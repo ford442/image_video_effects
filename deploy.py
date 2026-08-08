@@ -55,9 +55,16 @@ def build_zip(build_path: Path) -> bytes:
             if file.is_dir():
                 continue
             rel = file.relative_to(build_path)
-            # Skip common junk
+            # Skip common junk + heavy non-critical assets that 504 Contabo
+            # (shaders sync via storage API; thumbnails are optional polish;
+            # source maps are debug-only).
             parts = rel.parts
-            if any(p in (".git", "node_modules", "__pycache__", "shaders") for p in parts):
+            if any(
+                p in (".git", "node_modules", "__pycache__", "shaders", "thumbnails")
+                for p in parts
+            ):
+                continue
+            if file.suffix == ".map":
                 continue
             zf.write(file, str(rel))
             print(f"  + {rel}")
@@ -83,7 +90,7 @@ def deploy_bundle(build_path: Path) -> bool:
             files={"bundle": ("build.zip", zip_bytes, "application/zip")},
             data={"target_folder": target_folder, "target_site": DEPLOY_TARGET},
             headers=headers,
-            timeout=300,
+            timeout=900,
         )
     except Exception as exc:
         print(f"  \u2717 Upload exception: {exc}")

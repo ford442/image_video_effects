@@ -94,6 +94,8 @@ export function getRendererTypeFromURL(): RendererType | null {
 
 export class RendererManager {
   private currentRenderer: Renderer | null = null;
+  /** Active backend id; kept in sync with `currentRenderer` (null when none). */
+  private currentType: RendererType | null = null;
   // Retained even when switchRenderer('wasm') fails and falls back, so
   // getDiagnostics().wasm can still surface *why* WASM init failed
   // (e.g. surface-creation/adapter-limits errors recorded in adapterInfo).
@@ -173,14 +175,59 @@ export class RendererManager {
     return this.switchRenderer('js');
   }
 
+  /**
+   * Both the TypeScript WebGPU path and emdawnwebgpu (WASM) claim a browser
+   * GPUAdapter/device and configure the same canvas context. On Windows Chrome
+   * / Edge, a second `requestAdapter` while the first device is still alive
+   * fails with status Unavailable and "A valid external Instance reference no
+   * longer exists" / "No available adapters" — even though the JS path just
+   * succeeded. Exclusive WebGPU backends must therefore release before the
+   * other one inits.
+   */
+  private static usesExclusiveWebGpu(type: RendererType): boolean {
+    return type === 'webgpu' || type === 'wasm';
+  }
+
+  private static yieldForGpuRelease(): Promise<void> {
+    return new Promise((resolve) => {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => resolve());
+      } else {
+        setTimeout(resolve, 0);
+      }
+    });
+  }
+
   async switchRenderer(type: RendererType): Promise<boolean> {
     if (!this.canvas) return false;
 
     // Preserve video reference across renderer switches
     const video = (this.currentRenderer as { video?: HTMLVideoElement } | null)?.video;
 
-    // Destroy the old renderer only after the new one is ready, so we don't
-    // leave the app without a renderer if initialization fails.
+    const previousType = this.currentType;
+    const previousRenderer = this.currentRenderer;
+
+    // Release exclusive GPU ownership *before* the new backend requestAdapter().
+    // For non-exclusive targets (js) keep the old "init first, then destroy"
+    // order so a failed switch never leaves the app with no renderer.
+    const mustReleaseFirst =
+      RendererManager.usesExclusiveWebGpu(type) &&
+      previousRenderer != null &&
+      previousType != null &&
+      RendererManager.usesExclusiveWebGpu(previousType);
+
+    if (mustReleaseFirst) {
+      console.log(
+        `[RendererManager] Releasing ${previousType} before switching to ${type} ` +
+          '(exclusive WebGPU adapter/device ownership)',
+      );
+      previousRenderer.destroy();
+      this.currentRenderer = null;
+      this.currentType = null;
+      this.metrics.isWASM = false;
+      await RendererManager.yieldForGpuRelease();
+    }
+
     let renderer: Renderer;
     if (type === 'webgpu') {
       renderer = new WebGPURenderer(this.config);
@@ -193,21 +240,48 @@ export class RendererManager {
     const success = await renderer.init(this.canvas);
 
     if (success) {
-      this.currentRenderer?.destroy();
+      // Previous exclusive GPU was already destroyed when mustReleaseFirst.
+      if (!mustReleaseFirst) {
+        this.currentRenderer?.destroy();
+      }
       this.currentRenderer = renderer;
-      this.metrics.isWASM  = type === 'wasm';
+      this.currentType = type;
+      this.metrics.isWASM = type === 'wasm';
       if (type === 'wasm') this.lastFailedWasmRenderer = null;
+
+      // JS fallback may have replaced the DOM canvas after WebGPU permanently
+      // claimed the previous element's context type.
+      if (type === 'js' && typeof (renderer as JSRenderer).getCanvas === 'function') {
+        const replaced = (renderer as JSRenderer).getCanvas();
+        if (replaced) this.canvas = replaced;
+      }
 
       if (video) renderer.setVideo(video);
       this.refreshFormatCapabilities();
       this.applyPerformancePolicyToRenderer();
       this.startMetricsCollection();
     } else {
-      // If initialization failed, discard the new renderer.
-      // The previous renderer (if any) is still active.
-      console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);
+      console.warn(`[RendererManager] switchRenderer('${type}') failed`);
       if (type === 'wasm') {
         this.lastFailedWasmRenderer = renderer as WASMRenderer;
+      }
+      // We already tore down the previous exclusive backend — restore it so
+      // the UI does not sit on a black canvas after a failed C++ toggle.
+      if (mustReleaseFirst && previousType) {
+        console.warn(
+          `[RendererManager] Restoring previous renderer '${previousType}' after ${type} init failure`,
+        );
+        const restored = await this.switchRenderer(previousType);
+        if (!restored) {
+          console.warn(
+            `[RendererManager] Restore of '${previousType}' failed — falling back to Canvas2D`,
+          );
+          await this.switchRenderer('js');
+        }
+      } else {
+        console.warn(
+          `[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`,
+        );
       }
     }
 
@@ -677,6 +751,7 @@ export class RendererManager {
    * Useful for UI components that need to display or react to the active renderer.
    */
   getActiveRendererType(): RendererType {
+    if (this.currentType) return this.currentType;
     if (this.metrics.isWASM) return 'wasm';
     if (this.getShaderBackend()) return 'webgpu';
     return 'js';
@@ -903,6 +978,8 @@ export class RendererManager {
     this.adaptiveController.stop();
     this.currentRenderer?.destroy();
     this.currentRenderer = null;
+    this.currentType = null;
+    this.metrics.isWASM = false;
   }
 }
 

@@ -8,7 +8,7 @@
     "iridescent",
     "audio-reactive"
   ],
-  "description": "A hyper-dimensional weaving machine where threads of liquid light are spun into iridescent fabrics of space-time, dynamically reacting to audio frequencies and cosmic winds.",
+  "description": "A warp-flight weaving machine of iridescent light, velocity-aligned spectral threads, click-launched shuttle waves, and bounded radial braid trails.",
   "workgroup_size": [
     16,
     16,
@@ -53,5 +53,12 @@
   "updated": true,
   "id": "gen-prismatic-aether-loom",
   "url": "shaders/gen-prismatic-aether-loom.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ]
 }

@@ -11,10 +11,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Magnetic Dipole Field
 //  Category: generative
-//  Features: magnetic, dipole, field, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: magnetic, dipole, field, audio-reactive, mouse-interactive,
+//    semantic-alpha, fast-motion, analytic-fieldline-advection,
+//    velocity-aligned-motion-blur, temporal-feedback, hdr-clamped
 //  Complexity: Medium-High
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
+//  Updated: 2026-08-06 (Batch 38 FAST MOTION — Optimizer pass)
 //  By: Kimi Agent (Bright batch)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -33,13 +35,17 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount, .zw = resolution (width, height)
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down
+  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
   ripples: array<vec4<f32>, 50>,
 };
 
 const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+const HDR_CAP: f32 = 6.0;        // hard bound for feedback history energy
+const MAX_PARTICLES: i32 = 14;   // bounded primary particle iterations
+const MAX_IONS: i32 = 10;        // bounded fast-ion iterations
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -68,20 +74,38 @@ fn hashf(n: f32) -> f32 {
   return fract(sin(n * 127.1) * 43758.5453);
 }
 
-fn hash2f(n: f32) -> vec2<f32> {
-  return vec2<f32>(hashf(n), hashf(n + 73.156));
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
-// Evaluate field and particles at a given UV, returning color + particle density in alpha
-fn sampleField(uv: vec2<f32>, time: f32, p1: f32, p2: f32, p3: f32, p4: f32, dipole: vec2<f32>, bass: f32) -> vec4<f32> {
+// Smooth value noise — temporal-coherent (no hash-jitter strobing)
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), w.x),
+    mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), w.x),
+    w.y
+  );
+}
+
+// Analytic dipole B-field: B = (3(m·r)r − m r²) / r⁵  (m along +y)
+fn dipoleB(r: vec2<f32>, moment: f32) -> vec2<f32> {
+  let r_sq = dot(r, r);
+  let safe_r = max(sqrt(r_sq), 0.01);
+  let inv_r2 = 1.0 / (safe_r * safe_r);
+  let inv_r5 = inv_r2 * inv_r2 / safe_r;
+  return (3.0 * moment * r.y * r - vec2<f32>(0.0, moment) * r_sq) * inv_r5;
+}
+
+// Evaluate field and particles at a given UV, returning color + particle density in alpha.
+// withParticles=false skips the particle loops (cheap variant for the ghost dipole).
+fn sampleField(uv: vec2<f32>, time: f32, p1: f32, p2: f32, p3: f32, p4: f32, dipole: vec2<f32>, bass: f32, ionDrive: f32, withParticles: bool) -> vec4<f32> {
   let r = uv - dipole;
   let r_sq = dot(r, r);
-  let r_len = sqrt(r_sq);
-  let safe_r = max(r_len, 0.01);
   let dipole_moment = 1.0 + p1 * 2.0;
-  let my = vec2<f32>(0.0, dipole_moment);
-  let m_dot_r = my.y * r.y;
-  let B = (3.0 * m_dot_r * r - my * r_sq) / (safe_r * safe_r * safe_r * safe_r * safe_r);
+  let B = dipoleB(r, dipole_moment);
   let B_len = length(B);
   let B_dir = B / max(B_len, 0.0001);
   let line_density = 4.0 + p3 * 20.0;
@@ -90,36 +114,48 @@ fn sampleField(uv: vec2<f32>, time: f32, p1: f32, p2: f32, p3: f32, p4: f32, dip
   let field_line = exp(-abs(stream_val - round(stream_val)) * 40.0);
   let intensity = dipole_moment / (r_sq + 0.02);
 
-  // Primary particle layer
   var particle_glow = 0.0;
-  let num_particles = i32(3.0 + p1 * 8.0);
-  for (var i = 0; i < num_particles; i++) {
-    let p_seed = f32(i) * 157.0 + time * p2;
-    let p_angle = hashf(p_seed) * PI * 2.0;
-    let p_radius = 0.05 + hashf(p_seed + 1.0) * 0.4;
-    let p_time = time * p2 * (0.5 + hashf(p_seed + 2.0) * 1.5) + f32(i);
-    let p_orbit_angle = p_time * 0.3;
-    let p_pos = dipole + vec2<f32>(
-      cos(p_angle) * p_radius + cos(p_orbit_angle) * 0.02,
-      sin(p_angle) * p_radius + sin(p_orbit_angle) * 0.02
-    );
-    let p_dist = length(uv - p_pos);
-    particle_glow += exp(-p_dist * p_dist * 400.0) * 0.3;
-  }
+  if (withParticles) {
+    // ── FAST MOTION: analytic closed-form advection along dipole field lines ──
+    // Dipole field lines satisfy r = L·sin²θ. A particle's position on its line
+    // is a pure function of time (no per-frame integration → frame-rate
+    // independent and O(1) per particle). Triangle-wave phase bounces the
+    // particle pole-to-pole smoothly (no wrap jump / streak pop).
+    let speed_scale = (0.4 + p2 * 3.5) * (1.0 + bass * 0.9);
+    let num_particles = min(i32(4.0 + p1 * 10.0), MAX_PARTICLES);
+    for (var i = 0; i < num_particles; i++) {
+      let seed = f32(i) * 157.0;
+      let h1 = hashf(seed);
+      let h2 = hashf(seed + 1.0);
+      let h3 = hashf(seed + 2.0);
+      let line_L = 0.06 + h2 * 0.42;                       // field-line constant
+      let phase = fract(h1 + time * (0.08 + h3 * 0.22) * speed_scale);
+      let tri = 1.0 - abs(1.0 - 2.0 * phase);              // 0→1→0 smooth bounce
+      let theta = tri * PI;
+      let st = sin(theta);
+      let rr = line_L * st * st;
+      let p_pos = dipole + vec2<f32>(cos(theta), sin(theta)) * rr;
+      let d = uv - p_pos;
+      particle_glow += exp(-dot(d, d) * 500.0) * 0.35;
+    }
 
-  // Secondary fast ion population (audio-excited)
-  let fast_count = i32(bass * 8.0);
-  for (var i = 0; i < fast_count; i++) {
-    let p_seed = f32(i) * 293.0 + time * p2 * 3.0;
-    let p_angle = hashf(p_seed) * PI * 2.0;
-    let p_radius = 0.03 + hashf(p_seed + 1.0) * 0.15;
-    let p_time = time * p2 * 4.0 + f32(i);
-    let p_pos = dipole + vec2<f32>(
-      cos(p_angle + p_time) * p_radius,
-      sin(p_angle + p_time * 1.3) * p_radius
-    );
-    let p_dist = length(uv - p_pos);
-    particle_glow += exp(-p_dist * p_dist * 600.0) * 0.25 * (1.0 + bass);
+    // Secondary fast ion population (audio-excited) — tighter lines, higher speed
+    let fast_count = min(i32(clamp(bass * 5.0 + ionDrive * 6.0, 0.0, 10.0)), MAX_IONS);
+    for (var i = 0; i < fast_count; i++) {
+      let seed = f32(i) * 293.0;
+      let h1 = hashf(seed + 7.0);
+      let h2 = hashf(seed + 11.0);
+      let h3 = hashf(seed + 13.0);
+      let line_L = 0.03 + h2 * 0.16;
+      let phase = fract(h1 + time * (0.35 + h3 * 0.6) * speed_scale);
+      let tri = 1.0 - abs(1.0 - 2.0 * phase);
+      let theta = tri * PI;
+      let st = sin(theta);
+      let rr = line_L * st * st;
+      let p_pos = dipole + vec2<f32>(cos(theta), sin(theta)) * rr;
+      let d = uv - p_pos;
+      particle_glow += exp(-dot(d, d) * 700.0) * 0.28 * (1.0 + bass);
+    }
   }
 
   let field_contrib = field_line * intensity * 0.15;
@@ -136,6 +172,9 @@ fn sampleField(uv: vec2<f32>, time: f32, p1: f32, p2: f32, p3: f32, p4: f32, dip
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
   let resolution = vec2<f32>(u.config.zw);
+  // Bounds guard — mandatory
+  if (pixel.x >= i32(resolution.x) || pixel.y >= i32(resolution.y)) { return; }
+
   let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
@@ -145,10 +184,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let p3 = u.zoom_params.z;
   let p4 = u.zoom_params.w;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
-  let prev = textureLoad(dataTextureC, pixel, 0).rgb;
 
-  // Branchless dipole selection
+  // Guarded engine FFT bins 1–8 (extraBuffer[5+bin]) — read-only audio spectrum
+  var fftLo = 0.0;
+  var fftHi = 0.0;
+  if (arrayLength(&extraBuffer) > 13u) {
+    fftLo = (extraBuffer[6] + extraBuffer[7] + extraBuffer[8]) * 0.3333;
+    fftHi = (extraBuffer[11] + extraBuffer[12] + extraBuffer[13]) * 0.3333;
+  }
+  let ionDrive = clamp(fftLo * 0.5, 0.0, 1.5);
+
+  // Branchless dipole selection (mouse when pressed, slow auto-drift otherwise)
   let auto_dipole = vec2<f32>(0.0, sin(time * p2 * 0.15) * 0.1);
   let mouse_dipole = (mouse - 0.5) * 2.0;
   let dipole = select(auto_dipole, mouse_dipole, mouseDown);
@@ -158,56 +207,74 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let r_sq = dot(r, r);
   let field_intensity = dipole_moment / (r_sq + 0.02);
 
-  // Chromatic aberration split by field strength
-  let caStrength = 0.003 * field_intensity * (1.0 + bass);
-  let caDir = normalize(vec2<f32>(r.y, -r.x) + vec2<f32>(0.001));
-  let rResult = sampleField(uv + caDir * caStrength, time, p1, p2, p3, p4, dipole, bass);
-  let gResult = sampleField(uv, time, p1, p2, p3, p4, dipole, bass);
-  let bResult = sampleField(uv - caDir * caStrength, time, p1, p2, p3, p4, dipole, bass);
-  var color = vec3<f32>(rResult.r, gResult.g, bResult.b);
+  // ── Single full field evaluation (was 4×: R/G/B chromatic + ghost) ──
+  let gResult = sampleField(uv, time, p1, p2, p3, p4, dipole, bass, ionDrive, true);
+  var color = gResult.rgb;
 
-  // Ghost dipole orbiting for topological complexity
-  let ghost_angle = time * p2 * 0.12 + bass * 3.0;
+  // Ghost dipole orbiting for topological complexity — cheap variant, no particle loops
+  let ghost_angle = time * p2 * 0.4 + bass * 3.0;
   let ghost_dipole = dipole + vec2<f32>(cos(ghost_angle), sin(ghost_angle)) * 0.12;
-  let ghostResult = sampleField(uv, time, p1 * 0.4, p2, p3, p4 + 0.3, ghost_dipole, bass);
+  let ghostResult = sampleField(uv, time, p1 * 0.4, p2, p3, p4 + 0.3, ghost_dipole, bass, 0.0, false);
   color += ghostResult.rgb * 0.12 * (1.0 + bass * 0.6);
+
+  // Analytic chromatic split (replaces 2 extra full field evaluations):
+  // tangential direction around the dipole tints R/B channels in opposition.
+  let caStr = 0.25 * field_intensity / (1.0 + field_intensity) * (0.4 + bass * 0.6);
+  let caDir = normalize(vec2<f32>(r.y, -r.x) + vec2<f32>(0.001));
+  color = vec3<f32>(
+    color.r * (1.0 + caDir.x * caStr),
+    color.g,
+    color.b * (1.0 - caDir.x * caStr * 0.6)
+  );
 
   // Field magnitude contours
   let contour = abs(fract(log(field_intensity + 1.0) * 3.0) - 0.5) * 2.0;
   let contour_glow = exp(-contour * contour * 30.0) * 0.08 * depth;
   color += field_palette(fract(field_intensity * 0.05 + p4), p4) * contour_glow;
 
-  // Magnetic storm shimmer (bass-driven)
-  let stormNoise = hashf(dot(uv, vec2<f32>(50.0, 30.0)) + time * 8.0);
-  color += vec3<f32>(0.3, 0.5, 0.8) * bass * 0.2 * stormNoise * field_intensity * 0.1;
+  // Magnetic storm shimmer — smooth temporal-coherent value noise (was per-frame
+  // hash jitter → strobed at speed). Treble/FFT-driven.
+  let storm = valueNoise(uv * 22.0 + vec2<f32>(time * 2.6, -time * 1.9));
+  color += vec3<f32>(0.3, 0.5, 0.8) * (bass * 0.12 + fftHi * 0.25 + treble * 0.05) * storm * min(field_intensity * 0.1, 1.0);
 
   // Aurora-like background glow
-  let aurora = sin(uv.x * 3.0 + time * p2 * 0.2) * exp(-abs(uv.y) * 2.0);
+  let aurora = sin(uv.x * 3.0 + time * p2 * 0.6) * exp(-abs(uv.y) * 2.0);
   color += vec3<f32>(0.1, 0.4, 0.3) * aurora * 0.05 * (1.0 + bass);
 
-  // Subtle pulsing
-  color *= 1.0 + sin(time * p2 * 0.8) * 0.08;
+  // Subtle pulsing (time-warped, frame-rate independent)
+  color *= 1.0 + sin(time * (1.2 + p2 * 2.0)) * 0.07;
 
-  // Depth-based intensity falloff
-  let depthFalloff = 0.5 + 0.5 * depth;
-  color *= depthFalloff;
+  // Depth-based intensity falloff + bass modulation
+  color *= 0.5 + 0.5 * depth;
+  color *= 1.0 + bass * 0.4;
 
-  // Bass modulation
-  let bassMod = 1.0 + bass * 0.4;
-  color *= bassMod;
-
-  // Temporal persistence for glow trails
-  let persistence = 0.92 - bass * 0.04;
-  let temporal = prev * persistence * (0.6 + depth * 0.4);
+  // ── FAST MOTION: velocity-aligned motion-blur feedback ──
+  // Backtrace along the local field direction (particle velocity is tangent to
+  // B) so fast particles streak along field lines. textureLoad only, integer
+  // pixel offset, displacement clamped. HDR history hard-clamped ≤ HDR_CAP so
+  // speed never blows up the feedback loop.
+  let Bv = dipoleB(r, dipole_moment);
+  let Bv_len = length(Bv);
+  let Bv_dir = Bv / max(Bv_len, 0.0001);
+  let blur_px = clamp((2.0 + p2 * 14.0) * (0.5 + bass * 0.9), 0.0, 22.0);
+  let max_px = vec2<i32>(resolution) - vec2<i32>(1);
+  let back_px = clamp(pixel - vec2<i32>(Bv_dir * blur_px), vec2<i32>(0), max_px);
+  let hist = min(textureLoad(dataTextureC, back_px, 0).rgb, vec3<f32>(HDR_CAP));
+  let persistence = 0.90 - bass * 0.05;
+  let temporal = hist * persistence * (0.6 + depth * 0.4);
   color = max(color, temporal);
 
-  // ACES tone mapping
-  color = acesToneMap(color * 1.5);
-
+  // Semantic alpha from field/particle energy (never constant)
   let particle_density = clamp(gResult.w, 0.0, 1.0);
   let f_intensity = clamp(field_intensity * 0.5, 0.0, 1.0);
-  let alpha = f_intensity * particle_density * depth;
+  let alpha = clamp(f_intensity * 0.55 + particle_density * 0.85, 0.05, 1.0) * (0.45 + 0.55 * depth);
+
+  // Feedback state written EVERY frame (HDR, clamped) — read back next frame via C
+  textureStore(dataTextureA, pixel, vec4<f32>(min(color, vec3<f32>(HDR_CAP)), alpha));
+
+  // ACES tone mapping for presentation only
+  color = acesToneMap(color * (1.3 + mids * 0.3));
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(f_intensity, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(f_intensity * 0.6 + particle_density * 0.4, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

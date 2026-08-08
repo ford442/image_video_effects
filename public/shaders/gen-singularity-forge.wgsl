@@ -24,8 +24,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>,  // x=Disk Density, y=Jet Intensity, z=Gravity Warp, w=Time Dilation
     ripples: array<vec4<f32>, 50>,
 };
@@ -97,10 +97,18 @@ fn getRayDir(uv: vec2<f32>, time: f32, audioReactivity: f32) -> vec3<f32> {
     return rd;
 }
 
-fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, bass: f32) -> vec4<f32> {
+struct MarchResult {
+    color: vec3<f32>,
+    glow: f32,
+    travel: f32,
+    hit: bool,
+};
+
+fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, bass: f32) -> MarchResult {
     var col = vec3<f32>(0.0);
     var t = 0.0;
     var glow = vec3<f32>(0.0);
+    var hit = false;
     for(var i=0; i<100; i++) {
         var p = ro + rd * t;
         let distToOrigin = length(p);
@@ -117,31 +125,37 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, 
         let dJet = length(pJet.xz) - 0.1 / (abs(pJet.y) + 0.1);
         let d = min(dBlackHole, dDisk);
         if (d < 0.01) {
-            if (d == dBlackHole) {
+            hit = true;
+            if (dBlackHole < dDisk) {
                 col = vec3<f32>(0.0);
             } else {
                 let diskDist = length(pDisk.xz);
                 let heat = clamp(1.0 - (diskDist - 1.0) * 0.3, 0.0, 1.0);
-                col = mix(vec3<f32>(0.8, 0.2, 0.0), vec3<f32>(0.8, 0.9, 1.0), heat) * heat * 2.0;
+                let diskAngle = atan2(pDisk.z, pDisk.x);
+                let shear = 0.62 + 0.38 * sin(diskAngle * 16.0 - time * (7.0 + dd * 2.0));
+                col = mix(vec3<f32>(0.8, 0.2, 0.0), vec3<f32>(0.8, 0.9, 1.0), heat) * heat * (1.4 + shear);
             }
             break;
         }
+        let knotPhase = abs(fract(abs(pJet.y) * 0.18 - time * (0.9 + bass * 1.8)) - 0.5);
+        let jetKnot = exp(-knotPhase * knotPhase * 180.0);
         glow += vec3<f32>(1.0, 0.9, 1.0) * 0.02 / (abs(dBlackHole) + 0.05);
-        glow += vec3<f32>(0.6, 0.1, 1.0) * (0.01 * ji * (1.0 + sin(bass * 3.0))) / (abs(dJet) + 0.05);
+        glow += vec3<f32>(0.45, 0.12, 1.2) * (0.008 * ji * (0.7 + jetKnot * 2.4)) / (abs(dJet) + 0.05);
         glow += vec3<f32>(1.0, 0.4, 0.1) * 0.005 / (abs(dDisk) + 0.1);
-        t += d * 0.5;
+        t += max(abs(d) * 0.5, 0.003);
         if (distToOrigin < 0.8) {
             col = vec3<f32>(0.0);
             break;
         }
         if(t > 20.0) { break; }
     }
-    return vec4<f32>(col + glow, length(glow));
+    return MarchResult(col + glow, length(glow), t, hit);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
+    if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     let uv = (fragCoord * 2.0 - res) / res.y;
 
@@ -158,10 +172,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
     let audioReactivity = 1.0 + bass * 0.5;
 
-    // ═══ DEPTH-BASED GRAVITATIONAL LENSING ═══
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, fragCoord / res, 0.0).r;
-    let depthFactor = 0.5 + depth * 0.5;
-    let effectiveGravity = gravityWarp * depthFactor;
+    let effectiveGravity = gravityWarp * (0.85 + bass * 0.25);
 
     // Camera origin (shared across channels)
     var ro = vec3<f32>(0.0, 1.5, -4.0);
@@ -174,43 +185,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     ro.x = tr2.x;
     ro.z = tr2.y;
 
-    // Mouse Interaction - Additional Gravity Well
-    let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
-    let mouseY = u.zoom_config.z * 2.0 - 1.0;
-    let mousePos = vec3<f32>(mouseX * 5.0, mouseY * 5.0, 0.0);
-    let mouseDist = distance(ro, mousePos);
+    // Screen-space mouse gravity bends the ray toward the visible cursor.
+    let mouseUv = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(res.x / res.y, 1.0);
+    let mouseDelta = mouseUv - uv;
+    let mousePull = exp(-dot(mouseDelta, mouseDelta) * 2.8) * (0.10 + u.zoom_config.w * 0.16);
+    let lensedUv = uv + mouseDelta * mousePull;
+    let rd = getRayDir(lensedUv, time, audioReactivity);
 
-    // ═══ CHROMATIC ABERRATION (3 offset rays) ═══
-    let caStrength = 0.002 * (1.0 + bass);
-    var rdR = getRayDir(uv + vec2<f32>(caStrength, 0.0), time, audioReactivity);
-    var rdG = getRayDir(uv, time, audioReactivity);
-    var rdB = getRayDir(uv - vec2<f32>(caStrength, 0.0), time, audioReactivity);
+    // One primary march replaces the former three full raymarches. Spectral
+    // separation comes from orbital velocity and material-space Doppler shift.
+    let result = marchRay(ro, rd, time, diskDensity, jetIntensity, effectiveGravity, bass);
+    let orbitalPhase = atan2(lensedUv.y, lensedUv.x) - time * (4.0 + diskDensity);
+    let doppler = sin(orbitalPhase) * (0.035 + treble * 0.045);
+    var fresh = max(result.color * vec3<f32>(1.0 + doppler, 1.0, 1.0 - doppler), vec3<f32>(0.0));
 
-    if (mouseDist > 0.1) {
-        let mg = (mousePos - ro) * (0.5 / pow(mouseDist, 2.0));
-        rdR = normalize(rdR + mg);
-        rdG = normalize(rdG + mg);
-        rdB = normalize(rdB + mg);
-    }
-
-    // Raymarch each channel
-    let resR = marchRay(ro, rdR, time, diskDensity, jetIntensity, effectiveGravity, bass);
-    let resG = marchRay(ro, rdG, time, diskDensity, jetIntensity, effectiveGravity, bass);
-    let resB = marchRay(ro, rdB, time, diskDensity, jetIntensity, effectiveGravity, bass);
-
-    var col = vec3<f32>(resR.r, resG.g, resB.b);
-    let glowAmt = (resR.a + resG.a + resB.a) * 0.333;
-
-    // ═══ TEMPORAL JET PERSISTENCE ═══
-    let prevFrame = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
-    col = max(col, prevFrame.rgb * 0.88);
-
-    // ═══ ACES TONE MAPPING ═══
-    col = acesToneMap(col * 1.5);
-
-    // ═══ SEMANTIC ALPHA ═══
-    let alpha = clamp(glowAmt * depthFactor * (1.0 + bass) * 1.5, 0.0, 1.0);
-
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depthFactor * 0.3 + glowAmt * 0.15, 0.0, 0.0, 0.0));
+    // Angularly advected, bounded lensing history leaves fast curved trails.
+    let swirlVelocity = vec2<f32>(-uv.y, uv.x) * (3.0 + timeDilation * 2.0 + bass * 2.5);
+    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let historyCoord = clamp(vec2<i32>(id.xy) - vec2<i32>(swirlVelocity), vec2<i32>(0), maxCoord);
+    let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
+    let hdrColor = clamp(fresh + history * (0.28 + jetIntensity * 0.08), vec3<f32>(0.0), vec3<f32>(6.0));
+    let alpha = clamp(result.glow * (1.0 + bass) * 1.2 + select(0.0, 0.35, result.hit), 0.02, 0.98);
+    let depth = select(0.0, clamp(1.0 - result.travel / 20.0, 0.0, 1.0), result.hit);
+    let coords = vec2<i32>(id.xy);
+    textureStore(dataTextureA, coords, vec4<f32>(hdrColor, alpha));
+    textureStore(writeTexture, coords, vec4<f32>(acesToneMap(hdrColor * 1.45), alpha));
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

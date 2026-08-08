@@ -51,7 +51,7 @@ fi
 export EM_CACHE=/tmp/emscripten_cache
 
 # Print diagnostics
-emcc --version | head -1
+em++ --version | head -1
 echo "EM_CACHE: $EM_CACHE"
 echo "EMCC_CFLAGS: ${EMCC_CFLAGS:-<unset>}"
 

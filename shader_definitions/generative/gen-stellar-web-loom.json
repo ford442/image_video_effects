@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics.",
+  "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics. Upgraded for fast motion: warp-flight camera driven by Weave Speed, radial speed-line streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,15 @@
   "updated": true,
   "id": "gen-stellar-web-loom",
   "url": "shaders/gen-stellar-web-loom.wgsl",
-  "features": []
+  "features": [
+    "fast-motion",
+    "warp-flight",
+    "hdr-feedback-trails",
+    "speed-streaks",
+    "audio-transient-burst",
+    "audio-color-temperature",
+    "aces-tone-map",
+    "generated-depth",
+    "semantic-alpha"
+  ]
 }

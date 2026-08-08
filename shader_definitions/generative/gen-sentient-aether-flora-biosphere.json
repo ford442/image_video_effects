@@ -8,7 +8,7 @@
     "fractal",
     "audio-reactive"
   ],
-  "description": "A hyper-organic, bioluminescent extraterrestrial terrarium where fractal aether-spores drift and blossom into complex, sentient crystalline flora that pulse with cosmic energy in sync with ambient audio.",
+  "description": "A hyper-organic, bioluminescent extraterrestrial terrarium where fractal aether-spores drift and blossom into complex, sentient crystalline flora that pulse with cosmic energy in sync with ambient audio. Upgraded (fast-motion batch): spores now fly as a fast swarm with spring-damped cursor chase, bass kicks trigger bloom-burst shockwaves with bounded decay, and growth fronts propagate rapidly along the flora's own feedback history while velocity-advected HDR trails streak the flythrough.",
   "workgroup_size": [
     16,
     16,
@@ -53,5 +53,20 @@
   "updated": true,
   "id": "gen-sentient-aether-flora-biosphere",
   "url": "shaders/gen-sentient-aether-flora-biosphere.wgsl",
-  "features": []
+  "features": [
+    "fast-motion",
+    "spore-swarm",
+    "cursor-pursuit",
+    "growth-front",
+    "self-organizing",
+    "bass-kick-shockwave",
+    "click-shockwaves",
+    "velocity-advected-trails",
+    "temporal-feedback",
+    "audio-reactive",
+    "raymarched",
+    "hdr-output",
+    "semantic-alpha",
+    "depth-output"
+  ]
 }

@@ -17,19 +17,19 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Engine Speed, y=Chrome Reflectivity, z=Plasma Glow, w=Complexity
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Mouse Influence
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(controlled, color.a);
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 
@@ -61,8 +61,9 @@ fn sdCappedCylinder(p: vec3<f32>, h: f32, r: f32) -> f32 {
 }
 
 fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
-    var p = p_in;
-    let t = u.config.x * u.zoom_params.x;
+    let objectScale = mix(0.68, 1.5, clamp(u.zoom_params.z, 0.0, 1.0));
+    var p = p_in / objectScale;
+    let t = u.config.x * mix(0.45, 2.8, clamp(u.zoom_params.y, 0.0, 1.0));
     let audio = plasmaBuffer[0].x;
 
     // Domain repetition
@@ -72,7 +73,7 @@ fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
 
     // KIFS fold inner core
     var p_kifs = p;
-    let complexity = i32(u.zoom_params.w);
+    let complexity = 4;
     for(var i=0; i<complexity; i++) {
         p_kifs = abs(p_kifs) - vec3<f32>(0.5, 0.5, 0.5);
         let rx = rotX(0.5);
@@ -90,7 +91,8 @@ fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
     let base_box = sdBox(p - vec3<f32>(0.0, -2.0, 0.0), vec3<f32>(2.0, 1.0, 2.0));
 
     // Piston
-    let piston_h = 1.0 + sin(t + p_in.x * 0.2 + p_in.z * 0.2) * (1.0 + audio * 3.0);
+    let surge = sin(t * 2.4 + p_in.x * 0.24 + p_in.z * 0.19);
+    let piston_h = 1.0 + surge * (0.8 + audio * 2.8);
     let piston = sdCappedCylinder(p - vec3<f32>(0.0, piston_h, 0.0), 2.0, 0.8);
 
     // Inner core micro-structures
@@ -101,9 +103,9 @@ fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
     d = smin(d, core, 2.0);
 
     // Plasma glow based on core distance
-    *global_glow += 0.01 / (0.01 + abs(core)) * u.zoom_params.z;
+    *global_glow += 0.008 / (0.012 + abs(core)) * (0.45 + u.zoom_params.x * 1.4);
 
-    return d;
+    return d * objectScale;
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -132,17 +134,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = (coords - 0.5 * res) / res.y;
 
+    let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
+    let speed = clamp(u.zoom_params.y, 0.0, 1.0);
+    let mouseInfluence = clamp(u.zoom_params.w, 0.0, 1.0);
+
     // Chromatic aberration at screen edges during high audio
     let audio = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let distFromCenter = length(uv);
     uv *= 1.0 - (distFromCenter * audio * 0.1);
 
     // Camera
-    var ro = vec3<f32>(0.0, 4.0, -10.0 + u.config.x * u.zoom_params.x * 2.0);
+    let cameraTravel = u.config.x * (1.6 + speed * 6.0 + audio * 1.8);
+    var ro = vec3<f32>(0.0, 4.0, -10.0 + (cameraTravel - 8.0 * floor(cameraTravel / 8.0)));
     var rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
 
     // Mouse Interaction
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0;
+    let mouse = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0) * mouseInfluence;
 
     let rx = rotX(-mouse.y * 1.5 + 0.5);
     let roYZ = rx * vec2<f32>(ro.y, ro.z);
@@ -164,20 +173,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var d = 0.0;
     var t = 0.0;
     var global_glow = 0.0;
+    var hit = false;
 
     for (var i = 0; i < 100; i++) {
         var p = ro + rd * t;
         d = map(p, &global_glow);
-        if (d < 0.001 || t > 80.0) {
-            break;
-        }
-        t += d;
+        if (d < 0.001) { hit = true; break; }
+        if (t > 80.0) { break; }
+        t += max(abs(d), 0.002);
     }
 
     var col = vec3<f32>(0.0);
     var p = ro + rd * t;
 
-    if (t < 80.0) {
+    if (hit) {
         var n = calcNormal(p);
 
         let viewDir = normalize(ro - p);
@@ -188,7 +197,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Add some audio-reactive color to the reflection
         envCol += vec3<f32>(0.8, 0.2, 1.0) * audio * 0.5 * max(0.0, refDir.x);
 
-        let chrome_reflectivity = u.zoom_params.y;
+        let chrome_reflectivity = 0.72 + intensity * 0.24;
         col = mix(vec3<f32>(0.1), envCol, chrome_reflectivity);
 
         // Diffuse lighting
@@ -204,18 +213,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         sin(u.config.x * 2.3 + p.y * 0.5) * 0.5 + 0.5,
         sin(u.config.x * 2.7 + p.x * 0.5) * 0.5 + 0.5
     );
-    col += glowCol * global_glow * 0.05 * (1.0 + audio * 2.0);
+    let boundedGlow = min(global_glow, 8.0);
+    col += glowCol * boundedGlow * 0.045 * (0.65 + intensity * 1.1 + audio * 1.8);
+
+    // High-speed reflection bands stretch along the engine conveyor.
+    let streakPhase = (uv.x * 19.0 + uv.y * 8.0) - cameraTravel * 3.5;
+    let chromeStreak = pow(max(sin(streakPhase), 0.0), 18.0) * smoothstep(0.15, 0.85, distFromCenter);
+    col += vec3<f32>(0.35 + treble * 0.4, 0.75 + mids * 0.35, 1.25) * chromeStreak *
+           (0.16 + intensity * 0.25);
 
     // Fog
     col = mix(col, vec3<f32>(0.02, 0.02, 0.05), 1.0 - exp(-0.01 * t));
 
-    // Gamma correction
-    col = pow(col, vec3<f32>(1.0 / 2.2));
-
-        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), applyGenerativePrimaryControls(vec4<f32>(col, _alpha)));
-    let _depth_uv = clamp(vec2<f32>(global_id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    // Conveyor-advected, HDR-bounded reflections smear liquid chrome without
+    // turning the feedback buffer into an unbounded light accumulator.
+    let historyVelocity = vec2<f32>(mouse.x * 2.0, -(2.0 + speed * 5.0 + audio * 2.0));
+    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let coord = vec2<i32>(global_id.xy);
+    let historyCoord = clamp(coord - vec2<i32>(historyVelocity), vec2<i32>(0), maxCoord);
+    let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
+    let hdrColor = clamp(col * (0.68 + intensity * 0.72) + history * (0.23 + speed * 0.17), vec3<f32>(0.0), vec3<f32>(6.0));
+    let alpha = clamp(select(0.02, 0.28 + length(hdrColor) * 0.2, hit) + chromeStreak * 0.18, 0.02, 0.97);
+    let depth = select(0.0, clamp(1.0 - t / 80.0, 0.0, 1.0), hit);
+    textureStore(dataTextureA, coord, vec4<f32>(hdrColor, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(hdrColor * 1.1), alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

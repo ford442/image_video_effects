@@ -26,6 +26,10 @@ export interface UseRemoteSyncOptions {
     loadDepthModel: () => Promise<void>;
     setSelectedVideo: React.Dispatch<React.SetStateAction<string>>;
     setIsMuted: React.Dispatch<React.SetStateAction<boolean>>;
+    /** Roulette / randomize handlers (main app owns availableModes + setMode). */
+    handleRandomizeSlot?: (slot: number) => void;
+    triggerRandomizeAllSlots?: () => void;
+    triggerRoulette?: () => void;
 }
 
 export function useRemoteSync({
@@ -52,9 +56,21 @@ export function useRemoteSync({
     loadDepthModel,
     setSelectedVideo,
     setIsMuted,
+    handleRandomizeSlot,
+    triggerRandomizeAllSlots,
+    triggerRoulette,
 }: UseRemoteSyncOptions): void {
     const channelRef = useRef<BroadcastChannel | null>(null);
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Keep latest handlers in refs so the BroadcastChannel listener (mounted once)
+    // always calls current roulette logic without re-binding the channel.
+    const handleRandomizeSlotRef = useRef(handleRandomizeSlot);
+    handleRandomizeSlotRef.current = handleRandomizeSlot;
+    const triggerRandomizeAllSlotsRef = useRef(triggerRandomizeAllSlots);
+    triggerRandomizeAllSlotsRef.current = triggerRandomizeAllSlots;
+    const triggerRouletteRef = useRef(triggerRoulette);
+    triggerRouletteRef.current = triggerRoulette;
 
     const buildFullState = useCallback((): FullState => ({
         modes,
@@ -120,6 +136,22 @@ export function useRemoteSync({
                 setSelectedVideo(msg.payload);
             } else if (msg.type === 'CMD_SET_MUTED') {
                 setIsMuted(msg.payload);
+            } else if (msg.type === 'CMD_RANDOMIZE_SLOT') {
+                const slot = typeof msg.payload === 'number' ? msg.payload : msg.payload?.slot;
+                if (typeof slot === 'number' && slot >= 0 && slot <= 2) {
+                    handleRandomizeSlotRef.current?.(slot);
+                } else {
+                    console.warn('[RemoteSync] CMD_RANDOMIZE_SLOT missing/invalid slot', msg.payload);
+                }
+            } else if (msg.type === 'CMD_RANDOMIZE_ALL_SLOTS') {
+                triggerRandomizeAllSlotsRef.current?.();
+            } else if (msg.type === 'CMD_ROULETTE') {
+                // Prefer dedicated roulette (active slot + flash); fall back to slot 0.
+                if (triggerRouletteRef.current) {
+                    triggerRouletteRef.current();
+                } else {
+                    handleRandomizeSlotRef.current?.(0);
+                }
             } else if (msg.type === 'CMD_UPLOAD_FILE') {
                 // File upload from remote - handle if needed
             }
