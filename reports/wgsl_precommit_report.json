@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-07T08:05:46.124947",
+  "timestamp": "2026-08-08T08:11:42.681137",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": false,
   "total": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
+      "file": "public/shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
