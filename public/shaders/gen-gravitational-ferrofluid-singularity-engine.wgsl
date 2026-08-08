@@ -126,7 +126,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Gravity distortion effect on ray position
         let distToMouse = length(p - mouse3D);
-        let pull = (mouseDown) ? 2.0 : 0.5;
+        var pull = 0.5;
+        if (mouseDown) { pull = 2.0; }
         let warp = normalize(mouse3D - p) * (pull / (distToMouse * distToMouse + 0.1));
         p += warp;
 
