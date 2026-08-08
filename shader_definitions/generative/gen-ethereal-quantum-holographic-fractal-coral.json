@@ -1,0 +1,59 @@
+{
+  "name": "Ethereal Quantum-Holographic Fractal-Coral",
+  "category": "generative",
+  "tags": [
+    "organic",
+    "quantum",
+    "holographic",
+    "fractal",
+    "coral",
+    "oceanic",
+    "audio-reactive"
+  ],
+  "description": "A majestic, deep-void cybernetic coral reef that self-assembles through quantum superposition, weaving holographic bio-luminescence with hyper-geometric fractal branches. The coral branches pulsate with liquid neon energy driven by audio frequencies, expanding the fractal recursion depth on bass hits.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Fractal Density",
+      "default": 3.0,
+      "min": 1.0,
+      "max": 8.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Holographic Frequency",
+      "default": 5.0,
+      "min": 1.0,
+      "max": 20.0,
+      "step": 0.5
+    },
+    {
+      "index": 2,
+      "name": "Bio-Luminescence Intensity",
+      "default": 1.2,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "index": 3,
+      "name": "Audio Pulse Propagation",
+      "default": 2.0,
+      "min": 0.5,
+      "max": 5.0,
+      "step": 0.1
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-ethereal-quantum-holographic-fractal-coral",
+  "url": "shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
+  "features": []
+}

@@ -5132,11 +5132,15 @@
     "synced_at": 1786003212.5583088
   },
   "gen-symbiotic-cyber-fungal-core-reactor": {
-    "hash": "ce79309cd317092f79d021b245914899",
-    "synced_at": 1786003213.6151495
+    "hash": "1309add942692d366bd0e968a27e297a",
+    "synced_at": 1786089350.6935291
   },
   "gen-abyssal-silicate-geode-weaver": {
-    "hash": "809f306ac01270e597f098981e73fc2e",
-    "synced_at": 1786003213.5571866
+    "hash": "b76dc1cf2fb436baaa9956b495ad168e",
+    "synced_at": 1786089350.5840807
+  },
+  "gen-ethereal-quantum-holographic-fractal-coral": {
+    "hash": "56ea9574b74e14f667a1ec13f670e37b",
+    "synced_at": 1786089350.5839403
   }
 }
