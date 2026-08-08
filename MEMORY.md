@@ -2,7 +2,13 @@
 
 **Last updated:** 2026-08-06 (Batch 39 shader upgrade)
 
-## 2026-08-07 — Strategic audit + issue re-seed
+## 2026-08-08 — RendererManager + StoragePanel strangler (#1079 / PR #1092)
+
+- Extracted renderer seams mirroring webgpu/* split: `backendLifecycle`, `slotOrchestration`, `inputSourceBridge`, `performanceStatus` (+ diagnostics/types helpers) with colocated Jest.
+- `RendererManager.ts` facade **344 LOC** (was 987); all public API + contracts preserved (no WASM auto-fallback, feedback order untouched, #887 duck-types).
+- `StoragePanel` split into `panels/*` (list/browser, detail, ratings, upload, operations); facade **200 LOC**; library tab uses `StorageClient.listLibrary()`.
+- Proof: Jest **76 suites / 506 pass / 1 skip** (baseline 71/486); tsc clean; `SKIP_WASM_BUILD=1` build green; dependency-boundaries green.
+
 
 - Progress audit: foundation wave 2 closed; catalog ~1310; generative batch through #355;
   thumbs ~27%; WASM stay Tier B until real-GPU evidence.
