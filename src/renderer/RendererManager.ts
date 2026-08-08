@@ -1,696 +1,275 @@
-import { Renderer, RendererConfig, ShaderSlotRenderer, SlotZoomParamsUpdate, GPUTimings } from './Renderer';
-import { JSRenderer } from './JSRenderer';
-import { WASMDiagnostics } from './WASMRenderer';
+import { Renderer, RendererConfig, GPUTimings } from './Renderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
-import {
-  computeInternalDimensions,
-  estimateInternalTextureMiB,
-  INTERNAL_RENDER_RESOLUTION,
-  RenderQualityMode,
-  ResolvedPerformancePolicy,
-  resolvePerformancePolicy,
-} from '../config/performancePolicy';
-import {
-  DEFAULT_FORMAT_CAPABILITIES,
-  DeviceFormatCapabilities,
-  Fp32PinDecision,
-  InternalColorFormat,
-  resolveFp32Pin,
-} from '../config/formatPolicy';
 import { AdaptivePerformanceController } from './adaptivePerformance';
-import { getGraphEntryIds, hasGraph } from './multipassRegistry';
-import { resolveShaderUrl } from '../utils/resolveShaderUrl';
+import {
+  RendererType,
+  getRendererTypeFromURL,
+  performBackendSwitch,
+  resolveInitBackendPreference,
+} from './backendLifecycle';
+import * as inputBridge from './inputSourceBridge';
+import {
+  PerformancePolicyState,
+  RendererPerformanceStatus,
+  applyPerformancePolicyToRenderer,
+  applyQualityPolicy,
+  applyResolutionScaleToRenderer,
+  buildPerformanceStatus,
+  createPerformancePolicyState,
+  readResolutionScale,
+  refreshFormatCapabilities,
+  registerFp32Requirement,
+  releaseFp32Requirement,
+} from './performanceStatus';
+import {
+  ShaderLoadMeta,
+  SLOT_COUNT,
+  addRipple,
+  clearRipples,
+  firePlasmaOnBackend,
+  loadShaderForBackend,
+  loadShadersForBackend,
+  reloadShaderOnBackend,
+  resyncShaderStack,
+  resolveShaderBackend,
+  setActiveShader,
+  setSlotMode,
+  setSlotParams,
+  setSlotShader,
+  supportsShaderEffects as backendSupportsShaders,
+  syncAllSlotParams,
+  updateSlotParams,
+} from './slotOrchestration';
+import { DeviceFormatCapabilities } from '../config/formatPolicy';
+import { RenderQualityMode } from '../config/performancePolicy';
+import { buildRendererDiagnostics } from './rendererDiagnostics';
+import type { RendererDiagnostics, RendererMetrics } from './rendererTypes';
 
-export interface RendererMetrics {
-  fps: number;
-  frameTime: number;
-  agentCount: number;
-  isWASM: boolean;
-}
-
-export interface RendererPerformanceStatus {
-  qualityMode: RenderQualityMode;
-  backend: RendererType;
-  scale: number;
-  internalWidth: number;
-  internalHeight: number;
-  maxActiveSlots: number;
-  targetFps: number;
-  adaptive: boolean;
-  fps: number;
-  colorFormat: InternalColorFormat;
-  estimatedTextureMiB: number;
-  /** Format the quality tier asked for, before any FP32 pin. */
-  requestedColorFormat: InternalColorFormat;
-  /** True when an FP32-required shader forced rgba32float over the tier default. */
-  fp32Pinned: boolean;
-  /** Shader ids holding the FP32 pin. */
-  fp32PinnedBy: string[];
-  /** Graph dispatch cap for this tier (Tier C multipass). */
-  maxPassesPerFrame: number;
-}
-
-export interface ShaderLoadMeta {
-  requiresDeepWorkgroup?: boolean;
-  requiresHistoryRing?: boolean;
-  requiresRgba32Float?: boolean;
-}
-
-export interface RendererDiagnostics {
-  rendererType: RendererType;
-  metrics: RendererMetrics;
-  timestamp: string;
-  wasm?: WASMDiagnostics;
-  webgpu?: Record<string, any>;
-}
-
-/** Supported renderer backend identifiers. */
-export type RendererType = 'webgpu' | 'wasm' | 'js';
-
-/**
- * Read the preferred renderer type from the URL query string.
- *
- * Supported values for the `renderer` parameter:
- *   - `wasm`   → C++ Emscripten WASM renderer (**experimental** — see WASM_BACKEND_POLICY.md)
- *   - `webgpu` → TypeScript native WebGPU renderer (default)
- *   - `js`     → Canvas 2D fallback (no shaders)
- *
- * Example: `http://localhost:3000/?renderer=wasm`
- */
-export function getRendererTypeFromURL(): RendererType | null {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const value = params.get('renderer');
-    if (value === 'wasm' || value === 'webgpu' || value === 'js') {
-      return value as RendererType;
-    }
-  } catch {
-    // Not in a browser context (e.g. tests)
-  }
-  return null;
-}
+export type { RendererType };
+export { getRendererTypeFromURL };
+export type { RendererPerformanceStatus, ShaderLoadMeta };
+export type { RendererMetrics, RendererDiagnostics } from './rendererTypes';
 
 export class RendererManager {
   private currentRenderer: Renderer | null = null;
-  /** Active backend id; kept in sync with `currentRenderer` (null when none). */
   private currentType: RendererType | null = null;
-  // Retained even when switchRenderer('wasm') fails and falls back, so
-  // getDiagnostics().wasm can still surface *why* WASM init failed
-  // (e.g. surface-creation/adapter-limits errors recorded in adapterInfo).
   private lastFailedWasmRenderer: WASMRenderer | null = null;
-  private config: RendererConfig;
+  private readonly config: RendererConfig;
   private canvas: HTMLCanvasElement | null = null;
-  private metrics: RendererMetrics = {
-    fps: 0,
-    frameTime: 0,
-    agentCount: 0,
-    isWASM: false,
-  };
-  private onMetricsUpdate?: (metrics: RendererMetrics) => void;
-  private performancePolicy: ResolvedPerformancePolicy = resolvePerformancePolicy('auto', {
-    supportsDeepWorkgroup: true,
-  });
-  private qualityMode: RenderQualityMode = 'auto';
-  private resolutionScale = 1.0;
-  private formatCapabilities: DeviceFormatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
-  /** Loaded shaders that must not run at FP16 (docs/FORMAT_TIERS.md precision guard). */
-  private fp32RequiredShaders = new Set<string>();
-  private requestedColorFormat: InternalColorFormat = this.performancePolicy.colorFormat;
-  private fp32Pin: Fp32PinDecision = {
-    colorFormat: this.performancePolicy.colorFormat,
-    pinned: false,
-    pinnedBy: [],
-  };
-  private adaptiveController: AdaptivePerformanceController;
-
-  /** Max shader slots shared by WebGPU and WASM backends. */
-  private static readonly SLOT_COUNT = 3;
+  private metrics: RendererMetrics = { fps: 0, frameTime: 0, agentCount: 0, isWASM: false };
+  private readonly onMetricsUpdate?: (metrics: RendererMetrics) => void;
+  private readonly perfState: PerformancePolicyState = createPerformancePolicyState();
+  private readonly adaptiveController: AdaptivePerformanceController;
 
   constructor(config: RendererConfig, onMetricsUpdate?: (metrics: RendererMetrics) => void) {
     this.config = config;
     this.onMetricsUpdate = onMetricsUpdate;
     this.adaptiveController = new AdaptivePerformanceController({
       getFps: () => this.getCurrentFPS(),
-      getScale: () => this.resolutionScale,
-      setScale: (scale) => this.applyResolutionScale(scale),
+      getScale: () => this.perfState.resolutionScale,
+      setScale: (scale) => applyResolutionScaleToRenderer(this.perfState, this.shaderRenderer(), scale),
     });
   }
 
+  private shaderRenderer(): WebGPURenderer | WASMRenderer | null {
+    const r = this.currentRenderer;
+    return r instanceof WebGPURenderer || r instanceof WASMRenderer ? r : null;
+  }
+
+  private backend() {
+    return resolveShaderBackend(this.currentRenderer);
+  }
+
+  private slotPolicy() {
+    return {
+      maxActiveSlots: this.perfState.performancePolicy.maxActiveSlots,
+      preferNonDeepVariants: this.perfState.performancePolicy.preferNonDeepVariants,
+    };
+  }
+
+  private slotCallbacks() {
+    return {
+      onFp32Required: (id: string) => {
+        if (registerFp32Requirement(this.perfState, id)) {
+          if (this.perfState.performancePolicy.colorFormat !== 'rgba32float') {
+            console.warn(
+              `[RendererManager] "${id}" requires rgba32float — pinning storage format to FP32 ` +
+                `(quality mode stays "${this.perfState.qualityMode}")`,
+            );
+            this.applyQualityPolicy(this.perfState.qualityMode);
+          }
+        }
+      },
+    };
+  }
+
+  private loadShaderBound = (id: string, url: string, meta?: ShaderLoadMeta) =>
+    loadShaderForBackend(this.backend(), this.slotPolicy(), this.slotCallbacks(), id, url, meta);
+
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
     this.canvas = canvas;
+    const { preferredType } = resolveInitBackendPreference();
 
-    // Honour an explicit renderer preference from the URL query string
-    // (e.g. ?renderer=wasm) so the WASM path can be tested without code changes.
-    const urlPreference = getRendererTypeFromURL();
-
-    if (urlPreference === 'wasm') {
+    if (preferredType === 'wasm') {
       console.log('🔧 WASM renderer explicitly requested via ?renderer=wasm');
-      const wasmSuccess = await this.switchRenderer('wasm');
-      if (wasmSuccess) {
+      if (await this.switchRenderer('wasm')) {
         console.log('✅ Using C++ WASM renderer (experimental, forced via ?renderer=wasm)');
         return true;
       }
-      // Fall through to the normal priority order on failure
       console.warn('⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU');
-    }
-
-    if (urlPreference === 'js') {
+    } else if (preferredType === 'js') {
       console.log('🔧 Canvas2D renderer explicitly requested via ?renderer=js');
       return this.switchRenderer('js');
     }
 
-    // 1. Try native TypeScript WebGPU renderer (no WASM / Emscripten required)
-    const gpuSuccess = await this.switchRenderer('webgpu');
-    if (gpuSuccess) {
+    if (await this.switchRenderer('webgpu')) {
       console.log('✅ Using TypeScript WebGPU renderer (native navigator.gpu)');
       return true;
     }
 
-    // 2. Canvas2D fallback — no shader effects, but app stays functional.
-    // WASM renderer is NOT an automatic fallback; use switchRenderer('wasm') explicitly
-    // or pass ?renderer=wasm in the URL to opt in.
     console.warn('⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)');
     return this.switchRenderer('js');
-  }
-
-  /**
-   * Both the TypeScript WebGPU path and emdawnwebgpu (WASM) claim a browser
-   * GPUAdapter/device and configure the same canvas context. On Windows Chrome
-   * / Edge, a second `requestAdapter` while the first device is still alive
-   * fails with status Unavailable and "A valid external Instance reference no
-   * longer exists" / "No available adapters" — even though the JS path just
-   * succeeded. Exclusive WebGPU backends must therefore release before the
-   * other one inits.
-   */
-  private static usesExclusiveWebGpu(type: RendererType): boolean {
-    return type === 'webgpu' || type === 'wasm';
-  }
-
-  private static yieldForGpuRelease(): Promise<void> {
-    return new Promise((resolve) => {
-      if (typeof requestAnimationFrame === 'function') {
-        requestAnimationFrame(() => resolve());
-      } else {
-        setTimeout(resolve, 0);
-      }
-    });
   }
 
   async switchRenderer(type: RendererType): Promise<boolean> {
     if (!this.canvas) return false;
 
-    // Preserve video reference across renderer switches
-    const video = (this.currentRenderer as { video?: HTMLVideoElement } | null)?.video;
+    const outcome = await performBackendSwitch({
+      targetType: type,
+      canvas: this.canvas,
+      config: this.config,
+      previousType: this.currentType,
+      previousRenderer: this.currentRenderer,
+    });
 
-    const previousType = this.currentType;
-    const previousRenderer = this.currentRenderer;
-
-    // Release exclusive GPU ownership *before* the new backend requestAdapter().
-    // For non-exclusive targets (js) keep the old "init first, then destroy"
-    // order so a failed switch never leaves the app with no renderer.
-    const mustReleaseFirst =
-      RendererManager.usesExclusiveWebGpu(type) &&
-      previousRenderer != null &&
-      previousType != null &&
-      RendererManager.usesExclusiveWebGpu(previousType);
-
-    if (mustReleaseFirst) {
-      console.log(
-        `[RendererManager] Releasing ${previousType} before switching to ${type} ` +
-          '(exclusive WebGPU adapter/device ownership)',
-      );
-      previousRenderer.destroy();
-      this.currentRenderer = null;
-      this.currentType = null;
-      this.metrics.isWASM = false;
-      await RendererManager.yieldForGpuRelease();
-    }
-
-    let renderer: Renderer;
-    if (type === 'webgpu') {
-      renderer = new WebGPURenderer(this.config);
-    } else if (type === 'wasm') {
-      renderer = new WASMRenderer(this.config);
-    } else {
-      renderer = new JSRenderer(this.config);
-    }
-
-    const success = await renderer.init(this.canvas);
-
-    if (success) {
-      // Previous exclusive GPU was already destroyed when mustReleaseFirst.
-      if (!mustReleaseFirst) {
-        this.currentRenderer?.destroy();
-      }
-      this.currentRenderer = renderer;
-      this.currentType = type;
-      this.metrics.isWASM = type === 'wasm';
-      if (type === 'wasm') this.lastFailedWasmRenderer = null;
-
-      // JS fallback may have replaced the DOM canvas after WebGPU permanently
-      // claimed the previous element's context type.
-      if (type === 'js' && typeof (renderer as JSRenderer).getCanvas === 'function') {
-        const replaced = (renderer as JSRenderer).getCanvas();
-        if (replaced) this.canvas = replaced;
-      }
-
-      if (video) renderer.setVideo(video);
-      this.refreshFormatCapabilities();
-      this.applyPerformancePolicyToRenderer();
+    if (outcome.success) {
+      this.currentRenderer = outcome.renderer;
+      this.currentType = outcome.type;
+      this.canvas = outcome.canvas;
+      this.metrics.isWASM = outcome.isWASM;
+      this.lastFailedWasmRenderer = null;
+      refreshFormatCapabilities(this.perfState, this.shaderRenderer());
+      applyPerformancePolicyToRenderer(this.perfState, this.shaderRenderer(), this.adaptiveController);
       this.startMetricsCollection();
-    } else {
-      console.warn(`[RendererManager] switchRenderer('${type}') failed`);
-      if (type === 'wasm') {
-        this.lastFailedWasmRenderer = renderer as WASMRenderer;
-      }
-      // We already tore down the previous exclusive backend — restore it so
-      // the UI does not sit on a black canvas after a failed C++ toggle.
-      if (mustReleaseFirst && previousType) {
-        console.warn(
-          `[RendererManager] Restoring previous renderer '${previousType}' after ${type} init failure`,
-        );
-        const restored = await this.switchRenderer(previousType);
-        if (!restored) {
-          console.warn(
-            `[RendererManager] Restore of '${previousType}' failed — falling back to Canvas2D`,
-          );
-          await this.switchRenderer('js');
-        }
-      } else {
-        console.warn(
-          `[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`,
-        );
-      }
+      return true;
     }
 
-    return success;
+    if (outcome.failedWasmRenderer) this.lastFailedWasmRenderer = outcome.failedWasmRenderer;
+    this.currentRenderer = outcome.renderer;
+    this.currentType = outcome.type;
+    this.metrics.isWASM = outcome.isWASM;
+
+    if (outcome.restoreType) {
+      const restoreType = outcome.restoreType;
+      console.warn(`[RendererManager] Restoring previous renderer '${restoreType}' after ${type} init failure`);
+      const restored = await this.switchRenderer(restoreType);
+      if (!restored) {
+        console.warn(`[RendererManager] Restore of '${restoreType}' failed — falling back to Canvas2D`);
+        await this.switchRenderer('js');
+      }
+    } else {
+      console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);
+    }
+    return false;
   }
 
   private startMetricsCollection(): void {
     const updateMetrics = () => {
       const fps = this.currentRenderer?.getFPS?.();
-      if (typeof fps === 'number') {
-        this.metrics.fps = fps;
-      }
+      if (typeof fps === 'number') this.metrics.fps = fps;
       this.onMetricsUpdate?.(this.metrics);
       requestAnimationFrame(updateMetrics);
     };
     updateMetrics();
   }
 
-  setVideo(video: HTMLVideoElement): void {
-    this.currentRenderer?.setVideo(video);
-  }
-
-  updateVideoFrame(): void {
-    this.currentRenderer?.updateVideoFrame();
-  }
-
-  updateAudioData(bass: number, mid: number, treble: number): void {
-    this.currentRenderer?.updateAudioData(bass, mid, treble);
-  }
-
-  updateAudioFrequencyBins(bins: Float32Array): void {
-    this.currentRenderer?.updateAudioFrequencyBins?.(bins);
-  }
-
-  updateMouse(x: number, y: number): void {
-    this.currentRenderer?.updateMouse(x, y);
-  }
+  setVideo(video: HTMLVideoElement): void { inputBridge.setVideo(this.currentRenderer, video); }
+  updateVideoFrame(): void { inputBridge.updateVideoFrame(this.currentRenderer); }
+  updateAudioData(bass: number, mid: number, treble: number): void { this.currentRenderer?.updateAudioData(bass, mid, treble); }
+  updateAudioFrequencyBins(bins: Float32Array): void { this.currentRenderer?.updateAudioFrequencyBins?.(bins); }
+  updateMouse(x: number, y: number): void { this.currentRenderer?.updateMouse(x, y); }
 
   setParam(name: string, value: number): void {
     this.currentRenderer?.setParam(name, value);
-
-    if (name === 'agentCount') {
-      this.metrics.agentCount = Math.floor(value);
-    }
+    if (name === 'agentCount') this.metrics.agentCount = Math.floor(value);
   }
 
-  /** True when the active backend supports WGSL shader slots (WebGPU or WASM). */
-  supportsShaderEffects(): boolean {
-    return this.getShaderBackend() !== null;
-  }
-
-  /** Returns the shader-capable backend, or null for Canvas2D fallback. */
-  private getShaderBackend(): ShaderSlotRenderer | null {
-    const r = this.currentRenderer;
-    if (!r || r instanceof JSRenderer) return null;
-    const candidate = r as ShaderSlotRenderer;
-    if (
-      typeof candidate.loadShader === 'function' &&
-      typeof candidate.setSlotShader === 'function' &&
-      typeof candidate.updateSlotParams === 'function'
-    ) {
-      return candidate;
-    }
-    return null;
-  }
-
-  /**
-   * Load a shader by fetching its WGSL from the given URL.
-   * Works with both the TypeScript WebGPU renderer and the WASM renderer.
-   * No-op when the Canvas2D fallback is active.
-   */
+  supportsShaderEffects(): boolean { return backendSupportsShaders(this.currentRenderer); }
   async loadShader(id: string, url: string, meta?: ShaderLoadMeta): Promise<boolean> {
-    const backend = this.getShaderBackend();
-    if (!backend) return false;
-
-    if (
-      meta?.requiresDeepWorkgroup
-      && this.performancePolicy.preferNonDeepVariants
-    ) {
-      console.log(
-        `[RendererManager] Skipping "${id}" — deep-workgroup variant disabled by quality policy`,
-      );
-      return false;
-    }
-
-    if (meta?.requiresRgba32Float) {
-      this.fp32RequiredShaders.add(id);
-      if (this.performancePolicy.colorFormat !== 'rgba32float') {
-        console.warn(
-          `[RendererManager] "${id}" requires rgba32float — pinning storage format to FP32 ` +
-            `(quality mode stays "${this.qualityMode}")`,
-        );
-        // Re-resolve so the pin is applied to the renderer immediately.
-        this.applyQualityPolicy(this.qualityMode);
-      }
-    }
-
-    try {
-      const ok = await backend.loadShader(id, url);
-      if (ok && hasGraph(id)) {
-        const entries = getGraphEntryIds(id);
-        await Promise.all(
-          entries
-            .filter((entryId) => entryId !== id)
-            .map((entryId) =>
-              backend.loadShader(entryId, resolveShaderUrl(`shaders/${entryId}.wgsl`)).catch(() => false),
-            ),
-        );
-      }
-      if (
-        process.env.NODE_ENV === 'development'
-        && ok
-        && meta?.requiresHistoryRing
-      ) {
-        console.log(`[RendererManager] Loaded history-ring shader "${id}" (binding 13)`);
-      }
-      return ok;
-    } catch (err) {
-      console.warn(`[RendererManager] loadShader("${id}") failed:`, err);
-      return false;
-    }
+    return this.loadShaderBound(id, url, meta);
   }
-
-  /**
-   * Load all shaders from a shader list into the active shader backend.
-   * Shaders are loaded concurrently. Skips entries when Canvas2D is active.
-   */
   async loadShaders(shaders: ShaderEntry[]): Promise<void> {
-    if (!this.supportsShaderEffects()) return;
-    const results = await Promise.allSettled(
-      shaders.map(s => this.loadShader(s.id, s.url, {
-        requiresDeepWorkgroup: s.requiresDeepWorkgroup,
-        requiresHistoryRing: s.requiresHistoryRing,
-        requiresRgba32Float: s.requiresRgba32Float,
-      }))
-    );
-    const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value)).length;
-    if (failed > 0) {
-      console.warn(`[RendererManager] loadShaders: ${failed}/${shaders.length} shader(s) failed`);
-    }
+    return loadShadersForBackend(this.backend(), this.slotPolicy(), this.slotCallbacks(), shaders, this.loadShaderBound);
   }
-
-  /** Switch to a previously loaded shader. No-op with Canvas2D fallback. */
-  setActiveShader(id: string): void {
-    this.getShaderBackend()?.setActiveShader(id);
-  }
-
-  /** Assign a shader to a specific slot (0-2) without clearing other slots. */
-  setSlotShader(index: number, id: string): void {
-    if (id && index >= this.performancePolicy.maxActiveSlots) {
-      console.warn(
-        `[RendererManager] Slot ${index} exceeds quality cap (${this.performancePolicy.maxActiveSlots} max)`,
-      );
-      return;
-    }
-    this.getShaderBackend()?.setSlotShader(index, id);
-  }
-
-  /**
-   * Update zoom params for one slot using the per-param form (WASM bridge API).
-   * Falls back to aggregate updateSlotParams when the backend has no setSlotParams.
-   */
+  setActiveShader(id: string): void { setActiveShader(this.backend(), id); }
+  setSlotShader(index: number, id: string): void { setSlotShader(this.backend(), this.slotPolicy(), index, id); }
   setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void {
-    const backend = this.getShaderBackend();
-    if (!backend) return;
-    if (backend.setSlotParams) {
-      backend.setSlotParams(slotIndex, p1, p2, p3, p4);
-    } else {
-      backend.updateSlotParams(
-        { zoomParam1: p1, zoomParam2: p2, zoomParam3: p3, zoomParam4: p4 },
-        slotIndex
-      );
-    }
+    setSlotParams(this.backend(), slotIndex, p1, p2, p3, p4);
   }
-
-  /** Update zoom params for a slot (aggregate form from UI sliders). */
-  updateSlotParams(params: SlotZoomParamsUpdate, slotIndex = 0): void {
-    this.getShaderBackend()?.updateSlotParams(params, slotIndex);
+  updateSlotParams(params: import('./Renderer').SlotZoomParamsUpdate, slotIndex = 0): void {
+    updateSlotParams(this.backend(), params, slotIndex);
   }
-
-  /** Push all slot slider values to the active shader backend (required for WASM multi-slot). */
-  syncAllSlotParams(slotParams: SlotParams[], maxSlots = RendererManager.SLOT_COUNT): void {
-    if (!this.supportsShaderEffects() || slotParams.length === 0) return;
-    const count = Math.min(maxSlots, slotParams.length);
-    for (let i = 0; i < count; i++) {
-      const p = slotParams[i];
-      this.updateSlotParams(
-        {
-          zoomParam1: p.zoomParam1,
-          zoomParam2: p.zoomParam2,
-          zoomParam3: p.zoomParam3,
-          zoomParam4: p.zoomParam4,
-        },
-        i
-      );
-    }
+  syncAllSlotParams(slotParams: SlotParams[], maxSlots = SLOT_COUNT): void {
+    syncAllSlotParams(this.backend(), slotParams, maxSlots);
   }
-
-  /**
-   * Re-load and re-bind the current shader stack after a renderer backend switch.
-   * Ensures WASM receives the same slot shaders + params the UI already selected.
-   */
   async resyncShaderStack(options: {
     modes: RenderMode[];
     slotParams: SlotParams[];
     resolveShader: (shaderId: string) => ShaderEntry | undefined;
     inputSource?: InputSource;
   }): Promise<void> {
-    if (!this.supportsShaderEffects()) return;
-
-    if (options.inputSource) {
-      this.setInputSource(options.inputSource);
-    }
-
-    for (let i = 0; i < Math.min(RendererManager.SLOT_COUNT, options.modes.length); i++) {
-      const mode = options.modes[i];
-      if (!mode || mode === 'none') {
-        this.setSlotShader(i, '');
-        continue;
-      }
-
-      const entry = options.resolveShader(mode);
-      if (!entry) {
-        console.warn(`[RendererManager] resyncShaderStack: no entry for "${mode}" on slot ${i}`);
-        continue;
-      }
-
-      const ok = await this.loadShader(entry.id, entry.url, {
-        requiresDeepWorkgroup: entry.requiresDeepWorkgroup,
-        requiresHistoryRing: entry.requiresHistoryRing,
-        requiresRgba32Float: entry.requiresRgba32Float,
-      });
-      if (ok) {
-        this.setSlotShader(i, entry.id);
-      } else {
-        console.warn(`[RendererManager] resyncShaderStack: failed to load "${entry.id}" for slot ${i}`);
-      }
-    }
-
-    this.syncAllSlotParams(options.slotParams);
+    return resyncShaderStack(
+      this.backend(),
+      this.slotPolicy(),
+      this.slotCallbacks(),
+      this.loadShaderBound,
+      (source) => this.setInputSource(source),
+      options,
+    );
   }
-
-  /** Set slot execution mode ('chained' | 'parallel'). */
-  setSlotMode(index: number, mode: 'chained' | 'parallel'): void {
-    this.getShaderBackend()?.setSlotMode(index, mode);
-  }
-
-  /** Set the active input source (generative, image, video, webcam, or live). */
-  setInputSource(source: InputSource): void {
-    this.currentRenderer?.setInputSource?.(source);
-  }
-
-  /** Returns the active input source when the backend exposes it. */
-  getInputSource(): InputSource | null {
-    const r = this.currentRenderer as { getInputSource?: () => InputSource } | null;
-    return r?.getInputSource?.() ?? null;
-  }
-
-  addRipple(x: number, y: number): void {
-    this.getShaderBackend()?.addRipple(x, y);
-  }
-
-  /** Alias used by WebGPUCanvas mouse handlers (forwards to addRipple). */
-  addRipplePoint(x: number, y: number): void {
-    this.addRipple(x, y);
-  }
-
-  clearRipples(): void {
-    this.getShaderBackend()?.clearRipples();
-  }
-
-  /** Load an image by URL into the active renderer's read texture. */
-  async loadImage(url: string): Promise<string> {
-    const r = this.currentRenderer as {
-      loadImage?: (url: string) => Promise<string>;
-      loadImageFromURL?: (url: string) => Promise<void>;
-    } | null;
-    if (!r) return url;
-    if (r.loadImage) {
-      return r.loadImage(url);
-    }
-    if (r.loadImageFromURL) {
-      await r.loadImageFromURL(url);
-      return url;
-    }
-    return url;
-  }
-
-  /** @deprecated Use loadImage() */
-  async loadImageFromURL(url: string): Promise<void> {
-    await this.loadImage(url);
-  }
-
-
-  getAvailableModes(): ShaderEntry[] {
-    const r = this.currentRenderer as { getAvailableModes?: () => ShaderEntry[] } | null;
-    return r?.getAvailableModes?.() ?? [];
-  }
-
-  /** Forward a list of image URLs to the active renderer (e.g. for slideshow mode). */
-  setImageList(urls: string[]): void {
-    if (this.currentRenderer?.setImageList) {
-      this.currentRenderer.setImageList(urls);
-    }
-  }
-
-  /** Forward a depth map to the active renderer. */
+  setSlotMode(index: number, mode: 'chained' | 'parallel'): void { setSlotMode(this.backend(), index, mode); }
+  setInputSource(source: InputSource): void { inputBridge.setInputSource(this.currentRenderer, source); }
+  getInputSource(): InputSource | null { return inputBridge.getInputSource(this.currentRenderer); }
+  addRipple(x: number, y: number): void { addRipple(this.backend(), x, y); }
+  addRipplePoint(x: number, y: number): void { this.addRipple(x, y); }
+  clearRipples(): void { clearRipples(this.backend()); }
+  async loadImage(url: string): Promise<string> { return inputBridge.loadImage(this.currentRenderer, url); }
+  async loadImageFromURL(url: string): Promise<void> { await this.loadImage(url); }
+  getAvailableModes(): ShaderEntry[] { return inputBridge.getAvailableModes(this.currentRenderer); }
+  setImageList(urls: string[]): void { inputBridge.setImageList(this.currentRenderer, urls); }
   updateDepthMap(data: Float32Array, width: number, height: number): void {
-    if (this.currentRenderer?.updateDepthMap) {
-      this.currentRenderer.updateDepthMap(data, width, height);
-    }
+    inputBridge.updateDepthMap(this.currentRenderer, data, width, height);
   }
-
-  /** Forwards deep-workgroup capability query to the active renderer. */
-  getSupportsDeepWorkgroup(): boolean {
-    return this.currentRenderer?.getSupportsDeepWorkgroup?.() ?? false;
-  }
-
-  getFormatCapabilities(): DeviceFormatCapabilities {
-    return this.formatCapabilities;
-  }
-
-  private refreshFormatCapabilities(): void {
-    const r = this.currentRenderer;
-    const fromRenderer = r && 'getFormatCapabilities' in r
-      ? (r as WebGPURenderer).getFormatCapabilities?.()
-      : undefined;
-    if (fromRenderer) {
-      this.formatCapabilities = fromRenderer;
-    }
-  }
-
-  getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: 'chained' | 'parallel' } | null {
-    return this.currentRenderer?.getSlotState?.(index) ?? null;
-  }
-
+  getSupportsDeepWorkgroup(): boolean { return this.currentRenderer?.getSupportsDeepWorkgroup?.() ?? false; }
+  getFormatCapabilities(): DeviceFormatCapabilities { return this.perfState.formatCapabilities; }
+  getSlotState(index: number) { return this.currentRenderer?.getSlotState?.(index) ?? null; }
   getGPUTimings(): GPUTimings {
     return this.currentRenderer?.getGPUTimings?.() ?? {
-      parallelTime: 0,
-      chainedTime: 0,
-      totalTime: 0,
-      available: false,
-      timingSource: 'unavailable',
+      parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable',
     };
   }
-
-  /** Plasma drag impulse (WebGPU-only when implemented; otherwise falls back to ripple). */
   firePlasma(x: number, y: number, vx: number, vy: number): void {
-    const r = this.currentRenderer as {
-      firePlasma?: (x: number, y: number, vx: number, vy: number) => void;
-    } | null;
-    if (r?.firePlasma) {
-      r.firePlasma(x, y, vx, vy);
-      return;
-    }
-    this.addRipple(x, y);
+    firePlasmaOnBackend(this.currentRenderer, this.backend(), x, y, vx, vy);
   }
-
   async reloadShader(id: string, url: string): Promise<boolean> {
-    const backend = this.getShaderBackend();
-    if (!backend) return false;
-    const r = this.currentRenderer;
-    if (r?.reloadShaderFromURL) {
-      return r.reloadShaderFromURL(id, url);
-    }
-    return backend.loadShader(id, url);
+    return reloadShaderOnBackend(this.currentRenderer, this.backend(), id, url);
   }
-
-  applyTestRenderState(state: {
-    time?: number;
-    mouseX?: number;
-    mouseY?: number;
-    mouseDown?: boolean;
-    bass?: number;
-    mid?: number;
-    treble?: number;
-  }): void {
-    const r = this.currentRenderer as {
-      applyTestRenderState?: (s: typeof state) => void;
-    } | null;
-    r?.applyTestRenderState?.(state);
+  applyTestRenderState(state: Parameters<NonNullable<WebGPURenderer['applyTestRenderState']>>[0]): void {
+    (this.currentRenderer as WebGPURenderer | null)?.applyTestRenderState?.(state);
   }
-
-  getFrameImage(): string {
-    return this.currentRenderer?.getFrameImage?.() ?? '';
-  }
-
-  /** Capture current frame from the active renderer (WASM readback or canvas fallback). */
+  getFrameImage(): string { return this.currentRenderer?.getFrameImage?.() ?? ''; }
   async refreshFrameImage(): Promise<string> {
     const r = this.currentRenderer as { refreshFrameImage?: () => Promise<string> } | null;
-    if (r?.refreshFrameImage) {
-      return r.refreshFrameImage();
-    }
-    if (this.canvas) {
-      return this.canvas.toDataURL('image/png');
-    }
-    return '';
+    if (r?.refreshFrameImage) return r.refreshFrameImage();
+    return this.canvas ? this.canvas.toDataURL('image/png') : '';
   }
-
-  /** Download a PNG screenshot (GPU readback on WASM, canvas fallback otherwise). */
   async takeScreenshot(filename = 'screenshot.png'): Promise<void> {
     const r = this.currentRenderer as { takeScreenshot?: (f?: string) => Promise<void> } | null;
-    if (r?.takeScreenshot) {
-      return r.takeScreenshot(filename);
-    }
+    if (r?.takeScreenshot) return r.takeScreenshot(filename);
     const dataUrl = await this.refreshFrameImage();
-    if (!dataUrl) {
-      throw new Error('[RendererManager] Screenshot unavailable — no frame source');
-    }
+    if (!dataUrl) throw new Error('[RendererManager] Screenshot unavailable — no frame source');
     const a = document.createElement('a');
     a.href = dataUrl;
     a.download = filename;
@@ -698,282 +277,61 @@ export class RendererManager {
     a.click();
     document.body.removeChild(a);
   }
-
-  setRecording(isRecording: boolean): void {
-    this.currentRenderer?.setRecording?.(isRecording);
-  }
-
-  setRecordingMode(mode: 'loop' | 'continuous'): void {
-    this.currentRenderer?.setRecordingMode?.(mode);
-  }
-
-  /** True when the active backend records via internal GPU readback (WASM surface path). */
-  usesInternalRecording(): boolean {
-    return this.isWASM();
-  }
-
-  /**
-   * Start an 8s (default) WebM recording on backends that support it.
-   * WASM uses GPU readback; callers may still pass the display canvas for API symmetry.
-   */
-  startRecording(
-    canvas: HTMLCanvasElement,
-    options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }
-  ): Promise<Blob> {
-    const r = this.currentRenderer as {
-      startRecording?: (
-        c: HTMLCanvasElement,
-        o?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }
-      ) => Promise<Blob>;
-    } | null;
-    if (r?.startRecording) {
-      return r.startRecording(canvas, options);
-    }
+  setRecording(isRecording: boolean): void { this.currentRenderer?.setRecording?.(isRecording); }
+  setRecordingMode(mode: 'loop' | 'continuous'): void { this.currentRenderer?.setRecordingMode?.(mode); }
+  usesInternalRecording(): boolean { return this.isWASM(); }
+  startRecording(canvas: HTMLCanvasElement, options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }): Promise<Blob> {
+    const r = this.currentRenderer as { startRecording?: typeof RendererManager.prototype.startRecording } | null;
+    if (r?.startRecording) return r.startRecording(canvas, options);
     return Promise.reject(new Error('[RendererManager] startRecording not supported for active backend'));
   }
-
-  /** Stop an in-progress renderer recording (WASM readback path). */
   stopRendererRecording(): void {
-    const r = this.currentRenderer as { stopRecording?: () => void } | null;
-    r?.stopRecording?.();
+    (this.currentRenderer as { stopRecording?: () => void } | null)?.stopRecording?.();
   }
-
-  getMetrics(): RendererMetrics {
-    return this.metrics;
-  }
-
-  isWASM(): boolean {
-    return this.metrics.isWASM;
-  }
-
-  /**
-   * Returns the type identifier of the currently active renderer backend.
-   * Useful for UI components that need to display or react to the active renderer.
-   */
+  getMetrics(): RendererMetrics { return this.metrics; }
+  isWASM(): boolean { return this.metrics.isWASM; }
   getActiveRendererType(): RendererType {
     if (this.currentType) return this.currentType;
     if (this.metrics.isWASM) return 'wasm';
-    if (this.getShaderBackend()) return 'webgpu';
+    if (this.backend()) return 'webgpu';
     return 'js';
   }
-
-  /**
-   * Get diagnostic information about the currently active renderer.
-   * Useful for debugging, testing, and monitoring renderer health.
-   */
   getDiagnostics(): RendererDiagnostics {
-    const rendererType = this.getActiveRendererType();
-    const baseDiagnostics: RendererDiagnostics = {
-      rendererType,
-      metrics: this.metrics,
-      timestamp: new Date().toISOString(),
-    };
-
-    const active = this.currentRenderer as {
-      getDiagnostics?: () => WASMDiagnostics;
-      initialized?: boolean;
-      getFPS?: () => number;
-      getAdapterSummary?: () => string;
-      getAdapterAttemptLabel?: () => string | null;
-    } | null;
-
-    if (this.metrics.isWASM && active?.getDiagnostics) {
-      return {
-        ...baseDiagnostics,
-        wasm: active.getDiagnostics(),
-      };
-    }
-
-    if (this.getShaderBackend() && !this.metrics.isWASM && active) {
-      return {
-        ...baseDiagnostics,
-        webgpu: {
-          initialized: active.initialized ?? false,
-          fps: active.getFPS?.() ?? 0,
-          // Adapter identity is promotion evidence (WASM_BACKEND_POLICY gate 2) — keep it
-          // visible in-app, not only in the console at init time.
-          adapterInfo: active.getAdapterSummary?.() ?? '',
-          adapterAttemptLabel: active.getAdapterAttemptLabel?.() ?? null,
-        },
-        ...(this.lastFailedWasmRenderer
-          ? { wasm: this.lastFailedWasmRenderer.getDiagnostics() }
-          : {}),
-      };
-    }
-
-    if (this.lastFailedWasmRenderer) {
-      return {
-        ...baseDiagnostics,
-        wasm: this.lastFailedWasmRenderer.getDiagnostics(),
-      };
-    }
-
-    return baseDiagnostics;
+    return buildRendererDiagnostics(
+      this.getActiveRendererType(),
+      this.metrics,
+      this.currentRenderer,
+      this.lastFailedWasmRenderer,
+    );
   }
-
-  /**
-   * Render method called by WebGPUCanvas animation loop.
-   * WebGPU renderer drives its own loop; WASM uploads video frames here then renders internally.
-   */
-  render(..._args: unknown[]): void {
-    if (this.metrics.isWASM) {
-      this.updateVideoFrame();
-    }
-  }
-
-  /** Get latest FPS from the active renderer (real measured value). */
-  getCurrentFPS(): number {
-    return this.metrics.fps || 0;
-  }
-
-  /** Apply a user-facing quality preset (persisted by the UI layer). */
-  setRenderQuality(
-    mode: RenderQualityMode,
-    hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities },
-  ): void {
+  render(..._args: unknown[]): void { if (this.metrics.isWASM) this.updateVideoFrame(); }
+  getCurrentFPS(): number { return this.metrics.fps || 0; }
+  setRenderQuality(mode: RenderQualityMode, hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities }): void {
     this.applyQualityPolicy(mode, hints);
   }
-
-  /**
-   * Resolve + apply a quality tier. Storage format is pinned to rgba32float whenever an
-   * FP32-required shader is loaded, so switching to balanced/battery (or an auto probe
-   * landing on FP16) can never silently demote a physics sim — docs/FORMAT_TIERS.md.
-   */
-  private applyQualityPolicy(
-    mode: RenderQualityMode,
-    hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities },
-  ): void {
-    this.qualityMode = mode;
-    const supportsDeep = hints?.supportsDeepWorkgroup ?? this.getSupportsDeepWorkgroup();
-    const formatCaps = hints?.formatCaps ?? this.formatCapabilities;
-    const resolved = resolvePerformancePolicy(mode, {
-      supportsDeepWorkgroup: supportsDeep,
-      formatCaps,
-    });
-    this.requestedColorFormat = resolved.colorFormat;
-    const pin = resolveFp32Pin(resolved.colorFormat, this.fp32RequiredShaders);
-    this.fp32Pin = pin;
-    if (pin.pinned) {
-      console.warn(
-        `[RendererManager] Quality "${mode}" requests ${resolved.colorFormat}, but ` +
-          `${pin.pinnedBy.join(', ')} require rgba32float — storage format pinned to FP32`,
-      );
-    }
-    this.performancePolicy = { ...resolved, colorFormat: pin.colorFormat };
-    this.applyPerformancePolicyToRenderer();
+  private applyQualityPolicy(mode: RenderQualityMode, hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities }): void {
+    applyQualityPolicy(this.perfState, mode, hints, () => this.getSupportsDeepWorkgroup());
+    applyPerformancePolicyToRenderer(this.perfState, this.shaderRenderer(), this.adaptiveController);
   }
-
-  /**
-   * Drop an FP32 pin when a shader is no longer loaded (slot cleared / shader replaced).
-   * Re-applies the current tier so the format can return to FP16 when nothing needs FP32.
-   */
   releaseFp32Requirement(id: string): void {
-    if (!this.fp32RequiredShaders.delete(id)) return;
-    if (this.fp32Pin.pinned) {
-      this.applyQualityPolicy(this.qualityMode);
-    }
+    if (!releaseFp32Requirement(this.perfState, id)) return;
+    if (this.perfState.fp32Pin.pinned) this.applyQualityPolicy(this.perfState.qualityMode);
   }
-
-  getRenderQualityMode(): RenderQualityMode {
-    return this.qualityMode;
-  }
-
-  getMaxActiveSlots(): number {
-    return this.performancePolicy.maxActiveSlots;
-  }
-
+  getRenderQualityMode(): RenderQualityMode { return this.perfState.qualityMode; }
+  getMaxActiveSlots(): number { return this.perfState.performancePolicy.maxActiveSlots; }
   getPerformanceStatus(): RendererPerformanceStatus {
-    const backend = this.getActiveRendererType();
-    const scaleInfo = this.readResolutionScale();
-    return {
-      qualityMode: this.qualityMode,
-      backend,
-      scale: scaleInfo.scale,
-      internalWidth: scaleInfo.scaled.w,
-      internalHeight: scaleInfo.scaled.h,
-      maxActiveSlots: this.performancePolicy.maxActiveSlots,
-      targetFps: this.performancePolicy.targetFps,
-      adaptive: this.performancePolicy.adaptive,
-      fps: this.getCurrentFPS(),
-      colorFormat: this.performancePolicy.colorFormat,
-      estimatedTextureMiB: estimateInternalTextureMiB(
-        scaleInfo.scaled.w,
-        scaleInfo.scaled.h,
-        this.performancePolicy.colorFormat,
-      ),
-      requestedColorFormat: this.requestedColorFormat,
-      fp32Pinned: this.fp32Pin.pinned,
-      fp32PinnedBy: this.fp32Pin.pinnedBy,
-      maxPassesPerFrame: this.performancePolicy.maxPassesPerFrame,
-    };
+    return buildPerformanceStatus(
+      this.perfState,
+      this.getActiveRendererType(),
+      () => this.getCurrentFPS(),
+      readResolutionScale(this.perfState, this.config, this.shaderRenderer()),
+    );
   }
-
-  private readResolutionScale(): {
-    scale: number;
-    scaled: { w: number; h: number };
-  } {
-    const r = this.currentRenderer;
-    const fromRenderer = r && 'getResolutionScale' in r
-      ? (r as WebGPURenderer | WASMRenderer).getResolutionScale?.()
-      : undefined;
-    if (fromRenderer) {
-      this.resolutionScale = fromRenderer.scale;
-      return {
-        scale: fromRenderer.scale,
-        scaled: { w: fromRenderer.scaled.w, h: fromRenderer.scaled.h },
-      };
-    }
-    const base = this.config.width || INTERNAL_RENDER_RESOLUTION;
-    const dims = computeInternalDimensions(base, this.resolutionScale);
-    return {
-      scale: dims.scale,
-      scaled: { w: dims.width, h: dims.height },
-    };
+  getAudioData() {
+    return (this.currentRenderer as { getAudioData?: () => { bass: number; mid: number; treble: number; freqBins: Float32Array } } | null)
+      ?.getAudioData?.() ?? null;
   }
-
-  private applyPerformancePolicyToRenderer(): void {
-    this.applyResolutionScale(this.performancePolicy.scale);
-    this.applyColorFormat(this.performancePolicy.colorFormat);
-    const r = this.currentRenderer;
-    if (r instanceof WebGPURenderer) {
-      r.setAdaptiveQuality(false);
-      r.setMaxPassesPerFrame(this.performancePolicy.maxPassesPerFrame);
-    }
-    this.adaptiveController.updatePolicy(this.performancePolicy);
-  }
-
-  private applyColorFormat(format: InternalColorFormat): void {
-    const r = this.currentRenderer;
-    if (r instanceof WebGPURenderer) {
-      r.setColorFormat(format);
-    } else if (r instanceof WASMRenderer) {
-      r.setColorFormat(format);
-    }
-  }
-
-  private applyResolutionScale(scale: number): void {
-    this.resolutionScale = scale;
-    const r = this.currentRenderer;
-    if (r instanceof WebGPURenderer) {
-      r.setResolutionScale(scale);
-      r.setAdaptiveQuality(false);
-    } else if (r instanceof WASMRenderer) {
-      r.setResolutionScale(scale);
-    }
-  }
-
-  /** Get audio analysis data from the active renderer when supported. */
-  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } | null {
-    const r = this.currentRenderer as {
-      getAudioData?: () => { bass: number; mid: number; treble: number; freqBins: Float32Array };
-    } | null;
-    return r?.getAudioData?.() ?? null;
-  }
-
-  isRecording(): boolean {
-    return this.currentRenderer?.isRecording?.() ?? false;
-  }
-
+  isRecording(): boolean { return this.currentRenderer?.isRecording?.() ?? false; }
   destroy(): void {
     this.adaptiveController.stop();
     this.currentRenderer?.destroy();
