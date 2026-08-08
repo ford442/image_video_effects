@@ -361,11 +361,6 @@
       "added": "2026-07-29T15:23:12.229551"
     },
     {
-      "filename": "2026-07-30_ethereal-quantum-holographic-fractal-coral.md",
-      "title": "Ethereal Quantum-Holographic Fractal-Coral",
-      "added": "2026-07-30T15:12:55.645438"
-    },
-    {
       "filename": "2026-07-22_radiant-quantum-aether-celestial-lion.md",
       "title": "Radiant Quantum-Aether Celestial-Lion",
       "added": "2026-07-22T16:26:55.433391"
@@ -671,6 +666,13 @@
       "added": "2026-08-05T15:19:54.714471",
       "status": "completed",
       "completed_at": "2026-08-06T08:00:36.761140+00:00"
+    },
+    {
+      "filename": "2026-07-30_ethereal-quantum-holographic-fractal-coral.md",
+      "title": "Ethereal Quantum-Holographic Fractal-Coral",
+      "added": "2026-07-30T15:12:55.645438",
+      "status": "completed",
+      "completed_at": "2026-08-07T07:58:05.723475+00:00"
     }
   ],
   "rejected": [],
