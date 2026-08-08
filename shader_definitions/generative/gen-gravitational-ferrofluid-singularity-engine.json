@@ -1,0 +1,100 @@
+{
+  "id": "gen-gravitational-ferrofluid-singularity-engine",
+  "name": "Gravitational Ferrofluid Singularity-Engine",
+  "url": "shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
+  "category": "generative",
+  "description": "A hyper-dense, magnetic-liquid simulation that bends light and space around a central, interactive black-hole gravity well, merging dark metallic sheens with vibrant cosmic radiation.",
+  "features": [
+    "ferrofluid",
+    "singularity",
+    "raymarching",
+    "interactive",
+    "metallic",
+    "iridescent"
+  ],
+  "tags": [
+    "ferrofluid",
+    "singularity",
+    "raymarching",
+    "interactive",
+    "metallic",
+    "iridescent"
+  ],
+  "params": [
+    {
+      "id": "singularityMass",
+      "name": "Singularity Mass",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the radius and pull of the central black hole."
+    },
+    {
+      "id": "fluidViscosity",
+      "name": "Fluid Viscosity",
+      "default": 0.3,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Alters the speed and smoothness of the noise function driving the ferrofluid spikes."
+    },
+    {
+      "id": "spikeDensity",
+      "name": "Spike Density",
+      "default": 0.7,
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.05,
+      "mapping": "zoom_params.z",
+      "description": "Modulates the frequency of the 3D noise on the SDF."
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Shifts the color palette of the metallic reflections and rim lighting."
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Singularity Mass",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Fluid Viscosity",
+      "default": 0.3,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Spike Density",
+      "default": 0.7,
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "index": 3,
+      "name": "Iridescence",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
