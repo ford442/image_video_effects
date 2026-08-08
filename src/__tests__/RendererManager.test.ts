@@ -501,7 +501,7 @@ describe('RendererManager shader forwarding', () => {
       order.push('webgpu.destroy');
     });
     const wasm = makeMockWASM();
-    wasm.init = jest.fn(async () => {
+    wasm.init = jest.fn(async (canvas: HTMLCanvasElement) => {
       order.push('wasm.init');
       return true;
     });
