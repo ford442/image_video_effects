@@ -2,6 +2,15 @@
 
 **Last updated:** 2026-08-06 (Batch 39 shader upgrade)
 
+## 2026-08-07 — Strategic audit + issue re-seed
+
+- Progress audit: foundation wave 2 closed; catalog ~1310; generative batch through #355;
+  thumbs ~27%; WASM stay Tier B until real-GPU evidence.
+- Filed epic #1076 and issues #1077–#1084 (base-url, thumbs, RendererManager, WASM
+  promotion, multipass expansion, VJ 2.0, TS5 hygiene, generative queue).
+- User preference reaffirmed: build foundation residual before huge content-only waves;
+  multipass on TS GraphRunner; no C++ feature expansion until promotion decision.
+
 ## 2026-08-06 — Shader upgrade Batch 39 — FAST MOTION ENCORE
 
 - Continued the smallest clean single-pass generative queue with Chrono Voronoi
