@@ -1,6 +1,37 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-06 (Batch 39 shader upgrade)
+**Last updated:** 2026-08-09 (Batch 41 shader upgrade)
+
+## 2026-08-09 — Shader upgrade Batch 41 — FAST MOTION ENCORE
+
+- Upgraded tracker #364–371: Morphogenic Resonance, Chrysanthemum Burst,
+  Volumetric Cloud Nebula, Quantum Neural Lace, Aurora Borealis Loom, Willow
+  Cascade, Hyperbolic Crystal Symbiosis, and Wind & Ripple Fireworks.
+- Repaired fireworks-family normalized mouseUV bugs, missing A/depth/audio on
+  Nebula and Neural Lace, spurious dataTextureB writes, and aspect mouse on
+  Morphogenic Resonance. Added closed-form conveyors, speed-line streaks,
+  ripple shock fronts, and bounded textureLoad HDR trails; B remains unused and
+  no `extraBuffer` writes were introduced.
+- Proof: focused WGSL/Naga gate 8/8; strict extraBuffer audit PASS; 8/8
+  `updatedParams` byte-exact; 1,326 unique IDs; Jest 76/76 suites (506 pass /
+  1 skip); supplemental `DISABLE_ESLINT_PLUGIN=true SKIP_WASM_BUILD=1` build
+  green. Real-GPU visual QA remains external. ~49 generative pending remain.
+
+## 2026-08-09 — Shader upgrade Batch 40 — FAST MOTION ENCORE
+
+- Upgraded tracker #356–363: Gravitational Ferrofluid Singularity Engine,
+  Abyssal Leviathan Scales, Abyssal Silicate Geode Weaver, Neuro-Kinetic
+  Liquid-Gold Lotus, 4D Projection Dream Weavers, Prismatic Fractal Dunes,
+  Sentient Liquid-Neon Fractal Heart, and Micro-Cosmos.
+- Repaired fake ripple-count/timestamp audio, normalized-pointer scaling/Y,
+  Lotus's generic control shim, Heart's invalid per-map ripple loop, missing
+  display history, and flat/missing generated depth. Added closed-form fast
+  motion and bounded visible A/C trails; B remains unused and no `extraBuffer`
+  writes were introduced.
+- Proof: focused WGSL/Naga gate 8/8; strict extraBuffer audit PASS; 8/8
+  saved arrays exact; duplicate scan 1,326/1,326; Jest 76/76 suites (506 pass /
+  1 skip); supplemental production compile PASS. Canonical Jest/build are blocked
+  only by pre-existing WASM bridge WIP. Real-GPU visual QA remains external.
 
 ## 2026-08-08 — RendererManager + StoragePanel strangler (#1079 / PR #1092)
 

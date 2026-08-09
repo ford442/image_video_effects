@@ -398,14 +398,15 @@
     "name": "Aurora Borealis Loom",
     "category": "generative",
     "url": "shaders/aurora-borealis-loom.wgsl",
-    "description": "Aurora curtains woven like fabric on a celestial loom. Threads of light interlace with weft and warp patterns. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric.",
+    "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric.",
     "features": [
       "audio-reactive",
       "generative",
       "mouse-driven",
       "temporal",
       "chromatic",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "fast-motion"
     ],
     "params": [
       {
@@ -2295,7 +2296,7 @@
       "audio-reactive",
       "music"
     ],
-    "description": "Smooth continuous slicing and projection through higher-dimensional fractals and lattices. Mouse controls navigation through the extra two dimensions providing genuine higher-dimensional exploration. Audio affects fractal parameters and projection quality. Ethereal mathematical dream-like forms.",
+    "description": "A stylized projection of rotating 4D fractal slices with rapid hyperslice transport, velocity-stretched lattice afterimages, click phase kicks, live audio response, and bounded display history.",
     "workgroup_size": [
       16,
       16,
@@ -2340,7 +2341,14 @@
     "updated": true,
     "id": "gen-4d-projection-dream-weavers",
     "url": "shaders/gen-4d-projection-dream-weavers.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Abyssal Chrono-Coral",
@@ -2412,7 +2420,7 @@
       "raymarching",
       "bioluminescence"
     ],
-    "description": "A mesmerizing, infinite expanse of massive, interlocking biomechanical armor scales that undulate like a breathing cosmic leviathan, parting to reveal a blazing, audio-reactive quantum fusion core beneath.",
+    "description": "An endless biomechanical scale field with conveyor-fast breathing waves, racing plasma fissures, click breach wakes, and bounded display trails driven by live audio.",
     "workgroup_size": [
       16,
       16,
@@ -2457,7 +2465,14 @@
     "updated": true,
     "id": "gen-abyssal-leviathan-scales",
     "url": "shaders/gen-abyssal-leviathan-scales.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Abyssal Quantum-Leviathan Skeleton",
@@ -2536,15 +2551,23 @@
       "audio-reactive",
       "raymarching"
     ],
-    "description": "A crystalline, deep-sea geological formation that slowly weaves iridescent silicate threads over sharp geode facets, reacting organically to acoustic interactions.",
+    "description": "A stylized warp-flight through a crystalline cavity with fast gyroid filaments, audio-lit shard pulses, click refraction waves, and bounded iridescent trails.",
     "url": "shaders/gen-abyssal-silicate-geode-weaver.wgsl",
     "updated": true,
-    "supportsDepth": false,
+    "supportsDepth": true,
     "supportsDof": false,
     "workgroup_size": [
       16,
       16,
       1
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
     ],
     "updatedParams": [
       {
@@ -9297,7 +9320,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Each burst flashes brilliant white at the core then blooms into layered color rings — crimson inner petals fading to electric blue and gold at the edges. Multiple timed ring layers create depth within each explosion. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor.",
+    "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Fast ballistic petals, radial speed-line streaks, and advected HDR trails. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor.",
     "workgroup_size": [
       16,
       16,
@@ -9342,7 +9365,12 @@
     "updated": true,
     "id": "gen-fireworks-chrysanthemum",
     "url": "shaders/gen-fireworks-chrysanthemum.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "fast-motion"
+    ]
   },
   {
     "name": "4th of July — Comet Trail",
@@ -10151,7 +10179,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Classic willow-style fireworks with long, drooping golden and silver trails that hang in the night sky like luminous weeping branches. Fewer shells but each one paints a slow-falling curtain of sparks with gentle wind drift. Strong temporal persistence creates a cinematic long-exposure feel. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor.",
+    "description": "Classic willow-style fireworks with long, drooping golden and silver trails. Velocity-stretched droop streaks, wind-advected embers, and advected HDR trails. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor.",
     "workgroup_size": [
       16,
       16,
@@ -10196,7 +10224,12 @@
     "updated": true,
     "id": "gen-fireworks-willow-cascade",
     "url": "shaders/gen-fireworks-willow-cascade.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "fast-motion"
+    ]
   },
   {
     "name": "4th of July — Wind & Ripple",
@@ -10214,7 +10247,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Sparks drift on a time-varying wind while ripple events ignite directed radial barrages. Bass deepens the shells, mids add secondary gusts, and treble scatters silver micro-sparkle through the air. Mouse click or hold launches a personal wind-swept shell at the cursor.",
+    "description": "Sparks drift on a fast time-varying wind while ripple events ignite shock-front barrages. Comet-tail speed lines, wind conveyors, and advected HDR trails. Bass deepens the shells, mids add secondary gusts, treble scatters silver micro-sparkle. Mouse launches a personal wind-swept shell at the cursor.",
     "workgroup_size": [
       16,
       16,
@@ -10259,7 +10292,12 @@
     "updated": true,
     "id": "gen-fireworks-wind-ripple",
     "url": "shaders/gen-fireworks-wind-ripple.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "fast-motion"
+    ]
   },
   {
     "name": "Fourier Epicycles",
@@ -10890,14 +10928,20 @@
     "name": "Gravitational Ferrofluid Singularity-Engine",
     "url": "shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
     "category": "generative",
-    "description": "A hyper-dense, magnetic-liquid simulation that bends light and space around a central, interactive black-hole gravity well, merging dark metallic sheens with vibrant cosmic radiation.",
+    "description": "A stylized ferrofluid singularity with rotating magnetic domains, orbiting spike fronts, accelerating droplets, click shocks, and bounded horizon-aligned light trails driven by live audio.",
     "features": [
       "ferrofluid",
       "singularity",
       "raymarching",
       "interactive",
       "metallic",
-      "iridescent"
+      "iridescent",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
     ],
     "tags": [
       "ferrofluid",
@@ -10983,6 +11027,8 @@
         "step": 0.01
       }
     ],
+    "supportsDepth": true,
+    "supportsDof": false,
     "updated": true
   },
   {
@@ -12074,7 +12120,7 @@
       "audio-reactive",
       "mathematical"
     ],
-    "description": "Competing and cooperating crystal growth occurring in hyperbolic (Poincaré disk) geometry. Local curvature influenced by audio and mouse position. Exquisite non-Euclidean tiling patterns with iridescent jewel-like coloring and beautiful symmetry breaking.",
+    "description": "Competing crystal growth in hyperbolic (Poincaré disk) geometry. Racing growth-front runners, tile pulse waves, and advected HDR trails. Local curvature influenced by audio and mouse. Iridescent jewel coloring with symmetry-breaking facet borders.",
     "workgroup_size": [
       16,
       16,
@@ -12119,7 +12165,12 @@
     "updated": true,
     "id": "gen-hyperbolic-crystal-symbiosis",
     "url": "shaders/gen-hyperbolic-crystal-symbiosis.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "fast-motion"
+    ]
   },
   {
     "name": "Hyperbolic Tessellation Engine",
@@ -14838,7 +14889,7 @@
       "audio",
       "music"
     ],
-    "description": "A microscopic view of a teeming liquid universe, filled with procedural microorganisms, drifting particles, and organic structures.",
+    "description": "A stylized microscopic current with audio-driven helices, fast procedural organisms and wakes, smoothly traveling marine snow, and click-spawned microbe blooms.",
     "workgroup_size": [
       16,
       16,
@@ -14883,7 +14934,14 @@
     "updated": true,
     "id": "gen-micro-cosmos",
     "url": "shaders/gen-micro-cosmos.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Minimal Surface Soap Iridescence",
@@ -16410,7 +16468,7 @@
       "audio-reactive",
       "geometry"
     ],
-    "description": "A hyper-organic, slowly unfurling macro-lotus made of liquid-gold geometry that dynamically responds to acoustic impulses, its petals rippling with neuro-kinetic plasma energy.",
+    "description": "A liquid-gold lotus with rapid petal torque waves, audio-driven plasma runners, click-launched blossom shocks, direct saved-control behavior, and bounded rotational trails.",
     "workgroup_size": [
       16,
       16,
@@ -16455,7 +16513,14 @@
     "updated": true,
     "id": "gen-neuro-kinetic-liquid-gold-lotus",
     "url": "shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "id": "gen-newton-fractal",
@@ -17802,7 +17867,7 @@
       "raymarching",
       "fractal"
     ],
-    "description": "An infinite, shifting desert where the sand grains are micro-prisms, rippling and flowing like liquid glass under cosmic winds and erupting into chromatic geysers of light to the rhythm of sound.",
+    "description": "A high-speed procedural dune field with wind-conveyed ridges, smooth sand streaks, ballistic prism geysers, click-launched dust fronts, and bounded audio-reactive trails.",
     "workgroup_size": [
       16,
       16,
@@ -17847,7 +17912,14 @@
     "updated": true,
     "id": "gen-prismatic-fractal-dunes",
     "url": "shaders/gen-prismatic-fractal-dunes.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Prismatic Ion Cascade",
@@ -18904,7 +18976,7 @@
       "audio",
       "music"
     ],
-    "description": "",
+    "description": "Crystalline quantum lattice with pulsating fiber-optic strands. Warp-flight camera conveyor, traveling pulse packets along lattice fibers, and advected HDR trails. Pulse Speed drives packet velocity; Energy Level controls glow; Fiber Chaos warps strand distortion. Mouse orbits the camera.",
     "workgroup_size": [
       16,
       16,
@@ -18949,7 +19021,13 @@
     "updated": true,
     "id": "gen-quantum-neural-lace",
     "url": "shaders/gen-quantum-neural-lace.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "raymarched",
+      "fast-motion"
+    ]
   },
   {
     "id": "gen-quantum-pollen",
@@ -20541,7 +20619,7 @@
       "neon",
       "plasma"
     ],
-    "description": "A hyper-organic, pulsating biomechanical heart composed entirely of intertwined, liquid-neon fractal arteries that endlessly fold inward upon themselves, beating in perfect sync with ambient cosmic acoustic frequencies.",
+    "description": "A stylized liquid-neon fractal heart with live-audio contractions, traveling artery pulses, click shocks processed outside the march, and bounded plasma-flow trails.",
     "workgroup_size": [
       16,
       16,
@@ -20586,7 +20664,14 @@
     "updated": true,
     "id": "gen-sentient-liquid-neon-fractal-heart",
     "url": "shaders/gen-sentient-liquid-neon-fractal-heart.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Sentient Quantum-Chrono Leviathan-Moth",
@@ -27422,14 +27507,15 @@
     "name": "Morphogenic Resonance",
     "category": "generative",
     "url": "shaders/morphogenic-resonance.wgsl",
-    "description": "Organic shapes that morph between geometric and biological forms via sinusoidal interpolation. Bass drives morph speed, mids add surface ripple resonance, treble creates edge discharge. Mouse warps the morph field.",
+    "description": "Organic shapes that morph between geometric and biological forms via sinusoidal interpolation. Closed-form morph-field conveyor, traveling resonance rings, and advected HDR trails. Bass drives morph speed, mids add surface ripple resonance, treble creates smooth edge discharge. Mouse warps the morph field.",
     "features": [
       "audio-reactive",
       "generative",
       "mouse-driven",
       "temporal",
       "chromatic",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "fast-motion"
     ],
     "params": [
       {
@@ -30323,7 +30409,7 @@
     "id": "volumetric-cloud-nebula",
     "name": "Volumetric Cloud Nebula",
     "url": "shaders/volumetric-cloud-nebula.wgsl",
-    "description": "Raymarched volumetric clouds with nebula coloring. Features procedural cloud generation with FBM noise, dynamic color palettes, and animated camera movement through a cosmic nebula.",
+    "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, and advected HDR streaks. Bass/mids/treble drive flow, color, and sparkle. Extinction slider controls optical depth per march step.",
     "tags": [
       "generative",
       "nebula",
@@ -30335,7 +30421,11 @@
       "procedural"
     ],
     "features": [
-      "raymarched"
+      "raymarched",
+      "audio-reactive",
+      "temporal",
+      "fast-motion",
+      "supportsDepth"
     ],
     "author": "Kimi",
     "params": [

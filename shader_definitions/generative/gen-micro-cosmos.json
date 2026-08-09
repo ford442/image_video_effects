@@ -13,7 +13,7 @@
     "audio",
     "music"
   ],
-  "description": "A microscopic view of a teeming liquid universe, filled with procedural microorganisms, drifting particles, and organic structures.",
+  "description": "A stylized microscopic current with audio-driven helices, fast procedural organisms and wakes, smoothly traveling marine snow, and click-spawned microbe blooms.",
   "workgroup_size": [
     16,
     16,
@@ -58,5 +58,12 @@
   "updated": true,
   "id": "gen-micro-cosmos",
   "url": "shaders/gen-micro-cosmos.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ]
 }

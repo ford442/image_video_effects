@@ -96,6 +96,18 @@ for (const [specifier, loaderPath] of aiBoundaries) {
   }
 }
 
+const shaderListsDir = path.join(repoRoot, 'public/shader-lists');
+if (fs.existsSync(shaderListsDir)) {
+  for (const file of fs.readdirSync(shaderListsDir)) {
+    if (file.endsWith('.json')) {
+      const content = fs.readFileSync(path.join(shaderListsDir, file), 'utf8');
+      if (content.includes('https://test.1ink.us')) {
+        errors.push(`public/shader-lists/${file} contains hardcoded absolute CDN base-url (https://test.1ink.us). Regenerate without --base-url.`);
+      }
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error('Dependency boundary policy failed:');
   for (const error of errors) console.error(`  - ${error}`);
@@ -106,3 +118,4 @@ console.log('Dependency boundary policy passed:');
 console.log(`  TypeScript: ${installedTypescriptVersion} installed (${typescriptVersion} declared)`);
 console.log('  dependency declarations: no duplicate direct or aliased packages');
 console.log('  AI packages: referenced only through their dynamic loader modules');
+console.log('  base-url hygiene: no absolute test-CDN URLs leaked into committed shader lists');

@@ -2,7 +2,7 @@
   "id": "volumetric-cloud-nebula",
   "name": "Volumetric Cloud Nebula",
   "url": "shaders/volumetric-cloud-nebula.wgsl",
-  "description": "Raymarched volumetric clouds with nebula coloring. Features procedural cloud generation with FBM noise, dynamic color palettes, and animated camera movement through a cosmic nebula.",
+  "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, and advected HDR streaks. Bass/mids/treble drive flow, color, and sparkle. Extinction slider controls optical depth per march step.",
   "tags": [
     "generative",
     "nebula",
@@ -14,7 +14,11 @@
     "procedural"
   ],
   "features": [
-    "raymarched"
+    "raymarched",
+    "audio-reactive",
+    "temporal",
+    "fast-motion",
+    "supportsDepth"
   ],
   "author": "Kimi",
   "params": [

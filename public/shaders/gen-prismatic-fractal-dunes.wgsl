@@ -18,8 +18,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------
 struct Uniforms {
-    config: vec4<f32>, // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>, // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=ZoomTime, yz=MouseUV, w=MouseDown
     zoom_params: vec4<f32>, // x=Dune Complexity, y=Prism Dispersion, z=Geyser Height, w=Wind Speed
     ripples: array<vec4<f32>, 50>,
 };
@@ -73,11 +73,14 @@ fn map(p: vec3<f32>, time: f32, audio: f32, duneComplexity: f32, windSpeed: f32,
     var matId = 0.0; // 0 = sand, 1 = prismatic crystal geyser
 
     // === DUNES (domain-warped fbm from main + feature style) ===
-    let uv_dune = p.xz * 0.5 + vec2<f32>(time * windSpeed * 0.2, time * windSpeed * 0.1);
+    let conveyor = vec2<f32>(time * windSpeed * 1.15, time * windSpeed * 0.48);
+    let uv_dune = p.xz * 0.5 + conveyor;
     let warpX = fbm(uv_dune, 3);
     let warpY = fbm(uv_dune + vec2<f32>(5.2, 1.3), 3);
     let warped_uv = p.xz * (0.2 * duneComplexity) + vec2<f32>(warpX, warpY) * 2.0;
-    let dune_h = fbm(warped_uv, i32(duneComplexity)) * 3.0;
+    let duneOctaves = clamp(i32(2.0 + duneComplexity * 0.4), 2, 6);
+    let racingRidge = sin(p.x * 1.3 + p.z * 0.65 - time * windSpeed * 7.0) * 0.18;
+    let dune_h = fbm(warped_uv, duneOctaves) * 3.0 + racingRidge;
 
     d -= dune_h;
 
@@ -94,9 +97,12 @@ fn map(p: vec3<f32>, time: f32, audio: f32, duneComplexity: f32, windSpeed: f32,
     let q_xz = p.xz - round(p.xz / 4.0) * 4.0; // domain repetition
     q.x = q_xz.x;
     q.z = q_xz.y;
-    q.y -= dune_h;
-
     let cellId = floor(p.xz / 4.0);
+    let launchSeed = hash21(cellId + vec2<f32>(4.7, 9.1));
+    let launchPhase = fract(time * (0.32 + windSpeed * 0.12) + launchSeed);
+    let ballisticLift = geyserHeight * 4.0 * launchPhase * (1.0 - launchPhase);
+    q.y -= dune_h + ballisticLift;
+
     let is_active = hash21(cellId) > 0.75; // ~25% of cells have geysers
 
     if (is_active) {
@@ -112,7 +118,7 @@ fn map(p: vec3<f32>, time: f32, audio: f32, duneComplexity: f32, windSpeed: f32,
             bp.y = abs(bp.y) - 0.5;
             bp *= 1.2; // scale for more fractal detail
         }
-        let d_kifs = length(bp) - 0.25 * (1.0 + audio * geyserHeight);
+        let d_kifs = length(bp) - 0.25 * (1.0 + min(audio, 1.5) * geyserHeight);
         let geyserD = smax(length(q.xz) - 0.2, d_kifs, 0.25);
 
         if (geyserD < d) {
@@ -146,7 +152,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (fragCoord * 2.0 - res) / res.y;
     let time = u.config.x;
-    let audio = u.config.y;
+    let audioBands = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+    let audio = dot(audioBands, vec3<f32>(0.5, 0.3, 0.2));
 
     // Parameters from uniform
     let duneComplexity = u.zoom_params.x;
@@ -155,7 +162,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let windSpeed    = u.zoom_params.w;
 
     // === CAMERA (dynamic from feature + slight downward tilt from main) ===
-    var ro = vec3<f32>(time * windSpeed * 0.8, 4.0 + audio * 1.5, -8.0 + time * windSpeed * 0.4);
+    var ro = vec3<f32>(time * windSpeed * 1.9, 4.0 + audioBands.x * 0.7, -8.0 + time * windSpeed * 1.05);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Gentle downward look
@@ -173,7 +180,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var t = 0.0;
     var hit = false;
     var matId = 0.0;
-    for (var i = 0; i < 120; i++) {
+    let marchSteps = 64 + i32(clamp(duneComplexity, 1.0, 10.0) * 2.4);
+    for (var i = 0; i < 88; i++) {
+        if (i >= marchSteps) { break; }
         let p = ro + rd * t;
         let resMap = map(p, time, audio, duneComplexity, windSpeed, geyserHeight, mousePos);
         if (resMap.x < 0.008) {
@@ -181,7 +190,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             matId = resMap.y;
             break;
         }
-        t += resMap.x;
+        t += max(resMap.x, 0.004);
         if (t > 60.0) { break; }
     }
 
@@ -218,7 +227,38 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = mix(col, vec3<f32>(0.12, 0.06, 0.18), 1.0 - exp(-0.018 * t));
     }
 
-    col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    // Wind-aligned sand streaks use continuous phases and velocity stretching.
+    var sandStreaks = 0.0;
+    for (var si = 0; si < 7; si++) {
+        let fs = f32(si);
+        let lane = fract(hash21(vec2<f32>(fs, 4.2)) + time * windSpeed * (0.35 + fs * 0.025));
+        let center = vec2<f32>(lane * 2.4 - 1.2, hash21(vec2<f32>(fs, 8.8)) * 1.6 - 0.8);
+        let delta = uv - center;
+        sandStreaks += exp(-abs(delta.y) * 90.0) * exp(-abs(delta.x + 0.08) * 10.0) * (1.0 - lane);
+    }
+    col += vec3<f32>(1.0, 0.68, 0.28) * sandStreaks * (0.08 + windSpeed * 0.035);
+
+    // Click-launched dust fronts skim the terrain.
+    let screenUV = fragCoord / res;
+    let aspectFix = vec2<f32>(res.x / res.y, 1.0);
+    var dustFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri++) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 2.5) { continue; }
+        let ring = abs(length((screenUV - ripple.xy) * aspectFix) - age * (0.6 + windSpeed * 0.12));
+        dustFront += exp(-ring * 48.0) * (1.0 - age / 2.5);
+    }
+    col += vec3<f32>(0.95, 0.55, 0.3) * dustFront * (0.25 + audioBands.y * 0.2);
+
+    col = clamp(col, vec3<f32>(0.0), vec3<f32>(4.0));
+    let windDir = normalize(vec2<f32>(1.0, 0.35));
+    let historyUV = clamp(screenUV - windDir * (0.004 + windSpeed * 0.004), vec2<f32>(0.002), vec2<f32>(0.998));
+    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let temporal = clamp(max(col, previous * 0.89), vec3<f32>(0.0), vec3<f32>(5.0));
+    let depth = select(1.0, clamp(t / 60.0, 0.0, 0.995), hit);
+    textureStore(dataTextureA, id.xy, vec4<f32>(temporal, 1.0));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(temporal, 1.0));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

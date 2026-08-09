@@ -18,21 +18,11 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Bloom Radius, y=Plasma Intensity, z=Gold Smoothness, w=unused
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
+    zoom_params: vec4<f32>,  // x=Bloom Radius, y=Plasma Intensity, z=Gold Smoothness, w=Mouse Influence
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(controlled, color.a);
-}
-
 
 fn rotX(angle: f32) -> mat3x3<f32> {
     let s = sin(angle); let c = cos(angle);
@@ -92,13 +82,16 @@ fn sdSphere(p: vec3<f32>, s: f32) -> f32 {
     return length(p) - s;
 }
 
-fn sdLotusPetals(p: vec3<f32>, time: f32, bloom: f32) -> f32 {
+fn sdLotusPetals(p: vec3<f32>, time: f32, bloom: f32, torque: f32) -> f32 {
     var p_w = p;
 
     // Unfurling animation
     let num_petals = 8.0;
-    let angle = atan2(p_w.x, p_w.z);
     let r = length(p_w.xz);
+    let torqueWave = sin(r * 7.0 - time * 11.0) * torque * (0.15 + r * 0.08);
+    let twisted = rotY(torqueWave) * p_w;
+    p_w = twisted;
+    let angle = atan2(p_w.x, p_w.z);
 
     // Domain repetition
     let a = angle * num_petals / (2.0 * 3.14159265);
@@ -123,18 +116,18 @@ fn sdLotusPetals(p: vec3<f32>, time: f32, bloom: f32) -> f32 {
     return base + n;
 }
 
-fn map(p: vec3<f32>, time: f32, audio_val: f32, bloom: f32) -> f32 {
+fn map(p: vec3<f32>, time: f32, audio_val: f32, bloom: f32, torque: f32) -> f32 {
     let core = sdSphere(p, 0.5 + audio_val * 0.3) + fbm(p * 3.0 - vec3<f32>(0.0, time, 0.0)) * 0.2;
-    let petals = sdLotusPetals(p, time, bloom);
+    let petals = sdLotusPetals(p, time, bloom, torque);
     return opSmoothUnion(core, petals, 0.4);
 }
 
-fn getNormal(p: vec3<f32>, time: f32, audio_val: f32, bloom: f32) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, time: f32, audio_val: f32, bloom: f32, torque: f32) -> vec3<f32> {
     let e = vec2<f32>(0.01, 0.0);
     let n = vec3<f32>(
-        map(p + e.xyy, time, audio_val, bloom) - map(p - e.xyy, time, audio_val, bloom),
-        map(p + e.yxy, time, audio_val, bloom) - map(p - e.yxy, time, audio_val, bloom),
-        map(p + e.yyx, time, audio_val, bloom) - map(p - e.yyx, time, audio_val, bloom)
+        map(p + e.xyy, time, audio_val, bloom, torque) - map(p - e.xyy, time, audio_val, bloom, torque),
+        map(p + e.yxy, time, audio_val, bloom, torque) - map(p - e.yxy, time, audio_val, bloom, torque),
+        map(p + e.yyx, time, audio_val, bloom, torque) - map(p - e.yyx, time, audio_val, bloom, torque)
     );
     return normalize(n);
 }
@@ -147,29 +140,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (fragCoord - 0.5 * res) / res.y;
     let time = u.config.x;
-    let audio_val = u.config.y; // Simplified audio metric
+    let audioBands = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
 
     let bloom_radius = u.zoom_params.x;
     let plasma_int = u.zoom_params.y;
     let gold_smooth = u.zoom_params.z;
+    let mouseInfluence = u.zoom_params.w;
+    let audio_val = audioBands.x * plasma_int;
+    let pressKick = select(0.0, 0.35 * mouseInfluence, u.zoom_config.w > 0.5);
+    let torque = 0.25 + audioBands.y * 0.35 + pressKick;
 
     // Mouse Interaction: Bending ray direction
-    let mx = (u.zoom_config.y / res.x) * 2.0 - 1.0;
-    let my = u.zoom_config.z * 2.0 - 1.0;
+    let mx = (u.zoom_config.y - 0.5) * 2.0;
+    let my = (u.zoom_config.z - 0.5) * 2.0;
 
     let ro = vec3<f32>(0.0, 2.0, -5.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Apply mouse rotation
-    rd = rotX(my * 1.5) * rd;
-    rd = rotY(-mx * 1.5) * rd;
-    var ro_rot = rotX(my * 1.5) * ro;
-    ro_rot = rotY(-mx * 1.5) * ro_rot;
+    rd = rotX(my * 1.5 * mouseInfluence) * rd;
+    rd = rotY(-mx * 1.5 * mouseInfluence) * rd;
+    var ro_rot = rotX(my * 1.5 * mouseInfluence) * ro;
+    ro_rot = rotY(-mx * 1.5 * mouseInfluence) * ro_rot;
 
     // Raymarching
     var t = 0.0;
     var p = ro_rot;
     var d = 0.0;
+    var hit = false;
 
     for(var i=0; i<80; i++) {
         p = ro_rot + rd * t;
@@ -178,15 +176,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let bend = exp(-dist * dist * 0.5) * 0.2;
         p += vec3<f32>(bend * rd.xy, 0.0);
 
-        d = map(p, time, audio_val, bloom_radius);
-        if(d < 0.001 || t > 20.0) { break; }
-        t += d;
+        d = map(p, time, audio_val, bloom_radius, torque);
+        if(d < 0.001) { hit = true; break; }
+        if(t > 20.0) { break; }
+        t += max(d * 0.8, 0.001);
     }
 
     var col = vec3<f32>(0.02, 0.02, 0.05); // Background
 
-    if (d < 0.001) {
-        let n = getNormal(p, time, audio_val, bloom_radius);
+    if (hit) {
+        let n = getNormal(p, time, audio_val, bloom_radius, torque);
         let l = normalize(vec3<f32>(1.0, 2.0, -1.0));
         let v = normalize(ro_rot - p);
         let h = normalize(l + v);
@@ -196,12 +195,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Lighting
         let diff = max(dot(n, l), 0.0);
-        let spec = pow(max(dot(n, h), 0.0), 64.0 * gold_smooth);
+        let spec = pow(max(dot(n, h), 0.0), mix(8.0, 96.0, gold_smooth));
         let rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
 
         // Plasma veins logic using fbm
-        let vein_noise = fbm(p * 5.0 + vec3<f32>(time * 2.0));
-        let plasma_factor = smoothstep(0.4, 0.6, vein_noise) * audio_val * plasma_int;
+        let vein_noise = fbm(p * 5.0 + vec3<f32>(time * 4.0));
+        let runner = pow(max(0.0, sin(atan2(p.z, p.x) * 8.0 + length(p.xz) * 12.0 - time * 22.0)), 10.0);
+        let plasma_factor = clamp((smoothstep(0.4, 0.6, vein_noise) * (0.2 + audio_val) + runner * (0.15 + audioBands.z)) * plasma_int, 0.0, 2.5);
         let plasma_col = vec3<f32>(0.0, 1.0, 1.0) * plasma_factor; // Cyan plasma
         let plasma_col2 = vec3<f32>(1.0, 0.0, 1.0) * plasma_factor; // Magenta plasma
         let mixed_plasma = mix(plasma_col, plasma_col2, sin(time)*0.5+0.5);
@@ -216,6 +216,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Atmospheric perspective (fog)
     col = mix(col, vec3<f32>(0.02, 0.02, 0.05), 1.0 - exp(-0.02 * t * t));
 
-    textureStore(writeTexture, vec2<i32>(i32(id.x), i32(id.y)), applyGenerativePrimaryControls(vec4<f32>(col, 1.0)));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    // Click-launched blossom shocks race from the pointer through the petals.
+    let screenUV = fragCoord / res;
+    let aspectFix = vec2<f32>(res.x / res.y, 1.0);
+    var blossomShock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var r = 0u; r < rippleCount; r++) {
+        let ripple = u.ripples[r];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 2.0) { continue; }
+        let radius = length((screenUV - ripple.xy) * aspectFix);
+        blossomShock += exp(-abs(radius - age * 0.72) * 60.0) * (1.0 - age * 0.5);
+    }
+    col += vec3<f32>(1.0, 0.42, 0.12) * blossomShock * (0.4 + plasma_int * 0.25);
+
+    // Torque-advect and display bounded gold/plasma history.
+    let centered = screenUV - 0.5;
+    let historyCentered = rotZ(-0.018 * (1.0 + torque)) * vec3<f32>(centered, 0.0);
+    let historyUV = clamp(historyCentered.xy + 0.5, vec2<f32>(0.002), vec2<f32>(0.998));
+    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let temporal = clamp(max(col, previous * (0.86 + gold_smooth * 0.08)), vec3<f32>(0.0), vec3<f32>(6.0));
+    let depth = select(1.0, clamp(t / 20.0, 0.0, 0.995), hit);
+    textureStore(dataTextureA, id.xy, vec4<f32>(temporal, 1.0));
+    textureStore(writeTexture, vec2<i32>(i32(id.x), i32(id.y)), vec4<f32>(temporal, 1.0));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

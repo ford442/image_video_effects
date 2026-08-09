@@ -3,14 +3,20 @@
   "name": "Gravitational Ferrofluid Singularity-Engine",
   "url": "shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
   "category": "generative",
-  "description": "A hyper-dense, magnetic-liquid simulation that bends light and space around a central, interactive black-hole gravity well, merging dark metallic sheens with vibrant cosmic radiation.",
+  "description": "A stylized ferrofluid singularity with rotating magnetic domains, orbiting spike fronts, accelerating droplets, click shocks, and bounded horizon-aligned light trails driven by live audio.",
   "features": [
     "ferrofluid",
     "singularity",
     "raymarching",
     "interactive",
     "metallic",
-    "iridescent"
+    "iridescent",
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
   ],
   "tags": [
     "ferrofluid",
@@ -96,5 +102,7 @@
       "step": 0.01
     }
   ],
+  "supportsDepth": true,
+  "supportsDof": false,
   "updated": true
 }

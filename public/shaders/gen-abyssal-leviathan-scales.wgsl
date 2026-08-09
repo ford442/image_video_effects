@@ -19,8 +19,8 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
     zoom_params: vec4<f32>,  // x=Scale Density, y=Plasma Intensity, z=Breathing Speed, w=Core Heat
     ripples: array<vec4<f32>, 50>,
 };
@@ -52,7 +52,7 @@ fn sdScale(p: vec3<f32>, size: vec2<f32>) -> f32 {
 }
 
 var<private> g_time: f32;
-var<private> g_audio: f32;
+var<private> g_audio: vec3<f32>;
 var<private> g_mouse: vec2<f32>;
 
 fn map(pos: vec3<f32>) -> vec2<f32> {
@@ -76,15 +76,17 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     q.x = cellPos.x;
     q.z = cellPos.y;
 
-    // Breathing FBM based on cell ID and time
+    // A fast conveyor wave crosses whole rows while local breathing remains
+    // phase-continuous for every scale.
     let fbmVal = fbm(vec3<f32>(cellId.x, cellId.y, g_time * breathingSpeed * 0.5));
-    let localTime = g_time * breathingSpeed + fbmVal * 6.28;
+    let rowWave = sin(cellId.y * 1.7 - g_time * (5.0 + breathingSpeed * 2.5));
+    let localTime = g_time * breathingSpeed * 2.0 + fbmVal * 6.28 + rowWave * 0.8;
 
-    var lift = sin(localTime) * 0.2 + 0.2;
-    var tilt = cos(localTime) * 0.3;
+    var lift = sin(localTime) * 0.2 + 0.2 + max(rowWave, 0.0) * (0.18 + g_audio.x * 0.12);
+    var tilt = cos(localTime) * 0.3 + rowWave * 0.22;
 
     // Mouse Repulsion
-    let mouseWorld = vec2<f32>(g_mouse.x * 10.0, -g_mouse.y * 10.0 + g_time);
+    let mouseWorld = vec2<f32>(g_mouse.x * 10.0, g_mouse.y * 7.0 + g_time * 3.4);
     let distToMouse = length(p.xz - mouseWorld);
     let repel = 1.0 - smoothstep(0.0, 5.0, distToMouse);
     lift += repel * 1.5;
@@ -102,8 +104,9 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     let dScale = sdScale(q, size);
 
     // Underlying plasma plane heavily distorted by domain warping
-    let plasmaWarp = fbm(p * 0.5 + vec3<f32>(0.0, 0.0, -g_time * 2.0));
-    let dPlasma = p.y + 1.0 - plasmaWarp * 0.5;
+    let plasmaWarp = fbm(p * 0.5 + vec3<f32>(g_time * 0.8, 0.0, -g_time * 4.5));
+    let fissure = pow(abs(sin(p.x * 2.4 + p.z * 1.2 - g_time * (9.0 + g_audio.z * 2.0))), 12.0);
+    let dPlasma = p.y + 1.0 - plasmaWarp * 0.5 - fissure * (0.08 + g_audio.y * 0.08);
 
     if (dScale < dPlasma) {
         return vec2<f32>(dScale * 0.6, 1.0); // Material 1: Scale
@@ -129,15 +132,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var uv = (fragCoord * 2.0 - dims) / dims.y;
     let dataUV = fragCoord / dims;
-    let prev = textureSampleLevel(dataTextureC, u_sampler, dataUV, 0.0);
     g_time = u.config.x;
-    g_audio = u.config.y * 0.1; // u.config.y accumulates clicks/beats
-    let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mY = u.zoom_config.z * 2.0 - 1.0;
-    g_mouse = vec2<f32>(mX, mY);
+    g_audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+    g_mouse = (u.zoom_config.yz - 0.5) * 2.0;
 
     // Setup Camera
-    var ro = vec3<f32>(0.0, 5.0, g_time);
+    var ro = vec3<f32>(0.0, 5.0, g_time * (3.2 + u.zoom_params.z * 0.7 + g_audio.x * 0.35));
     let ta = ro + vec3<f32>(0.0, -1.0, 1.0);
     let ww = normalize(ta - ro);
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
@@ -155,7 +155,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         d = res.x;
         m = res.y;
         if (m == 2.0) {
-            glow += 0.01 / (0.01 + abs(d)); // Accumulate volumetric glow for plasma
+            glow += min(0.12, 0.004 / (0.01 + abs(d))); // bounded plasma glow
         }
         if (d < 0.001 || t > maxT) { break; }
         t += d;
@@ -164,7 +164,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var col = vec3<f32>(0.0);
     let plasmaIntensity = u.zoom_params.y;
     let coreHeat = u.zoom_params.w;
-    let audioPulse = 1.0 + g_audio * 5.0; // Audio reactivity
+    let audioPulse = 1.0 + g_audio.x * 1.5;
 
     if (t < maxT) {
         let p = ro + rd * t;
@@ -192,14 +192,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         } else if (m == 2.0) {
             // Material 2: Quantum Fusion Core (Plasma)
-            let heat = fbm(p * 2.0 - vec3<f32>(0.0, 0.0, g_time * 4.0)) * coreHeat;
+            let runner = pow(abs(sin(p.z * 3.0 - g_time * 13.0 + p.x)), 16.0);
+            let heat = (fbm(p * 2.0 - vec3<f32>(0.0, 0.0, g_time * 7.0)) + runner * 0.45) * coreHeat;
             col = vec3<f32>(1.0, 0.2, 0.05) * heat * audioPulse * plasmaIntensity;
             col += vec3<f32>(0.1, 0.5, 1.0) * pow(heat, 3.0) * audioPulse * plasmaIntensity;
         }
     }
 
     // Add volumetric glow
-    col += vec3<f32>(1.0, 0.3, 0.1) * glow * 0.05 * plasmaIntensity * audioPulse * coreHeat;
+    col += vec3<f32>(1.0, 0.3, 0.1) * min(glow, 4.0) * 0.08 * plasmaIntensity * audioPulse * coreHeat;
 
     // Background fade (fog)
     col = mix(col, vec3<f32>(0.01, 0.01, 0.02), 1.0 - exp(-t * 0.05));
@@ -208,9 +209,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = col / (col + vec3<f32>(1.0));
     col = pow(col, vec3<f32>(0.4545));
 
-    let decay = 0.96;
-    let temporal = mix(prev.rgb * decay, col, 0.25);
+    // Click breaches race down the scale conveyor and leave paired wakes.
+    var breach = 0.0;
+    let aspectFix = vec2<f32>(dims.x / dims.y, 1.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var r = 0u; r < rippleCount; r++) {
+        let ripple = u.ripples[r];
+        let age = g_time - ripple.z;
+        if (age < 0.0 || age > 2.0) { continue; }
+        let delta = (dataUV - ripple.xy) * aspectFix;
+        let front = abs(length(delta) - age * (0.75 + u.zoom_params.z * 0.2));
+        breach += exp(-front * 55.0) * (1.0 - age * 0.5);
+    }
+    col += vec3<f32>(0.15, 0.65, 1.1) * breach;
+
+    // Preserve the established A/C display history, but advect and display it.
+    let historyUV = clamp(dataUV + vec2<f32>(0.0, -0.006 - u.zoom_params.z * 0.002), vec2<f32>(0.002), vec2<f32>(0.998));
+    let prev = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0);
+    let temporal = clamp(max(col, prev.rgb * 0.91), vec3<f32>(0.0), vec3<f32>(5.0));
+    let depth = select(1.0, clamp(t / maxT, 0.0, 0.995), t < maxT);
     textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(temporal, 1.0));
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(temporal, 1.0));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

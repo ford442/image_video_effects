@@ -8,7 +8,7 @@
     "audio-reactive",
     "geometry"
   ],
-  "description": "A hyper-organic, slowly unfurling macro-lotus made of liquid-gold geometry that dynamically responds to acoustic impulses, its petals rippling with neuro-kinetic plasma energy.",
+  "description": "A liquid-gold lotus with rapid petal torque waves, audio-driven plasma runners, click-launched blossom shocks, direct saved-control behavior, and bounded rotational trails.",
   "workgroup_size": [
     16,
     16,
@@ -53,5 +53,12 @@
   "updated": true,
   "id": "gen-neuro-kinetic-liquid-gold-lotus",
   "url": "shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ]
 }

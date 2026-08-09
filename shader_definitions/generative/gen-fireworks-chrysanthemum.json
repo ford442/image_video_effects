@@ -15,7 +15,7 @@
     "4th-of-july",
     "july-4"
   ],
-  "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Each burst flashes brilliant white at the core then blooms into layered color rings \u2014 crimson inner petals fading to electric blue and gold at the edges. Multiple timed ring layers create depth within each explosion. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor.",
+  "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Fast ballistic petals, radial speed-line streaks, and advected HDR trails. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor.",
   "workgroup_size": [
     16,
     16,
@@ -60,5 +60,10 @@
   "updated": true,
   "id": "gen-fireworks-chrysanthemum",
   "url": "shaders/gen-fireworks-chrysanthemum.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "fast-motion"
+  ]
 }

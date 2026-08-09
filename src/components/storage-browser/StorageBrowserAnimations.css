@@ -1,0 +1,113 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   StorageBrowserAnimations.css
+   Responsive Rules, Entrance Animations & Shimmer Effects
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Responsive */
+@media (max-width: 768px) {
+  .storage-browser {
+    max-height: 90vh;
+    border-radius: 12px;
+  }
+  
+  .browser-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 16px;
+  }
+  
+  .tab-buttons {
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+  
+  .tab-buttons button {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+  }
+  
+  .search-box {
+    max-width: none;
+  }
+  
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .cards-grid.images {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .toast-container {
+    left: 16px;
+    right: 16px;
+    top: 16px;
+  }
+  
+  .toast {
+    min-width: auto;
+    max-width: none;
+  }
+  
+  .browser-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .connection-status {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Animations & Effects */
+
+/* Card entrance animation */
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.storage-card {
+  animation: cardEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+}
+
+.storage-card:nth-child(1) { animation-delay: 0.05s; }
+.storage-card:nth-child(2) { animation-delay: 0.1s; }
+.storage-card:nth-child(3) { animation-delay: 0.15s; }
+.storage-card:nth-child(4) { animation-delay: 0.2s; }
+.storage-card:nth-child(5) { animation-delay: 0.25s; }
+.storage-card:nth-child(6) { animation-delay: 0.3s; }
+
+/* Shimmer effect for selected cards */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.storage-card.selected::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 215, 0, 0.05) 50%, 
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+  pointer-events: none;
+  border-radius: 14px;
+}

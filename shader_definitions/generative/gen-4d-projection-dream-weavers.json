@@ -11,7 +11,7 @@
     "audio-reactive",
     "music"
   ],
-  "description": "Smooth continuous slicing and projection through higher-dimensional fractals and lattices. Mouse controls navigation through the extra two dimensions providing genuine higher-dimensional exploration. Audio affects fractal parameters and projection quality. Ethereal mathematical dream-like forms.",
+  "description": "A stylized projection of rotating 4D fractal slices with rapid hyperslice transport, velocity-stretched lattice afterimages, click phase kicks, live audio response, and bounded display history.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,12 @@
   "updated": true,
   "id": "gen-4d-projection-dream-weavers",
   "url": "shaders/gen-4d-projection-dream-weavers.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ]
 }

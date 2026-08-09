@@ -18,7 +18,7 @@ const MAX_WASM_SIZE = 200 * 1024; // 200 KB maximum (allows growth from typical 
 const artifacts = [
   { path: 'public/wasm/pixelocity_wasm.wasm', type: 'wasm', min: MIN_WASM_SIZE, max: MAX_WASM_SIZE },
   { path: 'public/wasm/pixelocity_wasm.js', type: 'js-module', min: 10 * 1024 }, // 10 KB min
-  { path: 'public/wasm/wasm_bridge.js', type: 'js-glue', min: 5 * 1024 }, // 5 KB min
+  { path: 'public/wasm/wasm_bridge.js', type: 'js-glue', min: 500 }, // 500 B min (modular barrel bridge)
 ];
 
 const requiredExports = [

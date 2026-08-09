@@ -8,8 +8,8 @@
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
     zoom_params: vec4<f32>,  // x=Fractal Complexity, y=Pulse Intensity, z=Neon Saturation, w=Bioluminescent Fog
     ripples: array<vec4<f32>, 50>,
 };
@@ -26,6 +26,11 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 const PI: f32 = 3.14159265359;
+
+var<private> g_audio: vec3<f32>;
+var<private> g_mouse: vec2<f32>;
+var<private> g_clickShock: f32;
+var<private> g_mouseDown: f32;
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -66,28 +71,15 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     // Heartbeat cycle
     let time = u.config.x;
 
-    // Calculate global audio spike intensity from ripples
-    var audio_intensity = 0.0;
-    for(var i = 0; i < 50; i++) {
-        let ripple = u.ripples[i];
-        if (ripple.w > 0.0) {
-            let dist = distance(p.xy, ripple.xy);
-            let ripple_effect = sin(dist * 10.0 - ripple.w * 5.0) * exp(-dist * 2.0);
-            audio_intensity += max(0.0, ripple_effect) * ripple.z;
-        }
-    }
-
-    // Smooth beat mixed with audio reactivity
-    let beat_phase = fract(time * 1.5) * PI * 2.0;
-    let base_beat = exp(-3.0 * fract(time * 1.5)) * sin(beat_phase) * 0.1;
-    let pulse = 1.0 + (base_beat + audio_intensity * 0.05) * u.zoom_params.y;
+    // Smooth contraction with real plasma bands and one precomputed click shock.
+    let beat_phase = fract(time * (1.25 + g_audio.x * 0.2)) * PI * 2.0;
+    let base_beat = exp(-3.0 * fract(time * 1.25)) * sin(beat_phase) * 0.1;
+    let pulse = 1.0 + (base_beat + g_audio.x * 0.11 + g_clickShock * 0.08) * u.zoom_params.y;
 
     // Localized Defibrillator Shock / Gravity Well (Mouse Interaction)
-    let mouse_pos = u.zoom_config.yz;
-    let mouse_dist = distance(p.xy, mouse_pos);
+    let mouse_dist = distance(p.xy, g_mouse * vec2<f32>(1.8, 1.2));
     let shock_influence = smoothstep(1.5, 0.0, mouse_dist);
-    let shock_scale = mix(1.0, 0.8 + 0.5 * sin(time * 20.0), shock_influence * u.zoom_config.y);
-    // using zoom_config.y as a stand-in for "mouse active" or simply rapid interaction
+    let shock_scale = mix(1.0, 0.88 + 0.22 * sin(time * 20.0), shock_influence * g_mouseDown);
 
     // Apply scaling
     p = p / (pulse * shock_scale);
@@ -116,7 +108,8 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     // Material ID: 1.0 for tissue, 2.0 for glowing arteries
     var mat_id = 1.0;
-    if (fractal_d < 0.1) {
+    let arteryWave = sin(atan2(p.y, p.x) * 7.0 + p.z * 8.0 - time * (9.0 + g_audio.y * 2.0));
+    if (arteryWave > 0.58) {
         mat_id = 2.0;
     }
 
@@ -144,7 +137,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let uv = (coords - 0.5 * res) / res.y;
+    let screenUV = coords / res;
     let time = u.config.x;
+
+    g_audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+    g_mouse = (u.zoom_config.yz - 0.5) * 2.0;
+    g_mouseDown = select(0.0, 1.0, u.zoom_config.w > 0.5);
+
+    // Process click fronts once per pixel, outside every map/normal evaluation.
+    g_clickShock = 0.0;
+    let aspectFix = vec2<f32>(res.x / res.y, 1.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri++) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 2.0) { continue; }
+        let front = abs(length((screenUV - ripple.xy) * aspectFix) - age * 0.74);
+        g_clickShock += exp(-front * 62.0) * (1.0 - age * 0.5);
+    }
 
     // Camera setup
     let camPos = vec3<f32>(0.0, 0.0, -4.0);
@@ -168,7 +178,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Volumetric accumulation (Bioluminescent fog and subsurface scattering)
         if (d < 0.2) {
-            glow += 0.01 / (0.01 + d * d);
+            glow += min(0.1, 0.006 / (0.01 + d * d));
         }
 
         d_min = min(d_min, d);
@@ -203,23 +213,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         if (hit_mat == 2.0) {
             // Arteries
-            col = neonColor * (0.8 + 0.2 * sin(p.z * 10.0 - time * 5.0)) + spec * vec3<f32>(1.0);
+            let arteryRunner = pow(max(0.0, sin(p.z * 14.0 + atan2(p.y, p.x) * 6.0 - time * (16.0 + g_audio.y * 2.0))), 8.0);
+            col = neonColor * (0.65 + arteryRunner * (0.45 + g_audio.z * 0.35)) + spec * vec3<f32>(1.0);
         } else {
             // Tissue
             col = tissueColor * diff + spec * vec3<f32>(0.5) + fresnel * vec3<f32>(0.3, 0.1, 0.5);
             // Add subsurface scattering based on accumulated glow
-            col += neonColor * glow * 0.1;
+            col += neonColor * min(glow, 4.0) * 0.1;
         }
     } else {
         // Void (Bioluminescent Fog)
-        col = vec3<f32>(0.05, 0.0, 0.1) * glow * u.zoom_params.w;
+        col = vec3<f32>(0.05, 0.0, 0.1) * min(glow, 4.0) * u.zoom_params.w;
         // Floating particles could be added here as noise
         let noise = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
         col += vec3<f32>(0.2, 0.8, 1.0) * step(0.999, noise) * u.zoom_params.w * 0.5;
     }
 
-    // Output
-    let final_color = vec4<f32>(col, 1.0);
-    textureStore(writeTexture, vec2<i32>(coords), final_color);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    col += vec3<f32>(0.1, 0.65, 1.0) * g_clickShock * (0.35 + u.zoom_params.y * 0.25);
+
+    // Arterial flow advects the bounded A/C display history and keeps neon
+    // plasma motion visible without unbounded HDR accumulation.
+    let radial = normalize(uv + vec2<f32>(0.0001));
+    let tangent = vec2<f32>(-radial.y, radial.x);
+    let historyUV = clamp(screenUV - tangent * 0.008 - radial * 0.003, vec2<f32>(0.002), vec2<f32>(0.998));
+    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let temporal = clamp(max(col, previous * 0.9), vec3<f32>(0.0), vec3<f32>(5.0));
+    let hit = t < 10.0 && hit_mat > 0.0;
+    let depth = select(1.0, clamp(t / 10.0, 0.0, 0.995), hit);
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, 1.0));
+    textureStore(writeTexture, vec2<i32>(coords), vec4<f32>(temporal, 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

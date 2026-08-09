@@ -56,16 +56,19 @@ fn sdf(p: vec3<f32>, singularityMass: f32, fluidViscosity: f32, spikeDensity: f3
     // Base sphere representing the core of the singularity
     let baseSphere = length(p) - (1.0 + singularityMass * 0.5);
 
-    // Magnetic spikes using 3D noise
-    let noiseVal = noise3D(p * spikeDensity * 5.0 + time * fluidViscosity * 2.0);
-    let spikes = (noiseVal - 0.5) * 0.8;
-
-    // Swirl distortion for the event horizon
+    // Rotate the magnetic domain around the horizon instead of calculating and
+    // discarding it. Two counter-moving angular fronts rake the fluid surface.
     var distortedP = p;
     let dist = length(p);
-    let angle = time + 1.0 / (dist + 0.1);
+    let angle = time * (0.8 + fluidViscosity * 2.4) + 1.0 / (dist + 0.1);
     let r2 = rot(angle);
     distortedP = vec3<f32>(r2 * distortedP.xy, distortedP.z);
+    let angularFront = sin(atan2(distortedP.y, distortedP.x) * (5.0 + spikeDensity * 2.0) - time * 8.0);
+    let radialFront = sin(dist * 15.0 - time * (9.0 + fluidViscosity * 5.0));
+
+    // Magnetic spikes use the rotated domain and remain bounded at the core.
+    let noiseVal = noise3D(distortedP * spikeDensity * 4.0 + vec3<f32>(0.0, 0.0, time * fluidViscosity * 2.0));
+    let spikes = (noiseVal - 0.5) * 0.65 + angularFront * radialFront * 0.12;
 
     // Combine base sphere with spikes
     return baseSphere + spikes * smoothstep(0.5, 2.0, dist);
@@ -98,10 +101,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     var mousePos = (mouse - 0.5) * 2.0;
     mousePos.x *= aspect;
-    mousePos.y = -mousePos.y; // Invert Y
 
     // Audio Reactivity
-    let bass = plasmaBuffer[0].x;
+    let audioBands = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+    let bass = audioBands.x;
     let audioPulse = 1.0 + bass * 0.2;
 
     // Parameters
@@ -128,7 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let distToMouse = length(p - mouse3D);
         var pull = 0.5;
         if (mouseDown) { pull = 2.0; }
-        let warp = normalize(mouse3D - p) * (pull / (distToMouse * distToMouse + 0.1));
+        let warp = normalize(mouse3D - p + vec3<f32>(0.001)) * (pull / (distToMouse * distToMouse + 0.1));
         p += warp;
 
         let dS = sdf(p, singularityMass, fluidViscosity, spikeDensity);
@@ -207,5 +210,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     color += vec3<f32>(0.2, 0.5, 1.0) * rippleGlow;
 
-    textureStore(writeTexture, pixel, vec4<f32>(color, 1.0));
+    // Accelerating ferrofluid droplets: fixed identities, smooth analytic
+    // trajectories, and velocity-stretched fronts rather than frame hashes.
+    var dropletGlow = 0.0;
+    for (var i = 0; i < 8; i++) {
+        let fi = f32(i);
+        let seed = hash(vec3<f32>(fi, fi * 1.71, 3.4));
+        let phase = fract(time * (0.22 + seed * 0.16) + seed);
+        let accel = phase * phase;
+        let ang = fi * 2.39996 + time * (1.3 + audioBands.y * 0.5);
+        let dir = vec2<f32>(cos(ang), sin(ang));
+        let center = dir * (0.32 + accel * 1.35);
+        let local = uv - center;
+        let along = dot(local, dir);
+        let across = abs(dot(local, vec2<f32>(-dir.y, dir.x)));
+        let streak = exp(-across * across * 900.0) * exp(-abs(along + 0.08) * 18.0) * smoothstep(0.0, 0.15, phase) * (1.0 - phase);
+        dropletGlow += streak;
+    }
+    color += vec3<f32>(0.18, 0.55, 1.2) * dropletGlow * (0.5 + iridescence);
+
+    // Advect prior display light around the event horizon and show the bounded
+    // result. A is the next display history; B remains untouched.
+    let radial = normalize(uv + vec2<f32>(0.0001));
+    let tangent = vec2<f32>(-radial.y, radial.x);
+    let historyUV = clamp(screenUV - tangent * (0.004 + fluidViscosity * 0.006) - radial * 0.002, vec2<f32>(0.002), vec2<f32>(0.998));
+    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let temporal = clamp(max(color, previous * (0.84 + 0.08 * iridescence)), vec3<f32>(0.0), vec3<f32>(6.0));
+    let depth = select(1.0, clamp(dO / 20.0, 0.0, 0.995), hit);
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, 1.0));
+    textureStore(writeTexture, pixel, vec4<f32>(temporal, 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
