@@ -181,14 +181,42 @@ See [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) for panel/hook detail.
 
 | Command | Purpose |
 |---------|---------|
-| `npm start` | Dev server (prestart: shader lists + manifest) |
-| `npm run build` | Production build (`prebuild`: wasm → lists → manifest → craco) |
+| `npm start` | Dev server (prestart: shader lists + manifest, relative URLs) |
+| `npm run build` | Production build (`prebuild`: wasm → lists → manifest → craco; relative URLs unless `SHADER_LIST_BASE_URL` is set) |
 | `npm run build:manifest` | Regenerate `shader-manifest-unified.json` from category lists |
-| `npm run verify:toolchain-foundation` | Enforce the main-bundle budget, lazy AI chunks, and dependency boundaries |
+| `npm run verify:toolchain-foundation` | Bundle budget, dependency boundaries, shader-list URL policy |
 | `npm test` | Jest unit tests (~250) |
 | `bash scripts/jules-setup.sh` | Agent/headless setup (`npm ci`, skip WASM compile) |
 
 Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`. No emcc: `SKIP_WASM_BUILD=1 npm run build`. Details: [`WASM_BUILD_CI_GUIDE.md`](WASM_BUILD_CI_GUIDE.md).
+
+### Shader list URLs (local vs deploy)
+
+`scripts/generate_shader_lists.js` writes `public/shader-lists/*.json` from `shader_definitions/`.
+By default URLs stay **relative** (`shaders/foo.wgsl`) so `npm start` and local `npm run build`
+serve WGSL from same-origin `public/shaders/`.
+
+| Context | Shader `url` in lists |
+|---------|----------------------|
+| `npm start` / local `npm run build` | Relative (default) |
+| Deploy / CDN publish | Absolute when `SHADER_LIST_BASE_URL` is set |
+
+Env precedence for an absolute base: `--base-url=` → `SHADER_LIST_BASE_URL` →
+`REACT_APP_SHADER_BASE_URL` → `SHADER_BASE_URL` (legacy).
+
+```bash
+# Local / CI (relative paths — default)
+node scripts/generate_shader_lists.js
+
+# Deploy bundle with CDN-hosted WGSL references
+SHADER_LIST_BASE_URL=https://test.1ink.us/image_video_effects npm run build
+
+# Or use the deploy helper (sets base URL before build)
+npm run deploy:full
+```
+
+CI enforces relative URLs via `npm run verify:shader-list-urls` (part of
+`verify:toolchain-foundation`). `build:manifest` rejects absolute URLs unless a base-url env is set.
 
 The production `main.js` budget is **320 KiB gzip**. `npm run verify:bundle-size` reads CRA's
 `build/asset-manifest.json`, measures only the main entry chunk, and separately asserts that

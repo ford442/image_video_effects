@@ -101,8 +101,11 @@ if (fs.existsSync(shaderListsDir)) {
   for (const file of fs.readdirSync(shaderListsDir)) {
     if (file.endsWith('.json')) {
       const content = fs.readFileSync(path.join(shaderListsDir, file), 'utf8');
-      if (content.includes('https://test.1ink.us')) {
-        errors.push(`public/shader-lists/${file} contains hardcoded absolute CDN base-url (https://test.1ink.us). Regenerate without --base-url.`);
+      if (content.includes('https://') || content.includes('http://')) {
+        errors.push(
+          `public/shader-lists/${file} contains absolute shader URLs. ` +
+            'Regenerate without --base-url (local default) or set SHADER_LIST_BASE_URL only for deploy builds.'
+        );
       }
     }
   }

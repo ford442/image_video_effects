@@ -272,7 +272,7 @@ You: Directly create the cron job at 21:00 with no offset suggestion.
 This repository is the **Pixelocity / WebGPU Shader Effects** app (Create React App + React 19 + WGSL compute shaders, with an optional C++/WASM renderer). See `README.md` and the `scripts` in `package.json` for the canonical commands. Notes below are the non-obvious things that bite you in the headless Cloud VM.
 
 ### Services / commands
-- **Dev server:** `npm start` (CRA on port 3000). The `prestart` step regenerates `public/shader-lists/*.json` (with a hard-coded `--base-url=https://test.1ink.us/...`) and the unified manifest; this runs automatically. Use `BROWSER=none` to avoid CRA trying to open a browser.
+- **Dev server:** `npm start` (CRA on port 3000). The `prestart` step regenerates `public/shader-lists/*.json` and the unified manifest with **relative** same-origin shader paths (no `--base-url`; set `SHADER_LIST_BASE_URL` only for deploy builds). Use `BROWSER=none` to avoid CRA trying to open a browser.
 - **Unit tests:** `npx react-scripts test --watchAll=false --ci` (Jest; ~125 tests, all pass). `npm test` works too.
 - **Lint:** `npx eslint src --ext .ts,.tsx`. NOTE: lint is **non-gating** — CI runs it with `|| true`, and there are pre-existing eslint errors/warnings in test/component files. Don't treat a non-zero eslint exit as a setup failure.
 - **Build:** `npm run build` runs `wasm:build` once in `prebuild`, then CRA; CI `wasm` job compiles separately. Use `SKIP_WASM_BUILD=1 npm run build` without emcc.
