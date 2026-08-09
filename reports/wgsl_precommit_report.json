@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-08T08:22:30.770494",
+  "timestamp": "2026-08-09T08:11:54.802428",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": false,
   "total": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
+      "file": "public/shaders/gen-cybernetic-crystalline-neuro-lattice.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
