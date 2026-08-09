@@ -99,5 +99,6 @@
       "step": 0.01
     }
   ],
-  "updated": true
+  "updated": true,
+  "category": "generative"
 }

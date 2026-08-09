@@ -294,7 +294,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "audio_geometric_pulse",
@@ -391,7 +392,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "aurora-borealis-loom",
@@ -690,7 +692,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-bioluminescent-abyss",
@@ -786,7 +789,8 @@
         "step": 0.05
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "bioluminescent-bloom",
@@ -982,7 +986,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "chromatic-ghost-tunnel",
@@ -1080,7 +1085,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "chrono-voronoi-mycelium",
@@ -1381,7 +1387,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "cosmic-web",
@@ -1481,7 +1488,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "crystalline-fracture",
@@ -2105,7 +2113,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "fractal-ice-palace",
@@ -2770,7 +2779,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "name": "Alien Flora",
@@ -4726,6 +4736,7 @@
     "name": "Celestial Clockwork Plasma-Loom",
     "author": "Jules",
     "description": "A gargantuan interstellar loom of turning astrolabes and celestial gears forged from liquid plasma and starlight, weaving threads of radiant energy across an endless, deep-void chronosphere.",
+    "category": "generative",
     "type": "generative",
     "url": "shaders/gen-celestial-clockwork-plasma-loom.wgsl",
     "tags": [
@@ -4769,7 +4780,42 @@
         "default": 0.5,
         "step": 0.01
       }
-    }
+    },
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Gear Complexity and Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Audio Plasma Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Loom Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Time Dilation Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "name": "Celestial Forge",
@@ -6845,7 +6891,8 @@
         "step": 0.05
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "name": "Cyber-Organic Liquid-Neon Pulsar",
@@ -13562,7 +13609,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "name": "Lorenz Attractor",
@@ -22165,7 +22213,8 @@
       "aces-tone-map",
       "raymarched",
       "volumetric"
-    ]
+    ],
+    "category": "generative"
   },
   {
     "name": "Symbiotic Light Networks",
@@ -23774,7 +23823,8 @@
         "mapping": "zoom_params.w",
         "description": "Controls mouse-driven or secondary variation influence."
       }
-    ]
+    ],
+    "category": "generative"
   },
   {
     "id": "gen-cyclic-automaton",
@@ -23868,7 +23918,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-fluffy-raincloud",
@@ -23966,7 +24017,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-grid",
@@ -24067,7 +24119,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-grok41-mandelbrot",
@@ -24164,7 +24217,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-grok41-plasma",
@@ -24262,7 +24316,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-grok4-life",
@@ -24351,7 +24406,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-grok4-perlin",
@@ -24448,7 +24504,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-grokcf-interference",
@@ -24552,7 +24609,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-grokcf-voronoi",
@@ -24650,7 +24708,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-hyper-warp",
@@ -24747,7 +24806,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-julia-set",
@@ -24839,7 +24899,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-kimi-crystal",
@@ -24942,7 +25003,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-kimi-nebula",
@@ -25041,7 +25103,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen_mandelbulb_3d",
@@ -25135,7 +25198,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-orb",
@@ -25233,7 +25297,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-psychedelic-spiral",
@@ -25332,7 +25397,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen_quantum_foam",
@@ -25425,7 +25491,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-rainbow-smoke",
@@ -25519,7 +25586,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-reaction-diffusion",
@@ -25620,7 +25688,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-trails",
@@ -25718,7 +25787,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gen-wave-equation",
@@ -25812,7 +25882,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "generative-psy-swirls",
@@ -25922,7 +25993,8 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "generative-turing-veins",
@@ -26021,7 +26093,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "gravito-phononic-accretion",
@@ -26627,7 +26700,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "kimi_flock_symphony",
@@ -26723,7 +26797,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "kimi-fractal-dreams",
@@ -26818,7 +26893,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "kimi-nebula-depth",
@@ -26907,7 +26983,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "kimi-quantum-field",
@@ -27002,7 +27079,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "lava-lamp-blobs",
@@ -27200,7 +27278,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "liquid_magnetic_ferro",
@@ -27297,7 +27376,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "magnetic-flux-garden",
@@ -27901,7 +27981,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "neon-fern-garden",
@@ -28394,7 +28475,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "plasma-jet-stream",
@@ -28689,7 +28771,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "quantum-foam-lattice",
@@ -28990,7 +29073,8 @@
         "step": 0.1
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "sacred-geometry-torus",
@@ -29394,7 +29478,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "spec-distance-field-text",
@@ -29498,7 +29583,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "spec-quaternion-julia",
@@ -29597,7 +29683,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "spore-galaxy",
@@ -29801,7 +29888,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "supernova-core",
@@ -30005,7 +30093,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "symbiotic-light-propagation-networks",
@@ -30403,7 +30492,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "volumetric-cloud-nebula",
@@ -30504,7 +30594,8 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   },
   {
     "id": "wolfram-data-demo",
@@ -30603,6 +30694,7 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "category": "generative"
   }
 ]
