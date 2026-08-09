@@ -1,0 +1,560 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   StorageBrowserBase.css
+   Root CSS Variables, Main Container, Header, Toolbar, Connection & Toasts
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* CSS Variables - Gold & Dark Glass Theme */
+:root {
+  /* Gold palette */
+  --gold-primary: #ffd700;
+  --gold-light: #ffec8b;
+  --gold-dark: #b8860b;
+  --gold-muted: #c9a227;
+  --gold-glow: rgba(255, 215, 0, 0.4);
+  --gold-subtle: rgba(255, 215, 0, 0.1);
+  
+  /* Dark glass palette */
+  --glass-bg: rgba(15, 15, 25, 0.85);
+  --glass-bg-light: rgba(25, 25, 40, 0.7);
+  --glass-border: rgba(255, 215, 0, 0.15);
+  --glass-border-hover: rgba(255, 215, 0, 0.4);
+  
+  /* Text colors */
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #6a6a6a;
+  
+  /* Status colors */
+  --status-connected: #ffd700;
+  --status-error: #ff4757;
+  --status-warning: #ffa502;
+  
+  /* Shadows */
+  --shadow-gold: 0 4px 20px rgba(255, 215, 0, 0.15);
+  --shadow-gold-lg: 0 8px 40px rgba(255, 215, 0, 0.2);
+}
+
+/* Main Container - Dark Glass Backdrop with Blur */
+.storage-browser {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 85vh;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border: 1px solid var(--glass-border);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Header - Gold Gradient Text, Glass Background */
+.browser-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, 
+    rgba(20, 15, 10, 0.95) 0%, 
+    rgba(30, 25, 20, 0.9) 50%,
+    rgba(20, 15, 10, 0.95) 100%
+  );
+  border-bottom: 1px solid var(--glass-border);
+  position: relative;
+}
+
+.browser-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--gold-primary) 50%, 
+    transparent 100%
+  );
+  opacity: 0.5;
+}
+
+.browser-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 50%, var(--gold-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px var(--gold-glow);
+  letter-spacing: 0.5px;
+}
+
+/* Connection Status - Gold for Connected, Red for Error */
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.connection-status.connected {
+  background: linear-gradient(135deg, 
+    rgba(255, 215, 0, 0.15) 0%, 
+    rgba(255, 215, 0, 0.05) 100%
+  );
+  border-color: rgba(255, 215, 0, 0.3);
+  color: var(--gold-primary);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+}
+
+.connection-status.error {
+  background: linear-gradient(135deg, 
+    rgba(255, 71, 87, 0.2) 0%, 
+    rgba(255, 71, 87, 0.05) 100%
+  );
+  border-color: rgba(255, 71, 87, 0.4);
+  color: var(--status-error);
+  box-shadow: 0 0 20px rgba(255, 71, 87, 0.15);
+}
+
+.connection-status.checking {
+  background: linear-gradient(135deg, 
+    rgba(255, 165, 2, 0.15) 0%, 
+    rgba(255, 165, 2, 0.05) 100%
+  );
+  border-color: rgba(255, 165, 2, 0.3);
+  color: var(--status-warning);
+}
+
+.connection-status .status-icon {
+  font-size: 1.1rem;
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+.connection-status .error-detail {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connection-status .retry-btn {
+  margin-left: 8px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, var(--status-error) 0%, #ff3344 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
+.connection-status .retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+}
+
+/* Toast Notifications - Glass with Gold Left Border */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  min-width: 300px;
+  max-width: 450px;
+  pointer-events: all;
+  animation: toastSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: linear-gradient(135deg, 
+    rgba(25, 25, 40, 0.95) 0%, 
+    rgba(15, 15, 25, 0.98) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-gold);
+  position: relative;
+  overflow: hidden;
+}
+
+.toast::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--gold-primary);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.toast.success::before {
+  background: linear-gradient(180deg, #2ed573 0%, #26af61 100%);
+  box-shadow: 0 0 10px rgba(46, 213, 115, 0.5);
+}
+
+.toast.error::before {
+  background: linear-gradient(180deg, #ff4757 0%, #ff3344 100%);
+  box-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+}
+
+.toast.warning::before {
+  background: linear-gradient(180deg, #ffa502 0%, #e67e22 100%);
+  box-shadow: 0 0 10px rgba(255, 165, 2, 0.5);
+}
+
+.toast.info::before {
+  background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
+  box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+}
+
+.toast-message {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.toast-close:hover {
+  opacity: 1;
+  color: var(--gold-primary);
+  background: var(--gold-subtle);
+}
+
+/* Toolbar - Glass Styling */
+.browser-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 24px;
+  background: linear-gradient(180deg, 
+    rgba(25, 25, 40, 0.8) 0%, 
+    rgba(20, 20, 35, 0.9) 100%
+  );
+  border-bottom: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  flex-wrap: wrap;
+}
+
+/* Tab Buttons - Gold Accent for Active Tab */
+.tab-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.tab-buttons button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-buttons button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.tab-buttons button:hover {
+  background: var(--gold-subtle);
+  color: var(--text-primary);
+}
+
+.tab-buttons button:hover::after {
+  width: 60%;
+}
+
+.tab-buttons button.active {
+  background: linear-gradient(135deg, 
+    rgba(255, 215, 0, 0.15) 0%, 
+    rgba(255, 215, 0, 0.05) 100%
+  );
+  border-color: rgba(255, 215, 0, 0.4);
+  color: var(--gold-primary);
+  box-shadow: 
+    0 0 20px rgba(255, 215, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.tab-buttons button.active::after {
+  width: 80%;
+  background: var(--gold-primary);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+.tab-buttons .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-muted) 100%);
+  color: #1a1a1a;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+/* Search Input - Glass Styling with Gold Focus Ring */
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+  max-width: 350px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  background: linear-gradient(135deg, 
+    rgba(20, 20, 35, 0.8) 0%, 
+    rgba(15, 15, 25, 0.9) 100%
+  );
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--gold-muted);
+  box-shadow: 
+    0 0 0 3px rgba(255, 215, 0, 0.1),
+    0 0 20px rgba(255, 215, 0, 0.1);
+}
+
+.search-box input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-box .clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--gold-subtle);
+  border: none;
+  color: var(--gold-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.search-box .clear-search:hover {
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--gold-primary);
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, 
+    rgba(255, 215, 0, 0.1) 0%, 
+    rgba(255, 215, 0, 0.05) 100%
+  );
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--gold-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, 
+    rgba(255, 215, 0, 0.2) 0%, 
+    rgba(255, 215, 0, 0.1) 100%
+  );
+  border-color: var(--gold-muted);
+  color: var(--gold-primary);
+  box-shadow: var(--shadow-gold);
+  transform: translateY(-2px);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Content Area - Gold Tinted Custom Scrollbar */
+.browser-content {
+  flex: 1;
+  overflow: auto;
+  padding: 20px 24px;
+  background: linear-gradient(180deg, 
+    rgba(15, 15, 25, 0.6) 0%, 
+    rgba(10, 10, 20, 0.8) 100%
+  );
+}
+
+/* Custom Gold Tinted Scrollbar */
+.browser-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.browser-content::-webkit-scrollbar-track {
+  background: rgba(15, 15, 25, 0.5);
+  border-radius: 5px;
+}
+
+.browser-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    var(--gold-dark) 0%, 
+    var(--gold-muted) 50%, 
+    var(--gold-dark) 100%
+  );
+  border-radius: 5px;
+  border: 2px solid rgba(15, 15, 25, 0.8);
+}
+
+.browser-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    var(--gold-primary) 0%, 
+    var(--gold-light) 50%, 
+    var(--gold-primary) 100%
+  );
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+.tab-content {
+  height: 100%;
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.item-count {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sort-controls span {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.sort-controls button {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sort-controls button:hover,
+.sort-controls button.active {
+  background: var(--gold-subtle);
+  border-color: var(--gold-muted);
+  color: var(--gold-primary);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+}

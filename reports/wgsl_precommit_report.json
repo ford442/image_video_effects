@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-08-08T08:22:30.770494",
-  "naga_bin": "/home/jules/.cargo/bin/naga",
-  "naga_available": false,
+  "timestamp": "2026-08-09T04:14:33.552519",
+  "naga_bin": "/root/.cargo/bin/naga",
+  "naga_available": true,
   "total": 1,
   "passed": 1,
   "failed": 0,
@@ -12,12 +12,12 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
+      "file": "public/shaders/gen-micro-cosmos.wgsl",
       "skipped": false,
       "skip_reason": null,
-      "naga_ok": null,
-      "naga_skipped": true,
-      "naga_error": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
