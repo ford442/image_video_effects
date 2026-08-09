@@ -6,9 +6,11 @@ const OUTPUT_DIR = path.join(__dirname, '../public/shader-lists');
 const PUBLIC_DIR = path.join(__dirname, '../public');
 
 // Optional CLI argument: --base-url https://test.1ink.us/image_video_effects/
+// Or environment variable: SHADER_BASE_URL
 // When provided, generated JSONs will contain absolute URLs instead of relative ones.
 const BASE_URL_ARG = process.argv.find(arg => arg.startsWith('--base-url='));
-const BASE_URL = BASE_URL_ARG ? BASE_URL_ARG.split('=')[1].replace(/\/$/, '') : null;
+const BASE_URL_VAL = BASE_URL_ARG ? BASE_URL_ARG.split('=')[1] : (process.env.SHADER_BASE_URL || null);
+const BASE_URL = BASE_URL_VAL ? BASE_URL_VAL.replace(/\/$/, '') : null;
 
 // Ensure output directory exists
 if (!fs.existsSync(OUTPUT_DIR)) {

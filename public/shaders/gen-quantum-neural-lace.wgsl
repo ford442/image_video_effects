@@ -23,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Density, y=PulseSpeed, z=Distortion, w=Glow
+    config: vec4<f32>,       // x=time, y=rippleCount, z=resW, w=resH
+    zoom_config: vec4<f32>,  // x=time, yz=mouse_uv, w=mouseDown
+    zoom_params: vec4<f32>,  // x=Lattice Density, y=Pulse Speed, z=Fiber Chaos, w=Energy Level
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -140,22 +140,25 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
+    let pixel = vec2<i32>(global_id.xy);
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
-    // Camera Setup
-    var mouse = u.zoom_config.yz; // 0..1
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    var mouse = u.zoom_config.yz;
     let time = u.config.x;
+    let pulseSpeed = u.zoom_params.y;
+    let glowIntensity = u.zoom_params.w;
+    let warpT = time + 0.35 * sin(time * 0.37);
 
     // Orbit controls
     let radius = 8.0;
     let yaw = (mouse.x - 0.5) * 6.28;
-    let pitch = ((mouse.y - 0.5)) * 3.14;
-
-    // Limit pitch to avoid flipping
+    let pitch = (mouse.y - 0.5) * 3.14;
     let safe_pitch = clamp(pitch, -1.5, 1.5);
 
     let cam_pos = vec3<f32>(
@@ -164,73 +167,66 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         radius * cos(safe_pitch) * cos(yaw)
     );
 
-    // Add forward movement
-    let forward_speed = 1.0;
-    let cam_offset = vec3<f32>(0.0, 0.0, time * forward_speed);
+    // Warp-flight through the lattice — closed-form forward conveyor.
+    let forward_speed = 1.8 + pulseSpeed * 2.5 + bass * 1.2;
+    let cam_offset = vec3<f32>(0.0, 0.0, warpT * forward_speed);
 
     let ro = cam_pos + cam_offset;
-    let target_pos = cam_offset; // Look at point ahead
-
+    let target_pos = cam_offset;
     let forward = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
-
     let rd = normalize(forward + right * uv.x + up * uv.y);
 
-    // Raymarching
     var res = raymarch(ro, rd);
     var t = res.x;
-
     var color = vec3<f32>(0.0);
-    let bg_color = vec3<f32>(0.0, 0.02, 0.05); // Deep cyber blue
+    let bg_color = vec3<f32>(0.0, 0.02, 0.05);
 
     if (t < 100.0) {
         var p = ro + rd * t;
         let n = calcNormal(p);
 
         let light_dir = normalize(vec3<f32>(0.5, 0.8, -0.5));
-
-        // Base Lighting (Blinn-Phong)
         let diff = max(dot(n, light_dir), 0.0);
-
         let view_dir = normalize(ro - p);
         let halfway = normalize(light_dir + view_dir);
         let spec = pow(max(dot(n, halfway), 0.0), 32.0);
 
-        // Material Colors
-        let base_col = vec3<f32>(0.1, 0.15, 0.2); // Dark metallic
+        let base_col = vec3<f32>(0.1, 0.15, 0.2);
+        let pulse_wave_speed = pulseSpeed * 7.0 + mids * 2.0;
+        let pulse_wave = sin(length(p) * 0.5 - warpT * pulse_wave_speed);
+        let pulse_mask = smoothstep(0.75, 1.0, pulse_wave);
 
-        // Emission / Pulse Logic
-        // Pulse moves along the structure
-        let pulse_speed = u.zoom_params.y * 5.0;
-        let pulse_freq = 0.5;
-        // Distance from some origin or just world coordinate waves
-        let pulse_wave = sin(length(p) * pulse_freq - time * pulse_speed);
-        let pulse_mask = smoothstep(0.8, 1.0, pulse_wave);
+        // Traveling pulse packets along fiber direction.
+        let packetPhase = sin(dot(p, vec3<f32>(1.0, 0.3, 0.7)) * 2.0 - warpT * (6.0 + pulseSpeed * 8.0));
+        let packet = pow(max(packetPhase, 0.0), 10.0) * 2.5;
 
-        let glow_intensity = u.zoom_params.w;
-        let glow_col = vec3<f32>(0.0, 0.8, 1.0); // Cyan glow
-
-        // Add "data packet" bright spots
-        let packet = pow(pulse_mask, 8.0) * 2.0;
-
+        let glow_col = vec3<f32>(0.0, 0.8, 1.0);
         color = base_col * (diff * 0.5 + 0.1) + vec3<f32>(spec);
-        color += glow_col * packet * glow_intensity;
+        color += glow_col * (pow(pulse_mask, 8.0) * 2.0 + packet) * glowIntensity * (1.0 + treble * 0.5);
 
-        // Rim lighting
         let rim = pow(1.0 - max(dot(n, view_dir), 0.0), 3.0);
-        color += vec3<f32>(0.5, 0.0, 0.8) * rim * 0.5; // Purple rim
+        color += vec3<f32>(0.5, 0.0, 0.8) * rim * 0.5;
 
-        // Fog
         let fog_amount = 1.0 - exp(-t * 0.08);
         color = mix(color, bg_color, fog_amount);
-
     } else {
-        // Background with digital dust?
         color = bg_color;
     }
 
-    // Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
+    color = clamp(color, vec3<f32>(0.0), vec3<f32>(4.0));
+
+    // Advected HDR lattice trails.
+    let histCoord = clamp(pixel - vec2<i32>(vec2<f32>(cos(warpT * 0.6), sin(warpT * 0.55)) * (2.0 + pulseSpeed * 3.0)),
+                          vec2<i32>(0), vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1));
+    let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
+    let temporal = clamp(color + prev * (0.83 + pulseSpeed * 0.05), vec3<f32>(0.0), vec3<f32>(5.5));
+
+    let depth = select(1.0, clamp(t / 100.0, 0.05, 0.98), t < 100.0);
+    let alpha = clamp(length(temporal) * 0.9 + 0.1, 0.1, 1.0);
+
+    textureStore(writeTexture, pixel, vec4<f32>(temporal, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
 }

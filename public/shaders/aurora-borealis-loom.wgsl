@@ -148,12 +148,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let weaveDensity = u.zoom_params.x * 20.0 + 8.0;
   let hueSpeed = u.zoom_params.y * 0.5 + 0.05;
   let ionization = u.zoom_params.z;
-  let curtainFlow = u.zoom_params.w * 0.3 + 0.1;
+  let curtainFlow = u.zoom_params.w * 0.55 + 0.25;
+  let warpT = time + 0.4 * sin(time * 0.29);
 
   // Mouse pulls the fabric (warps UV toward mouse)
   let mouseDist = length(uv01 - mouse);
   let pullStrength = exp(-mouseDist * mouseDist * 4.0) * 0.08;
   uv += (mouse - uv01) * pullStrength;
+  // Curtain conveyor scroll — closed-form horizontal transport.
+  uv.x += warpT * curtainFlow * 0.35;
+  uv.y += sin(warpT * 0.8 + uv.x * 4.0) * curtainFlow * 0.04;
+
+  // Vertical ion drift streaks racing along curtains.
+  var ionStreaks = 0.0;
+  for (var si = 0; si < 5; si++) {
+    let fs = f32(si);
+    let lane = fract(hash21(vec2<f32>(fs, 2.1)) + warpT * curtainFlow * (0.4 + fs * 0.05));
+    let streakX = lane;
+    ionStreaks += exp(-abs(uv.x - streakX) * 120.0) *
+                    exp(-abs(uv.y - fract(warpT * 0.5 + fs * 0.17)) * 80.0) * treble * ionization;
+  }
 
   // Bass swells the weave width
   let swell = 1.0 + bass * 0.5;
@@ -166,7 +180,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fi = f32(i);
     let xPos = 0.15 + fi * 0.18 + sin(time * curtainFlow + fi * 1.3) * 0.06;
     let width = (0.04 + fi * 0.005) * swell;
-    let c = auroraCurtain(uv, xPos, width, time, curtainFlow * 3.0 + 0.2);
+    let c = auroraCurtain(uv, xPos, width, warpT, curtainFlow * 4.5 + 0.35);
 
     // Mids shift hue through spectrum per curtain
     let hue = fract(fi * 0.15 + time * hueSpeed + mids * 0.2);
@@ -200,26 +214,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += curtainCol * curtains * 0.8;
   col += weaveCol * swell;
   col += nodeCol;
+  col += vec3<f32>(0.4, 0.85, 1.0) * ionStreaks * 0.6;
 
   // Atmospheric noise
   let atmos = fbm2(uv * 4.0 + time * 0.05, 3) * 0.1;
   col += vec3<f32>(0.1, 0.2, 0.3) * atmos * curtains;
 
-  // Chromatic dispersion: R/G/B offset along curtain direction
-  let cStr = 0.005 + treble * 0.008;
-  let cDir = vec2<f32>(0.0, 1.0);
-  let prevR = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * 1.3, 0.0).r;
-  let prevG = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * 0.9, 0.0).g;
-  let prevB = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * 0.5, 0.0).b;
-
-  // Temporal feedback
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
-  var fbCol = mix(col, prev.rgb * 0.94, 0.05 + bass * 0.02);
-
-  // Blend chromatic channels
-  fbCol.r = mix(fbCol.r, prevR * 0.94, 0.04 + mids * 0.02);
-  fbCol.g = mix(fbCol.g, prevG * 0.94, 0.04 + treble * 0.02);
-  fbCol.b = mix(fbCol.b, prevB * 0.94, 0.04 + bass * 0.02);
+  // Advected HDR curtain trails (textureLoad only, bounded).
+  let flowDir = vec2<f32>(curtainFlow * 0.5, sin(warpT * 0.6) * 0.2);
+  let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+  let histCoord = clamp(vec2<i32>(gid.xy) - vec2<i32>(flowDir * (3.0 + curtainFlow * 5.0)), vec2<i32>(0), maxCoord);
+  let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
+  var fbCol = clamp(col + prev * (0.85 + bass * 0.03), vec3<f32>(0.0), vec3<f32>(5.5));
 
   // Semantic alpha: based on curtain intensity and weave presence
   let alpha = clamp(curtains * 0.8 + weave * 0.3 + nodes * 0.5, 0.0, 1.0);

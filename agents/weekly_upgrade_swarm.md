@@ -5,9 +5,58 @@
 
 ---
 
-## Recently Completed (355 tracker entries)
+## Recently Completed (371 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 41 (8 shaders) — 2026-08-09 — FAST MOTION ENCORE
+
+The next eight smallest clean single-pass generative shaders received closed-
+form fast motion, repaired fireworks mouseUV bugs, wired missing audio/A/depth
+paths, and bounded textureLoad HDR trails. Chrysanthemum, Willow, and Wind-
+Ripple no longer write dataTextureB; Nebula and Neural Lace gained real plasma
+audio. All baseline `params` and `updatedParams` remain exact; B stays unused
+and no shader writes `extraBuffer`. Focused gate and extraBuffer audits are
+8/8; 1,326 unique IDs; Jest 76/76 suites (506 pass / 1 skip); supplemental
+`DISABLE_ESLINT_PLUGIN=true SKIP_WASM_BUILD=1` production build passes. Real-
+GPU visual QA remains external. Notes: `swarm-outputs/codex-2026-08-09-b41/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 364 | `morphogenic-resonance` | 41 | 232→238 (+6) | Aspect mouse, morph conveyor, resonance rings, textureLoad HDR trails. |
+| 365 | `gen-fireworks-chrysanthemum` | 41 | 234→244 (+10) | MouseUV fix, faster shells, radial speed-lines, trails, real depth. |
+| 366 | `volumetric-cloud-nebula` | 41 | 234→252 (+18) | Audio wired, warp-flight camera, ion flashes, A/depth/trails. |
+| 367 | `gen-quantum-neural-lace` | 41 | 236→252 (+16) | Uniform truth, warp-flight, pulse packets, A/depth/trails. |
+| 368 | `aurora-borealis-loom` | 41 | 237→246 (+9) | Curtain conveyor, ion drift streaks, textureLoad HDR trails. |
+| 369 | `gen-fireworks-willow-cascade` | 41 | 238→248 (+10) | MouseUV fix, droop streaks, trails, real depth. |
+| 370 | `gen-hyperbolic-crystal-symbiosis` | 41 | 239→254 (+15) | Growth-front runners, A/depth/trails, boundary A write. |
+| 371 | `gen-fireworks-wind-ripple` | 41 | 240→254 (+14) | MouseUV/ripple fix, comet tails, shock rings, real depth. |
+
+### Batch 40 (8 shaders) — 2026-08-09 — FAST MOTION ENCORE
+
+The next eight smallest clean single-pass generative shaders received closed-
+form fast motion, repaired audio/mouse/control semantics, bounded A/C display
+history, and generated depth. Heart click work was hoisted outside its march;
+Dunes now caps FBM/march work; Lotus no longer uses a generic post-color shim.
+All baseline `params` and `updatedParams` remain exact; B stays unused and no
+shader writes `extraBuffer`. Focused gate and schema-aware ownership/liveness
+audits are 8/8; catalogs remain 424 generative / 1,313 unified with 1,326 unique
+IDs; uniform verification passes. Full Jest is 75/76 suites (503 pass / 3
+pre-existing WASM bridge timeouts / 1 skip), and the canonical build reaches
+CRA before the same out-of-scope bridge WIP triggers `import/first`; a
+supplemental production compile with the ESLint plugin disabled passes. Real-
+GPU visual QA remains external. Notes: `swarm-outputs/codex-2026-08-09-b40/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 356 | `gen-gravitational-ferrofluid-singularity-engine` | 40 | 211→243 (+32) | Magnetic domain, spike fronts, accelerating droplets, click shocks, horizon trails and depth. |
+| 357 | `gen-abyssal-leviathan-scales` | 40 | 216→234 (+18) | Correct audio/mouse, conveyor scales, plasma fissures, breach wakes, displayed history and depth. |
+| 358 | `gen-abyssal-silicate-geode-weaver` | 40 | 221→246 (+25) | Correct audio/mouse, warp-flight, gyroid filaments, shard waves, trails and depth. |
+| 359 | `gen-neuro-kinetic-liquid-gold-lotus` | 40 | 221→243 (+22) | Direct control roles, petal torque, plasma runners, blossom shocks and gold trails. |
+| 360 | `gen-4d-projection-dream-weavers` | 40 | 222→252 (+30) | Hyperslice transport, lattice afterimages, phase kicks, displayed history and structural depth. |
+| 361 | `gen-prismatic-fractal-dunes` | 40 | 224→264 (+40) | Bounded FBM/march, dune conveyance, sand streaks, ballistic geysers and dust fronts. |
+| 362 | `gen-sentient-liquid-neon-fractal-heart` | 40 | 225→246 (+21) | Hoisted clicks, real audio, artery pulses, contraction shocks, plasma trails and depth. |
+| 363 | `gen-micro-cosmos` | 40 | 231→273 (+42) | Helical currents, fast organisms/wakes, smooth marine snow and microbe blooms. |
 
 ### Batch 39 (8 shaders) — 2026-08-06 — FAST MOTION ENCORE
 

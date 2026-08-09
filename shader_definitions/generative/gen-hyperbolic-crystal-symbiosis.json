@@ -11,7 +11,7 @@
     "audio-reactive",
     "mathematical"
   ],
-  "description": "Competing and cooperating crystal growth occurring in hyperbolic (Poincar\u00e9 disk) geometry. Local curvature influenced by audio and mouse position. Exquisite non-Euclidean tiling patterns with iridescent jewel-like coloring and beautiful symmetry breaking.",
+  "description": "Competing crystal growth in hyperbolic (Poincar\u00e9 disk) geometry. Racing growth-front runners, tile pulse waves, and advected HDR trails. Local curvature influenced by audio and mouse. Iridescent jewel coloring with symmetry-breaking facet borders.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,10 @@
   "updated": true,
   "id": "gen-hyperbolic-crystal-symbiosis",
   "url": "shaders/gen-hyperbolic-crystal-symbiosis.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "fast-motion"
+  ]
 }

@@ -132,7 +132,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
 
     let uv = vec2<f32>(global_id.xy) / res;
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     let aspect = res.x / res.y;
     let uvA = vec2<f32>((uv.x - 0.5) * aspect, uv.y - 0.5);
 
@@ -146,20 +145,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colorShift    = u.zoom_params.z;                 // 0..1
     let detailLevel   = u.zoom_params.w;                 // 0..1
 
+    // Clicks kick the hyperslice phase without changing persistent state.
+    let aspectFix = vec2<f32>(aspect, 1.0);
+    var phaseKick = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri++) {
+        let ripple = u.ripples[ri];
+        let age = t - ripple.z;
+        if (age < 0.0 || age > 2.2) { continue; }
+        let front = abs(length((uv - ripple.xy) * aspectFix) - age * 0.68);
+        phaseKick += exp(-front * 58.0) * (1.0 - age / 2.2);
+    }
+
     // Mouse controls the W and extra dimension navigation
     let mousePos = vec2<f32>(u.zoom_config.y - 0.5, u.zoom_config.z - 0.5);
     let w_dim = mousePos.x * PI * 1.5; // extra dimension W from mouse X
     let v_dim = mousePos.y * PI * 1.5; // extra dimension V from mouse Y
 
     // Scale UV into 4D space
-    let xy = uvA / zoomLevel;
+    let transport = vec2<f32>(sin(t * (1.7 + rotSpeed * 2.0)), cos(t * (1.3 + rotSpeed))) * (0.08 + bass * 0.025);
+    let xy = (uvA + transport) / zoomLevel;
 
     // 4D point: XY from screen, ZW from time and mouse
     var p4 = vec4<f32>(
         xy.x,
         xy.y,
-        cos(t * rotSpeed * 0.5 + w_dim) * (0.8 + mids * 0.3),
-        sin(t * rotSpeed * 0.4 + v_dim) * (0.8 + bass * 0.3)
+        cos(t * (rotSpeed * 0.5 + 0.35) + w_dim + phaseKick * 0.35) * (0.8 + mids * 0.3),
+        sin(t * (rotSpeed * 0.4 + 0.28) + v_dim - phaseKick * 0.28) * (0.8 + bass * 0.3)
     );
 
     // Apply 4D rotations driven by time and audio
@@ -205,6 +217,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let structuralLine = smoothstep(0.05, 0.0, abs(hypercubeD)) * treble * 0.5;
     color += vec3<f32>(0.8, 0.9, 1.0) * structuralLine;
 
+    // Velocity-stretched lattice afterimages are analytic projections of the
+    // current hyperslice, not additional fractal evaluations.
+    let transportVelocity = vec2<f32>(
+        cos(t * (1.7 + rotSpeed * 2.0)) * (1.7 + rotSpeed * 2.0),
+        -sin(t * (1.3 + rotSpeed)) * (1.3 + rotSpeed)
+    );
+    let velocityDir = normalize(transportVelocity + vec2<f32>(0.001));
+    var latticeTrail = 0.0;
+    for (var li = 0; li < 4; li++) {
+        let lag = f32(li) * 0.028;
+        let latticeUV = uvA - velocityDir * lag;
+        let lattice = min(abs(sin((latticeUV.x + p4.w * 0.08) * 34.0)), abs(sin((latticeUV.y + p4.z * 0.08) * 34.0)));
+        latticeTrail += smoothstep(0.12, 0.0, lattice) * (1.0 - f32(li) * 0.2);
+    }
+    color += vec3<f32>(0.2 + treble * 0.3, 0.45, 1.0) * latticeTrail * 0.12;
+
     // Dimensional depth fog: further W/V coordinates are hazier
     let dimFog = 1.0 - exp(-abs(p4.w) * 0.8);
     color = mix(color, vec3<f32>(0.05, 0.03, 0.1), dimFog * 0.4);
@@ -213,10 +241,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let boundarySharp = smoothstep(f32(maxIter) - 1.5, f32(maxIter) - 0.5, juliaIter);
     color += vec3<f32>(1.0, 0.95, 0.8) * boundarySharp * 0.5;
 
-    let decay = 0.96;
-    let temporal = mix(prev.rgb * decay, color, 0.25);
+    let historyUV = clamp(uv - velocityDir * (0.004 + rotSpeed * 0.008), vec2<f32>(0.002), vec2<f32>(0.998));
+    let advectedPrev = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0);
+    let temporal = clamp(max(color, advectedPrev.rgb * 0.9), vec3<f32>(0.0), vec3<f32>(5.0));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, 1.0));
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    let generatedDepth = clamp(0.2 + (1.0 - boundarySharp) * 0.55 + abs(p4.w) * 0.12, 0.0, 0.995);
+    textureStore(writeTexture, global_id.xy, vec4<f32>(temporal, 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(generatedDepth, 0.0, 0.0, 0.0));
 }

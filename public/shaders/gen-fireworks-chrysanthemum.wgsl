@@ -88,9 +88,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
   let time = u.config.x;
 
-  let mouse = vec2<f32>(u.zoom_config.yz);
+  let mouseNorm = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
-  let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);
+  let mouseUV = (mouseNorm - 0.5) * vec2<f32>(res.x / min(res.x, res.y), 1.0);
 
   let burstSize = mix(0.5, 1.5, u.zoom_params.x);
   let ringLayers = mix(1.0, 4.0, u.zoom_params.y);
@@ -109,15 +109,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col += vec3<f32>(0.75, 0.8, 1.0) * star;
 
   let numShells = 8;
-  let basePeriod = 1.6;
+  let basePeriod = 1.35;
 
   for (var s: i32 = 0; s < numShells; s = s + 1) {
     let si = f32(s);
     let seed = hash1(si * 31.0 + 7.0);
     let seed2 = hash1(si * 53.0 + 11.0);
 
-    let cycle = basePeriod * (0.8 + seed * 0.5);
-    let birth = floor((time * (0.8 + bass * 0.2) + seed * 1.4) / cycle) * cycle - seed * 1.4;
+    let cycle = basePeriod * (0.72 + seed * 0.45);
+    let birth = floor((time * (1.05 + bass * 0.35) + seed * 1.4) / cycle) * cycle - seed * 1.4;
     let age = time - birth;
     if (age < 0.0 || age > 6.5) { continue; }
 
@@ -159,17 +159,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let jSeed2 = hash1(si * 29.0 + lf * 7.0 + jf * 5.1);
 
           let angle = (jf / f32(sparksPerRing)) * TAU + (jSeed - 0.5) * 0.4 + lf * 0.15;
-          let speed = ringSpeed * (0.85 + jSeed2 * 0.3);
+          let speed = ringSpeed * (1.05 + jSeed2 * 0.35);
           let vel = vec2<f32>(cos(angle), sin(angle)) * speed;
           let grav = 0.85 + ringT * 0.35;
-          let sp = sparkPos(center, vel, layerAge, grav, 0.2 + ringT * 0.1);
+          let sp = sparkPos(center, vel, layerAge, grav, 0.18 + ringT * 0.08);
 
           let lifeFade = fade * smoothstep(4.0, 0.2, layerAge) * (0.6 + jSeed * 0.4);
+          // Radial speed-line stretch along velocity direction.
+          let vDir = normalize(vel + vec2<f32>(0.001));
+          let streak = exp(-abs(dot(uv - sp, vec2<f32>(-vDir.y, vDir.x))) * 140.0) *
+                       exp(-abs(dot(uv - sp, vDir) + layerAge * 0.35) * 18.0) * lifeFade * 0.35;
+
           let size = (0.005 + jSeed2 * 0.004) * (1.0 + bass * 0.15);
           let glow = softGlow(uv, sp, size, lifeFade * energy * 1.6);
 
           let sparkCol = chrysanthemumColor(ringT, colorSpread, jSeed, layerAge);
           col += sparkCol * glow * (0.85 + treble * 0.5);
+          col += sparkCol * streak * energy;
         }
       }
 
@@ -217,18 +223,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  // Temporal glow
-  let decay = 0.93 - bass * 0.01;
-  col = mix(prev * decay, col, 0.3);
+  // HDR velocity trails via advected history.
+  let histCoord = clamp(pixel - vec2<i32>(vec2<f32>(cos(time * 0.3), sin(time * 0.27)) * (2.0 + bass * 2.0)),
+                        vec2<i32>(0), vec2<i32>(i32(res.x) - 1, i32(res.y) - 1));
+  let prevHist = textureLoad(dataTextureC, histCoord, 0).rgb;
+  col = clamp(col + prevHist * (0.86 + density * 0.04), vec3<f32>(0.0), vec3<f32>(5.5));
 
   let vig = 1.0 - dot(uv * 0.72, uv * 0.72);
   col *= clamp(vig, 0.15, 1.0) * (0.7 + depth * 0.55);
 
   col = acesToneMap(col * 1.1);
   let alpha = clamp(length(col) * 1.15 + 0.14, 0.14, 0.97);
+  let genDepth = clamp(1.0 - length(col) * 0.22, 0.05, 0.98);
 
   textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.55 + prev * 0.38, 1.0));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(genDepth, 0.0, 0.0, 0.0));
 }

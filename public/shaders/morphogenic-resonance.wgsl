@@ -142,9 +142,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
 
   let uv01 = vec2<f32>(gid.xy) / res;
-  let uv = (vec2<f32>(gid.xy) / res - 0.5) * vec2<f32>(res.x / res.y, 1.0);
+  let aspect = res.x / res.y;
+  let uv = (uv01 - 0.5) * vec2<f32>(aspect, 1.0);
   let time = u.config.x;
-  let mouse = u.zoom_config.yz * 2.0 - 1.0;
+  let mouse = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -156,14 +157,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rippleIntensity = u.zoom_params.z * 2.0;
   let colorShift = u.zoom_params.w;
 
-  // Mouse warps the morph field
+  // Closed-form morph-field conveyor and mouse warp.
+  let warpT = time + 0.35 * sin(time * 0.43);
+  var warpedUV = uv;
+  warpedUV.x += warpT * morphSpeed * 0.22;
+  warpedUV.y += sin(warpT * 0.7 + uv.x * 2.0) * morphSpeed * 0.08;
   let mouseDist = length(uv - mouse);
   let mouseWarp = exp(-mouseDist * mouseDist * 8.0) * 0.15;
-  var warpedUV = uv;
-  warpedUV += normalize(uv - mouse + 0.001) * mouseWarp;
+  warpedUV += normalize(uv - mouse + vec2<f32>(0.001)) * mouseWarp;
+
+  // Traveling resonance rings along the morph surface.
+  let ringPhase = sin(length(warpedUV) * 18.0 - warpT * (4.0 + mids * 3.0));
+  let ringFront = smoothstep(0.55, 1.0, ringPhase) * rippleIntensity * 0.035;
 
   // Calculate morph field
-  var dist = morphField(warpedUV, time, morphSpeed, geoBias);
+  var dist = morphField(warpedUV, warpT, morphSpeed * 1.35, geoBias);
+  dist -= ringFront;
 
   // Bass-driven morph acceleration (temporal warp)
   let bassWarp = sin(uv.x * 10.0 + time * morphSpeed * (1.0 + bass * 2.0)) * bass * 0.03;
@@ -177,8 +186,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let edge = 1.0 - smoothstep(-0.02, 0.04, dist);
   let interior = 1.0 - smoothstep(0.0, 0.06, dist);
 
-  // Treble creates edge discharge
-  let discharge = treble * hash21(uv * 100.0 + time * 10.0) * edge * 2.0;
+  // Treble edge discharge — smooth noise, no per-frame hash strobing.
+  let dischargeNoise = noise2(warpedUV * 24.0 + vec2<f32>(warpT * 2.5, 0.0));
+  let discharge = treble * dischargeNoise * edge * 2.2;
 
   // Color based on morph phase and audio
   let hue = colorShift + bass * 0.1 + interior * 0.15 + time * 0.02;
@@ -199,21 +209,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += vec3<f32>(0.6, 0.8, 1.0) * edge * (0.5 + treble);
   col += vec3<f32>(1.0, 0.9, 0.7) * discharge;
 
-  // Chromatic dispersion: R/G/B channel offsets per element
-  let cOffset = 0.004 + treble * 0.006;
-  let cDir = normalize(warpedUV + 0.001);
-  let rOff = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cOffset * 1.2, 0.0).r;
-  let gOff = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cOffset * 0.8, 0.0).g;
-  let bOff = textureSampleLevel(dataTextureC, u_sampler, uv01 - cDir * cOffset * 1.0, 0.0).b;
-
-  // Temporal feedback
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
-  var fbCol = mix(col, prev.rgb * 0.92, 0.04 + bass * 0.02);
-
-  // Blend chromatic offsets
-  fbCol.r = mix(fbCol.r, rOff * 0.92, 0.03 + treble * 0.02);
-  fbCol.g = mix(fbCol.g, gOff * 0.92, 0.03 + mids * 0.02);
-  fbCol.b = mix(fbCol.b, bOff * 0.92, 0.03 + bass * 0.02);
+  // Velocity-advected HDR trails (textureLoad only, bounded).
+  let flowDir = normalize(vec2<f32>(morphSpeed * 0.4, sin(warpT * 0.5) * 0.25) + vec2<f32>(0.001));
+  let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+  let histCoord = clamp(vec2<i32>(gid.xy) - vec2<i32>(flowDir * (3.0 + morphSpeed * 4.0)), vec2<i32>(0), maxCoord);
+  let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
+  let decay = 0.84 + morphSpeed * 0.04 + bass * 0.02;
+  var fbCol = clamp(col + prev * decay, vec3<f32>(0.0), vec3<f32>(5.5));
 
   // Semantic alpha: based on edge presence and interior density
   let alpha = clamp(edge * 0.9 + interior * 0.6 + discharge * 0.3, 0.0, 1.0);

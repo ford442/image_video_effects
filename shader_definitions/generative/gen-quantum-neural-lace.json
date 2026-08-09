@@ -12,7 +12,7 @@
     "audio",
     "music"
   ],
-  "description": "",
+  "description": "Crystalline quantum lattice with pulsating fiber-optic strands. Warp-flight camera conveyor, traveling pulse packets along lattice fibers, and advected HDR trails. Pulse Speed drives packet velocity; Energy Level controls glow; Fiber Chaos warps strand distortion. Mouse orbits the camera.",
   "workgroup_size": [
     16,
     16,
@@ -57,5 +57,11 @@
   "updated": true,
   "id": "gen-quantum-neural-lace",
   "url": "shaders/gen-quantum-neural-lace.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "raymarched",
+    "fast-motion"
+  ]
 }
