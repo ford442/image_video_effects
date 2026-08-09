@@ -93,9 +93,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
   let time = u.config.x;
 
-  let mouse = vec2<f32>(u.zoom_config.yz);
+  let mouseNorm = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
-  let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);
+  let mouseUV = (mouseNorm - 0.5) * vec2<f32>(res.x / min(res.x, res.y), 1.0);
 
   let energy = mix(0.45, 1.45, u.zoom_params.x);
   let windAmt = mix(0.03, 0.42, u.zoom_params.x);
@@ -103,8 +103,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let trailLen = mix(0.88, 0.97, u.zoom_params.z);
   let colorDrift = u.zoom_params.w;
 
-  let windAngle = time * 0.22 + colorDrift * PI;
-  let wind = vec2<f32>(cos(windAngle), sin(windAngle) * 0.35) * windAmt;
+  let windAngle = time * 0.38 + colorDrift * PI;
+  let wind = vec2<f32>(cos(windAngle), sin(windAngle) * 0.35) * (windAmt * 1.4);
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -157,10 +157,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ang = (jf / f32(nSparks)) * TAU + (js - 0.5) * 0.7;
         let spd = (0.48 + js2 * 0.55) * shellEnergy;
         let vel = vec2<f32>(cos(ang), sin(ang)) * spd;
-        let sp = sparkPosWind(center, vel, burstAge, 1.05, 0.2, wind * (0.8 + js * 0.4));
+        let sp = sparkPosWind(center, vel, burstAge, 1.05, 0.18, wind * (0.8 + js * 0.4));
+
+        // Comet tail speed lines along wind direction.
+        let wDir = normalize(wind + vec2<f32>(0.001));
+        let comet = exp(-abs(dot(uv - sp, vec2<f32>(-wDir.y, wDir.x))) * 130.0) *
+                    exp(-abs(dot(uv - sp, wDir) + burstAge * 0.25) * 16.0) * fade * 0.3;
+
         let sz = 0.006 + js * 0.004;
         let g = softGlow(uv, sp, sz, fade * shellEnergy * 1.5);
         col += shellColor(hue + js * 0.25, smoothstep(0.4, 0.0, burstAge * 0.2)) * g;
+        col += shellColor(hue + js * 0.25, 0.3) * comet * shellEnergy;
       }
 
       // Silver wind micro-sparkle (treble)
@@ -178,16 +185,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  // ── Ripple-triggered barrages ──
-  for (var r: i32 = 0; r < 50; r = r + 1) {
+  // ── Ripple-triggered shock-front barrages ──
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var r: i32 = 0; r < i32(rippleCount); r = r + 1) {
     let ripple = u.ripples[r];
     let rAge = time - ripple.z;
     let strength = ripple.w;
     if (rAge < 0.0 || rAge > 1.4 || strength < (1.0 - rippleSens) * 0.6) { continue; }
 
-    let rCenter = (ripple.xy - vec2<f32>(0.5)) * res / min(res.x, res.y);
-    let rSparks = i32(18.0 + strength * 34.0 + mids * 12.0);
+    let rCenter = (ripple.xy - vec2<f32>(0.5)) * vec2<f32>(res.x / min(res.x, res.y), 1.0);
     let rFade = smoothstep(1.4, 0.1, rAge);
+    let shockRing = exp(-abs(length(uv - rCenter) - rAge * (0.7 + energy * 0.15)) * 55.0) * rFade;
+    col += vec3<f32>(0.9, 0.95, 1.0) * shockRing * strength * 0.35;
+
+    let rSparks = i32(18.0 + strength * 34.0 + mids * 12.0);
 
     for (var j: i32 = 0; j < rSparks; j = j + 1) {
       let jf = f32(j);
@@ -223,18 +234,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  // ── Temporal trails / wind haze ──
-  let haze = fbm(uv * 2.2 + vec2<f32>(time * 0.012, -time * 0.008) + wind * 2.0, 2) * 0.02;
-  col = mix(prev * trailLen + haze, col, 0.28);
+  // Advected HDR wind trails.
+  let histCoord = clamp(pixel - vec2<i32>(wind * (12.0 + energy * 8.0)),
+                        vec2<i32>(0), vec2<i32>(i32(res.x) - 1, i32(res.y) - 1));
+  let prevHist = textureLoad(dataTextureC, histCoord, 0).rgb;
+  col = clamp(col + prevHist * trailLen, vec3<f32>(0.0), vec3<f32>(5.5));
 
   let vig = 1.0 - dot(uv * 0.7, uv * 0.7);
   col *= clamp(vig, 0.15, 1.0) * (0.7 + depth * 0.55);
 
   col = acesToneMap(col * 1.08);
   let alpha = clamp(length(col) * 1.1 + 0.13, 0.14, 0.96);
+  let genDepth = clamp(1.0 - length(col) * 0.2, 0.05, 0.98);
 
   textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.55 + prev * 0.38, 1.0));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(genDepth, 0.0, 0.0, 0.0));
 }

@@ -15,7 +15,7 @@
     "4th-of-july",
     "july-4"
   ],
-  "description": "Classic willow-style fireworks with long, drooping golden and silver trails that hang in the night sky like luminous weeping branches. Fewer shells but each one paints a slow-falling curtain of sparks with gentle wind drift. Strong temporal persistence creates a cinematic long-exposure feel. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor.",
+  "description": "Classic willow-style fireworks with long, drooping golden and silver trails. Velocity-stretched droop streaks, wind-advected embers, and advected HDR trails. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor.",
   "workgroup_size": [
     16,
     16,
@@ -60,5 +60,10 @@
   "updated": true,
   "id": "gen-fireworks-willow-cascade",
   "url": "shaders/gen-fireworks-willow-cascade.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "fast-motion"
+  ]
 }

@@ -162,11 +162,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv = vec2<f32>(global_id.xy) / res;
     let t = u.config.x;
+    let warpT = t + 0.35 * sin(t * 0.33);
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let growthSpeed  = u.zoom_params.x * 1.5 + 0.3;  // 0.3..1.8
+    let growthSpeed  = u.zoom_params.x * 2.2 + 0.5;
     let competition  = u.zoom_params.y;               // 0..1 crystal competition
     let curvature    = u.zoom_params.z * 0.7 + 0.3;   // 0.3..1.0 hyperbolic curvature
     let mutation     = u.zoom_params.w * 0.5;          // 0..0.5 growth mutation
@@ -189,10 +190,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let r2 = dot(diskUV, diskUV);
     if (r2 >= 0.99) {
-        // Outside disk: boundary color
         let boundaryColor = vec3<f32>(0.05, 0.04, 0.08);
         textureStore(writeTexture, global_id.xy, vec4<f32>(boundaryColor, 1.0));
-        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.05, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, global_id.xy, vec4<f32>(boundaryColor, 1.0));
         return;
     }
 
@@ -205,7 +206,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cellId   = tiling.y;
 
     // Crystal facets
-    let crystalData = crystalFacet(diskUV, t, growthSpeed + bass * 0.3, mutation + mids * 0.2);
+    let crystalData = crystalFacet(diskUV, warpT, growthSpeed + bass * 0.5, mutation + mids * 0.2);
     let facetDist = crystalData.x;
     let facetId   = crystalData.w;
     let facetBorder = crystalData.z;
@@ -214,7 +215,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let combinedId = fract(cellId * 0.7 + facetId * 0.3);
 
     var color = jewelColor(combinedId, facetDist, facetBorder,
-                            t, bass, mids, treble);
+                            warpT, bass, mids, treble);
+
+    // Racing growth-front runners along hyperbolic tiles.
+    let frontWave = sin(facetDist * 12.0 - warpT * (growthSpeed * 4.0 + competition * 2.0));
+    let frontGlow = smoothstep(0.7, 1.0, frontWave) * treble * 0.6;
+    color += vec3<f32>(0.7, 1.0, 0.85) * frontGlow;
 
     // Facet borders: bright edges (symmetry breaking)
     let edgeWidth = 0.15 + competition * 0.2;
@@ -234,6 +240,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let diskEdge = 1.0 - smoothstep(0.7, 1.0, sqrt(r2));
     color *= diskEdge;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    let pixel = vec2<i32>(global_id.xy);
+    let histCoord = clamp(pixel - vec2<i32>(vec2<f32>(cos(warpT * 0.4), sin(warpT * 0.38)) * (2.0 + growthSpeed * 2.0)),
+                          vec2<i32>(0), vec2<i32>(i32(res.x) - 1, i32(res.y) - 1));
+    let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
+    let temporal = clamp(color + prev * (0.84 + growthSpeed * 0.04), vec3<f32>(0.0), vec3<f32>(5.5));
+    let depth = clamp(1.0 - facetDist * 1.8, 0.08, 0.98);
+
+    textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(temporal, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(clamp(temporal, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
 }

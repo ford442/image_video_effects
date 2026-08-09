@@ -82,7 +82,7 @@ echo "📜 Regenerating shader lists and unified manifest..."
 echo "   (matches what CRA prestart/prebuild do)"
 
 # Use the exact same invocation as package.json prestart
-if node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/; then
+if node scripts/generate_shader_lists.js; then
   echo "   ✅ Shader lists generated."
 else
   echo "   ⚠️  generate_shader_lists.js had issues (non-fatal for setup)."

@@ -8,7 +8,7 @@
     "raymarching",
     "bioluminescence"
   ],
-  "description": "A mesmerizing, infinite expanse of massive, interlocking biomechanical armor scales that undulate like a breathing cosmic leviathan, parting to reveal a blazing, audio-reactive quantum fusion core beneath.",
+  "description": "An endless biomechanical scale field with conveyor-fast breathing waves, racing plasma fissures, click breach wakes, and bounded display trails driven by live audio.",
   "workgroup_size": [
     16,
     16,
@@ -53,5 +53,12 @@
   "updated": true,
   "id": "gen-abyssal-leviathan-scales",
   "url": "shaders/gen-abyssal-leviathan-scales.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ]
 }

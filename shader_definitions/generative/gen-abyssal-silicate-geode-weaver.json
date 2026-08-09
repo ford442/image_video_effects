@@ -3,12 +3,20 @@
   "name": "Abyssal Silicate Geode-Weaver",
   "category": "generative",
   "tags": ["crystal", "geode", "iridescent", "organic", "audio-reactive", "raymarching"],
-  "description": "A crystalline, deep-sea geological formation that slowly weaves iridescent silicate threads over sharp geode facets, reacting organically to acoustic interactions.",
+  "description": "A stylized warp-flight through a crystalline cavity with fast gyroid filaments, audio-lit shard pulses, click refraction waves, and bounded iridescent trails.",
   "url": "shaders/gen-abyssal-silicate-geode-weaver.wgsl",
   "updated": true,
-  "supportsDepth": false,
+  "supportsDepth": true,
   "supportsDof": false,
   "workgroup_size": [16, 16, 1],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ],
   "updatedParams": [
     {
       "index": 0,

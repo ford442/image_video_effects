@@ -15,13 +15,15 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
     zoom_params: vec4<f32>,  // x=Density, y=FluidSpeed, z=GlowIntensity, w=ColorShift
     ripples: array<vec4<f32>, 50>,
 };
 
 // Micro-Cosmos - Generative Shader
+
+var<private> g_audio: vec3<f32>;
 
 // SDF Primitives
 fn sdSphere(p: vec3<f32>, s: f32) -> f32 {
@@ -55,9 +57,13 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     let densityParams = u.zoom_params.x; // 0.0 - 1.0
     let flowSpeed = u.zoom_params.y;     // 0.0 - 1.0
 
-    // Global Movement (Fluid Drift)
-    p.y += time * (0.2 + flowSpeed * 0.5);
-    p.x += sin(time * 0.1) * 0.5 + time * flowSpeed * 0.1;
+    // Audio-driven helical current and fast forward transport. Both are
+    // closed-form, avoiding fixed-per-frame integration.
+    let currentAngle = time * (0.8 + flowSpeed * 1.4 + g_audio.y * 0.35) + p.z * 0.22;
+    let currentXZ = rotate2D(p.xz, currentAngle * 0.28);
+    p.x = currentXZ.x + sin(currentAngle) * (0.35 + g_audio.x * 0.18);
+    p.z = currentXZ.y + time * (1.2 + flowSpeed * 1.8);
+    p.y += time * (0.45 + flowSpeed * 0.9) + cos(currentAngle) * (0.25 + g_audio.z * 0.12);
 
     // Domain Repetition
     // Adjust grid size based on density. Higher density -> smaller grid cells.
@@ -74,11 +80,11 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     var localP = q - offset;
 
     // Random rotation
-    let temp_localP_xy = rotate2D(localP.xy, time * (0.1 + rand * 0.2) + rand * 6.28);
+    let temp_localP_xy = rotate2D(localP.xy, time * (0.7 + flowSpeed + rand * 0.6 + g_audio.y * 0.2) + rand * 6.28);
     localP.x = temp_localP_xy.x;
     localP.y = temp_localP_xy.y;
 
-    let temp_localP_xz = rotate2D(localP.xz, time * (0.05 + rand * 0.1));
+    let temp_localP_xz = rotate2D(localP.xz, time * (0.45 + flowSpeed * 0.7 + rand * 0.35));
     localP.x = temp_localP_xz.x;
     localP.z = temp_localP_xz.y;
 
@@ -139,9 +145,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    let screenUV = vec2<f32>(global_id.xy) / resolution;
 
     // Camera Setup
     var time = u.config.x;
+    g_audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
 
     // Mouse Interaction for Camera
     var mouse = u.zoom_config.yz;
@@ -149,9 +157,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rotY = (mouse.y - 0.5) * 2.0;
 
     // Camera Position - drifting slowly
-    let ro = vec3<f32>(sin(time * 0.1) * 2.0, 0.0, -8.0 + time * 0.5);
+    let flowSpeed = u.zoom_params.y;
+    let ro = vec3<f32>(sin(time * 0.75) * (1.0 + g_audio.y * 0.25), cos(time * 0.55) * 0.4, -8.0 + time * (1.4 + flowSpeed * 0.8));
     // Look At
-    let ta = vec3<f32>(0.0, 0.0, time * 0.5);
+    let ta = vec3<f32>(sin(time * 0.65) * 0.5, cos(time * 0.5) * 0.3, time * (1.4 + flowSpeed * 0.8));
 
     // Camera Basis
     let fw = normalize(ta - ro);
@@ -208,6 +217,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 vec3<f32>(0.8, 0.9, 1.0) * rim * glowIntensity * 1.5 + // Rim Glow
                 objColor * sss * 0.5; // Backlight
 
+        let membraneRunner = pow(max(0.0, sin(atan2(p.y, p.x) * 7.0 + p.z * 9.0 - time * (15.0 + flowSpeed * 3.0))), 10.0);
+        color += vec3<f32>(0.2, 0.9, 1.0) * membraneRunner * (0.15 + g_audio.x * 0.4) * glowIntensity;
+
         // Inner Organelle Glow (Fake)
         // Use world position to create procedural noise inside
         let innerGlow = sin(p.x * 20.0) * sin(p.y * 20.0) * sin(p.z * 20.0);
@@ -220,12 +232,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = mix(color, bgColor, fogAmount);
     }
 
-    // Background Particles (Marine Snow)
-    let speckle = hash(vec3<f32>(uv.x, uv.y, time * 0.1));
-    if (speckle > 0.998) { // Make particles rarer
-        color += vec3<f32>(0.3);
+    // Smooth traveling marine snow with fixed particle identities.
+    var marineSnow = 0.0;
+    for (var si = 0; si < 12; si++) {
+        let fs = f32(si);
+        let seed = hash(vec3<f32>(fs, fs * 3.1, 7.2));
+        let travel = fract(seed + time * (0.06 + flowSpeed * 0.035 + seed * 0.025));
+        let snowPos = vec2<f32>(fract(seed * 7.31 + sin(time * 0.7 + fs) * 0.04), 1.1 - travel * 1.2);
+        let delta = (screenUV - snowPos) * vec2<f32>(resolution.x / resolution.y, 1.0);
+        marineSnow += exp(-dot(delta, delta) * 9000.0) * (0.35 + seed * 0.65);
     }
+    color += vec3<f32>(0.35, 0.55, 0.7) * marineSnow;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 50.0, 0.0, 0.0, 0.0));
+    // Clicks spawn short-lived microbe blooms instead of mutating persistent state.
+    var bloom = 0.0;
+    let aspectFix = vec2<f32>(resolution.x / resolution.y, 1.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri++) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 2.2) { continue; }
+        let delta = (screenUV - ripple.xy) * aspectFix;
+        let radius = length(delta);
+        let membrane = exp(-abs(radius - age * 0.32) * 80.0);
+        let colonies = pow(max(0.0, sin(atan2(delta.y, delta.x) * 9.0 + age * 14.0)), 12.0) * exp(-abs(radius - age * 0.24) * 35.0);
+        bloom += (membrane + colonies * 0.7) * (1.0 - age / 2.2);
+    }
+    color += vec3<f32>(0.25, 1.0, 0.7) * bloom * (0.35 + u.zoom_params.z * 0.2);
+
+    // Helical advection turns prior membranes into visible organism wakes.
+    let currentDir = normalize(vec2<f32>(cos(time * 0.8), sin(time * 0.8)) + vec2<f32>(0.001));
+    let historyUV = clamp(screenUV - currentDir * (0.004 + flowSpeed * 0.005), vec2<f32>(0.002), vec2<f32>(0.998));
+    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let temporal = clamp(max(color, previous * 0.89), vec3<f32>(0.0), vec3<f32>(5.0));
+    let hit = t < 50.0;
+    let depth = select(1.0, clamp(t / 50.0, 0.0, 0.995), hit);
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

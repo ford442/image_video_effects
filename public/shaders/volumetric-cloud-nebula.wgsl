@@ -83,11 +83,11 @@ fn fbmCloud(p: vec3<f32>) -> f32 {
 }
 
 // Cloud density function with volumetric properties
-fn cloudDensity(p: vec3<f32>, time: f32, densityScale: f32) -> f32 {
+fn cloudDensity(p: vec3<f32>, time: f32, densityScale: f32, flowSpeed: f32) -> f32 {
     let animP = p + vec3<f32>(
-        time * 0.05,
-        time * 0.02,
-        time * 0.03
+        time * (0.18 + flowSpeed * 0.35),
+        time * (0.08 + flowSpeed * 0.12),
+        time * (0.12 + flowSpeed * 0.22)
     );
     
     var density = fbmCloud(animP * 0.8);
@@ -116,7 +116,7 @@ fn nebulaColor(t: f32, shift: f32) -> vec3<f32> {
 }
 
 // Raymarch through clouds with volumetric integration
-fn raymarchVolumetric(ro: vec3<f32>, rd: vec3<f32>, time: f32, densityScale: f32, colorShift: f32) -> vec4<f32> {
+fn raymarchVolumetric(ro: vec3<f32>, rd: vec3<f32>, time: f32, densityScale: f32, colorShift: f32, flowSpeed: f32) -> vec4<f32> {
     var accumulatedColor = vec3<f32>(0.0);
     var totalOpticalDepth = 0.0;
     var transmittance = 1.0;
@@ -131,7 +131,7 @@ fn raymarchVolumetric(ro: vec3<f32>, rd: vec3<f32>, time: f32, densityScale: f32
         }
         
         var p = ro + rd * t;
-        var density = cloudDensity(p, time, densityScale);
+        var density = cloudDensity(p, time, densityScale, flowSpeed);
         
         if (density > 0.001) {
             // Calculate optical depth for this step
@@ -174,61 +174,78 @@ fn starField(uv: vec2<f32>, time: f32) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+    let pixel = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x * 0.3;
-    
+    let time = u.config.x;
+
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameters from sliders
     let densityScale = u.zoom_params.x * 0.5 + 0.5;
     let colorShift = u.zoom_params.y * 0.5;
     let camDist = u.zoom_params.z * 3.0 + 3.0;
-    
+    let flowSpeed = u.zoom_params.w * 0.8 + 0.2;
+
     // Normalized UV for raymarching
     let aspect = resolution.x / resolution.y;
     let st = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-    
-    // Camera setup
+
+    // Warp-flight camera — closed-form orbital conveyor.
+    let warpT = time + 0.4 * sin(time * 0.31);
+    let orbitSpeed = 0.55 + flowSpeed * 0.9 + bass * 0.25;
     let ro = vec3<f32>(
-        camDist * sin(time * 0.2),
-        1.0 + sin(time * 0.15) * 0.5,
-        camDist * cos(time * 0.2)
+        camDist * sin(warpT * orbitSpeed),
+        1.0 + sin(warpT * 0.42) * 0.5 + mids * 0.15,
+        camDist * cos(warpT * orbitSpeed)
     );
-    
-    let lookAt = vec3<f32>(0.0, 0.0, 0.0);
+
+    let lookAt = vec3<f32>(sin(warpT * 0.2) * 0.5, 0.0, cos(warpT * 0.17) * 0.5);
     let forward = normalize(lookAt - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
-    
+
     let rd = normalize(st.x * right + st.y * up + 1.5 * forward);
-    
+
     // Raymarch clouds with volumetric integration
-    let cloudResult = raymarchVolumetric(ro, rd, time, densityScale, colorShift);
-    
+    let cloudResult = raymarchVolumetric(ro, rd, warpT, densityScale, colorShift, flowSpeed);
+
+    // Treble ionization flashes along the view ray.
+    let ionFlash = treble * smoothstep(0.55, 1.0, sin(warpT * 4.0 + st.x * 8.0 + st.y * 6.0)) * 0.35;
+
     // Background gradient (deep space)
     let bgGradient = mix(
         vec3<f32>(0.02, 0.02, 0.08),
         vec3<f32>(0.05, 0.03, 0.1),
         uv.y * 0.5 + 0.5
     );
-    
+
     // Add stars
-    let stars = starField(st + time * 0.01, time);
+    let stars = starField(st + warpT * 0.04, warpT);
     let bg = bgGradient + stars * 0.8;
-    
-    // Volumetric composition:
-    // Final = cloud_emission + background * transmittance
+
+    // Volumetric composition
     let transmittance = 1.0 - cloudResult.a;
     var finalCol = cloudResult.rgb + bg * transmittance;
-    
+    finalCol += vec3<f32>(0.5, 0.7, 1.0) * ionFlash * cloudResult.a;
+
     // Tone mapping
     finalCol = finalCol / (1.0 + finalCol);
     finalCol = pow(finalCol, vec3<f32>(0.4545));
-    
-    // Write output with volumetric alpha
-    // RGB: Accumulated in-scattered light + transmitted background
-    // A: Volumetric opacity from optical depth
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalCol, cloudResult.a));
-    
-    // Write depth (simplified for generative shader)
-    // Store optical depth in depth for post-processing effects
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.5, cloudResult.a, 0.0, cloudResult.a));
+
+    // Advected HDR cloud streaks.
+    let histCoord = clamp(pixel - vec2<i32>(vec2<f32>(cos(warpT * 0.5), sin(warpT * 0.45)) * (2.0 + flowSpeed * 3.0)),
+                          vec2<i32>(0), vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1));
+    let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
+    let temporal = clamp(finalCol + prev * (0.82 + flowSpeed * 0.05), vec3<f32>(0.0), vec3<f32>(5.5));
+
+    let depth = clamp(1.0 - cloudResult.a * 0.85, 0.08, 0.98);
+    let alpha = clamp(cloudResult.a + length(finalCol) * 0.15, 0.1, 1.0);
+
+    textureStore(writeTexture, pixel, vec4<f32>(temporal, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
 }

@@ -92,9 +92,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
   let time = u.config.x;
 
-  let mouse = vec2<f32>(u.zoom_config.yz);
+  let mouseNorm = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
-  let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);
+  let mouseUV = (mouseNorm - 0.5) * vec2<f32>(res.x / min(res.x, res.y), 1.0);
 
   let trailLen = mix(0.88, 0.97, u.zoom_params.x);
   let droopAmt = mix(0.35, 1.15, u.zoom_params.y);
@@ -167,6 +167,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let wPos = willowPos(burstCenter, vel, burstAge, droopAmt * (0.8 + bass * 0.3), windAmt + jSeed * 0.08);
 
+        // Velocity-stretched droop streak along fall direction.
+        let fallDir = normalize(vec2<f32>(windAmt + jSeed * 0.08, -1.0));
+        let streak = exp(-abs(dot(uv - wPos, vec2<f32>(-fallDir.y, fallDir.x))) * 120.0) *
+                     exp(-abs(dot(uv - wPos, fallDir) + burstAge * 0.2) * 14.0) * burstFade * 0.4;
+
         // Trail samples along the arc (willow curtain effect)
         for (var t = 0; t < 5; t = t + 1) {
           let tf = f32(t) * 0.18;
@@ -178,6 +183,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let tc = willowColor(warmth, jSeed * treble, burstAge + tf);
           col += tc * tg;
         }
+        col += willowColor(warmth, jSeed * treble, burstAge) * streak * shellEnergy;
 
         // Silver micro-sparkle along strand (treble)
         if (treble > 0.3) {
@@ -217,9 +223,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  // Strong temporal persistence (long-exposure feel)
-  let smokeHaze = fbm(uv * 2.0 + vec2<f32>(time * 0.008, -time * 0.012), 2) * 0.025;
-  col = mix(prev * trailLen + smokeHaze, col, 0.22);
+  // Advected HDR willow trails.
+  let histCoord = clamp(pixel - vec2<i32>(vec2<f32>(windAmt * 8.0, -2.0 - droopAmt)),
+                        vec2<i32>(0), vec2<i32>(i32(res.x) - 1, i32(res.y) - 1));
+  let prevHist = textureLoad(dataTextureC, histCoord, 0).rgb;
+  col = clamp(col + prevHist * trailLen, vec3<f32>(0.0), vec3<f32>(5.5));
 
   // Treble dust
   let dust = step(0.987 - treble * 0.03, hash2(uv * 200.0 + time * 10.0));
@@ -230,9 +238,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   col = acesToneMap(col * 1.08);
   let alpha = clamp(length(col) * 1.1 + 0.12, 0.15, 0.96);
+  let genDepth = clamp(1.0 - length(col) * 0.2, 0.05, 0.98);
 
   textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.65 + prev * 0.3, 1.0));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(genDepth, 0.0, 0.0, 0.0));
 }
