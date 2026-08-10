@@ -45,6 +45,8 @@
   thumbs ~27%; WASM stay Tier B until real-GPU evidence.
 - Filed epic #1076 and issues #1077–#1084 (base-url, thumbs, RendererManager, WASM
   promotion, multipass expansion, VJ 2.0, TS5 hygiene, generative queue).
+- **#1077 shipped:** `prestart`/`prebuild` keep relative shader-list URLs; deploy uses
+  `SHADER_LIST_BASE_URL`; CI `verify:shader-list-urls` enforces no accidental CDN drift.
 - User preference reaffirmed: build foundation residual before huge content-only waves;
   multipass on TS GraphRunner; no C++ feature expansion until promotion decision.
 

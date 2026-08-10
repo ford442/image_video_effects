@@ -44,6 +44,15 @@ const PROJECT_ROOT = process.cwd();
 const LISTS_DIR = path.join(PROJECT_ROOT, 'public', 'shader-lists');
 const OUTPUT_FILE = path.join(PROJECT_ROOT, 'public', 'shader-manifest-unified.json');
 
+const ALLOW_ABSOLUTE_URLS =
+  Boolean(process.env.SHADER_LIST_BASE_URL) ||
+  Boolean(process.env.REACT_APP_SHADER_BASE_URL) ||
+  Boolean(process.env.SHADER_BASE_URL);
+
+function isAbsoluteShaderUrl(url: unknown): boolean {
+  return typeof url === 'string' && /^https?:\/\//.test(url);
+}
+
 /** Must match folder names under shader_definitions/ and generate_shader_lists.js output. */
 const CANONICAL_LIST_FILES = [
   'advanced-hybrid.json',
@@ -142,6 +151,15 @@ function buildUnifiedManifest(): void {
           validationErrors++;
           continue;
         }
+      }
+
+      if (isAbsoluteShaderUrl(entry.url) && !ALLOW_ABSOLUTE_URLS) {
+        console.error(
+          `❌ Entry "${entry.id}" in ${file} has absolute url ${entry.url}. ` +
+            'Regenerate shader lists without --base-url or set SHADER_LIST_BASE_URL for deploy builds.'
+        );
+        validationErrors++;
+        continue;
       }
 
       // Deduplicate on id — first occurrence wins

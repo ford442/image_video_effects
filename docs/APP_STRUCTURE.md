@@ -87,6 +87,21 @@ Directory: `src/components/controls/panels/` — see prior doc; `ControlsContain
 
 ---
 
+## Shader catalog generation
+
+| Artifact | Generator |
+|----------|-----------|
+| `public/shader-lists/*.json` | `scripts/generate_shader_lists.js` (from `shader_definitions/`) |
+| `public/shader-manifest-unified.json` | `npm run build:manifest` (`scripts/build-unified-manifest.ts`) |
+
+**URL policy:** committed lists use relative `shaders/...` paths for local dev and CI.
+Set `SHADER_LIST_BASE_URL` (or legacy `SHADER_BASE_URL`) only when building a deploy artifact
+that should reference CDN-hosted WGSL. `npm start` / `prebuild` do **not** inject `--base-url`.
+
+Verify: `npm run verify:shader-list-urls` (also runs inside `verify:toolchain-foundation`).
+
+---
+
 ## Multipass graph (Tier C)
 
 - [`docs/MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md)
