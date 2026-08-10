@@ -51,5 +51,6 @@
       "mapping": "zoom_params.w",
       "description": "Controls mouse-driven or secondary variation influence."
     }
-  ]
+  ],
+  "category": "generative"
 }

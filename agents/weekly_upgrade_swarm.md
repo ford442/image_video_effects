@@ -5,9 +5,30 @@
 
 ---
 
-## Recently Completed (371 tracker entries)
+## Recently Completed (372 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 42 (1 shader) — 2026-08-09 — QUEUE CLOSEOUT + CATALOG HYGIENE
+
+Finalized the remaining clean single-pass generative pending item
+`gen-celestial-clockwork-plasma-loom` by preserving the existing four-control
+contract in `updatedParams`, fixing normalized mouse orientation (no y-flip),
+and making feedback ownership honest by writing presentation color, generated
+depth, and A-history every frame. This closeout keeps canonical bindings and
+16x16x1 workgroup, uses real plasma audio (`plasmaBuffer[0]`), leaves B unused,
+and introduces no `extraBuffer` writes. Queue status for the
+`updatedParams` clean pending pool is now empty (0 remaining).
+
+Catalog hygiene pass in the same batch:
+- Added missing `"category": "generative"` on all generative JSON definitions.
+- Removed stale `public/shaders/*.wgsl.backup` files.
+- Regenerated `public/shader-lists/generative.json` and unified manifest
+  (`1,314` unique IDs, no duplicates).
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 372 | `gen-celestial-clockwork-plasma-loom` | 42 | 272→281 (+9) | Added exact `updatedParams`, corrected mouseUV orientation, and added writeTexture/writeDepthTexture/dataTextureA ownership writes with bounded history blend. |
 
 ### Batch 41 (8 shaders) — 2026-08-09 — FAST MOTION ENCORE
 

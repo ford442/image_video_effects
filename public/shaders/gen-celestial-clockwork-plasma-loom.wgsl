@@ -87,7 +87,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     // Mouse Interaction (Time Dilation Field)
     let mouse = u.zoom_config.yz;
     // Map mouse from 0..1 to -1..1 loosely based on screen space
-    let m_pos = vec3<f32>((mouse.x - 0.5) * 2.0 * 5.0, (0.5 - mouse.y) * 2.0 * 5.0, 0.0);
+    let m_pos = vec3<f32>((mouse.x - 0.5) * 2.0 * 5.0, (mouse.y - 0.5) * 2.0 * 5.0, 0.0);
     let m_dist = length(p - m_pos);
 
     // Localized twisting
@@ -268,5 +268,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let e = 0.14;
     col = clamp((col * (a * col + b)) / (col * (c * col + d_const) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    let px = vec2<i32>(global_id.xy);
+    let history = textureLoad(dataTextureC, px, 0);
+    let historyBlend = 0.86;
+    let historyDecay = 0.94;
+    let alphaFloor = 0.35;
+    let color = mix(history.rgb, col, historyBlend);
+    let alpha = max(history.a * historyDecay, alphaFloor);
+    let has_hit = t < max_dist;
+    let depth = select(0.0, clamp(1.0 - t / max_dist, 0.0, 1.0), has_hit);
+
+    textureStore(writeTexture, px, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, px, vec4<f32>(depth));
+    textureStore(dataTextureA, px, vec4<f32>(color, alpha));
 }
