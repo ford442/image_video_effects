@@ -261,13 +261,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv = (vec2<f32>(coord) - 0.5 * res) / res.y;
     let uv01 = vec2<f32>(coord) / res;
-    let previousState = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    let previousState = textureLoad(dataTextureC, coord, 0);
     let bass = bass_env(previousState.r, plasmaBuffer[0].x);
     let mids = bass_env(previousState.g, plasmaBuffer[0].y);
     let treble = bass_env(previousState.b, plasmaBuffer[0].z);
     let hivePulse = previousState.a;
     let mouse = u.zoom_config.yz * 2.0 - vec2<f32>(1.0);
     let mouseField = vec2<f32>(mouse.x * res.x / max(res.y, 1.0), -mouse.y);
+
+    // Clicks inject bounded chemotactic fronts into the existing hive-pulse state.
+    let aspect = res.x / res.y;
+    var clickPulse = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age < 0.0 || age > 4.0) { continue; }
+        let d = length((uv01 - ripple.xy) * vec2<f32>(aspect, 1.0));
+        clickPulse += exp(-abs(d - age * 0.2) * 65.0) * exp(-age * 0.85);
+    }
+    let activeHivePulse = clamp(hivePulse + clickPulse * 0.3, 0.0, 1.0);
 
     // Camera setup - looking straight down Z
     let ro = vec3<f32>(mouseField * 0.18, -5.0);
@@ -288,7 +301,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Raymarching Loop
     for (var i = 0; i < 80; i++) {
         p = ro + rd * t_dist;
-        let m = map(p, bass, mids, hivePulse, mouseField);
+        let m = map(p, bass, mids, activeHivePulse, mouseField);
 
         if (m.mat == 0.0) {
             // Hitting wall
@@ -310,7 +323,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Sync shift
             let cellHash = fract(sin(dot(m.hexId, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-            let colorShift = mix(cellHash, hivePulse, syncPulse * 0.4) + u.config.x * (0.08 + mids * 0.04) + treble * 0.08;
+            let colorShift = mix(cellHash, activeHivePulse, syncPulse * 0.4) + u.config.x * (0.08 + mids * 0.04) + treble * 0.08;
 
             let fluidColor = palette(m.glow + colorShift, a, b, c, d);
 
@@ -328,7 +341,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     if (hitWall) {
-        let n = calcNormal(p, bass, mids, hivePulse, mouseField);
+        let n = calcNormal(p, bass, mids, activeHivePulse, mouseField);
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
 
         let diff = max(dot(n, l), 0.0);
@@ -351,7 +364,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col *= 0.5 + 0.5 * pow(16.0 * uv01.x * uv01.y * (1.0 - uv01.x) * (1.0 - uv01.y), 0.25);
 
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
-    let membrane = clamp(glowSum * 2.0 + select(0.0, 0.45, hitWall), 0.0, 1.0);
+    let membrane = clamp(glowSum * 2.0 + select(0.0, 0.45, hitWall) + clickPulse * 0.25, 0.0, 1.0);
     let depthSignal = clamp(mix(1.0 - depthHit, inputDepth, 0.25) + membrane * 0.25, 0.0, 1.0);
     let alpha = clamp(0.18 + membrane * 0.72 + bass * 0.08, 0.18, 0.96);
 
@@ -363,7 +376,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
     let finalColor = mix(inputColor.rgb, col, alpha);
     let finalAlpha = max(inputColor.a, alpha);
-    let nextHivePulse = clamp(mix(hivePulse, membrane, 0.12 + bass * 0.04), 0.0, 1.0);
+    let nextHivePulse = clamp(mix(activeHivePulse, membrane, 0.12 + bass * 0.04), 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depthSignal, 0.0, 0.0, 0.0));

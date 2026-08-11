@@ -1,15 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  thermal-touch-blackbody
 //  Category: advanced-hybrid
-//  Features: blackbody-radiation, mouse-heat-source, thermal-touch
+//  Features: stylized-blackbody-palette, mouse-heat-source, thermal-touch, temporal-streaks
 //  Complexity: Medium
 //  Chunks From: thermal-touch.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-8 — Thermal & Atmospheric Enhancer
 // ═══════════════════════════════════════════════════════════════════
-//  Mouse-driven thermal camera with physically-correct blackbody
-//  coloring. The cursor acts as a localized heat source, and image
-//  brightness maps to temperature via Planck's law.
+//  Mouse-driven thermal camera with a stylized blackbody-inspired
+//  palette. The cursor acts as a localized heat source, and image
+//  brightness maps to an artistic temperature range.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -52,7 +52,7 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     if (t <= 6.5) {
         r = 1.0;
         g = clamp(0.39 * log(t) - 0.63, 0.0, 1.0);
-        b = clamp(0.54 * log(t - 1.0) - 1.0, 0.0, 1.0);
+        b = clamp(0.54 * log(max(t - 1.0, 0.001)) - 1.0, 0.0, 1.0);
     } else {
         r = clamp(1.29 * pow(t - 0.6, -0.133), 0.0, 1.0);
         g = clamp(1.29 * pow(t - 0.6, -0.076), 0.0, 1.0);
@@ -69,6 +69,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let time = u.config.x;
+    let audio = plasmaBuffer[0].xyz;
 
     // Parameters
     let heatIntensity = mix(0.1, 2.0, u.zoom_params.x);
@@ -84,7 +85,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dist = length(distVec);
 
     // Mouse heat influence
-    let mouseHeat = (1.0 - smoothstep(0.0, radius, dist)) * heatIntensity;
+    let mouseHeat = (1.0 - smoothstep(0.0, radius, dist)) * heatIntensity * (1.0 + audio.x * 0.25);
+
+    var clickHeatFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.8) {
+            let ringDist = abs(length((uv - ripple.xy) * vec2<f32>(aspect, 1.0)) - age * (0.18 + audio.y * 0.08));
+            clickHeatFront += (1.0 - smoothstep(0.0, 0.025, ringDist)) * (1.0 - age / 2.8);
+        }
+    }
 
     // Sample texture and compute luminance
     let texColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -96,7 +108,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var temperature = mix(tempRangeLow, tempRangeHigh, luminance);
 
     // Add mouse heat
-    temperature += mouseHeat * tempRangeHigh * 0.4;
+    temperature += (mouseHeat + clickHeatFront * (0.35 + heatIntensity * 0.25)) * tempRangeHigh * 0.4;
 
     // Ambient temperature blending
     if (ambientTemp > 0.0) {
@@ -104,19 +116,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         temperature = mix(temperature, ambientTempK, 0.3);
     }
 
-    // Blackbody color
+    // Stylized blackbody-inspired color plus bounded buoyant history streaks.
     var finalColor = blackbodyColor(temperature);
+
+    let coord = vec2<i32>(gid.xy);
+    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let buoyancy = 2 + i32(round(heatIntensity * 7.0 + audio.x * 3.0));
+    let sway = i32(round(sin(time * 3.1 + uv.y * 21.0) * (1.0 + audio.z * 2.0)));
+    let historyCoord = clamp(coord + vec2<i32>(sway, buoyancy), vec2<i32>(0), maxCoord);
+    let history = textureLoad(dataTextureC, historyCoord, 0);
+    let historyHeat = clamp(history.a, 0.0, 1.0);
+    let streakPhase = fract(uv.y * 7.0 + time * (1.7 + audio.y));
+    let streak = exp(-pow((streakPhase - 0.5) / 0.16, 2.0)) * historyHeat;
+    finalColor = max(finalColor, clamp(history.rgb, vec3<f32>(0.0), vec3<f32>(4.0)) * (0.45 + streak * 0.35));
 
     // Tone map
     finalColor = toneMapACES(finalColor);
 
-    // Optional: mix original texture back in
-    if (colorMode > 0.5) {
-        finalColor = mix(finalColor, texColor, 0.4);
-    }
+    // Original Blend is continuous over the full slider range.
+    finalColor = mix(finalColor, texColor, clamp(colorMode, 0.0, 1.0));
 
     textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(finalColor, temperature / 15000.0));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(finalColor, clamp(temperature / 15000.0, 0.0, 1.0)));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

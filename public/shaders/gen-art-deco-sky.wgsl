@@ -237,6 +237,12 @@ fn calcAO(p: vec3<f32>, n: vec3<f32>) -> f32 {
     return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
 }
 
+fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
+    let size = vec2<i32>(textureDimensions(dataTextureC));
+    let pixel = vec2<i32>(floor(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(size)));
+    return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -245,7 +251,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
     let uv_screen = vec2<f32>(global_id.xy) / resolution;
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv_screen, 0.0);
+    let prev = historyLoadUV(uv_screen);
 
     // Audio reactivity — bass amplifies gold glow and window flicker
     let bass = plasmaBuffer[0].x;
@@ -256,14 +262,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fogDensity = u.zoom_params.w; // 0..1
     var time = u.config.x;
     var mouse = u.zoom_config.yz; // 0..1
+    let mouseDown = u.zoom_config.w;
 
     // Camera setup
     // Ascending with the tower (but we handle Y movement in the map function)
     // So camera stays relatively static in Y, looking around
 
     // Orbit camera based on mouse
-    let cam_radius = 20.0 + (mouse.y - 0.5) * 10.0;
-    let cam_angle = (mouse.x - 0.5) * 6.28 + time * 0.05;
+    let cam_radius = 20.0 + (mouse.y - 0.5) * 10.0 - mouseDown * 3.0;
+    let cam_angle = (mouse.x - 0.5) * 6.28 + time * (0.05 + mouseDown * 0.08);
 
     // Look slightly up
     let ro = vec3<f32>(sin(cam_angle) * cam_radius, -5.0, cos(cam_angle) * cam_radius);
@@ -391,9 +398,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vign = 1.0 - length(uv) * 0.5;
     color = color * vign;
 
+    // Drag paints a moving deco searchlight; clicks launch gold skyline halos.
+    let aspect = resolution.x / resolution.y;
+    let pointerDelta = (uv_screen - mouse) * vec2<f32>(aspect, 1.0);
+    let searchlight = exp(-abs(pointerDelta.x) * 28.0) * exp(-max(pointerDelta.y, 0.0) * 3.0) * mouseDown;
+    color += lightColor1 * searchlight * (0.35 + goldGlow * 0.25);
+
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 3.5) { continue; }
+        let d = length((uv_screen - ripple.xy) * vec2<f32>(aspect, 1.0));
+        let halo = exp(-abs(d - age * 0.3) * 75.0) * exp(-age * 1.1);
+        color += mix(lightColor1, lightColor2, fract(age * 0.4)) * halo * (0.6 + bass);
+    }
+
     // Temporal blend before ACES
     let decay = 0.96;
-    let temporal = mix(prev.rgb * decay, color, 0.25);
+    let temporal = mix(prev.rgb * decay, color, 0.25 + mouseDown * 0.12);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
 
     // ACES filmic tone mapping (replaces Reinhard — gold accents keep their warmth)

@@ -2,13 +2,16 @@
   "id": "lenia",
   "name": "Lenia Cellular Automata",
   "url": "shaders/lenia.wgsl",
-  "description": "Continuous cellular automata with audio-driven growth rate, chromatic species colors (R/G/B evolve at different thresholds), temporal accumulation, mouse life injection, and neighborhood kernel expansion.",
+  "description": "A Lenia-inspired continuous cellular field with audio-shaped growth, directional state advection, traveling growth packets, and click-launched inoculation fronts.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "temporal",
     "chromatic",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "fast-motion",
+    "click-reactive",
+    "bounded-history"
   ],
   "tags": [
     "simulation",
@@ -52,5 +55,11 @@
       "max": 1,
       "step": 0.01
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Neighborhood Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Growth Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Accumulation", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Threshold", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ]
 }

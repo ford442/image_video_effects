@@ -78,9 +78,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let parallax = u.zoom_params.z * 0.05;
     let brightness = u.zoom_params.w;
 
-    let layer1UV = uv + depth * parallax;
-    let layer2UV = uv - depth * parallax * 0.5;
-    let layer3UV = uv + vec2<f32>(sin(t * 0.1), cos(t * 0.1)) * parallax * 0.3;
+    // Incommensurate phason/conveyor drift keeps the quasi-crystal moving
+    // continuously without changing its topology or hashing per frame.
+    let conveyor = vec2<f32>(sin(t * 0.73), cos(t * 0.61)) * (0.025 + parallax);
+    var dephaseFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = t - ripple.z;
+        if (age >= 0.0 && age < 2.5) {
+            let radius = age * (0.22 + bass * 0.10);
+            let ringDist = abs(length((uv - ripple.xy) * vec2<f32>(dims.x / max(dims.y, 1.0), 1.0)) - radius);
+            dephaseFront += (1.0 - smoothstep(0.0, 0.025, ringDist)) * (1.0 - age / 2.5);
+        }
+    }
+
+    let phason = vec2<f32>(sin(t * 1.37 + dephaseFront * 2.8), cos(t * 1.11 - dephaseFront * 2.1));
+    let layer1UV = uv + depth * parallax + conveyor * 0.55 + phason * 0.006;
+    let layer2UV = uv - depth * parallax * 0.5 - conveyor * 0.34 + phason.yx * 0.004;
+    let layer3UV = uv + vec2<f32>(sin(t * 0.91), cos(t * 0.83)) * parallax * 0.3 - phason * 0.003;
 
     let d1 = penrose_dist(layer1UV - mouse * 0.1, inflation);
     let d2 = penrose_dist(layer2UV + mouse * 0.05, inflation * 1.618);
@@ -91,12 +107,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let edge3 = 1.0 - smoothstep(0.0, glowWidth * 1.6, d3);
     let edgeConfidence = max(max(edge1, edge2 * 0.7), edge3 * 0.4);
 
-    let vertexGlow = pow(edge1 * edge2, 2.0) * 4.0 * (1.0 + mids);
-    let vertexGlow2 = pow(edge2 * edge3, 2.0) * 3.0 * (1.0 + treble * 0.5);
+    let runnerPhase1 = fract(dot(layer1UV * inflation, vec2<f32>(0.73, 0.41)) - t * (1.8 + bass * 1.6));
+    let runnerPhase2 = fract(dot(layer2UV * inflation, vec2<f32>(-0.37, 0.89)) + t * (2.2 + treble));
+    let runner1 = exp(-pow((runnerPhase1 - 0.5) / 0.075, 2.0));
+    let runner2 = exp(-pow((runnerPhase2 - 0.5) / 0.065, 2.0));
+    let vertexGlow = pow(edge1 * edge2, 2.0) * (2.0 + runner1 * 5.0) * (1.0 + mids);
+    let vertexGlow2 = pow(edge2 * edge3, 2.0) * (1.5 + runner2 * 4.0) * (1.0 + treble * 0.5);
 
     let mouseDist = length(uv - mouse);
     let uncertainty = 1.0 - smoothstep(0.0, 0.35, mouseDist);
-    let quantumNoise = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233)) + t * 3.0) * 43758.5453);
+    let quantumSeed = fract(sin(dot(floor(uv * dims * 0.2), vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let quantumNoise = 0.5 + 0.5 * sin(t * 3.0 + quantumSeed * 6.2831853);
     let quantumZone = uncertainty * quantumNoise * 0.25;
 
     let tileFill = smoothstep(0.0, glowWidth * 3.0, d1) * (1.0 - edge1);
@@ -110,6 +131,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     rgb += vec3<f32>(1.0, 0.9, 0.5) * (vertexGlow + vertexGlow2) * 0.2;
     rgb += vec3<f32>(0.1, 0.4, 1.0) * quantumZone * edgeConfidence;
+    rgb += vec3<f32>(0.4, 0.7, 1.0) * dephaseFront * (edge1 + edge2 * 0.5);
+
+    // Advect bounded display history opposite the conveyor for short lattice trails.
+    let coord = vec2<i32>(gid.xy);
+    let maxCoord = vec2<i32>(max(i32(dims.x) - 1, 0), max(i32(dims.y) - 1, 0));
+    let historyOffset = vec2<i32>(round(conveyor * dims * 0.16));
+    let history = textureLoad(dataTextureC, clamp(coord - historyOffset, vec2<i32>(0), maxCoord), 0);
+    let historyRgb = clamp(history.rgb, vec3<f32>(0.0), vec3<f32>(3.0));
+    rgb = max(rgb, historyRgb * (0.72 + mids * 0.08));
 
     rgb = aces_tonemap(rgb * (0.8 + brightness * 0.5));
 
@@ -117,6 +147,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let finalColor = vec4<f32>(rgb, alpha);
     textureStore(writeTexture, gid.xy, finalColor);
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth + edgeConfidence * 0.05, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(clamp(depth + edgeConfidence * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
     textureStore(dataTextureA, gid.xy, finalColor);
 }

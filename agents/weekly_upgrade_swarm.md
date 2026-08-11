@@ -5,9 +5,114 @@
 
 ---
 
-## Recently Completed (372 tracker entries)
+## Recently Completed (406 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 46 (12 shaders) — 2026-08-10 — PSYCHEDELIC ENCORE + COMPLEX SIX
+
+The six Batch 45 generators receive distinct secondary visual structures:
+dendrites, rose tracery, mycelium, prism fins, counter-spiral moire, and oracle
+sigils. Six registry-pending complex generative shaders add shader-specific
+drag/click motion, exact-load bounded history, safer pointer math, and truthful
+generated depth while preserving all slider arrays and A state/display roles.
+The explicit WGSL/bind-group gate and schema-aware contract audit pass 12/12;
+strict `extraBuffer` and focused slider audits pass with no new violations.
+Only the generative catalog changes (431 entries), the manifest remains 1,320,
+duplicates are 1,333/1,333, Jest is 77/77 suites (508 pass / 1 skip), and the
+production build passes. Seven unrelated leading-slash manifest URLs remain
+unchanged baseline debt. Real-GPU visual QA remains external. Notes:
+`swarm-outputs/codex-2026-08-10-b46/`.
+
+| # | Shader | Batch | Lines (baseline→final) | Changes Made |
+|---|--------|-------|------------------------|--------------|
+| 395 | `gen-kaleidoscopic-synapse-bloom` | 46 | 98→104 (+6) | Counter-dendrites and bridge sparks. |
+| 396 | `gen-liquid-cathedral-dream` | 46 | 102→108 (+6) | Rose tracery and floor caustics. |
+| 397 | `gen-mushroom-mandala-garden` | 46 | 104→108 (+4) | Mycelium pulses and fairy rings. |
+| 398 | `gen-prismatic-serpent-river` | 46 | 101→105 (+4) | Prism fins and river current. |
+| 399 | `gen-cosmic-velvet-hypnosis` | 46 | 99→102 (+3) | Counter-spiral moving moire. |
+| 400 | `gen-chromatic-oracle-jelly` | 46 | 107→112 (+5) | Oracle sigils and deep bells. |
+| 401 | `gen-gravitational-strain` | 46 | 451→461 (+10) | Drag strain runners, capped clicks, bounded RK4. |
+| 402 | `gen-holographic-data-core` | 46 | 382→410 (+28) | Smooth scan packets, beams, click rings, depth/history. |
+| 403 | `gen-art-deco-sky` | 46 | 408→432 (+24) | Searchlights, skyline halos, exact history. |
+| 404 | `gen-ethereal-anemone-bloom` | 46 | 385→415 (+30) | Drag blooms, feeding fronts, exact history. |
+| 405 | `gen-liquid-crystal-hive-mind` | 46 | 371→384 (+13) | Exact state loads and chemotactic fronts. |
+| 406 | `gen-celestial-prism-orchid` | 46 | 408→437 (+29) | Pointer fix, drag wind, prism petals, history. |
+
+### Batch 45 (6 new shaders) — 2026-08-10 — PSYCHEDELIC GENERATIVE SIX
+
+Created Kaleidoscopic Synapse Bloom, Liquid Cathedral Dream, Mushroom Mandala
+Garden, Prismatic Serpent River, Cosmic Velvet Hypnosis, and Chromatic Oracle
+Jelly. Each is a new colorful single-pass generative effect with four live,
+named sliders plus pointer-position, held-drag, bounded-click, and audio
+response. All use exact-load bounded A/C display history, semantic alpha, and
+generated structural depth while leaving B and `extraBuffer` untouched.
+Focused WGSL, interaction, control, buffer, and uniform gates pass 6/6. Only
+the generative catalog changes (431 entries); the unified manifest is 1,320,
+URLs remain relative, duplicates are 1,333/1,333, Jest is 77/77 suites (508
+pass / 1 skip), and the production build passes. Real-GPU visual QA remains
+external. Notes: `swarm-outputs/codex-2026-08-10-b45/`.
+
+| # | Shader | Batch | Lines | Changes Made |
+|---|--------|-------|-------|--------------|
+| 389 | `gen-kaleidoscopic-synapse-bloom` | 45 | 98 new | Neural petals, axon runners, drag vortex, click blooms. |
+| 390 | `gen-liquid-cathedral-dream` | 45 | 102 new | Melting arches, stained glass, drag refraction, rose fronts. |
+| 391 | `gen-mushroom-mandala-garden` | 45 | 104 new | Breathing caps, gill runners, drag growth, spore bursts. |
+| 392 | `gen-prismatic-serpent-river` | 45 | 101 new | Braided serpents, racing scales, drag steering, shed rings. |
+| 393 | `gen-cosmic-velvet-hypnosis` | 45 | 99 new | Velvet spirals, orbit runners, drag torque, soft halos. |
+| 394 | `gen-chromatic-oracle-jelly` | 45 | 107 new | Oracle jellies, curling tentacles, drag wakes, click pulses. |
+
+### Batch 44 (8 shaders) — 2026-08-10 — FAST MOTION ENCORE
+
+The next smallest clean all-category cohort upgrades Lenia, Reaction-Diffusion,
+Video Echo Chamber, Ion Stream, Chroma Depth Tunnel, Mercury Temporal Mirror,
+Viscous Drag, and Rain Lens Wipe. Each receives shader-specific conveyors,
+packets, runners, or streaks plus bounded click fronts without frame-hash
+strobing. The batch standardizes Chroma's 8x8 workgroup, adds missing guards,
+replaces filtering rgba32float history reads, fixes Ion's zero-density division,
+bounds Viscous output, and makes saved-control and scientific/depth metadata
+truthful. Source `params`, A packing, unused B, and zero `extraBuffer` writes
+are preserved. Gate and contract audits pass 8/8; only the four target catalogs
+change, URLs remain relative, duplicates are 1,327/1,327, Jest is 77/77 suites
+(508 pass / 1 skip), and the production build passes. Real-GPU visual QA
+remains external. Notes: `swarm-outputs/codex-2026-08-10-b44/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 381 | `lenia` | 44 | 110→104 (-6) | Advected state, growth packets, click inoculation, exact history. |
+| 382 | `reaction-diffusion` | 44 | 114→94 (-20) | Chemical conveyor, feed packets, click seeds, packed A/B state. |
+| 383 | `video-echo-chamber` | 44 | 124→90 (-34) | Orbit echoes, chromatic streaks, click echoes, corrected controls. |
+| 384 | `ion-stream` | 44 | 124→96 (-28) | Helical packets, magnetic wakes, ion fronts, density safety. |
+| 385 | `chroma-depth-tunnel` | 44 | 124→107 (-17) | 16x16x1, axial flight, spectral runners, shock rings. |
+| 386 | `mercury-temporal-mirror` | 44 | 124→93 (-31) | Liquid shear, capillary packets, smooth rain, impact fronts. |
+| 387 | `viscous-drag` | 44 | 124→90 (-34) | RG-state jets, vortex packets, pressure fronts, bounded output. |
+| 388 | `rain-lens-wipe` | 44 | 125→109 (-16) | Falling drops/streaks, advected wipe state, click wipe fronts. |
+
+### Batch 43 (8 shaders) — 2026-08-10 — FAST MOTION ENCORE
+
+The first post-queue-closeout all-category cohort upgrades Neon Quantum Lattice,
+Neon Strings, Kimi Chromatic Warp, Sine Wave, Slime Mold on Video, Thermal
+Touch Blackbody, VHS Jog, and Alpha Luminance History. The batch adds closed-
+form conveyors/packets/runners and exact-load history advection, plus bounded
+click fronts, without frame-hash strobing. It corrects Neon Strings' 8x8
+workgroup and halo, Kimi's missing bounds guard, filtering rgba32float reads,
+thermal logarithm/blend/scientific wording, VHS output bounds, and Alpha's dead
+diffusion control. Source `params`, A packing, unused B, and zero `extraBuffer`
+access are preserved. Gate and schema-aware audits pass 8/8; catalogs use
+relative URLs, duplicates are 1,327/1,327, Jest is 77/77 suites (508 pass / 1
+skip), and the production build passes. Real-GPU visual QA remains external.
+Notes: `swarm-outputs/codex-2026-08-10-b43/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 373 | `neon-quantum-lattice` | 43 | 122→152 (+30) | Phason conveyor, vertex runners, click dephasing, bounded A history. |
+| 374 | `neon-strings` | 43 | 122→148 (+26) | 16x16x1, pluck packets, harmonic streaks, corrected halo. |
+| 375 | `kimi_chromatic_warp` | 43 | 123→150 (+27) | Bounds guard, safe directions, prismatic runners and shock rings. |
+| 376 | `sine-wave` | 43 | 123→145 (+22) | Fast packets, click fronts, crest streaks, packed A state. |
+| 377 | `slime-mold-on-video` | 43 | 123→142 (+19) | Exact state loads, velocity advection, chemotactic and food fronts. |
+| 378 | `thermal-touch-blackbody` | 43 | 123→144 (+21) | Safe palette math, continuous blend, buoyant and click heat fronts. |
+| 379 | `vhs-jog` | 43 | 123→149 (+26) | Head rolls, tape streaks/slips, bounded nonnegative output. |
+| 380 | `alpha-luminance-history` | 43 | 124→136 (+12) | Live diffusion, directional advection, traveling light rings. |
 
 ### Batch 42 (1 shader) — 2026-08-09 — QUEUE CLOSEOUT + CATALOG HYGIENE
 

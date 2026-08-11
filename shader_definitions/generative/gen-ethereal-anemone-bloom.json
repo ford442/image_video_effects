@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "A pulsating, infinite underwater expanse of translucent, bioluminescent anemone-like structures that gently sway in an invisible current, reaching out to feed on the audio frequencies.",
+  "description": "A pulsating underwater expanse of translucent anemones that feed on audio, brighten under pointer drags, and answer clicks with traveling bioluminescent fronts and bounded display history.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,5 @@
   "updated": true,
   "id": "gen-ethereal-anemone-bloom",
   "url": "shaders/gen-ethereal-anemone-bloom.wgsl",
-  "features": []
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "raymarching", "semantic-alpha", "generated-depth"]
 }

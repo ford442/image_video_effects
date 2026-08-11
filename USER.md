@@ -6,7 +6,7 @@ _Learn about the person you're helping. Update this as you go._
 - **What to call them:**
 - **Pronouns:** _(optional)_
 - **Timezone:**
-- **Notes:** Prefers phased, reviewable foundation work before more multipass content; preserve WebGPU device-init policy, frame semantics, and lazy AI boundaries during toolchain migrations. Treat CRA→Vite as an optional spike, not a big-bang rewrite. For shader upgrade batches, preserve saved-preset parameter contracts and raw feedback-state ownership, keep new persistent state out of engine FFT slots, separate Cloud-VM structural proof from real-GPU visual handoff, and keep rolling directly into the next clean cohort when they ask for “another batch.” Prefers balanced generative hardening and accepts a deliberate feedback-ownership correction when it is necessary to make an advertised simulation real and the new contract is documented explicitly.
+- **Notes:** Prefers phased, reviewable foundation work before more multipass content; preserve WebGPU device-init policy, frame semantics, and lazy AI boundaries during toolchain migrations. Treat CRA→Vite as an optional spike, not a big-bang rewrite. For shader upgrade batches, preserve saved-preset parameter contracts and raw feedback-state ownership, keep new persistent state out of engine FFT slots, separate Cloud-VM structural proof from real-GPU visual handoff, and keep rolling directly into the next clean cohort when they ask for “another batch.” For new generative content, prefers colorful psychedelic-inspired variety with four live sliders and direct mouse-position, click, and held-drag response. Likes follow-up polish that deepens those new shaders while also upgrading already-complex generative work, with each effect retaining a distinct identity. Prefers balanced generative hardening and accepts a deliberate feedback-ownership correction when it is necessary to make an advertised simulation real and the new contract is documented explicitly.
 
 ## Context
 
@@ -17,7 +17,11 @@ _Learn about the person you're helping. Update this as you go._
   another agent leaves a partial swarm, reconstruct the dated briefs/outputs,
   preserve its useful work, finish missing deliverables, and apply a full
   coordinator contract review. Batches 31–41 are complete through tracker #371;
-  Batches 39–41 continued the requested fast-motion direction.
+  Batches 39–41 continued the requested fast-motion direction. After the
+  generative queue closeout, continue the same contract across clean all-category
+  cohorts; Batches 43–44 are complete through tracker #388 across clean
+  all-category continuations. Batch 45 adds six new interactive generative
+  shaders through tracker #394.
 
 ---
 

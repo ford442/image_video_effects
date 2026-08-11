@@ -570,7 +570,7 @@
     "id": "chroma-depth-tunnel",
     "name": "Chroma Depth Tunnel",
     "url": "shaders/chroma-depth-tunnel.wgsl",
-    "description": "A concentric tunnel effect centered on the mouse, with chromatic aberration.",
+    "description": "A mouse-centered chromatic tunnel with smooth axial flight, helical spectral runners, bounded afterimage streaks, and click-launched shock rings. Depth is passed through unchanged.",
     "params": [
       {
         "id": "speed",
@@ -608,7 +608,45 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal",
+      "fast-motion",
+      "click-reactive",
+      "bounded-history"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tunnel Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chroma Sep",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Center Fog",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",
@@ -5258,7 +5296,7 @@
     "id": "kimi-chromatic-warp",
     "name": "Kimi Chromatic Warp",
     "url": "shaders/kimi_chromatic_warp.wgsl",
-    "description": "RGB channel separation and prismatic distortion effects that intensify near the cursor with swirling motion.",
+    "description": "RGB channel separation and prismatic distortion with rotating conveyors, radial color runners, click shock rings, and bounded display-history trails around the cursor.",
     "features": [
       "mouse-driven",
       "interactive",
@@ -5266,6 +5304,9 @@
       "prism",
       "warp",
       "audio-reactive",
+      "click-reactive",
+      "fast-motion",
+      "temporal-trail",
       "upgraded-rgba"
     ],
     "params": [
@@ -5299,6 +5340,40 @@
         "min": 0,
         "max": 1,
         "default": 0.3,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Warp Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Warp Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "RGB Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Twist Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       }
     ],
@@ -8405,7 +8480,7 @@
     "id": "neon-strings",
     "name": "Neon Strings — Blackbody Wire",
     "url": "shaders/neon-strings.wgsl",
-    "description": "Plucked-string vibration with Planck blackbody thermal emission. Temperature proportional to squared displacement amplitude (kinetic energy density), Stefan-Boltzmann glow (T⁴) per string segment, Newton cooling from antinodes to clamped ends. Audio bass adds vibrato; treble drives plasma shimmer.",
+    "description": "Plucked-string vibration with a stylized heated-wire palette driven by squared displacement. Traveling pluck packets, harmonic afterimage streaks, and click-launched string impulses move across the wire bank while audio drives vibrato and shimmer.",
     "params": [
       {
         "id": "stringCount",
@@ -8436,10 +8511,47 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "String Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Cooling Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
+      "click-reactive",
+      "fast-motion",
+      "temporal-trail",
       "upgraded-rgba"
     ],
     "tags": [
@@ -10669,7 +10781,7 @@
     "id": "rain-lens-wipe",
     "name": "Rain Lens Wipe",
     "url": "shaders/rain-lens-wipe.wgsl",
-    "description": "Simulates raindrops on a lens. Use the mouse to wipe them away.",
+    "description": "Stylized falling lens drops and rapid water streak packets distort the image while the mouse wipes an advected clean-state mask and clicks launch expanding wipe fronts. Depth is passed through unchanged.",
     "params": [
       {
         "id": "strength",
@@ -10701,7 +10813,46 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "fast-motion",
+      "click-reactive",
+      "bounded-history"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rain Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Re-fog Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wipe Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Rain Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",
@@ -13390,7 +13541,7 @@
     "id": "vhs-jog",
     "name": "VHS Jog Wheel",
     "url": "shaders/vhs-jog.wgsl",
-    "description": "Simulate VHS tracking and jogging. Mouse X controls distortion (jog), Mouse Y controls tracking.",
+    "description": "Stylized VHS tracking and jogging with rapid head-switch rolls, horizontal tape-history streaks, and click tape-slip events. Mouse X controls jog distortion and Mouse Y controls tracking.",
     "params": [
       {
         "id": "noise",
@@ -13421,12 +13572,49 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Static Noise",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Dist. Freq",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Bleed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Scanlines",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "glitch",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive",
+      "fast-motion",
+      "temporal-trail"
     ],
     "tags": [
       "filter",

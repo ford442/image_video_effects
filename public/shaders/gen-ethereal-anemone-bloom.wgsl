@@ -266,6 +266,12 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(t, mat);
 }
 
+fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
+    let size = vec2<i32>(textureDimensions(dataTextureC));
+    let pixel = vec2<i32>(floor(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(size)));
+    return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
+
 // --- Compute Entry Point ---
 
 @compute @workgroup_size(16, 16, 1)
@@ -276,6 +282,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    let uv01 = vec2<f32>(global_id.xy) / resolution;
+    let fullTime = u.config.x;
     let time = u.config.x * 0.2;
     // Audio reactivity from plasmaBuffer (was u.config.y = MouseClickCount)
     let audioBass = plasmaBuffer[0].x;
@@ -370,6 +378,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = fogColor;
     }
 
+    // Pointer drag excites a local bloom; clicks send bioluminescent food fronts.
+    let aspect = resolution.x / resolution.y;
+    let pointerDelta = (uv01 - u.zoom_config.yz) * vec2<f32>(aspect, 1.0);
+    let dragBloom = exp(-length(pointerDelta) * 8.0) * u.zoom_config.w;
+    color += vec3<f32>(0.1, 0.8, 1.3) * dragBloom * (0.4 + audioBass);
+
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = fullTime - ripple.z;
+        if (age < 0.0 || age > 4.0) { continue; }
+        let d = length((uv01 - ripple.xy) * vec2<f32>(aspect, 1.0));
+        let front = exp(-abs(d - age * 0.22) * 70.0) * exp(-age * 0.9);
+        color += vec3<f32>(0.55, 0.15 + audioBass * 0.4, 1.0) * front;
+        alpha += front * 0.12;
+    }
+
+    let previous = historyLoadUV(uv01).rgb;
+    let display = mix(previous * 0.94, color, 0.3 + u.zoom_config.w * 0.14);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, 1.0));
+    color = display;
+
     // ACES filmic tone mapping (was gamma-only — bioluminescent tips clipped to white)
     color = acesToneMapping(color);
     // Gamma correction
@@ -380,6 +410,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = clamp(color + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // 5. writeTexture update with alpha
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(color, clamp(alpha, 0.0, 1.0)));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 80.0, 0.0, 0.0, 0.0));
 }

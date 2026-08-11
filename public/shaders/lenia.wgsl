@@ -1,11 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Lenia Cellular Automata
-//  Category: simulation
-//  Features: audio-reactive, temporal, chromatic-species, mouse-interactive,
-//            continuous-life, upgraded-rgba
-//  Complexity: High
-//  Upgraded: 2026-05-31
-// ═══════════════════════════════════════════════════════════════════════════════
+// Lenia-inspired continuous cellular field with advected growth packets.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -28,83 +21,84 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn historyLoad(pixel: vec2<i32>) -> vec4<f32> {
+    let size = vec2<i32>(textureDimensions(dataTextureC));
+    return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
+
 fn growthKernel(x: f32) -> f32 {
-    return exp(-pow((x - 0.5) / 0.15, 2.0) * 0.5);
+    return exp(-0.5 * pow((x - 0.5) / 0.15, 2.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
-    let uv = vec2<f32>(global_id.xy) / u.config.zw;
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+    let coord = vec2<i32>(global_id.xy);
+    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
-
-    // Audio-driven parameters
-    let radius = (u.zoom_params.x * 10.0 + 3.0) * (1.0 + mids * 0.2);
-    let growthRate = u.zoom_params.y * 0.1 * (1.0 + bass * 0.3);
+    let audio = plasmaBuffer[0].xyz;
+    let radius = 3.0 + u.zoom_params.x * 10.0;
+    let growthRate = (0.008 + u.zoom_params.y * 0.085) * (1.0 + audio.x * 0.35);
     let accumulationRate = u.zoom_params.z;
-    let threshold = u.zoom_params.w * (1.0 - treble * 0.1);
+    let threshold = mix(0.18, 0.72, u.zoom_params.w) * (1.0 - audio.z * 0.08);
 
-    let pixelSize = 1.0 / u.config.zw;
+    // A smooth conveyor shifts the sampled state; it never hashes the frame.
+    let conveyor = vec2<f32>(cos(time * 1.17), sin(time * 0.83));
+    let driftPixels = vec2<i32>(round(conveyor * (1.0 + u.zoom_params.y * 3.0)));
+    let advectedCoord = coord - driftPixels;
     var neighborSum = 0.0;
     var weightSum = 0.0;
-
-    // Larger neighborhood for more organic growth
     let neighRadius = i32(radius * 0.5 + 1.0);
-    for (var y: i32 = -neighRadius; y <= neighRadius; y++) {
-        for (var x: i32 = -neighRadius; x <= neighRadius; x++) {
+    for (var y = -neighRadius; y <= neighRadius; y = y + 1) {
+        for (var x = -neighRadius; x <= neighRadius; x = x + 1) {
             if (x == 0 && y == 0) { continue; }
-            let offset = vec2<f32>(f32(x), f32(y)) * pixelSize;
-            let dist = length(vec2<f32>(f32(x), f32(y)));
-            let weight = 1.0 / (1.0 + dist * dist);
-            let neighbor = textureSampleLevel(dataTextureC, u_sampler, uv + offset, 0.0);
-            neighborSum += neighbor.r * weight;
+            let delta = vec2<f32>(f32(x), f32(y));
+            let weight = 1.0 / (1.0 + dot(delta, delta));
+            neighborSum += historyLoad(advectedCoord + vec2<i32>(x, y)).r * weight;
             weightSum += weight;
         }
     }
 
+    let prev = historyLoad(coord);
+    let center = historyLoad(advectedCoord).r;
     let avgNeighbor = neighborSum / max(weightSum, 0.001);
-    let center = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
+    let packetPhase = dot(uv, normalize(vec2<f32>(1.0, 0.63))) * (18.0 + radius) - time * (5.0 + u.zoom_params.y * 10.0);
+    let growthPacket = pow(0.5 + 0.5 * sin(packetPhase), 12.0) * (0.025 + audio.y * 0.05);
 
-    // Lenia update rule with audio modulation
+    var clickFront = 0.0;
+    let aspect = resolution.x / resolution.y;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 3.0) {
+            let ring = abs(length((uv - ripple.xy) * vec2<f32>(aspect, 1.0)) - age * (0.16 + audio.x * 0.08));
+            clickFront += (1.0 - smoothstep(0.0, 0.025, ring)) * (1.0 - age / 3.0);
+        }
+    }
+
+    let mouseDist = length((uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0));
+    let inoculation = smoothstep(0.11, 0.0, mouseDist) * u.zoom_config.w * 0.32;
     let growth = growthKernel(avgNeighbor) * 2.0 - 1.0;
-    let newValue = center + growthRate * growth;
-    let clamped = clamp(newValue, 0.0, 1.0);
-    let finalValue = smoothstep(threshold * 0.5, threshold, clamped);
+    let clamped = clamp(center + growthRate * growth + growthPacket + clickFront * 0.10 + inoculation, 0.0, 1.0);
+    let finalValue = smoothstep(threshold * 0.5, max(threshold, 0.01), clamped);
 
-    // Chromatic species: R, G, B channels evolve with different thresholds
-    let rValue = smoothstep(threshold * 0.5 * 0.9, threshold * 0.9, clamped);
-    let gValue = smoothstep(threshold * 0.5, threshold, clamped);
-    let bValue = smoothstep(threshold * 0.5 * 1.1, threshold * 1.1, clamped);
-
-    // Audio-driven color saturation
-    let color = vec3<f32>(
-        rValue * (0.7 + 0.3 * sin(finalValue * 3.14 + bass * 2.0)),
-        gValue * (0.5 + 0.5 * sin(finalValue * 3.14 + 2.094 + mids * 2.0)),
-        bValue * (0.8 + 0.2 * sin(finalValue * 3.14 + 4.188 + treble * 2.0))
+    let species = vec3<f32>(
+        smoothstep(threshold * 0.42, threshold * 0.90, clamped),
+        smoothstep(threshold * 0.50, threshold, clamped),
+        smoothstep(threshold * 0.58, threshold * 1.10, clamped)
     );
-
-    // Temporal accumulation with advanced alpha
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let newAlpha = finalValue * (0.5 + bass * 0.1);
-    let accumulatedAlpha = prev.a * (1.0 - accumulationRate * 0.05) + newAlpha * accumulationRate;
-    let totalAlpha = min(accumulatedAlpha, 1.0);
-    let blendFactor = select(newAlpha * accumulationRate / totalAlpha, 0.0, totalAlpha < 0.001);
-    let finalColor = mix(prev.rgb, color, blendFactor);
-
-    // Mouse interaction: inject life near cursor
-    let mouse = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
-    let mDist = length(uv - mouse);
-    let mouseInfluence = smoothstep(0.1, 0.0, mDist) * mouseDown * 0.5;
-    let influencedColor = mix(finalColor, vec3<f32>(1.0, 0.9, 0.7), mouseInfluence);
-    let influencedAlpha = clamp(totalAlpha + mouseInfluence, 0.0, 1.0);
+    let color = species * (0.55 + 0.45 * sin(vec3<f32>(0.0, 2.094, 4.188) + finalValue * 3.14159 + audio * 2.0));
+    let newAlpha = clamp(finalValue * (0.55 + audio.x * 0.10) + clickFront * 0.15, 0.0, 1.0);
+    let totalAlpha = clamp(prev.a * (0.94 - accumulationRate * 0.05) + newAlpha * accumulationRate, 0.0, 1.0);
+    let blendFactor = newAlpha * accumulationRate / max(totalAlpha, 0.001);
+    let finalColor = mix(prev.rgb, color, clamp(blendFactor, 0.0, 1.0));
+    let influencedAlpha = clamp(totalAlpha + inoculation, 0.0, 1.0);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
     textureStore(dataTextureA, coord, vec4<f32>(finalValue, finalValue, finalValue, influencedAlpha));
-    textureStore(writeTexture, global_id.xy, vec4<f32>(influencedColor, influencedAlpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, vec4<f32>(clamp(finalColor + clickFront * vec3<f32>(0.25, 0.12, 0.05), vec3<f32>(0.0), vec3<f32>(1.0)), influencedAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

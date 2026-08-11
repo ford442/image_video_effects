@@ -2,7 +2,7 @@
   "id": "video-echo-chamber",
   "name": "Video Echo Chamber",
   "url": "shaders/video-echo-chamber.wgsl",
-  "description": "Temporal trails that persist longer near the mouse cursor, creating a ghostly echo effect.",
+  "description": "Orbiting history conveyors and horizontal chromatic streaks form bounded video echoes around the mouse, while clicks launch expanding echo rings. Depth is passed through unchanged.",
   "params": [
     {
       "id": "decay",
@@ -35,7 +35,17 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence"
+    "temporal-persistence",
+    "audio-reactive",
+    "fast-motion",
+    "click-reactive",
+    "bounded-history"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Global Decay", "default": 0.6, "min": 0, "max": 0.95, "step": 0.01 },
+    { "index": 1, "name": "Mouse Radius", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Echo Strength", "default": 0.8, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Color Shift", "default": 0, "min": 0, "max": 1, "step": 0.01 }
   ],
   "tags": [
     "filter",

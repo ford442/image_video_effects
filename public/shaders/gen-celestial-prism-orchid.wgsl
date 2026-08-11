@@ -245,6 +245,12 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     return vec4<f32>(t, mat_id, core_glow, min_dist);
 }
 
+fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
+    let size = vec2<i32>(textureDimensions(dataTextureC));
+    let pixel = vec2<i32>(floor(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(size)));
+    return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
+
 // Main compute shader
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -272,14 +278,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     g_audio = bass * 0.8 + mids * 0.3; // legacy for existing code, now richer
 
-    let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
+    let mX = u.zoom_config.y * 2.0 - 1.0;
     let mY = u.zoom_config.z * 2.0 - 1.0;
     g_mouse = vec2<f32>(mX, mY);
 
     // Pollinator mouse wind — surprising visceral interaction
-    let mouseDir = normalize(g_mouse - vec2<f32>(0.0));
-    let mouseDist = length(g_mouse);
-    let pollinator = smoothstep(0.8, 0.1, mouseDist) * (0.5 + bass * 0.5); // strong when mouse near center + bass
+    let mouseDist = max(length(g_mouse), 0.0001);
+    let mouseDir = g_mouse / mouseDist;
+    let mouseDown = u.zoom_config.w;
+    let pollinator = smoothstep(0.8, 0.1, mouseDist) * (0.35 + bass * 0.5 + mouseDown); // drag deepens the gust
     g_pollinator = pollinator;
     let windVec = mouseDir * pollinator * (0.8 + treble * 0.6); // directional gust toward/away from mouse
     g_windVec = windVec;
@@ -377,6 +384,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Subtle god-ray / atmospheric veil modulated by season + treble (volumetric feel)
     let veil = smoothstep(0.3, 1.4, length(uv)) * (0.04 + treble * 0.08) * (0.6 + season * 0.5);
     col = mix(col, col + vec3<f32>(0.15, 0.22, 0.35) * veil, 0.3 + bass * 0.2);
+
+    // Click-launched prism petals travel outward in screen space.
+    let uv01 = fragCoord / dims;
+    let aspect = dims.x / dims.y;
+    var clickPetals = vec3<f32>(0.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = g_time - ripple.z;
+        if (age < 0.0 || age > 4.0) { continue; }
+        let delta = (uv01 - ripple.xy) * vec2<f32>(aspect, 1.0);
+        let angle = atan2(delta.y, delta.x);
+        let petal = pow(0.5 + 0.5 * cos(angle * 8.0 - age * 5.0), 5.0);
+        let ring = exp(-abs(length(delta) - age * 0.23) * 70.0) * exp(-age * 0.8);
+        clickPetals += (0.5 + 0.5 * cos(vec3<f32>(0.0, 2.1, 4.2) + age * 2.0)) * petal * ring;
+    }
+    col += clickPetals * (0.6 + coreIntensity * 0.4);
+
+    let previous = historyLoadUV(uv01).rgb;
+    let display = mix(previous * 0.94, col, 0.3 + mouseDown * 0.14);
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(display, 1.0));
+    col = display;
 
     // Tone mapping (filmic)
     col = col / (col + vec3<f32>(1.0));

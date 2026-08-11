@@ -2,7 +2,7 @@
   "id": "neon-quantum-lattice",
   "name": "Neon Quantum Lattice",
   "url": "shaders/neon-quantum-lattice.wgsl",
-  "description": "Aperiodic Penrose-like quasi-crystal tiling with neon edge glow, metallic fill gradients, HDR vertex bloom, and quantum uncertainty zones.",
+  "description": "Aperiodic Penrose-like quasi-crystal tiling with phason conveyor drift, traveling vertex-energy runners, click-driven dephasing fronts, neon edge glow, and bounded display-history trails.",
   "params": [
     {
       "id": "inflation",
@@ -33,10 +33,47 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Tile Density",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Neon Glow Width",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Depth Parallax",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Brightness",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
+    "click-reactive",
+    "fast-motion",
+    "temporal-trail",
     "upgraded-rgba"
   ],
   "tags": [

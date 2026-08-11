@@ -1,6 +1,4 @@
-// --- RAIN LENS WIPE ---
-// Simulates raindrops on a lens. The mouse wipes them away, and they slowly return.
-// Uses feedback loop for the "wiped" state.
+// Rain-lens distortion with falling streak packets and click-launched wipe fronts.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -24,102 +22,88 @@ struct Uniforms {
 };
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
-    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(.1031, .1030, .0973));
+    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
 }
 
-fn rainDistortion(uv: vec2<f32>, t: f32, scale: f32) -> vec2<f32> {
-    let st = uv * scale;
-    let i_st = floor(st);
-    let f_st = fract(st);
+fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
+    let size = vec2<i32>(textureDimensions(dataTextureC));
+    let pixel = vec2<i32>(floor(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(size)));
+    return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
 
-    var m_dist = 1.0;
+fn rainDistortion(uv: vec2<f32>, time: f32, scale: f32) -> vec2<f32> {
+    // Cell identity is spatially stable; only the closed-form fall phase moves.
+    let fallingUV = uv + vec2<f32>(sin(time * 0.41) * 0.025, time * 0.42);
+    let cellUV = fallingUV * scale;
+    let cell = floor(cellUV);
+    let local = fract(cellUV);
+    var nearest = 1.0;
     var offset = vec2<f32>(0.0);
-
-    // Check 3x3 neighbors to find closest drop center
-    for(var y = -1; y <= 1; y++) {
-        for(var x = -1; x <= 1; x++) {
+    for (var y = -1; y <= 1; y = y + 1) {
+        for (var x = -1; x <= 1; x = x + 1) {
             let neighbor = vec2<f32>(f32(x), f32(y));
-            var point = hash22(i_st + neighbor);
-
-            // Jitter the drop position over time slightly
-            point = 0.5 + 0.3 * sin(t * 0.5 + 6.28 * point);
-
-            let diff = neighbor + point - f_st;
-            let dist = length(diff);
-
-            if (dist < m_dist) {
-                m_dist = dist;
-                // Distortion pulls towards the center of the drop (lens effect)
-                // Or pushes away? Convex lens inverts.
-                // Let's use the vector 'diff' which points to the drop center.
-                offset = diff;
+            let seed = hash22(cell + neighbor);
+            let center = vec2<f32>(0.2 + seed.x * 0.6, 0.18 + seed.y * 0.64);
+            let delta = neighbor + center - local;
+            let dropDistance = length(delta * vec2<f32>(1.0, 1.7));
+            if (dropDistance < nearest) {
+                nearest = dropDistance;
+                offset = delta;
             }
         }
     }
-
-    // Drop shape profile
-    let dropSize = 0.45;
-    let drop = smoothstep(dropSize, dropSize - 0.1, m_dist);
+    let drop = smoothstep(0.45, 0.30, nearest);
     return offset * drop;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let coord = vec2<i32>(global_id.xy);
+    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    let time = u.config.x;
+    let audio = plasmaBuffer[0].xyz;
+    let rainStrength = u.zoom_params.x;
+    let decaySpeed = 0.003 + u.zoom_params.y * 0.05;
+    let wipeRadius = 0.05 + u.zoom_params.z * 0.30;
+    let rainScale = 5.0 + u.zoom_params.w * 20.0;
     let aspect = resolution.x / resolution.y;
 
-    // Parameters
-    let rainStrength = u.zoom_params.x;      // Slider 1: Distortion Strength
-    let decaySpeed = 0.005 + u.zoom_params.y * 0.05; // Slider 2: Re-fog Speed
-    let wipeRadius = 0.05 + u.zoom_params.z * 0.3;  // Slider 3: Wipe Radius
-    let rainScale = 5.0 + u.zoom_params.w * 20.0;   // Slider 4: Drop Density
+    // Advect the clean-state mask downward with the falling water.
+    let stateUV = clamp(uv - vec2<f32>(sin(time * 0.7) * 0.0015, 0.004 + rainStrength * 0.006), vec2<f32>(0.0), vec2<f32>(1.0));
+    let previousState = historyLoadUV(stateUV).r;
+    var newState = max(0.0, previousState - decaySpeed);
+    let mouseDistance = length((uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0));
+    let mouseWipe = smoothstep(wipeRadius, wipeRadius * 0.45, mouseDistance) * (0.30 + u.zoom_config.w * 0.70);
+    newState = max(newState, mouseWipe);
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
-    let mouseDist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
-
-    // Feedback: Read previous "Clean State" from C
-    // 1.0 = Clean (Wiped), 0.0 = Rainy
-    let prevState = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
-
-    // Decay the clean state back to 0.0 (rainy)
-    var newState = max(0.0, prevState - decaySpeed);
-
-    // Apply Wipe (Mouse acts as a squeegee)
-    if (mouseDist < wipeRadius) {
-         let brush = smoothstep(wipeRadius, wipeRadius * 0.5, mouseDist);
-         newState = max(newState, brush);
+    var clickWipe = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.8) {
+            let ring = abs(length((uv - ripple.xy) * vec2<f32>(aspect, 1.0)) - age * (0.22 + audio.x * 0.08));
+            clickWipe += (1.0 - smoothstep(0.0, 0.03, ring)) * (1.0 - age / 2.8);
+        }
     }
+    newState = clamp(max(newState, clickWipe), 0.0, 1.0);
 
-    // Generate Rain Distortion
-    let distortVec = rainDistortion(uv, u.config.x, rainScale);
+    let distortion = rainDistortion(uv, time * (1.0 + rainStrength * 1.8), rainScale);
+    let streakPhase = fract(uv.y * (5.0 + u.zoom_params.w * 11.0) - time * (1.4 + rainStrength * 3.5) + floor(uv.x * rainScale) * 0.173);
+    let streakPacket = exp(-pow((streakPhase - 0.5) / 0.09, 2.0));
+    let streakOffset = vec2<f32>(sin(uv.x * rainScale * 2.1 + time) * 0.002, -0.012 * streakPacket) * rainStrength;
+    let finalDistortion = (distortion * rainStrength * 0.10 + streakOffset) * (1.0 - newState);
+    let sampleUV = clamp(uv + finalDistortion, vec2<f32>(0.0), vec2<f32>(1.0));
+    let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let wetness = clamp(length(finalDistortion) * 18.0 + streakPacket * 0.18, 0.0, 1.0) * (1.0 - newState);
+    let finalColor = vec4<f32>(clamp(color.rgb + vec3<f32>(0.08, 0.11, 0.14) * wetness * (1.0 + audio.z), vec3<f32>(0.0), vec3<f32>(1.0)), clamp(color.a, 0.0, 1.0));
 
-    // Effective Distortion: modulated by (1.0 - newState)
-    // If clean, distortion is 0.
-    let finalDistort = distortVec * rainStrength * 0.1 * (1.0 - newState);
-
-    // Sample Color
-    let finalUV = uv + finalDistort;
-    var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
-
-    // Add some specular highlights to the drops if they are visible
-    // Based on 'finalDistort' magnitude or recalculated drop profile.
-    // Quick hack: if distorted, brighten slightly
-    let wetness = length(finalDistort) * 20.0; // aprox
-    color += vec4<f32>(wetness * 0.1);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Store State for next frame
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newState, 0.0, 0.0, 1.0));
-
-    // Passthrough Depth
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(dataTextureA, coord, vec4<f32>(newState, 0.0, 0.0, 1.0));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
