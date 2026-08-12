@@ -37,6 +37,7 @@ fn hash(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
@@ -57,7 +58,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let delta = p - mousePos;
     let dist  = length(delta);
-    let dir   = normalize(delta + vec2<f32>(0.0001));
+    let dir   = delta / max(dist, 0.0001);
 
     // Parameters — bass widens warp radius, mids boost chromatic spread
     let warpRadius      = u.zoom_params.x * 0.8 + 0.05;
@@ -67,15 +68,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let falloff = smoothstep(warpRadius * (1.0 + bass * 0.15), 0.0, dist);
 
-    let angle  = dist * 10.0 - time * rotationSpeed + mouseDown * 2.0;
+    // Rotating prismatic conveyor: a continuous radial/azimuthal transport field.
+    let conveyor = sin(dist * 28.0 - time * (4.0 + rotationSpeed * 2.0));
+    let angle  = dist * 10.0 - time * rotationSpeed + mouseDown * 2.0 + conveyor * 0.35;
     let rotDir = vec2<f32>(
         dir.x * cos(angle) - dir.y * sin(angle),
         dir.x * sin(angle) + dir.y * cos(angle)
     );
 
-    let rOffset = rotDir * (warpStrength + chromaticSpread) * falloff;
-    let gOffset = rotDir * warpStrength * falloff;
-    let bOffset = rotDir * (warpStrength - chromaticSpread) * falloff * 0.5;
+    let uvRotDir = vec2<f32>(rotDir.x / max(aspect, 0.001), rotDir.y);
+
+    var clickShock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let rippleDelta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let front = abs(length(rippleDelta) - age * (0.32 + bass * 0.12));
+            clickShock += (1.0 - smoothstep(0.0, 0.025, front)) * (1.0 - age * 0.5);
+        }
+    }
+
+    let runnerPhase = fract(dist * (12.0 + warpRadius * 8.0) - time * (2.4 + rotationSpeed));
+    let radialRunner = 1.0 - smoothstep(0.0, 0.09, abs(runnerPhase - 0.5));
+    let shockWarp = clickShock * (0.012 + chromaticSpread * 0.10);
+    let rOffset = uvRotDir * (warpStrength + chromaticSpread + shockWarp) * falloff;
+    let gOffset = uvRotDir * (warpStrength + shockWarp * 0.5) * falloff;
+    let bOffset = uvRotDir * (warpStrength - chromaticSpread - shockWarp) * falloff * 0.5;
 
     let r = textureSampleLevel(readTexture, u_sampler, clamp(uv - rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, clamp(uv - gOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
@@ -94,7 +114,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         sin(hue * 6.28318 + 2.094) * 0.5 + 0.5,
         sin(hue * 6.28318 + 4.188) * 0.5 + 0.5
     );
-    color = mix(color, rainbow, ring * 0.3);
+    color = mix(color, rainbow, clamp(ring * 0.3 + radialRunner * falloff * 0.18 + clickShock * 0.22, 0.0, 0.75));
 
     // Vignette within warp
     let innerVignette = smoothstep(warpRadius * 0.3, warpRadius * 0.8, dist);
@@ -104,9 +124,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let burst = mouseDown * exp(-dist * 3.0) * sin(dist * 30.0 - time * 15.0);
     color += vec3<f32>(burst * 0.2 + treble * ring * 0.1);
 
-    // Film grain
-    let grain = hash(uv + vec2<f32>(time)) * 0.04 - 0.02;
+    // Spatial grain breathes continuously; time never enters the hash.
+    let grainSeed = hash(floor(uv * resolution * 0.5));
+    let grain = (grainSeed - 0.5) * (0.025 + 0.015 * sin(time * 5.0 + grainSeed * 6.28318));
     color += grain;
+
+    let coord = vec2<i32>(global_id.xy);
+    let maxCoord = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
+    let historyOffset = vec2<i32>(round(uvRotDir * resolution * (0.006 + warpStrength * 0.04)));
+    let history = textureLoad(dataTextureC, clamp(coord - historyOffset, vec2<i32>(0), maxCoord), 0);
+    color = max(color, clamp(history.rgb, vec3<f32>(0.0), vec3<f32>(2.5)) * (0.62 + radialRunner * 0.12));
 
     color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
 

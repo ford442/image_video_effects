@@ -1,0 +1,21 @@
+{
+  "id": "gen-mushroom-mandala-garden",
+  "name": "Mushroom Mandala Garden",
+  "category": "generative",
+  "url": "shaders/gen-mushroom-mandala-garden.wgsl",
+  "description": "A psychedelic-inspired radial garden of breathing mushroom caps, luminous gills, traveling spores, and pulsing mycelium. Drags bend persistent growth and clicks release patterned fairy-ring fronts.",
+  "params": [
+    { "id": "cap-count", "name": "Cap Count", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "breathe-rate", "name": "Breathe Rate", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "gill-detail", "name": "Gill Detail", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "bioluminescence", "name": "Bioluminescence", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Cap Count", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Breathe Rate", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Gill Detail", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Bioluminescence", "default": 0.7, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "fast-motion", "semantic-alpha", "generated-depth", "mycelium-network"],
+  "tags": ["generative", "psychedelic", "mushroom", "mandala", "bioluminescent", "organic"]
+}

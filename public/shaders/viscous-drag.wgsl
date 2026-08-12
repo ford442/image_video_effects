@@ -1,8 +1,4 @@
-// ═══════════════════════════════════════════════════════════════
-//  Viscous Drag
-//  Simulates dragging through a thick liquid.
-//  Uses a velocity/offset field stored in dataTextureA.
-// ═══════════════════════════════════════════════════════════════
+// Thick-liquid displacement with advected jets, vortices, and click pressure fronts.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -19,106 +15,76 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Viscosity, y=DragStrength, z=RecoverySpeed, w=DistortionScale
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+fn historyLoad(pixel: vec2<i32>) -> vec4<f32> {
+    let size = vec2<i32>(textureDimensions(dataTextureC));
+    return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-
-    // Parameters
-    let viscosity = mix(0.1, 0.9, u.zoom_params.x); // High viscosity = spreads slowly
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let coord = vec2<i32>(global_id.xy);
+    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    let time = u.config.x;
+    let audio = plasmaBuffer[0].xyz;
+    let viscosity = mix(0.08, 0.88, u.zoom_params.x);
     let dragStrength = mix(0.1, 2.0, u.zoom_params.y);
-    let recovery = mix(0.9, 0.995, u.zoom_params.z); // High = slow recovery
+    let recovery = mix(0.88, 0.994, u.zoom_params.z);
     let scale = mix(0.01, 0.2, u.zoom_params.w);
 
-    // Read previous offset state from history (dataTextureC)
-    // We store offset in RG channels
-    let prevData = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let prevOffset = prevData.xy;
+    // Advect the RG offset state along a smooth moving liquid jet.
+    let jetDirection = normalize(vec2<f32>(cos(time * 0.77), sin(time * 0.61)));
+    let advectPixels = vec2<i32>(round(jetDirection * (1.0 + (1.0 - viscosity) * 3.0)));
+    let baseCoord = coord - advectPixels;
+    let prevOffset = historyLoad(baseCoord).xy;
+    let up = historyLoad(baseCoord + vec2<i32>(0, -1)).xy;
+    let down = historyLoad(baseCoord + vec2<i32>(0, 1)).xy;
+    let left = historyLoad(baseCoord + vec2<i32>(-1, 0)).xy;
+    let right = historyLoad(baseCoord + vec2<i32>(1, 0)).xy;
+    let diffusedOffset = mix(prevOffset, (up + down + left + right) * 0.25, viscosity);
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w; // 1.0 if down
+    let aspect = resolution.x / resolution.y;
+    let delta = vec2<f32>((uv.x - u.zoom_config.y) * aspect, uv.y - u.zoom_config.z);
+    let distanceToMouse = max(length(delta), 0.001);
+    let radial = delta / distanceToMouse;
+    let tangent = vec2<f32>(-radial.y, radial.x);
+    let mouseMask = smoothstep(0.18, 0.0, distanceToMouse);
+    let mouseForce = (radial + tangent * sin(time * 5.0) * 0.55) * mouseMask * u.zoom_config.w * dragStrength * 0.018;
 
-    // To properly "drag", we really need delta mouse...
-    // But since we don't have it easily per pixel without extra buffer trickery,
-    // we'll simulate a "push" away from mouse, or a "pull" towards.
-    // Let's do a "smear" where pixels move towards the mouse if it's close?
-    // Actually, "dragging" usually implies moving WITH the mouse.
-
-    // Alternative: Just repel/attract based on distance.
-    // Let's do a "finger drag" simulation where the mouse acts as a point of high pressure.
-
-    let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
-    let mouse_aspect = vec2<f32>(mouse.x * aspect, mouse.y);
-
-    let dist = distance(uv_aspect, mouse_aspect);
-    let radius = 0.15;
-
-    var force = vec2<f32>(0.0);
-
-    // If mouse is present (y > 0 generally implies it's on canvas, but let's check input)
-    // Assuming zoom_config.y is valid.
-
-    if (dist < radius && dist > 0.001) {
-        // Calculate a vector. Let's make it a swirl or a push.
-        // A push away from mouse center:
-        var dir = normalize(uv_aspect - mouse_aspect);
-        let strength = (1.0 - dist / radius) * dragStrength;
-
-        // If mouse is down, pull in? Or push out?
-        // Let's say: Push out by default (displacement).
-        force = dir * strength * 0.01;
-
-        // If we wanted to track mouse velocity, we'd need previous mouse pos.
-        // But a push-displacement feels like "poking" the liquid.
+    // Traveling vortices form a second fast-motion family independent of input history.
+    let vortexPhase = dot(uv, vec2<f32>(19.0, -13.0)) - time * (6.0 + dragStrength * 2.0);
+    let vortexPacket = pow(0.5 + 0.5 * cos(vortexPhase), 16.0);
+    let vortexForce = vec2<f32>(-jetDirection.y, jetDirection.x) * vortexPacket * dragStrength * (0.002 + audio.y * 0.004);
+    var clickForce = vec2<f32>(0.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.8) {
+            let rippleDelta = vec2<f32>((uv.x - ripple.x) * aspect, uv.y - ripple.y);
+            let rippleDistance = max(length(rippleDelta), 0.001);
+            let ring = abs(rippleDistance - age * (0.18 + audio.x * 0.08));
+            clickForce += rippleDelta / rippleDistance * (1.0 - smoothstep(0.0, 0.026, ring)) * (1.0 - age / 2.8) * 0.018 * dragStrength;
+        }
     }
-
-    // Update offset
-    // New Offset = PrevOffset * recovery + force
-    // Also diffuse the offset (viscosity) - sample neighbors
-
-    let texel = 1.0 / resolution;
-    let up = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).xy;
-    let down = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).xy;
-    let left = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).xy;
-    let right = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).xy;
-
-    let avg = (up + down + left + right) * 0.25;
-
-    // Mix current offset with average neighbor offset based on viscosity
-    let diffusedOffset = mix(prevOffset, avg, viscosity);
-
-    var newOffset = diffusedOffset * recovery + force;
-
-    // Clamp offset to avoid crazy artifacts
+    var newOffset = (diffusedOffset * recovery) + mouseForce + vortexForce + clickForce;
     newOffset = clamp(newOffset, vec2<f32>(-0.5), vec2<f32>(0.5));
+    textureStore(dataTextureA, coord, vec4<f32>(newOffset, 0.0, 0.0));
 
-    // Write state
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newOffset, 0.0, 0.0));
-
-    // Render
-    // Sample readTexture at uv - newOffset * scale
-    let sampleUV = uv - newOffset * scale;
+    let sampleUV = clamp(uv - newOffset * scale, vec2<f32>(0.0), vec2<f32>(1.0));
     let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-
-    // Add specular highlight based on offset gradient (fake normal)
-    let normal = normalize(vec3<f32>(newOffset.x, newOffset.y, 0.01));
-    let lightDir = normalize(vec3<f32>(0.5, 0.5, 1.0));
-    let specular = pow(max(dot(normal, lightDir), 0.0), 20.0) * length(newOffset) * 2.0;
-
-    let finalColor = color + vec4<f32>(specular);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
+    let normal = normalize(vec3<f32>(newOffset, 0.02));
+    let lightDirection = normalize(vec3<f32>(0.5, 0.5, 1.0));
+    let specular = pow(max(dot(normal, lightDirection), 0.0), 20.0) * length(newOffset) * (1.0 + audio.z);
+    let finalColor = vec4<f32>(clamp(color.rgb + vec3<f32>(specular), vec3<f32>(0.0), vec3<f32>(1.0)), clamp(color.a, 0.0, 1.0));
+    textureStore(writeTexture, coord, finalColor);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

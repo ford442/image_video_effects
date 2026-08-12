@@ -121,6 +121,12 @@ fn holographicScanlines(uv: vec2<f32>, time: f32) -> f32 {
     return 0.9 + scanline * 0.1;
 }
 
+fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
+    let size = vec2<i32>(textureDimensions(dataTextureC));
+    let pixel = vec2<i32>(floor(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(size)));
+    return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Map Function
 // ═══════════════════════════════════════════════════════════════
@@ -215,17 +221,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
-    // Holographic Glitch (chromatic aberration & scanlines base)
-    let glitch_hash = hash21(vec2<f32>(floor(time * 20.0), uv.y));
-    if (glitch_intensity > 0.0 && glitch_hash < glitch_intensity * 0.1) {
-        uv.x += (hash21(uv + vec2<f32>(time)) - 0.5) * 0.1 * glitch_intensity;
-    }
+    // Smooth scan packets replace frame-hash jumps with continuous motion.
+    let glitchBand = pow(0.5 + 0.5 * sin(uv.y * 110.0 - time * (7.0 + travel_speed * 3.0)), 18.0);
+    uv.x += sin(uv.y * 37.0 + time * 3.0) * 0.055 * glitch_intensity * glitchBand;
 
     // Camera setup
     let cam_z = time * travel_speed * 2.0;
 
     // Mouse interaction for look around
     var mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
     let mouse_ang_x = (mouse.x - 0.5) * 3.14;
     let mouse_ang_y = (mouse.y - 0.5) * 3.14;
 
@@ -233,8 +238,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Gentle wobble
     let look_at = ro + vec3<f32>(
-        sin(time * 0.5) * 0.5 + sin(mouse_ang_x)*2.0,
-        cos(time * 0.3) * 0.5 - sin(mouse_ang_y)*2.0,
+        sin(time * 0.5) * 0.5 + sin(mouse_ang_x) * (2.0 + mouseDown),
+        cos(time * 0.3) * 0.5 - sin(mouse_ang_y) * (2.0 + mouseDown),
         1.0
     );
 
@@ -354,8 +359,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // 60Hz flicker — treble adds extra projection instability on hi-hats
     alpha *= projectionFlicker(time) * (1.0 - treble * 0.1);
     
-    // Glitch causes alpha instability
-    let glitchAlpha = 1.0 - glitch_intensity * 0.15 * hash21(vec2<f32>(time, uv.y));
+    // The moving scan packet modulates alpha without temporal strobing.
+    let glitchAlpha = 1.0 - glitch_intensity * 0.12 * glitchBand;
     alpha *= glitchAlpha;
     
     // Depth-based alpha (nodes at different depths have varying transparency)
@@ -366,17 +371,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ghost_col = col * 0.5;
     col = mix(col, ghost_col, PEPPER_GHOST_REFLECTION);
     
-    // Volumetric speckle
-    let speckle = hash21(uv * 80.0 + vec2<f32>(time * 2.0));
+    // Spatial speckle drifts continuously through the projection.
+    let speckle = hash21(uv * 80.0 + vec2<f32>(sin(time * 0.7), cos(time * 0.6)) * 2.0);
     alpha *= 0.92 + speckle * 0.16;
+
+    // Held-pointer beam and click-launched data rings.
+    let uv01 = vec2<f32>(global_id.xy) / resolution;
+    let aspect = resolution.x / resolution.y;
+    let pointerDelta = (uv01 - mouse) * vec2<f32>(aspect, 1.0);
+    let pointerBeam = exp(-abs(pointerDelta.x) * 35.0) * exp(-length(pointerDelta) * 2.5) * mouseDown;
+    col += vec3<f32>(0.15, 0.85, 1.4) * pointerBeam * (0.5 + bass);
+    alpha += pointerBeam * 0.18;
+
+    var clickGlow = vec3<f32>(0.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 3.0) { continue; }
+        let d = length((uv01 - ripple.xy) * vec2<f32>(aspect, 1.0));
+        let ring = exp(-abs(d - age * 0.38) * 80.0) * exp(-age * 1.3);
+        clickGlow += vec3<f32>(0.25, 0.8, 1.0) * ring * (1.0 + treble);
+    }
+    col += clickGlow;
+    alpha += length(clickGlow) * 0.12;
     
     // Cap alpha
     alpha = min(alpha, 0.5);
 
-    // Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
+    let previous = historyLoadUV(uv01).rgb;
+    let display = mix(previous * 0.93, col, 0.32 + mouseDown * 0.12);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(display, clamp(alpha, 0.0, 0.5)));
 
-    // Pass through depth (mock)
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(global_id.xy)/resolution, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Ray distance is generated scene depth, not source-depth passthrough.
+    let depth = clamp(t / max_dist, 0.0, 1.0);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

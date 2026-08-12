@@ -33,6 +33,11 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn historyAt(coord: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), maxCoord), 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -40,19 +45,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let uv = vec2<f32>(gid.xy) / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let time = u.config.x;
+    let audio = plasmaBuffer[0].xyz;
 
     // Read current frame
     let currentColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let currentLuma = dot(currentColor, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Read previous rolling average from dataTextureC
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    // Read a directionally advected history texel with exact clamped loads.
+    let diffusion = clamp(u.zoom_params.w, 0.0, 1.0);
+    let mouseVector = u.zoom_config.yz - uv;
+    let mouseDirection = mouseVector / max(length(mouseVector), 0.0001);
+    let flowDirection = normalize(mouseDirection * 0.65 + vec2<f32>(cos(time * 0.7), sin(time * 0.9)) * 0.35);
+    let historyOffset = vec2<i32>(round(flowDirection * (1.0 + diffusion * 6.0)));
+    let prevState = historyAt(coord - historyOffset, res);
     let prevAvgLuma = prevState.a;
 
     // === PARAMETERS ===
     // decay: 0.01 = long memory, 0.5 = short memory
     let decay = mix(0.005, 0.3, u.zoom_params.x);
-    let glowIntensity = u.zoom_params.y * 3.0;
+    let glowIntensity = u.zoom_params.y * 3.0 * (1.0 + audio.y * 0.25);
     let colorShift = u.zoom_params.z; // Hue shift based on history
 
     // === UPDATE ROLLING AVERAGE ===
@@ -87,27 +99,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let boostedAvg = mix(newAvgLuma, 1.0, mouseInfluence * 0.5);
 
     // === RIPPLE FLASH ===
-    let time = u.config.x;
     let rippleCount = min(u32(u.config.y), 50u);
     var rippleBoost = 0.0;
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
-        let rDist = length(uv - ripple.xy);
         let age = time - ripple.z;
-        if (age < 2.0 && rDist < 0.1) {
-            rippleBoost += smoothstep(0.1, 0.0, rDist) * max(0.0, 1.0 - age * 0.5);
+        if (age >= 0.0 && age < 2.8) {
+            let radius = age * (0.16 + audio.x * 0.08);
+            let ringDist = abs(length(uv - ripple.xy) - radius);
+            rippleBoost += (1.0 - smoothstep(0.0, 0.022, ringDist)) * (1.0 - age / 2.8);
         }
     }
     let finalAvgLuma = mix(boostedAvg, 1.0, rippleBoost * 0.3);
 
     // === SPATIAL DIFFUSION OF HISTORY ===
     // Let the history bleed slightly for light-painting effect
-    let ps = 1.0 / res;
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let diffusedAvg = (left.a + right.a + down.a + up.a) * 0.125 + finalAvgLuma * 0.5;
+    let left = historyAt(coord + vec2<i32>(-1, 0), res);
+    let right = historyAt(coord + vec2<i32>(1, 0), res);
+    let down = historyAt(coord + vec2<i32>(0, -1), res);
+    let up = historyAt(coord + vec2<i32>(0, 1), res);
+    let neighborAvg = (left.a + right.a + down.a + up.a) * 0.25;
+    let diffusedAvg = mix(finalAvgLuma, neighborAvg, mix(0.0, 0.48, diffusion));
 
     // === STORE STATE ===
     textureStore(dataTextureA, coord, vec4<f32>(currentColor, diffusedAvg));

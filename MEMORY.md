@@ -1,6 +1,53 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-09 (Batch 41 shader upgrade)
+**Last updated:** 2026-08-10 (Batch 45 new generative shaders)
+
+## 2026-08-10 — Batch 45 — Psychedelic generative six
+
+- User requested six new colorful psychedelic-inspired generative shaders with
+  four live sliders plus mouse position, click, and drag response. Created
+  Kaleidoscopic Synapse Bloom, Liquid Cathedral Dream, Mushroom Mandala Garden,
+  Prismatic Serpent River, Cosmic Velvet Hypnosis, and Chromatic Oracle Jelly
+  as tracker #389–394.
+- Every shader uses pointer position plus mouseDown for held local deformation,
+  bounded ripple timestamps for clicks, exact-load A/C display history, real
+  audio, semantic alpha, and generated structural depth. B and `extraBuffer`
+  remain unused.
+- Proof is green: WGSL/Naga and interaction contracts 6/6, four-control
+  liveness, buffer, and uniform audits pass; only the 431-entry generative
+  catalog changes, unified manifest is 1,320, URLs are relative, definitions
+  are 1,333/1,333 unique, Jest is 77/77 suites (508 pass / 1 skip), and the
+  production build passes. Real-GPU visual QA remains external.
+
+## 2026-08-10 — Shader upgrade Batch 44 — FAST MOTION ENCORE
+
+- Upgraded tracker #381–388 across Lenia, Reaction-Diffusion, Video Echo
+  Chamber, Ion Stream, Chroma Depth Tunnel, Mercury Temporal Mirror, Viscous
+  Drag, and Rain Lens Wipe. Rainbow Vector Field was explicitly rejected after
+  coordinator review exposed its hidden Pass-1 multipass ownership.
+- Added state/display conveyors, traveling packets/streaks, and bounded click
+  fronts without frame-hash motion. Repaired filtering rgba32float reads,
+  Chroma's 8x8 workgroup, missing bounds guards, Ion's zero-density division,
+  Viscous output/alpha bounds, and overclaimed depth/physics metadata.
+- Proof is green: gate and contract audit 8/8, exact source params, indexed
+  controls, A packing, unused B, live sliders/audio/mouse/clicks, zero new
+  extraBuffer writes, relative URLs, 1,327 unique IDs, Jest 77/77 suites (508
+  pass / 1 skip), and production build. Real-GPU visual QA remains external.
+
+## 2026-08-10 — Shader upgrade Batch 43 — FAST MOTION ENCORE
+
+- Upgraded tracker #373–380 across the first clean all-category cohort after
+  Batch 42's generative queue closeout: Neon Quantum Lattice, Neon Strings, Kimi
+  Chromatic Warp, Sine Wave, Slime Mold on Video, Thermal Touch Blackbody, VHS
+  Jog, and Alpha Luminance History.
+- Added shader-specific closed-form conveyors/packets/runners, bounded exact-load
+  history advection, and click fronts. Repaired 8x8 workgroup/bounds/filtering,
+  halo, safe-log/continuous-blend, output-bounds, and dead-diffusion issues while
+  removing time-hash strobing and correcting overclaimed thermal metadata.
+- Proof: gate 8/8; strict buffer and schema-aware contract audits PASS; source
+  params exact; A packing preserved; B unused; no extraBuffer access; 1,327
+  unique IDs; Jest 77/77 suites (508 pass / 1 skip); production build green.
+  Real-GPU visual QA remains external.
 
 ## 2026-08-09 — Shader upgrade Batch 41 — FAST MOTION ENCORE
 
@@ -587,6 +634,13 @@
 - `spore-galaxy` feedback fix is important: color now writes dataTextureA (host copies A→C
   last), masks write dataTextureB, enabling real color trails instead of mask-as-color feedback.
 - No live visual QA in the headless VM; use real WebGPU hardware for look/slider tuning.
+
+## Psychedelic generator encore — Batch 46 (2026-08-10)
+
+- Tracker #395–406 covers a second visual-layer pass on the six Batch 45 generators plus six registry-pending complex generative shaders: Gravitational Strain, Holographic Data Core, Art Deco Sky, Ethereal Anemone Bloom, Liquid-Crystal Hive-Mind, and Celestial Prism-Orchid.
+- Preserve exact `params` and `updatedParams` arrays even when complex definitions expose only `updatedParams`. Gravitational Strain and Hive-Mind own A as state; the other ten use A/C display history; B and `extraBuffer` remain unused.
+- Useful fixes: smooth analytic scan packets replaced Holographic frame hashes; Orchid normalized mouse X no longer divides by resolution and its center direction is safe; Art Deco/Hive C reads are exact loads; all click loops cap at 50.
+- Structural proof: Naga/bind-group and schema-aware contract audits 12/12, Jest 77/77 suites, production build green. The manifest retains seven unrelated baseline leading-slash URLs; real-GPU visual/performance QA remains external.
 
 ## Thumbnail coverage — corrected August 2026 baseline
 

@@ -314,6 +314,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv     = vec2<f32>(gid.xy) / res;
     let t      = u.config.x;
     let mouse  = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
     // Mouse Y-flip: screen-top (zoom_config.z=0) = +Y/up
     let mouseY = mouse.y;
     let bass   = plasmaBuffer[0].x;
@@ -343,12 +344,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     // Mouse-controlled well with Y-flip
     let mouseWell = vec2<f32>((mouse.x - 0.5) * aspect, mouseY - 0.5);
-    wells[0] = vec3<f32>(mouseWell.x, mouseWell.y, wellMass * 1.5 * (1.0 + bass * 0.5));
+    wells[0] = vec3<f32>(mouseWell.x, mouseWell.y, wellMass * (1.5 + mouseDown * 1.5) * (1.0 + bass * 0.5));
 
     // ── Ray deflection: RK4 geodesic integration ──
     var rayPos = p;
     var rayVel = vec2<f32>(0.0);
-    let steps  = 24;
+    // The lensing-quality control also scales the bounded RK4 budget.
+    let steps  = 16 + i32(u.zoom_params.z * 8.0);
     let stepSz = 1.0 / f32(steps);
     var totalAbsorption = 0.0;
 
@@ -382,7 +384,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     darkening *= beerLambert(totalAbsorption, 2.0);
 
     // ── Ripple: temporary extra gravity wells ──
-    let ripCount = u32(u.config.y);
+    let ripCount = min(u32(u.config.y), 50u);
     var ripEmission = vec3<f32>(0.0);
     for (var i: u32 = 0u; i < ripCount; i++) {
         let r   = u.ripples[i];
@@ -396,6 +398,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Compose ──
     var col = stars * darkening + emission + ripEmission;
+
+    // A held pointer spins a closed-form strain runner around the local well.
+    let mouseDelta = p - mouseWell;
+    let mouseDist = max(length(mouseDelta), 0.0001);
+    let strainPhase = mouseDist * 72.0 - t * (9.0 + bass * 4.0) + atan2(mouseDelta.y, mouseDelta.x) * 5.0;
+    let strainRunner = pow(0.5 + 0.5 * sin(strainPhase), 12.0) * exp(-mouseDist * 5.0) * mouseDown;
+    let strainColor = hsv2rgb(fract(t * 0.08 + mouseDist * 0.6), 0.9, 1.0);
+    col += strainColor * strainRunner * (1.0 + treble);
 
     // ── Einstein ring glows with Fresnel ──
     for (var i = 0; i < wellCount; i++) {
@@ -441,7 +451,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Alpha: emission energy + lens arc + ring intensity ──
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let emEnergy = length(emission) + length(ripEmission) + length(arcColor);
+    let emEnergy = length(emission) + length(ripEmission) + length(arcColor) + strainRunner;
     let alpha = clamp(0.4 + luma * 0.3 + emEnergy * 0.15 + depthOut * 0.2, 0.0, 1.0);
 
     textureStore(writeTexture, gid.xy, vec4<f32>(col, alpha));

@@ -69,6 +69,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse Inputs
     let mouse_x = u.zoom_config.y; // 0.0 to 1.0
     let mouse_y = u.zoom_config.z; // 0.0 to 1.0
+    let mouse_down = u.zoom_config.w;
 
     // Jog Wheel: Mouse X controls horizontal tear/distortion intensity
     let distortion_strength = pow(abs(mouse_x - 0.5) * 2.0, 2.0) * 0.5; // Stronger at edges
@@ -79,7 +80,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Apply Vertical Tracking (looping)
     var uv = uv_raw;
-    uv.y = fract(uv.y + vertical_tracking + time * 0.05 * distortion_strength * direction);
+    let headRollPhase = fract(uv.y - time * (0.55 + distortion_strength * 2.5) * direction + 0.5);
+    let headSwitchRoll = exp(-pow((headRollPhase - 0.5) / 0.055, 2.0)) * distortion_strength;
+    uv.y = fract(uv.y + vertical_tracking + time * 0.05 * distortion_strength * direction + headSwitchRoll * 0.035 * direction);
+
+    var tapeSlip = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.2) {
+            let slipY = fract(ripple.y + age * (0.22 + mids * 0.10));
+            let bandDist = abs(fract(uv_raw.y - slipY + 0.5) - 0.5);
+            tapeSlip += (1.0 - smoothstep(0.0, 0.035, bandDist)) * (1.0 - age / 2.2);
+        }
+    }
+    tapeSlip += mouse_down * (1.0 - smoothstep(0.0, 0.025, abs(uv_raw.y - mouse_y))) * 0.45;
 
     // Horizontal Distortion (Jitter)
     // Create 'bands' of distortion based on Y and Time
@@ -87,7 +103,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Threshold the wave to make it look like digital tearing
     let tear = smoothstep(0.4, 0.6, dist_wave) * distortion_strength;
 
-    uv.x += (dist_wave - 0.5) * tear * 0.2;
+    let horizontalStreak = sin(uv.y * resolution.y * 0.15 - time * (35.0 + dist_freq)) * (headSwitchRoll + tapeSlip);
+    uv.x += (dist_wave - 0.5) * tear * 0.2 + horizontalStreak * (0.015 + distortion_strength * 0.08) * direction;
 
     // Color Bleed (Chromatic Aberration)
     // R, G, B sampled at different X offsets
@@ -101,8 +118,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = vec3<f32>(r, g, b);
 
     // Static Noise
-    let static_noise = hash12(uv * resolution + time);
+    let static_noise = noise(vec2<f32>(uv.x * resolution.x * 0.25, uv.y * 80.0 + time * 12.0));
     color += (static_noise - 0.5) * noise_amt;
+
+    // Exact, clamped display-history loads make horizontal tape streaks stable.
+    let coord = vec2<i32>(global_id.xy);
+    let maxCoord = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
+    let streakOffset = i32(round(direction * (3.0 + distortion_strength * 14.0 + tapeSlip * 8.0)));
+    let history = textureLoad(dataTextureC, clamp(coord - vec2<i32>(streakOffset, 0), vec2<i32>(0), maxCoord), 0);
+    color = max(color, clamp(history.rgb, vec3<f32>(0.0), vec3<f32>(3.0)) * (0.42 + headSwitchRoll * 0.25 + tapeSlip * 0.18));
 
     // Scanlines
     let scanline = sin(uv.y * resolution.y * 0.5 * PI);
@@ -111,9 +135,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Vignette / Tube curve (optional, keep it subtle)
     let d = distance(uv_raw, vec2<f32>(0.5));
     color *= 1.0 - d * 0.3;
+    color = max(color, vec3<f32>(0.0));
+    color = clamp(color / (vec3<f32>(1.0) + color * 0.35), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Alpha: preserve input transparency while blending tear intensity
-    let finalAlpha = mix(baseColor.a, 1.0, tear * 0.7);
+    let finalAlpha = clamp(mix(baseColor.a, 1.0, clamp(tear * 0.7 + tapeSlip * 0.3, 0.0, 1.0)), 0.0, 1.0);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
 

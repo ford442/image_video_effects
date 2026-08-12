@@ -3046,7 +3046,7 @@
       "audio",
       "music"
     ],
-    "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.",
+    "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting, drag-steered searchlights, click-launched skyline halos, and bounded display history.",
     "workgroup_size": [
       16,
       16,
@@ -3091,7 +3091,16 @@
     "updated": true,
     "id": "gen-art-deco-sky",
     "url": "shaders/gen-art-deco-sky.wgsl",
-    "features": []
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "raymarching",
+      "generated-depth"
+    ]
   },
   {
     "name": "Astral-Silk Chrono-Weaver Arachnid",
@@ -5016,7 +5025,7 @@
       "iridescent",
       "atmospheric"
     ],
-    "description": "A mesmerizing, infinite expanse of refractive, crystalline petals that fold, bloom, and scatter starlight into vivid chromatic spectrums, dynamically responding to cosmic winds and audio vibrations.",
+    "description": "An infinite expanse of refractive crystalline petals that fold under audio and drag-driven pollinator wind, then scatter click-launched prism petals through bounded display history.",
     "workgroup_size": [
       16,
       16,
@@ -5061,7 +5070,17 @@
     "updated": true,
     "id": "gen-celestial-prism-orchid",
     "url": "shaders/gen-celestial-prism-orchid.wgsl",
-    "features": []
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "raymarching",
+      "semantic-alpha",
+      "generated-depth"
+    ]
   },
   {
     "name": "Celestial Quantum-Glass Dragonfly",
@@ -5542,6 +5561,105 @@
     "id": "gen-chromatic-metamorphosis",
     "url": "shaders/gen-chromatic-metamorphosis.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-chromatic-oracle-jelly",
+    "name": "Chromatic Oracle Jelly",
+    "category": "generative",
+    "url": "shaders/gen-chromatic-oracle-jelly.wgsl",
+    "description": "A psychedelic-inspired swarm of drifting oracle jellyfish with layered bells, sigil eyes, and curling tentacles. Drags attract persistent wakes and clicks trigger bioluminescent prophecies.",
+    "params": [
+      {
+        "id": "swarm-density",
+        "name": "Swarm Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "drift-speed",
+        "name": "Drift Speed",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "tentacle-curl",
+        "name": "Tentacle Curl",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "oracle-chroma",
+        "name": "Oracle Chroma",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Swarm Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Drift Speed",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Tentacle Curl",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Oracle Chroma",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "semantic-alpha",
+      "generated-depth",
+      "oracle-sigils"
+    ],
+    "tags": [
+      "generative",
+      "psychedelic",
+      "jellyfish",
+      "oracle",
+      "bioluminescent",
+      "chromatic"
+    ]
   },
   {
     "name": "Chromatic Singularity-Loom",
@@ -6441,6 +6559,105 @@
     "id": "gen-cosmic-slime-mold",
     "url": "shaders/gen-cosmic-slime-mold.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-cosmic-velvet-hypnosis",
+    "name": "Cosmic Velvet Hypnosis",
+    "category": "generative",
+    "url": "shaders/gen-cosmic-velvet-hypnosis.wgsl",
+    "description": "A psychedelic-inspired velvet spiral well with soft chromatic arms, counter-spirals, and moving moire. Drags torque persistent trails and clicks send luminous hypnosis halos outward.",
+    "params": [
+      {
+        "id": "spiral-arms",
+        "name": "Spiral Arms",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "spin-rate",
+        "name": "Spin Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "velvet-softness",
+        "name": "Velvet Softness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Spiral Arms",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spin Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Velvet Softness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Saturation",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "semantic-alpha",
+      "generated-depth",
+      "counter-spiral-moire"
+    ],
+    "tags": [
+      "generative",
+      "psychedelic",
+      "hypnosis",
+      "spiral",
+      "velvet",
+      "cosmic"
+    ]
   },
   {
     "name": "Cosmic Web Filament",
@@ -8280,7 +8497,7 @@
       "music",
       "reactive"
     ],
-    "description": "A pulsating, infinite underwater expanse of translucent, bioluminescent anemone-like structures that gently sway in an invisible current, reaching out to feed on the audio frequencies.",
+    "description": "A pulsating underwater expanse of translucent anemones that feed on audio, brighten under pointer drags, and answer clicks with traveling bioluminescent fronts and bounded display history.",
     "workgroup_size": [
       16,
       16,
@@ -8325,7 +8542,17 @@
     "updated": true,
     "id": "gen-ethereal-anemone-bloom",
     "url": "shaders/gen-ethereal-anemone-bloom.wgsl",
-    "features": []
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "raymarching",
+      "semantic-alpha",
+      "generated-depth"
+    ]
   },
   {
     "name": "Ethereal-Aurora Ghost-Orchid",
@@ -11098,7 +11325,7 @@
       "beer-lambert",
       "fresnel"
     ],
-    "description": "Orbiting gravity wells warp a procedural star field via RK4 geodesic ray integration. Tidal emission glows where gravitational gradients collide. Upgraded with domain-warped FBM, curl noise, Voronoi nebulae, Beer-Lambert extinction, Fresnel-Schlick lensing, accretion disks, and enhanced audio reactivity.",
+    "description": "Orbiting gravity wells warp a procedural star field through bounded RK4 geodesic integration. Tidal emission, accretion disks, click fronts, and held-pointer strain runners illuminate the generated potential field.",
     "workgroup_size": [
       16,
       16,
@@ -11142,7 +11369,16 @@
     "supportsDof": false,
     "updated": true,
     "url": "shaders/gen-gravitational-strain.wgsl",
-    "features": []
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "bounded-raymarch",
+      "semantic-alpha",
+      "generated-depth"
+    ]
   },
   {
     "name": "Gravito-Phononic Accretion",
@@ -11345,7 +11581,7 @@
       "audio",
       "music"
     ],
-    "description": "An infinite journey through a quantum lattice of glowing data nodes and pulsing circuits.",
+    "description": "An infinite journey through a quantum lattice of glowing data nodes, smooth scan packets, pointer beams, and click-launched data rings with bounded display history.",
     "workgroup_size": [
       16,
       16,
@@ -11390,7 +11626,17 @@
     "updated": true,
     "id": "gen-holographic-data-core",
     "url": "shaders/gen-holographic-data-core.wgsl",
-    "features": []
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "volumetric",
+      "semantic-alpha",
+      "generated-depth"
+    ]
   },
   {
     "id": "gen-holographic-fracture",
@@ -12774,6 +13020,105 @@
     "features": []
   },
   {
+    "id": "gen-kaleidoscopic-synapse-bloom",
+    "name": "Kaleidoscopic Synapse Bloom",
+    "category": "generative",
+    "url": "shaders/gen-kaleidoscopic-synapse-bloom.wgsl",
+    "description": "A psychedelic-inspired neural mandala where traveling axon pulses, counter-rotating dendrites, and bridge sparks bloom around the pointer. Held drags twist persistent synapse trails and clicks launch expanding inoculation rings.",
+    "params": [
+      {
+        "id": "bloom-density",
+        "name": "Bloom Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "pulse-speed",
+        "name": "Pulse Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "neural-warp",
+        "name": "Neural Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color-flux",
+        "name": "Color Flux",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bloom Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pulse Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Neural Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Flux",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "semantic-alpha",
+      "generated-depth",
+      "counter-rotating-dendrites"
+    ],
+    "tags": [
+      "generative",
+      "psychedelic",
+      "kaleidoscope",
+      "neural",
+      "mandala",
+      "chromatic"
+    ]
+  },
+  {
     "name": "Kinetic Neo-Brutalist Megastructure",
     "category": "generative",
     "tags": [
@@ -13265,6 +13610,105 @@
     "features": []
   },
   {
+    "id": "gen-liquid-cathedral-dream",
+    "name": "Liquid Cathedral Dream",
+    "category": "generative",
+    "url": "shaders/gen-liquid-cathedral-dream.wgsl",
+    "description": "A psychedelic-inspired cathedral of melting stained-glass arches, rose tracery, and racing floor caustics. Pointer drags refract the persistent structure and clicks unfold rotating rose-window shock fronts.",
+    "params": [
+      {
+        "id": "spire-density",
+        "name": "Spire Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "melt-speed",
+        "name": "Melt Speed",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "refraction",
+        "name": "Refraction",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "stained-hue",
+        "name": "Stained Hue",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Spire Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Melt Speed",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Refraction",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Stained Hue",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "semantic-alpha",
+      "generated-depth",
+      "rose-tracery"
+    ],
+    "tags": [
+      "generative",
+      "psychedelic",
+      "cathedral",
+      "stained-glass",
+      "liquid",
+      "chromatic"
+    ]
+  },
+  {
     "name": "Liquid-Crystal Hive-Mind",
     "category": "generative",
     "tags": [
@@ -13281,7 +13725,7 @@
       "raymarched",
       "showcase"
     ],
-    "description": "A vast, breathing network of hexagonal bio-synthetic cells containing turbulent, iridescent liquid crystals. Smoothed audio drives hive pulse, turbulence, and shimmer while mouse motion rotates and disrupts the local field.",
+    "description": "A breathing network of hexagonal bio-synthetic cells filled with turbulent liquid crystal. Smoothed audio and pointer drag disrupt the field while clicks inject traveling chemotactic fronts into its preserved hive state.",
     "workgroup_size": [
       16,
       16,
@@ -13326,7 +13770,17 @@
     "updated": true,
     "id": "gen-liquid-crystal-hive-mind",
     "url": "shaders/gen-liquid-crystal-hive-mind.wgsl",
-    "features": []
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "simulation-state",
+      "raymarching",
+      "semantic-alpha",
+      "generated-depth"
+    ]
   },
   {
     "name": "Liquid-Neon Cyber-Metropolis",
@@ -15254,6 +15708,105 @@
     "id": "gen-murmuration-phantom",
     "url": "shaders/gen-murmuration-phantom.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-mushroom-mandala-garden",
+    "name": "Mushroom Mandala Garden",
+    "category": "generative",
+    "url": "shaders/gen-mushroom-mandala-garden.wgsl",
+    "description": "A psychedelic-inspired radial garden of breathing mushroom caps, luminous gills, traveling spores, and pulsing mycelium. Drags bend persistent growth and clicks release patterned fairy-ring fronts.",
+    "params": [
+      {
+        "id": "cap-count",
+        "name": "Cap Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "breathe-rate",
+        "name": "Breathe Rate",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "gill-detail",
+        "name": "Gill Detail",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "bioluminescence",
+        "name": "Bioluminescence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cap Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Breathe Rate",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Gill Detail",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bioluminescence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "semantic-alpha",
+      "generated-depth",
+      "mycelium-network"
+    ],
+    "tags": [
+      "generative",
+      "psychedelic",
+      "mushroom",
+      "mandala",
+      "bioluminescent",
+      "organic"
+    ]
   },
   {
     "name": "Mycelium Network",
@@ -18202,7 +18755,103 @@
         "default": 0.2,
         "step": 0.01,
         "mappedTo": "zoom_params.w"
+      },
+    "id": "gen-prismatic-serpent-river",
+    "name": "Prismatic Serpent River",
+    "category": "generative",
+    "url": "shaders/gen-prismatic-serpent-river.wgsl",
+    "description": "Psychedelic-inspired prismatic serpents braid across a luminous current with racing scales, refractive fins, and bright eyes. Drags steer their persistent wakes and clicks shed expanding chromatic skins.",
+    "params": [
+      {
+        "id": "serpent-count",
+        "name": "Serpent Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "flow-speed",
+        "name": "Flow Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "body-scale",
+        "name": "Body Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Serpent Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Body Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "drag-reactive",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "semantic-alpha",
+      "generated-depth",
+      "prismatic-fins"
+    ],
+    "tags": [
+      "generative",
+      "psychedelic",
+      "serpent",
+      "river",
+      "prismatic",
+      "chromatic"
     ]
   },
   {

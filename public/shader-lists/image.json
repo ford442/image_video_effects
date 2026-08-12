@@ -3503,7 +3503,7 @@
     "id": "mercury-temporal-mirror",
     "name": "Mercury Temporal Mirror",
     "url": "shaders/mercury-temporal-mirror.wgsl",
-    "description": "The input image is reflected in a living liquid mercury surface whose ripples persist and evolve over time. Mouse presses create visceral impact dents that propagate realistically. Audio controls the viscosity and thickness of the metal.",
+    "description": "A stylized liquid-metal mirror with directionally advected wave state, traveling capillary packets, audio rain tracks, and click-launched impact fronts. Its generated depth follows the evolving wave energy rather than a physical fluid model.",
     "tags": [
       "mercury",
       "liquid",
@@ -3520,7 +3520,11 @@
       "mouse-impact",
       "temporal",
       "semantic-alpha",
-      "depth-aware"
+      "depth-aware",
+      "generated-depth",
+      "fast-motion",
+      "click-reactive",
+      "bounded-history"
     ],
     "params": [
       {
@@ -3549,6 +3553,40 @@
       },
       {
         "id": "metallic",
+        "name": "Metallic Sheen",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Reflection Strength",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Mouse Impact",
+        "default": 0.9,
+        "min": 0,
+        "max": 1.8,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Metallic Sheen",
         "default": 0.65,
         "min": 0,
@@ -5335,7 +5373,7 @@
     "id": "video-echo-chamber",
     "name": "Video Echo Chamber",
     "url": "shaders/video-echo-chamber.wgsl",
-    "description": "Temporal trails that persist longer near the mouse cursor, creating a ghostly echo effect.",
+    "description": "Orbiting history conveyors and horizontal chromatic streaks form bounded video echoes around the mouse, while clicks launch expanding echo rings. Depth is passed through unchanged.",
     "params": [
       {
         "id": "decay",
@@ -5368,7 +5406,45 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "audio-reactive",
+      "fast-motion",
+      "click-reactive",
+      "bounded-history"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Global Decay",
+        "default": 0.6,
+        "min": 0,
+        "max": 0.95,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mouse Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Echo Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",

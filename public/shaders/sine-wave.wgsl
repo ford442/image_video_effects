@@ -67,12 +67,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
   let mouseMask = 1.0 - smoothstep(0.0, 0.75, mouseDist);
 
-  // Multi-frequency sine wave interference with traveling wave packets
+  // Multi-frequency interference with fast, closed-form packet envelopes.
   let phase = uv.y * scale * 6.28318 + time * speed * 2.5;
   let phase2 = uv.x * (scale * 0.7) * 6.28318 - time * speed * 1.7;
+  let packetPhaseX = fract(uv.y * (1.5 + scale * 0.12) - time * speed * 0.42);
+  let packetPhaseY = fract(uv.x * (1.2 + scale * 0.09) + time * speed * 0.31);
+  let packetX = exp(-pow((packetPhaseX - 0.5) / 0.16, 2.0));
+  let packetY = exp(-pow((packetPhaseY - 0.5) / 0.18, 2.0));
   let groupVel = sin(phase * 0.5 + time * speed * 0.8) * 0.5 + 0.5;
-  let waveX = sin(phase) * groupVel;
-  let waveY = cos(phase2) * (1.0 - groupVel * 0.3);
+
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.4) {
+      let front = abs(length((uv - ripple.xy) * vec2<f32>(aspect, 1.0)) - age * (0.30 + speed * 0.04));
+      clickWave += (1.0 - smoothstep(0.0, 0.025, front)) * (1.0 - age / 2.4);
+    }
+  }
+
+  let waveX = sin(phase + clickWave * 2.2) * groupVel * (0.55 + packetX * 0.9);
+  let waveY = cos(phase2 - clickWave * 1.7) * (1.0 - groupVel * 0.3) * (0.60 + packetY * 0.75);
 
   // Amplitude modulation from audio + mouse
   let am = 1.0 + bass * 0.5 + mouseMask * 0.8;
@@ -86,7 +102,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     (waveY - waveX * 0.35) * intensity * 0.45 * (1.0 + mouseMask)
   ) * depthAtten;
 
-  let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+  let coord = vec2<i32>(gid.xy);
+  let maxCoord = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
+  let stateOffset = vec2<i32>(round(vec2<f32>(waveX, waveY) * (2.0 + detail * 5.0)));
+  let previousState = textureLoad(dataTextureC, clamp(coord - stateOffset, vec2<i32>(0), maxCoord), 0);
+  let historyOffset = clamp(previousState.xy, vec2<f32>(-0.12), vec2<f32>(0.12));
+  let sampleUV = clamp(uv + offset + historyOffset * (0.08 + detail * 0.12), vec2<f32>(0.0), vec2<f32>(1.0));
 
   // Chromatic dispersion on wave crests
   let crest = clamp(abs(waveX) * 0.6 + abs(waveY) * 0.4, 0.0, 1.0);
@@ -105,7 +126,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = finalColor + causticTint * interference * (0.04 + bass * 0.12);
 
   // HDR specular highlights on crests
-  let specular = pow(crest, 8.0) * (0.3 + bass * 0.4);
+  let crestStreak = clamp(previousState.z, 0.0, 1.0) * (packetX + packetY) * 0.5;
+  let specular = pow(crest, 8.0) * (0.3 + bass * 0.4) + crestStreak * (0.12 + detail * 0.22);
   finalColor = finalColor + vec3<f32>(1.0, 0.95, 0.85) * specular;
 
   // ACES tone mapping

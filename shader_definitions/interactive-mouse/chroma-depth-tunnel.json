@@ -2,7 +2,7 @@
   "id": "chroma-depth-tunnel",
   "name": "Chroma Depth Tunnel",
   "url": "shaders/chroma-depth-tunnel.wgsl",
-  "description": "A concentric tunnel effect centered on the mouse, with chromatic aberration.",
+  "description": "A mouse-centered chromatic tunnel with smooth axial flight, helical spectral runners, bounded afterimage streaks, and click-launched shock rings. Depth is passed through unchanged.",
   "params": [
     {
       "id": "speed",
@@ -40,7 +40,17 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal",
+    "fast-motion",
+    "click-reactive",
+    "bounded-history"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Tunnel Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Chroma Sep", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Center Fog", "default": 0.2, "min": 0, "max": 1, "step": 0.01 }
   ],
   "tags": [
     "filter",

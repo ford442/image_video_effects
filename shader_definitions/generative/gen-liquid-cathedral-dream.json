@@ -1,0 +1,21 @@
+{
+  "id": "gen-liquid-cathedral-dream",
+  "name": "Liquid Cathedral Dream",
+  "category": "generative",
+  "url": "shaders/gen-liquid-cathedral-dream.wgsl",
+  "description": "A psychedelic-inspired cathedral of melting stained-glass arches, rose tracery, and racing floor caustics. Pointer drags refract the persistent structure and clicks unfold rotating rose-window shock fronts.",
+  "params": [
+    { "id": "spire-density", "name": "Spire Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "melt-speed", "name": "Melt Speed", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "refraction", "name": "Refraction", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "stained-hue", "name": "Stained Hue", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Spire Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Melt Speed", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Refraction", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Stained Hue", "default": 0.45, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "fast-motion", "semantic-alpha", "generated-depth", "rose-tracery"],
+  "tags": ["generative", "psychedelic", "cathedral", "stained-glass", "liquid", "chromatic"]
+}

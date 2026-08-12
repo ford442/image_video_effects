@@ -24,7 +24,7 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -37,8 +37,9 @@ fn lumaAt(uv: vec2<f32>, readTexture: texture_2d<f32>, u_sampler: sampler) -> f3
   return dot(textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
-fn trailAt(uv: vec2<f32>, dataTextureC: texture_2d<f32>, u_sampler: sampler) -> f32 {
-  return textureSampleLevel(dataTextureC, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+fn stateAt(coord: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+  let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+  return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), maxCoord), 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -58,13 +59,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthGlow = mix(0.6, 1.4, depth);
 
     let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let trail = textureLoad(dataTextureC, coord, 0).r;
+    let previousState = stateAt(coord, res);
+    let trail = previousState.r;
 
     var blur = 0.0;
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
-            let sampleUV = uv + vec2<f32>(f32(x), f32(y)) * px;
-            blur = blur + trailAt(sampleUV, dataTextureC, u_sampler);
+            blur = blur + stateAt(coord + vec2<i32>(x, y), res).r;
         }
     }
     blur = blur / 9.0;
@@ -75,10 +76,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let foodD = lumaAt(uv - vec2<f32>(0.0, px.y), readTexture, u_sampler);
     let foodU = lumaAt(uv + vec2<f32>(0.0, px.y), readTexture, u_sampler);
 
-    let trailL = trailAt(uv - vec2<f32>(px.x, 0.0), dataTextureC, u_sampler);
-    let trailR = trailAt(uv + vec2<f32>(px.x, 0.0), dataTextureC, u_sampler);
-    let trailD = trailAt(uv - vec2<f32>(0.0, px.y), dataTextureC, u_sampler);
-    let trailU = trailAt(uv + vec2<f32>(0.0, px.y), dataTextureC, u_sampler);
+    let trailL = stateAt(coord + vec2<i32>(-1, 0), res).r;
+    let trailR = stateAt(coord + vec2<i32>(1, 0), res).r;
+    let trailD = stateAt(coord + vec2<i32>(0, -1), res).r;
+    let trailU = stateAt(coord + vec2<i32>(0, 1), res).r;
 
     let gradFood = vec2<f32>(foodR - foodL, foodU - foodD);
     let gradTrail = vec2<f32>(trailR - trailL, trailU - trailD);
@@ -89,13 +90,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     ) * 0.015 * bass_env(bass, mids);
 
     let drift = normalize(gradFood * 2.3 + gradTrail * 1.2 + jitter + vec2<f32>(1e-4));
-    let aheadUV = clamp(uv + drift * px * 2.0, vec2<f32>(0.0), vec2<f32>(1.0));
-    let aheadTrail = trailAt(aheadUV, dataTextureC, u_sampler);
-
     let follow = mix(0.05, 0.80, clamp(u.zoom_params.x, 0.0, 1.0));
     let decay = mix(0.88, 0.995, clamp(u.zoom_params.y, 0.0, 1.0));
     let foodGain = mix(0.01, 0.20, clamp(u.zoom_params.z, 0.0, 1.0));
     let glowGain = mix(0.25, 1.50, clamp(u.zoom_params.w, 0.0, 1.0)) * depthGlow;
+
+    // Advect history by its packed velocity before following the new gradient.
+    let priorVelocity = clamp(previousState.zw * 2.0 - 1.0, vec2<f32>(-1.0), vec2<f32>(1.0));
+    let advectPixels = vec2<i32>(round(priorVelocity * (1.0 + follow * 5.0)));
+    let advectedTrail = stateAt(coord - advectPixels, res).r;
+    let aheadTrail = stateAt(coord + vec2<i32>(round(drift * 2.0)), res).r;
+
+    let chemPhase = fract(dot(uv, vec2<f32>(1.7, -1.1)) * 5.0 - u.config.x * (1.8 + mids));
+    let chemPacket = exp(-pow((chemPhase - 0.5) / 0.12, 2.0)) * smoothstep(0.01, 0.20, length(gradFood));
 
     var deposit = max(food - 0.25, 0.0) * foodGain;
 
@@ -104,7 +111,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseBoost = smoothstep(0.10, 0.0, length(uv - mousePos)) * mouseDown;
     deposit = deposit + mouseBoost * 0.12 * (1.0 + bass * 0.5);
 
-    var nextTrail = max(blur * decay, aheadTrail * follow) + deposit;
+    var clickFoodFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age >= 0.0 && age < 2.5) {
+            let front = abs(length(uv - ripple.xy) - age * (0.14 + bass * 0.08));
+            clickFoodFront += (1.0 - smoothstep(0.0, 0.018, front)) * (1.0 - age / 2.5);
+        }
+    }
+    deposit += chemPacket * foodGain * (0.20 + mids * 0.20) + clickFoodFront * 0.16;
+
+    var nextTrail = max(max(blur * decay, aheadTrail * follow), advectedTrail * (0.55 + follow * 0.35)) + deposit;
     nextTrail = clamp(nextTrail, 0.0, 1.0);
 
     textureStore(dataTextureA, coord, vec4<f32>(nextTrail, food, drift.x * 0.5 + 0.5, drift.y * 0.5 + 0.5));

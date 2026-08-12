@@ -4,13 +4,16 @@
   "url": "shaders/ion-stream.wgsl",
   "features": [
     "upgraded-rgba",
-    "depth-aware",
     "curl-turbulence",
     "magnetic-bending",
     "audio-reactive",
-    "mouse-driven"
+    "mouse-driven",
+    "temporal",
+    "fast-motion",
+    "click-reactive",
+    "bounded-history"
   ],
-  "description": "Particle trail advection with curl turbulence and magnetic bending. FBM-driven curl noise warps the flow field; mouse creates magnetic deflection. Ion glow streams pulse with treble, bass deepens the bend.",
+  "description": "Helical ion packets race through a smooth turbulent flow while the mouse bends their bounded display wakes and clicks launch expanding ion fronts. Audio shapes flow and glow; depth is passed through unchanged.",
   "params": [
     {
       "name": "Stream Speed",
@@ -40,6 +43,12 @@
       "min": 0,
       "max": 1
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Stream Speed", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Curl Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Stream Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Ion Color", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ],
   "tags": [
     "filter",

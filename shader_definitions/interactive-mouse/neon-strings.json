@@ -2,7 +2,7 @@
   "id": "neon-strings",
   "name": "Neon Strings — Blackbody Wire",
   "url": "shaders/neon-strings.wgsl",
-  "description": "Plucked-string vibration with Planck blackbody thermal emission. Temperature proportional to squared displacement amplitude (kinetic energy density), Stefan-Boltzmann glow (T⁴) per string segment, Newton cooling from antinodes to clamped ends. Audio bass adds vibrato; treble drives plasma shimmer.",
+  "description": "Plucked-string vibration with a stylized heated-wire palette driven by squared displacement. Traveling pluck packets, harmonic afterimage streaks, and click-launched string impulses move across the wire bank while audio drives vibrato and shimmer.",
   "params": [
     {
       "id": "stringCount",
@@ -33,10 +33,47 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "String Count",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Tension",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Cooling Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
     "audio-driven",
+    "click-reactive",
+    "fast-motion",
+    "temporal-trail",
     "upgraded-rgba"
   ],
   "tags": [

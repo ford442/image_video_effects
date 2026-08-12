@@ -13,7 +13,7 @@
     "audio",
     "music"
   ],
-  "description": "An infinite journey through a quantum lattice of glowing data nodes and pulsing circuits.",
+  "description": "An infinite journey through a quantum lattice of glowing data nodes, smooth scan packets, pointer beams, and click-launched data rings with bounded display history.",
   "workgroup_size": [
     16,
     16,
@@ -58,5 +58,5 @@
   "updated": true,
   "id": "gen-holographic-data-core",
   "url": "shaders/gen-holographic-data-core.wgsl",
-  "features": []
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "volumetric", "semantic-alpha", "generated-depth"]
 }

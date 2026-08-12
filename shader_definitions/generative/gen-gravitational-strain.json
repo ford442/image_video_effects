@@ -18,7 +18,7 @@
     "beer-lambert",
     "fresnel"
   ],
-  "description": "Orbiting gravity wells warp a procedural star field via RK4 geodesic ray integration. Tidal emission glows where gravitational gradients collide. Upgraded with domain-warped FBM, curl noise, Voronoi nebulae, Beer-Lambert extinction, Fresnel-Schlick lensing, accretion disks, and enhanced audio reactivity.",
+  "description": "Orbiting gravity wells warp a procedural star field through bounded RK4 geodesic integration. Tidal emission, accretion disks, click fronts, and held-pointer strain runners illuminate the generated potential field.",
   "workgroup_size": [
     16,
     16,
@@ -62,5 +62,5 @@
   "supportsDof": false,
   "updated": true,
   "url": "shaders/gen-gravitational-strain.wgsl",
-  "features": []
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "bounded-raymarch", "semantic-alpha", "generated-depth"]
 }

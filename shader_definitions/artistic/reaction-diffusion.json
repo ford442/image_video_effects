@@ -2,9 +2,14 @@
   "id": "reaction-diffusion",
   "name": "Reaction-Diffusion",
   "url": "shaders/reaction-diffusion.wgsl",
-  "description": "Grey-Scott style color bleed with cross-channel inhibition.",
+  "description": "A Gray-Scott-inspired two-channel field with directional state advection, traveling feed packets, audio modulation, and click-launched seed fronts. Legacy control labels are retained for saved presets.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "fast-motion",
+    "click-reactive",
+    "bounded-history"
   ],
   "tags": [
     "simulation",
@@ -43,5 +48,11 @@
       "max": 1,
       "step": 0.01
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Detail", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ]
 }
