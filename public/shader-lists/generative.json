@@ -18707,6 +18707,55 @@
     "features": []
   },
   {
+    "id": "gen-prismatic-quantum-glass-chrysalis-engine",
+    "url": "shaders/gen-prismatic-quantum-glass-chrysalis-engine.wgsl",
+    "category": "generative",
+    "name": "Prismatic Quantum-Glass Chrysalis-Engine",
+    "tags": [
+      "chrysalis",
+      "glass",
+      "quantum",
+      "refraction",
+      "chromatic"
+    ],
+    "description": "A hyper-reflective, slowly rotating multifaceted chrysalis floating in a void of refracted auroral light, combining harsh geometric cuts with fluid internal luminescence.",
+    "parameters": [
+      {
+        "name": "Refraction Index",
+        "type": "slider",
+        "min": 1,
+        "max": 2.5,
+        "default": 1.5,
+        "step": 0.01,
+        "mappedTo": "zoom_params.x"
+      },
+      {
+        "name": "Plasma Intensity",
+        "type": "slider",
+        "min": 0,
+        "max": 3,
+        "default": 1,
+        "step": 0.1,
+        "mappedTo": "zoom_params.y"
+      },
+      {
+        "name": "Core Rotation Speed",
+        "type": "slider",
+        "min": 0,
+        "max": 2,
+        "default": 0.5,
+        "step": 0.01,
+        "mappedTo": "zoom_params.z"
+      },
+      {
+        "name": "Chromatic Dispersion",
+        "type": "slider",
+        "min": 0,
+        "max": 1,
+        "default": 0.2,
+        "step": 0.01,
+        "mappedTo": "zoom_params.w"
+      },
     "id": "gen-prismatic-serpent-river",
     "name": "Prismatic Serpent River",
     "category": "generative",

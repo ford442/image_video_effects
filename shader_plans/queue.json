@@ -391,11 +391,6 @@
       "added": "2026-08-05T15:19:54.714471"
     },
     {
-      "filename": "2026-08-06_prismatic-quantum-glass-chrysalis-engine.md",
-      "title": "Prismatic Quantum-Glass Chrysalis-Engine",
-      "added": "2026-08-06T15:45:31.948122"
-    },
-    {
       "filename": "2026-08-07_gravitational-ferrofluid-singularity-engine.md",
       "title": "Gravitational Ferrofluid Singularity-Engine",
       "added": "2026-08-07T15:56:08.651032"
@@ -569,6 +564,13 @@
       "added": "2026-08-09T15:31:01.897649",
       "status": "completed",
       "completed_at": "2026-08-10T08:06:46.451278+00:00"
+    },
+    {
+      "filename": "2026-08-06_prismatic-quantum-glass-chrysalis-engine.md",
+      "title": "Prismatic Quantum-Glass Chrysalis-Engine",
+      "added": "2026-08-06T15:45:31.948122",
+      "status": "completed",
+      "completed_at": "2026-08-11T08:23:57.016031+00:00"
     }
   ],
   "completed": [
