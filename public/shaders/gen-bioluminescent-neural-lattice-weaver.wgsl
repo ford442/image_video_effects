@@ -162,8 +162,13 @@ fn map(p: vec3<f32>) -> MapResult {
   let intersection_mask = 1.0 - smoothstep(0.0, 0.2, abs(d_lattice - d_neural));
   energy += intersection_mask * pulse;
 
+
   // Increase energy near mouse
   energy += (1.0 - smoothstep(0.0, 2.0, dist_to_mouse)) * 1.5;
+
+  // Audio reactivity
+  let audio_sample = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(abs(d_neural) * 0.5, 0.5), 0.0).r;
+  energy += audio_sample * 2.0;
 
   res.energy = energy;
 
@@ -258,8 +263,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (res.mat_id == 0) {
       // Crystalline Lattice: metallic, specular
       albedo = vec3<f32>(0.1, 0.3, 0.4);
-      let ref = reflect(rd, n);
-      let spec = pow(max(0.0, dot(ref, l1)), 32.0);
+      let refl = reflect(rd, n);
+      let spec = pow(max(0.0, dot(refl, l1)), 32.0);
       col = albedo * (dif1 * 0.8 + 0.2) + vec3<f32>(1.0) * spec;
     } else {
       // Neural Pathways: subsurface scattering approx, organic
