@@ -46,12 +46,12 @@ fn simplex3d(p: vec3<f32>) -> f32 {
   let K1 = 0.333333333;
   let K2 = 0.166666667;
 
-  let i = floor(p + (p.x + p.y + p.z) * K1);
+  let i = floor(p + vec3<f32>((p.x + p.y + p.z) * K1));
   let d0 = p - (i - (i.x + i.y + i.z) * K2);
 
   var e = step(vec3<f32>(0.0), d0 - d0.yzx);
-  var i1 = e * (1.0 - e.zxy);
-  var i2 = 1.0 - e.zxy * (1.0 - e);
+  var i1 = e * (vec3<f32>(1.0) - e.zxy);
+  var i2 = vec3<f32>(1.0) - e.zxy * (1.0 - e);
 
   let d1 = d0 - (i1 - 1.0 * K2);
   let d2 = d0 - (i2 - 2.0 * K2);
@@ -244,7 +244,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
   // -- Shading --
   var col = vec3<f32>(0.02, 0.05, 0.1); // Deep background (cyan/magenta mix base)
-  col -= length(uv) * 0.05; // vignette
+  col -= vec3<f32>(length(uv) * 0.05); // vignette
 
   if (hit) {
     let p = ro + rd * t;
@@ -293,7 +293,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   col += vol_color * accumulated_energy * biolum_intensity * 2.0;
 
   // Tone mapping (ACES approx)
-  col = (col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14);
+  col = (col * (2.51 * col + vec3<f32>(0.03))) / (col * (2.43 * col + vec3<f32>(0.59)) + vec3<f32>(0.14));
 
   let out_color = vec4<f32>(col, 1.0);
   textureStore(writeTexture, coords, out_color);
