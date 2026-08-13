@@ -1,7 +1,7 @@
 {
-  "generated": "2026-08-06T08:02:41.355190+00:00",
-  "defs_scanned": 1015,
-  "defs_with_params": 1015,
+  "generated": "2026-08-12T08:04:52.848053+00:00",
+  "defs_scanned": 1024,
+  "defs_with_params": 1024,
   "new_dead_sliders": [],
   "known_dead_sliders": [
     {
@@ -1234,13 +1234,6 @@
       "category": "visual-effects",
       "param_id": "saturation",
       "name": "Saturation",
-      "field": "w"
-    },
-    {
-      "id": "alpha-luminance-history",
-      "category": "visual-effects",
-      "param_id": "diffusion",
-      "name": "Trail Diffusion",
       "field": "w"
     },
     {
