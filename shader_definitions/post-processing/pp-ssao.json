@@ -2,7 +2,7 @@
   "id": "pp-ssao",
   "name": "PP SSAO",
   "url": "shaders/pp-ssao.wgsl",
-  "description": "Screen-space ambient occlusion for added depth, with color bleeding from occluding surfaces",
+  "description": "Stylized screen-space depth occlusion with rotating sample kernels, held-pointer focus, rapid scan packets, three-band audio response, color bleed, and bounded click fronts.",
   "tags": [
     "post-process",
     "ssao",
@@ -38,5 +38,19 @@
       "min": 0,
       "max": 1
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Radius", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Quality", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Color Bleed", "default": 0.2, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "features": [
+    "depth-aware",
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "fast-motion",
+    "upgraded-rgba"
   ]
 }

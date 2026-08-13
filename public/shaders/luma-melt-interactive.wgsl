@@ -24,7 +24,7 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -84,6 +84,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let time = u.config.x;
+    let held = step(0.5, u.zoom_config.w);
 
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
@@ -91,7 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
 
     let meltSpeed = u.zoom_params.x * 0.03 * bass_env(bass, mids);
-    let persistence = u.zoom_params.y;
+    let persistence = clamp(u.zoom_params.y, 0.5, 0.99);
     let radius = max(u.zoom_params.z, 0.01);
     let heat = u.zoom_params.w * 0.15;
 
@@ -100,26 +102,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let diff = uv - mousePos;
     let dist = length(vec2<f32>(diff.x * aspect, diff.y));
-    let mouseFactor = smoothstep(radius, 0.0, dist);
+    let mouseFactor = smoothstep(radius, 0.0, dist) * mix(0.12, 1.0, held);
+
+    var clickHeat = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var rippleIndex: u32 = 0u; rippleIndex < rippleCount; rippleIndex = rippleIndex + 1u) {
+      let ripple = u.ripples[rippleIndex];
+      let rippleAge = max(time - ripple.z, 0.0);
+      let front = abs(distance(uv, ripple.xy) - rippleAge * (0.17 + bass * 0.10));
+      clickHeat += exp(-front * 125.0) * exp(-rippleAge * 1.55);
+    }
 
     let newColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let luma = dot(newColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    let curl = curl2D(uv * 3.0, u.config.x * 0.2) * meltSpeed * (1.0 + bass * 0.5);
-    let gravity = vec2<f32>(0.0, -meltSpeed * luma);
+    let meltRunner = pow(max(0.0, sin((uv.y + uv.x * 0.22) * 46.0 - time * (13.0 + mids * 6.0))), 14.0);
+    let dripPacket = pow(max(0.0, sin(uv.y * 62.0 + fbm(uv * 7.0, 3) * 8.0 - time * (18.0 + treble * 7.0))), 18.0);
+    let curl = curl2D(uv * 3.0, time * 0.2) * meltSpeed * (1.0 + bass * 0.5);
+    let gravity = vec2<f32>(0.0, meltSpeed * luma * (1.0 + meltRunner * 0.7));
     let flow = (curl + gravity) * viscosity;
 
-    let totalFlow = flow + (heat * mouseFactor);
+    let totalFlow = flow + vec2<f32>(0.0, heat * (mouseFactor + clickHeat * 0.8 + dripPacket * 0.18));
     let sourceUV = clamp(uv - totalFlow, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let history = textureSampleLevel(dataTextureC, u_sampler, sourceUV, 0.0);
+    let historyCoord = clamp(vec2<i32>(sourceUV * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+    let history = textureLoad(dataTextureC, historyCoord, 0);
 
     let trebleGlow = treble * 0.1 * mouseFactor;
     let blended = mix(newColor, history, persistence);
-    let heated = blended + vec4<f32>(trebleGlow, trebleGlow * 0.5, trebleGlow * 0.2, 0.0);
+    let heated = blended + vec4<f32>(trebleGlow + meltRunner * mids * 0.05,
+                                     trebleGlow * 0.5 + clickHeat * 0.05,
+                                     trebleGlow * 0.2 + dripPacket * treble * 0.04,
+                                     0.0);
 
     let meltAlpha = clamp(luma * 0.8 + mouseFactor * 0.3 + bass * 0.15, 0.0, 1.0);
-    let finalColor = vec4<f32>(heated.rgb, meltAlpha);
+    let finalColor = vec4<f32>(clamp(heated.rgb, vec3<f32>(0.0), vec3<f32>(1.0)), meltAlpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);

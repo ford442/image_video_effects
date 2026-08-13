@@ -84,13 +84,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hatchDir = vec2<f32>(cos(lightRotation), sin(lightRotation));
   let crossDir = vec2<f32>(-hatchDir.y, hatchDir.x);
 
-  let contourLine = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), contourDir) * lineDensity * 0.6);
-  let hatchLine = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), hatchDir) * lineDensity);
-  let crossLine = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), crossDir) * lineDensity * 0.7);
+  let contourLine = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), contourDir) * lineDensity * 0.6 - time * 5.0);
+  let hatchLine = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), hatchDir) * lineDensity - time * 8.0);
+  let crossLine = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), crossDir) * lineDensity * 0.7 + time * 6.0);
 
   let densityMask = smoothstep(0.0, 0.35, gradMag);
   let hatchMix = mix(hatchLine, contourLine, densityMask);
-  let combinedHatch = hatchMix * 0.55 + crossLine * 0.3;
+  let lineRunner = pow(max(0.0, sin(dot(uv * vec2<f32>(aspect, 1.0), hatchDir) * lineDensity * 1.7 - time * 14.0)), 14.0);
+  let combinedHatch = clamp(hatchMix * 0.55 + crossLine * 0.3 + lineRunner * (0.12 + audio.z * 0.12), 0.0, 1.5);
 
   let burrUV = uv * stippleScale * 60.0;
   let stipple = hash12(floor(burrUV));
@@ -101,7 +102,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let mouseDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let burin = 1.0 - smoothstep(0.0, 0.5, length(mouseDelta));
-  let burinCut = burin * smoothstep(0.3, 0.7, hash12(floor(uv * 90.0) + vec2<f32>(time * 3.0, 0.0))) * 0.18;
+  let toolPacket = smoothstep(0.25, 0.8, 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), hatchDir) * lineDensity * 2.0 - time * 16.0));
+  let heldPressure = mix(0.35, 1.0, step(0.5, u.zoom_config.w));
+  var burinCut = burin * toolPacket * heldPressure * 0.18;
+
+  // Clicks send rapidly engraved rings across the plate.
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.0) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      let impactLine = smoothstep(0.018, 0.0, abs(length(delta) - age * 0.38));
+      burinCut += impactLine * exp(-age * 1.3) * (0.28 + audio.x * 0.15);
+    }
+  }
 
   let paperNoise = hash12(floor(uv * 400.0)) * 0.04;
   let warmPaper = mix(vec3<f32>(0.95, 0.92, 0.85), vec3<f32>(0.88, 0.94, 0.98), audio.y * 0.2) + paperNoise;

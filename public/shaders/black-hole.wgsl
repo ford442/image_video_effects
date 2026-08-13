@@ -40,10 +40,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = audio.x;
     let mids = audio.y;
     let treble = audio.z;
+    let t = u.config.x;
 
     // Parameters
-    let gravity = u.zoom_params.x * (1.0 + bass * 0.35);        // Distortion strength
-    let radius = u.zoom_params.y * 0.3;   // Event horizon size (0.0 - 0.3)
+    let held = step(0.5, u.zoom_config.w);
+    let gravity = u.zoom_params.x * (1.0 + bass * 0.35) * mix(0.75, 1.0, held); // Distortion strength
+    let radius = u.zoom_params.y * 0.3 * (1.0 + held * 0.12);   // Event horizon size (0.0 - 0.3)
     let glow_intensity = u.zoom_params.z * (1.0 + treble * 0.4); // Accretion disk glow
     let lensing_scale = u.zoom_params.w * (1.0 + mids * 0.25);  // Lensing width factor
 
@@ -55,8 +57,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let d_vec_aspect = vec2<f32>(d_vec_raw.x * aspect, d_vec_raw.y);
     let dist = length(d_vec_aspect);
 
-    // Time for animation
-    let t = u.config.x;
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = t - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickFront += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.48)) * exp(-age * 1.4);
+        }
+    }
 
     var final_color = vec3<f32>(0.0, 0.0, 0.0);
 
@@ -68,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dist_from_surface = dist - radius;
         
         // Inverse square-ish falloff for gravity
-        let distortion = (gravity * 0.1) / (dist_from_surface * 5.0 + 0.1);
+        let distortion = (gravity * 0.1 + clickFront * 0.025) / (dist_from_surface * 5.0 + 0.1);
 
         // Direction from pixel towards mouse
         let pinch_factor = distortion * (0.5 + lensing_scale);
@@ -95,6 +105,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Audio-reactive turbulence in the disk
         let angle = atan2(d_vec_aspect.y, d_vec_aspect.x);
         let disk_turb = sin(angle * 14.0 + t * 9.0 + bass * 5.0) * (0.12 + treble * 0.08) + 1.0;
+        let orbitRunner = pow(max(0.0, sin(angle * 22.0 - t * 17.0 + dist * 31.0)), 14.0) * glow_falloff;
+        let infallPacket = pow(max(0.0, sin(dist_from_surface * 95.0 - t * 15.0)), 16.0) * glow_falloff;
         
         // Rich temperature gradient in the accretion disk
         let temp = 1.0 - (dist_from_surface * 0.8);
@@ -104,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             0.15 + treble * 0.45 + temp * 0.25
         ) * disk_turb;
         
-        let glow_color = disk_color * glow_intensity * 3.5 * glow_falloff;
+        let glow_color = disk_color * glow_intensity * (3.5 * glow_falloff + orbitRunner * 0.8 + infallPacket * 0.55 + clickFront * 0.7);
 
         // Subtle redshift near the horizon
         let redshift = smoothstep(0.0, 0.6, dist_from_surface);
@@ -113,12 +125,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         final_color = final_bg + glow_color;
     }
 
-    let horizonMask = 1.0 - smoothstep(radius, radius + 0.08 + lensing_scale * 0.1, dist);
+    let horizonMask = 1.0 - smoothstep(radius, radius + 0.08 + lensing_scale * 0.1 + clickFront * 0.02, dist);
     // Richer alpha with atmospheric falloff and accretion contribution
     let atm = exp(-dist * 1.8);
     let finalAlpha = clamp(0.12 + horizonMask * 0.5 + glow_intensity * 0.18 + atm * 0.15, 0.06, 1.15);
     let a = clamp(finalAlpha, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color * a, a));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(final_color * a, vec3<f32>(0.0), vec3<f32>(4.0)), a));
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

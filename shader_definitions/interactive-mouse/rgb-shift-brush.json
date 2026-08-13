@@ -2,7 +2,7 @@
   "id": "rgb-shift-brush",
   "name": "RGB Shift Brush",
   "url": "shaders/rgb-shift-brush.wgsl",
-  "description": "Paint with RGB channel separation trails using the mouse.",
+  "description": "Held-pointer RGB separation brush with exact advected mask history, rapid spectral ribbons, stylized channel transmission, three-band audio response, and bounded click fronts.",
   "params": [
     {
       "id": "shift",
@@ -35,7 +35,18 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence"
+    "temporal-persistence",
+    "audio-reactive",
+    "bounded-history",
+    "click-reactive",
+    "fast-motion",
+    "upgraded-rgba"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Shift Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Brush Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Trail Decay", "default": 0.8, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Hue Shift", "default": 0, "min": 0, "max": 1, "step": 0.01 }
   ],
   "tags": [
     "filter",

@@ -67,9 +67,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time  = u.config.x;
 
     // Audio
-    let bass   = extraBuffer[0];
-    let mid    = extraBuffer[1];
-    let treble = extraBuffer[2];
+    let bass   = plasmaBuffer[0].x;
+    let mid    = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Params
     let scanlineStr  = mix(0.0, 0.7,  u.zoom_params.x);
@@ -77,10 +77,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let glitchAmt    = mix(0.0, 0.04, u.zoom_params.z) * (1.0 + bass * 2.0);
     let gradeStr     = mix(0.0, 1.0,  u.zoom_params.w);
 
-    // Glitch roll: bass-driven horizontal displacement bands
-    let glitchBand   = floor(uv.y * 20.0 + time * 3.0);
-    let glitchOffset = (hash(glitchBand + floor(time * 8.0)) * 2.0 - 1.0) * glitchAmt * bass;
-    var sampleUV     = clamp(vec2<f32>(uv.x + glitchOffset, uv.y), vec2<f32>(0.0), vec2<f32>(1.0));
+    let mouse = u.zoom_config.yz;
+    let held = step(0.5, u.zoom_config.w);
+    let aspect = dims.x / dims.y;
+    let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+    let mouseField = (1.0 - smoothstep(0.04, 0.34, mouseDist)) * mix(0.25, 1.0, held);
+
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.7) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickFront += smoothstep(0.022, 0.0, abs(length(delta) - age * 0.5)) * exp(-age * 1.6);
+        }
+    }
+
+    // Stable bands oscillate continuously; head-roll packets race downscreen.
+    let glitchBand = floor(uv.y * 20.0);
+    let bandSeed = hash(glitchBand);
+    let bandCarrier = sin(time * (8.0 + bass * 5.0) + bandSeed * 6.28318);
+    let headRoll = pow(max(0.0, sin(uv.y * 68.0 - time * 15.0)), 15.0);
+    let glitchOffset = bandCarrier * glitchAmt * (0.25 + bass + mouseField * 0.8 + clickFront) + headRoll * glitchAmt * 1.5;
+    var sampleUV = clamp(vec2<f32>(uv.x + glitchOffset, uv.y), vec2<f32>(0.0), vec2<f32>(1.0));
 
     let src = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
     var col = src.rgb;
@@ -101,13 +121,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     col *= phosphor;
 
+    let phosphorRunner = pow(max(0.0, sin(uv.x * dims.x * 0.55 + uv.y * 21.0 - time * 18.0)), 14.0);
+    col += phosphor * phosphorRunner * phosphorStr * (0.08 + treble * 0.12);
+
     // Treble flicker
     let flicker = 1.0 + treble * 0.08 * sin(time * 60.0);
     col *= flicker;
 
     // Neon bloom: add a faint neon haze proportional to brightness
     let lumaOrig    = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let neonOverlay = vec3<f32>(0.0, 0.9, 0.8) * lumaOrig * 0.08 * (1.0 + mid);
+    let neonOverlay = vec3<f32>(0.0, 0.9, 0.8) * lumaOrig * (0.08 + clickFront * 0.25) * (1.0 + mid);
     col += neonOverlay;
 
     // Cinematic colour grade

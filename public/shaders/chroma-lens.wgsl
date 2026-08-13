@@ -33,6 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     var uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -45,19 +46,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse
     var mouse = u.zoom_config.yz;
+    let heldLens = step(0.5, u.zoom_config.w);
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
 
     let dVec = (uv - mouse) * aspectVec;
     let dist = length(dVec);
+    let activeRadius = max(0.001, radius * (1.0 + heldLens * 0.18));
+
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.8) {
+            let delta = (uv - ripple.xy) * aspectVec;
+            clickFront += smoothstep(0.022, 0.0, abs(length(delta) - age * 0.44)) * exp(-age * 1.5);
+        }
+    }
 
     var finalUV_R = uv;
     var finalUV_G = uv;
     var finalUV_B = uv;
 
     // Lens Effect
-    if (dist < radius) {
-        let ndist = dist / radius; // 0 at center, 1 at edge
+    if (dist < activeRadius) {
+        let ndist = dist / activeRadius; // 0 at center, 1 at edge
 
         // Distortion curve (barrel)
         // zoom factor increases towards center
@@ -76,7 +90,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // R scales more (spreads out), B scales less? Or offset?
         // Let's scale them slightly differently based on aberration param.
 
-        let abbStrength = aberration * 0.05 * (ndist); // More aberration at edges of lens
+        let abbStrength = aberration * 0.05 * ndist * (1.0 + clickFront); // More aberration at edges of lens
 
         let factorR = lensCurve - abbStrength;
         let factorG = lensCurve;
@@ -92,23 +106,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Let's just do the lens and aberration.
     }
 
-    let r = textureSampleLevel(readTexture, u_sampler, finalUV_R, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, finalUV_G, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, finalUV_B, 0.0).b;
+    let edgeBand = smoothstep(activeRadius * 0.55, activeRadius, dist) * (1.0 - smoothstep(activeRadius, activeRadius + 0.02, dist));
+    let tangent = vec2<f32>(-dVec.y, dVec.x) / max(dist, 0.001);
+    let blurOffset = tangent * blurEdges * edgeBand * 0.006;
+    let safeR = clamp(finalUV_R, vec2<f32>(0.0), vec2<f32>(1.0));
+    let safeG = clamp(finalUV_G, vec2<f32>(0.0), vec2<f32>(1.0));
+    let safeB = clamp(finalUV_B, vec2<f32>(0.0), vec2<f32>(1.0));
+    let r = (textureSampleLevel(readTexture, u_sampler, safeR, 0.0).r + textureSampleLevel(readTexture, u_sampler, clamp(safeR + blurOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r) * 0.5;
+    let g = (textureSampleLevel(readTexture, u_sampler, safeG, 0.0).g + textureSampleLevel(readTexture, u_sampler, clamp(safeG - blurOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g) * 0.5;
+    let b = (textureSampleLevel(readTexture, u_sampler, safeB, 0.0).b + textureSampleLevel(readTexture, u_sampler, clamp(safeB + blurOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b) * 0.5;
 
     // Source alpha follows the green (undisplaced) channel's sample point
-    let srcAlpha = textureSampleLevel(readTexture, u_sampler, finalUV_G, 0.0).a;
+    let srcAlpha = textureSampleLevel(readTexture, u_sampler, safeG, 0.0).a;
 
     // Add a rim/glass reflection effect at the edge
     var color = vec4<f32>(r, g, b, srcAlpha);
 
-    if (dist < radius && dist > radius * 0.95) {
-        let rim = smoothstep(radius * 0.95, radius, dist);
-        color = mix(color, vec4<f32>(1.0), rim * 0.3 * blurEdges);
-    }
+    let rim = smoothstep(activeRadius * 0.88, activeRadius, dist) * (1.0 - smoothstep(activeRadius, activeRadius + 0.012, dist));
+    let angle = atan2(dVec.y, dVec.x);
+    let rimRunner = pow(max(0.0, sin(angle * 14.0 - time * 15.0)), 12.0) * rim;
+    color = mix(color, vec4<f32>(1.0, 0.75 + mids * 0.2, 1.0, 1.0), clamp(rim * blurEdges * 0.3 + rimRunner * 0.35 + clickFront * 0.4, 0.0, 0.8));
 
     // Antialiased circle edge — glass body reads slightly more solid than the plate
-    let mask = 1.0 - smoothstep(radius, radius + 0.01, dist);
+    let mask = 1.0 - smoothstep(activeRadius, activeRadius + 0.01, dist);
     color.a = clamp(color.a + mask * 0.15, 0.0, 1.0);
 
     // If we are outside the lens, just show original

@@ -65,14 +65,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time  = u.config.x;
 
     // Audio
-    let bass   = extraBuffer[0];
-    let mid    = extraBuffer[1];
+    let audio  = plasmaBuffer[0].xyz;
+    let bass   = audio.x;
+    let mid    = audio.y;
 
     // Params
     let bloomR    = mix(0.003, 0.025, u.zoom_params.x) * (1.0 + bass * 2.0);
     let wetEdge   = mix(0.0, 1.0, u.zoom_params.y);
     let paperStr  = mix(0.0, 0.25, u.zoom_params.z);
-    let drySpeed  = mix(0.85, 0.99, u.zoom_params.w);
+    let dryRate   = mix(0.01, 0.18, u.zoom_params.w);
+
+    let mouse = u.zoom_config.yz;
+    let held = step(0.5, u.zoom_config.w);
+    let aspect = dims.x / dims.y;
+    let mouseDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
+    let wetBrush = (1.0 - smoothstep(0.04, 0.32, length(mouseDelta))) * held;
+
+    var clickBloom = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var rippleIndex = 0u; rippleIndex < rippleCount; rippleIndex = rippleIndex + 1u) {
+        let ripple = u.ripples[rippleIndex];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickBloom += smoothstep(0.026, 0.0, abs(length(delta) - age * 0.36)) * exp(-age * 1.35);
+        }
+    }
 
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
@@ -94,7 +112,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var bloom = vec4<f32>(0.0);
     for (var i = 0; i < 13; i++) {
-        bloom += bloomSample(uv, OFFSETS[i] * ps * (bloomR / ps.x), WEIGHTS[i]);
+        bloom += bloomSample(uv, OFFSETS[i] * ps * (bloomR / ps.x) * (1.0 + wetBrush * 0.5 + clickBloom * 0.4), WEIGHTS[i]);
     }
 
     // Watercolor pigment: desaturate slightly, push toward warm tones
@@ -105,20 +123,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Paper texture
     let paper = paperNoise(uv, 80.0) * paperStr;
     var col   = warm * (1.0 - paper * 0.5) + vec3<f32>(paper * 0.03);
+    let pigmentRunner = pow(max(0.0, sin(uv.x * 63.0 + uv.y * 29.0 - time * 15.0)), 14.0);
+    col += vec3<f32>(0.12, 0.05, 0.16) * pigmentRunner * (0.08 + audio.z * 0.14 + wetBrush * 0.12);
 
     // Wet-edge darkening: darken near the brightest/darkest transition
     let edgeDark = 1.0 - wetEdge * smoothstep(0.3, 0.7, luma) * 0.5;
     col *= edgeDark;
 
-    // Temporal feedback: slowly accumulate / dry
-    let prev = textureLoad(dataTextureC, coord, 0);
-    let accumulated = mix(vec4<f32>(col, bloom.a), prev, drySpeed * (1.0 - mid * 0.1));
+    // Advect wet pigment along a smooth diagonal flow, then let it dry.
+    let wetFlow = vec2<f32>(sin(uv.y * 18.0 + time * 2.0), -1.0) * (1.0 + wetBrush * 2.0 + mid);
+    let historyCoord = clamp(coord - vec2<i32>(round(wetFlow)), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+    let prev = textureLoad(dataTextureC, historyCoord, 0);
+    let retention = clamp(1.0 - dryRate + wetBrush * 0.04, 0.0, 0.995);
+    let freshPigment = vec4<f32>(col + vec3<f32>(0.12, 0.04, 0.08) * clickBloom, bloom.a);
+    let accumulated = mix(freshPigment, prev, retention * (1.0 - mid * 0.1));
     var finalColor  = accumulated;
 
     // Semantic alpha
     let alpha = clamp(src.a * (0.85 + luma * 0.15), 0.0, 1.0);
     finalColor.a = alpha;
 
+    finalColor = vec4<f32>(clamp(finalColor.rgb, vec3<f32>(0.0), vec3<f32>(4.0)), alpha);
     textureStore(writeTexture, coord, finalColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(luma, 0.0, 0.0, 1.0));
     textureStore(dataTextureA, coord, finalColor);

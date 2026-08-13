@@ -37,7 +37,7 @@ struct Uniforms {
 };
 
 fn sampleColor(uv: vec2<f32>) -> vec3<f32> {
-    return textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 }
 
 fn gaussSpatial(dist2: f32, sigma: f32) -> f32 {
@@ -57,6 +57,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = 1.0 / res;
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5;
+    let time = u.config.x;
+    let aspect = res.x / res.y;
     
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -67,9 +69,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let strength = mix(0.0, 1.0, u.zoom_params.z);
     let clickBoost = select(1.0, 2.5, mouseDown);
     
-    let mouseDist = length(uv - mousePos);
+    let mouseDelta = (uv - mousePos) * vec2<f32>(aspect, 1.0);
+    let mouseDist = length(mouseDelta);
     let brushFalloff = exp(-mouseDist * mouseDist / (brushSize * brushSize));
-    let localStrength = strength * brushFalloff * clickBoost;
+    let travelDir = vec2<f32>(cos(time * 0.9), sin(time * 0.9));
+    let brushRunner = pow(max(0.0, sin(dot(mouseDelta, travelDir) * 52.0 - time * 13.0)), 12.0) * brushFalloff;
+
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.8) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickFront += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.45)) * exp(-age * 1.6);
+        }
+    }
+    let localStrength = strength * clamp(brushFalloff * clickBoost + brushRunner * 0.45 + clickFront, 0.0, 1.5);
     
     if (localStrength < 0.01) {
         // Untouched region: alpha marks zero filter coverage
@@ -112,7 +128,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Bass lifts the smoothed region so the brush reads as a glowing sheen
     let sheen = clamp(localStrength, 0.0, 1.0) * bass;
-    finalColor = finalColor + vec3<f32>(0.4, 0.55, 0.8) * sheen * 0.25;
+    finalColor = clamp(finalColor + vec3<f32>(0.4, 0.55, 0.8) * (sheen + clickFront * 0.4) * 0.25, vec3<f32>(0.0), vec3<f32>(4.0));
 
     // Alpha carries filter coverage — how much this pixel was actually smoothed
     let alpha = clamp(localStrength, 0.0, 1.0);

@@ -1555,7 +1555,7 @@
     "id": "cross-conv-mouse-bilateral",
     "name": "Bilateral Paint",
     "url": "shaders/cross-conv-mouse-bilateral.wgsl",
-    "description": "Crossover shader combining bilateral convolution with mouse-driven painting. The cursor acts as a brush that applies edge-preserving smoothing — stronger near the cursor, with click boosting the effect.",
+    "description": "Edge-preserving bilateral paint with an aspect-correct pointer brush, rapidly traveling sheen packets, audio response, and click-launched smoothing fronts.",
     "tags": [
       "crossover",
       "convolution",
@@ -1569,7 +1569,35 @@
       "mouse-driven",
       "advanced-convolution",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "fast-motion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Edge Preservation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Effect Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -3178,7 +3206,7 @@
     "name": "Kintsugi Repair",
     "category": "image",
     "url": "shaders/kintsugi-repair.wgsl",
-    "description": "Simulates the Japanese art of repairing broken pottery with gold (Kintsugi). Voronoi patterns create cracks with gold filling.",
+    "description": "Kintsugi-inspired Voronoi cracks with held-pointer repair energy, rapid gold runners, stable sparkles, three-band audio response, and bounded click fronts.",
     "params": [
       {
         "id": "scale",
@@ -3212,7 +3240,43 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "fast-motion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Shard Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Gold Width",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Shatter Amount",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Gold Sparkle",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "kintsugi",
@@ -3600,7 +3664,7 @@
     "name": "Neon Pulse Dissolve",
     "url": "shaders/neon-pulse-dissolve.wgsl",
     "category": "image",
-    "description": "Audio-reactive neon edge detection that pulses with bass and dissolves the image interior into luminous colour noise driven by mid and treble frequencies.",
+    "description": "Audio-reactive neon edge dissolve with smooth traveling scan packets, held-pointer energy, bounded click fronts, and continuously advected luminous noise.",
     "tags": [
       "neon",
       "glow",
@@ -3612,7 +3676,44 @@
     "features": [
       "audio-reactive",
       "upgraded-rgba",
-      "semantic-alpha"
+      "semantic-alpha",
+      "mouse-driven",
+      "click-reactive",
+      "fast-motion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Glow Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Dissolve Amount",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Neon Saturation",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Edge Sharpness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -4488,7 +4589,7 @@
     "name": "Scanline Cyberpunk",
     "url": "shaders/scanline-cyberpunk.wgsl",
     "category": "image",
-    "description": "CRT scanline grid with RGB phosphor triad mask layered over a cyberpunk cinematic colour grade (teal shadows, amber-magenta highlights). Bass drives glitch-roll bands; treble flickers brightness.",
+    "description": "CRT scanlines and RGB phosphor triads with continuous head-roll packets, fast phosphor runners, held-pointer distortion, click corruption fronts, real audio, and cyberpunk color grading.",
     "tags": [
       "crt",
       "scanlines",
@@ -4502,7 +4603,10 @@
     "features": [
       "audio-reactive",
       "upgraded-rgba",
-      "semantic-alpha"
+      "semantic-alpha",
+      "mouse-driven",
+      "click-reactive",
+      "fast-motion"
     ],
     "params": [
       {
@@ -4531,6 +4635,40 @@
       },
       {
         "id": "color_grade",
+        "name": "Color Grade",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scanline Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Phosphor Mask",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glitch Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Color Grade",
         "default": 0.6,
         "min": 0,
@@ -5545,7 +5683,7 @@
     "name": "Watercolor Bloom",
     "url": "shaders/watercolor-bloom.wgsl",
     "category": "image",
-    "description": "Soft feathered watercolor bloom with paper fibre texture, wet-edge darkening, and audio-reactive radius expansion. Temporal feedback lets wet paint slowly dry.",
+    "description": "Soft watercolor bloom with exact-load advected wet pigment, fast pigment runners, held-pointer diffusion, click blooms, paper fiber texture, truthful drying, and real audio.",
     "tags": [
       "watercolor",
       "bloom",
@@ -5559,7 +5697,11 @@
       "audio-reactive",
       "temporal",
       "upgraded-rgba",
-      "semantic-alpha"
+      "semantic-alpha",
+      "bounded-history",
+      "mouse-driven",
+      "click-reactive",
+      "fast-motion"
     ],
     "params": [
       {
@@ -5588,6 +5730,40 @@
       },
       {
         "id": "dry_speed",
+        "name": "Dry Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bloom Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wet Edge",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Paper Texture",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Dry Speed",
         "default": 0.6,
         "min": 0,

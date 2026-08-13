@@ -3,8 +3,13 @@
     "id": "black-hole",
     "name": "Gravitational Lensing",
     "url": "shaders/black-hole.wgsl",
+    "description": "Stylized gravitational-lensing distortion with held-pointer pull, orbiting horizon runners, inward light packets, audio modulation, and bounded click fronts.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "fast-motion",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -37,6 +42,40 @@
       },
       {
         "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -1308,7 +1347,7 @@
     "id": "heat-haze",
     "name": "Heat Haze",
     "url": "shaders/heat-haze.wgsl",
-    "description": "Interactive heat distortion with thermal glow, mouse-driven heat injection, diffusion, and audio-reactive shimmer.",
+    "description": "Stylized heat distortion with exact-load rising heat advection, fast convection packets, held-pointer injection, click thermal fronts, diffusion, and audio shimmer.",
     "params": [
       {
         "id": "heatGain",
@@ -1339,12 +1378,50 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Heat Gain",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Diffusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "animated",
       "atmospheric",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal",
+      "bounded-history",
+      "click-reactive",
+      "fast-motion"
     ],
     "tags": [
       "distortion",
@@ -2405,7 +2482,7 @@
     "name": "Predator Camouflage",
     "category": "distortion",
     "url": "shaders/predator-camouflage.wgsl",
-    "description": "Upgraded active camouflage with chromatophore pigment-sac simulation, predator thermal vision (IR false-color), heat-map distortion, HDR bloom on heat signatures, ACES tone mapping, and chromatic separation on camouflage edges. Bass drives chromatophore oscillation, mouse acts as prey heat source, depth controls thermal haze.",
+    "description": "Stylized active-camouflage treatment with false-color thermal mapping, fast pigment-sac runners and hunt sweeps, held-pointer cloaking, click fronts, depth-shaped haze, bloom, and chromatic separation.",
     "params": [
       {
         "id": "radius",
@@ -2444,13 +2521,49 @@
         "param": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cloak Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Refraction Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatophore Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Noise Scale",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "semantic-alpha",
       "chromatic-aberration",
-      "thermal-vision"
+      "thermal-vision",
+      "click-reactive",
+      "fast-motion"
     ],
     "tags": [
       "cloak",

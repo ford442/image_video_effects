@@ -53,9 +53,9 @@ fn get_heat_color(t: f32, shift: f32) -> vec3<f32> {
         col = mix(col, vec3<f32>(1.0, 1.0, 1.0), (t - 0.9) / 0.1);
     }
 
-    // Simple hue shift if desired (by rotating RGB channels? Nah, too complex for now).
-    // Let's just stick to the heat map.
-    return col;
+    // Rotate the established heat palette without changing intensity.
+    let rotated = vec3<f32>(col.g, col.b, col.r);
+    return mix(col, rotated, clamp(shift, 0.0, 1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -64,14 +64,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let coord = vec2<i32>(global_id.xy);
+    let maxCoord = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
+    let time = u.config.x;
+    let audio = plasmaBuffer[0].xyz;
 
     // Params
-    let decay = clamp(u.zoom_params.x, 0.0, 1.0);          // Heat Decay
-    let sensitivity = clamp(u.zoom_params.y, 0.0, 1.0);    // Motion Sensitivity
-    let mouse_heat = clamp(u.zoom_params.z, 0.0, 1.0);     // Mouse Heat Amount
-    let color_shift = clamp(u.zoom_params.w, 0.0, 1.0);    // Color Shift (Unused currently, keep simplified)
+    let decay = clamp(u.zoom_params.x, 0.001, 0.3);
+    let sensitivity = clamp(u.zoom_params.y, 0.0, 10.0);
+    let mouse_heat = clamp(u.zoom_params.z, 0.0, 2.0);
+    let color_shift = clamp(u.zoom_params.w, 0.0, 1.0);
 
     // Read Current Video
     let currColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -79,9 +83,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Read History (Heat + PrevLuma)
     // R = Heat, A = PrevLuma
-    let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+    let flow = vec2<f32>(
+        sin(uv.y * 15.0 + time * 3.2),
+        -1.0 - audio.x * 1.5
+    );
+    let flowPixels = vec2<i32>(round(flow * vec2<f32>(2.0, 1.5)));
+    let advectedCoord = clamp(coord - flowPixels, vec2<i32>(0), maxCoord);
+    let history = textureLoad(dataTextureC, advectedCoord, 0);
+    let localHistory = textureLoad(dataTextureC, coord, 0);
     let prevHeat = history.r;
-    let prevLuma = history.a;
+    let prevLuma = localHistory.a;
 
     // Calculate Motion
     let motion = abs(currLuma - prevLuma);
@@ -93,32 +104,50 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     newHeat = newHeat + (motion * sensitivity * 0.1);
 
     // Add Mouse Heat
-    var mousePos = u.zoom_config.yz;
+    let mousePos = u.zoom_config.yz;
     let mouseDistVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(mouseDistVec);
     let radius = 0.05;
 
     if (dist < radius) {
         let falloff = 1.0 - (dist / radius);
-        newHeat = newHeat + (mouse_heat * falloff * 0.1);
+        let heldBoost = mix(0.35, 1.0, step(0.5, u.zoom_config.w));
+        newHeat = newHeat + (mouse_heat * falloff * 0.1 * heldBoost);
+    }
+
+    // Fast motion: bright heat packets race along the advected flow field.
+    let runnerPhase = dot(uv * vec2<f32>(aspect, 1.0), normalize(flow + vec2<f32>(0.001))) * 55.0 - time * 14.0;
+    let heatRunner = pow(max(0.0, sin(runnerPhase)), 14.0) * (motion * sensitivity + audio.y * 0.08);
+    newHeat += heatRunner;
+
+    // Clicks launch bounded thermal fronts without persistent buffer state.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let ring = smoothstep(0.025, 0.0, abs(length(delta) - age * 0.42));
+            newHeat += ring * exp(-age * 1.4) * (0.65 + audio.x * 0.35);
+        }
     }
 
     // Clamp Heat
     newHeat = clamp(newHeat, 0.0, 2.0);
 
     // Write State (Heat, 0, 0, CurrLuma)
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newHeat, 0.0, 0.0, currLuma));
+    textureStore(dataTextureA, coord, vec4<f32>(newHeat, 0.0, 0.0, currLuma));
 
     // Render
     let displayHeat = clamp(newHeat, 0.0, 1.0);
     let heatColor = get_heat_color(displayHeat, color_shift);
 
     // Composite: Additive, preserving input alpha
-    let finalColor = currColor.rgb + heatColor * displayHeat;
+    let finalColor = clamp(currColor.rgb + heatColor * displayHeat, vec3<f32>(0.0), vec3<f32>(4.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, currColor.a));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, currColor.a));
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

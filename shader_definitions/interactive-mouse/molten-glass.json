@@ -6,9 +6,19 @@
     "mouse-driven",
     "upgraded-rgba",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "temporal",
+    "click-reactive",
+    "fast-motion",
+    "bounded-history"
   ],
-  "description": "Melts the image under the mouse cursor like hot glass.",
+  "description": "Stylized molten glass with exact-load rising heat advection, smooth convection packets, held-pointer heating, click thermal fronts, Fresnel response, and Beer-Lambert absorption.",
+  "updatedParams": [
+    { "index": 0, "name": "Heat Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Refraction", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Cooling Rate", "default": 0.2, "min": 0, "max": 1, "step": 0.01 }
+  ],
   "params": [
     {
       "id": "heat-radius",

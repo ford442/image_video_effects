@@ -3,7 +3,7 @@
   "name": "Spectral Slit Scan",
   "url": "shaders/spectral-slit-scan.wgsl",
   "category": "artistic",
-  "description": "Multi-slit spectral scan effect with 3 simultaneous parametric slits (sine wave, spiral, radial). Chromatic time smearing decomposes RGB across temporal offsets. HDR streak accumulation with ACES tone mapping. Bass drives slit velocity, mouse positions add parallax, and depth creates layered slit separation.",
+  "description": "Three-to-seven-slit spectral scan with exact-load chromatic history, fast slit and spectral packets, held-pointer curl, click fronts, audio-driven velocity, and depth-layered separation.",
   "tags": [
     "slit-scan",
     "temporal",
@@ -19,7 +19,10 @@
     "mouse-driven",
     "temporal",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "bounded-history",
+    "click-reactive",
+    "fast-motion"
   ],
   "params": [
     {
@@ -58,5 +61,11 @@
       "max": 1.0,
       "step": 0.01
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Slit Density", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 1, "name": "Trail Decay", "default": 0.6, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 2, "name": "Chromatic Shift", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 3, "name": "Curve Amplitude", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 }
   ]
 }

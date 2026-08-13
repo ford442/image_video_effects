@@ -37,6 +37,17 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let cell = floor(p);
+    let f = fract(p);
+    let smoothF = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash(cell), hash(cell + vec2<f32>(1.0, 0.0)), smoothF.x),
+        mix(hash(cell + vec2<f32>(0.0, 1.0)), hash(cell + vec2<f32>(1.0, 1.0)), smoothF.x),
+        smoothF.y
+    );
+}
+
 fn sobel(uv: vec2<f32>, ps: vec2<f32>) -> f32 {
     let tl = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-ps.x,  ps.y), 0.0).rgb;
     let tc = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>( 0.0,   ps.y), 0.0).rgb;
@@ -80,9 +91,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time   = u.config.x;
 
     // Audio
-    let bass    = extraBuffer[0];
-    let mid     = extraBuffer[1];
-    let treble  = extraBuffer[2];
+    let bass    = plasmaBuffer[0].x;
+    let mid     = plasmaBuffer[0].y;
+    let treble  = plasmaBuffer[0].z;
 
     // Params
     let glowRadius     = mix(1.0, 6.0,  u.zoom_params.x);
@@ -98,16 +109,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     edge = clamp(edge * edgeSharpness, 0.0, 1.0);
     edge = edge * (1.0 + bass * 2.0);
 
+    let aspect = dims.x / dims.y;
+    let mouseDelta = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0);
+    let mouseEnergy = (1.0 - smoothstep(0.04, 0.32, length(mouseDelta))) * step(0.5, u.zoom_config.w);
+    let scanRunner = pow(max(0.0, sin(uv.y * 58.0 + uv.x * 19.0 - time * 16.0)), 14.0);
+
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.8) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickFront += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.46)) * exp(-age * 1.5);
+        }
+    }
+    edge = clamp(edge + scanRunner * (0.08 + treble * 0.16) + clickFront * 0.7 + mouseEnergy * 0.2, 0.0, 2.0);
+
     // Neon edge colour cycles with position + time
     let angle     = atan2(uv.y - 0.5, uv.x - 0.5) + time * 0.5 + bass * PI;
     let neonCol   = neonColor(angle, neonSat);
     let neonGlow  = neonCol * edge * (1.0 + bass * 1.5);
 
     // Interior dissolve into colour noise
-    let noiseUV   = uv * 4.0 + vec2<f32>(time * 0.3, time * 0.17);
-    let n         = hash(floor(noiseUV * 80.0));
+    let noiseUV   = uv * 18.0 + vec2<f32>(time * 3.2, time * 1.9);
+    let n         = valueNoise(noiseUV);
     let noiseCol  = neonColor(n * 2.0 * PI + time, neonSat * 0.7);
-    let dissolve  = dissolveAmt * (mid * 0.5 + treble * 0.5) * (1.0 - edge);
+    let dissolve  = dissolveAmt * (0.2 + mid * 0.5 + treble * 0.5 + scanRunner * 0.35 + mouseEnergy * 0.45) * (1.0 - clamp(edge, 0.0, 1.0));
     let interior  = mix(src.rgb, noiseCol, clamp(dissolve * 2.0, 0.0, 1.0));
 
     // Blend: edges overlay on interior

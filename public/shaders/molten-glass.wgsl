@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// Molten Glass - Physical glass transmission with Beer-Lambert law
+// Molten Glass - Stylized glass transmission with Beer-Lambert absorption
 // Category: distortion
 // Features: heat simulation, melting distortion, physically-based alpha
 // ═══════════════════════════════════════════════════════════════
@@ -19,16 +19,17 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=HeatRadius, y=Viscosity, z=Refraction, w=GlassDensity
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=HeatRadius, y=Viscosity, z=Refraction, w=CoolingRate
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coord = vec2<i32>(global_id.xy);
+    let maxCoord = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
 
     if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) {
         return;
@@ -43,20 +44,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Parameters
-    let heatRadius = u.zoom_params.x * 0.2;
+    let heatRadius = max(0.01, u.zoom_params.x * 0.2);
     let viscosity = u.zoom_params.y * (1.0 + mids * 0.5);
     let refraction = u.zoom_params.z * 0.1 * (1.0 + treble * 0.6);
     let coolingRate = 0.01 + u.zoom_params.w * 0.1;
-    let glassDensity = 0.5 + u.zoom_params.w * 2.0; // Beer-Lambert density
+    let glassDensity = 1.15;
 
     // Mouse interaction
-    var mousePos = u.zoom_config.yz;
+    let mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
     let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
 
-    // Read previous heat state
-    let prevColor = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+    // Advect heat upward with a smooth, viscosity-dependent convection conveyor.
+    let sourceOffset = vec2<i32>(
+        i32(round(sin(uv.y * 16.0 + time * 2.2) * (1.0 + viscosity * 2.0))),
+        2 + i32(round(bass * 2.0))
+    );
+    let sourceCoord = clamp(coord + sourceOffset, vec2<i32>(0), maxCoord);
+    let prevColor = textureLoad(dataTextureC, sourceCoord, 0);
     var heat = prevColor.r;
 
     // Decay heat
@@ -64,7 +70,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Add heat from mouse (bass pulses the injection)
     let influence = smoothstep(heatRadius, 0.0, dist);
-    heat = min(1.0, heat + influence * (0.5 + bass * 0.4));
+    let heldBoost = mix(0.35, 1.0, step(0.5, u.zoom_config.w));
+    heat = min(1.0, heat + influence * (0.5 + bass * 0.4) * heldBoost);
+
+    let convectionPacket = pow(max(0.0, sin(uv.y * 34.0 + uv.x * 11.0 - time * 11.0)), 10.0);
+    heat += convectionPacket * prevColor.r * (0.04 + mids * 0.04);
+
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let clickDelta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let heatFront = smoothstep(0.025, 0.0, abs(length(clickDelta) - age * 0.36));
+            heat += heatFront * exp(-age * 1.25) * (0.55 + bass * 0.25);
+        }
+    }
+    heat = clamp(heat, 0.0, 1.0);
 
     // Write new heat state
     textureStore(dataTextureA, coord, vec4<f32>(heat, 0.0, 0.0, 1.0));
@@ -74,15 +96,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distort = (heat * refraction) + (heat * wobble * viscosity);
 
     // Offset UVs based on heat gradient
-    let pushDir = normalize(uv - mousePos);
-    let safePushDir = select(pushDir, vec2<f32>(0.0, 0.0), length(uv - mousePos) < 0.001);
+    let pushDelta = uv - mousePos;
+    let safePushDir = pushDelta / max(length(pushDelta), 0.0001);
 
     let offset = safePushDir * distort * 0.5 + vec2<f32>(
         sin(uv.y * 50.0 + heat * 10.0),
         cos(uv.x * 50.0 + heat * 10.0)
     ) * distort * 0.5;
 
-    let finalUV = uv + offset;
+    let finalUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
     var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
     // Physical properties of molten glass
@@ -111,15 +133,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
 
     // Apply glass tint and transmission
-    color = vec4<f32>(color.rgb * glassColor, transmission);
+    color = vec4<f32>(clamp(color.rgb * glassColor, vec3<f32>(0.0), vec3<f32>(4.0)), clamp(transmission, 0.0, 1.0));
 
     // Gloss/specular where heat is high
     let gloss = smoothstep(0.8, 1.0, heat) * 0.2;
-    color = color + vec4<f32>(gloss, gloss, gloss, 0.0);
+    color = vec4<f32>(clamp(color.rgb + vec3<f32>(gloss), vec3<f32>(0.0), vec3<f32>(4.0)), color.a);
 
     textureStore(writeTexture, coord, color);
 
     // Depth pass-through, brought slightly forward where glass is hottest
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth - heat * 0.1, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth - heat * 0.1, 0.0, 1.0), 0.0, 0.0, 0.0));
 }
