@@ -256,7 +256,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let l2 = normalize(vec3<f32>(-1.0, -0.5, 1.0));
 
     let dif1 = max(0.0, dot(n, l1));
-    let dif2 = max(0.0, dot(n, l2));
+
 
     var albedo = vec3<f32>(0.0);
 
