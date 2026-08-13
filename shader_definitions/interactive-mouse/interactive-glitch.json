@@ -2,7 +2,7 @@
   "id": "interactive-glitch",
   "name": "Interactive Glitch",
   "url": "shaders/interactive-glitch.wgsl",
-  "description": "Digital glitch artifacts that intensify around the mouse cursor.",
+  "description": "Continuously pulsing digital glitch blocks with fast scan tears, held-pointer amplification, real audio, and click-launched corruption fronts.",
   "params": [
     {
       "id": "intensity",
@@ -33,12 +33,20 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Base Intensity", "default": 0.1, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Influence Radius", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Glitch Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Block Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+  ],
   "features": [
     "mouse-driven",
     "glitch",
     "upgraded-rgba",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "click-reactive",
+    "fast-motion"
   ],
   "tags": [
     "filter",

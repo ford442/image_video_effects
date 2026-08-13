@@ -39,7 +39,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     var uv = vec2<f32>(global_id.xy) / resolution;
     var mousePos = u.zoom_config.yz;
+    let heldFocus = step(0.5, u.zoom_config.w);
     let aspectRatio = resolution.x / resolution.y;
+    let time = u.config.x;
 
     // Mouse is 0-1. UV is 0-1.
     // Distance needs aspect ratio correction if we want circular radius.
@@ -50,6 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Bass pulses the focus aperture, mids drive glitch/aberration
     let radius = (u.zoom_params.x * 0.5 + 0.1) * (1.0 + bass * 0.35); // 0.1 to 0.6
@@ -57,8 +60,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glitchIntensity = u.zoom_params.z * (1.0 + mids * 0.5);
     let aberration = u.zoom_params.w * 0.05 * (1.0 + mids * 0.4);
 
-    // Smoothstep for focus transition
-    let focusMask = smoothstep(radius, radius + 0.1, dist); // 0 inside, 1 outside (increases with distance)
+    var clickClarity = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.8) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspectRatio, 1.0);
+            clickClarity += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.48)) * exp(-age * 1.5);
+        }
+    }
+
+    // Smooth focus aperture plus fast scanner packets and click clarity fronts.
+    let activeRadius = radius * (1.0 + heldFocus * 0.35);
+    let baseFocusMask = smoothstep(activeRadius, activeRadius + 0.1, dist);
+    let scanPacket = pow(max(0.0, sin(uv.y * 75.0 - time * 15.0)), 14.0) * baseFocusMask;
+    let focusMask = clamp(baseFocusMask * (1.0 - clickClarity * 0.9) - scanPacket * 0.18, 0.0, 1.0);
 
     var finalColor = vec4<f32>(0.0);
 
@@ -73,9 +90,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (glitchIntensity > 0.0) {
             let blockSize = 20.0;
             let blockId = floor(uv * blockSize);
-            let noise = hash21(blockId + u.config.x * 0.1);
+            let blockSeed = hash21(blockId);
+            let noise = 0.5 + 0.5 * sin(time * (4.0 + mids * 3.0) + blockSeed * 6.28318);
             if (noise < glitchIntensity * 0.2) {
-                offset = (vec2<f32>(hash21(blockId), hash21(blockId + 1.0)) - 0.5) * 0.1;
+                let direction = vec2<f32>(hash21(blockId), hash21(blockId + 1.0)) - 0.5;
+                offset = direction * (0.06 + scanPacket * 0.06 + treble * 0.02);
             }
         }
 
@@ -92,12 +111,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         for (var i = -1.0; i <= 1.0; i += 1.0) {
             for (var j = -1.0; j <= 1.0; j += 1.0) {
                 let jitter = vec2<f32>(i, j);
-                let sampleUV = uv + offset + jitter * blurSize;
+                let sampleUV = clamp(uv + offset + jitter * blurSize, vec2<f32>(0.0), vec2<f32>(1.0));
 
                 // Chromatic Aberration: R and B are offset
-                let r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(aberration * focusMask, 0.0), 0.0).r;
+                let r = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(aberration * focusMask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
                 let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
-                let b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(aberration * focusMask, 0.0), 0.0).b;
+                let b = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - vec2<f32>(aberration * focusMask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
                 r_acc += r;
                 g_acc += g;
@@ -115,6 +134,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         finalColor = mix(original, finalColor, focusMask);
     }
+
+    finalColor = vec4<f32>(
+        clamp(finalColor.rgb + vec3<f32>(0.05, 0.35, 0.55) * scanPacket * (0.2 + treble * 0.3), vec3<f32>(0.0), vec3<f32>(4.0)),
+        finalColor.a
+    );
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);

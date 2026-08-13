@@ -2,7 +2,7 @@
   "id": "motion-heatmap",
   "name": "Motion Heatmap",
   "url": "shaders/motion-heatmap.wgsl",
-  "description": "Visualizes video motion and mouse interaction as a heatmap.",
+  "description": "Advected motion heatmap with rising thermal flow, fast heat runners, held-pointer injection, and click-launched thermal fronts.",
   "params": [
     {
       "id": "decay",
@@ -34,7 +34,19 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "click-reactive",
+    "audio-reactive",
+    "temporal",
+    "fast-motion",
+    "bounded-history",
+    "upgraded-rgba"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Heat Decay", "default": 0.05, "min": 0.001, "max": 0.3, "step": 0.001 },
+    { "index": 1, "name": "Motion Sens.", "default": 2, "min": 0, "max": 10, "step": 0.1 },
+    { "index": 2, "name": "Mouse Intensity", "default": 1, "min": 0, "max": 2, "step": 0.01 },
+    { "index": 3, "name": "Color Shift", "default": 0, "min": 0, "max": 1, "step": 0.01 }
   ],
   "tags": [
     "filter",

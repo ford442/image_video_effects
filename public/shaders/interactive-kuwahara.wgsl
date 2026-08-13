@@ -43,18 +43,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Params (radius pulses with bass, sat with mids)
     let radiusParam = (u.zoom_params.x * 8.0 + 2.0) * (1.0 + bass * 0.4);
     let satBoost = u.zoom_params.y * 2.0 * (1.0 + mids * 0.3);
-    let mouseFalloff = u.zoom_params.z;
+    let focusRadius = mix(0.08, 0.6, u.zoom_params.z);
+    let hardness = mix(0.02, 0.22, u.zoom_params.w);
 
     let mouse = u.zoom_config.yz;
+    let heldStroke = step(0.5, u.zoom_config.w);
     let aspect = resolution.x / resolution.y;
     let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
 
-    let mouseFactor = smoothstep(0.0, 0.5, dist);
-    let effectiveRadius = mix(radiusParam, 0.0, (1.0 - mouseFactor) * mouseFalloff);
+    let mouseFactor = smoothstep(max(0.0, focusRadius - hardness), focusRadius + hardness, dist);
+    let strokeDir = normalize(vec2<f32>(1.0, 0.42));
+    let wetRunner = pow(max(0.0, sin(dot(uv * vec2<f32>(aspect, 1.0), strokeDir) * 52.0 - u.config.x * 13.0)), 12.0) * (1.0 - mouseFactor) * mix(0.25, 1.0, heldStroke);
+
+    var clickClarity = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var rippleIndex = 0u; rippleIndex < rippleCount; rippleIndex = rippleIndex + 1u) {
+        let ripple = u.ripples[rippleIndex];
+        let age = u.config.x - ripple.z;
+        if (age >= 0.0 && age < 1.8) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickClarity += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.42)) * exp(-age * 1.5);
+        }
+    }
+    let detailLift = clamp((1.0 - mouseFactor) * mix(0.35, 0.75, heldStroke) + wetRunner * 0.25 + clickClarity * 0.8, 0.0, 0.9);
+    let effectiveRadius = mix(radiusParam, max(1.0, radiusParam * 0.25), detailLift);
 
     let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    let radius = i32(max(effectiveRadius, 0.0));
+    let radius = min(i32(max(effectiveRadius, 1.0)), 10);
     let pixelSize = vec2<f32>(1.0 / max(resolution.x, 1.0), 1.0 / max(resolution.y, 1.0));
 
     // Kuwahara: 4 sectors
@@ -111,7 +127,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Treble shimmer
     let shimmer = sin(uv.x * 200.0 + u.config.x * 12.0) * treble * 0.05;
-    let finalRGB = clamp(satColor + vec3<f32>(shimmer), vec3<f32>(0.0), vec3<f32>(4.0));
+    let wetTint = vec3<f32>(0.08, 0.16, 0.22) * wetRunner * (0.3 + treble * 0.3);
+    let finalRGB = clamp(satColor + vec3<f32>(shimmer) + wetTint, vec3<f32>(0.0), vec3<f32>(4.0));
 
     // Meaningful alpha: stylization strength + base alpha + audio
     let stylization = clamp(effectiveRadius / 12.0, 0.0, 1.0);

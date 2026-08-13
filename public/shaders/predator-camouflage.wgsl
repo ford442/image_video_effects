@@ -65,6 +65,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let uv = vec2<f32>(gid.xy) / dims;
   let mouse = u.zoom_config.yz;
+  let heldCloak = step(0.5, u.zoom_config.w);
   let time = u.config.x;
   let aspect = dims.x / dims.y;
   let audio = plasmaBuffer[0].xyz;
@@ -77,16 +78,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let dist = length(centered);
-  let cloakMask = 1.0 - smoothstep(cloakRadius * 0.7, cloakRadius, dist);
+  let activeRadius = cloakRadius * (1.0 + heldCloak * 0.18);
+  let cloakMask = (1.0 - smoothstep(activeRadius * 0.7, activeRadius, dist)) * mix(0.68, 1.0, heldCloak);
   let rim = smoothstep(cloakRadius * 0.5, cloakRadius * 0.9, dist) * cloakMask;
+
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.0) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      clickFront += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.46)) * exp(-age * 1.4);
+    }
+  }
 
   let chr1 = noise(uv * noiseScale + vec2<f32>(time * chromatophoreSpeed, -time * 0.6) + audio.x * 2.0);
   let chr2 = noise(uv * (noiseScale * 1.6) - vec2<f32>(time * 0.9, time * chromatophoreSpeed));
   let pigment = (chr1 + chr2 - 1.0) * (0.5 + audio.x);
   let sacScale = smoothstep(0.35, 0.65, chr1) * cloakMask;
+  let cloakAngle = atan2(centered.y, centered.x);
+  let sacRunner = pow(max(0.0, sin(cloakAngle * 18.0 + dist * noiseScale * 3.0 - time * (13.0 + chromatophoreSpeed))), 14.0) * cloakMask;
+  let huntSweep = pow(max(0.0, sin(dist * 72.0 - time * 16.0)), 16.0) * cloakMask;
 
   let normal = normalize(centered + vec2<f32>(0.001, 0.0));
-  let haze = (0.5 + depth * 0.5) * refractionStrength * cloakMask * (0.4 + pigment);
+  let haze = (0.5 + depth * 0.5) * refractionStrength * cloakMask * (0.4 + pigment + sacRunner * 0.25 + clickFront * 0.5);
   let offset = normal * haze;
   let refractedUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
@@ -108,6 +124,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let chromaTint = mix(vec3<f32>(0.08, 0.75, 0.95), vec3<f32>(0.6, 0.9, 0.25), chr1);
   sampleColor = mix(sampleColor, sampleColor * 0.5 + thermal * 0.55 + chromaTint * 0.25, cloakMask * 0.6);
   sampleColor += chromaTint * rim * (0.12 + audio.y * 0.2) + thermal * sacScale * 0.15;
+  sampleColor += chromaTint * sacRunner * (0.12 + audio.z * 0.15) + thermal * (huntSweep * 0.12 + clickFront * 0.3);
 
   let bloom = thermal * rim * sacScale * (0.3 + audio.x * 0.3);
   sampleColor += bloom;
@@ -115,10 +132,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   sampleColor = acesToneMap(sampleColor * (1.0 + cloakMask * 0.25));
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, refractedUV, 0.0).r;
-  let depthOut = clamp(mix(baseDepth, 0.15 + cloakMask * 0.75, 0.35), 0.0, 1.0);
+  let depthOut = clamp(mix(baseDepth, 0.15 + cloakMask * 0.75, 0.35) - clickFront * 0.08, 0.0, 1.0);
 
   let thermalContrast = abs(heatSource - 0.5) * 2.0;
-  let semantic_alpha = clamp(cloakMask * thermalContrast * (0.4 + depth * 0.6), 0.25, 0.98);
+  let semantic_alpha = clamp(cloakMask * thermalContrast * (0.4 + depth * 0.6) + sacRunner * 0.12 + clickFront * 0.2, 0.25, 0.98);
 
   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(sampleColor, semantic_alpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));

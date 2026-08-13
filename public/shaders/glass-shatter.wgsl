@@ -75,6 +75,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let mouse = u.zoom_config.yz;
   let audio = plasmaBuffer[0].xyz;
+  let time = u.config.x;
+  let held = step(0.5, u.zoom_config.w);
 
   let shardScale = u.zoom_params.x * 20.0 + 3.0;
   let displacement = u.zoom_params.y * 0.42;
@@ -87,8 +89,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseVec = v.center - vec2<f32>(mouse.x * aspect, mouse.y);
   let mouseDist = length(mouseVec);
   let repelDir = select(vec2<f32>(0.0), mouseVec / max(mouseDist, 0.0001), mouseDist > 0.0001);
-  let repelMask = 1.0 - smoothstep(0.0, 0.6, mouseDist);
-  let offset = repelDir * repelMask * (displacement + audioPulse * 0.06);
+  let repelMask = (1.0 - smoothstep(0.0, 0.6, mouseDist)) * mix(0.18, 1.0, held);
+
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var rippleIndex: u32 = 0u; rippleIndex < rippleCount; rippleIndex = rippleIndex + 1u) {
+    let ripple = u.ripples[rippleIndex];
+    let rippleAge = max(time - ripple.z, 0.0);
+    let front = abs(distance(uv, ripple.xy) - rippleAge * (0.24 + audio.x * 0.12));
+    clickFront += exp(-front * 125.0) * exp(-rippleAge * 1.7);
+  }
+
+  let shardPhase = dot(hash22(v.id), vec2<f32>(5.3, 8.7)) * 6.2831853;
+  let shardRunner = pow(max(0.0, sin(shardPhase + length(v.center - vec2<f32>(0.5)) * 34.0 - time * (12.0 + audio.y * 7.0))), 12.0);
+  let edgeRunner = pow(max(0.0, sin(v.dist * 72.0 + shardPhase - time * (17.0 + audio.z * 8.0))), 18.0);
+  let offset = repelDir * (repelMask * (displacement + audioPulse * 0.06) + clickFront * 0.055);
   let randBase = hash22(v.id) - 0.5;
   let randOffset = randBase * (0.005 + max(displacement, 0.08) * 0.025);
   let finalUV = clamp(uv - offset - randOffset, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -101,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let viewDir = vec3<f32>(0.0, 0.0, 1.0);
   let cosTheta = max(dot(viewDir, normal), 0.0);
   let fresnel = 0.04 + (1.0 - 0.04) * pow(1.0 - cosTheta, 5.0);
-  let edgeHighlight = pow(1.0 - cosTheta, 3.0) * (0.25 + edge * 0.75);
+  let edgeHighlight = pow(1.0 - cosTheta, 3.0) * (0.25 + edge * 0.75) + edgeRunner * (0.08 + audio.z * 0.28);
 
   let thickness = 0.04 + (1.0 - clamp(v.dist, 0.0, 1.0)) * 0.08 + edge * 0.04;
   let density = 0.70 + edge * 1.50;
@@ -117,6 +132,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lightDir = normalize(vec3<f32>(-0.4, 0.5, 0.8));
   let specular = pow(max(dot(lightDir, normal), 0.0), 20.0) * (0.20 + 0.40 * edge + 0.30 * audio.z);
   finalColor = finalColor + glassTint * edgeHighlight * 0.25 + vec3<f32>(specular);
+  finalColor += vec3<f32>(0.58, 0.82, 1.0) * shardRunner * (0.04 + audio.y * 0.18) +
+                vec3<f32>(1.0, 0.72, 0.35) * clickFront * 0.16;
+  finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthOut = clamp(mix(baseDepth, 0.35 + 0.55 * (1.0 - transmission), 0.20 + 0.35 * edge), 0.0, 1.0);

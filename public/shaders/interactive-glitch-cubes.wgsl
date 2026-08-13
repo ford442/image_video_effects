@@ -42,6 +42,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let held = step(0.5, u.zoom_config.w);
+
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var rippleIndex: u32 = 0u; rippleIndex < rippleCount; rippleIndex = rippleIndex + 1u) {
+        let ripple = u.ripples[rippleIndex];
+        let rippleAge = max(time - ripple.z, 0.0);
+        let front = abs(distance(uv, ripple.xy) - rippleAge * (0.22 + bass * 0.12));
+        clickFront += exp(-front * 120.0) * exp(-rippleAge * 1.6);
+    }
 
     // Audio-reactive parameters
     let gridSize = 5.0 + u.zoom_params.x * 50.0 * (1.0 + bass * 0.2);
@@ -58,14 +68,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let dist = distance(tileCenterUV, mouse);
 
-    let influence = smoothstep(0.5, 0.0, dist);
-    let height = influence * extrusion * 2.0;
+    let influence = smoothstep(0.5, 0.0, dist) * mix(0.16, 1.0, held);
+    let cubeSweep = pow(max(0.0, sin(i_st.x * 0.73 + i_st.y * 0.41 - time * (11.0 + mids * 7.0))), 12.0);
+    let conveyor = pow(max(0.0, sin((tileCenterUV.y + tileCenterUV.x * 0.35) * 42.0 - time * (16.0 + bass * 6.0))), 16.0);
+    let height = clamp(influence * extrusion * 2.0 + clickFront * 0.55 + cubeSweep * extrusion * 0.16, 0.0, 2.5);
 
     let baseScale = 1.0 - gapBase;
     let scale = baseScale * (1.0 + height * 0.3);
 
     let viewVec = tileCenterUV - vec2<f32>(0.5, 0.5);
-    let shift = viewVec * height * 0.1;
+    let shift = viewVec * height * 0.1 + vec2<f32>(conveyor * 0.008 / ar, 0.0);
     let shiftLocal = shift * vec2<f32>(ar, 1.0) * gridSize;
     let faceCenter = vec2<f32>(0.5) + shiftLocal;
 
@@ -88,9 +100,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rUV = sampleUV + vec2<f32>(edgeGlow * 0.01 / ar, 0.0);
         let bUV = sampleUV - vec2<f32>(edgeGlow * 0.01 / ar, 0.0);
 
-        let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-        let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
-        let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+        let r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+        let g = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+        let b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
         color = vec3<f32>(r, g, b);
 
         color += height * 0.1;
@@ -107,16 +119,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Temporal cube memory: previous heights persist for settling effect
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let prevHeight = prev.b;
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    let prevHeight = prev.a;
     let settledHeight = mix(height, prevHeight * 0.92, 0.05 + mids * 0.02);
     var settledColor = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
     // Audio sparkle on cube faces
     if (isFace) {
-        let sparkle = hash(vec2<f32>(i_st.x + time * 10.0, i_st.y)) * treble * 0.15;
+        let stableSeed = hash(i_st);
+        let sparkle = pow(max(0.0, sin(time * (19.0 + treble * 8.0) + stableSeed * 6.2831853)), 20.0) * treble * 0.20;
         settledColor += sparkle;
     }
+
+    settledColor += vec3<f32>(0.2, 0.55, 1.0) * conveyor * (0.03 + mids * 0.10) +
+                    vec3<f32>(1.0, 0.28, 0.72) * clickFront * 0.10;
+    settledColor = clamp(settledColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthAlpha = mix(alpha, 1.0, depth * 0.3);

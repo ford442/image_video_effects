@@ -3,13 +3,15 @@
   "name": "Engraving Stipple",
   "category": "artistic",
   "url": "shaders/engraving-stipple.wgsl",
-  "description": "Upgraded copperplate engraving with gradient-aware contour hatching, burr effects at crossings, ink pooling, paper texture, and chromatic edge darkening. Bass drives tool pressure, mouse acts as burin, depth controls line width.",
+  "description": "Copperplate-inspired engraving with continuously traveling hatch runners, held-pointer burin pressure, click-engraved impact rings, ink pooling, and depth-shaped line width.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
     "line-art",
-    "depth-aware"
+    "depth-aware",
+    "click-reactive",
+    "fast-motion"
   ],
   "tags": [
     "engraving",
@@ -19,6 +21,12 @@
     "audio-reactive",
     "cross-hatch",
     "copperplate"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Line Density", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Stipple Scale", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Contrast", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Light Rotation", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
   ],
   "params": [
     {

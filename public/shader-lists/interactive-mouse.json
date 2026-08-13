@@ -751,7 +751,7 @@
     "id": "chroma-lens",
     "name": "Chroma Lens",
     "url": "shaders/chroma-lens.wgsl",
-    "description": "A magnifying lens effect that splits color channels (chromatic aberration) towards the edges.",
+    "description": "Held magnifying lens with chromatic edge splitting, actual tangential edge blur, rapid rim runners, audio response, and click-launched glass fronts.",
     "params": [
       {
         "id": "magnification",
@@ -782,10 +782,46 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Magnification",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Lens Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Edge Blur",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "fast-motion"
     ],
     "tags": [
       "filter",
@@ -1656,7 +1692,7 @@
     "id": "cyber-focus",
     "name": "Cyber Focus",
     "url": "shaders/cyber-focus.wgsl",
-    "description": "High-tech focus mode where the area around the mouse is crisp, while the background suffers from digital interference and chromatic aberration.",
+    "description": "High-tech focus aperture with smooth scanner packets, stable block interference, chromatic defocus, and click-launched rings of clarity.",
     "params": [
       {
         "id": "radius",
@@ -1687,11 +1723,47 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Focus Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Blur Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glitch Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "chromatic-aberration",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "fast-motion"
     ],
     "tags": [
       "filter",
@@ -3193,7 +3265,7 @@
     "id": "ferrofluid",
     "name": "Magnetic Ferrofluid",
     "url": "shaders/ferrofluid.wgsl",
-    "description": "Simulates magnetic ferrofluid spikes attracted to the mouse.",
+    "description": "Stylized magnetic ferrofluid with rotating domain spikes, fast droplet runners, live viscosity, held-pointer attraction, and click-launched magnetic fronts.",
     "params": [
       {
         "id": "spikeScale",
@@ -3224,8 +3296,46 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Spike Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Attraction",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "fast-motion",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3539,7 +3649,7 @@
     "name": "Glass Shatter",
     "category": "interactive-mouse",
     "url": "shaders/glass-shatter.wgsl",
-    "description": "Interactive shattered glass effect where shards are pushed by the mouse.",
+    "description": "Held-pointer glass-shard distortion with continuous shard and edge runners, chromatic transmission, three-band audio response, and bounded click fronts.",
     "params": [
       {
         "id": "scale",
@@ -3574,7 +3684,43 @@
       "mouse-driven",
       "chromatic-aberration",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "fast-motion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Shard Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Displacement",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "glass",
@@ -4722,7 +4868,7 @@
     "id": "interactive-glitch-cubes",
     "name": "Interactive Glitch Cubes",
     "url": "shaders/interactive-glitch-cubes.wgsl",
-    "description": "Image mapped onto a grid of extruded cubes with audio-reactive extrusion, chromatic edge glow, temporal cube memory for settling physics, and depth-aware alpha.",
+    "description": "Image-mapped cubes with exact prior-state settling, held-pointer extrusion, rapid grid conveyors, stable sparkle pulses, three-band audio response, and bounded click fronts.",
     "params": [
       {
         "id": "size",
@@ -4763,7 +4909,44 @@
       "audio-reactive",
       "temporal",
       "chromatic",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "bounded-history",
+      "click-reactive",
+      "fast-motion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cube Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Extrusion Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Grid Gap",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Shadow Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",
@@ -4779,7 +4962,7 @@
     "id": "interactive-glitch",
     "name": "Interactive Glitch",
     "url": "shaders/interactive-glitch.wgsl",
-    "description": "Digital glitch artifacts that intensify around the mouse cursor.",
+    "description": "Continuously pulsing digital glitch blocks with fast scan tears, held-pointer amplification, real audio, and click-launched corruption fronts.",
     "params": [
       {
         "id": "intensity",
@@ -4810,12 +4993,48 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Base Intensity",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Influence Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glitch Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Block Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "glitch",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive",
+      "fast-motion"
     ],
     "tags": [
       "filter",
@@ -4870,7 +5089,41 @@
     "id": "interactive-kuwahara",
     "name": "Oil Painting (Kuwahara)",
     "url": "shaders/interactive-kuwahara.wgsl",
-    "description": "Applies an oil painting effect using a Kuwahara filter. Mouse distance controls the detail level (focus area).",
+    "description": "Interactive Kuwahara oil painting with live focus hardness, fast wet-paint runners, audio shimmer, and click-launched clarity fronts.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Saturation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Focus Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hardness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "params": [
       {
         "id": "radius",
@@ -4905,7 +5158,9 @@
       "mouse-driven",
       "artistic",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "fast-motion"
     ],
     "tags": [
       "filter",
@@ -7007,9 +7262,47 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "temporal",
+      "click-reactive",
+      "fast-motion",
+      "bounded-history"
     ],
-    "description": "Melts the image under the mouse cursor like hot glass.",
+    "description": "Stylized molten glass with exact-load rising heat advection, smooth convection packets, held-pointer heating, click thermal fronts, Fresnel response, and Beer-Lambert absorption.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Heat Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Cooling Rate",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "params": [
       {
         "id": "heat-radius",
@@ -7049,7 +7342,7 @@
     "id": "motion-heatmap",
     "name": "Motion Heatmap",
     "url": "shaders/motion-heatmap.wgsl",
-    "description": "Visualizes video motion and mouse interaction as a heatmap.",
+    "description": "Advected motion heatmap with rising thermal flow, fast heat runners, held-pointer injection, and click-launched thermal fronts.",
     "params": [
       {
         "id": "decay",
@@ -7081,7 +7374,47 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "click-reactive",
+      "audio-reactive",
+      "temporal",
+      "fast-motion",
+      "bounded-history",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Heat Decay",
+        "default": 0.05,
+        "min": 0.001,
+        "max": 0.3,
+        "step": 0.001
+      },
+      {
+        "index": 1,
+        "name": "Motion Sens.",
+        "default": 2,
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Mouse Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",
@@ -11456,7 +11789,7 @@
     "id": "rgb-shift-brush",
     "name": "RGB Shift Brush",
     "url": "shaders/rgb-shift-brush.wgsl",
-    "description": "Paint with RGB channel separation trails using the mouse.",
+    "description": "Held-pointer RGB separation brush with exact advected mask history, rapid spectral ribbons, stylized channel transmission, three-band audio response, and bounded click fronts.",
     "params": [
       {
         "id": "shift",
@@ -11489,7 +11822,46 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "audio-reactive",
+      "bounded-history",
+      "click-reactive",
+      "fast-motion",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Shift Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Decay",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",

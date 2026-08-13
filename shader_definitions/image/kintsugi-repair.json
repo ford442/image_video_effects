@@ -3,7 +3,7 @@
   "name": "Kintsugi Repair",
   "category": "image",
   "url": "shaders/kintsugi-repair.wgsl",
-  "description": "Simulates the Japanese art of repairing broken pottery with gold (Kintsugi). Voronoi patterns create cracks with gold filling.",
+  "description": "Kintsugi-inspired Voronoi cracks with held-pointer repair energy, rapid gold runners, stable sparkles, three-band audio response, and bounded click fronts.",
   "params": [
     {
       "id": "scale",
@@ -37,7 +37,15 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive",
+    "fast-motion"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Shard Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Gold Width", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Shatter Amount", "default": 0.1, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Gold Sparkle", "default": 0.8, "min": 0, "max": 1, "step": 0.01 }
   ],
   "tags": [
     "kintsugi",

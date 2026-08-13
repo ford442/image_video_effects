@@ -5,9 +5,92 @@
 
 ---
 
-## Recently Completed (406 tracker entries)
+## Recently Completed (430 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 49 (8 shaders) — 2026-08-13 — FAST MOTION CONTINUATION
+
+The next smallest clean single-pass cohort upgrades Gravitational Lensing,
+Chroma Depth Tunnel Prismatic, Glass Shatter, Interactive Glitch Cubes,
+Kintsugi Repair, Luma Melt, PP SSAO, and RGB Shift Brush. Each receives two
+distinct continuous motion structures, held-pointer response, real three-band
+audio, and capped click fronts without frame-hash strobing. The batch replaces
+filtered C-state reads with exact bounded loads, fixes Luma Melt's downward
+flow and held-state annotation, removes time-seeded cube sparkle, and limits
+prismatic, kintsugi, and occlusion claims to stylized behavior. Source `params`,
+A packing, unused B, depth ownership, canonical bindings, 16x16x1 workgroups,
+and zero `extraBuffer` access are preserved. Structural validation details are
+in `swarm-outputs/codex-2026-08-13-b49/`; real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 423 | `black-hole` | 49 | 127→139 (+12) | Orbit runners, infall packets, held lensing, horizon fronts. |
+| 424 | `chroma-depth-tunnel-prismatic` | 49 | 127→146 (+19) | Axial packets, spectral helix, pointer pull, prism fronts. |
+| 425 | `glass-shatter` | 49 | 127→145 (+18) | Shard runners, edge glints, held repel, impact fronts. |
+| 426 | `interactive-glitch-cubes` | 49 | 127→144 (+17) | Exact history, cube sweeps, grid conveyor, stable sparkle. |
+| 427 | `kintsugi-repair` | 49 | 127→144 (+17) | Repair runners, gold traces, held energy, crack fronts. |
+| 428 | `luma-melt-interactive` | 49 | 127→144 (+17) | Exact downward history, melt runners, drip packets, heat fronts. |
+| 429 | `pp-ssao` | 49 | 127→148 (+21) | Rotating kernel, depth scans, pointer focus, occlusion fronts. |
+| 430 | `rgb-shift-brush` | 49 | 127→142 (+15) | Exact mask advection, spectral ribbons, held brush, color fronts. |
+
+### Batch 48 (8 shaders) — 2026-08-13 — FAST MOTION CONTINUATION
+
+The next smallest clean single-pass cohort upgrades Ferrofluid, Interactive
+Glitch, Chroma Lens, Heat Haze, Predator Camouflage, Scanline Cyberpunk,
+Spectral Slit Scan, and Watercolor Bloom. Each receives two distinct continuous
+motion structures plus held-pointer response and capped click fronts without
+frame-hash strobing. The batch activates Ferrofluid's viscosity, implements
+Chroma Lens edge blur, makes Slit Density select three-to-seven slits, corrects
+Heat Haze decay and Watercolor drying semantics, standardizes Interactive
+Glitch to 16x16x1, replaces reserved audio reads in Scanline and Watercolor,
+and converts Heat/Spectral/Watercolor state reads to exact bounded loads.
+Source `params`, A packing, Scanline's diagnostic B, Watercolor's mirrored B,
+otherwise-unused B, and zero persistent `extraBuffer` writes are preserved.
+Gate and contract audits pass 8/8; Batch 48 incrementally changes only its four
+target catalogs, URLs remain relative, duplicates are 1,336/1,336, Jest is
+77/77 suites (508 pass / 1 skip), and the production build passes. The unified
+manifest remains 1,323 entries. Real-GPU visual QA remains external. Notes:
+`swarm-outputs/codex-2026-08-13-b48/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 415 | `ferrofluid` | 48 | 125→142 (+17) | Live viscosity, magnetic domains, droplet runners, click fronts. |
+| 416 | `interactive-glitch` | 48 | 125→132 (+7) | 16x16x1, stable pulsing blocks, scan tears, corruption fronts. |
+| 417 | `chroma-lens` | 48 | 126→146 (+20) | Actual edge blur, held lens, rim runners, glass fronts. |
+| 418 | `heat-haze` | 48 | 126→144 (+18) | Exact rising heat, true decay, convection packets, thermal fronts. |
+| 419 | `predator-camouflage` | 48 | 126→143 (+17) | Held cloak, pigment runners, hunt sweeps, click fronts. |
+| 420 | `scanline-cyberpunk` | 48 | 126→149 (+23) | Correct audio, head rolls, phosphor runners, pointer corruption. |
+| 421 | `spectral-slit-scan` | 48 | 126→152 (+26) | Live slit count, exact history, slit packets, pointer curl. |
+| 422 | `watercolor-bloom` | 48 | 126→151 (+25) | Correct audio/drying, advected pigment, runners, click blooms. |
+
+### Batch 47 (8 shaders) — 2026-08-13 — FAST MOTION CONTINUATION
+
+The next smallest clean all-category cohort upgrades Motion Heatmap, Cross
+Convolution Mouse Bilateral, Cyber Focus, Data Moshing Diffusion, Engraving
+Stipple, Interactive Kuwahara, Molten Glass, and Neon Pulse Dissolve. Each
+receives shader-specific advected flow, runners, scan packets, or continuous
+tool motion plus bounded click fronts without frame-hash strobing. The batch
+also makes saved controls truthful and live, replaces filtering state reads
+with exact loads, standardizes Molten Glass to 16x16x1, fixes Neon Pulse's
+reserved-buffer audio read, and bounds unsafe sampling/output paths. Source
+`params`, A packing, the established Neon diagnostic B write, otherwise-unused
+B, and zero persistent `extraBuffer` writes are preserved. Gate and contract
+audits pass 8/8; only the four target catalogs change, URLs remain relative,
+duplicates are 1,336/1,336, Jest is 77/77 suites (508 pass / 1 skip), and the
+production build passes. The unified manifest remains 1,323 entries. Real-GPU
+visual QA remains external. Notes: `swarm-outputs/codex-2026-08-13-b47/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 407 | `motion-heatmap` | 47 | 124→153 (+29) | Advected heat runners, click fronts, live palette shift, exact state. |
+| 408 | `cross-conv-mouse-bilateral` | 47 | 125→141 (+16) | Traveling bilateral sheen, smoothing fronts, safe sampling. |
+| 409 | `cyber-focus` | 47 | 125→149 (+24) | Stable block motion, held aperture, scan packets, clarity fronts. |
+| 410 | `data-moshing-diffusion` | 47 | 125→146 (+21) | Advected offset state, stream packets, click displacement fronts. |
+| 411 | `engraving-stipple` | 47 | 125→140 (+15) | Traveling hatching, line runners, pressure and engraved rings. |
+| 412 | `interactive-kuwahara` | 47 | 125→142 (+17) | Live hardness, held wet runners, click clarity, bounded radius. |
+| 413 | `molten-glass` | 47 | 125→147 (+22) | 16x16x1, upward heat state, thermal runners, safer refraction. |
+| 414 | `neon-pulse-dissolve` | 47 | 125→153 (+28) | Correct audio source, smooth luminous noise, scan and click fronts. |
 
 ### Batch 46 (12 shaders) — 2026-08-10 — PSYCHEDELIC ENCORE + COMPLEX SIX
 

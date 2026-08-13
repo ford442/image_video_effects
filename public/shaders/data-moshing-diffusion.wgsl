@@ -38,6 +38,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) { return; }
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
+  let coord = vec2<i32>(global_id.xy);
+  let maxCoord = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
   let pixelSize = 1.0 / res;
   let time = u.config.x;
   let mousePos = u.zoom_config.yz;
@@ -51,8 +53,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dt = mix(0.05, 0.25, u.zoom_params.z) * (1.0 + treble * 0.1);
   let quantize = u.zoom_params.w;
 
-  // Read previous UV offset from history
-  let prevData = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Advect the packed UV-offset state through a smooth tape conveyor.
+  let conveyor = vec2<i32>(i32(round(sin(uv.y * 10.0 + time * 1.7) * 2.0)), 2 + i32(round(bass * 2.0)));
+  let historyCoord = clamp(coord + conveyor, vec2<i32>(0), maxCoord);
+  let prevData = textureLoad(dataTextureC, historyCoord, 0);
   var offset = prevData.xy;
 
   // Mouse swirl interaction
@@ -62,14 +66,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (mouseDist < mouseRadius) {
     let angle = atan2(uv.y - mousePos.y, uv.x - mousePos.x);
     let swirl = vec2<f32>(cos(angle + time), sin(angle + time));
-    let force = (1.0 - mouseDist / mouseRadius) * smearStrength * 0.02;
+    let heldBoost = mix(0.35, 1.0, step(0.5, u.zoom_config.w));
+    let force = (1.0 - mouseDist / mouseRadius) * smearStrength * 0.02 * heldBoost;
     offset = offset + swirl * force;
+  }
+
+  // Continuous stream packets and click fronts inject coherent offset motion.
+  let streamPacket = pow(max(0.0, sin(uv.y * 48.0 + uv.x * 17.0 - time * 14.0)), 12.0);
+  offset += vec2<f32>(0.012, -0.004) * streamPacket * smearStrength * (1.0 + treble);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 1.8) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      let distanceToClick = length(delta);
+      let direction = delta / max(distanceToClick, 0.0001);
+      let front = smoothstep(0.025, 0.0, abs(distanceToClick - age * 0.44)) * exp(-age * 1.5);
+      offset += direction * front * 0.025 * smearStrength;
+    }
   }
 
   offset = offset * 0.96;
   offset = clamp(offset, vec2<f32>(-0.5), vec2<f32>(0.5));
 
-  let distortedUV = uv - offset;
+  let distortedUV = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
   var currentR = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).r;
   var currentG = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).g;
   var currentB = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).b;
@@ -103,8 +124,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     avgCoeff = (cN + cS + cE + cW) * 0.25;
   }
 
-  let paintBoost = 1.0 + smearStrength * 0.3;
-  var finalColor = mix(vec3<f32>(currentR, currentG, currentB), vec3<f32>(currentR, currentG, currentB), paintBoost);
+  var finalColor = vec3<f32>(currentR, currentG, currentB);
 
   // Color quantization with audio-driven glitch
   if (quantize > 0.0) {
@@ -112,14 +132,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = floor(finalColor * q) / q;
   }
 
-  // Temporal smear persistence
-  let prevSmear = prevData.rgb;
-  finalColor = mix(finalColor, prevSmear * 0.95, 0.02 + mids * 0.01);
+  // Display trails re-sample source color; packed A history remains UV-offset state.
+  let trailUV = clamp(uv - offset * 1.65, vec2<f32>(0.0), vec2<f32>(1.0));
+  let trailColor = textureSampleLevel(readTexture, u_sampler, trailUV, 0.0).rgb;
+  finalColor = clamp(mix(finalColor, trailColor, 0.08 + smearStrength * 0.12), vec3<f32>(0.0), vec3<f32>(4.0));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let alpha = clamp(avgCoeff + length(offset) * 2.0 + bass * 0.05, 0.0, 1.0);
 
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(offset, 0.0, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(offset, 0.0, alpha));
   textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

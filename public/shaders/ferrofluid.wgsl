@@ -62,10 +62,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Params — bass intensifies magnetic spike formation
     let spikeScale = mix(10.0, 50.0, u.zoom_params.x);
     let attractionStrength = u.zoom_params.y * (1.0 + bass * 0.4);
-    let viscosity = u.zoom_params.z;
+    let viscosity = clamp(u.zoom_params.z, 0.0, 1.0);
     let colorShift = u.zoom_params.w;
 
-    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    let mouse = u.zoom_config.yz;
+    let mouseDown = step(0.5, u.zoom_config.w);
 
     // Vector to mouse
     let toMouse = (mouse - uv);
@@ -79,17 +80,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Spike pattern: based on angle towards mouse
     let angle = atan2(dir.y, dir.x);
-    // Noise based on angle and distance rings
-    let spikeNoise = noise(vec2<f32>(angle * 10.0, dist * spikeScale - time));
+    // Rotating magnetic domains and outward-running droplets stay continuous.
+    let mobility = mix(1.45, 0.35, viscosity);
+    let domainPhase = angle * (7.0 + spikeScale * 0.12) - time * (5.0 + mobility * 4.0);
+    let spikeNoise = noise(vec2<f32>(domainPhase, dist * spikeScale - time * mobility * 2.0));
+    let domainRunner = pow(max(0.0, sin(domainPhase * 1.7 + dist * spikeScale * 1.3)), 12.0);
+    let dropletRunner = pow(max(0.0, sin(dist * spikeScale * 2.4 - time * (12.0 + mobility * 5.0) + angle * 3.0)), 14.0);
+
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.8) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickFront += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.42)) * exp(-age * 1.5);
+        }
+    }
 
     // Displace UVs towards mouse, modulated by spikes
-    let force = smoothstep(0.5, 0.0, dist) * attractionStrength; // Stronger near mouse
-    let spikeForce = force * (0.5 + 0.5 * spikeNoise); // Modulate
+    let force = smoothstep(0.5, 0.0, dist) * attractionStrength * mix(0.55, 1.0, mouseDown); // Stronger near a held mouse
+    let spikeForce = force * (0.38 + 0.42 * spikeNoise + domainRunner * 0.2) + clickFront * attractionStrength * 0.35;
 
     // Viscosity adds "lag" or smoothing (simulated by blurring the noise domain in real sim, here just intensity)
-    let finalDisplacement = dir * spikeForce * 0.2;
+    let tangent = vec2<f32>(-dir.y, dir.x);
+    let finalDisplacement = (dir * spikeForce + tangent * dropletRunner * force * 0.25) * 0.2 * mobility;
 
-    let distortedUV = uv - finalDisplacement;
+    let distortedUV = clamp(uv - finalDisplacement, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
 
@@ -101,13 +118,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var fluidColor = vec3<f32>(gray * 0.5);
 
     // Add specular highlights on "ridges" (where noise gradient is high)
-    let ridge = smoothstep(0.6, 0.8, spikeNoise) * force;
+    let ridge = clamp(smoothstep(0.6, 0.8, spikeNoise) * force + domainRunner * force * 0.45 + clickFront * 0.3, 0.0, 1.5);
     fluidColor += vec3<f32>(ridge);
 
     // Mix with original based on distance (effect fades out far away)
     let effectMask = smoothstep(0.6, 0.3, dist);
 
-    var finalColor = mix(baseColor.rgb, fluidColor, effectMask);
+    var finalColor = mix(baseColor.rgb, fluidColor, clamp(effectMask + clickFront * 0.35, 0.0, 1.0));
 
     // Color shift param
     if (colorShift > 0.0) {
@@ -116,7 +133,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Alpha: preserve input transparency, blend toward opaque based on effect intensity
     let finalAlpha = mix(baseColor.a, 1.0, effectMask * 0.7);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(4.0)), finalAlpha));
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(spikeForce, ridge, dist, 1.0));
 
     // Pass depth

@@ -40,7 +40,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     return fract(sin(k) * 43758.5453);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -74,20 +74,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let downMult  = select(1.0, 2.0, mouseDown > 0.5);
     let influence = rawInfluence * downMult;
 
-    // Bass boosts totalIntensity
-    let baseTotalIntensity = mix(intensity * 0.2, 1.0, influence * intensity);
-    let totalIntensity     = baseTotalIntensity * (1.0 + bass * 0.5);
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.6) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickFront += smoothstep(0.024, 0.0, abs(length(delta) - age * 0.5)) * exp(-age * 1.7);
+        }
+    }
 
-    // Generate glitch blocks
+    // Bass and click fronts boost total intensity.
+    let baseTotalIntensity = mix(intensity * 0.2, 1.0, influence * intensity);
+    let totalIntensity = clamp(baseTotalIntensity * (1.0 + bass * 0.5) + clickFront * 0.85, 0.0, 1.5);
+
+    // Stable blocks pulse and slide continuously instead of changing from frame hashes.
     let blockSize = max(0.01, blockScale * 0.2);
     let blockGrid = floor(uv / blockSize);
-    let blockTime = floor(time * (speed * 10.0 + 1.0));
-
-    let noise = hash21(blockGrid + vec2<f32>(blockTime * 0.1));
-
-    // Branchless block offset: use step(noise, totalIntensity) as weight
-    let blockActive = step(noise, totalIntensity);
-    let rawShift    = (hash22(blockGrid + vec2<f32>(blockTime)) - 0.5) * 0.1 * totalIntensity;
+    let blockSeed = hash21(blockGrid);
+    let blockPulse = 0.5 + 0.5 * sin(time * (4.0 + speed * 13.0) + blockSeed * 6.28318);
+    let blockActive = smoothstep(max(0.0, 0.9 - totalIntensity * 0.7), 1.0, blockPulse);
+    let blockDirection = hash22(blockGrid + vec2<f32>(17.0, 31.0)) - 0.5;
+    let blockCarrier = sin(time * (9.0 + speed * 16.0) + blockSeed * 12.0);
+    let rawShift = blockDirection * blockCarrier * 0.12 * totalIntensity;
     let offset_base = rawShift * blockActive;
 
     // Branchless color shift: select by hash comparison
@@ -96,25 +106,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colorShiftAmt = totalIntensity * 0.05 * (1.0 + treble * 0.3);
     let colorShift    = select(0.0, colorShiftAmt, colorHashVal < 0.5) * blockActive;
 
-    // Additional horizontal scanline tears
-    let scanLine  = floor(uv.y * 50.0 + time * speed * 20.0);
-    let scanNoise = hash21(vec2<f32>(scanLine, floor(time * 10.0)));
-    // Branchless scanline offset: use step(scanNoise, totalIntensity * 0.5) as weight
-    let scanActive   = step(scanNoise, totalIntensity * 0.5);
-    let scanOffsetX  = (scanNoise - 0.5) * 0.2 * totalIntensity * scanActive;
+    // Rapid scan packets travel vertically while their tears oscillate horizontally.
+    let scanPacket = pow(max(0.0, sin(uv.y * 72.0 - time * (14.0 + speed * 18.0))), 14.0);
+    let scanOffsetX = sin(uv.y * 37.0 + time * 11.0) * 0.12 * totalIntensity * scanPacket;
 
     let finalOffset = vec2<f32>(offset_base.x + scanOffsetX, offset_base.y);
 
     // Apply chromatic aberration with offset
-    let r = textureSampleLevel(readTexture, u_sampler, uv + finalOffset + vec2<f32>(colorShift, 0.0), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv + finalOffset, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + finalOffset - vec2<f32>(colorShift, 0.0), 0.0).b;
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + finalOffset + vec2<f32>(colorShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + finalOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + finalOffset - vec2<f32>(colorShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
     // Meaningful alpha: encodes offset magnitude + totalIntensity + bass pulse
     let offsetMag  = length(finalOffset);
     let alpha      = clamp(offsetMag * 20.0 + totalIntensity * 0.5 + bass * 0.3, 0.0, 1.0);
 
-    let finalColor = vec4<f32>(r, g, b, alpha);
+    let finalColor = vec4<f32>(clamp(vec3<f32>(r, g, b), vec3<f32>(0.0), vec3<f32>(4.0)), alpha);
 
     textureStore(writeTexture, coord, finalColor);
     textureStore(dataTextureA, coord, finalColor);

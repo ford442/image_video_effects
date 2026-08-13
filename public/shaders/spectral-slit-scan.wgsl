@@ -41,6 +41,12 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
+fn loadHistory(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  let maxCoord = vec2<i32>(resolution) - vec2<i32>(1);
+  let coord = clamp(vec2<i32>(uv * resolution), vec2<i32>(0), maxCoord);
+  return textureLoad(dataTextureC, coord, 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -50,10 +56,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
-  let bass = plasmaBuffer[0].x;
+  let held = step(0.5, u.zoom_config.w);
+  let audio = plasmaBuffer[0].xyz;
+  let bass = audio.x;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let aspect = resolution.x / resolution.y;
 
-  let slitCount = 3.0 + floor(u.zoom_params.x * 4.0);
+  let slitCount = 3u + u32(round(u.zoom_params.x * 4.0));
   let trailDecay = 0.75 + u.zoom_params.y * 0.24;
   let chromaShift = u.zoom_params.z * 0.04;
   let curveAmp = u.zoom_params.w * 0.06;
@@ -65,9 +74,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var totalWeight = 0.0;
   var maxAge = 0.0;
 
-  for (var s: u32 = 0u; s < 3u; s = s + 1u) {
+  let mouseDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let mouseFalloff = 1.0 - smoothstep(0.04, 0.42, length(mouseDelta));
+  let mouseCurl = vec2<f32>(-mouseDelta.y, mouseDelta.x) * mouseFalloff * held * 0.08;
+
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 1.9) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      clickFront += smoothstep(0.024, 0.0, abs(length(delta) - age * 0.48)) * exp(-age * 1.45);
+    }
+  }
+
+  for (var s: u32 = 0u; s < slitCount; s = s + 1u) {
     let fi = f32(s);
-    let slitPhase = fi * 2.094;
+    let slitPhase = fi * 6.28318 / f32(slitCount);
 
     // Parametric slit curves: sine, spiral, radial
     var curveOff = vec2<f32>(0.0);
@@ -82,19 +106,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Mouse adds parallax offset per slit
-    let mousePull = (mouse - 0.5) * 0.02 * (fi + 1.0);
+    let mousePull = (mouse - 0.5) * 0.02 * (fi + 1.0) + mouseCurl;
     let parallax = (depth - 0.5) * 0.03 * (fi + 1.0);
+    let slitRunner = pow(max(0.0, sin(uv.y * 74.0 + slitPhase - time * (14.0 + fi))), 14.0);
 
-    let sampleUV = clamp(uv + curveOff + mousePull + parallax, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sampleUV = clamp(uv + curveOff + mousePull + parallax + vec2<f32>(slitRunner * 0.012 + clickFront * 0.018, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Spectral decomposition: R/G/B sample at different temporal lags
-    let histR = textureSampleLevel(dataTextureC, u_sampler, sampleUV + vec2<f32>(chromaShift, 0.0), 0.0);
-    let histG = textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0);
-    let histB = textureSampleLevel(dataTextureC, u_sampler, sampleUV - vec2<f32>(chromaShift, 0.0), 0.0);
+    let histR = loadHistory(sampleUV + vec2<f32>(chromaShift, 0.0), resolution);
+    let histG = loadHistory(sampleUV, resolution);
+    let histB = loadHistory(sampleUV - vec2<f32>(chromaShift, 0.0), resolution);
 
     let age = clamp(1.0 - (histR.a + histG.a + histB.a) * 0.333, 0.0, 1.0);
     let decay = pow(trailDecay, fi + 1.0);
-    let w = decay * (1.0 + bass * 0.5);
+    let w = decay * (1.0 + bass * 0.5 + slitRunner * 0.25 + clickFront * 0.4);
 
     accum.r = accum.r + mix(histR.r, histG.r, 0.3) * w;
     accum.g = accum.g + mix(histG.g, histB.g, 0.3) * w;
@@ -108,14 +133,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let feedback = mix(inputColor.rgb, accum, 0.6);
+  let feedback = mix(inputColor.rgb, accum, clamp(0.6 + mouseFalloff * held * 0.15 + clickFront * 0.2, 0.0, 0.9));
 
   // HDR streak accumulation with tone mapping
-  var hdr = feedback * (1.0 + bass * 0.4);
+  let spectralPacket = vec3<f32>(0.25 + audio.z, 0.15 + audio.y, 0.4 + audio.x) * pow(max(0.0, sin(uv.x * 48.0 + uv.y * 19.0 - time * 17.0)), 16.0);
+  var hdr = feedback * (1.0 + bass * 0.4) + spectralPacket * (0.12 + clickFront * 0.25);
   hdr = aces_approx(hdr);
 
   // Alpha: slit intensity × temporal accumulation age
-  let slitIntensity = smoothstep(0.1, 0.9, totalWeight / 3.0);
+  let slitIntensity = smoothstep(0.1, 0.9, totalWeight / f32(slitCount));
   let alpha = clamp(slitIntensity * (0.3 + maxAge * 0.7), 0.0, 1.0);
 
   let finalColor = vec4<f32>(hdr, alpha);
