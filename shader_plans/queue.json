@@ -414,11 +414,6 @@
       "filename": "2026-08-12_luminescent-quantum-silicate-diatom.md",
       "title": "Luminescent Quantum-Silicate Diatom",
       "added": "2026-08-12T15:28:58.638076"
-    },
-    {
-      "filename": "2026-08-13_abyssal-plasma-void-medusa.md",
-      "title": "Abyssal Plasma Void-Medusa",
-      "added": "2026-08-13T15:13:28.701419"
     }
   ],
   "current": null,
@@ -600,6 +595,13 @@
       "added": "2026-08-12T15:28:58.638076",
       "status": "completed",
       "completed_at": "2026-08-13T08:11:15.164261+00:00"
+    },
+    {
+      "filename": "2026-08-13_abyssal-plasma-void-medusa.md",
+      "title": "Abyssal Plasma Void-Medusa",
+      "added": "2026-08-13T15:13:28.701419",
+      "status": "completed",
+      "completed_at": "2026-08-14T08:37:15.142219+00:00"
     }
   ],
   "completed": [
