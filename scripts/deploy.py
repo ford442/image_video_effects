@@ -5,17 +5,17 @@ Uses a local manifest to track uploaded file hashes.
 """
 
 import os
-import paramiko
-import getpass
 import json
 import hashlib
 from pathlib import Path
 
+from deploy_credentials import load_credentials, open_sftp
+
 # --- Server Configuration ---
-# DreamHost (Apache) - Update these for your account
-HOSTNAME = "1ink.us"          # Your DreamHost domain or server
+# DreamHost (Apache) — override via .env.deploy or DEPLOY_* / FTP_* env vars
+HOSTNAME = "1ink.us"
 PORT = 22
-USERNAME = "ford442"          # Your DreamHost username
+USERNAME = "ford442"
 
 # --- Project Configuration ---
 LOCAL_DIRECTORY = "build"
@@ -248,26 +248,18 @@ def main():
         exit(1)
     print("")
     
-    # Read password from env var; fall back to interactive prompt.
-    # Set DEPLOY_PASS in your shell environment — never hardcode credentials here.
-    password = os.environ.get("DEPLOY_PASS", "")
-    if not password:
-        password = getpass.getpass(f"Password for {USERNAME}@{HOSTNAME}: ")
-
+    creds = load_credentials()
     # Load manifest
     manifest = load_manifest()
     print(f"📋 Loaded manifest with {len(manifest)} tracked files")
 
-    transport = None
+    client = None
     sftp = None
     try:
-        # Establish SSH connection
-        transport = paramiko.Transport((HOSTNAME, PORT))
-        print(f"🔌 Connecting to {HOSTNAME}...")
-        transport.connect(username=USERNAME, password=password)
+        print(f"🔌 Connecting to {creds.host} as {creds.username} ({creds.source})...")
+        client, sftp = open_sftp(creds)
         print("✅ Connected!")
 
-        sftp = paramiko.SFTPClient.from_transport(transport)
         print(f"🚀 Deploying '{LOCAL_DIRECTORY}' to '{REMOTE_DIRECTORY}'...")
         print("")
 
@@ -298,8 +290,8 @@ def main():
     finally:
         if sftp:
             sftp.close()
-        if transport:
-            transport.close()
+        if client:
+            client.close()
         print("🔒 Connection closed.")
 
 

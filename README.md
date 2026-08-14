@@ -215,6 +215,11 @@ SHADER_LIST_BASE_URL=https://test.1ink.us/image_video_effects npm run build
 npm run deploy:full
 ```
 
+SFTP login reads gitignored `.env.deploy` (copy from `.env.deploy.example`) or
+`DEPLOY_USER` / `DEPLOY_PASS`. `FTP_USER` / `FTP_PASS` work as aliases. The
+scripts no longer prompt when that file is present. An authorized `DEPLOY_KEY`
+(or `~/.ssh/id_ed25519`) is used when available.
+
 CI enforces relative URLs via `npm run verify:shader-list-urls` (part of
 `verify:toolchain-foundation`). `build:manifest` rejects absolute URLs unless a base-url env is set.
 
@@ -268,7 +273,7 @@ See [`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md). CI: **Generate T
 | `npm run bucket:sync` | Sync GCS bucket (simple watcher) |
 | `npm run bucket:watch` | Watch mode |
 | `npm run sync:shaders` | Push shaders to VPS storage |
-| `npm run deploy` / `deploy:app` / `deploy:full` | Deploy scripts |
+| `npm run deploy` / `deploy:app` / `deploy:full` | Deploy scripts (SFTP; reads gitignored `.env.deploy`) |
 | `npm run audit:shaders` | WGSL audit swarm |
 | `npm run swarm:upgrade` | Shader upgrade swarm runner |
 

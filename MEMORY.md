@@ -1,6 +1,17 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-10 (Batch 45 new generative shaders)
+**Last updated:** 2026-08-15 (deploy credentials no longer prompt)
+
+## 2026-08-15 — Deploy SFTP credentials
+
+- `npm run deploy` / `deploy:app` / shader SFTP sync no longer prompt when
+  gitignored `.env.deploy` or an authorized SSH key is present.
+- Shared loader: `scripts/deploy_credentials.py`. Example: `.env.deploy.example`.
+- This VM's ed25519 key is authorized on `ford442@1ink.us`.
+- The live DreamHost password is still the one that was once committed; rotate
+  it when convenient. Never put it back in tracked files.
+
+## 2026-08-10 — Batch 45 — Psychedelic generative six
 
 ## 2026-08-10 — Batch 45 — Psychedelic generative six
 
