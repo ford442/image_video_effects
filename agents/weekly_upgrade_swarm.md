@@ -5,9 +5,35 @@
 
 ---
 
-## Recently Completed (430 tracker entries)
+## Recently Completed (438 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 50 (8 shaders) — 2026-08-14 — GEOMETRY & DETAIL ENRICHMENT
+
+The geometry-forward cohort upgrades Neon Contour Drag, Voronoi Glass, Blue
+Noise Stipple, IFS Attractor Glass, Navier-Stokes Dye, Chrono Luma Slit Scan,
+Blackbody Thermal, and Adaptive Mosaic. Each receives enriched shapes, facet
+geometry, structural detail, two continuous motion structures, held-pointer
+response, real three-band audio, and capped click fronts. The batch adds
+second-closest Voronoi grout, golden tertiary stipple dots, IFS branch runners,
+filament streaks, slit-band scan geometry, isotherm thermal rings, grout
+conveyors, and exact bounded C history loads. Source `params`, established A/B/C
+roles, chrono binding 13 + `extraBuffer[4]` history head, canonical bindings,
+16x16x1 workgroups (neon-contour-drag from 8x8), and zero new `extraBuffer`
+writes are preserved. Structural validation details are in
+`swarm-outputs/codex-2026-08-14-b50/`; real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 431 | `neon-contour-drag` | 50 | 126→120 (-6) | 16x16x1, dual-scale Sobel, contour runners, click edge rings. |
+| 432 | `voronoi-glass` | 50 | 127→123 (-4) | Second-closest grout, facet glints, held pull, shatter fronts. |
+| 433 | `spec-blue-noise-stipple` | 50 | 127→121 (-6) | Golden tertiary dots, treble crawl, ink splatter, held densify. |
+| 434 | `fractal-glass-distort` | 50 | 128→135 (+7) | Branch runners, held pinch, treble iridescence, shock rings. |
+| 435 | `navier-stokes-dye` | 50 | 127→128 (+1) | Filament streaks, vortex ribbons, 50-cap ripples, dye bursts. |
+| 436 | `chrono-luma-slit-scan` | 50 | 127→100 (-27) | Slit-band runners, held temporal halo, 50-cap warp fronts. |
+| 437 | `spec-blackbody-thermal` | 50 | 127→136 (+9) | Isotherm rings, ember filaments, exact C load, heat fronts. |
+| 438 | `adaptive-mosaic` | 50 | 128→130 (+2) | Exact C load, grout conveyors, click tile pulse, treble crackle. |
 
 ### Batch 49 (8 shaders) — 2026-08-13 — FAST MOTION CONTINUATION
 

@@ -8385,7 +8385,7 @@
     "id": "neon-contour-drag",
     "name": "Neon Wake",
     "url": "shaders/neon-contour-drag.wgsl",
-    "description": "Detects edges and applies a neon glow that is warped by the mouse cursor like a magnetic field.",
+    "description": "Dual-scale neon contour detection with held warp boost, contour runners, hue conveyor ribbons, capped click edge rings, and three-band audio.",
     "params": [
       {
         "id": "edgeStrength",
@@ -8422,7 +8422,43 @@
       "audio-reactive",
       "audio-driven",
       "upgraded-rgba",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive",
+      "fast-motion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Edge Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Warp Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",
@@ -14276,7 +14312,7 @@
     "id": "voronoi-glass",
     "name": "Voronoi Glass",
     "url": "shaders/voronoi-glass.wgsl",
-    "description": "Refractive glass cells based on Voronoi patterns that shift with the mouse.",
+    "description": "Refractive Voronoi glass with true grout borders, facet glint runners, held attraction, and capped shatter fronts.",
     "params": [
       {
         "id": "density",
@@ -14312,7 +14348,43 @@
       "geometry",
       "audio-reactive",
       "audio-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "fast-motion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cell Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Border Width",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mouse Attract",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",

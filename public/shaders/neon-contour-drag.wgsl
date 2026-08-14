@@ -26,26 +26,18 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn getLuminance(color: vec3<f32>) -> f32 {
-    return dot(color, vec3<f32>(0.299, 0.587, 0.114));
-}
-
 fn sobel(uv: vec2<f32>, step: vec2<f32>) -> f32 {
     let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -step.y), 0.0).rgb;
     let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, step.y), 0.0).rgb;
     let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-step.x, 0.0), 0.0).rgb;
     let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(step.x, 0.0), 0.0).rgb;
-
     let tl = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-step.x, -step.y), 0.0).rgb;
     let tr = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(step.x, -step.y), 0.0).rgb;
     let bl = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-step.x, step.y), 0.0).rgb;
     let br = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(step.x, step.y), 0.0).rgb;
-
     let gx = -tl + tr - 2.0 * l + 2.0 * r - bl + br;
     let gy = -tl - 2.0 * t - tr + bl + 2.0 * b + br;
-
-    let mag = length(gx) + length(gy);
-    return mag;
+    return length(gx) + length(gy);
 }
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
@@ -54,73 +46,75 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
-// Alpha calculation for emissive materials
 fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
     let coreAlpha = 0.3 * glowIntensity;
-    let glowAlpha = 0.0;
-    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+    return mix(0.0, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<f32>(u.config.zw);
     if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / dims;
     let aspect = dims.x / dims.y;
+    let time = u.config.x;
 
-    // Audio: bass thickens edges, mids feeds glow, treble cycles hue
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let held = step(0.5, u.zoom_config.w);
 
-    // Parameters
-    // x: edgeStrength, y: dragRadius, z: glowIntensity, w: colorShift
     let edgeStrength = u.zoom_params.x * 5.0 * (1.0 + bass * 0.5);
     let dragRadius = u.zoom_params.y;
-    let glowIntensity = u.zoom_params.z * 2.0 * (1.0 + mids * 0.6);
+    let glowIntensity = u.zoom_params.z * 2.0 * (1.0 + mids * 0.6) * mix(1.0, 1.35, held);
     let colorShift = u.zoom_params.w + treble * 0.2;
     let occlusionBalance = 0.5;
 
-    // Mouse interaction
-    var mousePos = u.zoom_config.yz;
-    let mouseActive = u.zoom_config.w;
-
-    // Coordinate correction for distance
+    let mousePos = u.zoom_config.yz;
     let uv_c = vec2<f32>(uv.x * aspect, uv.y);
     let mouse_c = vec2<f32>(mousePos.x * aspect, mousePos.y);
     let dist = distance(uv_c, mouse_c);
 
-    // Drag/Warp effect based on distance
-    let warpAmount = smoothstep(dragRadius, 0.0, dist) * 0.2;
+    let warpAmount = smoothstep(dragRadius, 0.0, dist) * mix(0.2, 0.38, held);
     var dir = normalize(uv_c - mouse_c);
     let safeDir = select(vec2<f32>(0.0), dir, dist > 0.001);
     let warpUV = uv - safeDir * warpAmount;
 
-    // Edge Detection
-    let step = 1.0 / dims;
-    let edge = sobel(warpUV, step);
+    let stepFine = 1.0 / dims;
+    let stepCoarse = stepFine * 3.0;
+    let edgeFine = sobel(warpUV, stepFine);
+    let edgeCoarse = sobel(warpUV, stepCoarse);
+    let edgeBlend = mix(edgeCoarse, edgeFine, u.zoom_params.x);
+    let edge = edgeBlend * (1.0 + edgeStrength * 0.15);
 
-    // Neon Glow Color - Cycle hue based on time and distance from mouse
-    let hue = fract(u.config.x * 0.2 + dist * 2.0 + colorShift);
-    let neonColor = hsv2rgb(vec3<f32>(hue, 0.8, 1.0));
+    let contourRunner = pow(max(0.0, sin(edge * 28.0 - time * (14.0 + bass * 6.0))), 12.0);
+    let hueConveyor = pow(max(0.0, sin(dot(warpUV, vec2<f32>(1.2, 0.7)) * 40.0 - time * (18.0 + treble * 8.0))), 14.0);
 
-    // Emission calculation (HDR capable)
-    let glow = edge * edgeStrength * glowIntensity * smoothstep(1.0, 0.0, dist * 0.5);
-    var emission = neonColor * glow;
-
-    // Extra: If mouse is close, add hot core
-    if (dist < 0.05) {
-        emission = mix(emission, vec3<f32>(1.0) - emission, 1.0 - dist/0.05);
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickFront += smoothstep(0.02, 0.0, abs(length(delta) - age * 0.35)) * exp(-age * 1.5);
+        }
     }
 
-    // Calculate alpha based on emission intensity
+    let hue = fract(time * 0.2 + dist * 2.0 + colorShift + hueConveyor * 0.12);
+    let neonColor = hsv2rgb(vec3<f32>(hue, 0.8, 1.0));
+
+    let glow = edge * edgeStrength * glowIntensity * smoothstep(1.0, 0.0, dist * 0.5);
+    var emission = neonColor * glow * (1.0 + contourRunner * 0.35 + clickFront * 0.4);
+
+    let hotCore = smoothstep(0.05, 0.0, dist);
+    emission = mix(emission, vec3<f32>(1.0) - emission, hotCore * 0.5);
+
     let glowStrength = length(emission);
     let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
 
-    // Output RGBA: RGB = emission (HDR), A = physical occlusion
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
 
-    // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

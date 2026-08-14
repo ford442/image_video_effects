@@ -2,7 +2,7 @@
   "id": "voronoi-glass",
   "name": "Voronoi Glass",
   "url": "shaders/voronoi-glass.wgsl",
-  "description": "Refractive glass cells based on Voronoi patterns that shift with the mouse.",
+  "description": "Refractive Voronoi glass with true grout borders, facet glint runners, held attraction, and capped shatter fronts.",
   "params": [
     {
       "id": "density",
@@ -38,7 +38,15 @@
     "geometry",
     "audio-reactive",
     "audio-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive",
+    "fast-motion"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Cell Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Refraction", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Border Width", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Mouse Attract", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ],
   "tags": [
     "filter",

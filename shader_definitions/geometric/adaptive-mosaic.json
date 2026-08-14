@@ -2,12 +2,15 @@
   "id": "adaptive-mosaic",
   "name": "Adaptive Mosaic",
   "url": "shaders/adaptive-mosaic.wgsl",
-  "description": "Depth-adaptive tile mosaic: near objects render as fine tiles, far objects as coarse blocks. SDF bevel on every tile edge, Voronoi crackle overlay at coarse sizes, mouse-focus zone, and audio-reactive tile-size pulse.",
+  "description": "Depth-adaptive tile mosaic with exact C history, grout conveyor runners, click tile pulses, held fine-focus, and treble-flickered Voronoi crackle.",
   "features": [
     "mouse-driven",
     "depth-aware",
     "audio-reactive",
-    "temporal"
+    "temporal",
+    "bounded-history",
+    "click-reactive",
+    "fast-motion"
   ],
   "params": [
     {
@@ -53,5 +56,11 @@
     "pattern",
     "audio",
     "reactive"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Tile Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Depth Blend", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Bevel Width", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Audio Sensitivity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ]
 }

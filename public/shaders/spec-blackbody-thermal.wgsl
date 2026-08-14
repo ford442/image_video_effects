@@ -3,8 +3,6 @@
 //  Category: advanced-hybrid
 //  Features: blackbody-radiation, HDR, physical-color, audio-reactive,
 //            temporal-ember-persistence, chromatic-temperature-gradient, depth-output
-//  Complexity: High
-//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -58,11 +56,13 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let held = step(0.5, u.zoom_config.w);
 
     let tempRangeLow = mix(800.0, 2500.0, u.zoom_params.x);
     let tempRangeHigh = mix(4000.0, 15000.0, u.zoom_params.y);
@@ -70,37 +70,46 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let glowAmount = mix(0.0, 0.8, u.zoom_params.w);
 
     let mousePos = u.zoom_config.yz;
-    let isMouseDown = u.zoom_config.w > 0.5;
+    let mouseDist = length(uv - mousePos);
+    let mouseHeat = exp(-mouseDist * mouseDist * 400.0) * held;
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let luma = dot(baseColor, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Audio-driven temperature modulation
     var temperature = mix(tempRangeLow, tempRangeHigh, luma);
     temperature = temperature * (1.0 + mids * 0.2 * sin(time * 3.0));
+    temperature += mouseHeat * tempRangeHigh * 0.5 * (1.0 + treble * 0.3);
 
-    if (isMouseDown) {
-        let mouseDist = length(uv - mousePos);
-        let mouseHeat = exp(-mouseDist * mouseDist * 400.0);
-        temperature += mouseHeat * tempRangeHigh * 0.5 * (1.0 + treble * 0.3);
+    let isothermRing = pow(max(0.0, sin(luma * 24.0 - time * (8.0 + bass * 4.0))), 12.0);
+    let emberFilament = pow(max(0.0, sin(luma * 36.0 + atan2(uv.y - 0.5, uv.x - 0.5) * 3.0 - time * (12.0 + treble * 6.0))), 14.0);
+    temperature += (isothermRing + emberFilament * 0.5) * tempRangeHigh * 0.15;
+
+    var clickHeat = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let rd = length(uv - ripple.xy);
+            clickHeat += smoothstep(0.02, 0.0, abs(rd - age * 0.35)) * exp(-age * 1.5);
+        }
     }
+    temperature += clickHeat * tempRangeHigh * 0.25;
 
     var thermalColor = blackbodyColor(temperature) * thermalIntensity;
 
-    // Chromatic temperature gradient: cooler = more blue, hotter = more red
     let tempNorm = clamp((temperature - tempRangeLow) / (tempRangeHigh - tempRangeLow), 0.0, 1.0);
     let chromaR = thermalColor * vec3<f32>(1.1, 0.95, 0.85) * (1.0 + treble * 0.15);
     let chromaB = thermalColor * vec3<f32>(0.85, 0.95, 1.1) * (1.0 + bass * 0.15);
     thermalColor = mix(chromaB, chromaR, tempNorm);
 
-    // Temporal ember persistence via dataTextureC
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prevCoord = vec2<i32>(gid.xy);
+    let prev = textureLoad(dataTextureC, prevCoord, 0);
     let prevEmber = prev.rgb * prev.a * 15000.0;
     let emberDecay = mix(0.85, 0.98, glowAmount);
     let persistentEmber = blackbodyColor(dot(prevEmber, vec3<f32>(0.299, 0.587, 0.114)) * emberDecay) * thermalIntensity * glowAmount;
     thermalColor = max(thermalColor, persistentEmber);
 
-    // Glow around bright regions with audio reactivity
     if (glowAmount > 0.01) {
         let glowRadius = 0.03;
         var glowAccum = vec3<f32>(0.0);

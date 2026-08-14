@@ -2,12 +2,6 @@
 //  IFS Attractor Glass — Iterated Function System + Chromatic Glass
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
-//  Complexity: High
-//  Scientific: 4-contraction IFS (Barnsley fern variant),
-//              attractor density field drives refraction index,
-//              chromatic dispersion through fractal structure,
-//              audio-driven contraction parameter modulation
-//  Upgraded: Phase B
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,21 +19,19 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Contraction, y=Rotation, z=Refraction, w=Aberration
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Apply one IFS affine transformation: p' = A·p + b
 fn ifsAffine(p: vec2<f32>, angle: f32, scale: f32, tx: f32, ty: f32) -> vec2<f32> {
     let c = cos(angle); let s = sin(angle);
     return vec2<f32>(scale * (c * p.x - s * p.y) + tx,
                      scale * (s * p.x + c * p.y) + ty);
 }
 
-// Evaluate IFS attractor density at point p by inverse iteration.
-fn ifsAttractorDensity(p: vec2<f32>, contraction: f32, rotation: f32, audio: f32) -> f32 {
+fn ifsAttractorDensity(p: vec2<f32>, contraction: f32, rotation: f32) -> f32 {
     let s  = contraction * 0.55;
     let s2 = contraction * 0.45;
     let r1 = rotation;
@@ -66,8 +58,7 @@ fn ifsAttractorDensity(p: vec2<f32>, contraction: f32, rotation: f32, audio: f32
 
         density += exp(-length(q) * 3.0);
     }
-    density = density / 8.0;
-    return clamp(density, 0.0, 1.0);
+    return clamp(density / 8.0, 0.0, 1.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -78,49 +69,65 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
-    // Audio reactivity
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let held = step(0.5, u.zoom_config.w);
+    let mouse = u.zoom_config.yz;
 
     let aspect = resolution.x / resolution.y;
+    let mousePinch = exp(-dot((uv - mouse) * vec2<f32>(aspect, 1.0), (uv - mouse) * vec2<f32>(aspect, 1.0)) * 12.0) * held;
 
-    let contraction = mix(0.4, 0.75, u.zoom_params.x);
+    let contraction = mix(0.4, 0.75, u.zoom_params.x) * mix(1.0, 0.82, mousePinch * 0.5);
     let rotation    = u.zoom_params.y * 6.28318 + time * 0.2;
     let refrStr     = mix(0.0, 0.08, u.zoom_params.z) * (1.0 + bass * 0.4);
     let aberration  = u.zoom_params.w * 0.015 + mids * 0.005;
 
     var p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 1.5;
 
-    let d0  = ifsAttractorDensity(p, contraction, rotation, bass);
-    let dx  = ifsAttractorDensity(p + vec2<f32>(0.008, 0.0), contraction, rotation, bass);
-    let dy  = ifsAttractorDensity(p + vec2<f32>(0.0, 0.008), contraction, rotation, bass);
+    let d0  = ifsAttractorDensity(p, contraction, rotation);
+    let dx  = ifsAttractorDensity(p + vec2<f32>(0.008, 0.0), contraction, rotation);
+    let dy  = ifsAttractorDensity(p + vec2<f32>(0.0, 0.008), contraction, rotation);
     let grad = vec2<f32>(dx - d0, dy - d0) * refrStr;
 
-    let uvR = clamp(uv + grad * 1.3, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvG = clamp(uv + grad * 1.0, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvB = clamp(uv + grad * 0.7, vec2<f32>(0.0), vec2<f32>(1.0));
+    let branchRunner = pow(max(0.0, sin(atan2(grad.y, grad.x) * 6.0 - time * (14.0 + mids * 6.0))), 12.0);
+    let attractorRunner = pow(max(0.0, sin(d0 * 24.0 - time * (18.0 + bass * 8.0))), 14.0);
+
+    var clickRing = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            clickRing += smoothstep(0.02, 0.0, abs(length(delta) - age * 0.45)) * exp(-age * 1.6);
+        }
+    }
+
+    let gradBoost = grad * (1.0 + branchRunner * 0.25 + clickRing * 0.3);
+
+    let uvR = clamp(uv + gradBoost * 1.3, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvG = clamp(uv + gradBoost * 1.0, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(uv + gradBoost * 0.7, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let sR  = textureSampleLevel(readTexture, u_sampler, uvR, 0.0);
     let sG  = textureSampleLevel(readTexture, u_sampler, uvG, 0.0);
     let sB  = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
     var color = vec3<f32>(sR.r, sG.g, sB.b);
 
-    let glow  = d0 * d0 * 0.6;
-    let angle  = atan2(grad.y, grad.x) / 6.28318 + 0.5;
+    let glow  = d0 * d0 * 0.6 * (1.0 + attractorRunner * 0.35);
+    let angle  = atan2(grad.y, grad.x) / 6.28318 + 0.5 + treble * 0.15;
     let iridR  = 0.5 + 0.5 * sin(angle * 6.28318 + 0.0);
     let iridG  = 0.5 + 0.5 * sin(angle * 6.28318 + 2.094);
     let iridB  = 0.5 + 0.5 * sin(angle * 6.28318 + 4.189);
     color = mix(color, vec3<f32>(iridR, iridG, iridB), glow * 0.4);
 
     color += vec3<f32>(0.9, 0.95, 1.0) * smoothstep(0.7, 1.0, d0) * 0.5;
+    color += vec3<f32>(0.4, 0.6, 1.0) * clickRing * 0.25;
 
-    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-    // Semantic alpha
     let luminance = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(d0 * 0.5 + length(grad) * 5.0 + glow * 0.5 + luminance * 0.2, 0.2, 1.0);
+    let alpha = clamp(d0 * 0.5 + length(gradBoost) * 5.0 + glow * 0.5 + luminance * 0.2, 0.2, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

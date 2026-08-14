@@ -3280,11 +3280,13 @@
     "id": "navier-stokes-dye",
     "name": "Navier-Stokes Dye",
     "url": "shaders/navier-stokes-dye.wgsl",
-    "description": "Velocity advection and dye injection with a pressure-like solve placeholder.",
+    "description": "Navier-Stokes dye with filament streaks, vortex ribbon detail, held dye injection, and capped click dye bursts.",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
-      "audio-reactive"
+      "audio-reactive",
+      "click-reactive",
+      "fast-motion"
     ],
     "tags": [
       "simulation",
@@ -3330,6 +3332,40 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Color manipulation amount"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -4935,7 +4971,7 @@
     "id": "spec-blue-noise-stipple",
     "name": "Blue Noise Stipple",
     "url": "shaders/spec-blue-noise-stipple.wgsl",
-    "description": "Blue-noise dithered pointillism rendering. Uses golden-ratio low-discrepancy sequences for perceptually optimal, uniformly-spaced dot distributions with smooth gradients and no aliasing.",
+    "description": "Blue-noise pointillism with golden tertiary dots, treble chromatic crawl, held densification, and capped ink-splatter click fronts.",
     "tags": [
       "pointillism",
       "blue-noise",
@@ -4948,7 +4984,10 @@
       "blue-noise",
       "pointillism",
       "stochastic-sampling",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "fast-motion"
     ],
     "params": [
       {
@@ -4977,6 +5016,40 @@
       },
       {
         "id": "density",
+        "name": "Dot Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dot Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Dot Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Variation",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Dot Density",
         "default": 0.7,
         "min": 0,
