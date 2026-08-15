@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-14T00:38:27.468358",
+  "timestamp": "2026-08-15T16:02:46.633474",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 8,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/adaptive-mosaic.wgsl",
+      "file": "public/shaders/liquid-fast.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/chrono-luma-slit-scan.wgsl",
+      "file": "public/shaders/liquid-glitch.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/fractal-glass-distort.wgsl",
+      "file": "public/shaders/liquid-jelly.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/navier-stokes-dye.wgsl",
+      "file": "public/shaders/liquid-perspective.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neon-contour-drag.wgsl",
+      "file": "public/shaders/liquid-rainbow.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spec-blackbody-thermal.wgsl",
+      "file": "public/shaders/liquid-rgb.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spec-blue-noise-stipple.wgsl",
+      "file": "public/shaders/liquid-viscous-grokcf1.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/voronoi-glass.wgsl",
+      "file": "public/shaders/liquid-viscous-simple.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

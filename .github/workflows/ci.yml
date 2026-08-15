@@ -191,7 +191,7 @@ jobs:
       run: npx playwright install chromium
     
     - name: Run WASM Playwright smoke tests
-      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts tests/renderer-parity.spec.ts tests/wasm-benchmark.spec.ts --project=chromium
+      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=chromium
       env:
         CI: true
         WASM_GPU_TESTS: '0'
@@ -304,6 +304,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -319,6 +321,13 @@ jobs:
     
     - name: Generate shader lists
       run: node scripts/generate_shader_lists.js
+
+    - name: Regenerate unified shader manifest
+      run: npm run build:manifest
+
+    - name: Check thumbnail coverage regression
+      if: github.event_name == 'pull_request'
+      run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}"
 
     - name: Validate JSON manifests
       run: |

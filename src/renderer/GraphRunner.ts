@@ -8,6 +8,8 @@
 import {
   ExpandedDispatch,
   MultipassGraphDef,
+  capGraphDispatches,
+  countGraphPasses,
   expandGraph,
   validateGraph,
 } from './multipassGraph';
@@ -21,6 +23,15 @@ export interface GraphRoleBindings {
   dataC: GPUTexture;
 }
 
+export interface GraphRunReport {
+  shaderId: string | null;
+  requested: number;
+  executed: number;
+  truncated: number;
+  cap: number;
+  errors: string[];
+}
+
 export interface GraphRunnerContext {
   device: GPUDevice;
   pipelineLayout: GPUPipelineLayout;
@@ -31,6 +42,7 @@ export interface GraphRunnerContext {
   scaledW: number;
   scaledH: number;
   maxPassesPerFrame: number;
+  shaderId?: string;
   /**
    * Optional: return timestampWrites for the Nth compute dispatch in this graph run
    * (0-based among successfully encoded compute passes). Interior passes may return undefined.
@@ -54,22 +66,44 @@ function encodeCopy(
   );
 }
 
+function emptyReport(partial: Partial<GraphRunReport>): GraphRunReport {
+  return {
+    shaderId: partial.shaderId ?? null,
+    requested: partial.requested ?? 0,
+    executed: partial.executed ?? 0,
+    truncated: partial.truncated ?? 0,
+    cap: partial.cap ?? 0,
+    errors: partial.errors ?? [],
+  };
+}
+
 export class GraphRunner {
-  runGraph(encoder: GPUCommandEncoder, graph: MultipassGraphDef, ctx: GraphRunnerContext): void {
+  lastReport: GraphRunReport | null = null;
+
+  runGraph(encoder: GPUCommandEncoder, graph: MultipassGraphDef, ctx: GraphRunnerContext): GraphRunReport {
+    const shaderId = ctx.shaderId ?? null;
     const errors = validateGraph(graph);
     if (errors.length > 0) {
       console.warn('[GraphRunner] Invalid graph:', errors);
-      return;
+      const report = emptyReport({
+        shaderId,
+        requested: countGraphPasses(graph),
+        cap: Math.min(graph.maxPassesPerFrame || 0, ctx.maxPassesPerFrame),
+        errors,
+      });
+      this.lastReport = report;
+      return report;
     }
 
     const cap = Math.min(graph.maxPassesPerFrame, ctx.maxPassesPerFrame);
-    let expanded = expandGraph(graph);
+    const requested = countGraphPasses(graph);
+    let expanded = capGraphDispatches(graph, ctx.maxPassesPerFrame);
 
-    if (expanded.length > cap) {
+    const truncated = Math.max(0, requested - expanded.length);
+    if (truncated > 0) {
       console.warn(
-        `[GraphRunner] Pass cap ${cap} — skipping ${expanded.length - cap} dispatch(es)`,
+        `[GraphRunner] Pass cap ${cap} — truncated ${truncated} dispatch(es) (kept color write)`,
       );
-      expanded = expanded.slice(0, cap);
     }
 
     // Resolve pipelines once (avoids double getPipeline side effects in tests/callers).
@@ -85,6 +119,17 @@ export class GraphRunner {
         encodedIndex++;
       }
     }
+
+    const report = emptyReport({
+      shaderId,
+      requested,
+      executed: encodedIndex,
+      truncated,
+      cap,
+      errors: [],
+    });
+    this.lastReport = report;
+    return report;
   }
 
   private runDispatch(

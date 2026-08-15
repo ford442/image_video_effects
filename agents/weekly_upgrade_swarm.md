@@ -5,9 +5,35 @@
 
 ---
 
-## Recently Completed (438 tracker entries)
+## Recently Completed (446 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 51 (8 shaders) — 2026-08-15 — LIQUID DYNAMICS, GEOMETRY & VISCOUS FLOW
+
+The compact Liquid Effects cohort upgrades Liquid Fast, Liquid RGB, Liquid Jelly,
+Liquid Rainbow, Liquid Perspective, Liquid Glitch, Liquid Viscous Nebula grokcf1,
+and Liquid Viscous (Simple). Each receives dual continuous motion structures
+(divergence-free Hamiltonian streamfunctions, complex potential vortex dynamics,
+viscoelastic Kelvin-Voigt modeling, trochoidal wave systems, and Navier-Stokes
+vorticity confinement), 2.5D heightfield normal derivatives, Snell's law refraction,
+thin-film optical interference, Voronoi cellular quantization, interactive pointer
+drag wakes, and exact `textureLoad` float32 temporal history accumulation.
+Source `params`, established A/C roles, canonical 13-binding layout, 16x16x1
+workgroups, and zero new `extraBuffer` writes are preserved. Structural validation
+details are in `swarm-outputs/codex-2026-08-15-b51/`; real-GPU visual QA remains
+external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 439 | `liquid-fast` | 51 | 64→145 (+81) | Hamiltonian streamfunctions, drag vortex, 2.5D heightfield normals, exact C load. |
+| 440 | `liquid-rgb` | 51 | 66→143 (+77) | Complex potential flow, Cauchy chromatic dispersion, Beer-Lambert absorption, exact C load. |
+| 441 | `liquid-jelly` | 51 | 67→145 (+78) | Kelvin-Voigt viscoelasticity, spring-mass drag tether, volumetric scattering, exact C load. |
+| 442 | `liquid-rainbow` | 51 | 71→148 (+77) | Trochoidal Gerstner waves, thin-film optical interference, chromatic dispersion, exact C load. |
+| 443 | `liquid-perspective` | 51 | 76→144 (+68) | 3D perspective rays, Snell refraction, edge silhouette bioluminescence, exact C load. |
+| 444 | `liquid-glitch` | 51 | 76→142 (+66) | Voronoi cellular quantization, fluid stream advection, Bernoulli slip bands, exact C load. |
+| 445 | `liquid-viscous-grokcf1` | 51 | 84→143 (+59) | Multi-octave FBM domain warping, helical flow, nebula filaments, exact C load. |
+| 446 | `liquid-viscous-simple` | 51 | 106→148 (+42) | Laplace cohesion operator, vorticity confinement flow, Fresnel sheen, exact C load. |
 
 ### Batch 50 (8 shaders) — 2026-08-14 — GEOMETRY & DETAIL ENRICHMENT
 

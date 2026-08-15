@@ -56,6 +56,10 @@ describe('attractShowcasePool', () => {
   it('uses longer dwell for physics lab ids', () => {
     expect(getAttractDwellSeconds('ripple-tank')).toBe(ATTRACT_PHYSICS_DWELL_SEC);
     expect(getAttractDwellSeconds('photonic-caustics-graph')).toBe(ATTRACT_PHYSICS_DWELL_SEC);
+    expect(getAttractDwellSeconds('fabric-of-reality')).toBe(ATTRACT_PHYSICS_DWELL_SEC);
+    expect(getAttractDwellSeconds('chromatographic-fluid')).toBe(ATTRACT_PHYSICS_DWELL_SEC);
+    expect(getAttractDwellSeconds('gray-scott-tank')).toBe(ATTRACT_PHYSICS_DWELL_SEC);
+    expect(getAttractDwellSeconds('optical-flow-dream')).toBe(ATTRACT_PHYSICS_DWELL_SEC);
     expect(getAttractDwellSeconds('gen-showcase-nebula-core')).toBe(ATTRACT_DEFAULT_DWELL_SEC);
   });
 });

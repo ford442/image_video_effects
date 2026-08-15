@@ -164,7 +164,33 @@ export function attachConsoleCollector(page: Page): {
   return { criticalErrors, consoleErrors };
 }
 
+export async function waitForWebGpuProbe(page: Page, timeoutMs = 30000): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const w = window as { webgpuProbe?: { ok: boolean }; __pixelocity__?: { renderer?: unknown } };
+      return w.webgpuProbe != null || w.__pixelocity__?.renderer != null;
+    },
+    { timeout: timeoutMs },
+  );
+}
+
+export async function isGpuProbeOk(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const w = window as {
+      webgpuProbe?: { ok: boolean };
+      __pixelocity__?: { renderer?: unknown };
+    };
+    if (w.webgpuProbe != null) return w.webgpuProbe.ok === true;
+    return w.__pixelocity__?.renderer != null;
+  });
+}
+
 export async function waitForTestApi(page: Page, timeoutMs = 30000): Promise<void> {
+  await waitForWebGpuProbe(page, timeoutMs);
+  const probeOk = await isGpuProbeOk(page);
+  if (!probeOk) {
+    return;
+  }
   await page.waitForFunction(() => (window as any).__pixelocity__?.renderer != null, {
     timeout: timeoutMs,
   });

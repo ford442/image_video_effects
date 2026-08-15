@@ -3490,5 +3490,38 @@
       0.65
     ],
     "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "chromatographic-fluid": {
+    "thumbnail_url": "thumbnails/chromatographic-fluid.png",
+    "generated_at": "2026-08-15T00:00:00.000Z",
+    "params_snapshot": [
+      0.55,
+      0.45,
+      0.4,
+      0.6
+    ],
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "gray-scott-tank": {
+    "thumbnail_url": "thumbnails/gray-scott-tank.png",
+    "generated_at": "2026-08-15T00:00:00.000Z",
+    "params_snapshot": [
+      0.42,
+      0.55,
+      0.5,
+      0.65
+    ],
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "optical-flow-dream": {
+    "thumbnail_url": "thumbnails/optical-flow-dream.png",
+    "generated_at": "2026-08-15T00:00:00.000Z",
+    "params_snapshot": [
+      0.55,
+      0.7,
+      0.45,
+      0.75
+    ],
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
   }
 }

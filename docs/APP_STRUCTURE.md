@@ -110,6 +110,17 @@ Verify: `npm run verify:shader-list-urls` (also runs inside `verify:toolchain-fo
 
 ---
 
+## Compute tiers (FX vs analysis)
+
+| Tier | Meaning | Owner |
+|------|---------|-------|
+| **4a** | Domain FX compute (catalog shaders, GraphRunner) | `public/shaders/`, `webgpu/slotDispatch.ts` |
+| **4b** | gpu-chores analysis / pre-FX (histogram, reduce, LUT, downsample) | [`src/gpuChores/`](../src/gpuChores/) — see [`GPU_CHORES.md`](GPU_CHORES.md) |
+
+Chores **adopt** the renderer `GPUDevice`. Kill switch: `?no_gpu_compute`.
+
+---
+
 ## Testing
 
 ```bash

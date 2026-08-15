@@ -1,7 +1,7 @@
 {
-  "generated": "2026-08-12T08:04:52.848053+00:00",
-  "defs_scanned": 1024,
-  "defs_with_params": 1024,
+  "generated": "2026-08-15T14:05:11.809489+00:00",
+  "defs_scanned": 1028,
+  "defs_with_params": 1028,
   "new_dead_sliders": [],
   "known_dead_sliders": [
     {
@@ -569,13 +569,6 @@
       "category": "interactive-mouse",
       "param_id": "patternSpeed",
       "name": "Pattern Speed",
-      "field": "w"
-    },
-    {
-      "id": "interactive-kuwahara",
-      "category": "interactive-mouse",
-      "param_id": "hardness",
-      "name": "Hardness",
       "field": "w"
     },
     {
@@ -1153,20 +1146,6 @@
       "field": "w"
     },
     {
-      "id": "fabric-of-reality",
-      "category": "simulation",
-      "param_id": "tearThreshold",
-      "name": "Tear Threshold",
-      "field": "y"
-    },
-    {
-      "id": "quantum-foam-pass1",
-      "category": "simulation",
-      "param_id": "param3",
-      "name": "Scale",
-      "field": "z"
-    },
-    {
       "id": "quantum-foam-pass2",
       "category": "simulation",
       "param_id": "param4",
@@ -1202,25 +1181,11 @@
       "field": "w"
     },
     {
-      "id": "ripple-tank",
-      "category": "simulation",
-      "param_id": "sourceStrength",
-      "name": "Source Strength",
-      "field": "z"
-    },
-    {
       "id": "sim-fluid-feedback-field",
       "category": "simulation",
       "param_id": "glow",
       "name": "Glow Intensity",
       "field": "w"
-    },
-    {
-      "id": "wave-tank",
-      "category": "simulation",
-      "param_id": "sourceStrength",
-      "name": "Source Strength",
-      "field": "z"
     },
     {
       "id": "alpha-depth-fog-volumetric",

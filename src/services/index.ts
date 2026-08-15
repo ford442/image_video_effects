@@ -4,11 +4,8 @@ export {
   StorageService,
   storageAPI,
   getStorageClient,
-  getStorageService,
   createStorageClient,
-  createStorageService,
   resetStorageClient,
-  resetStorageService,
 } from './storage';
 
 export type {

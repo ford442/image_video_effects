@@ -260,15 +260,6 @@ export function resetStorageClient(): void {
   defaultClient = null;
 }
 
-/** @deprecated Use getStorageClient — kept for backward compatibility. */
-export const getStorageService = getStorageClient;
-
-/** @deprecated Use createStorageClient */
-export const createStorageService = createStorageClient;
-
-/** @deprecated Use resetStorageClient */
-export const resetStorageService = resetStorageClient;
-
 /** Backward-compatible alias */
 export { StorageClient as StorageService };
 

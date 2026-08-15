@@ -10,7 +10,7 @@ import { resolveMultipassChain } from '../multipassRegistry';
 import {
   ExpandedDispatch,
   MultipassGraphDef,
-  expandGraph,
+  capGraphDispatches,
   resolveGraphForShader,
 } from '../multipassGraph';
 import type { WebGPUFrameState } from './frameState';
@@ -57,8 +57,7 @@ export function getCappedGraphDispatches(
   graph: MultipassGraphDef,
   maxPassesPerFrame: number,
 ): ExpandedDispatch[] {
-  const cap = Math.min(graph.maxPassesPerFrame, maxPassesPerFrame);
-  return expandGraph(graph).slice(0, cap);
+  return capGraphDispatches(graph, maxPassesPerFrame);
 }
 
 /** Count passes that will actually encode, for accurate last-compute timestamps. */
@@ -238,6 +237,7 @@ function dispatchSlot(
       scaledW: state.scaledW,
       scaledH: state.scaledH,
       maxPassesPerFrame: state.maxPassesPerFrame,
+      shaderId: plan.slot.shaderId ?? undefined,
       getTimestampWrites: querySet
         ? () => {
             const { isLast } = nextPassMeta(mode);

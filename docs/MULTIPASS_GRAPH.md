@@ -103,7 +103,7 @@ effectiveCap = min(graph.maxPassesPerFrame, performancePolicy.maxPassesPerFrame)
 | auto (mobile) | 6 |
 | auto (desktop) | 12 |
 
-When over budget, excess dispatches are skipped and a console warning is logged.
+When over budget, iterative `repeat` counts shrink first and the last node that writes `color` is kept. Excess work is reported as truncated steps (Dev Tools + `GraphRunReport`), with a console warning.
 
 ## Encoder boundaries
 
@@ -140,6 +140,9 @@ Wired into `prestart` / `prebuild` alongside `generate_shader_lists.js`.
 | `ripple-tank` | step×4 → inject → optics gather → render (flagship Tier C physics demo) |
 | `fabric-of-reality` | verlet → constraint×4 → tear → render (cloth sim) |
 | `photonic-caustics-graph` | emit → trace×2 → accumulate (caustic transport) |
+| `chromatographic-fluid` | force → advect → diffuse×2 → interact → phase → render (shared wind, RGB viscosity) |
+| `gray-scott-tank` | gs-step×4 → inject → render (true Jacobi Gray–Scott) |
+| `optical-flow-dream` | flow → advect×2 → grade (history ring, binding 13) |
 | `wave-tank` | step×3 → inject → render (minimal graph reference / tests) |
 | `quantum-foam-pass1` | 3-node graph (field → particles → composite) |
 

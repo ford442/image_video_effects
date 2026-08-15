@@ -1,6 +1,42 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-15 (deploy credentials no longer prompt)
+**Last updated:** 2026-08-15 (Batch 51 — Liquid Dynamics, Geometry & Viscous Flow)
+
+## 2026-08-15 — Shader upgrade Batch 51 — LIQUID DYNAMICS, GEOMETRY & VISCOUS FLOW
+
+- Upgraded tracker #439–446 across the Liquid Effects cohort: Liquid Fast,
+  Liquid RGB, Liquid Jelly, Liquid Rainbow, Liquid Perspective, Liquid Glitch,
+  Liquid Viscous Nebula grokcf1, and Liquid Viscous (Simple).
+- Added dual continuous motion structures (Hamiltonian divergence-free streamfunctions,
+  complex potential vortex superposition, Kelvin-Voigt viscoelastic elasticity,
+  trochoidal Gerstner waves, Laplace cohesion, and vorticity confinement), 2.5D
+  heightfield normal derivatives, Snell's law refraction, thin-film optical
+  interference, Voronoi cellular quantization, and interactive pointer drag wakes.
+- Replaced all rgba32float feedback reads with exact `textureLoad` from `dataTextureC`.
+- Structural proof: 8/8 Naga and bindgroup gate, 0 new extraBuffer violations,
+  0 new dead sliders, catalogs in sync (1,340 unique IDs, 0 duplicates), uniforms layout
+  contract in sync. Real-GPU visual QA remains external.
+
+## 2026-08-15 — gpu-chores analysis layer (Tier 4b)
+
+- Shared pre-FX kit in `src/gpuChores/`: BT.709 histogram, reduce_f32, lut_u8_map,
+  downsample_2d. Adopts the renderer `GPUDevice` — never `requestDevice()`.
+- Live path: auto-exposure from the histogram **normalizes the 64×64 preview**,
+  not catalog FX. Kill switch `?no_gpu_compute`. Breadcrumbs in Dev Tools.
+- CPU goldens are the Chromashift-shaped parity SoT on the headless VM.
+- Docs: `docs/GPU_CHORES.md` (Tier 4a = domain FX, Tier 4b = chores).
+- Device-init policy and feedback B→C / A→C copy order untouched.
+
+## 2026-08-15 — Multipass Physics Lab flagships (#1081 / epic #1076)
+
+- Three new Tier C graphs: `chromatographic-fluid` (7), `gray-scott-tank` (6),
+  `optical-flow-dream` (4, history ring). TS GraphRunner only; no C++.
+- GraphRunner now returns `GraphRunReport` and shrinks Jacobi repeats before
+  dropping the color write. Dev Tools shows truncated steps + validation errors.
+- Shader Browser has a Physics Lab chip (`hasGraph`). Attract pool includes the
+  three new stacks plus `fabric-of-reality` at 22s dwell.
+- Structural proof: 12/12 naga+bindgroup; focused Jest 45+ green. Real-GPU
+  visual QA and thumbnail regen remain workstation-side.
 
 ## 2026-08-15 — Deploy SFTP credentials
 
@@ -563,7 +599,15 @@
 - INITIAL_MEMORY 64 MiB experiment: **reject** (no wasm size win); ASYNCIFY **+40 KiB wasm** documented in `BUILD_FLAG_EXPERIMENTS.md`
 - `measure_wasm_build_flags.sh` for reproducible flag comparisons
 - PR template checklist includes `wasm:validate`; CMake marked CI-off-limits
-- `docs/TOOLCHAIN_DECISION.md`: **stay CRA + CRACO** (Vite spike deferred)
+- `docs/TOOLCHAIN_DECISION.md`: **stay CRA + CRACO** (Vite spike deferred); **TS 5.4.5 landed** (#1083, Aug 2026)
+
+## Toolchain truth pass (#1076 / #1083, 2026-08-15)
+- **Decision recorded:** TypeScript 5.4.5 on CRA 5 + CRACO 7 — not blocked; only CRA peer-metadata noise (`npm ls typescript` invalid peer).
+- **Docs:** `TOOLCHAIN_DECISION.md` decision log + dependency boundaries; README toolchain command matrix; `npm run typecheck`.
+- **Cleanup:** removed `BaseRenderer.ts`, root Storage UI shims, `getStorageService` aliases; `StorageService.ts` facade kept.
+- **Vite:** deferred per revisit triggers (TS 5 prerequisite satisfied).
+- **Green:** typecheck, verify:device-policy, verify:uniforms, 513 Jest pass, SKIP_WASM_BUILD build, verify:toolchain-foundation (~258 KiB main gzip).
+- **No collateral:** device-init policy and feedback B→C / A→C copy order untouched.
 
 - Multi-agent shader relay experiment: `gen-relay-psychedelia` in generative category
 - CHUNK-based ownership (domain-warp, symmetry, palette, feedback, motion) — see `agents/RELAY_PROTOCOL.md`
@@ -660,3 +704,14 @@
 - Always audit and force-regenerate invalid existing PNGs before `--missing` waves. Priority order: generative, simulation multipass, interactive-mouse, then remaining categories.
 - Do not allowlist renderable failures to improve the denominator. CI remains reporting-only until healthy coverage reaches at least 50%.
 - The current Cloud VM's production WebGPU probe produced a zero-energy frame, so batch generation requires a verified discrete-GPU host. See `reports/thumbnail-coverage-2026-08.md`.
+
+## Thumbnail foundation wave — #1076 (2026-08-15)
+
+- Confirmed the app engine is the full-catalog/multipass path and constrained the
+  minimal engine/package command to generative-only captures.
+- Added `thumbs:check-regression`, a PR check that compares healthy coverage with
+  the base git ref and fails new shader definitions without healthy PNGs.
+- `thumbs:status` now reports curated attract + Physics Lab priority coverage and
+  accepts `--require-priority` for GPU-workstation enforcement.
+- Current VM proof: nominal 349/1,324 (26.4%), healthy 272/1,323 (20.6%),
+  priority 20/21 (95.2%); capture remains blocked until discrete-GPU access.

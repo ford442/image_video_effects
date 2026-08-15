@@ -140,6 +140,26 @@ def scan_definition(def_path: Path) -> dict | None:
     if not params:
         return None  # no slider params -> nothing to audit
     sid = meta.get("id", def_path.stem)
+    
+    graph_nodes = meta.get("multipass", {}).get("graph", {}).get("nodes", [])
+    if graph_nodes:
+        all_read: set[str] = set()
+        for node in graph_nodes:
+            entry = node.get("entry")
+            if entry:
+                node_wgsl = SHADERS_DIR / f"{entry}.wgsl"
+                if node_wgsl.exists():
+                    all_read.update(fields_read(node_wgsl.read_text(encoding="utf-8", errors="replace")))
+        dead = [p for p in params if p["field"] not in all_read]
+        return {
+            "id": sid,
+            "def": _rel(def_path),
+            "category": def_path.parent.name,
+            "params": params,
+            "dead": dead,
+            "wgsl": _rel(def_path),
+        }
+
     wgsl = wgsl_path_for(def_path, meta)
     if wgsl is None:
         return {"id": sid, "def": _rel(def_path),

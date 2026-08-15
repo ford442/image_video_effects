@@ -8,6 +8,8 @@ import {
   getRendererTypeFromURL,
   performBackendSwitch,
   resolveInitBackendPreference,
+  type RendererInitOptions,
+  type WebGpuProbeHandoff,
 } from './backendLifecycle';
 import * as inputBridge from './inputSourceBridge';
 import {
@@ -47,7 +49,7 @@ import { RenderQualityMode } from '../config/performancePolicy';
 import { buildRendererDiagnostics } from './rendererDiagnostics';
 import type { RendererDiagnostics, RendererMetrics } from './rendererTypes';
 
-export type { RendererType };
+export type { RendererType, RendererInitOptions, WebGpuProbeHandoff };
 export { getRendererTypeFromURL };
 export type { RendererPerformanceStatus, ShaderLoadMeta };
 export type { RendererMetrics, RendererDiagnostics } from './rendererTypes';
@@ -58,6 +60,7 @@ export class RendererManager {
   private lastFailedWasmRenderer: WASMRenderer | null = null;
   private readonly config: RendererConfig;
   private canvas: HTMLCanvasElement | null = null;
+  private webGpuHandoff: WebGpuProbeHandoff | undefined;
   private metrics: RendererMetrics = { fps: 0, frameTime: 0, agentCount: 0, isWASM: false };
   private readonly onMetricsUpdate?: (metrics: RendererMetrics) => void;
   private readonly perfState: PerformancePolicyState = createPerformancePolicyState();
@@ -108,8 +111,9 @@ export class RendererManager {
   private loadShaderBound = (id: string, url: string, meta?: ShaderLoadMeta) =>
     loadShaderForBackend(this.backend(), this.slotPolicy(), this.slotCallbacks(), id, url, meta);
 
-  async init(canvas: HTMLCanvasElement): Promise<boolean> {
+  async init(canvas: HTMLCanvasElement, options?: RendererInitOptions): Promise<boolean> {
     this.canvas = canvas;
+    this.webGpuHandoff = options?.webGpuHandoff;
     const { preferredType } = resolveInitBackendPreference();
 
     if (preferredType === 'wasm') {
@@ -118,19 +122,19 @@ export class RendererManager {
         console.log('✅ Using C++ WASM renderer (experimental, forced via ?renderer=wasm)');
         return true;
       }
-      console.warn('⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU');
-    } else if (preferredType === 'js') {
+      console.warn('⚠️ WASM renderer requested but failed to initialise');
+      return false;
+    }
+    if (preferredType === 'js') {
       console.log('🔧 Canvas2D renderer explicitly requested via ?renderer=js');
       return this.switchRenderer('js');
     }
-
     if (await this.switchRenderer('webgpu')) {
       console.log('✅ Using TypeScript WebGPU renderer (native navigator.gpu)');
       return true;
     }
-
-    console.warn('⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)');
-    return this.switchRenderer('js');
+    console.warn('⚠️ WebGPU unavailable — renderer blocked (no automatic Canvas2D fallback)');
+    return false;
   }
 
   async switchRenderer(type: RendererType): Promise<boolean> {
@@ -142,7 +146,11 @@ export class RendererManager {
       config: this.config,
       previousType: this.currentType,
       previousRenderer: this.currentRenderer,
+      webGpuHandoff: type === 'webgpu' ? this.webGpuHandoff : undefined,
     });
+    if (type === 'webgpu') {
+      this.webGpuHandoff = undefined;
+    }
 
     if (outcome.success) {
       this.currentRenderer = outcome.renderer;
@@ -162,12 +170,9 @@ export class RendererManager {
     this.metrics.isWASM = outcome.isWASM;
 
     if (outcome.restoreType) {
-      const restoreType = outcome.restoreType;
-      console.warn(`[RendererManager] Restoring previous renderer '${restoreType}' after ${type} init failure`);
-      const restored = await this.switchRenderer(restoreType);
-      if (!restored) {
-        console.warn(`[RendererManager] Restore of '${restoreType}' failed — falling back to Canvas2D`);
-        await this.switchRenderer('js');
+      console.warn(`[RendererManager] Restoring previous renderer '${outcome.restoreType}' after ${type} init failure`);
+      if (!(await this.switchRenderer(outcome.restoreType))) {
+        console.warn(`[RendererManager] Restore of '${outcome.restoreType}' failed — renderer blocked`);
       }
     } else {
       console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);
@@ -176,13 +181,13 @@ export class RendererManager {
   }
 
   private startMetricsCollection(): void {
-    const updateMetrics = () => {
+    const tick = () => {
       const fps = this.currentRenderer?.getFPS?.();
       if (typeof fps === 'number') this.metrics.fps = fps;
       this.onMetricsUpdate?.(this.metrics);
-      requestAnimationFrame(updateMetrics);
+      requestAnimationFrame(tick);
     };
-    updateMetrics();
+    tick();
   }
 
   setVideo(video: HTMLVideoElement): void { inputBridge.setVideo(this.currentRenderer, video); }
@@ -340,5 +345,4 @@ export class RendererManager {
     this.metrics.isWASM = false;
   }
 }
-
 export default RendererManager;

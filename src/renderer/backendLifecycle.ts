@@ -9,6 +9,14 @@ import { Renderer, RendererConfig } from './Renderer';
 import { JSRenderer } from './JSRenderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
+import type { WebGpuProbeHandoff } from './webgpuBootProbe';
+
+export type { WebGpuProbeHandoff };
+
+/** Optional init knobs for RendererManager (probe handoff avoids double requestDevice). */
+export interface RendererInitOptions {
+  webGpuHandoff?: WebGpuProbeHandoff;
+}
 
 /** Supported renderer backend identifiers. */
 export type RendererType = 'webgpu' | 'wasm' | 'js';
@@ -22,6 +30,9 @@ export type RendererType = 'webgpu' | 'wasm' | 'js';
  *   - `js`     → Canvas 2D fallback (no shaders)
  *
  * Example: `http://localhost:3000/?renderer=wasm`
+ *
+ * Related: `?no_gpu_compute` forces gpu-chores (Tier 4b) onto the TS backend.
+ * See docs/GPU_CHORES.md — it does not switch the renderer.
  */
 export function getRendererTypeFromURL(): RendererType | null {
   try {
@@ -65,6 +76,8 @@ export interface BackendSwitchInput {
   config: RendererConfig;
   previousType: RendererType | null;
   previousRenderer: Renderer | null;
+  /** Pre-probed WebGPU handoff — avoids double requestDevice on boot. */
+  webGpuHandoff?: WebGpuProbeHandoff;
 }
 
 export interface BackendSwitchResult {
@@ -101,7 +114,12 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
   }
 
   const renderer = createRendererForType(targetType, config);
-  const success = await renderer.init(canvas);
+  let success = false;
+  if (targetType === 'webgpu') {
+    success = await (renderer as WebGPURenderer).init(canvas, input.webGpuHandoff);
+  } else {
+    success = await renderer.init(canvas);
+  }
 
   if (success) {
     if (!mustReleaseFirst) {

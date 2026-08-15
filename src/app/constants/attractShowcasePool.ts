@@ -35,6 +35,10 @@ export const ATTRACT_SHOWCASE_IDS: string[] = [
 export const ATTRACT_PHYSICS_LAB_IDS: string[] = [
   'ripple-tank',
   'photonic-caustics-graph',
+  'fabric-of-reality',
+  'chromatographic-fluid',
+  'gray-scott-tank',
+  'optical-flow-dream',
 ];
 
 /** Default attract dwell (seconds) for generative single-pass demos. */

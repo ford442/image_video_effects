@@ -15,6 +15,7 @@ import {
   stopStaticServer,
   buildAppUrl,
   waitForTestApi,
+  waitForWebGpuProbe,
   getActiveBackend,
   assertExpectedBackend,
   attachConsoleCollector,
@@ -31,6 +32,36 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await stopStaticServer();
+});
+
+test('WebGPU boot probe completes on headless CI', async ({ page }) => {
+  const { criticalErrors } = attachConsoleCollector(page);
+  await page.goto(buildAppUrl('webgpu'), { waitUntil: 'networkidle' });
+  await waitForWebGpuProbe(page);
+
+  const probe = await page.evaluate(() => (window as { webgpuProbe?: { ok: boolean; attempts: unknown[] } }).webgpuProbe);
+  expect(probe).toBeDefined();
+  if (isStrictGpuMode()) {
+    expect(probe?.ok).toBe(true);
+  } else {
+    expect(typeof probe?.ok).toBe('boolean');
+    if (!probe?.ok) {
+      expect(probe?.attempts?.length).toBeGreaterThan(0);
+    }
+  }
+
+  const overlay = await page.getByTestId('webgpu-probe-failure').isVisible();
+  if (!probe?.ok) {
+    expect(overlay).toBe(true);
+  }
+
+  const filtered = criticalErrors.filter(
+    (e) =>
+      !e.includes('No GPU adapter found') &&
+      !e.includes('Failed to obtain a WebGPU adapter') &&
+      !e.includes('webgpu-unavailable')
+  );
+  expect(filtered).toEqual([]);
 });
 
 test('WASM renderer initializes (testMode API + diagnostics)', async ({ page }) => {

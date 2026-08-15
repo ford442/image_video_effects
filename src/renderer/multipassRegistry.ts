@@ -138,6 +138,73 @@ export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
 };
 
 export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
+  "chromatographic-fluid": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "force",
+        "entry": "chromatographic-force",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "advect",
+        "entry": "chromatographic-advect",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "diffuse",
+        "entry": "chromatographic-diffuse",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ],
+        "repeat": 2
+      },
+      {
+        "id": "interact",
+        "entry": "chromatographic-interact",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataB"
+        ]
+      },
+      {
+        "id": "phase",
+        "entry": "chromatographic-phase",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "chromatographic-render",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
   "fabric-of-reality": {
     "maxPassesPerFrame": 10,
     "nodes": [
@@ -177,6 +244,80 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         "entry": "fabric-render",
         "reads": [
           "dataA"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
+  "gray-scott-tank": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "step",
+        "entry": "gray-scott-step",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ],
+        "repeat": 4
+      },
+      {
+        "id": "inject",
+        "entry": "gray-scott-inject",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "gray-scott-render",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
+  "optical-flow-dream": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "flow",
+        "entry": "optical-flow-estimate",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "advect",
+        "entry": "optical-flow-advect",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ],
+        "repeat": 2
+      },
+      {
+        "id": "grade",
+        "entry": "optical-flow-grade",
+        "reads": [
+          "dataC"
         ],
         "writes": [
           "color",

@@ -44,6 +44,9 @@ import {
 import { ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
 import type { InternalColorFormat } from '../config/formatPolicy';
 import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities } from '../config/formatPolicy';
+import { graphRunner } from './GraphRunner';
+import { GpuChoresHost } from '../gpuChores';
+import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private device: GPUDevice | null = null;
@@ -103,6 +106,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private adapterAttemptLabel: string | null = null;
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
 
+  readonly gpuChores = new GpuChoresHost();
+
   private frameState?: WebGPUFrameState;
 
   constructor(private config: RendererConfig) {}
@@ -111,10 +116,15 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   getColorFormat(): InternalColorFormat { return this.colorFormat; }
   getFormatCapabilities(): DeviceFormatCapabilities { return this.formatCapabilities; }
 
-  async init(canvas: HTMLCanvasElement): Promise<boolean> {
+  async init(canvas: HTMLCanvasElement, webGpuHandoff?: WebGpuProbeHandoff): Promise<boolean> {
     if (this.initialized) return true;
 
-    const outcome = await initializeWebGPUDevice(canvas, this.config.width, this.config.height);
+    const outcome = await initializeWebGPUDevice(
+      canvas,
+      this.config.width,
+      this.config.height,
+      webGpuHandoff,
+    );
     if (!outcome.ok) return false;
 
     this.device = outcome.device;
@@ -133,10 +143,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.initialized = false;
       this.timestampRuntime.hasRealGpuTimings = false;
       this.timestampRuntime.readbackPending = false;
+      this.gpuChores.detach('device lost');
     });
 
     this.updateScaledDimensions();
     this.setupGpuResources(outcome.hasF32Filterable, this.colorFormat);
+    this.gpuChores.attach(outcome.device);
 
     this.frameState = createFrameState(createRendererFrameHost(this as unknown as RendererFrameDeps));
     this.initialized = true;
@@ -201,6 +213,23 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** Which rung of ADAPTER_ATTEMPT_LADDER produced the device, if any. */
   getAdapterAttemptLabel(): string | null {
     return this.adapterAttemptLabel;
+  }
+
+  /** Last Tier C graph run (truncated steps + validation errors). */
+  getLastGraphReport() {
+    return graphRunner.lastReport;
+  }
+
+  getGpuChoresBreadcrumbs() {
+    return this.gpuChores.getBreadcrumbs();
+  }
+
+  encodePreFxChores(encoder: GPUCommandEncoder): void {
+    this.gpuChores.encodePreFx(encoder, this.resources.readTex, this.scaledW, this.scaledH);
+  }
+
+  afterFrameSubmitChores(): void {
+    this.gpuChores.afterSubmit();
   }
 
   getGPUTimings(): GPUTimings {
@@ -386,7 +415,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   async loadImage(url: string): Promise<string> {
-    return mediaLoadImage(this.getMediaContext(), this.mediaState, url);
+    const result = await mediaLoadImage(this.getMediaContext(), this.mediaState, url);
+    this.gpuChores.ingestOffscreen(this.mediaState.offscreen, this.mediaState.offCtx);
+    return result;
   }
 
   updateAudioData(bass: number, mid: number, treble: number): void {
@@ -458,6 +489,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   destroy(): void {
     if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
     this.initialized = false;
+    this.gpuChores.destroy();
     destroyTimestampQueries(this.timestampRuntime);
     this.supportsTimestampQuery = false;
     this.pipeline.clear();

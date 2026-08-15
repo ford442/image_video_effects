@@ -10,7 +10,7 @@ The TypeScript WebGPU renderer is the **default production path**. The C++ Emscr
 |------|---------|-------------|-----|
 | **A — Production** | TypeScript WebGPU | Default; recommended | Full feature parity; must work on supported browsers |
 | **B — Experimental** | C++ WASM (`?renderer=wasm`, Controls switcher) | Labeled **Experimental (C++)** | Must not crash app; best-effort parity; no guarantee on edge GPUs |
-| Fallback | Canvas2D (`js`) | Automatic when WebGPU unavailable | No shader effects |
+| Dev escape | Canvas2D (`js`, `?renderer=js`) | Explicit URL only | No shader effects |
 
 WASM is **never** an automatic fallback. Users must explicitly choose it.
 

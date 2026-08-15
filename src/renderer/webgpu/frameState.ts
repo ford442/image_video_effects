@@ -94,6 +94,8 @@ export interface WebGPUFrameState {
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   /** Mutable GPU timestamp runtime (shared with WebGPURenderer). */
   timestampRuntime: WebGPUTimestampQueries;
+  encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
+  afterFrameSubmitChores?: () => void;
 }
 
 /** Minimal host surface the frame loop reads/writes through getters. */
@@ -162,6 +164,8 @@ export interface WebGPUFrameHost {
   supportsTimestampQuery: boolean;
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   timestampRuntime: WebGPUTimestampQueries;
+  encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
+  afterFrameSubmitChores?: () => void;
 }
 
 /** Dependencies passed from WebGPURenderer to build a frame host. */
@@ -211,6 +215,8 @@ export interface RendererFrameDeps {
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   timestampRuntime: WebGPUTimestampQueries;
   maxPassesPerFrame: number;
+  encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
+  afterFrameSubmitChores?: () => void;
 }
 
 export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
@@ -296,6 +302,8 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     get supportsTimestampQuery() { return d.supportsTimestampQuery; },
     get gpuTimings() { return d.gpuTimings; },
     get timestampRuntime() { return d.timestampRuntime; },
+    encodePreFxChores: (encoder) => d.encodePreFxChores?.(encoder),
+    afterFrameSubmitChores: () => d.afterFrameSubmitChores?.(),
   };
 }
 
@@ -376,5 +384,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get supportsTimestampQuery() { return h.supportsTimestampQuery; },
     get gpuTimings() { return h.gpuTimings; },
     get timestampRuntime() { return h.timestampRuntime; },
+    encodePreFxChores: (encoder) => h.encodePreFxChores?.(encoder),
+    afterFrameSubmitChores: () => h.afterFrameSubmitChores?.(),
   };
 }

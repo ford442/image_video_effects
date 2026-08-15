@@ -1,0 +1,75 @@
+{
+  "id": "gray-scott-tank",
+  "name": "Gray-Scott Tank",
+  "url": "shaders/gray-scott-step.wgsl",
+  "description": "Physics Lab — true multi-step Gray–Scott reaction-diffusion (Jacobi ×4 / frame). Hold paints V, clicks seed spots. graph · 6 passes · rgba32float.",
+  "requiresRgba32Float": true,
+  "multipass": {
+    "graph": {
+      "maxPassesPerFrame": 8,
+      "nodes": [
+        { "id": "step", "entry": "gray-scott-step", "reads": ["dataC"], "writes": ["dataA"], "repeat": 4 },
+        { "id": "inject", "entry": "gray-scott-inject", "reads": ["dataC"], "writes": ["dataA"] },
+        { "id": "render", "entry": "gray-scott-render", "reads": ["dataC"], "writes": ["color", "dataA"] }
+      ]
+    }
+  },
+  "params": [
+    {
+      "id": "feed",
+      "name": "Feed",
+      "default": 0.42,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Gray–Scott feed F (≈0.022–0.058) — spots vs stripes"
+    },
+    {
+      "id": "kill",
+      "name": "Kill",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Gray–Scott kill K (≈0.051–0.065); mouse X biases slightly"
+    },
+    {
+      "id": "diffusion",
+      "name": "Diffusion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "U diffusion (V is half of U) per Jacobi step"
+    },
+    {
+      "id": "seedStrength",
+      "name": "Seed Strength",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Hold-paint and click seed amplitude"
+    }
+  ],
+  "features": [
+    "simulation",
+    "multi-pass",
+    "graph-runner",
+    "physics",
+    "mouse-driven",
+    "audio-reactive",
+    "interactive"
+  ],
+  "tags": [
+    "reaction-diffusion",
+    "gray-scott",
+    "simulation",
+    "physics",
+    "showcase"
+  ]
+}

@@ -13,6 +13,7 @@ const LISTS_DIR = path.join(ROOT, 'public', 'shader-lists');
 const THUMB_DIR = path.join(ROOT, 'public', 'thumbnails');
 const MANIFEST_PATH = path.join(THUMB_DIR, 'manifest.json');
 const INTEGRITY_PATH = path.join(ROOT, 'reports', 'thumbnail_integrity_audit.json');
+const ATTRACT_POOL_PATH = path.join(ROOT, 'src', 'app', 'constants', 'attractShowcasePool.ts');
 
 function loadAllCatalogIds() {
   const files = fs.readdirSync(LISTS_DIR).filter(f => f.endsWith('.json'));
@@ -29,6 +30,16 @@ function loadAllCatalogIds() {
 function hasThumbFile(id, manifest) {
   if (!manifest[id]) return false;
   return fs.existsSync(path.join(THUMB_DIR, `${id}.png`));
+}
+
+function loadPriorityIds() {
+  if (!fs.existsSync(ATTRACT_POOL_PATH)) return [];
+  const source = fs.readFileSync(ATTRACT_POOL_PATH, 'utf8');
+  const ids = [];
+  for (const block of source.matchAll(/export const ATTRACT_(?:SHOWCASE|PHYSICS_LAB)_IDS[^[]*\[([\s\S]*?)\];/g)) {
+    for (const match of block[1].matchAll(/'([^']+)'/g)) ids.push(match[1]);
+  }
+  return [...new Set(ids)];
 }
 
 function thumbnailFingerprint(files) {
@@ -90,6 +101,9 @@ const healthyEligible = withThumbEligible - flaggedEligible;
 const healthyEligiblePct = eligibleTotal
   ? ((healthyEligible / eligibleTotal) * 100).toFixed(1)
   : '0.0';
+const priorityIds = loadPriorityIds().filter(id => catalog.has(id));
+const priorityThumbs = priorityIds.filter(id => hasThumbFile(id, manifest));
+const requirePriority = process.argv.includes('--require-priority');
 
 console.log(`Thumbnail coverage: ${withThumb}/${total} (${pct}%)`);
 console.log(`Eligible coverage (excl. skip list): ${withThumbEligible}/${eligibleTotal} (${eligiblePct}%)`);
@@ -111,6 +125,18 @@ if (integrityCurrent) {
     `Integrity audit is stale for the current ${pngCount} PNG files; ` +
     'run python3 scripts/audit_thumbnail_integrity.py',
   );
+}
+
+if (priorityIds.length > 0) {
+  console.log(
+    `Attract / Physics Lab priority coverage: ${priorityThumbs.length}/${priorityIds.length} ` +
+    `(${((priorityThumbs.length / priorityIds.length) * 100).toFixed(1)}%)`,
+  );
+  if (priorityThumbs.length < priorityIds.length) {
+    const missingPriority = priorityIds.filter(id => !hasThumbFile(id, manifest));
+    console.log(`Priority thumbnails missing: ${missingPriority.join(', ')}`);
+    if (requirePriority) process.exitCode = 1;
+  }
 }
 
 if (skipIds.size > 0) {

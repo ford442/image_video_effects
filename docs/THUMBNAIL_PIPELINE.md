@@ -24,7 +24,10 @@ SKIP_WASM_BUILD=1 npm run build
 npx playwright install chromium
 ```
 
-The `app` engine (default) serves the production build from `build/`. The `minimal` engine skips the build and uses a fast inline WebGPU path (generative shaders only).
+The `app` engine (default) serves the production build from `build/` and supports the
+full catalog, including multipass shaders. The `minimal` engine skips the build and
+uses a fast inline WebGPU path for **generative shaders only**; it rejects other
+categories rather than producing misleading captures.
 
 ## Commands
 
@@ -49,15 +52,15 @@ npm run thumbs:generate -- --missing --shard=1/4
 # Force regenerate existing
 npm run thumbs:generate -- --force --ids=plasma-storm,cyber-ripples
 
-# Fast inline engine (no production build)
-npm run thumbs:generate:minimal -- --category=generative --limit=20
+# Fast inline engine (no production build; generative only)
+npm run thumbs:generate:minimal -- --limit=20
 ```
 
 ## CLI flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--engine=app\|minimal` | `app` | Production renderer vs inline WebGPU |
+| `--engine=app\|minimal` | `app` | Production full-catalog renderer vs generative-only inline WebGPU |
 | `--missing` | off | Skip shaders that already have PNG + manifest entry |
 | `--force` | off | Regenerate even when thumbnail exists |
 | `--category=NAME` | `all-catalog` | Shader list category or `all-catalog` |
@@ -111,9 +114,9 @@ Failure reasons: `black_frame`, `magenta_frame`, `error_frame`, `compile`, `pipe
 
 Skipped shaders (intentional): listed in `reports/thumbnail_skip_allowlist.json` — excluded from generation queue and eligible coverage denominator.
 
-## Coverage strategy (target ≥80%)
+## Coverage strategy (first campaign ≥60%, stretch target ≥80%)
 
-Current catalog is ~1,300 shaders. Run in waves on a GPU workstation:
+Current catalog is ~1,300 shaders. Run in waves on a discrete-GPU workstation:
 
 ```bash
 SKIP_WASM_BUILD=1 npm run build
@@ -144,6 +147,9 @@ git add public/thumbnails/
 
 `thumbs:status` reports both nominal manifest/file coverage and integrity-adjusted
 healthy coverage when the checked-in audit fingerprint matches the current PNG set.
+Use `npm run thumbs:status -- --require-priority` after a GPU wave to make the
+curated attract and Physics Lab pool requirement blocking; the default status
+command remains reporting-only for Cloud VM checks.
 
 Check one monthly snapshot into `reports/thumbnail-coverage-YYYY-MM.md`; include
 catalog/eligible/healthy counts, integrity reasons, skip justifications, and the
@@ -155,11 +161,17 @@ Commit PNGs + `manifest.json` in category-sized PRs to keep diffs reviewable.
 
 Manual workflow: **Actions → Generate Thumbnails → Run workflow**
 
-The default GitHub runner has no GPU; the job runs a `--limit=5` smoke capture and uploads artifacts. For full batch runs, use a self-hosted runner with the `webgpu` label (see `.github/workflows/generate-thumbnails.yml`). Coverage remains reporting-only and must not gate PRs before the healthy baseline reaches 50%.
+The default GitHub runner has no GPU; the job runs a `--limit=5` smoke capture and uploads artifacts. For full batch runs, use a self-hosted runner with the `webgpu` label (see `.github/workflows/generate-thumbnails.yml`).
+
+Pull requests that add shader definitions run `npm run thumbs:check-regression`.
+The check compares the PR with `origin/main` and fails when a new definition has
+no healthy PNG or when overall healthy coverage drops. PRs that do not add
+definitions receive an informational result. The weekly coverage workflow remains
+reporting-only until the healthy baseline reaches 50%.
 
 ## Related
 
 - Generator: [`scripts/generate-shader-thumbnails.js`](../scripts/generate-shader-thumbnails.js)
 - Harness: [`scripts/lib/thumbnailHarness.mjs`](../scripts/lib/thumbnailHarness.mjs)
 - Test API: [`src/hooks/useTestHarness.ts`](../src/hooks/useTestHarness.ts)
-- Parent issue: #965 / #921
+- Parent issue: #1076

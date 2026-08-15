@@ -9,6 +9,7 @@
 import { test, expect } from '@playwright/test';
 import { execSync, spawn } from 'child_process';
 import { resolve } from 'path';
+import { isGpuProbeOk, waitForWebGpuProbe } from './helpers/rendererHarness';
 
 const BUILD_DIR = resolve(__dirname, '../build');
 const PORT = 3456;
@@ -85,7 +86,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function loadSlotStack(page: any, shaders: { slot: number; id: string; url: string }[]) {
-  // Wait for test API to be available
+  await waitForWebGpuProbe(page);
+  if (!(await isGpuProbeOk(page))) {
+    return false;
+  }
+
   await page.waitForFunction(() => (window as any).__pixelocity__?.renderer != null, {
     timeout: 15000,
   });
@@ -101,6 +106,7 @@ async function loadSlotStack(page: any, shaders: { slot: number; id: string; url
 
   // Small delay for pipeline compilation
   await page.waitForTimeout(500);
+  return true;
 }
 
 function assertNoErrors(page: any, label: string) {
@@ -120,7 +126,11 @@ function assertNoErrors(page: any, label: string) {
 
 test('2-slot stack renders without critical errors', async ({ page }) => {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-  await loadSlotStack(page, SHADER_2_SLOT);
+  const loaded = await loadSlotStack(page, SHADER_2_SLOT);
+  if (!loaded) {
+    test.skip(true, 'WebGPU probe failed (headless CI without GPU)');
+    return;
+  }
 
   // Render for 2 seconds
   await page.waitForTimeout(2000);
@@ -130,7 +140,11 @@ test('2-slot stack renders without critical errors', async ({ page }) => {
 
 test('3-slot stack renders without critical errors', async ({ page }) => {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-  await loadSlotStack(page, SHADER_3_SLOT);
+  const loaded = await loadSlotStack(page, SHADER_3_SLOT);
+  if (!loaded) {
+    test.skip(true, 'WebGPU probe failed (headless CI without GPU)');
+    return;
+  }
 
   // Render for 2 seconds
   await page.waitForTimeout(2000);
