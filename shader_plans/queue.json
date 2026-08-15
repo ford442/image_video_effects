@@ -419,11 +419,6 @@
       "filename": "2026-08-13_abyssal-plasma-void-medusa.md",
       "title": "Abyssal Plasma Void-Medusa",
       "added": "2026-08-13T15:13:28.701419"
-    },
-    {
-      "filename": "2026-08-14_stellar-acoustic-resonance-manifold.md",
-      "title": "Stellar-Acoustic Resonance-Manifold",
-      "added": "2026-08-14T15:19:26.218601"
     }
   ],
   "current": null,
@@ -740,6 +735,13 @@
       "added": "2026-08-08T15:28:22.099874",
       "status": "completed",
       "completed_at": "2026-08-09T08:10:42.101387+00:00"
+    },
+    {
+      "filename": "2026-08-14_stellar-acoustic-resonance-manifold.md",
+      "title": "Stellar-Acoustic Resonance-Manifold",
+      "added": "2026-08-14T15:19:26.218601",
+      "status": "completed",
+      "completed_at": "2026-08-15T08:16:48.233383+00:00"
     }
   ],
   "rejected": [],
