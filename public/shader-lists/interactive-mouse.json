@@ -2687,7 +2687,17 @@
     "id": "digital-mold",
     "name": "Digital Mold",
     "url": "shaders/digital-mold.wgsl",
-    "description": "Reaction-diffusion growth with spore noise and depth humidity. Gray-Scott simulation grows mold patterns from the mouse cursor; depth modulates growth speed. Bass injects spores, treble adds bright sporulation highlights.",
+    "description": "Continuous Gray-Scott reaction-diffusion kinetics with biological hyphal branching, spore dispersal inoculation, bioluminescent nutrient glow, and exact-load chemical state memory.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "reaction-diffusion",
+      "spore-noise",
+      "depth-humidity",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "updated": true,
     "params": [
       {
         "id": "feedRate",
@@ -2718,13 +2728,35 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "reaction-diffusion",
-      "spore-noise",
-      "depth-humidity",
-      "upgraded-rgba"
+    "updatedParams": [
+      {
+        "id": "feedRate",
+        "name": "Feed Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "killRate",
+        "name": "Kill Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "diffusionA",
+        "name": "Diffusion A",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "diffusionB",
+        "name": "Diffusion B",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ],
     "tags": [
       "filter",
@@ -2734,7 +2766,8 @@
       "reactive",
       "mold",
       "reaction-diffusion",
-      "organic"
+      "organic",
+      "temporal"
     ]
   },
   {
@@ -4680,7 +4713,19 @@
     "id": "interactive-fisheye",
     "name": "Fluid Lens Dynamics",
     "url": "shaders/interactive-fisheye.wgsl",
-    "description": "Velocity-sensitive fluid lens with spring-mass response, viscosity-controlled damping, impulse-driven splash ripples, and depth-aware refractive magnification.",
+    "description": "Velocity-sensitive viscoelastic Kelvin-Voigt droplet lens with spring-mass tether, capillary ripple waves, 2.5D parabolic meniscus normal refraction, and exact-load state memory.",
+    "features": [
+      "mouse-driven",
+      "geometry",
+      "audio-reactive",
+      "depth-aware",
+      "spring-mass",
+      "velocity-sensitive",
+      "splash-response",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "updated": true,
     "params": [
       {
         "id": "surface_tension",
@@ -4711,16 +4756,35 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "geometry",
-      "audio-reactive",
-      "audio-driven",
-      "depth-aware",
-      "spring-mass",
-      "velocity-sensitive",
-      "splash-response",
-      "upgraded-rgba"
+    "updatedParams": [
+      {
+        "id": "surface_tension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mass",
+        "name": "Lens Mass",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "splash_threshold",
+        "name": "Splash Threshold",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      }
     ],
     "tags": [
       "filter",
@@ -4729,7 +4793,8 @@
       "music",
       "reactive",
       "lens",
-      "fluid"
+      "fluid",
+      "temporal"
     ]
   },
   {
@@ -7426,7 +7491,17 @@
     "name": "Motion Revealer",
     "url": "shaders/motion-revealer.wgsl",
     "category": "interactive-mouse",
-    "description": "Optical flow estimation via structure tensor reveals only moving regions. Motion trails with spectral chromatic aberration, HDR glow on fast objects, ACES tone mapping, and motion blur. Bass drives motion sensitivity, mouse creates a motion mask, depth controls trail length perspective.",
+    "description": "Lucas-Kanade optical flow structure tensor motion detector with spectral streakline integration, bioluminescent particle wake, and exact-load temporal frame difference.",
+    "features": [
+      "mouse-driven",
+      "optical-flow",
+      "motion-trails",
+      "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "updated": true,
     "params": [
       {
         "id": "sensitivity",
@@ -7461,14 +7536,39 @@
         "step": 0.01
       }
     ],
-    "features": [
-      "mouse-driven",
-      "optical-flow",
-      "motion-trails",
-      "audio-reactive",
-      "depth-aware",
-      "chromatic-mixing",
-      "upgraded-rgba"
+    "updatedParams": [
+      {
+        "id": "sensitivity",
+        "name": "Motion Sensitivity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trailLen",
+        "name": "Trail Length",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glowStr",
+        "name": "Glow Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromaSep",
+        "name": "Chromatic Separation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "mouse-driven",
@@ -7477,7 +7577,8 @@
       "depth-aware",
       "optical-flow",
       "motion-trails",
-      "chromatic"
+      "chromatic",
+      "temporal"
     ]
   },
   {
@@ -13331,7 +13432,15 @@
     "id": "swirling-void",
     "name": "Swirling Void",
     "url": "shaders/swirling-void.wgsl",
-    "description": "A powerful vortex that twists the image around the mouse cursor, now with a photorealistic accretion disk via blackbody temperature, OkLab color mixing, and ACES filmic tonemapping.",
+    "description": "General relativistic Kerr metric frame-dragging vortex with accretion disk Doppler beaming, blackbody thermal gradient, photon sphere deflection, and exact-load photon ring persistence.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "relativistic",
+      "upgraded-rgba"
+    ],
+    "updated": true,
     "params": [
       {
         "id": "strength",
@@ -13362,18 +13471,46 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven",
-      "upgraded-rgba"
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Vortex Strength",
+        "default": 0.5,
+        "min": -1,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Event Horizon",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "darkness",
+        "name": "Void Darkness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "audioReact",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "vortex",
+      "relativistic",
+      "black-hole",
+      "temporal"
     ]
   },
   {
@@ -13721,14 +13858,46 @@
     "id": "velocity-field-paint",
     "name": "Velocity Field — Vorticity Confinement",
     "url": "shaders/velocity-field-paint.wgsl",
-    "description": "Mouse-driven velocity field with vorticity confinement (Fedkiw et al. 2001). Computes ω=∂v_y/∂x−∂v_x/∂y from 4-neighbour finite differences, applies F=ε·(η̂×ω̂) confinement force to restore turbulent detail. Enstrophy (ω²) colour coding: cyan=CCW, magenta=CW. Audio bass drives force, treble drives confinement strength.",
+    "description": "2D Navier-Stokes momentum advection with 4-neighbor vorticity confinement (Fedkiw et al.), viscous Laplace damping, chromatic shear dispersion, and exact-load velocity state persistence.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal",
+      "fluid-dynamics",
       "upgraded-rgba"
     ],
+    "updated": true,
     "params": [
+      {
+        "id": "dissipation",
+        "name": "Dissipation",
+        "default": 0.9,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "brushSize",
+        "name": "Brush Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "force",
+        "name": "Force",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "vortConfinement",
+        "name": "Vort. Confinement",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "dissipation",
         "name": "Dissipation",
@@ -13765,7 +13934,8 @@
       "vorticity",
       "physics",
       "audio",
-      "reactive"
+      "reactive",
+      "temporal"
     ]
   },
   {

@@ -2116,7 +2116,18 @@
     "id": "magnetic-field",
     "name": "Magnetic Field",
     "url": "shaders/magnetic-field.wgsl",
-    "description": "Multi-pole magnetic field simulation with curl-noise particle traces and audio-reactive attraction. Field lines wiggle organically via FBM curl, depth modulates field strength, and treble adds particle sparkle.",
+    "description": "Multi-pole magnetic vector field with Lorentz particle conveyor dynamics, ferromagnetic dipole alignment caustic ridges, 4-mode field topology, and exact-load flux memory.",
+    "features": [
+      "animated",
+      "physics",
+      "mouse-driven",
+      "audio-reactive",
+      "curl-noise",
+      "field-lines",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "updated": true,
     "params": [
       {
         "id": "strength",
@@ -2147,14 +2158,35 @@
         "max": 1
       }
     ],
-    "features": [
-      "animated",
-      "physics",
-      "mouse-driven",
-      "audio-reactive",
-      "curl-noise",
-      "field-lines",
-      "upgraded-rgba"
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Field Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Field Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mode",
+        "name": "Mode",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ],
     "tags": [
       "filter",
@@ -2164,7 +2196,8 @@
       "reactive",
       "magnetic",
       "curl",
-      "particles"
+      "particles",
+      "temporal"
     ]
   },
   {

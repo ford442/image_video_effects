@@ -1,6 +1,20 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-15 (Batch 51 — Liquid Dynamics, Geometry & Viscous Flow)
+**Last updated:** 2026-08-16 (Batch 52 — Interactive Vector Fields & Optical Dynamics)
+
+## 2026-08-16 — Shader upgrade Batch 52 — INTERACTIVE VECTOR FIELDS & OPTICAL DYNAMICS
+
+- Upgraded tracker #447–454 across the Interactive Vector Fields & Optical Dynamics cohort:
+  Interactive Fresnel, Velocity Field (Vorticity Confinement), Fluid Lens Dynamics (Interactive Fisheye),
+  Magnetic Field, Digital Mold, Swirling Void, Elastic Chromatic Explosion, and Motion Revealer.
+- Added rich physical kinematics: multi-pole Lorentz vector fields, 2D Navier-Stokes momentum advection
+  with vorticity confinement, Kelvin-Voigt viscoelastic droplet surface tension, continuous Gray-Scott
+  reaction-diffusion kinetics, general relativistic Kerr metric frame dragging, and Lucas-Kanade
+  optical flow structure tensor coherence analysis.
+- Upgraded `swirling-void` from non-canonical 8x8 to canonical 16x16x1 compute workgroups.
+- Replaced all non-standard / hardware-dependent float32 filtering operations with exact `textureLoad` from `dataTextureC`.
+- Structural proof: 8/8 Naga and bindgroup gate, 0 new extraBuffer violations, 0 new dead sliders,
+  catalogs in sync (1,341 unique IDs, 0 duplicates), uniforms layout contract in sync. Real-GPU visual QA remains external.
 
 ## 2026-08-15 — Shader upgrade Batch 51 — LIQUID DYNAMICS, GEOMETRY & VISCOUS FLOW
 

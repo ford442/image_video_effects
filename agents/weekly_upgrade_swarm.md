@@ -5,9 +5,35 @@
 
 ---
 
-## Recently Completed (446 tracker entries)
+## Recently Completed (454 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 52 (8 shaders) — 2026-08-16 — INTERACTIVE VECTOR FIELDS & OPTICAL DYNAMICS
+
+The vector fields and optical dynamics cohort upgrades Interactive Fresnel,
+Velocity Field (Vorticity Confinement), Fluid Lens Dynamics (Interactive Fisheye),
+Magnetic Field, Digital Mold, Swirling Void, Elastic Chromatic Explosion, and
+Motion Revealer. Each receives enriched physical kinematics (multi-pole Lorentz
+vector fields, Navier-Stokes momentum advection with vorticity confinement,
+Kelvin-Voigt viscoelastic surface tension, Gray-Scott reaction-diffusion kinetics,
+Kerr metric frame-dragging, and Lucas-Kanade optical flow structure tensors),
+2.5D surface normal derivatives, Snell's law prismatic dispersion, and exact
+`textureLoad` float32 temporal history persistence. Source `params`, established
+A/C roles, canonical 13-binding layout, 16x16x1 workgroups (swirling-void from 8x8),
+and zero new `extraBuffer` writes are preserved. Structural validation details are
+in `swarm-outputs/codex-2026-08-16-b52/`; real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 447 | `interactive-fresnel` | 52 | 107→145 (+38) | 2.5D Fresnel lens curvature, annular normal derivatives, Cauchy dispersion, exact C load. |
+| 448 | `velocity-field-paint` | 52 | 120→142 (+22) | Navier-Stokes momentum advection, vorticity confinement, chromatic shear, exact C load. |
+| 449 | `interactive-fisheye` | 52 | 121→145 (+24) | Kelvin-Voigt viscoelastic droplet, capillary waves, mass tether recoil, exact C load. |
+| 450 | `magnetic-field` | 52 | 127→145 (+18) | Multi-pole magnetic vector field, Lorentz particle conveyor, caustic ridges, exact C load. |
+| 451 | `digital-mold` | 52 | 127→142 (+15) | Gray-Scott reaction-diffusion kinetics, hyphal branching, spore dispersal, exact C load. |
+| 452 | `swirling-void` | 52 | 128→145 (+17) | Kerr metric frame-dragging, Doppler beaming, thermal gradient, 16x16x1, exact C load. |
+| 453 | `elastic-chromatic-explosion` | 52 | 129→140 (+11) | Prismatic Snell refraction, Cauchy dispersion, viscoelastic shockwave, exact C load. |
+| 454 | `motion-revealer` | 52 | 129→140 (+11) | Lucas-Kanade structure tensor, spectral streaklines, bioluminescent wake, exact C load. |
 
 ### Batch 51 (8 shaders) — 2026-08-15 — LIQUID DYNAMICS, GEOMETRY & VISCOUS FLOW
 

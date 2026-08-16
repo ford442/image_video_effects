@@ -1,7 +1,7 @@
 {
-  "generated": "2026-08-15T14:05:11.809489+00:00",
-  "defs_scanned": 1028,
-  "defs_with_params": 1028,
+  "generated": "2026-08-16T00:23:14.912185+00:00",
+  "defs_scanned": 1029,
+  "defs_with_params": 1029,
   "new_dead_sliders": [],
   "known_dead_sliders": [
     {
