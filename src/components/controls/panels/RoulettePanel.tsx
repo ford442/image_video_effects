@@ -27,21 +27,15 @@ export const RoulettePanel: React.FC<RoulettePanelProps> = ({
 }) => (
     <div className="glass-panel" style={{ margin: '15px 0', padding: '15px' }}>
         <div style={{ position: 'relative', zIndex: 1 }}>
-            <button
-                onClick={onRoulette}
-                className={`gold-btn ${isRouletteActive ? 'spinning' : ''}`}
-                title="Randomize active slot shader + sliders (R)"
-                style={{ width: '100%', marginBottom: '8px' }}
-            >
-                <span>🎰</span>
-                <span>Randomize Slot {activeSlot + 1}</span>
-            </button>
-
+            {/* Per-slot randomize lives in the top menubar; keep bulk + modes here. */}
+            <div style={{ fontSize: '12px', color: '#a0a0b0', marginBottom: '10px' }}>
+                Slot {activeSlot + 1} randomize is in the menubar (or press <kbd style={{ background: 'rgba(255,215,0,0.15)', borderColor: 'rgba(255,215,0,0.3)', color: '#FFD700', padding: '0 4px', borderRadius: 3 }}>R</kbd>)
+            </div>
             <button
                 onClick={onRandomizeAllSlots}
                 className={`gold-outline-btn ${isRouletteActive ? 'spinning' : ''}`}
                 title="Randomize all 3 shader slots + sliders"
-                style={{ width: '100%', marginTop: '8px' }}
+                style={{ width: '100%' }}
             >
                 <span>🎲</span>
                 <span>Randomize All Slots</span>

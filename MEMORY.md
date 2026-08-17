@@ -1,6 +1,14 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-16 (Batch 52 — Interactive Vector Fields & Optical Dynamics)
+**Last updated:** 2026-08-17 (black flicker — timestamp query resolve)
+
+## 2026-08-17 — Repeating black present flicker (timestamp queries)
+
+- **Symptom:** repeating black flashes during otherwise healthy WebGPU rendering.
+- **Cause:** `encodeResolveAndCopy` skipped `resolveQuerySet` while `mapAsync` was pending; subsequent frames rewrote the same query indices without resolve → WebGPU validation killed the command buffer (present never ran, clear stayed black). Multipass also rewrote the same end-query index every intermediate pass.
+- **Fix:** always resolve when stamps were written; per-slot `stagingBusy` for the 2-deep readback ring; intermediate multipass passes omit timestamps (only phase starts + final compute end). WASM `ResolveTimestampQueries` mirrors resolve-always. Tests in `WebGPUTiming.test.ts` updated.
+- Real-GPU visual QA still external (no GPU adapter on Cloud VM).
+
 
 ## 2026-08-16 — Shader upgrade Batch 52 — INTERACTIVE VECTOR FIELDS & OPTICAL DYNAMICS
 

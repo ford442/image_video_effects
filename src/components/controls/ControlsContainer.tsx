@@ -277,6 +277,10 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 currentShaderEntry={currentShaderEntry}
                 currentParams={currentParams}
                 updateSlotParam={updateSlotParam}
+                onStartMidiLearn={(slot, param) => liveControl.startLearnForParam(slot, param)}
+                learnActiveParam={
+                    liveControl.learnTarget === 'param' ? liveControl.pendingParam : null
+                }
             />
 
             {currentCoordinate !== null && (
