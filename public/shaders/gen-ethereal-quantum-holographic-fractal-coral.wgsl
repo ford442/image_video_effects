@@ -87,7 +87,8 @@ fn map(p_in: vec3<f32>) -> f32 {
     // KIFS setup
     var d = 1000.0;
     var scale = 1.0;
-    let iterations = i32(min(floor(u.zoom_params.x) + i32(audioEnergy * 2.0), 10.0));
+    // Keep iteration math in f32 until the final cast (naga rejects f32 + i32).
+    let iterations = i32(clamp(floor(u.zoom_params.x) + floor(audioEnergy * 2.0), 1.0, 10.0));
 
     let fold = vec3<f32>(1.5, 1.2, 1.5) + vec3<f32>(sin(t), cos(t * 0.8), sin(t * 1.2)) * 0.1;
 
@@ -203,9 +204,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Camera setup
     let camTime = u.config.x * 0.1;
     let ro = vec3<f32>(sin(camTime) * 3.0, cos(camTime) * 2.0, -5.0 + sin(camTime * 0.5));
-    let target = vec3<f32>(0.0, 0.0, 0.0);
+    // `target` is reserved in WGSL; camera look-at point
+    let look_at = vec3<f32>(0.0, 0.0, 0.0);
 
-    let cw = normalize(target - ro);
+    let cw = normalize(look_at - ro);
     let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
     let cv = normalize(cross(cu, cw));
 

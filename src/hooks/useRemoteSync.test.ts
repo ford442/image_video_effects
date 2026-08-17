@@ -27,7 +27,7 @@ class MockBroadcastChannel {
   }
 }
 
-describe('useRemoteSync randomize commands', () => {
+describe('useRemoteSync commands', () => {
   const originalBC = global.BroadcastChannel;
 
   beforeEach(() => {
@@ -44,6 +44,7 @@ describe('useRemoteSync randomize commands', () => {
     handleRandomizeSlot?: (slot: number) => void;
     triggerRandomizeAllSlots?: () => void;
     triggerRoulette?: () => void;
+    updateSlotParam?: (index: number, updates: Record<string, number>) => void;
   }) {
     return renderHook(() =>
       useRemoteSync({
@@ -61,7 +62,7 @@ describe('useRemoteSync randomize commands', () => {
         isMuted: true,
         setMode: jest.fn(),
         setActiveSlot: jest.fn(),
-        updateSlotParam: jest.fn(),
+        updateSlotParam: handlers.updateSlotParam ?? jest.fn(),
         setShaderCategory: jest.fn(),
         syncInputSourceToRenderer: jest.fn(),
         setAutoChangeEnabled: jest.fn(),
@@ -115,5 +116,36 @@ describe('useRemoteSync randomize commands', () => {
     });
 
     expect(triggerRandomizeAllSlots).toHaveBeenCalled();
+  });
+
+  it('dispatches CMD_UPDATE_SLOT_PARAM to updateSlotParam (target params)', () => {
+    const updateSlotParam = jest.fn();
+    mountMain({ updateSlotParam });
+
+    const main = MockBroadcastChannel.instances[0];
+    act(() => {
+      main.onmessage?.({
+        data: {
+          type: 'CMD_UPDATE_SLOT_PARAM',
+          payload: { index: 0, updates: { zoomParam1: 0.42, zoomParam2: 0.8 } },
+        },
+      } as MessageEvent);
+    });
+
+    expect(updateSlotParam).toHaveBeenCalledWith(0, { zoomParam1: 0.42, zoomParam2: 0.8 });
+  });
+
+  it('ignores CMD_UPDATE_SLOT_PARAM without index/updates', () => {
+    const updateSlotParam = jest.fn();
+    mountMain({ updateSlotParam });
+
+    const main = MockBroadcastChannel.instances[0];
+    act(() => {
+      main.onmessage?.({
+        data: { type: 'CMD_UPDATE_SLOT_PARAM', payload: {} },
+      } as MessageEvent);
+    });
+
+    expect(updateSlotParam).not.toHaveBeenCalled();
   });
 });

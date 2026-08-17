@@ -140,7 +140,18 @@ export function useShaderMode({
             next[slotIndex] = { ...next[slotIndex], ...updates };
             return next;
         });
-    }, [setSlotParams]);
+        // Push to GPU immediately so remote control / MIDI / sliders affect the
+        // live frame without waiting on a React→canvas effect cycle.
+        rendererRef.current?.updateSlotParams(
+            {
+                zoomParam1: updates.zoomParam1,
+                zoomParam2: updates.zoomParam2,
+                zoomParam3: updates.zoomParam3,
+                zoomParam4: updates.zoomParam4,
+            },
+            slotIndex,
+        );
+    }, [setSlotParams, rendererRef]);
 
     return {
         setMode,
