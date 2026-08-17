@@ -424,11 +424,6 @@
       "filename": "2026-08-15_cymatic-chronos-aether-lattice.md",
       "title": "Cymatic Chronos Aether-Lattice",
       "added": "2026-08-15T15:17:24.028303"
-    },
-    {
-      "filename": "2026-08-16_cybernetic-aether-moth-chrysalis.md",
-      "title": "Cybernetic Aether-Moth Chrysalis",
-      "added": "2026-08-16T15:24:54.147548"
     }
   ],
   "current": null,
@@ -752,6 +747,13 @@
       "added": "2026-08-14T15:19:26.218601",
       "status": "completed",
       "completed_at": "2026-08-15T08:16:48.233383+00:00"
+    },
+    {
+      "filename": "2026-08-16_cybernetic-aether-moth-chrysalis.md",
+      "title": "Cybernetic Aether-Moth Chrysalis",
+      "added": "2026-08-16T15:24:54.147548",
+      "status": "completed",
+      "completed_at": "2026-08-17T08:12:11.417884+00:00"
     }
   ],
   "rejected": [],
