@@ -429,11 +429,6 @@
       "filename": "2026-08-16_cybernetic-aether-moth-chrysalis.md",
       "title": "Cybernetic Aether-Moth Chrysalis",
       "added": "2026-08-16T15:24:54.147548"
-    },
-    {
-      "filename": "2026-08-17_chrono-kinetic-fractal-engine.md",
-      "title": "Chrono-Kinetic Fractal Engine",
-      "added": "2026-08-17T15:12:31.089564"
     }
   ],
   "current": null,
@@ -771,6 +766,13 @@
       "added": "2026-08-13T15:13:28.701419",
       "status": "completed",
       "completed_at": "2026-08-16T08:04:46.785845+00:00"
+    },
+    {
+      "filename": "2026-08-17_chrono-kinetic-fractal-engine.md",
+      "title": "Chrono-Kinetic Fractal Engine",
+      "added": "2026-08-17T15:12:31.089564",
+      "status": "completed",
+      "completed_at": "2026-08-18T08:03:46.946672+00:00"
     }
   ],
   "rejected": [],
