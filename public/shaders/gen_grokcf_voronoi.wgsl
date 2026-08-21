@@ -153,7 +153,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let coord = vec2<i32>(global_id.xy);
-    let time = u.config.x;
+    let time = u.config.x * 5.0; // Fast motion upgrade
 
     // Audio
     let bass = plasmaBuffer[0].x;

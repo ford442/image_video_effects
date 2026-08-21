@@ -121,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   let size = vec2<i32>(i32(resolution.x), i32(resolution.y));
   let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
-  let time = u.config.x;
+  let time = u.config.x * 5.0; // Fast motion upgrade
   // Long-session precision fix: wrap the noise-coordinate time so the fbm
   // fields do not degrade into banding after hours of runtime. Simulation
   // state lives in dataTextureA, so only procedural coordinates need this.
