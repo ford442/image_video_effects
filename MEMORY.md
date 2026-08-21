@@ -785,5 +785,14 @@
 - Current committed baseline has malformed
   `shader_definitions/generative/gen-chrono-kinetic-fractal-engine.json`.
   Generators skip it and Jest catalog hygiene fails on it; do not attribute that
-  pre-existing defect to Batches 53 or 54. Structural/build gates pass, but
+  pre-existing defect to Batches 53, 54, or 55. Structural/build gates pass, but
   psychedelic identity and motion/trail acceptance still require a real GPU.
+
+## Shader upgrade Batch 55 (2026-08-21)
+
+- Tracker #471–474: Kaleido-Scope Prism grokcf1, RGB Topology, Elastic Strip,
+  Refraction Tunnel. Geometry detail + fast motion + psychedelic color.
+- Kaleido 8x8→16x16; origin A `[env, springXY, vel]`; topology mask A
+  preserved; B unused; no extraBuffer writes. Tunnel no longer uses
+  `floor(time)` hash caustics.
+- Structural proof 4/4; visual QA remains real-GPU workstation work.

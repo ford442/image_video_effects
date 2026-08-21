@@ -27,6 +27,13 @@
 | 468 | `echo-ripple` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 469 | `scanline-wave` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 470 | `quantum-ripples` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 471 | `kaleido-scope-grokcf1` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 472 | `rgb-topology` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 473 | `elastic-strip` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 474 | `refraction-tunnel` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+
+Batch 55 (4 shaders) is a distinct geometry / fast-motion / psychedelic cohort
+after Batches 53–54. Structural gates 4/4. Real-GPU visual QA remains external.
 
 Batch 53 and Batch 54 were closed independently. Each full Jest run reached
 80/81 suites (544 passed, 1 skipped); the sole failure

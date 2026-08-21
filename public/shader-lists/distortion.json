@@ -521,8 +521,42 @@
     "id": "elastic-strip",
     "name": "Elastic Strip",
     "url": "shaders/elastic-strip.wgsl",
-    "description": "Spring physics strips with chromatic stretch and audio frequency response. Each strip oscillates at bass-driven frequencies, depth modulates stiffness, and treble adds chromatic edge glow on stretched boundaries.",
+    "description": "Spring physics strips with beveled sub-ribs, traveling pluck packets, soap-film color from stretch energy, held drag, and bounded click plucks. Display RGBA is packed in A.",
     "params": [
+      {
+        "id": "density",
+        "name": "Strip Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "strength",
+        "name": "Stretch Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "falloff",
+        "name": "Influence Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dir",
+        "name": "Direction (V/H)",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "labels": [
+          "Vertical Strips",
+          "Horizontal Strips"
+        ]
+      }
+    ],
+    "updatedParams": [
       {
         "id": "density",
         "name": "Strip Density",
@@ -562,7 +596,10 @@
       "spring-physics",
       "chromatic-aberration",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "thin-film"
     ],
     "tags": [
       "distortion",
@@ -2818,8 +2855,38 @@
     "id": "refraction-tunnel",
     "name": "Refraction Tunnel",
     "url": "shaders/refraction-tunnel.wgsl",
-    "description": "Multi-layer chromatic refraction through a cylindrical tunnel with Snell's-law dispersion, rainbow caustics, volumetric fog, and anamorphic streaks.",
+    "description": "Chromatic refraction tunnel with wall ribs, hoop rings, helical rails, analytic liquid-rainbow caustics, held aim, and bounded click shock rings. Display RGBA is packed in A.",
     "params": [
+      {
+        "id": "depth",
+        "name": "Tunnel Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "twist",
+        "name": "Twist Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Chromatic Dispersion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "curvature",
+        "name": "Tunnel Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "depth",
         "name": "Tunnel Depth",
@@ -2855,7 +2922,10 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "liquid-rainbow-caustics"
     ],
     "tags": [
       "distortion",

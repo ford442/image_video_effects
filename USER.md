@@ -22,7 +22,9 @@ _Learn about the person you're helping. Update this as you go._
   cohorts; Batches 43–44 are complete through tracker #388 across clean
   all-category continuations. Batch 45 adds six new interactive generative
   shaders through tracker #394. Shader upgrade Batch 52 closed through tracker
-  #454 (interactive vector fields). Generative volume is no longer the bottleneck.
+  #454 (interactive vector fields). Batches 53–55 closed through tracker #474
+  (Batch 55 = four-shader geometry / fast-motion / psychedelic-color).
+  Generative volume is no longer the bottleneck.
 - **2026-08-21 progress audit:** board was empty except #1080 (WASM GPU evidence)
   and #1111 (thumbnail CI; partial landing already in tree). Next work is
   foundation residual before another content wave: compile/feature SoT (#1123),
@@ -107,8 +109,9 @@ Format specification:
   Capture stays discrete-GPU workstation work. Do not count black PNGs.
 - CRA→Vite remains deferred. Dead CRA-rewire deps to drop in #1125.
 - Keep thumbnail coverage CI reporting-only until the healthy baseline reaches 50%.
-- Shader upgrade work now includes separately closed Batches 53 and 54 through
-  tracker #470; preserve sequential batch boundaries, exact saved-param
+- Shader upgrade work now includes separately closed Batches 53, 54, and 55
+  through tracker #474; preserve sequential batch boundaries, exact saved-param
   compatibility, truthful feedback packing, and independent verification before
-  the next cohort begins.
+  the next cohort begins. Batch 55 is the four-shader geometry / fast-motion /
+  psychedelic-color cohort.
 </IMPORTANT_REMINDER>

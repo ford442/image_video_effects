@@ -5,9 +5,36 @@
 
 ---
 
-## Recently Completed (470 tracker entries)
+## Recently Completed (474 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 55 (4 shaders) — 2026-08-21 — GEOMETRY, FAST MOTION, PSYCHEDELIC COLOR
+
+This four-shader cohort upgrades Kaleido-Scope Prism grokcf1, RGB Topology,
+Elastic Strip, and Refraction Tunnel. Each keeps its core algorithm and adds
+shader-specific geometry (facet seams/grout, index isolines/ridge ticks,
+beveled sub-ribs, wall ribs/hoops/helical rails), two continuous motion
+structures plus held-pointer and capped click fronts, and psychedelic
+oil-slick / hypsometric / thin-film / liquid-rainbow color. Kaleido moves
+to 16x16x1 and keeps origin A as `[env, springXY, vel]` with display trails
+elsewhere; topology A stays `[lineR, lineG, lineB, alpha]`; strip and tunnel
+keep display RGBA in A. B is unused and no extraBuffer access was added.
+Tunnel's `floor(time)` hash caustics are replaced with analytic phases.
+Source `params` stay exact; indexed `updatedParams` are aligned. The explicit
+gate, strict buffer audit, dead-slider audit, and schema-aware contract audit
+pass 4/4; URL, duplicate, and uniform-layout checks pass; the production
+build is green. Full Jest is 80/81 suites (544 pass / 1 skip), blocked only by
+the unrelated committed malformed `gen-chrono-kinetic-fractal-engine.json`.
+Notes: `swarm-outputs/codex-2026-08-21-b55/`. Real-GPU visual QA remains
+external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 471 | `kaleido-scope-grokcf1` | 55 | 130→148 (+18) | 16x16, facet seams, wedge conveyor, radial packets, oil-slick prism, iris clicks; origin A state preserved. |
+| 472 | `rgb-topology` | 55 | 129→167 (+38) | Index isolines, ridge ticks, iso-runners, rainbow hypsometry, held shear, click fronts; mask A preserved. |
+| 473 | `elastic-strip` | 55 | 129→161 (+32) | Beveled sub-ribs, traveling plucks, thin-film stretch color, held drag, click plucks. |
+| 474 | `refraction-tunnel` | 55 | 129→147 (+18) | Ribs/hoops/helix, axial packets, analytic rainbow caustics, held aim, click rings. |
 
 ### Batch 54 (8 shaders) — 2026-08-21 — PSYCHEDELIC UPGRADE
 
