@@ -1,6 +1,41 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-17 (black flicker — timestamp query resolve)
+**Last updated:** 2026-08-21 (getGPUTimings JS/C++ ABI)
+
+## 2026-08-21 — WASM `getGPUTimings` bridge ABI
+
+- JS SoT is **`src/wasm/bridge/*.js`**. `concat_bridge.sh` copies src → `wasm_renderer/bridge` + `public/wasm/bridge`. Editing `wasm_renderer/bridge` gets overwritten. JS-only: no emcc; Playwright still needs a CRA rebuild.
+- Do **not** change C++ `getGPUTimings` to a JSON string. Match out-params via `_malloc` / `ccall` / `getValue` / `_free`. Never return `{}` — always the `GPUTimings` shape (`timingSource` synthesized in JS).
+
+## 2026-08-21 — Progress audit: foundation residual before next content
+
+- Catalog ~1,343 defs / ~1,366 WGSL / manifest ~1,328; thumbs ~353 PNGs (~27%
+  nominal, ~21% healthy). Renderer modularization, GraphRunner Physics Lab set 1,
+  gpu-chores kit, TS 5.4, format-tier *types*, and WASM init ladder are in tree.
+- Open board was only #1080 (WASM real-GPU promotion/demotion) and #1111
+  (thumbnail regression gate). #1111 body is stale: `thumbs:check-regression`
+  exists and runs on PRs, but still lacks deferrals, skip/integrity eligibility,
+  and set-difference `newlyEligible` (comment posted).
+- **Strategic call: build foundation, not another generative swarm.**
+  - Adapter ladder / opaque canvas / limits JSON / B→C then A→C: **leave alone**.
+  - WASM stays Tier B; no GraphRunner C++ port until #1080.
+  - CRA+CRACO stays; Vite deferred.
+- Filed **#1123–#1129**:
+  1. #1123 WASM compile SoT (CMake export drift; C++ cannot request subgroups —
+     `requiredFeatures[2]`; scanner feature set is a third variant)
+  2. #1124 rgba16float tiers real (`probeFormatCapabilities` hardcodes true;
+     C++ `writeTexture` always fp32 bytesPerRow)
+  3. #1125 bridge SoT is `src/wasm` (concat copies src→wasm_renderer); drop
+     unused `react-app-rewired` / `customize-cra` / `webpack-cli`; TS the JS glue
+  4. #1126 second devices: ShaderValidator/Scanner + depth `requestAdapter`
+  5. #1127 gpu-chores opt-in auto-exposure on catalog source (not just 64×64 preview)
+  6. #1128 catalog hygiene (hyphen/underscore ids, graph parents, 44 leftover 8×8,
+     parseWorkgroupSize fallback 8×8 vs canonical 16×16)
+  7. #1129 later: Physics Lab set 2 (DLA, Kuwahara, Droste, ecology, Poincaré,
+     byte-mosh) + audio mapping for **all slots** / simulation graphs
+     (`useAudioReactiveParams` is slot-0 generative only)
+- Audio-reactive slider mapping **exists** but is opt-in and slot-0/generative-only.
+- Attract mode + Physics Lab chip already exist.
 
 ## 2026-08-17 — Repeating black present flicker (timestamp queries)
 

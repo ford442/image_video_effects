@@ -9,12 +9,20 @@ describe('WASM bridge uniforms (setInputSource)', () => {
   const ccall = jest.fn();
   const malloc = jest.fn().mockReturnValue(1000);
   const free = jest.fn();
+  const getValue = jest.fn((ptr: number, type: string) => {
+    if (type === 'float' && ptr === 1000) return 1.25;
+    if (type === 'float' && ptr === 1004) return 2.5;
+    if (type === 'float' && ptr === 1008) return 3.75;
+    if (type === 'i32' && ptr === 1012) return 0;
+    return 0;
+  });
 
   function makeMockModule() {
     return {
       ccall,
       _malloc: malloc,
       _free: free,
+      getValue,
       HEAPU8: { set: jest.fn() },
     };
   }
@@ -22,8 +30,17 @@ describe('WASM bridge uniforms (setInputSource)', () => {
   beforeEach(() => {
     jest.resetModules();
     ccall.mockReset();
-    malloc.mockClear();
-    free.mockClear();
+    malloc.mockReset();
+    malloc.mockReturnValue(1000);
+    free.mockReset();
+    getValue.mockReset();
+    getValue.mockImplementation((ptr: number, type: string) => {
+      if (type === 'float' && ptr === 1000) return 1.25;
+      if (type === 'float' && ptr === 1004) return 2.5;
+      if (type === 'float' && ptr === 1008) return 3.75;
+      if (type === 'i32' && ptr === 1012) return 0;
+      return 0;
+    });
     (window as unknown as { PixelocityWASM?: unknown }).PixelocityWASM = jest
       .fn()
       .mockResolvedValue(makeMockModule());
@@ -103,6 +120,66 @@ describe('WASM bridge uniforms (setInputSource)', () => {
       expect.anything(),
       expect.anything(),
     );
+
+    bridge.shutdownWasmRenderer();
+  });
+
+  it('getGPUTimings returns typed zeros before init', async () => {
+    const bridge = await import('../wasm/wasm_bridge.js');
+    expect(bridge.getGPUTimings()).toEqual({
+      parallelTime: 0,
+      chainedTime: 0,
+      totalTime: 0,
+      available: false,
+      timingSource: 'unavailable',
+    });
+    expect(ccall).not.toHaveBeenCalled();
+    expect(malloc).not.toHaveBeenCalled();
+  });
+
+  it('getGPUTimings reads C++ out-params via malloc/getValue', async () => {
+    const bridge = await initBridge();
+
+    const timings = bridge.getGPUTimings();
+
+    expect(malloc).toHaveBeenCalledWith(16);
+    expect(ccall).toHaveBeenCalledWith(
+      'getGPUTimings',
+      null,
+      ['number', 'number', 'number', 'number'],
+      [1000, 1004, 1008, 1012],
+    );
+    expect(getValue).toHaveBeenCalledWith(1000, 'float');
+    expect(getValue).toHaveBeenCalledWith(1004, 'float');
+    expect(getValue).toHaveBeenCalledWith(1008, 'float');
+    expect(getValue).toHaveBeenCalledWith(1012, 'i32');
+    expect(free).toHaveBeenCalledWith(1000);
+    expect(timings).toEqual({
+      parallelTime: 1.25,
+      chainedTime: 2.5,
+      totalTime: 3.75,
+      available: false,
+      timingSource: 'wall-clock',
+    });
+
+    bridge.shutdownWasmRenderer();
+  });
+
+  it('getGPUTimings marks gpu-timestamp when C++ available flag is set', async () => {
+    getValue.mockImplementation((ptr: number, type: string) => {
+      if (type === 'i32' && ptr === 1012) return 1;
+      if (type === 'float') return 4;
+      return 0;
+    });
+    const bridge = await initBridge();
+
+    expect(bridge.getGPUTimings()).toEqual({
+      parallelTime: 4,
+      chainedTime: 4,
+      totalTime: 4,
+      available: true,
+      timingSource: 'gpu-timestamp',
+    });
 
     bridge.shutdownWasmRenderer();
   });
