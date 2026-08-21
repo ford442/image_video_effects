@@ -521,8 +521,42 @@
     "id": "elastic-strip",
     "name": "Elastic Strip",
     "url": "shaders/elastic-strip.wgsl",
-    "description": "Spring physics strips with chromatic stretch and audio frequency response. Each strip oscillates at bass-driven frequencies, depth modulates stiffness, and treble adds chromatic edge glow on stretched boundaries.",
+    "description": "Spring physics strips with beveled sub-ribs, traveling pluck packets, soap-film color from stretch energy, held drag, and bounded click plucks. Display RGBA is packed in A.",
     "params": [
+      {
+        "id": "density",
+        "name": "Strip Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "strength",
+        "name": "Stretch Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "falloff",
+        "name": "Influence Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dir",
+        "name": "Direction (V/H)",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "labels": [
+          "Vertical Strips",
+          "Horizontal Strips"
+        ]
+      }
+    ],
+    "updatedParams": [
       {
         "id": "density",
         "name": "Strip Density",
@@ -562,7 +596,10 @@
       "spring-physics",
       "chromatic-aberration",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "thin-film"
     ],
     "tags": [
       "distortion",
@@ -2818,8 +2855,38 @@
     "id": "refraction-tunnel",
     "name": "Refraction Tunnel",
     "url": "shaders/refraction-tunnel.wgsl",
-    "description": "Multi-layer chromatic refraction through a cylindrical tunnel with Snell's-law dispersion, rainbow caustics, volumetric fog, and anamorphic streaks.",
+    "description": "Chromatic refraction tunnel with wall ribs, hoop rings, helical rails, analytic liquid-rainbow caustics, held aim, and bounded click shock rings. Display RGBA is packed in A.",
     "params": [
+      {
+        "id": "depth",
+        "name": "Tunnel Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "twist",
+        "name": "Twist Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Chromatic Dispersion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "curvature",
+        "name": "Tunnel Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "depth",
         "name": "Tunnel Depth",
@@ -2855,7 +2922,10 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "liquid-rainbow-caustics"
     ],
     "tags": [
       "distortion",
@@ -2869,8 +2939,39 @@
     "id": "scan-distort-gpt52",
     "name": "Scan Distort Matrix gpt52",
     "url": "shaders/scan-distort-gpt52.wgsl",
-    "description": "High-density scanlines with 3-band frequency distortion, FBM-perturbed scan positions, rolling jitter, curvature, chromatic tearing, mids-driven band distortion, domain-warped FBM displacement, and an audio-reactive color palette.",
+    "description": "High-density scanlines with smooth multi-band jitter, opposing scan heads, diagonal tear conveyors, held-pointer band pulling, bounded click shocks, curvature, domain-warped FBM, and audio-reactive chromatic grading.",
+    "updated": true,
     "params": [
+      {
+        "id": "scan_intensity",
+        "name": "Scan Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "band_split",
+        "name": "Band Split",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fbm_scale",
+        "name": "FBM Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromatic_mix",
+        "name": "Chromatic Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "scan_intensity",
         "name": "Scan Intensity",
@@ -2907,7 +3008,10 @@
       "upgraded-rgba",
       "audio-reactive",
       "domain-warp",
-      "palette"
+      "palette",
+      "continuous-motion",
+      "bounded-click-ripples",
+      "held-drag"
     ],
     "tags": [
       "filter",
@@ -3219,6 +3323,8 @@
     "id": "spiral-lens",
     "name": "Spiral Lens",
     "url": "shaders/spiral-lens.wgsl",
+    "description": "Liquid rainbow interference through a Möbius kaleidoscopic lens, with spectral caustics, drag-twisted focus, bounded click-launched iris waves, domain warp, audio response, and layered depth alpha.",
+    "updated": true,
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -3231,7 +3337,41 @@
       "chromatic-dispersion",
       "domain-warp",
       "kaleidoscope",
-      "mobius-lens"
+      "mobius-lens",
+      "liquid-rainbow",
+      "spectral-caustics",
+      "bounded-click-ripples",
+      "held-drag"
+    ],
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Spiral Tightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Lens Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Chromatic",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
     ],
     "params": [
       {

@@ -128,8 +128,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w > 0.5;
 
-  let twist = u.zoom_params.x * TAU;
-  let tileSize = max(0.01, u.zoom_params.y);
+  // JSON order is Tile Size, Twist Amount, Radius, Edge Smoothness.
+  let tileSize = max(0.01, u.zoom_params.x);
+  let twist = u.zoom_params.y * TAU;
   let radius = max(0.01, u.zoom_params.z);
   let edgeSmooth = u.zoom_params.w;
 
@@ -164,6 +165,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseDist = length(uv01 - mouse);
   let influence = smoothstep(radius, radius * 0.2, mouseDist) * (0.5 + 0.5 * f32(mouseDown));
 
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.4) {
+      clickWave = max(clickWave,
+        exp(-abs(distance(uv01, rp.xy) - age * 0.52) * 78.0) * (1.0 - age / 1.4));
+    }
+  }
+
   // Hash-jittered tile center
   let jitter = hash22(tIdx) * 0.25 * (1.0 + ridge);
   let tCenter = (tIdx + 0.5 + jitter) * tSize;
@@ -173,7 +185,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lissB = sin(time * oscSpeed + tileHash * TAU * 0.7);
   let lissajousAngle = atan2(lissB, lissA) * 0.5;
   let tileTwist = tileHash * twist * pulse * (1.0 + ridge + influence * 2.0 + treble);
-  let angle = lissajousAngle + tileTwist;
+  let kaleidoDrag = f32(mouseDown) * atan2(uv01.y - mouse.y, (uv01.x - mouse.x) * aspect);
+  let angle = lissajousAngle + tileTwist + kaleidoDrag * influence + clickWave * (0.8 + tileHash);
 
   // Rotate pixel around jittered tile center
   let rel = wuv - tCenter;
@@ -194,10 +207,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, clamp(rotUV - caDir * caStr * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   var color = vec3<f32>(r, src.g, b);
 
+  // Synesthetic quilt palette and animated moire seams.
+  let quilt = 0.5 + 0.5 * cos(TAU * (vec3<f32>(tileHash + ridge * 0.7 + time * 0.07)
+                                  + vec3<f32>(0.0, 0.33, 0.67)));
+  let moire = pow(0.5 + 0.5 * sin((tFrac.x + tFrac.y) * 28.0
+                               + sin((tFrac.x - tFrac.y) * 22.0 - time * 3.2)), 8.0);
+  color = mix(color, color * quilt * 1.7, 0.28 + mids * 0.18);
+  color += quilt * (moire * 0.16 + clickWave * 0.32) * edgeMask;
+
   // Mids-driven hue rotation + treble sparkle
   color = acesToneMap(color * (0.9 + mids * 0.2) * pulse);
   color = hueRotate(color, time * 0.1 + mids * 0.8 + tileHash * 0.3);
-  let sparkle = hash21(uv01 * 200.0 + time) * treble * 0.25;
+  let sparklePhase = hash21(floor(uv01 * 200.0)) * TAU;
+  let sparkle = pow(0.5 + 0.5 * sin(time * 9.0 + sparklePhase), 12.0) * treble * 0.25;
   color = color + vec3<f32>(sparkle);
 
   // Semantic alpha pulsed by bass envelope
@@ -205,12 +227,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Temporal feedback trail
   let decay = 0.96 - edgeSmooth * 0.03;
-  let trail = mix(prev.rgb * decay, color, 0.25 + env * 0.1);
-  textureStore(dataTextureA, pixel, vec4<f32>(env, trail.g, trail.b, prev.a));
+  let trail = mix(prev.gba * decay, color, 0.25 + env * 0.1 + clickWave * 0.15);
+  textureStore(dataTextureA, pixel, vec4<f32>(env, trail));
 
   // Depth passthrough
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
-  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(trail, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -5,9 +5,95 @@
 
 ---
 
-## Recently Completed (454 tracker entries)
+## Recently Completed (474 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 55 (4 shaders) — 2026-08-21 — GEOMETRY, FAST MOTION, PSYCHEDELIC COLOR
+
+This four-shader cohort upgrades Kaleido-Scope Prism grokcf1, RGB Topology,
+Elastic Strip, and Refraction Tunnel. Each keeps its core algorithm and adds
+shader-specific geometry (facet seams/grout, index isolines/ridge ticks,
+beveled sub-ribs, wall ribs/hoops/helical rails), two continuous motion
+structures plus held-pointer and capped click fronts, and psychedelic
+oil-slick / hypsometric / thin-film / liquid-rainbow color. Kaleido moves
+to 16x16x1 and keeps origin A as `[env, springXY, vel]` with display trails
+elsewhere; topology A stays `[lineR, lineG, lineB, alpha]`; strip and tunnel
+keep display RGBA in A. B is unused and no extraBuffer access was added.
+Tunnel's `floor(time)` hash caustics are replaced with analytic phases.
+Source `params` stay exact; indexed `updatedParams` are aligned. The explicit
+gate, strict buffer audit, dead-slider audit, and schema-aware contract audit
+pass 4/4; URL, duplicate, and uniform-layout checks pass; the production
+build is green. Full Jest is 80/81 suites (544 pass / 1 skip), blocked only by
+the unrelated committed malformed `gen-chrono-kinetic-fractal-engine.json`.
+Notes: `swarm-outputs/codex-2026-08-21-b55/`. Real-GPU visual QA remains
+external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 471 | `kaleido-scope-grokcf1` | 55 | 130→148 (+18) | 16x16, facet seams, wedge conveyor, radial packets, oil-slick prism, iris clicks; origin A state preserved. |
+| 472 | `rgb-topology` | 55 | 129→167 (+38) | Index isolines, ridge ticks, iso-runners, rainbow hypsometry, held shear, click fronts; mask A preserved. |
+| 473 | `elastic-strip` | 55 | 129→161 (+32) | Beveled sub-ribs, traveling plucks, thin-film stretch color, held drag, click plucks. |
+| 474 | `refraction-tunnel` | 55 | 129→147 (+18) | Ribs/hoops/helix, axial packets, analytic rainbow caustics, held aim, click rings. |
+
+### Batch 54 (8 shaders) — 2026-08-21 — PSYCHEDELIC UPGRADE
+
+This distinct psychedelic cohort upgrades Spiral Lens, Tile Twist, Page Curl
+Interactive, Tesseract Fold, Polar Warp Interactive, Echo Ripple, Scanline Wave,
+and Quantum Ripples. The effects now combine liquid rainbow interference,
+Möbius caustics, animated moiré seams, impossible-page tunnels, stained-glass
+hypercube faces, recursive polar mandalas, oil-slick echo wakes, phosphor
+auroras, probability clouds, and chromatic Voronoi diffraction with stronger
+held-pointer and bounded click response. Tile Twist's swapped Tile Size/Twist
+mapping is corrected and A is repaired to `[bassEnvelope, trailRGB]`; Polar Warp
+keeps truthful `[bassEnvelope, mouseX, mouseY, alpha]` state without treating it
+as RGB history. B remains unused throughout the cohort and no `extraBuffer`
+access was introduced. Source `params`, canonical bindings, 16x16x1 workgroups,
+depth ownership, and `plasmaBuffer[0].xyz` audio remain intact. The explicit
+gate, strict buffer audit, dead-slider audit, and schema-aware contract audit
+pass 8/8; URL, duplicate, and uniform-layout checks pass; the production build
+is green. Full Jest is 80/81 suites (544 pass / 1 skip), blocked only by the
+unrelated committed malformed `gen-chrono-kinetic-fractal-engine.json`. Notes:
+`swarm-outputs/codex-2026-08-21-b54/`. Real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 463 | `spiral-lens` | 54 | 195→217 (+22) | Liquid rainbow interference, Möbius caustics, held spiral focus, capped iris waves. |
+| 464 | `tile-twist` | 54 | 216→238 (+22) | Quilt palettes, moiré seams, held kaleidoscope, capped tile blasts; mapping and A feedback repaired. |
+| 465 | `page-curl-interactive` | 54 | 218→233 (+15) | Impossible-page tunnel, aurora backside, held curl/twist, capped fold shockwaves. |
+| 466 | `tesseract-fold` | 54 | 204→232 (+28) | Stained-glass faces, edge diffraction, held projection shear, capped fold shells; closed-form. |
+| 467 | `polar-warp-interactive` | 54 | 187→197 (+10) | Liquid tunnel bands, mandalas, stable sparkles, held singularity, capped spirals; truthful A state. |
+| 468 | `echo-ripple` | 54 | 193→203 (+10) | Thin-film rings, caustic wakes, spectral harmonics, bounded exact-load history advection. |
+| 469 | `scanline-wave` | 54 | 197→219 (+22) | Phosphor auroras, Lissajous bands, capped CRT shocks, smooth sparkle phases. |
+| 470 | `quantum-ripples` | 54 | 234→256 (+22) | Probability clouds, Voronoi diffraction, entangled twins, stronger bounded interaction. |
+
+### Batch 53 (8 shaders) — 2026-08-21 — FAST MOTION ENCORE
+
+The next clean single-pass cohort upgrades Pixel Sand, CRT Magnet, Scan Distort
+Matrix gpt52, Digital Lens, Chromatic Mosaic Projector, Chrono Slit Scan, Mosaic
+Reveal, and Quad Mirror. Each receives two shader-specific continuous-motion
+structures plus held-pointer and bounded click response: avalanche shelves and
+jets, degauss rings and beam sweeps, smooth scan tears, caustic zoom streaks,
+mosaic conveyors, traveling slit heads, flood runners, and mirrored spectral
+ribbons. Frame-quantized/time-hashed motion was replaced with analytic phases.
+Source `params`, established A/B/C packing, canonical bindings, 16x16x1
+workgroups, depth writes, and `plasmaBuffer[0].xyz` audio remain intact. The
+explicit gate, strict buffer audit, dead-slider audit, and schema-aware contract
+audit pass 8/8; URL, duplicate, and uniform-layout checks pass; the production
+build is green. Full Jest is 80/81 suites (544 pass / 1 skip), blocked only by
+the unrelated committed malformed `gen-chrono-kinetic-fractal-engine.json`.
+Notes: `swarm-outputs/codex-2026-08-21-b53/`. Real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 455 | `pixel-sand` | 53 | 214→228 (+14) | Smooth avalanche sheets, rising jet lanes, held gravity, capped click shelves; B state preserved. |
+| 456 | `crt-magnet` | 53 | 211→234 (+23) | Degauss rings, beam sweeps, held field gain, exact C echo, capped shocks; A control packing preserved. |
+| 457 | `scan-distort-gpt52` | 53 | 206→233 (+27) | Smooth scan tears, diagonal conveyor, held band pull, stable grain, capped click shocks. |
+| 458 | `digital-lens` | 53 | 200→221 (+21) | Caustic zoom streaks, spectral runners, held gravity lens, capped iris waves; `[bassEnvelope, trailRGB]` preserved. |
+| 459 | `chromatic-mosaic-projector` | 53 | 204→223 (+19) | Crossed mosaic conveyors, tile runners, held gravity, capped chromatic blasts. |
+| 460 | `chrono-slit-scan` | 53 | 191→214 (+23) | Traveling slit heads, cross-runners, held slit bend, capped temporal fronts. |
+| 461 | `mosaic-reveal` | 53 | 237→258 (+21) | Opposing tile conveyors, smooth flood runners, held expansion, capped reveal fronts. |
+| 462 | `quad-mirror` | 53 | 180→201 (+21) | Mirrored ribbons, seam runners, held twist, capped fold shells; A/C trail preserved. |
 
 ### Batch 52 (8 shaders) — 2026-08-16 — INTERACTIVE VECTOR FIELDS & OPTICAL DYNAMICS
 

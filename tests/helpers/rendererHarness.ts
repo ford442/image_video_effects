@@ -157,8 +157,14 @@ export function attachConsoleCollector(page: Page): {
     }
   });
 
-  page.on('pageerror', (err) => {
-    criticalErrors.push(`[pageerror] ${err.message}`);
+  page.on('pageerror', (error) => {
+    const msg = error.message || String(error);
+    if (!isStrictGpuMode()) {
+      if (msg.includes('No GPU adapter found') || msg.includes('Failed to obtain a WebGPU adapter') || msg.includes('Failed to get WebGPU adapter')) {
+        return;
+      }
+    }
+    criticalErrors.push(`[pageerror] ${error.message}`);
   });
 
   return { criticalErrors, consoleErrors };
@@ -227,10 +233,9 @@ export async function loadShaderOnSlot(
       const api = (window as any).__pixelocity__;
       api.setInputSource(source);
       const ok = await api.loadShader(s.id, s.url);
-      if (ok) {
-        api.setSlotShader(s.slot ?? 0, s.id);
-      }
-      return ok;
+      if (!ok) return false;
+      api.setSlotShader(s.slot ?? 0, s.id);
+      return true;
     },
     { s: shader, source: inputSource }
   );
@@ -297,16 +302,17 @@ export async function exerciseShaderOnWasm(
   page: Page,
   shader: ParityShaderCase,
   renderMs = 2500
-): Promise<{ fps: number; stats: ImageStats; criticalErrors: string[]; ok: boolean }> {
+): Promise<{ loaded: boolean; fps: number; stats: ImageStats; criticalErrors: string[] }> {
   const { criticalErrors } = attachConsoleCollector(page);
-  const ok = await loadShaderOnSlot(page, shader);
-  if (ok && shader.testState) {
+  const loaded = await loadShaderOnSlot(page, shader);
+  if (!loaded) return { loaded: false, fps: 0, stats: { width: 0, height: 0, nonZeroPixels: 0, rBar: 0, gBar: 0, bBar: 0 }, criticalErrors };
+  if (shader.testState) {
     await applyTestState(page, shader.testState);
   }
   await page.waitForTimeout(renderMs);
   const stats = await captureCanvasStats(page);
   const fps = await getRendererFps(page);
-  return { fps, stats, criticalErrors, ok };
+  return { loaded: true, fps, stats, criticalErrors };
 }
 
 export async function renderShaderCase(

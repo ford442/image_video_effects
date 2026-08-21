@@ -2,8 +2,39 @@
   "id": "chromatic-mosaic-projector",
   "name": "Chromatic Mosaic Projector",
   "url": "shaders/chromatic-mosaic-projector.wgsl",
-  "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, audio-reactive cell pulsing, HDR ACES tone mapping, temporal trails, dynamic blackbody color temperature, and layered alpha compositing.",
+  "description": "Animated Voronoi projector with crossed mosaic conveyors, tile-belt runners, held gravity warping, bounded chromatic tile blasts, audio pulsing, exact-load temporal trails, and layered premultiplied alpha.",
+  "updated": true,
   "params": [
+    {
+      "id": "cellSize",
+      "name": "Cell Size",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chromatic",
+      "name": "Chromatic Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "voronoi",
+      "name": "Voronoi Distort",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "angle",
+      "name": "Projection Angle",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updatedParams": [
     {
       "id": "cellSize",
       "name": "Cell Size",
@@ -46,7 +77,10 @@
     "depth-aware",
     "alpha-layered",
     "edge-preserve",
-    "luminance-key"
+    "luminance-key",
+    "continuous-motion",
+    "bounded-click-ripples",
+    "held-drag"
   ],
   "tags": [
     "filter",

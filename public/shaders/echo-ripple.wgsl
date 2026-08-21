@@ -29,6 +29,7 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
 
 // ── Hash & noise ──────────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
@@ -94,9 +95,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasma.x;
     let mids = plasma.y;
     let treble = plasma.z;
-    let history = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    let history = textureLoad(dataTextureC, pixel, 0);
     let envBass = bass_env(history.a, bass, 0.8, 0.15);
-    let beat = envBass * exp(-3.0 * fract(time * 3.0));
+    let beat = envBass * (0.7 + 0.3 * sin(time * 3.0));
 
     // User params remapped to working ranges
     let frequency = u.zoom_params.x * 30.0 + 2.0;
@@ -115,14 +116,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let atten = smoothstep(0.6, 0.0, dist);
 
     // Echo ripples from the last three click events — branchless accumulation
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 12u);
     var totalWave = wave;
-    for (var i: i32 = 0; i < 3; i++) {
-        let hasR = f32(rippleCount > u32(i));
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let r = u.ripples[i];
         let age = time - r.z;
-        let rw = echoWave(uv01, r.xy, aspect, frequency, speed, age, f32(i) * 0.7) * hasR;
-        totalWave += rw;
+        let rw = echoWave(uv01, r.xy, aspect, frequency, speed, age, f32(i) * 0.7);
+        totalWave += rw * exp(-max(age, 0.0) * 0.7);
     }
 
     // Click shockwave burst
@@ -167,9 +167,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sparkle = treble * step(0.92, hash) * atten * 0.5;
     color += vec3<f32>(sparkle);
 
+    // Oil-slick thin-film rings, spectral harmonics, and bioluminescent caustic wakes.
+    let film = 0.5 + 0.5 * cos(TAU * (vec3<f32>(dist * frequency * 0.08 - time * 0.12)
+                                  + vec3<f32>(0.0, 0.33, 0.67)));
+    let harmonic = pow(0.5 + 0.5 * sin(dist * frequency * 2.0 - time * speed * 1.7), 6.0);
+    let wake = exp(-abs(fract((uv01.x + uv01.y) * 3.0 - time * 0.45) - 0.5) * 28.0)
+             * abs(totalWave) * atten;
+    color += film * (harmonic * 0.18 + wake * 0.24) * (0.5 + mids + treble * 0.5);
+
     // Temporal feedback loop with subtle motion advection
     let advect = displacement * 0.02;
-    let prev = textureSampleLevel(dataTextureC, u_sampler, clamp(uv01 - advect, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let advectUV = clamp(uv01 - advect, vec2<f32>(0.0), vec2<f32>(1.0));
+    let advectPixel = vec2<i32>(clamp(advectUV * res, vec2<f32>(0.0), res - 1.0));
+    let prev = textureLoad(dataTextureC, advectPixel, 0);
     let mixed = mix(color, prev.rgb, decay * (1.0 - atten * 0.25));
 
     // Chromatic aberration + ACES tone mapping

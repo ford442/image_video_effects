@@ -135,13 +135,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseBoost = (1.0 - smoothstep(0.0, 0.4, mouseDist)) * (0.5 + isMouseDown * 0.5);
     let localWave  = waveAmount * audio_gain(drive, mids) * (1.0 + mouseBoost);
 
+    var clickWave = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (rp.z > 0.0 && age >= 0.0 && age < 1.35) {
+            clickWave = max(clickWave,
+                exp(-abs(distance(uv01, rp.xy) - age * 0.54) * 78.0) * (1.0 - age / 1.35));
+        }
+    }
+
     let lineIdx    = floor(uv01.y * lineCount);
     let lineCenter = (lineIdx + 0.5) / lineCount;
     let rollSpeed  = 0.5 + audioMix * 0.75 + drive * 0.25;
     let linePhase  = lineCenter * TAU + time * rollSpeed * 2.0;
 
     // Horizontal scanline warp with bass pulse
-    let offset = sin(linePhase) * localWave * 0.02 * (1.0 + drive * 0.5);
+    let lissajous = sin(uv01.y * TAU * 5.0 - time * 3.2)
+                   * cos(uv01.x * TAU * 3.0 + time * 2.1);
+    let offset = (sin(linePhase) + lissajous * 0.45 + clickWave * 0.8)
+               * localWave * 0.02 * (1.0 + drive * 0.5);
     let waveUV = clamp(uv01 + vec2<f32>(offset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Chromatic CRT aberration, sharpened by treble
@@ -166,9 +180,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = mixOkLab(dimColor, rolled, drive * 0.3);
 
+    // Psychedelic phosphor aurora and rainbow Lissajous scan bands.
+    let aurora = 0.5 + 0.5 * cos(TAU * (vec3<f32>(uv01.y * 1.8 + lissajous * 0.18 + time * 0.07)
+                                    + vec3<f32>(0.0, 0.33, 0.67)));
+    let bandGlow = pow(0.5 + 0.5 * lissajous, 8.0);
+    color += aurora * (bandGlow * 0.16 + clickWave * 0.3) * (0.5 + audioMix + treble * 0.5);
+
     // Treble sparkle: high-frequency glitter on bright scanlines
     let sparkleMask = pow(max(0.0, scanline * treble * audioMix), 2.0);
-    let sparkle = (ign(uv01 * res * 2.0 + time * 10.0) - 0.45) * sparkleMask * 0.35;
+    let sparklePhase = ign(floor(uv01 * res * 0.5)) * TAU;
+    let sparkle = pow(0.5 + 0.5 * sin(time * 8.0 + sparklePhase), 16.0)
+                * step(0.72, ign(floor(uv01 * res * 0.5))) * sparkleMask * 0.35;
     color = color + vec3<f32>(sparkle);
 
     // Blackbody color temperature grading: bass warms, treble cools

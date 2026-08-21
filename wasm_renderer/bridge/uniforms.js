@@ -255,39 +255,54 @@ export function setColorFormat(format) {
   state.colorFormat = format === 1 ? 1 : 0;
 }
 
+function unavailableGPUTimings() {
+  return {
+    parallelTime: 0,
+    chainedTime: 0,
+    totalTime: 0,
+    available: false,
+    timingSource: 'unavailable',
+  };
+}
+
 /**
- * Get GPU pass timing measurements from C++ timing query set.
- * Returns empty object if timestamps are unsupported on the adapter.
- * @returns {{ computeMs?: number, renderMs?: number, totalMs?: number }}
+ * Get GPU pass timing measurements from C++ out-params.
+ * C++ signature: void getGPUTimings(float* parallelMs, float* chainedMs, float* totalMs, int* available).
+ * Always returns the GPUTimings shape (never {}).
+ * @returns {{ parallelTime: number, chainedTime: number, totalTime: number, available: boolean, timingSource: 'gpu-timestamp'|'wall-clock'|'unavailable' }}
  */
 export function getGPUTimings() {
-  const fallback = { parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' };
-  if (!state.initialized || !wasmRef.module) return fallback;
+  if (!state.initialized || !wasmRef.module) return unavailableGPUTimings();
+  const m = wasmRef.module;
+  if (typeof m._malloc !== 'function' || typeof m.getValue !== 'function' || typeof m.ccall !== 'function') {
+    return unavailableGPUTimings();
+  }
+
+  const ptr = m._malloc(16);
+  if (!ptr) return unavailableGPUTimings();
+
   try {
-    const ptr = wasmRef.module._malloc(16);
-    wasmRef.module.ccall(
+    m.ccall(
       'getGPUTimings',
       null,
       ['number', 'number', 'number', 'number'],
       [ptr, ptr + 4, ptr + 8, ptr + 12]
     );
-
-    const parallelTime = wasmRef.module.getValue(ptr, 'float');
-    const chainedTime = wasmRef.module.getValue(ptr + 4, 'float');
-    const totalTime = wasmRef.module.getValue(ptr + 8, 'float');
-    const available = wasmRef.module.getValue(ptr + 12, 'i32') === 1;
-
-    wasmRef.module._free(ptr);
-
+    const parallelTime = m.getValue(ptr, 'float');
+    const chainedTime = m.getValue(ptr + 4, 'float');
+    const totalTime = m.getValue(ptr + 8, 'float');
+    const available = m.getValue(ptr + 12, 'i32') !== 0;
     return {
       parallelTime,
       chainedTime,
       totalTime,
       available,
-      timingSource: available ? 'gpu-timestamp' : 'wall-clock'
+      timingSource: available ? 'gpu-timestamp' : 'wall-clock',
     };
   } catch {
-    return fallback;
+    return unavailableGPUTimings();
+  } finally {
+    if (typeof m._free === 'function') m._free(ptr);
   }
 }
 

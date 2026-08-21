@@ -169,6 +169,31 @@ no healthy PNG or when overall healthy coverage drops. PRs that do not add
 definitions receive an informational result. The weekly coverage workflow remains
 reporting-only until the healthy baseline reaches 50%.
 
+### Deferral Mechanism
+
+When a PR adds a shader definition but cannot provide a healthy thumbnail (e.g., pending GPU capture), add a deferral entry to `reports/thumbnail_deferrals.json`:
+
+```json
+{
+  "entries": [
+    {
+      "id": "gen-shader-name",
+      "added_by": "author",
+      "pr": 1234,
+      "deferred_at": "2026-08-21",
+      "expires": "2026-09-20",
+      "reason": "pending GPU capture wave"
+    }
+  ]
+}
+```
+
+**Rules:**
+- `expires` must be ≤ 30 days from `deferred_at`
+- Each deferral must correspond to a shader ID newly added in the PR
+- Expired deferrals are not honored; the check enforces expiry on the weekly coverage report
+- Deferrals are distinct from skip allowlist: skip IDs are permanent (unrenderable), deferrals are temporary (pending thumbnail)
+
 ## Related
 
 - Generator: [`scripts/generate-shader-thumbnails.js`](../scripts/generate-shader-thumbnails.js)
