@@ -261,13 +261,33 @@ export function setColorFormat(format) {
  * @returns {{ computeMs?: number, renderMs?: number, totalMs?: number }}
  */
 export function getGPUTimings() {
-  if (!state.initialized || !wasmRef.module) return {};
+  const fallback = { parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' };
+  if (!state.initialized || !wasmRef.module) return fallback;
   try {
-    const raw = wasmRef.module.ccall('getGPUTimings', 'string', [], []);
-    if (!raw) return {};
-    return JSON.parse(raw);
+    const ptr = wasmRef.module._malloc(16);
+    wasmRef.module.ccall(
+      'getGPUTimings',
+      null,
+      ['number', 'number', 'number', 'number'],
+      [ptr, ptr + 4, ptr + 8, ptr + 12]
+    );
+
+    const parallelTime = wasmRef.module.getValue(ptr, 'float');
+    const chainedTime = wasmRef.module.getValue(ptr + 4, 'float');
+    const totalTime = wasmRef.module.getValue(ptr + 8, 'float');
+    const available = wasmRef.module.getValue(ptr + 12, 'i32') === 1;
+
+    wasmRef.module._free(ptr);
+
+    return {
+      parallelTime,
+      chainedTime,
+      totalTime,
+      available,
+      timingSource: available ? 'gpu-timestamp' : 'wall-clock'
+    };
   } catch {
-    return {};
+    return fallback;
   }
 }
 

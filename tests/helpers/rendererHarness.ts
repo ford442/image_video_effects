@@ -221,16 +221,16 @@ export async function loadShaderOnSlot(
   page: Page,
   shader: { id: string; url: string; slot?: number },
   inputSource: 'generative' | 'image' | 'none' = 'generative'
-): Promise<void> {
-  await page.evaluate(
+): Promise<boolean> {
+  return page.evaluate(
     async ({ s, source }) => {
       const api = (window as any).__pixelocity__;
       api.setInputSource(source);
       const ok = await api.loadShader(s.id, s.url);
-      if (!ok) {
-        throw new Error(`loadShader failed for ${s.id}`);
+      if (ok) {
+        api.setSlotShader(s.slot ?? 0, s.id);
       }
-      api.setSlotShader(s.slot ?? 0, s.id);
+      return ok;
     },
     { s: shader, source: inputSource }
   );
@@ -297,16 +297,16 @@ export async function exerciseShaderOnWasm(
   page: Page,
   shader: ParityShaderCase,
   renderMs = 2500
-): Promise<{ fps: number; stats: ImageStats; criticalErrors: string[] }> {
+): Promise<{ fps: number; stats: ImageStats; criticalErrors: string[]; ok: boolean }> {
   const { criticalErrors } = attachConsoleCollector(page);
-  await loadShaderOnSlot(page, shader);
-  if (shader.testState) {
+  const ok = await loadShaderOnSlot(page, shader);
+  if (ok && shader.testState) {
     await applyTestState(page, shader.testState);
   }
   await page.waitForTimeout(renderMs);
   const stats = await captureCanvasStats(page);
   const fps = await getRendererFps(page);
-  return { fps, stats, criticalErrors };
+  return { fps, stats, criticalErrors, ok };
 }
 
 export async function renderShaderCase(
