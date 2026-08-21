@@ -112,6 +112,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01  = vec2<f32>(pixel) / res;
     let time  = u.config.x;
     let mouse = u.zoom_config.yz;
+    let held  = f32(u.zoom_config.w > 0.5);
     let p1    = u.zoom_params.x;
     let p2    = u.zoom_params.y;
     let p3    = u.zoom_params.z;
@@ -130,15 +131,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hOffset = (p1 - 0.5) * 0.4;
     let vOffset = (p2 - 0.5) * 0.4;
     let seamWarpAmt = p3 * 0.05;
-    let rotation = p4 * TAU + time * 0.1 * (1.0 + bass * 0.3);
+    let rotation = p4 * TAU + time * 0.1 * (1.0 + bass * 0.3) + held * sin(time * 2.2) * 0.35;
     let warpShimmer = seamWarpAmt * (1.0 + treble * 0.5);
 
     // ── Quad mirror transform ─────────────────────────────────────
     // Rotate UV around mouse, then mirror on both axes to create 4-way symmetry.
     let rel = uv01 - mouse;
-    let r = rot2(rotation) * rel;
+    var r = rot2(rotation) * rel;
+    // Mirrored spectral ribbons and seam runners sweep through all quadrants.
+    let ribbonX = sin((abs(r.y) * 10.0 + abs(r.x) * 3.0) * TAU - time * 6.0);
+    let ribbonY = cos((abs(r.x) * 8.0 - abs(r.y) * 2.0) * TAU + time * 4.7);
+    r += vec2<f32>(ribbonX, ribbonY) * (0.003 + p3 * 0.012) * (0.6 + mids);
     let zoom = max(MIN_ZOOM, 0.5 + mids * 0.1);
     var sampleUV = mouse - vec2<f32>(abs(r.x + hOffset), abs(r.y + vOffset)) / zoom;
+
+    var clickWave = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (rp.z > 0.0 && age >= 0.0 && age < 1.4) {
+            clickWave = max(clickWave,
+                exp(-abs(distance(uv01, rp.xy) - age * 0.5) * 76.0) * (1.0 - age / 1.4));
+        }
+    }
+    sampleUV += normalize(rel + vec2<f32>(0.0001)) * clickWave * 0.025;
 
     // ── Seam warp with compute-safe anti-moiré LOD bias ───────────
     // dpdx/dpdy are fragment-only, so we approximate procedural LOD from
@@ -165,6 +182,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
     color = vec4<f32>(genChromaticShift(color.rgb, uv01, caStr, time), color.a);
+    let ribbonGlow = pow(0.5 + 0.5 * ribbonX * ribbonY, 8.0);
+    let spectral = 0.5 + 0.5 * cos(TAU * (vec3<f32>(abs(r.x) + abs(r.y) + time * 0.08)
+                                      + vec3<f32>(0.0, 0.33, 0.67)));
+    color = vec4<f32>(color.rgb + spectral * (ribbonGlow * 0.16 + clickWave * 0.24), color.a);
     color = vec4<f32>(acesToneMap(color.rgb * (0.9 + mids * 0.2)), color.a);
 
     // ── Semantic alpha & temporal feedback ────────────────────────

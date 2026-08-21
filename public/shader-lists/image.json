@@ -284,8 +284,39 @@
     "id": "chrono-slit-scan",
     "name": "Chrono Slit Scan",
     "url": "shaders/chrono-slit-scan.wgsl",
-    "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, audio-reactive speed modulation, depth-aware width scaling, and LOD-optimized fbm warp with early-exit sampling.",
+    "description": "Multi-slit temporal scan with continuous slit heads and cross-runners, held-pointer slit bending, bounded click scan fronts, audio-reactive speed, exact-load display history, and sparse early-exit sampling.",
+    "updated": true,
     "params": [
+      {
+        "id": "slitCount",
+        "name": "Slit Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "slitWidth",
+        "name": "Slit Width",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "slitSpeed",
+        "name": "Slit Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "feather",
+        "name": "Feather",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "slitCount",
         "name": "Slit Count",
@@ -325,7 +356,10 @@
       "depth-aware",
       "lod-noise",
       "early-exit",
-      "sparse-sampling"
+      "sparse-sampling",
+      "continuous-motion",
+      "bounded-click-ripples",
+      "held-drag"
     ],
     "tags": [
       "filter",
@@ -1906,8 +1940,39 @@
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
-    "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, mouse gravity-well focus, attack/release bass envelope, temporal feedback trails, ACES tone mapping, film grain, and advanced RGBA compositing via depth-layered, luminance-key, and effect-intensity alpha.",
+    "description": "Brown-Conrady digital lens with continuous caustic zoom streaks, spectral radial runners, held gravity-well focus, bounded click iris waves, chromatic dispersion, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+    "updated": true,
     "params": [
+      {
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "vignette",
+        "name": "Vignette",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "focus",
+        "name": "Focus Point",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "distortion",
         "name": "Distortion",
@@ -1947,7 +2012,9 @@
       "anamorphic",
       "temporal-feedback",
       "alpha-layered",
-      "luminance-key"
+      "luminance-key",
+      "continuous-motion",
+      "bounded-click-ripples"
     ],
     "tags": [
       "filter",
@@ -3927,10 +3994,45 @@
       "chromatic-aberration",
       "oklab-mix",
       "lod-noise",
-      "branchless-page-mask"
+      "branchless-page-mask",
+      "impossible-page-tunnel",
+      "aurora-marbling",
+      "bounded-click-ripples",
+      "held-drag"
     ],
-    "description": "Interactive page curl with warm/cool 3-point studio lighting on the curl face, OkLab color blending, ACES tone mapping, click shockwaves, depth-aware shadows, LOD noise, branchless page masking, chromatic aberration, and temporal feedback trails.",
+    "description": "Impossible-page tunnel curl with aurora-marbling on the backside, held curl-radius and projection twist, bounded chromatic fold shockwaves, studio lighting, exact-load A/C trails, and depth-aware premultiplied composition.",
+    "updated": true,
     "params": [
+      {
+        "id": "param1",
+        "name": "Curl Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Shadow Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Feedback Amount",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "param1",
         "name": "Curl Radius",
@@ -5177,8 +5279,43 @@
     "id": "tesseract-fold",
     "name": "Tesseract Fold",
     "url": "shaders/tesseract-fold.wgsl",
-    "description": "A 4D kaleidoscopic folding effect centered on the mouse. Features HDR tone mapping, iridescent color grading, atmospheric vignette, treble-driven edge glow, and bloom-weight alpha for chained rendering.",
+    "description": "Neon stained-glass tesseract faces with spectral edge diffraction, inner-face interference, held projection-plane deformation, bounded click-pulsed fold shells, closed-form 4D-style rotation, and depth-aware alpha.",
+    "updated": true,
     "params": [
+      {
+        "id": "param1",
+        "name": "4D Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Projection Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Edge Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Face Opacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
       {
         "id": "param1",
         "name": "4D Rotation Speed",
@@ -5216,7 +5353,11 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "stained-glass",
+      "spectral-diffraction",
+      "bounded-click-ripples",
+      "held-drag"
     ],
     "tags": [
       "filter",

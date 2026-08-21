@@ -107,4 +107,8 @@ Format specification:
   Capture stays discrete-GPU workstation work. Do not count black PNGs.
 - CRA→Vite remains deferred. Dead CRA-rewire deps to drop in #1125.
 - Keep thumbnail coverage CI reporting-only until the healthy baseline reaches 50%.
+- Shader upgrade work now includes separately closed Batches 53 and 54 through
+  tracker #470; preserve sequential batch boundaries, exact saved-param
+  compatibility, truthful feedback packing, and independent verification before
+  the next cohort begins.
 </IMPORTANT_REMINDER>

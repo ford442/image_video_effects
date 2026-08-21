@@ -169,13 +169,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let isHex = u.zoom_params.w > 0.5;
 
   let mouse = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
   let mouseDist = distance((uv01 - mouse) * aspectVec, vec2<f32>(0.0));
 
-  // Tile UV center (square or hex)
-  let tile = uv01 * cellSize;
+  // Two opposing tile conveyors keep the mosaic field moving continuously.
+  let conveyor = vec2<f32>(sin(time * 0.75), cos(time * 0.93)) * (0.008 + u.zoom_params.x * 0.018);
+  let tileUV = uv01 + conveyor;
+  let tile = tileUV * cellSize;
   let sqCenter = (floor(tile) + 0.5) / cellSize;
-  let hxCenter = hexCenter(uv01 * cellSize, cellSize);
-  let tileCenter = select(sqCenter, hxCenter, isHex);
+  let hxCenter = hexCenter(tileUV * cellSize, cellSize);
+  let tileCenter = select(sqCenter, hxCenter, isHex) - conveyor;
 
   var colMosaic = textureSampleLevel(readTexture, non_filtering_sampler, tileCenter, 0.0).rgb;
   var colFull = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
@@ -184,8 +187,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Organic reveal boundary
   let warp = (fbm(uv01 * cellSize * 0.4 + time * 0.15, 3) - 0.5) * 0.06;
   let bassPulse = 1.0 + bass * 0.35;
-  let revealRadius = clamp(fract(time * revealSpeed * bassPulse) * 0.85 + warp, 0.0, 1.0);
-  let revealMask = 1.0 - smoothstep(revealRadius - 0.05, revealRadius + 0.05, mouseDist);
+  let revealRadius = clamp(0.45 + 0.38 * sin(time * revealSpeed * bassPulse) + warp, 0.04, 0.92);
+  let floodRunner = exp(-abs(mouseDist - (0.45 + 0.35 * sin(time * revealSpeed * 1.7 + uv01.x * TAU))) * 45.0);
+  var revealMask = 1.0 - smoothstep(revealRadius - 0.05, revealRadius + 0.05, mouseDist);
+  revealMask = max(revealMask, floodRunner * (0.35 + held * 0.45));
+
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
+      clickWave = max(clickWave,
+        exp(-abs(distance((uv01 - rp.xy) * aspectVec, vec2<f32>(0.0)) - age * 0.48) * 74.0)
+        * (1.0 - age / 1.5));
+    }
+  }
+  revealMask = max(revealMask, clickWave * 0.9);
 
   // Edge mask for rim light
   let edgeMask = smoothstep(revealRadius - 0.12, revealRadius - 0.03, mouseDist)
@@ -197,6 +215,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Audio-reactive blackbody rim glow
   let temp = 2200.0 + treble * 5500.0 + mids * 1200.0;
   color = color + blackbodyRGB(temp) * edgeMask * edgeGlow * (2.0 + treble);
+  let runnerPalette = 0.5 + 0.5 * cos(TAU * (vec3<f32>(uv01.x + uv01.y + time * 0.09)
+                                         + vec3<f32>(0.0, 0.33, 0.67)));
+  color += runnerPalette * (floodRunner * 0.16 + clickWave * 0.25) * (0.5 + edgeGlow);
 
   // Depth haze
   let haze = depth * 0.25;

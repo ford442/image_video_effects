@@ -2,8 +2,39 @@
   "id": "chrono-slit-scan",
   "name": "Chrono Slit Scan",
   "url": "shaders/chrono-slit-scan.wgsl",
-  "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, audio-reactive speed modulation, depth-aware width scaling, and LOD-optimized fbm warp with early-exit sampling.",
+  "description": "Multi-slit temporal scan with continuous slit heads and cross-runners, held-pointer slit bending, bounded click scan fronts, audio-reactive speed, exact-load display history, and sparse early-exit sampling.",
+  "updated": true,
   "params": [
+    {
+      "id": "slitCount",
+      "name": "Slit Count",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "slitWidth",
+      "name": "Slit Width",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "slitSpeed",
+      "name": "Slit Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "feather",
+      "name": "Feather",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updatedParams": [
     {
       "id": "slitCount",
       "name": "Slit Count",
@@ -43,7 +74,10 @@
     "depth-aware",
     "lod-noise",
     "early-exit",
-    "sparse-sampling"
+    "sparse-sampling",
+    "continuous-motion",
+    "bounded-click-ripples",
+    "held-drag"
   ],
   "tags": [
     "filter",

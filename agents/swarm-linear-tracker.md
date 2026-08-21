@@ -7,6 +7,32 @@
 
 ---
 
+## Local Sequential Upgrade Tracker — 2026-08-21
+
+| # | Shader | Batch | Status | Verification |
+|---|--------|-------|--------|--------------|
+| 455 | `pixel-sand` | 53 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 456 | `crt-magnet` | 53 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 457 | `scan-distort-gpt52` | 53 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 458 | `digital-lens` | 53 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 459 | `chromatic-mosaic-projector` | 53 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 460 | `chrono-slit-scan` | 53 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 461 | `mosaic-reveal` | 53 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 462 | `quad-mirror` | 53 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 463 | `spiral-lens` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 464 | `tile-twist` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 465 | `page-curl-interactive` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 466 | `tesseract-fold` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 467 | `polar-warp-interactive` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 468 | `echo-ripple` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 469 | `scanline-wave` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 470 | `quantum-ripples` | 54 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+
+Batch 53 and Batch 54 were closed independently. Each full Jest run reached
+80/81 suites (544 passed, 1 skipped); the sole failure
+is the unrelated malformed committed `gen-chrono-kinetic-fractal-engine.json`.
+Real-GPU visual QA remains external.
+
 ## Active Batch Dashboard (JUL-185)
 
 | # | Shader | Agent Role | Linear Issue | Status | Agent |

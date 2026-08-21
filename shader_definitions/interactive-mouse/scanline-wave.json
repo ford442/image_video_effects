@@ -13,10 +13,45 @@
     "HDR-color-grading",
     "ACES-tone-map",
     "IGN-dither",
-    "premultiplied-alpha"
+    "premultiplied-alpha",
+    "phosphor-aurora",
+    "lissajous-bands",
+    "bounded-click-ripples",
+    "smooth-sparkles"
   ],
-  "description": "Temporal scanline persistence with chromatic CRT aberration, envelope-smoothed audio reactivity, and HDR color grading. Each scanline undulates with bass-driven amplitude; mouse proximity boosts local distortion. Treble adds per-scanline chromatic shift and high-frequency sparkle, while the smoothed bass envelope rolls the field and drives blackbody color temperature shifts. ACES tone mapping, hue-preserving HDR clamp, and IGN dither finish the image.",
+  "description": "Psychedelic phosphor auroras and rainbow Lissajous scan bands with held local distortion, bounded CRT click shockwaves, smooth seeded sparkles, audio-reactive persistence, and preserved [premultipliedRGB, drive] A packing.",
+  "updated": true,
   "params": [
+    {
+      "id": "waveAmount",
+      "name": "Wave Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "lineCount",
+      "name": "Line Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "persistence",
+      "name": "Persistence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "audioMix",
+      "name": "Audio Mix",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updatedParams": [
     {
       "id": "waveAmount",
       "name": "Wave Amount",

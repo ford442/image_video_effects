@@ -502,7 +502,7 @@
 | `neon-strings` | image | 3.4 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
 | `phantom-lag` | image | 3.3 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
 | `scanline-sorting` | image | 3.3 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
-| `scan-distort-gpt52` | image | 3.2 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
+| `scan-distort-gpt52` | image | 3.2 KB | B | mouse_interactive | completed | Batch 53 | advanced | Smooth scan tears, diagonal conveyor, held band pull, stable grain, capped clicks. |
 | `kinetic_tiles` | unknown | 5.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. MISSING JSON. |
 | `hex-circuit` | visual-effects | 5.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `cyber-organic` | image | 5.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
@@ -706,7 +706,7 @@
 | `fractal-image-surf` | image | 3.4 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `glitch-slice-mirror` | image | 3.4 KB | B | mouse_interactive | completed | Batch 24 | basic | Spring seam, click slice fractures, block FFT/treble breakup, comments fixed. |
 | `pixel-sort-radial` | image | 3.4 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `quad-mirror` | image | 3.4 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `quad-mirror` | image | 3.4 KB | B | mouse_interactive | completed | Batch 53 | advanced | Mirrored ribbons, seam runners, held projection twist, capped click shells. |
 | `pixel-stretch-interactive` | image | 3.4 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `volumetric-god-rays` | image | 3.4 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `kinetic-dispersion` | interactive-mouse | 3.4 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
@@ -736,24 +736,24 @@
 | `spectral-brush` | image | 3.3 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `oscilloscope-overlay` | image | 3.3 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `kaleido-scope-grokcf1` | geometric | 3.3 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `quantum-ripples` | image | 3.3 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `scanline-wave` | interactive-mouse | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `echo-ripple` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `polar-warp-interactive` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `tesseract-fold` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `page-curl-interactive` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `quantum-ripples` | image | 3.3 KB | B | mouse_interactive | completed | Batch 54 | advanced | Probability clouds, Voronoi diffraction, entangled twins, stronger bounded interaction; A/C history preserved. |
+| `scanline-wave` | interactive-mouse | 3.2 KB | B | mouse_interactive | completed | Batch 54 | advanced | Phosphor auroras, Lissajous bands, capped CRT shocks, smooth sparkle phases; A packing preserved. |
+| `echo-ripple` | image | 3.2 KB | B | mouse_interactive | completed | Batch 54 | advanced | Thin-film rings, caustic wakes, spectral harmonics, exact-load A history advection. |
+| `polar-warp-interactive` | image | 3.2 KB | B | mouse_interactive | completed | Batch 54 | advanced | Liquid tunnels, mandalas, stable sparkles, held singularity, capped spirals; truthful A state. |
+| `tesseract-fold` | image | 3.2 KB | B | mouse_interactive | completed | Batch 54 | advanced | Stained-glass faces, spectral diffraction, held projection shear, capped fold shells; closed-form. |
+| `page-curl-interactive` | image | 3.2 KB | B | mouse_interactive | completed | Batch 54 | advanced | Impossible-page tunnel, aurora backside, held curl/twist, capped fold shockwaves. |
 | `pixelate-blast` | retro-glitch | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `tile-twist` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `spiral-lens` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `tile-twist` | image | 3.2 KB | B | mouse_interactive | completed | Batch 54 | advanced | Quilt palettes, moiré seams, held kaleidoscope, capped tile blasts; slider mapping and A feedback repaired. |
+| `spiral-lens` | image | 3.2 KB | B | mouse_interactive | completed | Batch 54 | advanced | Liquid rainbow interference, Möbius caustics, held spiral focus, capped iris waves. |
 | `double-exposure` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `mosaic-reveal` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `chromatic-mosaic-projector` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `chrono-slit-scan` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `digital-lens` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `crt-magnet` | image | 3.2 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `mosaic-reveal` | image | 3.2 KB | B | mouse_interactive | completed | Batch 53 | advanced | Tile conveyors, smooth flood runners, held expansion, capped reveal fronts. |
+| `chromatic-mosaic-projector` | image | 3.2 KB | B | mouse_interactive | completed | Batch 53 | advanced | Mosaic conveyors, tile runners, held gravity, capped chromatic blasts. |
+| `chrono-slit-scan` | image | 3.2 KB | B | mouse_interactive | completed | Batch 53 | advanced | Traveling slit heads, cross-runners, held slit bend, capped temporal fronts. |
+| `digital-lens` | image | 3.2 KB | B | mouse_interactive | completed | Batch 53 | advanced | Caustic zoom streaks, spectral runners, held gravity lens, capped iris waves. |
+| `crt-magnet` | image | 3.2 KB | B | mouse_interactive | completed | Batch 53 | advanced | Degauss rings, beam sweeps, held field gain, exact C echo, capped shocks. |
 | `pixel-depth-sort` | image | 3.1 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 | `phosphor-decay` | visual-effects | 3.1 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
-| `pixel-sand` | image | 3.1 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
+| `pixel-sand` | image | 3.1 KB | B | mouse_interactive | completed | Batch 53 | advanced | Smooth avalanche sheets, jet lanes, held gravity, capped click shelves; B state preserved. |
 | `luma-pixel-sort` | artistic | 3.1 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 | `interactive-magnetic-ripple` | image | 3.1 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 | `data-slicer-interactive` | interactive-mouse | 3.1 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |

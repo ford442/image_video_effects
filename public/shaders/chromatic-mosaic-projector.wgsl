@@ -111,6 +111,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = res.x / res.y;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -125,17 +126,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let voronoiDistort = u.zoom_params.z * 0.5 * (1.0 + treble);
   let projectionAngle = (u.zoom_params.w - 0.5) * 1.5;
 
-  // Animated Voronoi cells
-  let voro = voronoi(uv01, cellSize, voronoiDistort, time);
+  // Two smooth mosaic conveyors cross-feed the animated Voronoi cells.
+  let conveyor = vec2<f32>(sin(time * 0.9), cos(time * 0.73)) * (0.01 + u.zoom_params.z * 0.025);
+  let conveyorUV = uv01 + conveyor;
+  let voro = voronoi(conveyorUV, cellSize, voronoiDistort, time);
   let cellHash = hash21(vec2<f32>(voro.y, voro.z));
-  let cellCenter = (vec2<f32>(voro.y, voro.z) + 0.5) / cellSize;
+  let cellCenter = (vec2<f32>(voro.y, voro.z) + 0.5) / cellSize - conveyor;
 
   // Mouse gravity warp
   let toMouse = (mouse - uv01) * vec2<f32>(aspect, 1.0);
   let mouseDist = length(toMouse);
   let gravity = 0.25;
   let warp = select(vec2<f32>(0.0), normalize(toMouse) * gravity / (1.0 + mouseDist * 3.0), mouseDist > 0.0001);
-  let warpedUV = uv01 + warp * 0.025;
+  let warpedUV = uv01 + warp * (0.025 + held * 0.045);
+
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.35) {
+      clickWave = max(clickWave,
+        exp(-abs(distance(uv01, rp.xy) - age * 0.5) * 76.0) * (1.0 - age / 1.35));
+    }
+  }
 
   // Projection direction with per-cell rotation
   let dirVec = (cellCenter - mouse) * vec2<f32>(aspect, 1.0);
@@ -162,6 +176,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mosaic edge shaping + radial falloff
   let edgeFade = smoothstep(0.0, 0.18, voro.x);
   color = color * (0.65 + 0.35 * edgeFade);
+  let beltRunner = pow(0.5 + 0.5 * sin((voro.y + voro.z) * 0.7 - time * 7.0), 10.0);
+  color += vec3<f32>(0.12, 0.45, 1.0) * beltRunner * edgeFade * (0.2 + treble * 0.3);
   let falloff = 1.0 / (1.0 + dist * 2.5);
   color = color * falloff;
 
@@ -170,6 +186,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let temp = mix(3500.0, 7500.0, clamp(cellHash + mids * 0.3, 0.0, 1.0));
   let tint = blackbodyRGB(temp);
   color = mix(color, color * tint * 1.5, 0.35);
+  let blastPalette = 0.5 + 0.5 * cos(TAU * (vec3<f32>(cellHash + time * 0.08)
+                                        + vec3<f32>(0.0, 0.33, 0.67)));
+  color += blastPalette * clickWave * (0.28 + chromaticStrength * 1.8);
 
   // Temporal feedback trail
   let decay = 0.96 - u.zoom_params.w * 0.03;

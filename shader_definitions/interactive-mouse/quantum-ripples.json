@@ -2,8 +2,39 @@
   "id": "quantum-ripples",
   "name": "Quantum Ripples",
   "url": "shaders/quantum-ripples.wgsl",
-  "description": "Mouse-driven quantum interference waves with domain-warped FBM, divergence-free curl turbulence, Voronoi cellular displacement, SDF portal masking, audio-driven palette, temporal feedback, depth-aware chromatic aberration and audio reactivity.",
+  "description": "Probability-cloud interference with chromatic Voronoi diffraction, entangled twin-ripple sources, stronger held and bounded click response, domain-warped turbulence, audio palettes, depth refraction, and preserved A/C display history.",
+  "updated": true,
   "params": [
+    {
+      "id": "waveFreq",
+      "name": "Wave Freq",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "waveSpeed",
+      "name": "Propagate Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "distortionStr",
+      "name": "Distortion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updatedParams": [
     {
       "id": "waveFreq",
       "name": "Wave Freq",
@@ -42,7 +73,11 @@
     "chromatic-aberration",
     "voronoi-displacement",
     "sdf-masking",
-    "audio-palette"
+    "audio-palette",
+    "probability-cloud",
+    "voronoi-diffraction",
+    "entangled-twins",
+    "bounded-click-ripples"
   ],
   "tags": [
     "filter",

@@ -772,3 +772,18 @@
   accepts `--require-priority` for GPU-workstation enforcement.
 - Current VM proof: nominal 349/1,324 (26.4%), healthy 272/1,323 (20.6%),
   priority 20/21 (95.2%); capture remains blocked until discrete-GPU access.
+
+## Shader upgrade Batches 53–54 (2026-08-21)
+
+- Tracker #455–470 is complete in two sequential, independently gated cohorts:
+  Batch 53 Fast Motion Encore and Batch 54 Psychedelic Upgrade. Preserve their
+  closeouts separately when auditing or reporting.
+- Batch 54's intentional contract repairs are Tile Twist A
+  `[bassEnvelope, trailRGB]` plus corrected Tile Size/Twist mapping, and Polar
+  Warp A `[bassEnvelope, mouseX, mouseY, alpha]` with no RGB-history read. B is
+  unused throughout Batch 54; no extraBuffer access was introduced.
+- Current committed baseline has malformed
+  `shader_definitions/generative/gen-chrono-kinetic-fractal-engine.json`.
+  Generators skip it and Jest catalog hygiene fails on it; do not attribute that
+  pre-existing defect to Batches 53 or 54. Structural/build gates pass, but
+  psychedelic identity and motion/trail acceptance still require a real GPU.
