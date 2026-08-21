@@ -9,7 +9,7 @@ describe('WASM bridge uniforms (setInputSource)', () => {
   const ccall = jest.fn();
   const malloc = jest.fn().mockReturnValue(1000);
   const free = jest.fn();
-  const getValue = jest.fn((ptr: number, type: string) => {
+  const getValue = jest.fn((ptr: number, type: string): number => {
     if (type === 'float' && ptr === 1000) return 1.25;
     if (type === 'float' && ptr === 1004) return 2.5;
     if (type === 'float' && ptr === 1008) return 3.75;
