@@ -129,14 +129,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
   let uv01   = vec2<f32>(pixel) / res;
-  let time   = u.config.x;
+  let time   = u.config.x * 2.35;
   let aspect = res.x / max(res.y, 1.0);
   let uvCenter = (uv01 - 0.5) * vec2<f32>(aspect, 1.0);
 
   let bass   = plasmaBuffer[0].x;
   let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let mouse  = u.zoom_config.yz;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) { springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = springPos - rawMouse; let temp = (springVel + omega * sdelta) * dt;
+  springVel = (springVel - omega * temp) * springDecay; springPos = rawMouse + (sdelta + temp) * springDecay;
+  if (hasSpring && global_id.x == 0u && global_id.y == 0u) { extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
+  let mouse  = springPos;
   let mouseDown = u.zoom_config.w > 0.5;
 
   // Parameter mapping
@@ -171,7 +180,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let freqX = floor(mix(1.0, complexity, sf / max(f32(STRANDS) - 1.0, 1.0)));
     let freqY = floor(freqX + select(1.0, 0.0, si % 2 == 0));
     let phase = sf * 0.63 + time * speed * (0.7 + sf * 0.11) * (1.0 + bass * 0.3);
-    let hueBase = fract(sf / f32(activeStrands) + time * 0.07 * speed + mids * 0.15);
+    let hueBase = fract(sf / f32(activeStrands) + time * 0.16 * speed + mids * 0.22);
 
     var minDistSq = 1e9;
     for (var ti: i32 = 0; ti < SAMPLES; ti = ti + 1) {
@@ -220,8 +229,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ── Temporal feedback / motion-vector advection ───────────────
   let drift = organicDrift(uv01, time, 5.0) * (0.015 + bass * 0.015);
-  let fbUV = clamp(uv01 + drift, vec2<f32>(0.0), vec2<f32>(1.0));
-  let prev = textureSampleLevel(dataTextureC, u_sampler, fbUV, 0.0).rgb;
+  let dimsC = vec2<i32>(textureDimensions(dataTextureC));
+  let fbCoord = clamp(pixel + vec2<i32>(drift * vec2<f32>(dimsC)), vec2<i32>(0), dimsC - vec2<i32>(1));
+  let prev = textureLoad(dataTextureC, fbCoord, 0).rgb;
   let fbMix = feedback * 0.82;
   let decay = 0.88 + feedback * 0.11;
   totalColor = mix(totalColor, prev * decay, fbMix);
@@ -247,5 +257,4 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(writeTexture,      pixel, vec4<f32>(totalColor, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA,      pixel, vec4<f32>(totalColor, alpha));
-  textureStore(dataTextureB,      pixel, vec4<f32>(drift, depth, alpha));
 }

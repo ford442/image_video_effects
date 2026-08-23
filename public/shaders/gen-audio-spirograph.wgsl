@@ -94,7 +94,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= dims.x || global_id.y >= dims.y) { return; }
     let resolution = vec2<f32>(dims);
     var uv = (vec2<f32>(global_id.xy) + vec2<f32>(0.5) - resolution * 0.5) / min(resolution.x, resolution.y);
-    let t = u.config.x;
+    let t = u.config.x * 2.5;
     
     // Parameters - safe randomization
     let baseFreq = mix(0.5, 3.0, u.zoom_params.x);
@@ -108,14 +108,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioMod = 1.0 + audio * audioReactivity * 2.0;
 
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(t - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    var mouseUv = rawMouse;
+    var mouseVelocity = vec2<f32>(0.0);
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    if (hasSpring && extraBuffer[137] > 0.5) {
+        mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    }
+    let springDt = select(0.016, clamp(t - extraBuffer[138], 0.001, 0.05), hasSpring && extraBuffer[137] > 0.5);
     let springOmega = 8.0;
     mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
     mouseUv += mouseVelocity * springDt;
-    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
         extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
         extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
         extraBuffer[137] = 1.0; extraBuffer[138] = t;
@@ -162,7 +166,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
         
         // Color based on harmonic
-        let hue = fract(f32(i) * 0.2 + t * 0.05);
+        let hue = fract(f32(i) * 0.2 + t * 0.14 + treble * 0.2);
         let sat = 0.7 + audio * 0.3;
         let light = 0.5 + audio * 0.3;
         let col = hsl2rgb(hue, sat, light);
@@ -224,7 +228,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             clickChime = max(clickChime, shell);
         }
     }
-    col += vec3<f32>(0.35, 0.75, 1.2) * clickChime * (0.65 + treble * 0.3);
+    col += vec3<f32>(1.05, 0.18, 0.95) * clickChime * (0.65 + treble * 0.3);
+    let geoRing = abs(fract(length(uv) * 12.0 - t * 1.4) - 0.5);
+    col += hsl2rgb(fract(t * 0.2 + mids), 0.95, 0.55) * (1.0 - smoothstep(0.0, 0.07, geoRing)) * 0.22;
     
     // Add trail accumulation
     col = col + clamp(prevCol, vec3<f32>(0.0), vec3<f32>(1.2)) * trailLength * 0.78;
