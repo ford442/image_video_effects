@@ -183,7 +183,7 @@
     "id": "bio-touch",
     "name": "Bio-Luminescent Touch",
     "url": "shaders/bio-touch.wgsl",
-    "description": "Reveals organic, glowing cellular structures beneath the image where you touch. Audio-reactive cell density and pulse speed respond to bass.",
+    "description": "Bioluminescent cellular membranes with traveling nuclei, held curl vortices, click growth fronts, three-band audio, and spectral organism color.",
     "params": [
       {
         "id": "radius",
@@ -217,7 +217,11 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color"
     ],
     "tags": [
       "filter",
@@ -226,7 +230,42 @@
       "voronoi",
       "organic",
       "glow"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Glow Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Cell Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "biomimetic-scales",
@@ -3723,7 +3762,7 @@
     "id": "foil-impression",
     "name": "Foil Impression",
     "url": "shaders/foil-impression.wgsl",
-    "description": "Simulates a metallic foil surface. Pressing with the mouse flattens the foil to reveal the image relief and color.",
+    "description": "Embossed metallic foil with moving brushed highlights, held impression pressure, click rings, three-band audio, and iridescent spectral reflection.",
     "params": [
       {
         "id": "pressure_radius",
@@ -3755,12 +3794,53 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Pressure Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Foil Crinkle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Image Emboss",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "glass-bead-curtain",
@@ -3832,7 +3912,7 @@
     "name": "Glass Shatter",
     "category": "interactive-mouse",
     "url": "shaders/glass-shatter.wgsl",
-    "description": "Held-pointer glass-shard distortion with continuous shard and edge runners, chromatic transmission, three-band audio response, and bounded click fronts.",
+    "description": "Voronoi facets with stress birefringence: residual stress concentrates at the facet boundaries and under load, and the resulting retardation produces per-wavelength polariscope fringes along the cracks. Crack energy accumulates in dataTextureC so repeated clicks progressively craze the glass rather than each producing an isolated ring. Fixes a mask-as-colour hazard where dataTextureA held a mask tuple that nothing read, and adds ACES in place of a hard clamp.",
     "params": [
       {
         "id": "scale",
@@ -3869,47 +3949,62 @@
       "audio-reactive",
       "upgraded-rgba",
       "click-reactive",
-      "fast-motion"
+      "fast-motion",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "voronoi-facets",
+      "stress-birefringence",
+      "fresnel",
+      "crack-propagation",
+      "temporal-crack-memory"
     ],
     "updatedParams": [
       {
-        "index": 0,
-        "name": "Shard Size",
+        "id": "scale",
+        "name": "Shard Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Voronoi cell frequency — how many shards across the frame."
       },
       {
-        "index": 1,
+        "id": "displacement",
         "name": "Displacement",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "How far shards are pushed away from the pointer."
       },
       {
-        "index": 2,
-        "name": "Edge",
+        "id": "edge",
+        "name": "Edge Sharpness",
         "default": 0.2,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Bevel highlight strength and glass density."
       },
       {
-        "index": 3,
+        "id": "aberration",
         "name": "Aberration",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Chromatic split across each shard tilt."
       }
     ],
     "tags": [
       "glass",
       "shards",
       "prismatic",
-      "distortion"
+      "distortion",
+      "shatter",
+      "voronoi",
+      "birefringence",
+      "fracture"
     ]
   },
   {
@@ -4321,7 +4416,7 @@
     "id": "hypnotic-spiral",
     "name": "Hypnotic Spiral",
     "url": "shaders/hypnotic-spiral.wgsl",
-    "description": "Breathing, rotating spirals with color cycling; mouse warps and twists the spiral geometry.",
+    "description": "Bounds-safe breathing spiral geometry with corrected normalized pointer warp, held reversal, capped click waves, depth twist, three-band audio, and spectral color.",
     "params": [
       {
         "id": "arms",
@@ -4358,12 +4453,52 @@
       "visual",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Arms",
+        "default": 3,
+        "min": 1,
+        "max": 12,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 4,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Cycle",
+        "default": 0.2,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "impasto-swirl",
@@ -4643,7 +4778,7 @@
     "id": "ink-bleed",
     "name": "Ink Bleed",
     "url": "shaders/ink-bleed.wgsl",
-    "description": "Click to drop spreading ink that permanently stains the video feed.",
+    "description": "Anisotropic capillary diffusion on paper: ink wicks along a procedural fibre grain roughly four times faster than across it, so blots elongate with the grain instead of spreading as isotropic discs. Fibre angle and wicking rate are modulated by the eight FFT bins, and the nib is a spring-damped pointer in extraBuffer[133..136] whose stroke speed thins the deposit. Renames a misleading binding-5 identifier (filteringSampler on the engine's NON-filtering sampler) and moves all float32 state reads to exact textureLoad.",
     "params": [
       {
         "id": "inkHue",
@@ -4676,11 +4811,61 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "anisotropic-diffusion",
+      "paper-fibre"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "ink",
+      "paper",
+      "diffusion",
+      "artistic",
+      "brush"
+    ],
+    "updatedParams": [
+      {
+        "id": "inkHue",
+        "name": "Ink Hue",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "description": "Hue of the deposited ink."
+      },
+      {
+        "id": "spreadSpeed",
+        "name": "Wicking Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Diffusion rate along the paper fibres; treble loosens the sizing."
+      },
+      {
+        "id": "fadeSpeed",
+        "name": "Fade Speed",
+        "default": 0.05,
+        "min": 0,
+        "max": 1,
+        "description": "How quickly deposited ink dries out and fades."
+      },
+      {
+        "id": "density",
+        "name": "Ink Density",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "description": "Opacity mapping from ink concentration to alpha."
+      }
     ]
   },
   {
@@ -9160,7 +9345,7 @@
     "id": "neon-pulse",
     "name": "Neon Pulse Distortion",
     "url": "shaders/neon-pulse.wgsl",
-    "description": "Distorts the image with a pulsating neon wave emanating from the cursor.",
+    "description": "Blackbody plasma cell array where each cell owns one of the eight FFT bins driving its base temperature and flicker rate. Cell temperature is carried through dataTextureC and relaxed with a Stefan-Boltzmann-style T^4 cooling term, so filaments heat fast under the cursor and cool slowly. Fixes a shader catalogued as mouse-driven that never read the mouse (zoom_config appeared only in the struct declaration), an 8x8 workgroup, a depth clobber, and unbounded additive HDR written with an out-of-range alpha.",
     "params": [
       {
         "id": "strength",
@@ -9197,14 +9382,61 @@
       "audio-reactive",
       "audio-driven",
       "upgraded-rgba",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "semantic-alpha",
+      "aces",
+      "blackbody",
+      "plasma-arcs",
+      "thermal-diffusion"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "neon",
+      "plasma",
+      "blackbody",
+      "thermal",
+      "grid"
+    ],
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Number of plasma cells across the frame (maps to zoom_params.x)."
+      },
+      {
+        "id": "speed",
+        "name": "Base Temperature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Cell base temperature in Kelvin, 800-12000 K (maps to zoom_params.y)."
+      },
+      {
+        "id": "glow",
+        "name": "Audio Heat Gain",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "How much spectrum energy adds to cell temperature (maps to zoom_params.z)."
+      },
+      {
+        "id": "radius",
+        "name": "Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Gaussian hotspot sigma; hotter cells glow wider (maps to zoom_params.w)."
+      }
     ]
   },
   {
@@ -9975,7 +10207,7 @@
     "id": "particle-swarm",
     "name": "Particle Swarm",
     "url": "shaders/particle-swarm.wgsl",
-    "description": "Pixels behave like a swarm of particles attracted to the mouse, with spring physics returning them to their origin.",
+    "description": "Boid swarm with anisotropic scattering: each particle reads its neighbours out of the state texture and applies cohesion and separation, so the field forms travelling flocks instead of N independent springs. Per-particle FFT bands drive turbulence and the attractor is spring-damped through extraBuffer[133..136]. Fixes a missing bounds guard and a degenerate Henyey-Greenstein term whose cosine was dotted against vec2(0,0), making the phase function a constant.",
     "params": [
       {
         "id": "stiffness",
@@ -10009,11 +10241,62 @@
     "features": [
       "mouse-driven",
       "temporal-persistence",
-      "physics"
+      "physics",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "boid-cohesion",
+      "henyey-greenstein",
+      "motion-blur"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "particles",
+      "swarm",
+      "boids",
+      "scattering",
+      "physics"
+    ],
+    "updatedParams": [
+      {
+        "id": "stiffness",
+        "name": "Spring Stiffness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Restoring force pulling each particle back to its home pixel."
+      },
+      {
+        "id": "force",
+        "name": "Pointer Force",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Attraction/repulsion strength around the cursor (0.5 is neutral)."
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "description": "Velocity retention per frame."
+      },
+      {
+        "id": "radius",
+        "name": "Particle Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Interaction radius and particle opacity."
+      }
     ]
   },
   {
@@ -13802,10 +14085,16 @@
     "id": "sphere-projection",
     "name": "Sphere Projection",
     "url": "shaders/sphere-projection.wgsl",
-    "description": "Projects the image onto a 3D sphere that can be rotated with the mouse.",
+    "description": "Analytic image-mapped sphere with moving latitude bands and lighting, held zoom pressure, bounded click fronts, three-band audio, and spectral highlights.",
     "features": [
       "mouse-driven",
-      "3d"
+      "3d",
+      "audio-reactive",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "depth-aware"
     ],
     "params": [
       {
@@ -13852,7 +14141,42 @@
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sphere Zoom",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spin Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Lighting",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ambient Light",
+        "default": 0.3,
+        "min": 0,
+        "max": 0.6,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "split-dimension",

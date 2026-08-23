@@ -1,83 +1,101 @@
 {
   "id": "gen-abyssal-plasma-void-medusa",
   "name": "Abyssal Plasma Void-Medusa",
-<<<<<<< HEAD
   "description": "A majestic, deep-space biomechanical entity undulating through a quantum fluidic void, driven by audio-reactive bioluminescent plasma nodes.",
   "category": "generative",
   "url": "shaders/gen-abyssal-plasma-void-medusa.wgsl",
-  "tags": ["organic", "fluid", "bioluminescent", "plasma", "audio-reactive"],
-  "sliders": [
+  "features": [
+    "organic",
+    "fluid",
+    "bioluminescent",
+    "plasma",
+    "audio-reactive"
+  ],
+  "tags": [
+    "organic",
+    "fluid",
+    "bioluminescent",
+    "plasma",
+    "audio-reactive"
+  ],
+  "params": [
     {
+      "id": "bioluminescence",
       "name": "Bioluminescence",
-      "uniform": "zoom_params.x",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "name": "Fluid Distortion",
-      "uniform": "zoom_params.y",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "name": "Tentacle Length",
-      "uniform": "zoom_params.z",
-      "default": 0.8,
-      "min": 0.2,
-      "max": 1.5,
-      "step": 0.01
-    },
-    {
-      "name": "Plasma Hue",
-      "uniform": "zoom_params.w",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-=======
-  "category": "generative",
-  "url": "shaders/gen-abyssal-plasma-void-medusa.wgsl",
-  "parameters": [
-    {
-      "name": "Bioluminescence",
-      "type": "range",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "uniform": "zoom_params.x"
+      "mapping": "zoom_params.x"
     },
     {
+      "id": "fluidDistortion",
       "name": "Fluid Distortion",
-      "type": "range",
       "default": 0.3,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "uniform": "zoom_params.y"
+      "mapping": "zoom_params.y"
     },
     {
+      "id": "tentacleLength",
       "name": "Tentacle Length",
-      "type": "range",
       "default": 0.8,
       "min": 0.2,
       "max": 1.5,
       "step": 0.01,
-      "uniform": "zoom_params.z"
+      "mapping": "zoom_params.z"
     },
     {
+      "id": "plasmaHue",
       "name": "Plasma Hue",
-      "type": "range",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "uniform": "zoom_params.w"
->>>>>>> 79f3f9a67ad49750fcbc4745e1bca43fc4b432b4
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "id": "bioluminescence",
+      "name": "Bioluminescence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "index": 1,
+      "id": "fluidDistortion",
+      "name": "Fluid Distortion",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "index": 2,
+      "id": "tentacleLength",
+      "name": "Tentacle Length",
+      "default": 0.8,
+      "min": 0.2,
+      "max": 1.5,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "index": 3,
+      "id": "plasmaHue",
+      "name": "Plasma Hue",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

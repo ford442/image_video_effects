@@ -2,7 +2,7 @@
   "id": "ink-bleed",
   "name": "Ink Bleed",
   "url": "shaders/ink-bleed.wgsl",
-  "description": "Click to drop spreading ink that permanently stains the video feed.",
+  "description": "Anisotropic capillary diffusion on paper: ink wicks along a procedural fibre grain roughly four times faster than across it, so blots elongate with the grain instead of spreading as isotropic discs. Fibre angle and wicking rate are modulated by the eight FFT bins, and the nib is a spring-damped pointer in extraBuffer[133..136] whose stroke speed thins the deposit. Renames a misleading binding-5 identifier (filteringSampler on the engine's NON-filtering sampler) and moves all float32 state reads to exact textureLoad.",
   "params": [
     {
       "id": "inkHue",
@@ -35,10 +35,60 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence"
+    "temporal-persistence",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "spring-damper-pointer",
+    "anisotropic-diffusion",
+    "paper-fibre"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "ink",
+    "paper",
+    "diffusion",
+    "artistic",
+    "brush"
+  ],
+  "updatedParams": [
+    {
+      "id": "inkHue",
+      "name": "Ink Hue",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "description": "Hue of the deposited ink."
+    },
+    {
+      "id": "spreadSpeed",
+      "name": "Wicking Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Diffusion rate along the paper fibres; treble loosens the sizing."
+    },
+    {
+      "id": "fadeSpeed",
+      "name": "Fade Speed",
+      "default": 0.05,
+      "min": 0,
+      "max": 1,
+      "description": "How quickly deposited ink dries out and fades."
+    },
+    {
+      "id": "density",
+      "name": "Ink Density",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "description": "Opacity mapping from ink concentration to alpha."
+    }
   ]
 }

@@ -14,9 +14,11 @@
     "semantic-alpha",
     "aces",
     "angular-chromatic-dispersion",
-    "temporal-smear"
+    "temporal-smear",
+    "spring-damper-pointer",
+    "rankine-vortex"
   ],
-  "description": "Turbulent vortex warp: the swirl angle is perturbed by eight counter-rotating FFT-banded lobes, R/G/B are fetched at different rotation angles so the prism fringe follows the flow lines, and the previous frame is advected along the tangential direction for motion smear. Held pointer tightens the core; clicks emit bounded counter-rotating shock rings.",
+  "description": "Rankine vortex warp: solid-body rotation inside the core radius and free-vortex circulation (omega ~ 1/r^2) outside it, giving a tightly spun core with a slower, longer-reaching outer flow instead of a rigidly rotating disc. The vortex eye is spring-damped through extraBuffer[133..136] and its own velocity shears the flow, so whipping the cursor drags the vortex behind the pointer. Retains the FFT-banded azimuthal turbulence and flow-aligned angular dispersion from Batch 56.",
   "params": [
     {
       "id": "strength",
@@ -68,7 +70,7 @@
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "description": "Rigid rotation gain at the core; bass adds up to +45%."
+      "description": "Circulation gain of the Rankine profile; bass adds up to +45%."
     },
     {
       "id": "radius",
@@ -76,7 +78,7 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "description": "Vortex extent in aspect-corrected UV; holding the pointer tightens it."
+      "description": "Vortex extent; also sets the solid-body core radius."
     },
     {
       "id": "twist",
@@ -84,7 +86,7 @@
       "default": 0.2,
       "min": 0,
       "max": 1,
-      "description": "Radius-dependent spiral term layered on the rigid rotation."
+      "description": "Radius-dependent spiral layered on the circulation."
     },
     {
       "id": "turbulence",
@@ -94,7 +96,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Gain on the FFT-banded azimuthal lobes (was declared but unread before Batch 56)."
+      "description": "Gain on the FFT-banded azimuthal lobes."
     }
   ]
 }

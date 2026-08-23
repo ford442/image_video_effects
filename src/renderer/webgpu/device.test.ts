@@ -113,6 +113,8 @@ describe('formatEnabledDeviceFeatures', () => {
 });
 
 describe('buildCanvasConfigureOptions', () => {
+  // WASM also calls ConfigureSurface() after JS_CreateSurfaceFromCanvas
+  // (Fifo + width/height). Do not "unify" away that second configure.
   it('sets opaque alpha and RENDER_ATTACHMENT usage', () => {
     const device = makeDevice();
     const opts = buildCanvasConfigureOptions(device, 'bgra8unorm');

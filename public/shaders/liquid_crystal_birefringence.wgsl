@@ -12,8 +12,36 @@
 //      oscillation, treble -> Schlieren sparkle grain
 //    - 8-bin spectral retardation bands (per-bin Newton-ring fringes)
 //    - Spring-damper smoothed mouse defect core (extraBuffer[133..134])
+//    - Crossed-polarizer analyzer obeying Malus's law, steered by the pointer
+//    - Frederiks relaxation lag read back from dataTextureC
 //  Target: 4.7★ rating
-//  Upgraded: 2026-07-26 (swarm Algorithmist b15)
+//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+//
+//  BUG FIXED IN THIS PASS — depth clobber. The shader wrote its polarization
+//  alpha into writeDepthTexture:
+//
+//      textureStore(writeDepthTexture, coord, vec4<f32>(finalAlpha, 0, 0, 1));
+//
+//  so every depth-aware shader chained after this one read polarization instead
+//  of scene geometry, and the engine's depth swap fed that back in. Scene depth
+//  is now preserved and only modulated by the cell's effective thickness.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Crossed-polarizer analyzer (Malus's law) — the cell now sits between a
+//       fixed polarizer and an analyzer whose angle follows the held pointer.
+//       Transmission goes as cos² of the angle between the emergent
+//       polarization and the analyzer axis, which is what produces the dark
+//       extinction brushes real liquid-crystal microscopy shows wherever the
+//       director lines up with either axis. Previously the "polarization" was
+//       applied with no analyzer at all, so the extinction structure — the most
+//       recognisable feature of the effect — could not appear.
+//
+//    2. Frederiks relaxation lag — real nematic cells do not switch instantly;
+//       rise time falls with applied voltage while decay is voltage-independent
+//       and slow. The transmitted field is now relaxed toward its new state
+//       through dataTextureC with an asymmetric time constant, so bright
+//       transitions snap under voltage and dark ones bleed away.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -151,15 +179,40 @@ fn sparkleGrain(uv: vec2<f32>, time: f32) -> f32 {
     return fract(h);
 }
 
+// ── ACES filmic tone map (Narkowicz fit) ─────────────────────────────────────
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
+}
+
+// ── Crossed-polarizer analyzer (Malus's law) ─────────────────────────────────
+// Intensity through an analyzer at `analyzerAngle` for light whose plane of
+// polarization has been rotated to `emergentAngle`: I = I0 * cos^2(delta).
+// The retardation term reintroduces the wavelength dependence, so the
+// extinction brushes are coloured rather than neutral grey.
+fn malusTransmission(emergentAngle: f32, analyzerAngle: f32, retardation: vec3<f32>) -> vec3<f32> {
+    let delta = emergentAngle - analyzerAngle;
+    let c = cos(delta);
+    let extinction = c * c;
+    // sin^2(delta) * sin^2(retardation/2) is the classic crossed-polar term.
+    let s = sin(delta);
+    let cross = s * s;
+    let half = retardation * 0.5;
+    let sr = sin(half);
+    return vec3<f32>(extinction) + cross * sr * sr;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
+    let dimsI = vec2<i32>(textureDimensions(writeTexture));
+    if (global_id.x >= u32(dimsI.x) || global_id.y >= u32(dimsI.y)) { return; }
+
     let coord = vec2<i32>(global_id.xy);
-
-    if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) {
-        return;
-    }
-
+    let resolution = vec2<f32>(dimsI);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
@@ -252,18 +305,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += vec3<f32>(0.1, 0.15, 0.2) * schlieren * (0.5 + sparkle * 0.9);
     color += vec3<f32>(sparkle * 0.08); // fine treble glitter across the cell
 
+    // ── Structure 1: crossed-polarizer analyzer ─────────────────────────────
+    // The emergent plane of polarization is the director orientation carried
+    // through the twist; the analyzer axis is fixed until the pointer is held,
+    // when it rotates toward the cursor and sweeps the extinction brushes.
+    let directorAngle = atan2(director.y, director.x);
+    let emergentAngle = directorAngle + localTwist * 0.5;
+    let toCursor = uv - mousePos;
+    let heldAnalyzer = atan2(toCursor.y, toCursor.x);
+    let analyzerAngle = mix(PI * 0.5, heldAnalyzer,
+                            select(0.0, 1.0, isMouseDown) * (1.0 - smoothstep(0.0, 0.6, distToMouse)));
+    let transmission = malusTransmission(emergentAngle, analyzerAngle, retardation);
+    color *= 0.35 + transmission * 0.9;
+
     // Alpha based on polarization rotation amount
     let rotationAmount = abs(sin(localTwist)) * (1.0 + birefringence);
     let finalAlpha = rotationAmount * 0.7 + 0.3;
 
-    // Tone mapping
-    color = color / (1.0 + color * 0.3);
+    // ── Structure 2: Frederiks relaxation lag (exact load from C) ───────────
+    // Rise time shortens with drive voltage; decay is slow and voltage-blind.
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let rising = step(dot(prev.rgb, vec3<f32>(1.0)), dot(color, vec3<f32>(1.0)));
+    let riseRate = 0.45 + effectiveVoltage * 0.45;   // volts speed the switch on
+    let decayRate = 0.16;                            // relaxation back is slow
+    let rate = mix(decayRate, riseRate, rising);
+    color = mix(prev.rgb, color, clamp(rate, 0.05, 1.0));
+
+    color = acesFilm(color);
 
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.3;
+    let outColor = vec4<f32>(color * vignette, finalAlpha * vignette);
 
-    textureStore(writeTexture, coord, vec4<f32>(color * vignette, finalAlpha * vignette));
-    textureStore(writeDepthTexture, coord, vec4<f32>(finalAlpha, 0.0, 0.0, 1.0));
+    textureStore(writeTexture, coord, outColor);
+    textureStore(dataTextureA, coord, outColor);
 
-    textureStore(dataTextureA, coord, vec4<f32>(color, finalAlpha));
+    // Depth: scene geometry preserved (was clobbered by finalAlpha), thinned
+    // slightly where the cell compresses under voltage.
+    let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord,
+                 vec4<f32>(clamp(sceneDepth * (1.0 - effectiveThickness * 0.05), 0.0, 1.0),
+                           0.0, 0.0, 1.0));
 }
