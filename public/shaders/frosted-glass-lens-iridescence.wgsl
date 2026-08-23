@@ -1,16 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  frosted-glass-lens-iridescence
+//  Frosted Glass Lens Iridescence
 //  Category: advanced-hybrid
-//  Features: frosted-glass, thin-film-interference, depth-aware, mouse-driven
+//  Features: frosted-glass, thin-film-interference, depth-aware,
+//            mouse-driven, audio-reactive, exact-feedback
 //  Complexity: Very High
-//  Chunks From: frosted-glass-lens.wgsl, spec-iridescence-engine.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-21 — Distortion & Material Enhancer
 // ═══════════════════════════════════════════════════════════════════
 //  Physical frosted glass transmission with thin-film iridescence
-//  on the glass surface. Film thickness varies with frost density
-//  and viewing angle, producing soap-bubble color shifts at lens
-//  edges. Beer-Lambert absorption blends with Fresnel interference.
+//  on the glass surface. Multi-tap microfacet scattering and Beer-
+//  Lambert absorption blend with soap-bubble Fresnel interference
+//  and an interactive chromatic magnifying lens.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,15 +26,27 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
+    config: vec4<f32>,       // x=Time, y=RippleCount, zw=Resolution
+    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
+    zoom_params: vec4<f32>,  // x=FrostAmount, y=LensRadius, z=EdgeSoftness, w=FilmIOR
+    ripples: array<vec4<f32>, 50>,
 };
+
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+
+fn acesToneMap(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 += dot(p3, p3.yzx + 33.33);
+    p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
@@ -54,10 +64,10 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
     let opd = 2.0 * filmIOR * thicknessNm * cosTheta_t;
     var color = vec3<f32>(0.0);
     var sampleCount = 0.0;
-    for (var lambda = 380.0; lambda <= 700.0; lambda = lambda + 40.0) {
+    for (var lambda = 390.0; lambda <= 690.0; lambda = lambda + 40.0) {
         let phase = opd / lambda;
-        let interference = cos(phase * 6.28318530718) * 0.5 + 0.5;
-        color += wavelengthToRGB(lambda) * interference;
+        let interference = cos(phase * TAU) * 0.5 + 0.5;
+        color = color + wavelengthToRGB(lambda) * interference;
         sampleCount = sampleCount + 1.0;
     }
     return color / max(sampleCount, 1.0);
@@ -65,89 +75,147 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    let res = u.config.zw;
+    let pixel = vec2<i32>(global_id.xy);
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+    
     let time = u.config.x;
-
-    let frost_amt = u.zoom_params.x;
-    let lens_radius = u.zoom_params.y * 0.4 + 0.05;
-    let edge_softness = u.zoom_params.z * 0.2 + 0.01;
+    let isMouseDown = u.zoom_config.w > 0.5;
+    let mouseUV = u.zoom_config.yz;
+    
+    // Persistent single-writer state management
+    if (global_id.x == 0u && global_id.y == 0u) {
+        var targetPos = mouseUV;
+        if (!isMouseDown && extraBuffer[137] < 0.5) {
+            targetPos = vec2<f32>(0.5 + 0.2 * cos(time * 0.7), 0.5 + 0.2 * sin(time * 0.85));
+        }
+        
+        var curP = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        if (curP.x == 0.0 && curP.y == 0.0) { curP = mouseUV; }
+        
+        var pVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        let diff = targetPos - curP;
+        pVel = pVel + diff * 0.18;
+        pVel = pVel * 0.82;
+        curP = curP + pVel;
+        
+        extraBuffer[133] = clamp(curP.x, 0.0, 1.0);
+        extraBuffer[134] = clamp(curP.y, 0.0, 1.0);
+        extraBuffer[135] = clamp(pVel.x, -0.05, 0.05);
+        extraBuffer[136] = clamp(pVel.y, -0.05, 0.05);
+        
+        let prevDown = extraBuffer[137];
+        var rippleImpulse = extraBuffer[138] * 0.94;
+        if (isMouseDown && prevDown < 0.5) {
+            rippleImpulse = 1.0;
+        }
+        extraBuffer[137] = select(0.0, 1.0, isMouseDown);
+        extraBuffer[138] = rippleImpulse;
+    }
+    
+    let smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    let clickImpulse = extraBuffer[138];
+    
+    let uv = (vec2<f32>(pixel) + 0.5) / res;
+    let aspect = res.x / res.y;
+    let aspectVec = vec2<f32>(aspect, 1.0);
+    
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    
+    // Sliders
+    let frostAmt = clamp(u.zoom_params.x, 0.0, 1.0);
+    let lensRadius = mix(0.12, 0.72, u.zoom_params.y);
+    let edgeSoftness = mix(0.02, 0.28, u.zoom_params.z);
     let filmIOR = mix(1.2, 2.4, u.zoom_params.w);
-
-    let mouse = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
-
-    let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(dist_vec);
-
-    // Lens mask
-    let lens_mask = smoothstep(lens_radius, lens_radius + edge_softness, dist);
-    let glassDensity = frost_amt * 1.5 + 0.5;
-
-    // Frost noise
-    let noise_val = hash12(uv * 100.0 + time * 0.1);
-    let frost_offset = (noise_val - 0.5) * 0.05 * frost_amt * lens_mask;
-
-    // Rough normal and Fresnel
-    let roughNormal = normalize(vec3<f32>(frost_offset * 20.0, 0.0, 1.0 - frost_amt * 0.5));
-    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-    let cos_theta = max(dot(viewDir, roughNormal), 0.0);
-    let R0 = 0.04;
-    let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
-
-    // Thin-film iridescence on glass surface
+    
+    let distVec = (uv - smoothMouse) * aspectVec;
+    let dist = length(distVec);
+    let holdEffect = smoothstep(0.35, 0.0, dist) * select(0.3, 1.0, isMouseDown);
+    
+    // Capped click ripple fronts
+    var rippleDistortion = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let r = u.ripples[i];
+        let rAge = time - r.z;
+        if (r.z > 0.0 && rAge > 0.0 && rAge < 2.5) {
+            let rDist = length((uv - r.xy) * aspectVec);
+            let env = smoothstep(2.5, 0.0, rAge);
+            let wave = sin(rDist * 34.0 - rAge * 11.0) * exp(-rDist * 6.0) * env;
+            rippleDistortion = rippleDistortion + wave * 0.35;
+        }
+    }
+    rippleDistortion = rippleDistortion + sin(dist * 30.0 - time * 8.0) * exp(-dist * 7.0) * clickImpulse * 0.5;
+    
+    // Lens magnification & chromatic dispersion
+    let lensMask = 1.0 - smoothstep(lensRadius, lensRadius + edgeSoftness, dist);
+    let lensBulge = (1.0 - dist / (lensRadius + edgeSoftness + 0.001)) * lensMask;
+    let magStrength = (0.25 + holdEffect * 0.35 + bass * 0.15) * lensMask;
+    let lensOffset = -normalize(distVec + vec2<f32>(0.0001)) * lensBulge * magStrength;
+    
+    // Multi-tap microfacet frost scattering
+    let noiseVal = hash12(uv * 180.0 + vec2<f32>(time * 0.05, -time * 0.03));
+    let noiseAngle = hash12(uv * 90.0 - time * 0.02) * TAU;
+    let scatterRadius = (frostAmt * 0.025 * (1.0 - lensMask * 0.7) + rippleDistortion * 0.01) * (1.0 + mids * 0.3);
+    let frostOffset = vec2<f32>(cos(noiseAngle), sin(noiseAngle)) * noiseVal * scatterRadius;
+    
+    let caStrength = (0.006 * frostAmt + 0.012 * lensMask + treble * 0.004) * smoothstep(0.0, lensRadius, dist);
+    let caDir = normalize(distVec + vec2<f32>(0.0001));
+    
+    let baseUV = uv + lensOffset + frostOffset;
+    let uvR = clamp(baseUV + caDir * caStrength, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvG = clamp(baseUV, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(baseUV - caDir * caStrength * 0.8, vec2<f32>(0.0), vec2<f32>(1.0));
+    
+    let colR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+    let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
+    let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+    let scatteredColor = vec3<f32>(colR, colG, colB);
+    
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvG, 0.0).r;
+    
+    // Beer-Lambert glass absorption
+    let glassThickness = 0.04 + frostAmt * 0.12 * (1.0 + noiseVal) + depth * 0.08;
+    let glassTint = mix(vec3<f32>(0.92, 0.96, 1.0), vec3<f32>(0.98, 0.93, 0.99), treble);
+    let absorption = exp(-(vec3<f32>(1.0) - glassTint) * glassThickness * 3.5);
+    let transmission = (absorption.r + absorption.g + absorption.b) * 0.3333;
+    
+    // Thin-film iridescence coating on glass surface
     let toCenter = uv - vec2<f32>(0.5);
     let viewDist = length(toCenter);
-    let cosThetaView = sqrt(max(1.0 - viewDist * viewDist * 0.5, 0.01));
-    let filmThicknessBase = 200.0 + frost_amt * 400.0;
-    let noiseVal = hash12(uv * 12.0 + time * 0.1) * 0.5
-                 + hash12(uv * 25.0 - time * 0.15) * 0.25;
-    let thickness = filmThicknessBase * (0.7 + noiseVal * lens_mask);
-    let iridescent = thinFilmColor(thickness, cosThetaView, filmIOR);
-
-    // Beer-Lambert absorption
-    let thicknessGlass = 0.03 + frost_amt * 0.1 * (1.0 + noise_val);
-    let glassColor = vec3<f32>(0.92, 0.95, 0.98);
-    let absorption = exp(-(1.0 - glassColor) * thicknessGlass * glassDensity);
-    let baseTransmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
-    let transmission = mix(baseTransmission, baseTransmission * 0.7, frost_amt * lens_mask);
-
-    // Sample with frost offset
-    var color: vec4<f32>;
-    if (lens_mask > 0.001) {
-        let sample_uv = uv + vec2<f32>(frost_offset);
-        color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
-        let frostTint = mix(vec3<f32>(1.0), glassColor, 0.7);
-        color = vec4<f32>(mix(color.rgb, frostTint, 0.2 * frost_amt * lens_mask), transmission);
-    } else {
-        color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-        color = vec4<f32>(color.rgb * glassColor, baseTransmission);
-    }
-
-    // Chromatic aberration at lens edge
-    let ab_mask = smoothstep(lens_radius, lens_radius + edge_softness * 0.5, dist) *
-                  (1.0 - smoothstep(lens_radius + edge_softness * 0.5, lens_radius + edge_softness, dist));
-    let aberration = frost_amt * 0.02 * ab_mask;
-    let uv_r = uv + vec2<f32>(frost_offset) + vec2<f32>(aberration, 0.0);
-    let uv_g = uv + vec2<f32>(frost_offset);
-    let uv_b = uv + vec2<f32>(frost_offset) - vec2<f32>(aberration, 0.0);
-    let col_r = textureSampleLevel(readTexture, u_sampler, uv_r, 0.0).r;
-    let col_g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
-    let col_b = textureSampleLevel(readTexture, u_sampler, uv_b, 0.0).b;
-    color = vec4<f32>(col_r, col_g, col_b, transmission);
-
-    // Apply iridescence on top, stronger at edges
-    let edgeIridescence = fresnel * lens_mask * (0.5 + frost_amt * 0.5);
-    color = vec4<f32>(mix(color.rgb, iridescent, edgeIridescence * 0.6), color.a);
-
-    // Frost tint
-    let frostTint = vec3<f32>(0.9, 0.95, 1.0);
-    color = vec4<f32>(mix(color.rgb, color.rgb * frostTint, 0.3 * frost_amt * lens_mask), color.a);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(iridescent, thickness / 1000.0));
+    let cosTheta = sqrt(max(1.0 - viewDist * viewDist * 0.5, 0.02));
+    
+    let filmThicknessBase = 220.0 + frostAmt * 450.0 + lensMask * 200.0;
+    let filmNoise = hash12(uv * 14.0 + time * 0.08) * 0.6 + hash12(uv * 28.0 - time * 0.12) * 0.4;
+    let thickness = filmThicknessBase * (0.65 + depth * 0.5 + filmNoise * 0.35 + holdEffect * 0.3 + bass * 0.2);
+    
+    let iridescent = thinFilmColor(thickness, cosTheta, filmIOR);
+    let R0 = 0.04;
+    let fresnel = R0 + (1.0 - R0) * pow(1.0 - cosTheta, 4.0);
+    let edgeIridescence = fresnel * (0.4 + frostAmt * 0.5 + lensMask * 0.4);
+    
+    // Composite glass layers
+    var finalColor = scatteredColor * absorption * glassTint;
+    finalColor = mix(finalColor, iridescent, edgeIridescence * 0.65);
+    
+    // Lens bevel specular highlight
+    let bevelMask = smoothstep(lensRadius - 0.02, lensRadius, dist) * (1.0 - smoothstep(lensRadius, lensRadius + edgeSoftness, dist));
+    let specLight = normalize(vec3<f32>(0.5, 0.8, -0.6));
+    let normalBevel = normalize(vec3<f32>(distVec * 15.0, 1.0));
+    let spec = pow(max(dot(normalBevel, specLight), 0.0), 40.0) * bevelMask * (1.0 + treble);
+    finalColor = finalColor + vec3<f32>(spec * 0.8);
+    
+    // Exact temporal feedback from dataTextureC
+    let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+    finalColor = mix(finalColor, prev, 0.1 + mids * 0.08);
+    
+    let tonemapped = acesToneMap(finalColor * (1.0 + treble * 0.1));
+    let alpha = clamp(transmission * 0.6 + edgeIridescence * 0.3 + bevelMask * 0.3 + holdEffect * 0.15, 0.2, 0.98);
+    let outputRGBA = vec4<f32>(tonemapped, alpha);
+    
+    textureStore(writeTexture, pixel, outputRGBA);
+    textureStore(dataTextureA, pixel, outputRGBA);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

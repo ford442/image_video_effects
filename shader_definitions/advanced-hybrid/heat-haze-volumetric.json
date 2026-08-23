@@ -2,7 +2,7 @@
   "id": "heat-haze-volumetric",
   "name": "Heat Haze Volumetric",
   "url": "shaders/heat-haze-volumetric.wgsl",
-  "description": "Catalog entry for Heat Haze Volumetric.",
+  "description": "Persistent buoyant heat and column density drive layered turbulent refraction, HDR glow, and interactive thermal shock fronts.",
   "tags": [
     "heat-diffusion",
     "volumetric-fog",
@@ -53,5 +53,13 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Heat Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Refraction Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Column Depth", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Turbulence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = horizontal and vertical velocity, heat, refractive column density",
+  "updated": true,
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

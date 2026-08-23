@@ -109,6 +109,42 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Blue Scatter",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Light Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "HDR Bloom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = aerogel density, scatter energy, horizontal and vertical velocity",
+    "updated": true,
     "target_rating": 4.8
   },
   {
@@ -246,20 +282,26 @@
     "id": "anamorphic-flare-iridescence",
     "name": "Anamorphic Flare Iridescence",
     "url": "shaders/anamorphic-flare-iridescence.wgsl",
-    "description": "Anamorphic Flare Iridescence",
+    "description": "Cinematic anamorphic lens flare combined with physical thin-film interference. Flare streaks, hexagonal ghosts, starburst rays, and halo rings carry angle-dependent iridescent soap-bubble reflections modulated by audio dynamics.",
     "tags": [
       "lens-flare",
       "thin-film-interference",
       "spectral-render",
       "mouse-driven",
-      "HDR"
+      "anamorphic",
+      "iridescence",
+      "advanced-hybrid"
     ],
     "features": [
+      "advanced-hybrid",
       "lens-flare",
       "thin-film-interference",
       "spectral-render",
       "mouse-driven",
-      "HDR"
+      "audio-reactive",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -299,7 +341,43 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flare Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Streak Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Film Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Film IOR",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA with anamorphic streaks, ghost elements, and thin-film sheen history",
+    "updated": true,
+    "target_rating": 4.8
   },
   {
     "id": "anisotropic-kuwahara-nlm",
@@ -584,6 +662,42 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fog Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fog Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Depth Weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = fog density, horizontal and vertical drift, moisture",
+    "updated": true,
     "target_rating": 4.7
   },
   {
@@ -1821,18 +1935,26 @@
     "id": "chroma-lens-iridescence",
     "name": "Chroma Lens Iridescence",
     "url": "shaders/chroma-lens-iridescence.wgsl",
-    "description": "Chroma Lens Iridescence",
+    "description": "Chromatic lens magnification fused with physical thin-film optical iridescence. The lens body exhibits true wavelength-dependent interference, radial chromatic aberration, and Fresnel bevel reflections driven by pointer spring dynamics and audio.",
     "tags": [
       "chroma-lens",
       "thin-film-interference",
       "depth-aware",
-      "mouse-driven"
+      "mouse-driven",
+      "lens",
+      "spectral",
+      "advanced-hybrid"
     ],
     "features": [
+      "advanced-hybrid",
       "chroma-lens",
       "thin-film-interference",
       "depth-aware",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -1872,7 +1994,43 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Magnification",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Chromatic Dispersion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Lens Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence / Rim Blur",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA with chromatic lens magnification and iridescent sheen history",
+    "updated": true,
+    "target_rating": 4.8
   },
   {
     "id": "chroma-threads-gabor",
@@ -3939,18 +4097,25 @@
     "id": "dynamic-lens-flares-prismatic",
     "name": "Dynamic Lens Flares Prismatic",
     "url": "shaders/dynamic-lens-flares-prismatic.wgsl",
-    "description": "Dynamic Lens Flares Prismatic",
+    "description": "Cinematic optical lens flares with physical prismatic dispersion. Ghost elements refract through virtual glass lens surfaces using Cauchy's equation, creating distinct chromatic splitting along the optical axis with starburst diffraction and ring halos.",
     "tags": [
       "lens-flares",
       "prismatic-dispersion",
       "spectral-rendering",
-      "mouse-driven"
+      "mouse-driven",
+      "optical",
+      "advanced-hybrid"
     ],
     "features": [
+      "advanced-hybrid",
       "lens-flares",
       "prismatic-dispersion",
       "spectral-rendering",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -3990,7 +4155,43 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flare Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Threshold / Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Dispersion / Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ghost Count / Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA with dispersed ghost elements and optical flare persistence",
+    "updated": true,
+    "target_rating": 4.8
   },
   {
     "id": "edge-glow-mouse-em",
@@ -4478,7 +4679,7 @@
     "id": "fire-smoke-volumetric-fog",
     "name": "Fire Smoke Volumetric Fog",
     "url": "shaders/fire-smoke-volumetric-fog.wgsl",
-    "description": "Fire Smoke Volumetric Fog",
+    "description": "Coupled flame heat, smoke density, soot, and buoyant momentum feed a layered blackbody fire-and-fog volume.",
     "tags": [
       "fire",
       "smoke",
@@ -4533,6 +4734,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flame Heat",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Smoke Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Fog Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = smoke density, temperature, soot, lateral momentum",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -4914,18 +5151,26 @@
     "id": "frosted-glass-lens-iridescence",
     "name": "Frosted Glass Lens Iridescence",
     "url": "shaders/frosted-glass-lens-iridescence.wgsl",
-    "description": "Frosted Glass Lens Iridescence",
+    "description": "Physical frosted glass transmission with thin-film optical iridescence on the glass surface. Multi-tap microfacet scattering and Beer-Lambert absorption blend with soap-bubble Fresnel interference and an interactive chromatic magnifying lens.",
     "tags": [
       "frosted-glass",
       "thin-film-interference",
       "depth-aware",
-      "mouse-driven"
+      "mouse-driven",
+      "lens",
+      "refraction",
+      "advanced-hybrid"
     ],
     "features": [
+      "advanced-hybrid",
       "frosted-glass",
       "thin-film-interference",
       "depth-aware",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -4965,7 +5210,43 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Frost Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Lens Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Film IOR / Iridescence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA with frosted transmission and thin-film iridescent coating",
+    "updated": true,
+    "target_rating": 4.8
   },
   {
     "id": "gamma-ray-burst-blackbody",
@@ -5746,7 +6027,16 @@
     "id": "glass-refraction-prismatic",
     "name": "Glass Refraction Prismatic",
     "url": "shaders/glass-refraction-prismatic.wgsl",
-    "description": "Raymarched glass blobs with 4-band spectral dispersion using Cauchy's equation and CIE color matching. Each wavelength refracts at a different angle through animated SDF glass surfaces.",
+    "description": "Raymarched optical glass prism with 4-band Cauchy spectral dispersion. Physical Snell refraction rays split wavelengths internally with Fresnel dielectric reflections and Beer-Lambert spectral absorption.",
+    "tags": [
+      "glass",
+      "refraction",
+      "spectral",
+      "prismatic",
+      "physical",
+      "chromatic",
+      "advanced-hybrid"
+    ],
     "features": [
       "advanced-hybrid",
       "raymarched",
@@ -5754,7 +6044,10 @@
       "physical-refraction",
       "mouse-driven",
       "depth-aware",
-      "randomization-safe"
+      "audio-reactive",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -5798,22 +6091,43 @@
         "description": "Surface roughness affecting specular highlights"
       }
     ],
-    "chunks_used": [
-      "sdSphere, smoothUnion, map, calcNormal (glass_refraction_alpha.wgsl)",
-      "fresnel, refractRay (glass_refraction_alpha.wgsl)",
-      "cauchyIOR, wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Transparency",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Cauchy B Coefficient",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Thickness Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Surface Roughness",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-    "created_date": "2026-04-18",
-    "tags": [
-      "glass",
-      "refraction",
-      "spectral",
-      "prismatic",
-      "physical",
-      "chromatic"
-    ]
+    "feedbackPacking": "A/C = display RGBA with spectrally refracted raymarched prism transmission",
+    "updated": true,
+    "target_rating": 4.8
   },
   {
     "id": "glass-shatter-morph",
@@ -5877,7 +6191,7 @@
     "id": "glass-wall-prismatic",
     "name": "Glass Wall Prismatic",
     "url": "shaders/glass-wall-prismatic.wgsl",
-    "description": "A grid of glass tiles where each tile acts as a prismatic lens with 4-band spectral dispersion via Cauchy's equation. Mouse interaction tilts tiles, refracting light into rainbow spectra.",
+    "description": "A grid of glass tiles where each tile acts as a prismatic lens with 4-band spectral dispersion via Cauchy's equation. Mouse interaction tilts tiles with spring physics, refracting light into rainbow spectra with mortar grooves and Fresnel highlights.",
     "tags": [
       "glass",
       "prismatic",
@@ -5885,13 +6199,18 @@
       "dispersion",
       "refraction",
       "chromatic",
-      "mouse-driven"
+      "mouse-driven",
+      "advanced-hybrid"
     ],
     "features": [
+      "advanced-hybrid",
       "mouse-driven",
       "spectral-rendering",
       "physical-dispersion",
-      "HDR"
+      "audio-reactive",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -5927,6 +6246,42 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA with tilted tile prismatic refraction and Fresnel highlights",
+    "updated": true,
     "target_rating": 4.8
   },
   {
@@ -6230,7 +6585,7 @@
     "id": "heat-haze-volumetric",
     "name": "Heat Haze Volumetric",
     "url": "shaders/heat-haze-volumetric.wgsl",
-    "description": "Catalog entry for Heat Haze Volumetric.",
+    "description": "Persistent buoyant heat and column density drive layered turbulent refraction, HDR glow, and interactive thermal shock fronts.",
     "tags": [
       "heat-diffusion",
       "volumetric-fog",
@@ -6281,13 +6636,58 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Heat Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Refraction Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Column Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = horizontal and vertical velocity, heat, refractive column density",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "holographic-failure-iridescence",
     "name": "Holographic Failure Iridescence",
     "url": "shaders/holographic-failure-iridescence.wgsl",
-    "description": "Simulated hologram projection failure merged with thin-film interference iridescence. Flickering artifacts and block noise overlay soap-bubble spectral colors driven by depth, viewing angle, and time.",
+    "description": "Simulated hologram projection failure merged with physical thin-film interference iridescence. Glitching phase carriers, block tearing, and laser flicker overlay soap-bubble spectral colors driven by depth, viewing angle, and audio dynamics.",
+    "tags": [
+      "hologram",
+      "iridescence",
+      "glitch",
+      "thin-film",
+      "spectral",
+      "failure",
+      "advanced-hybrid"
+    ],
     "features": [
       "advanced-hybrid",
       "holographic",
@@ -6295,7 +6695,10 @@
       "glitch",
       "depth-aware",
       "mouse-driven",
-      "randomization-safe"
+      "audio-reactive",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -6339,34 +6742,69 @@
         "description": "Film thickness noise variation"
       }
     ],
-    "chunks_used": [
-      "Flicker, block artifacts, holographic color (holographic-projection-failure.wgsl)",
-      "Thin-film interference, spectral sampling (spec-iridescence-engine.wgsl)"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Failure Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Holographic Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Film IOR",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
-    "performance_target": "40 FPS (GTX 1060)",
-    "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
-    "created_date": "2026-04-18",
-    "tags": [
-      "hologram",
-      "iridescence",
-      "glitch",
-      "thin-film",
-      "spectral",
-      "failure"
-    ]
+    "feedbackPacking": "A/C = display RGBA with failing holographic carrier and iridescent interference history",
+    "updated": true,
+    "target_rating": 4.8
   },
   {
     "id": "holographic-interferometry-bilateral",
     "name": "Holographic Interferometry Bilateral",
     "url": "shaders/holographic-interferometry-bilateral.wgsl",
-    "description": "Simulated hologram with interference fringes and edge-preserving bilateral smoothing. Speckle noise is softly reduced while sharp interference fringe edges remain crisp.",
+    "description": "Simulated optical hologram with interference fringes and edge-preserving bilateral filtering. Laser speckle noise is smoothly filtered in uniform zones while sharp interference fringe edges remain crisp.",
+    "tags": [
+      "hologram",
+      "interference",
+      "bilateral",
+      "speckle",
+      "rainbow",
+      "spectral",
+      "advanced-hybrid"
+    ],
     "features": [
       "advanced-hybrid",
       "holography",
       "bilateral-filter",
       "interference-patterns",
       "speckle-reduction",
-      "randomization-safe"
+      "audio-reactive",
+      "mouse-driven",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -6410,69 +6848,68 @@
         "description": "Saturation of holographic colors"
       }
     ],
-    "advanced_params": [
+    "updatedParams": [
       {
-        "id": "bilateral_spatial",
-        "name": "Bilateral Spatial",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.x",
-        "description": "Spatial sigma of bilateral filter"
-      },
-      {
-        "id": "bilateral_color",
-        "name": "Bilateral Color",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.y",
-        "description": "Color sigma of bilateral filter"
-      },
-      {
-        "id": "bilateral_blend",
-        "name": "Bilateral Blend",
+        "index": 0,
+        "name": "Fringe Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.z",
-        "description": "Blend between original hologram and smoothed result"
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Coherence Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reconstruction Angle",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
-    "chunks_used": [
-      "hash12 (holographic-interferometry.wgsl)",
-      "speckleNoise (holographic-interferometry.wgsl)",
-      "interferencePattern (holographic-interferometry.wgsl)",
-      "reconstructHologram (holographic-interferometry.wgsl)",
-      "bilateral filter (conv-bilateral-dream.wgsl)"
-    ],
-    "performance_target": "30-40 FPS (GTX 1060)",
-    "created_by": "Agent CB-3 — Convolution Post-Processor",
-    "created_date": "2026-04-18",
-    "tags": [
-      "hologram",
-      "interference",
-      "bilateral",
-      "speckle",
-      "rainbow"
-    ]
+    "feedbackPacking": "A/C = display RGBA with bilaterally filtered holographic reconstruction and fringe edge confidence",
+    "updated": true,
+    "target_rating": 4.8
   },
   {
     "id": "holographic-interferometry",
     "name": "Holographic Interferometry",
     "url": "shaders/holographic-interferometry.wgsl",
-    "description": "Simulated hologram with interference fringe patterns. Rainbow interference fringes with speckled laser light.",
+    "description": "Simulated optical hologram with interference fringe patterns. Reference and object laser wavefronts interfere across depth and luma fields, creating iridescent diffraction fringes with laser speckle coherence and parallax depth reconstruction.",
+    "tags": [
+      "hologram",
+      "interference",
+      "laser",
+      "speckle",
+      "diffraction",
+      "spectral",
+      "advanced-hybrid"
+    ],
     "features": [
       "advanced-hybrid",
       "interference-patterns",
       "holography",
       "phase-coloring",
-      "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "mouse-driven",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -6516,25 +6953,49 @@
         "description": "Saturation of holographic colors"
       }
     ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "Interference pattern math",
-      "Speckle noise generation"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fringe Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Coherence Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reconstruction Angle",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
-    "tags": [
-      "audio",
-      "music",
-      "reactive"
-    ]
+    "feedbackPacking": "A/C = display RGBA with reconstructed holographic color and fringe confidence",
+    "updated": true,
+    "target_rating": 4.8
   },
   {
     "id": "honey-melt-blackbody",
     "name": "Honey Melt Blackbody",
     "url": "shaders/honey-melt-blackbody.wgsl",
-    "description": "Catalog entry for Honey Melt Blackbody.",
+    "description": "High-viscosity honey carries thickness and heat through a melting hex-cell field with Beer-Lambert absorption and blackbody glow.",
     "tags": [
       "hex-grid",
       "blackbody-radiation",
@@ -6585,6 +7046,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cell Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Melt Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Flow Pull",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Surface Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = velocity.xy, honey thickness, normalized temperature",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -6854,6 +7351,42 @@
         "description": "Speed of fluid advection"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tensor Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Advection Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = velocity.xy, tensor anisotropy, transported dye",
+    "updated": true,
     "chunks_used": [
       "hash12 (gen_grid.wgsl)",
       "fbm2 (gen_grid.wgsl)",
@@ -7174,7 +7707,7 @@
     "id": "interactive-magnetic-ripple-em",
     "name": "Interactive Magnetic Ripple Em",
     "url": "shaders/interactive-magnetic-ripple-em.wgsl",
-    "description": "Interactive Magnetic Ripple Em",
+    "description": "A damped Maxwell-like electric and magnetic field solver with held dipoles, traveling click waves, spectral emission, and iron-filings contours.",
     "tags": [
       "mouse-driven",
       "field-simulation",
@@ -7225,6 +7758,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Field Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Magnetic Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Spectral Gain",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = electric field xy, magnetic scalar, field energy",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -7865,7 +8434,7 @@
     "id": "liquid-smear-structure",
     "name": "Liquid Smear Structure",
     "url": "shaders/liquid-smear-structure.wgsl",
-    "description": "Liquid Smear Structure",
+    "description": "Structure-tensor streamlines advect a persistent psychedelic paint layer, with edge-aware LIC, held-pointer stirring, and traveling click fronts.",
     "tags": [
       "liquid-smear",
       "structure-tensor",
@@ -7918,13 +8487,49 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Smear Memory",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Streamline Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Tensor Coherence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Brush Force",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = linear display RGBA history; exact bounded history loads",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "melting-oil-blackbody",
     "name": "Melting Oil Blackbody",
     "url": "shaders/melting-oil-blackbody.wgsl",
-    "description": "Melting Oil Blackbody",
+    "description": "Thermal-gradient oil transports velocity, temperature, and molten coverage through blackbody-hot pointer and click-driven flow.",
     "tags": [
       "melting-oil",
       "blackbody-radiation",
@@ -7975,6 +8580,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Temperature Range",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Thermal Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ember Bloom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = velocity.xy, normalized temperature, molten coverage",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -8557,7 +9198,7 @@
     "id": "photonic-caustics-iridescence",
     "name": "Photonic Caustics Iridescence",
     "url": "shaders/photonic-caustics-iridescence.wgsl",
-    "description": "Backward photon-traced caustics combined with thin-film interference iridescence. Caustic intensity modulates film thickness, creating soap-bubble colors on light concentrations. Features chromatic dispersion, Fresnel reflections, and temporal accumulation.",
+    "description": "Backward photon-traced caustics combined with thin-film optical iridescence. High-energy caustic focal concentrations illuminate an iridescent surface layer with chromatic dispersion, Fresnel reflections, and exact temporal feedback.",
     "tags": [
       "caustics",
       "iridescence",
@@ -8567,14 +9208,19 @@
       "refraction",
       "dispersion",
       "photon-tracing",
-      "temporal"
+      "temporal",
+      "advanced-hybrid"
     ],
     "features": [
+      "advanced-hybrid",
       "depth-aware",
       "temporal",
       "spectral-render",
       "mouse-driven",
-      "HDR"
+      "audio-reactive",
+      "exact-feedback",
+      "temporal-state",
+      "ACES-tonemapped"
     ],
     "params": [
       {
@@ -8609,7 +9255,44 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Index of Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Light Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA with accumulated photonic caustics and thin-film iridescent sheen",
+    "updated": true,
+    "target_rating": 4.8
   },
   {
     "id": "predator-prey-rgba",
@@ -9029,6 +9712,42 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Smoke Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Rise Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Thermal Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = smoke density, temperature, horizontal and vertical velocity",
+    "updated": true,
     "target_rating": 4.7
   },
   {
@@ -9683,7 +10402,7 @@
     "id": "steamy-glass-volumetric",
     "name": "Steamy Glass Volumetric",
     "url": "shaders/steamy-glass-volumetric.wgsl",
-    "description": "Steamy Glass Volumetric",
+    "description": "Layered steam extinction, droplet scattering, and vertical condensation flow with interactive clearing and chromatic refraction.",
     "tags": [
       "steamy-glass",
       "depth-fog",
@@ -9734,6 +10453,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Steam Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fog Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Droplet Scatter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = steam density, optical depth, droplets, vertical flow",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -10192,7 +10947,7 @@
     "id": "viscous-drag-bilateral",
     "name": "Viscous Drag Bilateral",
     "url": "shaders/viscous-drag-bilateral.wgsl",
-    "description": "Viscous Drag Bilateral",
+    "description": "A persistent gel displacement field drives a bounded edge-aware bilateral reconstruction with glossy spectral pointer and click wakes.",
     "tags": [
       "viscous-drag",
       "bilateral-filter",
@@ -10243,6 +10998,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Range Sigma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spectral Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Drag Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = displacement.xy, edge confidence, coating thickness",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {

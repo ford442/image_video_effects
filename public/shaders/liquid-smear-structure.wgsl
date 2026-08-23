@@ -1,16 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  liquid-smear-structure
-//  Category: advanced-hybrid
-//  Features: liquid-smear, structure-tensor, LIC, temporal, mouse-driven
-//  Complexity: Very High
-//  Chunks From: liquid-smear.wgsl, conv-structure-tensor-flow.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-14 — Liquid Effects Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Temporal liquid smear accumulates structure-tensor LIC flow.
-//  Mouse pulls pixels along eigenvector streamlines while decay
-//  creates painterly trails that follow image edges and texture.
-// ═══════════════════════════════════════════════════════════════════
+// Liquid Smear Structure — Codex (e) structure-tensor paint transport.
+// A/C packing: display RGBA history. B and extraBuffer are intentionally unused.
+// History is read only through bounded, exact textureLoad operations.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,188 +23,122 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
-fn hash12(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// ═══ CHUNK: palette (from conv-structure-tensor-flow.wgsl) ═══
-fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
-  return a + b * cos(6.28318 * (c * t + d));
+fn sourceAt(uv: vec2<f32>) -> vec4<f32> {
+  return textureSampleLevel(readTexture, u_sampler,
+    clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 }
 
-fn sampleLuma(uv: vec2<f32>, pixelSize: vec2<f32>, dx: i32, dy: i32) -> f32 {
-  let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-  return dot(textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+fn lumaAt(uv: vec2<f32>) -> f32 {
+  return dot(sourceAt(uv).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
-fn structureTensor(uv: vec2<f32>, pixelSize: vec2<f32>) -> vec4<f32> {
-  let gx = 
-    -1.0 * sampleLuma(uv, pixelSize, -1, -1) +
-    -2.0 * sampleLuma(uv, pixelSize, -1,  0) +
-    -1.0 * sampleLuma(uv, pixelSize, -1,  1) +
-     1.0 * sampleLuma(uv, pixelSize,  1, -1) +
-     2.0 * sampleLuma(uv, pixelSize,  1,  0) +
-     1.0 * sampleLuma(uv, pixelSize,  1,  1);
-
-  let gy = 
-    -1.0 * sampleLuma(uv, pixelSize, -1, -1) +
-    -2.0 * sampleLuma(uv, pixelSize,  0, -1) +
-    -1.0 * sampleLuma(uv, pixelSize,  1, -1) +
-     1.0 * sampleLuma(uv, pixelSize, -1,  1) +
-     2.0 * sampleLuma(uv, pixelSize,  0,  1) +
-     1.0 * sampleLuma(uv, pixelSize,  1,  1);
-
-  let Ix2 = gx * gx;
-  let Iy2 = gy * gy;
-  let Ixy = gx * gy;
-  return vec4<f32>(Ix2, Iy2, Ixy, 0.0);
+fn historyAt(uv: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+  let p = clamp(vec2<i32>(floor(uv * vec2<f32>(dims))),
+    vec2<i32>(0), dims - vec2<i32>(1));
+  return textureLoad(dataTextureC, p, 0);
 }
 
-fn smoothTensor(uv: vec2<f32>, pixelSize: vec2<f32>) -> vec4<f32> {
-  var sum = vec4<f32>(0.0);
-  for (var dy = -1; dy <= 1; dy++) {
-    for (var dx = -1; dx <= 1; dx++) {
-      let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-      sum += structureTensor(uv + offset, pixelSize);
-    }
-  }
-  return sum / 9.0;
-}
-
-fn lic(uv: vec2<f32>, direction: vec2<f32>, pixelSize: vec2<f32>, steps: i32, stepSize: f32) -> f32 {
-  var pos = uv;
-  var accum = 0.0;
-  var weight = 0.0;
-  for (var i = 0; i < steps; i++) {
-    let lum = dot(textureSampleLevel(readTexture, u_sampler, pos, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let w = 1.0 - f32(i) / f32(steps);
-    accum += lum * w;
-    weight += w;
-    pos += direction * stepSize * pixelSize;
-  }
-  pos = uv;
-  for (var i = 0; i < steps; i++) {
-    let lum = dot(textureSampleLevel(readTexture, u_sampler, pos, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let w = 1.0 - f32(i) / f32(steps);
-    accum += lum * w;
-    weight += w;
-    pos -= direction * stepSize * pixelSize;
-  }
-  return accum / max(weight, 0.001);
+fn palette(t: f32) -> vec3<f32> {
+  return 0.55 + 0.45 * cos(6.283185 *
+    (vec3<f32>(t) + vec3<f32>(0.00, 0.31, 0.67)));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
 
-  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
-  let pixelSize = 1.0 / resolution;
+  let coord = vec2<i32>(gid.xy);
+  let dims = vec2<i32>(res);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+  let texel = 1.0 / res;
+  let aspect = res.x / max(res.y, 1.0);
   let time = u.config.x;
-  let mousePos = u.zoom_config.yz;
-  let mouseDown = u.zoom_config.w;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  let smearDecay = mix(0.85, 0.99, u.zoom_params.x);
-  let licSteps = i32(mix(8.0, 32.0, u.zoom_params.y));
-  let coherencyBoost = mix(0.5, 4.0, u.zoom_params.z);
-  let mouseInfluence = u.zoom_params.w;
+  let memory = mix(0.76, 0.975, u.zoom_params.x);
+  let streamline = mix(1.0, 7.0, u.zoom_params.y);
+  let tensorGain = mix(0.45, 4.2, u.zoom_params.z);
+  let brushForce = mix(0.15, 1.5, u.zoom_params.w);
 
-  // === STRUCTURE TENSOR FLOW (from conv-structure-tensor-flow) ===
-  let tensor = smoothTensor(uv, pixelSize);
-  let Jxx = tensor.x;
-  let Jyy = tensor.y;
-  let Jxy = tensor.z;
+  let gx = lumaAt(uv + vec2<f32>(texel.x, 0.0)) -
+    lumaAt(uv - vec2<f32>(texel.x, 0.0));
+  let gy = lumaAt(uv + vec2<f32>(0.0, texel.y)) -
+    lumaAt(uv - vec2<f32>(0.0, texel.y));
+  let gradient = vec2<f32>(gx, gy);
+  let energy = dot(gradient, gradient);
+  let tangent = vec2<f32>(-gradient.y, gradient.x) / max(sqrt(energy), 0.0001);
+  let coherence = 1.0 - exp(-energy * 32.0 * tensorGain);
 
-  let trace = Jxx + Jyy;
-  let det = Jxx * Jyy - Jxy * Jxy;
-  let diff = sqrt(max((Jxx - Jyy) * (Jxx - Jyy) + 4.0 * Jxy * Jxy, 0.0));
-  let lambda1 = (trace + diff) * 0.5;
-  let lambda2 = (trace - diff) * 0.5;
+  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let conveyor = sin(dot(p, tangent * vec2<f32>(1.0 / aspect, 1.0)) * 42.0 -
+    time * (2.4 + audio.y * 4.0));
+  var flow = tangent * texel * streamline *
+    (0.45 + coherence * 1.6 + conveyor * 0.22);
+  flow += vec2<f32>(-tangent.y, tangent.x) * texel *
+    sin(time * 1.7 + energy * 70.0) * audio.z * 1.8;
 
-  var eigenvec = vec2<f32>(1.0, 0.0);
-  if (abs(Jxy) > 0.0001 || abs(Jxx - lambda1) > 0.0001) {
-    eigenvec = normalize(vec2<f32>(lambda1 - Jyy, Jxy));
-  }
+  let mouseP = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseDelta = p - mouseP;
+  let mouseDist = max(length(mouseDelta), 0.0001);
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
+  let brush = exp(-mouseDist * mouseDist * 46.0) * held;
+  flow += vec2<f32>(-mouseDelta.y / aspect, mouseDelta.x) / mouseDist *
+    brush * 0.018 * brushForce;
+  flow -= vec2<f32>(mouseDelta.x / aspect, mouseDelta.y) / mouseDist *
+    brush * 0.006 * brushForce;
 
-  let coherency = select(0.0, (lambda1 - lambda2) / (lambda1 + lambda2 + 0.0001), lambda1 + lambda2 > 0.0001);
-  let boostedCoherency = pow(coherency, 1.0 / coherencyBoost);
-
-  // Mouse vortex disturbance
-  let mouseDist = length(uv - mousePos);
-  let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * mouseInfluence;
-  let mouseAngle = atan2(uv.y - mousePos.y, uv.x - mousePos.x);
-  let vortex = vec2<f32>(-sin(mouseAngle), cos(mouseAngle)) * mouseFactor;
-  eigenvec = normalize(mix(eigenvec, vortex, mouseFactor));
-
-  // Ripple turbulence
-  var rippleTurb = vec2<f32>(0.0);
-  let rippleCount = u32(u.config.y);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let ripple = u.ripples[i];
-    let rPos = ripple.xy;
-    let rStart = ripple.z;
-    let rElapsed = time - rStart;
-    if (rElapsed > 0.0 && rElapsed < 3.0) {
-      let rDist = length(uv - rPos);
-      let wave = exp(-pow((rDist - rElapsed * 0.3) * 8.0, 2.0));
-      let turbAngle = atan2(uv.y - rPos.y, uv.x - rPos.x) + rElapsed * 3.0;
-      rippleTurb += vec2<f32>(cos(turbAngle), sin(turbAngle)) * wave * (1.0 - rElapsed / 3.0);
+  var clickLight = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = time - event.z;
+    if (age >= 0.0 && age < 3.0) {
+      let q = (uv - event.xy) * vec2<f32>(aspect, 1.0);
+      let d = max(length(q), 0.0001);
+      let front = sin((d - age * 0.34) * 64.0) *
+        exp(-abs(d - age * 0.34) * 22.0 - age * 0.8);
+      flow += vec2<f32>(q.x / aspect, q.y) / d * front * 0.012 * brushForce;
+      clickLight += abs(front);
     }
   }
-  eigenvec = normalize(eigenvec + rippleTurb * 2.0);
 
-  let rotAngle = time * 0.2;
-  let cosR = cos(rotAngle);
-  let sinR = sin(rotAngle);
-  let animatedDir = vec2<f32>(
-    eigenvec.x * cosR - eigenvec.y * sinR,
-    eigenvec.x * sinR + eigenvec.y * cosR
-  );
+  flow = clamp(flow, vec2<f32>(-0.065), vec2<f32>(0.065));
+  let advectedUV = clamp(uv - flow, vec2<f32>(0.0), vec2<f32>(1.0));
+  let history = historyAt(advectedUV, dims);
 
-  let licValue = lic(uv, animatedDir, pixelSize, licSteps, 1.5);
-
-  // === LIQUID SMEAR (from liquid-smear) ===
-  let aspect = resolution.x / resolution.y;
-  let brushSize = 0.05 + mouseInfluence * 0.2;
-  let smearStrength = 0.1 + mouseInfluence * 0.9;
-
-  let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
-  var offset = vec2<f32>(0.0);
-  if (dist < brushSize && dist > 0.001) {
-    var dir = normalize(mousePos - uv);
-    offset = dir * smearStrength * (1.0 - smoothstep(0.0, brushSize, dist)) * 0.05;
+  var lic = vec3<f32>(0.0);
+  var weight = 0.0;
+  for (var j = -3; j <= 3; j = j + 1) {
+    let fj = f32(j);
+    let w = 1.0 - abs(fj) * 0.18;
+    lic += sourceAt(uv + tangent * texel * fj * streamline).rgb * w;
+    weight += w;
   }
+  lic /= max(weight, 0.001);
 
-  // Sample previous smeared LIC frame
-  var history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let angle = atan2(tangent.y, tangent.x) * 0.15915494 + 0.5;
+  let spectral = palette(angle + time * 0.025 + audio.y * 0.1);
+  var fresh = mix(lic, spectral * (0.35 + lumaAt(uv)),
+    clamp(coherence * 0.62 + audio.x * 0.12, 0.0, 0.82));
+  fresh += spectral * (clickLight * 0.12 + brush * 0.18 + audio.z * 0.05);
+  let historyMix = memory * (1.0 - clickLight * 0.12);
+  let rgbLinear = mix(fresh, clamp(history.rgb, vec3<f32>(0.0), vec3<f32>(3.0)), historyMix);
+  let sourceAlpha = sourceAt(advectedUV).a;
+  let alpha = clamp(mix(sourceAlpha, history.a, memory * 0.72) +
+    coherence * 0.08 + brush * 0.12, 0.0, 1.0);
+  let packed = vec4<f32>(rgbLinear, alpha);
 
-  // Current LIC color
-  let flowAngle = atan2(eigenvec.y, eigenvec.x) * 0.15915 + 0.5;
-  let color = palette(flowAngle, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
-  let currentLIC = color * (0.3 + 0.7 * boostedCoherency) * (0.5 + 0.5 * licValue);
-
-  // Sample history at offset for smear
-  var smeared = textureSampleLevel(dataTextureC, u_sampler, uv - offset, 0.0);
-  if (history.a == 0.0) {
-    smeared = vec4<f32>(currentLIC, 1.0);
-  }
-
-  // Blend current LIC with smeared history
-  let blend = mix(vec4<f32>(currentLIC, 1.0), smeared, smearDecay);
-  textureStore(dataTextureA, global_id.xy, blend);
-
-  // Smear tint
-  let smearTint = vec3<f32>(0.02, 0.01, 0.0) * smearStrength;
-  let finalColor = blend.rgb + smearTint;
-
-  // Alpha
-  let alpha = clamp(0.5 + length(offset) * 10.0 + blend.a * 0.3, 0.0, 1.0);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, packed);
+  textureStore(writeTexture, coord, vec4<f32>(aces(rgbLinear), alpha));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler,
+    advectedUV, 0.0).r;
+  textureStore(writeDepthTexture, coord,
+    vec4<f32>(clamp(depth - coherence * 0.012 - brush * 0.018, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

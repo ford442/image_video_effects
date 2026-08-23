@@ -1,6 +1,89 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Codex liquid complexity batch)
+**Last updated:** 2026-08-23 (Codex (g) wave / smoke / ink / volumetric batch complete)
+
+## 2026-08-23 — Codex (g) wave / smoke / ink / volumetric batch complete
+
+- Upgraded all ten requested effects with distinct stateful solvers: wave tank,
+  condensation glass, volumetric steam, subtractive wet ink, thermal smoke,
+  fire/soot fog, HDR aerogel scatter, heat haze, atmospheric fog, and magnetic
+  EM ripples.
+- All ten use the exact renderer 13-binding ABI, explicit 16×16×1 dispatch,
+  bounded exact C loads, A-only feedback writes, `plasmaBuffer[0].xyz`, held
+  pointer and capped age-guarded `u.ripples`, semantic alpha, and ACES. No
+  shader-owned `extraBuffer` state was needed.
+- Original saved `params` are exact 10/10. Updated metadata, category lists,
+  the 1,333-entry unified manifest, and coordinator notes are present. Actual
+  Naga is 10/10; strict buffer/dead-slider audits, URL/uniform/type gates, all
+  81 Jest suites (545 pass, 1 skip), and the production build pass. Real-GPU
+  visual and performance tuning remains the handoff.
+
+## 2026-08-23 — Gemini batch — optical / glass / holographic / lens set (10) complete
+
+- Completed all 10 advanced-hybrid optical, glass, holographic, and lens shaders to the full Gemini-style contract:
+  1. `holographic-interferometry.wgsl`
+  2. `holographic-interferometry-bilateral.wgsl`
+  3. `holographic-failure-iridescence.wgsl`
+  4. `frosted-glass-lens-iridescence.wgsl`
+  5. `glass-refraction-prismatic.wgsl`
+  6. `glass-wall-prismatic.wgsl`
+  7. `anamorphic-flare-iridescence.wgsl`
+  8. `dynamic-lens-flares-prismatic.wgsl`
+  9. `photonic-caustics-iridescence.wgsl`
+  10. `chroma-lens-iridescence.wgsl`
+- Architectural rigor:
+  - Canonical 13-binding WGSL compute header `@workgroup_size(16, 16, 1)` with out-of-bounds guards.
+  - ACES tone mapping on output RGB.
+  - Semantic alpha (transmission, depth, fringe confidence, or specular glow).
+  - A-only writeback to `dataTextureA` and `writeTexture`; B remains untouched.
+  - Exact `textureLoad(dataTextureC, pixel, 0)` previous frame feedback without filtering.
+  - Three-band audio from `plasmaBuffer[0].x` (bass), `.y` (mids), `.z` (treble).
+  - Single-writer spring-damper dynamics in `extraBuffer[133..138]`.
+  - Capped click-ripple shockwave interaction with age guards `time - r.z`.
+  - Naga-clean WGSL (removed undefined `saturate`, fixed audio indexing bugs, removed unneeded barriers).
+- Definitions & manifest:
+  - Saved parameters preserved byte-exact in all 10 JSON definition files in `shader_definitions/advanced-hybrid/`.
+  - Added aligned `updatedParams`, features, tags, and feedback packing.
+  - Regenerated multipass registry, category shader lists, and unified manifest (`1326` shaders cataloged with relative paths).
+- Validation:
+  - WGSL precommit gate 10/10 passed.
+  - `typecheck`, `verify:uniforms`, `audit:extrabuffer` (0 new violations), `audit:dead-sliders` (0 new dead sliders), and `verify:shader-list-urls` all green.
+  - Jest test suite: 81/81 passed (545 passed, 1 skipped).
+  - Production build: compiled successfully.
+
+
+- Current scope is ten effects: Wave Equation, Steamy Glass, Volumetric Steamy
+  Glass, RGBA Ink Diffusion, Thermal Smoke Trails, Fire/Smoke Volumetric Fog,
+  Aerogel Smoke HDR, Heat-Haze Volumetric, Atmospheric Volumetric Fog, and
+  Interactive Magnetic Ripple EM. Apply the same strict contract as Codex (e):
+  full bindings, ACES, semantic alpha, A-only feedback, bounded exact C loads,
+  bass/mid/treble audio, optional state only at `extraBuffer[133..138]`, full
+  pointer/held/click interaction, and actual Naga validation.
+
+## 2026-08-23 — Codex (e) ferro / melt / tensor / fluid-sim batch requested
+
+- Upgrade ten named effects: Liquid Jelly Fluid, Liquid Metal Prismatic,
+  Liquid Oil Iridescence, Liquid Smear Structure, Melting Oil Blackbody, Honey
+  Melt Blackbody, Viscous Drag Bilateral, Hyper Tensor Fluid, Coupled Fluid
+  Feedback, and Ripple Tank. Enforce the full 13-binding contract, ACES,
+  semantic alpha, A-only writeback, exact C loads, all three plasma audio bands,
+  bounded persistent state only at `extraBuffer[133..138]`, preserved
+  mouse/held/click-ripple response, and actual Naga validation.
+
+## 2026-08-23 — Codex (e) ferro / melt / tensor / fluid-sim batch complete
+
+- Closed all ten targets with thirteen Naga-clean WGSL modules. Legacy smear,
+  thermal oil, honey, bilateral drag, tensor fluid, coupled fluid, and Ripple
+  Tank code now uses distinct A/C state, exact bounded C loads, A-only writes,
+  all-band audio, ACES, semantic alpha, and full interaction. The three already
+  premium Batch 59 liquid shaders were contract-refined and revalidated.
+- Ripple Tank retains seven graph passes while replacing its B handoff and
+  broad scratch grid with A→C barriers and per-pixel capillary/foam state.
+  Saved params remain exact; strict buffer/dead-control audits, catalogs,
+  uniforms, TypeScript, 81 Jest suites, and production build are green. Real-GPU
+  QA remains external.
+- Nine unrelated optical/holographic shader edits appeared concurrently during
+  this batch and were preserved untouched; do not attribute them to Codex (e).
 
 ## 2026-08-23 — Codex Liquid Shader Complexity Batch requested
 

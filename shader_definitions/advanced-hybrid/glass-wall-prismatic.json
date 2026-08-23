@@ -2,7 +2,7 @@
   "id": "glass-wall-prismatic",
   "name": "Glass Wall Prismatic",
   "url": "shaders/glass-wall-prismatic.wgsl",
-  "description": "A grid of glass tiles where each tile acts as a prismatic lens with 4-band spectral dispersion via Cauchy's equation. Mouse interaction tilts tiles, refracting light into rainbow spectra.",
+  "description": "A grid of glass tiles where each tile acts as a prismatic lens with 4-band spectral dispersion via Cauchy's equation. Mouse interaction tilts tiles with spring physics, refracting light into rainbow spectra with mortar grooves and Fresnel highlights.",
   "tags": [
     "glass",
     "prismatic",
@@ -10,13 +10,18 @@
     "dispersion",
     "refraction",
     "chromatic",
-    "mouse-driven"
+    "mouse-driven",
+    "advanced-hybrid"
   ],
   "features": [
+    "advanced-hybrid",
     "mouse-driven",
     "spectral-rendering",
     "physical-dispersion",
-    "HDR"
+    "audio-reactive",
+    "exact-feedback",
+    "temporal-state",
+    "ACES-tonemapped"
   ],
   "params": [
     {
@@ -52,5 +57,13 @@
       "step": 0.01
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Grid Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Curvature", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Dispersion", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Thickness", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = display RGBA with tilted tile prismatic refraction and Fresnel highlights",
+  "updated": true,
   "target_rating": 4.8
 }

@@ -20,6 +20,22 @@ _Learn about the person you're helping. Update this as you go._
   duplicate-declaration repair are verified by actual Naga plus strict contract,
   catalog, type, Jest, and production-build gates. Real-GPU visual QA remains the
   explicit handoff.
+- **Current shader batch (2026-08-23):** Codex (e) is a ten-effect ferro / melt /
+  tensor / fluid-simulation cohort. The user explicitly requires the canonical
+  13 bindings, ACES, semantic alpha, A-only writes, exact C loads, three-band
+  audio, state confined to `extraBuffer[133..138]`, preserved pointer/held/click
+  ripple interaction, and Naga-clean WGSL.
+- **Latest shader batch (2026-08-23):** Codex (e) is complete. It closes the
+  ten-effect ferro/melt/tensor/fluid-sim cohort with actual Naga 13/13, A-only
+  temporal ownership, exact C loads, three-band audio, preserved interaction,
+  strict audits, 1,333-ID catalog parity, clean TypeScript/Jest/build gates, and
+  an explicit real-GPU visual/performance handoff.
+- **Latest shader batch (2026-08-23):** Codex (g) is complete across ten
+  wave/smoke/ink/volumetric/ferro-adjacent effects. The renderer ABI, exact-C
+  and A-only feedback, three-band audio, held/click interaction, ACES and
+  semantic-alpha contract pass actual Naga 10/10; saved params, catalogs,
+  TypeScript, Jest, and production build are also verified. Real-GPU visual QA
+  remains external.
 
 ## Context
 
