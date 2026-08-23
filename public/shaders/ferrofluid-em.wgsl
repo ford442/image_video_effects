@@ -59,7 +59,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let aspectVec = vec2<f32>(aspect, 1.0);
   let p = (uv - 0.5) * aspectVec;
-  let mouse = (u.zoom_config.yz - 0.5) * aspectVec;
+  let rawMouse = u.zoom_config.yz;
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -72,6 +72,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let conductivity = u.zoom_params.z;
   let colorPhase = u.zoom_params.w;
 
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var sprungMouse = rawMouse; var chargeVelocity = vec2<f32>(0.0);
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    sprungMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); chargeVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  }
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    var pos = sprungMouse; var vel = chargeVelocity; let seeded = extraBuffer[138] > 0.5;
+    if (!seeded) { pos = rawMouse; vel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.05), seeded);
+    vel += ((rawMouse - pos) * 190.0 - vel * mix(20.0, 32.0, conductivity)) * dt; pos += vel * dt;
+    extraBuffer[133] = pos.x; extraBuffer[134] = pos.y; extraBuffer[135] = vel.x; extraBuffer[136] = vel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0;
+  }
+  let mouse = (sprungMouse - 0.5) * aspectVec;
+
   let orbit = 0.29 + sin(time * 0.17) * 0.035;
   let c0 = vec2<f32>(cos(time * 0.31), sin(time * 0.31)) * orbit;
   let c1 = vec2<f32>(cos(time * 0.23 + 2.15), sin(time * 0.23 + 2.15)) * orbit;
@@ -79,6 +93,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var em = chargeField(p, c0, 1.0) + chargeField(p, c1, -0.82) + chargeField(p, c2, 0.67);
   let mouseCharge = select(-0.55, 1.35, u.zoom_config.w > 0.5) * fieldGain;
   em += chargeField(p, mouse, mouseCharge);
+  em = vec3<f32>(em.xy + chargeVelocity / aspectVec * 0.08 * fieldGain, em.z);
 
   var clickEnergy = 0.0;
   var clickField = vec2<f32>(0.0);

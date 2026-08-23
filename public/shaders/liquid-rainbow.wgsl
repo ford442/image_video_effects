@@ -66,6 +66,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dispersion = u.zoom_params.w;
   let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var sprungMouse = u.zoom_config.yz; var pointerVelocity = vec2<f32>(0.0);
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    sprungMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); pointerVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  }
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    var p = sprungMouse; var v = pointerVelocity; let seeded = extraBuffer[138] > 0.5;
+    if (!seeded) { p = u.zoom_config.yz; v = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.05), seeded);
+    v += ((u.zoom_config.yz - p) * 185.0 - v * mix(20.0, 31.0, viscosity)) * dt; p += v * dt;
+    extraBuffer[133] = p.x; extraBuffer[134] = p.y; extraBuffer[135] = v.x; extraBuffer[136] = v.y; extraBuffer[137] = time; extraBuffer[138] = 1.0;
+  }
+
   let rawDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthFactor = mix(1.0, 0.35, clamp(rawDepth, 0.0, 1.0));
 
@@ -78,13 +91,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var waveCrest = (wave1.z + wave2.z) * 150.0;
 
   // Interactive pointer drag / vortex shear
-  let mousePos = u.zoom_config.yz;
+  let mousePos = sprungMouse;
   let isMouseDown = u.zoom_config.w;
   let mouseDelta = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let mouseDist = max(length(mouseDelta), 0.001);
   let dragCore = exp(-mouseDist * mix(8.0, 3.5, viscosity));
   let dragTangent = vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDist;
-  let dragForce = dragTangent * dragCore * (0.008 + turbulence * 0.015) * (1.0 + isMouseDown * 2.2);
+  let dragForce = dragTangent * dragCore * (0.008 + turbulence * 0.015) * (1.0 + isMouseDown * 2.2)
+    + pointerVelocity * dragCore * select(0.002, 0.012, isMouseDown > 0.5);
   totalDisp += vec2<f32>(dragForce.x / aspect, dragForce.y);
 
   // 50-ripple shockwaves with dispersion

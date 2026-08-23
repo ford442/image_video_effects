@@ -2,7 +2,7 @@
   "id": "liquid-viscous-grokcf1",
   "name": "Liquid Viscous Nebula grokcf1",
   "url": "shaders/liquid-viscous-grokcf1.wgsl",
-  "description": "Cosmic viscous flow with multi-octave nebula warping, emissive veins, depth parallax, audio reactivity, and persistent trails.",
+  "description": "Cosmic viscous flow with bounded heavy pointer inertia, held vortex shear, long-lived click eddies, exact-load nebula trails, three-band emissive veins, ACES, and semantic alpha.",
   "tags": [
     "filter",
     "image-processing",
@@ -57,7 +57,13 @@
     "depth-aware",
     "mouse-driven",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-interaction",
+    "click-reactive",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "updatedParams": [
     {

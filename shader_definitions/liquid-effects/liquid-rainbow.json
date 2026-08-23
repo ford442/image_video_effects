@@ -2,7 +2,7 @@
   "id": "liquid-rainbow",
   "name": "Liquid Rainbow",
   "url": "shaders/liquid-rainbow.wgsl",
-  "description": "Thin-film liquid refraction with spectral ripple crests, Fresnel edge color, audio-reactive dispersion, and depth-aware compositing.",
+  "description": "Thin-film liquid refraction with bounded pointer inertia, held vortex shear, dispersive click crests, exact-load trails, Fresnel interference, three-band chromatic separation, ACES, and semantic alpha.",
   "tags": [
     "filter",
     "image-processing",
@@ -57,7 +57,13 @@
     "depth-aware",
     "mouse-driven",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-interaction",
+    "click-reactive",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "updatedParams": [
     {

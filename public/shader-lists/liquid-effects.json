@@ -1116,7 +1116,7 @@
     "id": "liquid-rainbow",
     "name": "Liquid Rainbow",
     "url": "shaders/liquid-rainbow.wgsl",
-    "description": "Thin-film liquid refraction with spectral ripple crests, Fresnel edge color, audio-reactive dispersion, and depth-aware compositing.",
+    "description": "Thin-film liquid refraction with bounded pointer inertia, held vortex shear, dispersive click crests, exact-load trails, Fresnel interference, three-band chromatic separation, ACES, and semantic alpha.",
     "tags": [
       "filter",
       "image-processing",
@@ -1171,7 +1171,13 @@
       "depth-aware",
       "mouse-driven",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-interaction",
+      "click-reactive",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "updatedParams": [
       {
@@ -1409,7 +1415,18 @@
     "id": "liquid-v1",
     "name": "Liquid (Ambient)",
     "url": "shaders/liquid-v1.wgsl",
-    "description": "",
+    "description": "A clean baseline persistent liquid height field with ambient capillary modes, held pointer push, click waves, exact C state, three-band caustics, ACES output, and semantic alpha.",
+    "features": [
+      "mouse-driven",
+      "held-interaction",
+      "click-reactive",
+      "audio-reactive",
+      "stateful-simulation",
+      "raw-height-velocity-state",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
     "tags": [
       "filter",
       "image-processing"
@@ -1453,7 +1470,7 @@
     "id": "liquid-viscous-grokcf1",
     "name": "Liquid Viscous Nebula grokcf1",
     "url": "shaders/liquid-viscous-grokcf1.wgsl",
-    "description": "Cosmic viscous flow with multi-octave nebula warping, emissive veins, depth parallax, audio reactivity, and persistent trails.",
+    "description": "Cosmic viscous flow with bounded heavy pointer inertia, held vortex shear, long-lived click eddies, exact-load nebula trails, three-band emissive veins, ACES, and semantic alpha.",
     "tags": [
       "filter",
       "image-processing",
@@ -1508,7 +1525,13 @@
       "depth-aware",
       "mouse-driven",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-interaction",
+      "click-reactive",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "updatedParams": [
       {
@@ -1749,7 +1772,7 @@
     "id": "liquid",
     "name": "Liquid (Interactive)",
     "url": "shaders/liquid.wgsl",
-    "description": "",
+    "description": "The canonical persistent capillary liquid with viscosity-controlled recovery, bounded pointer inertia, held surface push, click packets, curvature foam, exact C state, three-band optics, ACES, and semantic alpha.",
     "tags": [
       "filter",
       "image-processing"
@@ -1799,7 +1822,15 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-interaction",
+      "click-reactive",
+      "stateful-simulation",
+      "raw-height-velocity-state",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ]
   },
   {
@@ -1900,9 +1931,15 @@
       "depth-aware",
       "upgraded-rgba",
       "chromatic-drip",
-      "curl-turbulence"
+      "curl-turbulence",
+      "held-interaction",
+      "click-reactive",
+      "temporal",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
-    "description": "Image melts downwards with curl-noise turbulence. Bright pixels drip faster; chromatic separation makes R/B channels drip at different rates. Audio heat pulses and depth viscosity modulate flow.",
+    "description": "Exact-load HDR history melts downward under luma-derived velocity, curl turbulence, depth viscosity, held pointer stirring, click fronts, three-band heat and chromatic flow, ACES, and semantic alpha.",
     "params": [
       {
         "name": "Melt Speed",
@@ -1950,7 +1987,7 @@
     "category": "liquid-effects",
     "type": "compute",
     "url": "shaders/rain-ripples.wgsl",
-    "description": "Interactive water ripples and raindrops with FBM micro-ripples, depth-aware fog, displacement-driven chromatic aberration, specular highlights, and ACES tone mapping.",
+    "description": "Rain-driven ripple packets with bounded pointer wakes, held water push, exact-load HDR persistence, FBM micro-ripples, Voronoi drops, three-band caustics and thin-film color, ACES, and semantic alpha.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1958,7 +1995,14 @@
       "depth-aware",
       "voronoi-raindrops",
       "caustics",
-      "thin-film-interference"
+      "thin-film-interference",
+      "held-interaction",
+      "click-reactive",
+      "spring-interaction",
+      "temporal",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",

@@ -2,7 +2,8 @@
   "id": "liquid-v1",
   "name": "Liquid (Ambient)",
   "url": "shaders/liquid-v1.wgsl",
-  "description": "",
+  "description": "A clean baseline persistent liquid height field with ambient capillary modes, held pointer push, click waves, exact C state, three-band caustics, ACES output, and semantic alpha.",
+  "features": ["mouse-driven", "held-interaction", "click-reactive", "audio-reactive", "stateful-simulation", "raw-height-velocity-state", "exact-load-feedback", "aces-tone-map", "semantic-alpha"],
   "tags": [
     "filter",
     "image-processing"

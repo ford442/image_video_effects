@@ -1070,7 +1070,7 @@
     "name": "Ferrofluid Spikes",
     "category": "simulation",
     "url": "shaders/ferrofluid-spikes.wgsl",
-    "description": "A mouse-driven Rosensweig ferrofluid lattice with hexagonal peaks, click-launched spike fronts, viscous display persistence, honest generated depth, and studio-lit GGX metallic shading.",
+    "description": "A classic Rosensweig ferrofluid lattice with bounded magnet inertia, held polarity strength, click-launched spike fronts, exact-load viscous persistence, three-band response, honest depth, and studio-lit anisotropic GGX metal.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1087,7 +1087,12 @@
       "click-reactive",
       "temporal",
       "depth-aware",
-      "rosensweig-lattice"
+      "rosensweig-lattice",
+      "held-interaction",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {

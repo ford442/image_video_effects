@@ -27,6 +27,15 @@ _Learn about the person you're helping. Update this as you go._
   Jelly/Fast/Glitch own display history. Liquid Metal now has Rosensweig spikes
   and anisotropic reflection. Naga, contract, catalog, Jest, and build gates are
   green; real-GPU visual QA remains external.
+- **Completed follow-on liquid/ferro batch (2026-08-23):** Upgraded liquid-v1,
+  liquid, liquid-rainbow, liquid-viscous-grokcf1, luma-velocity-melt,
+  rain-ripples, ferrofluid-spikes, ferrofluid-em,
+  liquid-magnetic-ferro-em, and ambient-liquid-coupled under the unchanged
+  exact-C / A-only / ACES / semantic-alpha / three-band-audio /
+  `[133..138]` state / full interaction contract, preserving saved params.
+  Four shaders own raw physical A state and six own HDR display history; B is
+  unwritten. Naga/contract 10/10, params exact, catalogs/tests/build green;
+  real-GPU visual QA remains external.
 
 ## Context
 

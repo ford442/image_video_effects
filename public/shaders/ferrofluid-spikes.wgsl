@@ -202,12 +202,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    let mousePos = u.zoom_config.yz;
+    let rawMouse = u.zoom_config.yz;
 
     let magnetStrength = u.zoom_params.x * (1.0 + bass * 0.5);
     let spikeDensity = u.zoom_params.y;
     let fluidViscosity = u.zoom_params.z;
     let highlightSharpness = u.zoom_params.w;
+
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var mousePos = rawMouse; var magnetVelocity = vec2<f32>(0.0);
+    if (hasSpring && extraBuffer[138] > 0.5) {
+        mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]); magnetVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    }
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
+        var pos = mousePos; var vel = magnetVelocity; let seeded = extraBuffer[138] > 0.5;
+        if (!seeded) { pos = rawMouse; vel = vec2<f32>(0.0); }
+        let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.05), seeded);
+        vel += ((rawMouse - pos) * 205.0 - vel * mix(20.0, 34.0, fluidViscosity)) * dt; pos += vel * dt;
+        extraBuffer[133] = pos.x; extraBuffer[134] = pos.y; extraBuffer[135] = vel.x; extraBuffer[136] = vel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0;
+    }
 
     let aspect = resolution.x / resolution.y;
     let aspectUV = vec2<f32>(uv.x * aspect, uv.y);
@@ -235,7 +248,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     let held = select(0.62, 1.0, u.zoom_config.w > 0.5);
     let spikeBase = rosensweigHeight(aspectUV, aspectMouse, spikeDensity, time * (1.0 + treble * 0.18));
-    let spikeHeight = (spikeBase * field * (1.2 + magnetStrength) + clickHeight * 0.5)
+    let spikeHeight = (spikeBase * field * (1.2 + magnetStrength) + clickHeight * 0.5 + length(magnetVelocity) * field * 0.018)
         * mix(1.25, 0.62, fluidViscosity) * held;
     let eps = 1.3 / resolution.y;
     let hL = rosensweigHeight(aspectUV - vec2<f32>(eps, 0.0), aspectMouse, spikeDensity, time);

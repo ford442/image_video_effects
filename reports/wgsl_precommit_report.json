@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-23T08:36:38.060982",
+  "timestamp": "2026-08-23T16:07:33.018514",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/glass-wipes.wgsl",
+      "file": "public/shaders/ambient-liquid-coupled.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/ink-marbling.wgsl",
+      "file": "public/shaders/ferrofluid-em.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/kimi_liquid_glass.wgsl",
+      "file": "public/shaders/ferrofluid-spikes.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-displacement.wgsl",
+      "file": "public/shaders/liquid-magnetic-ferro-em.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-fast.wgsl",
+      "file": "public/shaders/liquid-rainbow.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-glitch.wgsl",
+      "file": "public/shaders/liquid-v1.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-jelly.wgsl",
+      "file": "public/shaders/liquid-viscous-grokcf1.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-metal.wgsl",
+      "file": "public/shaders/liquid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-mirror.wgsl",
+      "file": "public/shaders/luma-velocity-melt.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-oil.wgsl",
+      "file": "public/shaders/rain-ripples.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

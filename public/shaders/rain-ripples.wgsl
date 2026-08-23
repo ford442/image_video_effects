@@ -112,6 +112,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let waveWidth = mix(0.03, 0.12, 1.0 - p4);
     let scale = mix(0.5, 2.5, p3);
 
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var rainPointer = u.zoom_config.yz; var pointerVelocity = vec2<f32>(0.0);
+    if (hasSpring && extraBuffer[138] > 0.5) {
+        rainPointer = vec2<f32>(extraBuffer[133], extraBuffer[134]); pointerVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    }
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
+        var pos = rainPointer; var vel = pointerVelocity; let seeded = extraBuffer[138] > 0.5;
+        if (!seeded) { pos = u.zoom_config.yz; vel = vec2<f32>(0.0); }
+        let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.05), seeded);
+        vel += ((u.zoom_config.yz - pos) * 175.0 - vel * 24.0) * dt; pos += vel * dt;
+        extraBuffer[133] = pos.x; extraBuffer[134] = pos.y; extraBuffer[135] = vel.x; extraBuffer[136] = vel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0;
+    }
+
     // Domain-warped FBM micro-ripples.
     let q = vec2<f32>(fbm(uv * scale * 8.0 + time * 0.1, 3),
                       fbm(uv * scale * 8.0 + vec2<f32>(5.2, 1.3) - time * 0.08, 3));
@@ -122,8 +135,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cell = voronoi(uv * mix(4.0, 12.0, p3) + time * 0.05, time * 2.0);
     let drop = sin(cell.x * 40.0 - time * 8.0) * exp(-cell.x * 3.0) * 0.015 * p3;
 
-    var totalDisplacement = vec2<f32>(0.0);
-    for (var i: u32 = 0u; i < 50u; i = i + 1u) {
+    let pointerDelta = (uv - rainPointer) * vec2<f32>(aspect, 1.0);
+    let pointerDist = length(pointerDelta); let pointerMask = exp(-pointerDist * pointerDist * 75.0);
+    let pointerDir = select(vec2<f32>(0.0), pointerDelta / pointerDist, pointerDist > 0.001);
+    let held = select(0.14, 1.0, u.zoom_config.w > 0.5);
+    var totalDisplacement = pointerDir / vec2<f32>(aspect, 1.0) * pointerMask * held * (0.004 + p1 * 0.018)
+        + pointerVelocity * pointerMask * select(0.001, 0.006, u.zoom_config.w > 0.5);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let startTime = ripple.z;
         let elapsed = time - startTime;
@@ -176,11 +195,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let film = vec3<f32>(sin(curvature * TAU + 0.0), sin(curvature * TAU + 2.09), sin(curvature * TAU + 4.18));
     color = vec4<f32>(mix(color.rgb, color.rgb * (0.7 + 0.3 * film), wet * p3 * 0.25), color.a);
 
-    color = vec4<f32>(acesToneMap(color.rgb * (1.0 + mids * 0.15)), color.a);
+    let historyCoord = clamp(vec2<i32>(floor((uv - totalDisplacement * 0.35) * resolution)), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+    let history = textureLoad(dataTextureC, historyCoord, 0);
+    let persistence = clamp((0.08 + p4 * 0.22) * history.a, 0.0, 0.3);
+    let hdr = mix(color.rgb * (1.0 + mids * 0.15), history.rgb * 0.975, persistence);
+    let alpha = clamp(max(color.a, history.a * persistence) + dispMag * 18.0 + wet * 0.12 + bass * 0.06, 0.0, 1.0);
 
-    let alpha = clamp(dispMag * 30.0 + bass * 0.25 + mids * 0.1 + depth * 0.2, 0.0, 1.0);
-
-    textureStore(writeTexture, coord, vec4<f32>(color.rgb, alpha));
-    textureStore(dataTextureA, coord, vec4<f32>(color.rgb, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(hdr), alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(min(hdr, vec3<f32>(8.0)), alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

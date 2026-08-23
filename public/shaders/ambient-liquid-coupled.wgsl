@@ -1,19 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  ambient-liquid-coupled
-//  Category: advanced-hybrid
-//  Features: liquid-membrane, mouse-pressure, audio-reactive, depth-aware, temporal-feedback
-//  Complexity: High
-//  Chunks From: ambient-liquid.wgsl, mouse-fluid-coupling.wgsl, bass_env pattern
-//  Created: 2026-04-18
-//  Updated: 2026-05-31
-//  By: Grok (living membrane + bass tension upgrade)
-// ═══════════════════════════════════════════════════════════════════
-
-//  Gentle ambient sine waves are driven by a real fluid velocity
-//  field. The mouse drags viscous fluid that warps the image via
-//  advected displacement, while ripple eddies create vortices.
-// ═══════════════════════════════════════════════════════════════════
-
+// Ambient Liquid Coupled — two persistent height layers joined by a membrane.
+// Raw A ownership: R=top height, G=top velocity, B=lower height, A=lower velocity.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -27,226 +13,94 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+const TAU: f32 = 6.28318530718;
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-// ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
-fn hash12(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
-}
-
-// ═══ CHUNK: bass_env (attack/release envelope for surface tension) ═══
-// High bass = high surface tension (slow healing, dramatic tears persist)
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-    let k = select(release, attack, bass > prev);
-    return mix(prev, bass, k);
+fn clampPixel(p: vec2<i32>, dims: vec2<i32>) -> vec2<i32> { return clamp(p, vec2<i32>(0), dims - vec2<i32>(1)); }
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw; if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
+  let pixel = vec2<i32>(gid.xy); let dims = vec2<i32>(res);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res; let time = u.config.x;
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
+  let waveStrength = u.zoom_params.x; let viscosity = u.zoom_params.y;
+  let vortexStrength = u.zoom_params.z; let layerSeparation = u.zoom_params.w;
+  let c = textureLoad(dataTextureC, pixel, 0);
+  let l = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(-1, 0), dims), 0);
+  let r = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(1, 0), dims), 0);
+  let d = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(0, -1), dims), 0);
+  let t = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(0, 1), dims), 0);
+  let initialized = dot(abs(c), vec4<f32>(1.0)) > 0.00001;
+  var topHeight = select(0.1, c.r, initialized); var topVelocity = select(0.0, c.g, initialized);
+  var lowerHeight = select(0.08, c.b, initialized); var lowerVelocity = select(0.0, c.a, initialized);
+  let topL = select(0.1, l.r, initialized); let topR = select(0.1, r.r, initialized);
+  let topD = select(0.1, d.r, initialized); let topU = select(0.1, t.r, initialized);
+  let lowL = select(0.08, l.b, initialized); let lowR = select(0.08, r.b, initialized);
+  let lowD = select(0.08, d.b, initialized); let lowU = select(0.08, t.b, initialized);
+  let lapTop = topL + topR + topD + topU - 4.0 * topHeight;
+  let lapLower = lowL + lowR + lowD + lowU - 4.0 * lowerHeight;
 
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
-  let time = u.config.x;
-
-  let waveStrength = mix(0.005, 0.04, u.zoom_params.x);
-  let fluidViscosity = mix(0.85, 0.99, u.zoom_params.y);
-  let vortexStrength = u.zoom_params.z * 2.0;
-  let brightSplit = u.zoom_params.w;
-
-  // === FLUID VELOCITY FIELD (from mouse-fluid-coupling) ===
-  let mousePos = u.zoom_config.yz;
-  let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
-  let mouseVel = (mousePos - prevMouse) * 60.0;
-  let mouseSpeed = length(mouseVel);
-
-  // Store current mouse position at (0,0)
-  if (global_id.x == 0u && global_id.y == 0u) {
-    textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(mousePos, 0.0, 0.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var pointer = u.zoom_config.yz; var pointerVelocity = vec2<f32>(0.0);
+  if (hasSpring && extraBuffer[138] > 0.5) { pointer = vec2<f32>(extraBuffer[133], extraBuffer[134]); pointerVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]); }
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    var p = pointer; var v = pointerVelocity; let seeded = extraBuffer[138] > 0.5;
+    if (!seeded) { p = u.zoom_config.yz; v = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.05), seeded);
+    v += ((u.zoom_config.yz - p) * 130.0 - v * mix(18.0, 30.0, viscosity)) * dt; p += v * dt;
+    extraBuffer[133] = p.x; extraBuffer[134] = p.y; extraBuffer[135] = v.x; extraBuffer[136] = v.y; extraBuffer[137] = time; extraBuffer[138] = 1.0;
   }
 
-  let px = vec2<f32>(1.0) / resolution;
-
-  // Read previous velocity and density
-  let prevVel = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).xy;
-  let prevDens = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).a;
-
-  // Advect velocity
-  let backUV = uv - prevVel * px * 2.0;
-  let advectedVel = textureSampleLevel(dataTextureC, u_sampler, backUV, 0.0).xy;
-  let advectedDens = textureSampleLevel(dataTextureC, u_sampler, backUV, 0.0).a;
-
-  var vel = advectedVel * fluidViscosity;
-  var dens = advectedDens * fluidViscosity;
-
-  // === LIVING MEMBRANE PRESSURE (new high-signal behavior) ===
-  // Read previous membrane pressure from dataTextureB
-  let prevPressure = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
-  let prevBass = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(0.0), 0.0).g; // stored bass history at origin
-
-  // Bass-driven surface tension (high bass = high tension = slow healing)
-  let bass = plasmaBuffer[0].x;
-  let surfaceTension = mix(0.6, 0.97, bass * 0.7); // 0.6 = loose, 0.97 = very tight skin
-  let tensionRelease = bass_env(prevBass, bass, 0.85, 0.12);
-
-  // Mouse as "finger" pressing into the membrane
-  let toMouse = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-  let dist = length(toMouse);
-  let isPressing = u.zoom_config.w; // mouse down = active press
-  let pressRadius = mix(0.04, 0.22, u.zoom_params.y * 0.6);
-  let pressInfluence = smoothstep(pressRadius, 0.0, dist) * isPressing;
-
-  // Pressure increases sharply under the finger, then slowly heals
-  var pressure = prevPressure * surfaceTension;
-  pressure = pressure + pressInfluence * 1.8;
-  pressure = clamp(pressure, 0.0, 3.2);
-
-  // Bass spikes make existing tears "set" (higher tension locks in deformation)
-  if (bass > 0.65) {
-    pressure = pressure * (1.0 + (bass - 0.65) * 0.8);
-  }
-
-  // Store updated pressure + current bass envelope at origin for next frame
-  if (global_id.x == 0u && global_id.y == 0u) {
-    textureStore(dataTextureB, vec2<i32>(0, 0), vec4<f32>(pressure, tensionRelease, bass, 0.0));
-  }
-
-  // Mouse force (now modulated by membrane pressure)
-  let mouseRadius = mix(0.03f, 0.18f, 0.5f);
-  let influence = smoothstep(mouseRadius, 0.0, dist);
-  let membraneResistance = 1.0 - (pressure * 0.18); // high pressure = more resistant surface
-  vel = vel + mouseVel * influence * 0.5 * membraneResistance;
-
-  // Vortex force (twisting the membrane)
-  let vortexDir = vec2<f32>(-mouseVel.y, mouseVel.x);
-  vel = vel + vortexDir * influence * vortexStrength * mouseSpeed * (1.0 + pressure * 0.2);
-
-  // Ripple injection (still works, but ripples now "ring" the membrane pressure)
-  let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let ripple = u.ripples[i];
-    let elapsed = time - ripple.z;
-    if (elapsed > 0.0 && elapsed < 2.0) {
-      let rToMouse = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
-      let rDist = length(rToMouse);
-      let rInfluence = smoothstep(0.2, 0.0, rDist) * exp(-elapsed * 1.5);
-      let outward = select(vec2<f32>(0.0), normalize(rToMouse / vec2<f32>(aspect, 1.0)), rDist > 0.001);
-      vel = vel + outward * rInfluence * 0.3;
-      dens = dens + rInfluence * 0.5;
-      // Ripples also locally disturb membrane pressure
-      pressure = pressure + rInfluence * 0.6;
+  let mouseDelta = (uv - pointer) * aspectVec; let mouseDist = length(mouseDelta);
+  let mouseMask = exp(-mouseDist * mouseDist * 58.0); let held = select(0.12, 1.0, u.zoom_config.w > 0.5);
+  let tangent = select(vec2<f32>(0.0), vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDist, mouseDist > 0.001);
+  let pointerTwist = dot(pointerVelocity, tangent / aspectVec) * mouseMask * vortexStrength;
+  var topImpulse = mouseMask * held * (0.012 + waveStrength * 0.05) + pointerTwist * 0.012;
+  var lowerImpulse = -mouseMask * held * layerSeparation * 0.025 - pointerTwist * 0.007;
+  var clickEnergy = 0.0; let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i += 1u) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age >= 0.0 && age < 3.2) {
+      let dist = length((uv - ripple.xy) * aspectVec);
+      let ring = exp(-pow((dist - age * (0.14 + bass * 0.06)) * 40.0, 2.0)) * exp(-age * 1.0);
+      topImpulse += ring * sin(age * 6.5) * (0.02 + waveStrength * 0.055);
+      lowerImpulse -= ring * cos(age * 5.2) * (0.012 + layerSeparation * 0.035); clickEnergy += ring;
     }
   }
+  let p = (uv - 0.5) * aspectVec;
+  let ambientTop = sin(p.x * 11.0 + time * (0.42 + bass * 0.16)) * cos(p.y * 9.0 - time * 0.31);
+  let ambientLower = cos(p.x * 7.0 - time * (0.24 + mids * 0.12)) * sin(p.y * 13.0 + time * 0.27);
+  let coupling = (lowerHeight - topHeight + 0.02) * (0.035 + layerSeparation * 0.12);
+  let damping = mix(0.91, 0.986, viscosity);
+  topVelocity = clamp(topVelocity * damping + lapTop * mix(0.13, 0.055, viscosity) + coupling
+    + ambientTop * waveStrength * 0.0018 + topImpulse, -0.8, 0.8);
+  lowerVelocity = clamp(lowerVelocity * damping + lapLower * mix(0.1, 0.045, viscosity) - coupling
+    + ambientLower * waveStrength * 0.0015 + lowerImpulse, -0.7, 0.7);
+  topHeight = clamp(topHeight + topVelocity * mix(0.085, 0.038, viscosity), 0.005, 0.9);
+  lowerHeight = clamp(lowerHeight + lowerVelocity * mix(0.072, 0.032, viscosity), 0.005, 0.8);
+  textureStore(dataTextureA, pixel, vec4<f32>(topHeight, topVelocity, lowerHeight, lowerVelocity));
 
-  // Edge damping
-  let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-  let edgeDamp = smoothstep(0.05, 0.1, edgeDist);
-  vel = vel * edgeDamp;
-  vel = clamp(vel, vec2<f32>(-0.5), vec2<f32>(0.5));
-  dens = clamp(dens, 0.0, 2.0);
-
-  // Store velocity state + current membrane pressure (for next frame feedback)
-  let vorticity = vel.x - vel.y;
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(vel, vorticity, dens));
-  // Write pressure field so the displacement stage can read it
-  textureStore(dataTextureB, vec2<i32>(global_id.xy), vec4<f32>(pressure, 0.0, 0.0, 0.0));
-
-  // === LIVING MEMBRANE DISPLACEMENT (high-signal creative upgrade) ===
-  // Read the membrane pressure we just wrote (or previous frame)
-  let membranePressure = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
-
-  let rate = 0.5;
-  let waveTime = time * rate;
-  let frequency = 15.0;
-
-  // Fluid velocity warps the wave phase
-  let wavePhase = vec2<f32>(vel.x * 5.0, vel.y * 5.0);
-
-  var d1 = sin(uv.x * frequency + waveTime + wavePhase.x) * waveStrength;
-  var d2 = cos(uv.y * frequency * 0.7 + waveTime + wavePhase.y) * waveStrength;
-
-  // Mouse attractor (stronger when pressing into the membrane)
-  let to_mouse = mousePos - uv;
-  let dist_to_mouse = length(to_mouse);
-  let pressBoost = 1.0 + membranePressure * 0.8;
-  let mouse_influence = exp(-dist_to_mouse * 5.0) * 0.015 * pressBoost;
-  d1 += to_mouse.x * mouse_influence;
-  d2 += to_mouse.y * mouse_influence;
-
-  // Ripple eddies
-  for (var i = 0; i < 50; i++) {
-    let ripple = u.ripples[i];
-    if (ripple.z > 0.0) {
-      let ripple_pos = ripple.xy;
-      let ripple_age = waveTime - ripple.z;
-      if (ripple_age > 0.0 && ripple_age < 4.0) {
-        let to_ripple = uv - ripple_pos;
-        let ripple_dist = length(to_ripple);
-        let ripple_strength = sin(ripple_dist * 20.0 - ripple_age * 5.0) * exp(-ripple_age * 0.5) * 0.01;
-        d1 += to_ripple.y * ripple_strength;
-        d2 -= to_ripple.x * ripple_strength;
-      }
-    }
-  }
-
-  // === MEMBRANE LAYER SEPARATION (the new "wow" behavior) ===
-  // When membranePressure is high, the "finger" has pushed through the surface,
-  // so we sample two slightly different layers and blend them based on pressure.
-  let baseUV = uv + vec2<f32>(d1, d2);
-
-  // Subsurface offset grows with pressure (the tear reveals a different "inside")
-  let tearStrength = membranePressure * 0.018;
-  let subsurfaceUV = baseUV + vec2<f32>(d2, -d1) * tearStrength * 1.3;
-
-  var topLayer = textureSampleLevel(readTexture, u_sampler, baseUV, 0.0);
-  var subLayer = textureSampleLevel(readTexture, u_sampler, subsurfaceUV, 0.0);
-
-  // Bass makes the separation more chromatic (color bleeds differently across the tear)
-  let bassShift = bass * 0.6;
-  let layerMix = clamp(membranePressure * 0.55 + bassShift * 0.25, 0.0, 0.92);
-
-  var color = mix(topLayer, subLayer, layerMix);
-
-  // Bright/dark split now also respects the membrane tear
-  let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
-  if (luma > 0.75 && brightSplit > 0.0) {
-    let bright_time = time * 0.65;
-    let bd1 = sin(uv.x * frequency + bright_time) * waveStrength;
-    let bd2 = cos(uv.y * frequency * 0.7 + bright_time) * waveStrength;
-    let brightDisplacedUV = baseUV + vec2<f32>(bd1, bd2);
-    color = mix(color, textureSampleLevel(readTexture, u_sampler, brightDisplacedUV, 0.0), 0.25 * brightSplit);
-  }
-
-  if (luma < 0.25 && brightSplit > 0.0) {
-    let dark_time = time * 0.45;
-    let dd1 = sin(uv.x * frequency + dark_time) * waveStrength;
-    let dd2 = cos(uv.y * frequency * 0.7 + dark_time) * waveStrength;
-    let darkDisplacedUV = baseUV + vec2<f32>(dd1, dd2);
-    color = mix(color, textureSampleLevel(readTexture, u_sampler, darkDisplacedUV, 0.0), 0.75 * brightSplit);
-  }
-
-  // Depth-aware alpha with membrane thickness
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let membraneThickness = 1.0 - (membranePressure * 0.12); // high pressure = thinner / more translucent
-  let alpha = mix(0.65, 1.0, luma) * membraneThickness;
-  let finalAlpha = mix(alpha * 0.75, alpha, depth);
-
-  // Fluid + membrane tint: high pressure areas get a cooler, deeper hue
-  let fluidTint = mix(vec3<f32>(1.0), vec3<f32>(1.0, 0.94, 0.86), dens * 0.28);
-  let pressureTint = mix(vec3<f32>(1.0), vec3<f32>(0.88, 0.95, 1.08), membranePressure * 0.22);
-  let tintedColor = color.rgb * fluidTint * pressureTint;
-
-  // Premultiplied write for clean chaining in slot 2/3
-  let a = clamp(finalAlpha, 0.0, 1.0);
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(tintedColor * a, a));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let topGradient = vec2<f32>(topL - topR, topD - topU) * (5.0 + waveStrength * 10.0);
+  let lowGradient = vec2<f32>(lowL - lowR, lowD - lowU) * (4.0 + layerSeparation * 8.0);
+  let topNormal = normalize(vec3<f32>(topGradient, 0.28)); let lowerNormal = normalize(vec3<f32>(lowGradient, 0.34));
+  let topUV = clamp(uv + topNormal.xy * (0.012 + topHeight * 0.045) / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999));
+  let lowerUV = clamp(uv - lowerNormal.xy * (0.01 + lowerHeight * 0.055) / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999));
+  let topLayer = textureSampleLevel(readTexture, u_sampler, topUV, 0.0);
+  let lowerLayer = textureSampleLevel(readTexture, u_sampler, lowerUV, 0.0);
+  let separation = clamp(abs(topHeight - lowerHeight) * (2.0 + layerSeparation * 4.0) + clickEnergy * 0.18, 0.0, 1.0);
+  let membrane = smoothstep(0.02, 0.35, abs(topHeight - lowerHeight));
+  let spectral = 0.5 + 0.5 * cos(TAU * (vec3<f32>(0.0, 0.32, 0.67) + topHeight * 0.5 - lowerHeight * 0.35 + time * 0.012));
+  let fresnel = 0.025 + 0.975 * pow(clamp(1.0 - topNormal.z, 0.0, 1.0), 5.0);
+  let color = mix(topLayer.rgb, lowerLayer.rgb * vec3<f32>(0.78, 0.9, 1.08), separation * layerSeparation)
+    + spectral * membrane * (0.08 + mids * 0.1) + vec3<f32>(0.42, 0.72, 1.0) * fresnel * (0.13 + treble * 0.1);
+  let alpha = clamp(max(topLayer.a, lowerLayer.a * separation) + membrane * 0.09 + fresnel * 0.06, 0.0, 1.0);
+  textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
+  let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(max(sourceDepth * 0.88, topHeight * 0.3 + lowerHeight * 0.18 + membrane * 0.03), 0.0, 0.0, 0.0));
 }

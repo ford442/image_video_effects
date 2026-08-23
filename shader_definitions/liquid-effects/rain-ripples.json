@@ -4,7 +4,7 @@
   "category": "liquid-effects",
   "type": "compute",
   "url": "shaders/rain-ripples.wgsl",
-  "description": "Interactive water ripples and raindrops with FBM micro-ripples, depth-aware fog, displacement-driven chromatic aberration, specular highlights, and ACES tone mapping.",
+  "description": "Rain-driven ripple packets with bounded pointer wakes, held water push, exact-load HDR persistence, FBM micro-ripples, Voronoi drops, three-band caustics and thin-film color, ACES, and semantic alpha.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -12,7 +12,14 @@
     "depth-aware",
     "voronoi-raindrops",
     "caustics",
-    "thin-film-interference"
+    "thin-film-interference",
+    "held-interaction",
+    "click-reactive",
+    "spring-interaction",
+    "temporal",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "filter",

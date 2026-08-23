@@ -1,6 +1,26 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Codex b liquid-surface cohort)
+**Last updated:** 2026-08-23 (remaining liquid core + ferro/fluid cohort)
+
+## 2026-08-23 — Remaining liquid core + ferro/fluid simulation cohort
+
+- Requested set: liquid-v1, liquid, liquid-rainbow,
+  liquid-viscous-grokcf1, luma-velocity-melt, rain-ripples,
+  ferrofluid-spikes, ferrofluid-em, liquid-magnetic-ferro-em, and
+  ambient-liquid-coupled.
+- Preserve the canonical 13 core bindings, exact C loads, A-only feedback,
+  ACES, semantic alpha, bass/mids/treble, guarded state only at `[133..138]`,
+  mouse/held/click-ripple response, saved params, and Naga cleanliness.
+- Completed with four raw A simulations: Liquid V1 and Liquid own
+  height/velocity/foam/coverage, Magnetic Ferro EM owns
+  height/velocity/potential/charge, and Ambient Coupled owns two coupled
+  height/velocity layers. The other six own semantic HDR display history; B is
+  unwritten for all ten.
+- Eight pointer-heavy effects use guarded single-writer `[133..138]` springs;
+  Liquid V1 and Luma Melt use no extra state. Saved params are byte-exact.
+- Focused Naga and contract gates 10/10, extraBuffer clean, URL policy green,
+  1,333 unique manifest IDs including all ten, Jest 81/81 (545 pass, 1 skip),
+  and the WASM-skipped production build pass. Real-GPU QA remains external.
 
 ## 2026-08-23 — Codex (b) liquid-surface cohort
 

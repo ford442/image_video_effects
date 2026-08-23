@@ -2,7 +2,7 @@
   "id": "ferrofluid-em",
   "name": "Ferrofluid Em",
   "url": "shaders/ferrofluid-em.wgsl",
-  "description": "Conductive ferrofluid shaped by animated electromagnetic multipoles, equipotential ridges, Poynting-line runners, Hall-like transverse drift, alternating click charges, and persistent spectral emission.",
+  "description": "Conductive ferrofluid shaped by electromagnetic multipoles, a bounded inertial mouse charge, held polarity, alternating click charges, equipotential ridges, Poynting runners, Hall drift, exact-load emission, ACES, and semantic alpha.",
   "tags": [
     "ferrofluid-distortion",
     "em-field-visualization",
@@ -18,7 +18,15 @@
   "features": [
     "ferrofluid-distortion",
     "em-field-visualization",
-    "mouse-driven"
+    "mouse-driven",
+    "held-interaction",
+    "click-reactive",
+    "audio-reactive",
+    "spring-interaction",
+    "temporal",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "params": [
     {
