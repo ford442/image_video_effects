@@ -13,9 +13,16 @@
     "procedural",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "audio-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
-  "description": "Dark matter web with Voronoi filaments, FBM warping, and mouse gravity wells. Hypnotic cosmic structure with purple-to-cyan gradients.",
+  "description": "Large-scale cosmic structure evolving at speed \u2014 Zel'dovich streaming, Voronoi filaments and Apollonian voids, with caustic striation running along each strand. Stellar populations are graded through a psychedelic spectrum. The spring-smoothed cursor opens a void well that drags the web toward it, holding collapses structure into the well, and clicks send density shocks rippling through the filaments.",
   "workgroup_size": [
     16,
     16,
@@ -40,16 +47,16 @@
     },
     {
       "index": 2,
-      "name": "Flow Speed",
-      "default": 0.25,
+      "name": "Evolution Speed",
+      "default": 0.35,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "index": 3,
-      "name": "Color Shift",
-      "default": 0,
+      "name": "Void Pull",
+      "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01

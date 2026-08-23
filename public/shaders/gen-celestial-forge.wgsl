@@ -1,20 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Celestial Forge
+//  Celestial Forge — Batch 63
 //  Category: generative
-//  Features: celestial-forge, cosmic-anvil, audio-hammer, mouse-sparks, stellar-plasma, depth-stars
-//  Complexity: High
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish pass — richer cosmic light, audio hammering, atmospheric stars)
-// ═══════════════════════════════════════════════════════════════════
-//  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
-//  upgraded-rgba
-// ═══════════════════════════════════════════════════════════════════
-//  OPTIMIZATION LOG (2026-05-31):
-//  - Standard header (was stub "COPY PASTE THIS HEADER" placeholder)
-//  - Audio reactivity wired to plasmaBuffer (bass→core pulse, treble→ring panels)
-//  - Raymarch steps 128→96 with adaptive step relaxation
-//  - Reinhard → ACES filmic tone mapping (hue-neutral highlights)
-//  - IGN dither added; depth texture now written (was missing)
+//  A stellar engine hammering at speed: contra-rotating greebled rings,
+//  psychedelic plasma spectra, spring-cursor orbit, held forge surge,
+//  capped click hammer-strike shockwaves.
+//  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
+//            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
+//            bounded extraBuffer[133..138] state.
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -32,11 +24,26 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=RotationSpeed, y=Complexity, z=RingScale, w=CoreIntensity
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
+    zoom_params: vec4<f32>,  // x=Rotation Speed, y=Complexity, z=Ring Scale, w=Core Intensity
     ripples: array<vec4<f32>, 50>,
 };
+
+const TAU: f32 = 6.28318530718;
+
+const SPRING_X: i32 = 133;
+const SPRING_Y: i32 = 134;
+const SPRING_VX: i32 = 135;
+const SPRING_VY: i32 = 136;
+const SPRING_T: i32 = 137;
+const SPRING_INIT: i32 = 138;
+
+var<private> g_bass: f32;
+var<private> g_mids: f32;
+var<private> g_treble: f32;
+var<private> g_strike: f32;
+var<private> g_held: f32;
 
 // --- Helper Functions ---
 
@@ -46,49 +53,32 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// Rotation around X axis
 fn rotX(a: f32) -> mat3x3<f32> {
     let s = sin(a);
     let c = cos(a);
-    return mat3x3<f32>(
-        1.0, 0.0, 0.0,
-        0.0, c, -s,
-        0.0, s, c
-    );
+    return mat3x3<f32>(1.0, 0.0, 0.0, 0.0, c, -s, 0.0, s, c);
 }
 
-// Rotation around Y axis
 fn rotY(a: f32) -> mat3x3<f32> {
-    var s = sin(a);
-    var c = cos(a);
-    return mat3x3<f32>(
-        c, 0.0, s,
-        0.0, 1.0, 0.0,
-        -s, 0.0, c
-    );
+    let s = sin(a);
+    let c = cos(a);
+    return mat3x3<f32>(c, 0.0, s, 0.0, 1.0, 0.0, -s, 0.0, c);
 }
 
-// Rotation around Z axis
 fn rotZ(a: f32) -> mat3x3<f32> {
-    var s = sin(a);
-    var c = cos(a);
-    return mat3x3<f32>(
-        c, -s, 0.0,
-        s, c, 0.0,
-        0.0, 0.0, 1.0
-    );
+    let s = sin(a);
+    let c = cos(a);
+    return mat3x3<f32>(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0);
 }
 
-// Smooth minimum for blending
-fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = max(k - abs(a - b), 0.0) / k;
-    return min(a, b) - h * h * k * (1.0 / 4.0);
-}
-
-// ACES filmic tone mapping (replaces component-wise Reinhard — hue-neutral highlights)
 fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
-    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+    return clamp((color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Psychedelic forge spectrum — molten wheel spun by the audio
+fn forgePalette(t: f32, drive: f32) -> vec3<f32> {
+    let phase = vec3<f32>(0.1, 1.9 + drive * 1.3, 4.0 - drive * 1.0);
+    return 0.5 + 0.5 * cos(TAU * t + phase);
 }
 
 // --- SDFs ---
@@ -98,18 +88,13 @@ fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
 }
 
 fn sdTorus(p: vec3<f32>, t: vec2<f32>) -> f32 {
-    var q = vec2<f32>(length(p.xz) - t.x, p.y);
+    let q = vec2<f32>(length(p.xz) - t.x, p.y);
     return length(q) - t.y;
 }
 
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
-    var q = abs(p) - b;
+    let q = abs(p) - b;
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
-}
-
-fn sdCylinder(p: vec3<f32>, h: f32, r: f32) -> f32 {
-    var d = vec2<f32>(length(p.xz), p.y) - vec2<f32>(r, h);
-    return min(max(d.x, d.y), 0.0) + length(max(d, vec2<f32>(0.0)));
 }
 
 // --- Noise Functions ---
@@ -120,11 +105,9 @@ fn hash31(p: vec3<f32>) -> f32 {
 }
 
 fn noise3D(p: vec3<f32>) -> f32 {
-    var i = floor(p);
+    let i = floor(p);
     var f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    
-    var n = i.x + i.y * 157.0 + 113.0 * i.z;
     return mix(
         mix(
             mix(hash31(i + vec3<f32>(0.0, 0.0, 0.0)), hash31(i + vec3<f32>(1.0, 0.0, 0.0)), f.x),
@@ -140,7 +123,6 @@ fn noise3D(p: vec3<f32>) -> f32 {
     );
 }
 
-// FBM for plasma texture
 fn fbm(p: vec3<f32>) -> f32 {
     var value = 0.0;
     var amplitude = 0.5;
@@ -156,49 +138,45 @@ fn fbm(p: vec3<f32>) -> f32 {
 // --- Map Function ---
 // Returns vec3: x = distance, y = material ID, z = emission
 fn map(p_in: vec3<f32>) -> vec3<f32> {
-    var p = p_in;
-    var time = u.config.x;
-    let speed = u.zoom_params.x;
+    let p = p_in;
+    let time = u.config.x;
+    // Fast motion: the forge spins hard, bass and held both throttle it
+    let speed = u.zoom_params.x * (3.2 + g_bass * 2.6 + g_held * 1.8);
     let complexity = u.zoom_params.y;
     let scale = u.zoom_params.z;
-    
+
     var d = 1000.0;
     var mat = 0.0;
     var emission = 0.0;
-    
-    // --- Central Energy Core (Pulsating Star) ---
-    let corePulse = 1.0 + sin(time * 3.0) * 0.1;
+
+    // --- Central energy core ---
+    let corePulse = 1.0 + sin(time * (6.0 + g_bass * 6.0)) * 0.12 + g_strike * 0.25;
     let coreRadius = 0.8 * corePulse * scale;
     let dCore = sdSphere(p, coreRadius);
-    
-    // Plasma texture on core surface
-    let plasmaNoise = fbm(p * 3.0 + time * 0.5);
+
+    let plasmaNoise = fbm(p * 3.0 + time * 1.6);
     let dCorePlasma = dCore - plasmaNoise * 0.1;
-    
+
     if (dCorePlasma < d) {
         d = dCorePlasma;
-        mat = 1.0; // Core material
+        mat = 1.0;
         emission = u.zoom_params.w * (1.0 + plasmaNoise * 0.5);
     }
-    
-    // --- Contra-Rotating Rings ---
+
+    // --- Contra-rotating rings ---
     let numRings = 3 + i32(complexity * 3.0);
-    
+
     for (var i = 0; i < numRings; i++) {
         let fi = f32(i);
-        
-        // Ring parameters
+
         let ringRadius = (1.5 + fi * 0.8) * scale;
         let ringThickness = 0.08 + complexity * 0.05;
-        
-        // Rotation axes for each ring
+
         let rotSpeed1 = time * speed * (0.5 + fi * 0.2);
         let rotSpeed2 = time * speed * (0.3 - fi * 0.15);
-        
-        // Transform position for this ring
+
         var ringP = p;
-        
-        // Apply contra-rotation
+
         if (i % 2 == 0) {
             ringP = rotX(rotSpeed1) * ringP;
             ringP = rotY(rotSpeed2 * 0.5) * ringP;
@@ -206,63 +184,63 @@ fn map(p_in: vec3<f32>) -> vec3<f32> {
             ringP = rotY(rotSpeed1) * ringP;
             ringP = rotZ(rotSpeed2 * 0.7) * ringP;
         }
-        
-        // Base torus
-        let dTorus = sdTorus(ringP, vec2<f32>(ringRadius, ringThickness));
-        
-        // Boolean trenches/greebles - carve details into rings
+
+        var dTorus = sdTorus(ringP, vec2<f32>(ringRadius, ringThickness));
+
+        // Greeble pass: hull plating + rivet rows carved into every ring
+        let ringAngle = atan2(ringP.z, ringP.x);
+        let plating = sin(ringAngle * (24.0 + fi * 8.0)) * sin(ringP.y * 30.0);
+        dTorus -= plating * 0.008 * (1.0 + complexity);
+
+        // Boolean trenches
         let trenchCount = 6.0 + fi * 4.0;
-        let trenchAngle = atan2(ringP.z, ringP.x) * trenchCount + time * speed;
+        let trenchAngle = ringAngle * trenchCount + time * speed;
         let trenchPos = vec3<f32>(
             ringRadius * cos(trenchAngle / trenchCount),
             ringP.y,
             ringRadius * sin(trenchAngle / trenchCount)
         );
         let dTrench = sdBox(ringP - trenchPos, vec3<f32>(0.02, 0.15, 0.02) * scale);
-        
-        // Subtract trenches
+
         let dRingDetail = max(dTorus, -dTrench);
-        
-        // Add glowing panels
+
+        // Glowing panels
         let panelCount = 12.0;
-        let panelAngle = atan2(ringP.z, ringP.x) * panelCount;
-        let panelPhase = sin(panelAngle + time * speed * 2.0);
-        let isPanel = panelPhase > 0.7;
-        
+        let panelPhase = sin(ringAngle * panelCount + time * speed * 3.0);
+        let isPanel = panelPhase > 0.7 - g_treble * 0.2;
+
         if (dRingDetail < d) {
             d = dRingDetail;
-            mat = 2.0; // Metal ring material
+            mat = 2.0;
             if (isPanel) {
-                mat = 3.0; // Glowing panel
+                mat = 3.0;
                 emission = 0.5 * u.zoom_params.w;
             }
         }
     }
-    
-    // --- Plasma Arcs ---
-    // Occasional energy bridges between rings and core
-    let arcTime = fract(time * 0.3);
-    if (arcTime < 0.3) {
-        let arcAngle = time * 2.0;
+
+    // --- Plasma arcs — fast, and click strikes fire extra ones ---
+    let arcTime = fract(time * (1.1 + g_mids * 0.8));
+    if (arcTime < 0.3 + g_strike * 0.4) {
+        let arcAngle = time * 6.0;
         let arcRadius = 1.2 * scale;
         let arcPos = vec3<f32>(
             arcRadius * cos(arcAngle),
-            sin(time * 5.0) * 0.3,
+            sin(time * 12.0) * 0.35,
             arcRadius * sin(arcAngle)
         );
-        let dArc = sdSphere(p - arcPos, 0.05 * scale * (1.0 - arcTime * 3.0));
-        
+        let dArc = sdSphere(p - arcPos, 0.05 * scale * max(1.0 - arcTime * 3.0, 0.05));
+
         if (dArc < d) {
             d = dArc;
-            mat = 4.0; // Plasma arc
-            emission = 2.0 * u.zoom_params.w * (1.0 - arcTime * 3.0);
+            mat = 4.0;
+            emission = 2.0 * u.zoom_params.w * max(1.0 - arcTime * 3.0, 0.0);
         }
     }
-    
+
     return vec3<f32>(d, mat, emission);
 }
 
-// --- Normal Calculation ---
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
@@ -276,144 +254,191 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(id.xy);
-    
+
     if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) {
         return;
     }
-    
-    var uv = (fragCoord * 2.0 - dims) / dims.y;
 
-    // Audio reactivity — bass drives core/emission, treble accents ring panels
-    let bass = plasmaBuffer[0].x;
-    let treble = plasmaBuffer[0].z;
+    let coord = vec2<i32>(id.xy);
+    let uv01 = fragCoord / dims;
+    let uv = (fragCoord * 2.0 - dims) / dims.y;
+    let aspect = vec2<f32>(dims.x / max(dims.y, 1.0), 1.0);
+    let time = u.config.x;
 
-    // Camera setup
-    var time = u.config.x;
-    var ro = vec3<f32>(0.0, 0.0, 6.0);
-    
-    // Mouse interaction for camera orbit
-    let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
-    
+    g_bass = plasmaBuffer[0].x;
+    g_mids = plasmaBuffer[0].y;
+    g_treble = plasmaBuffer[0].z;
+
+    let rawMouse = u.zoom_config.yz;
+    let held = u.zoom_config.w > 0.5;
+    g_held = select(0.0, 1.0, held);
+
+    // ── spring cursor (extraBuffer[133..138] only) ──────────────────────
+    var smoothMouse = rawMouse;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[SPRING_INIT] > 0.5) {
+        smoothMouse = vec2<f32>(extraBuffer[SPRING_X], extraBuffer[SPRING_Y]);
+    }
+    if (hasSpring && id.x == 0u && id.y == 0u) {
+        var springPos = smoothMouse;
+        var springVel = vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]);
+        if (extraBuffer[SPRING_INIT] <= 0.5) {
+            springPos = rawMouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[SPRING_T], 0.001, 0.05);
+            let omega = 9.0;
+            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[SPRING_X] = springPos.x;
+        extraBuffer[SPRING_Y] = springPos.y;
+        extraBuffer[SPRING_VX] = springVel.x;
+        extraBuffer[SPRING_VY] = springVel.y;
+        extraBuffer[SPRING_T] = time;
+        extraBuffer[SPRING_INIT] = 1.0;
+        smoothMouse = springPos;
+    }
+
+    // ── click hammer strikes (capped, bounded) ─────────────────────────
+    var strike = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 1.1) {
+            let front = abs(length((uv01 - rp.xy) * aspect) - age * 1.05);
+            strike = max(strike, exp(-front * 32.0) * (1.0 - age / 1.1));
+        }
+    }
+    strike = min(strike, 1.0);
+    g_strike = strike;
+
+    // Camera — orbit steered by the smoothed cursor, auto-spin runs fast
+    var ro = vec3<f32>(0.0, 0.0, 6.0 - g_held * 1.2 + strike * 0.8);
+    let mouseX = smoothMouse.x * 2.0 - 1.0;
+    let mouseY = smoothMouse.y * 2.0 - 1.0;
+
     let temp_ro_yz = rot(mouseY * 1.5) * ro.yz;
     ro.y = temp_ro_yz.x;
     ro.z = temp_ro_yz.y;
 
-    let temp_ro_xz = rot(mouseX * 3.14 + time * 0.1) * ro.xz;
+    let temp_ro_xz = rot(mouseX * 3.14159 + time * (0.55 + g_bass * 0.9)) * ro.xz;
     ro.x = temp_ro_xz.x;
     ro.z = temp_ro_xz.y;
 
-    
-    // Camera look-at
     let ta = vec3<f32>(0.0, 0.0, 0.0);
     let ww = normalize(ta - ro);
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
     let rd = normalize(uv.x * uu + uv.y * vv + 1.8 * ww);
-    
+
     // Raymarching
     var t = 0.0;
     var d = 0.0;
     var m = 0.0;
     var accumEmission = 0.0;
-    let maxSteps = 96; // was 128 — adaptive relaxation recovers the detail
+    let maxSteps = 96;
     let maxDist = 30.0;
 
     for (var i = 0; i < maxSteps; i++) {
-        var p = ro + rd * t;
+        let p = ro + rd * t;
         let res = map(p);
         d = res.x;
         m = res.y;
         accumEmission += res.z;
 
         if (d < 0.001 || t > maxDist) { break; }
-        // Adaptive step: tight 0.6 near surfaces for detail, relaxed 0.85 in open space
         let stepScale = select(0.85, 0.6, d < 0.3);
         t += d * stepScale;
     }
-    
+
     // Space background with subtle nebula
     var col = vec3<f32>(0.005, 0.01, 0.02);
-    let nebula = fbm(rd * 2.0 + time * 0.05);
-    col += vec3<f32>(0.02, 0.03, 0.05) * nebula * max(0.0, rd.y);
-    
-    // Add distant stars
+    let nebula = fbm(rd * 2.0 + time * 0.25);
+    col += forgePalette(nebula + time * 0.05, g_mids) * nebula * 0.06 * max(0.0, rd.y + 0.4);
+
     let stars = pow(hash31(rd * 500.0), 20.0);
     col += vec3<f32>(stars);
-    
+
+    var fre = 0.0;
+
     if (t < maxDist) {
-        var p = ro + rd * t;
-        var n = calcNormal(p);
+        let p = ro + rd * t;
+        let n = calcNormal(p);
         let v = normalize(ro - p);
-        
-        // Core is the primary light source
+
         let corePos = vec3<f32>(0.0);
         let toCore = normalize(corePos - p);
-        
-        // Distance to core for lighting falloff
         let distToCore = length(p);
-        // Bass swells the forge's core luminosity on the beat
-        let coreIntensity = u.zoom_params.w * (1.0 + bass * 0.6);
-        
-        // Material-specific shading
+        let coreIntensity = u.zoom_params.w * (1.0 + g_bass * 0.8 + strike * 0.6);
+
+        // Hue races around the forge with the mids
+        let hue = fract(distToCore * 0.14 + time * (0.25 + g_mids * 0.85) + strike * 0.35);
+
         if (m == 1.0) {
-            // --- Core Material (Pulsating Star) ---
-            let plasmaDetail = fbm(p * 5.0 + time);
-            let coreCol = vec3<f32>(1.0, 0.7, 0.3) * (1.0 + plasmaDetail * 0.3);
-            col = coreCol * coreIntensity * 2.0;
-            
+            let plasmaDetail = fbm(p * 5.0 + time * 2.0);
+            col = forgePalette(hue, 1.0 + g_bass) * (1.0 + plasmaDetail * 0.4) * coreIntensity * 2.0;
+
         } else if (m == 2.0 || m == 3.0) {
-            // --- Metal Ring Material ---
-            
-            // Lighting from core
             let dif = max(dot(n, toCore), 0.0);
             let hal = normalize(toCore - rd);
             let spec = pow(max(dot(n, hal), 0.0), 64.0);
-            let fre = pow(1.0 - max(dot(n, v), 0.0), 5.0);
-            
-            // Metal color with rim lighting from core
+            fre = pow(1.0 - max(dot(n, v), 0.0), 5.0);
+
             let metalCol = vec3<f32>(0.4, 0.45, 0.5);
-            let warmRim = vec3<f32>(1.0, 0.6, 0.3) * fre * coreIntensity;
-            
-            // Ambient light from core based on distance
+            let warmRim = forgePalette(hue + 0.2, g_treble) * fre * coreIntensity * 1.3;
             let ambientCore = coreIntensity / (distToCore * distToCore + 1.0);
-            
+
             col = metalCol * (dif * coreIntensity + ambientCore * 0.3);
             col += vec3<f32>(1.0) * spec * coreIntensity;
             col += warmRim;
-            
+
+            // Plating banding — surfaces the greebled ring detail
+            let band = 0.5 + 0.5 * sin(atan2(p.z, p.x) * 24.0 + p.y * 30.0);
+            col *= 0.82 + band * 0.36;
+
             if (m == 3.0) {
-                // Glowing panels — treble makes the ring panels flicker brighter
-                col += vec3<f32>(0.3, 0.8, 1.0) * (0.5 + treble * 0.4) * coreIntensity;
+                col += forgePalette(hue + 0.55, 1.0) * (0.6 + g_treble * 0.8) * coreIntensity;
             }
-            
+
         } else if (m == 4.0) {
-            // --- Plasma Arc ---
-            col = vec3<f32>(0.5, 0.8, 1.0) * coreIntensity * 3.0;
+            col = forgePalette(hue + 0.7, 1.0 + g_treble) * coreIntensity * 3.2;
         }
-        
-        // Global emission accumulation (glow from core/proximity)
-        col += accumEmission * vec3<f32>(0.3, 0.5, 1.0) * 0.05;
-        
-        // Distance fog (dark space)
+
+        col += accumEmission * forgePalette(time * 0.3, g_mids) * 0.05;
         col = mix(col, vec3<f32>(0.005, 0.01, 0.02), 1.0 - exp(-0.08 * t));
     }
-    
+
+    // Hammer-strike flash + cursor forge halo
+    col += forgePalette(time * 1.2, 1.0) * strike * 1.5;
+    let cursorDist = length((uv01 - smoothMouse) * aspect);
+    col += forgePalette(time * 0.5 + cursorDist, g_bass) * exp(-cursorDist * 7.5) * (0.14 + g_held * 0.5);
+
     // Vignette
     col *= 1.0 - 0.4 * length(uv);
 
-    // ACES filmic tone mapping (replaces Reinhard — preserves hue in the molten core)
-    col = acesToneMapping(col);
+    // ── temporal feedback — exact load, no filtering ────────────────────
+    let prev = textureLoad(dataTextureC, coord, 0);
+    col = mix(col, prev.rgb * 0.93, 0.07 + g_bass * 0.04);
 
-    // Gamma correction
-    col = pow(col, vec3<f32>(0.4545));
+    col = acesToneMapping(col * (1.0 + g_mids * 0.25));
 
     // IGN dither — suppresses banding in the dark-space nebula gradient
-    let ign = fract(52.9829189 * fract(dot(vec2<f32>(id.xy), vec2<f32>(0.06711056, 0.00583715))));
+    let ign = fract(52.9829189 * fract(dot(fragCoord, vec2<f32>(0.06711056, 0.00583715))));
     col = clamp(col + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
-    // Depth write was missing — pack normalized ray distance for downstream depth-aware effects
+    // Semantic alpha: structure presence + forge emission
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(
+        select(0.0, 0.45 + fre * 0.3, t < maxDist)
+        + luma * 0.45 + min(accumEmission, 2.0) * 0.12 + strike * 0.3,
+        0.0, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
+
     let sceneDepth = select(1.0, t / maxDist, t < maxDist);
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(sceneDepth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(sceneDepth, 0.0, 0.0, 0.0));
 }

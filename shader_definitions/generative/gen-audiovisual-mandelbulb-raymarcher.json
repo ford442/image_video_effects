@@ -8,9 +8,15 @@
     "audio-reactive",
     "mandelbulb",
     "neon",
-    "abstract"
+    "abstract",
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
-  "description": "Raymarched 3D Mandelbulb fractal with video texture mapping, audio-reactive geometry mutation, and depth output.",
+  "description": "A Mandelbulb raymarched at speed: the fractal exponent morphs several times a second under bass, orbit-trap coloring races through a full psychedelic spectrum with treble, and a greebled ridge shell carves micro-detail into every surface. The spring-smoothed cursor orbits the camera, holding the button throttles the spin and dollies in, and clicks fire shock rings that deform the bulb and flash the palette.",
   "workgroup_size": [
     16,
     16,

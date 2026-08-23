@@ -6,9 +6,15 @@
     "quantum",
     "mechanical",
     "audio-reactive",
-    "fractal"
+    "fractal",
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
-  "description": "A hyper-organic, glowing network of bio-mechanical mycelial threads that endlessly branch, mutate, and pulse with neon-quantum data streams.",
+  "description": "A bio-mechanical mycelial net streaming and firing fast. Hyphal filigree carves branching detail over the trails, data pulses race at a treble-driven rate, and the whole net is graded through a psychedelic neon spectrum. The spring-smoothed cursor is an attractor whose whip speed mutates the growth, holding blooms the well, and clicks fire mutation bursts. Persistent state now lives only in the extraBuffer safe zone.",
   "workgroup_size": [
     16,
     16,
@@ -29,7 +35,7 @@
       "default": 0.8,
       "min": 0.0,
       "max": 2.0,
-      "step": 0.05
+      "step": 0.01
     },
     {
       "index": 2,
@@ -48,7 +54,7 @@
       "step": 0.01
     }
   ],
-  "supportsDepth": false,
+  "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-cybernetic-mycelium-neural-web",

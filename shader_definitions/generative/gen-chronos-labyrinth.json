@@ -13,9 +13,16 @@
     "generative",
     "procedural",
     "audio",
-    "music"
+    "music",
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "audio-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
-  "description": "An infinite, Escher-esque maze of shifting geometric staircases and corridors suspended over a void, with glowing temporal anomalies.",
+  "description": "An Escher-esque maze whose cells now shift several times a second, with masonry coursing carved into every wall and chronal iridescence staining the stone. Temporal rifts fire at a treble-driven rate and glow through a psychedelic spectrum, leaving decaying echoes. The spring-smoothed cursor orbits the labyrinth, holding dilates time and pulls the camera in, and clicks send chronal shockwaves through the geometry.",
   "workgroup_size": [
     16,
     16,
@@ -28,7 +35,7 @@
       "default": 1,
       "min": 0.5,
       "max": 3,
-      "step": 0.1
+      "step": 0.05
     },
     {
       "index": 1,
@@ -36,7 +43,7 @@
       "default": 0.5,
       "min": 0,
       "max": 2,
-      "step": 0.05
+      "step": 0.01
     },
     {
       "index": 2,
@@ -44,7 +51,7 @@
       "default": 0.8,
       "min": 0,
       "max": 2,
-      "step": 0.1
+      "step": 0.01
     },
     {
       "index": 3,
@@ -52,7 +59,7 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.05
+      "step": 0.01
     }
   ],
   "supportsDepth": true,

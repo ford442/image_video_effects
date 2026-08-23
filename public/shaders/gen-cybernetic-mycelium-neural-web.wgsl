@@ -1,16 +1,19 @@
 // ----------------------------------------------------------------
-// Cybernetic-Mycelium Neural-Web
+// Cybernetic-Mycelium Neural-Web — Batch 63
 // Category: generative
-// ----------------------------------------------------------------
-//  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
-//            organic, mycelium, neural-network, bioluminescence, particle-trails,
-//            upgraded-rgba, spring-damper envelopes, click-seeded mutation
+// A bio-mechanical mycelial net firing at speed: psychedelic pulse
+// spectra, KIFS lattice + hyphal filigree detail, spring-cursor
+// attractor, held bloom, capped click mutation bursts.
+// Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
+//           exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
+//           bounded extraBuffer[133..138] state (the legacy [0..6] writes into
+//           the engine-reserved / FFT zone are gone).
 // ----------------------------------------------------------------
 
 struct Uniforms {
-  config      : vec4<f32>,
-  zoom_config : vec4<f32>,
-  zoom_params : vec4<f32>,
+  config      : vec4<f32>,  // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config : vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
+  zoom_params : vec4<f32>,  // x=Growth Rate, y=Pulse Intensity, z=Decay Speed, w=Network Complexity
   ripples     : array<vec4<f32>, 50>,
 };
 
@@ -29,6 +32,14 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer : array<vec4<f32>>;
 
 const PI : f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530718;
+
+const SPRING_X: i32 = 133;
+const SPRING_Y: i32 = 134;
+const SPRING_VX: i32 = 135;
+const SPRING_VY: i32 = 136;
+const SPRING_T: i32 = 137;
+const SPRING_INIT: i32 = 138;
 
 fn hash2(p: vec2<f32>) -> f32 {
   var q = fract(p * vec2<f32>(0.1031, 0.1030));
@@ -36,30 +47,13 @@ fn hash2(p: vec2<f32>) -> f32 {
   return fract((q.x + q.y) * q.x);
 }
 
-fn hash3(p: vec3<f32>) -> f32 {
-  var q = fract(p * 0.1031);
-  q += dot(q, q.yzx + 33.33);
-  return fract((q.x + q.y) * q.z);
-}
-
 fn noise2(p: vec2<f32>) -> f32 {
   let i = floor(p);
   let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
+  let w = f * f * (3.0 - 2.0 * f);
   return mix(
-    mix(hash2(i+vec2<f32>(0,0)), hash2(i+vec2<f32>(1,0)), u.x),
-    mix(hash2(i+vec2<f32>(0,1)), hash2(i+vec2<f32>(1,1)), u.x), u.y);
-}
-
-fn noise3(p: vec3<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(mix(hash3(i+vec3<f32>(0,0,0)), hash3(i+vec3<f32>(1,0,0)), u.x),
-        mix(hash3(i+vec3<f32>(0,1,0)), hash3(i+vec3<f32>(1,1,0)), u.x), u.y),
-    mix(mix(hash3(i+vec3<f32>(0,0,1)), hash3(i+vec3<f32>(1,0,1)), u.x),
-        mix(hash3(i+vec3<f32>(0,1,1)), hash3(i+vec3<f32>(1,1,1)), u.x), u.y), u.z);
+    mix(hash2(i+vec2<f32>(0.0,0.0)), hash2(i+vec2<f32>(1.0,0.0)), w.x),
+    mix(hash2(i+vec2<f32>(0.0,1.0)), hash2(i+vec2<f32>(1.0,1.0)), w.x), w.y);
 }
 
 fn fbm(p: vec2<f32>) -> f32 {
@@ -72,20 +66,14 @@ fn fbm(p: vec2<f32>) -> f32 {
   return v;
 }
 
-fn rot(a: f32) -> mat2x2<f32> {
-  let c = cos(a); let s = sin(a);
-  return mat2x2<f32>(c, -s, s, c);
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn bass_env(prev: f32, curr: f32, att: f32, rel: f32) -> f32 {
-  if(curr > prev) { return mix(prev, curr, att); }
-  else { return mix(prev, curr, rel); }
-}
-
-fn spring_damper(prev: f32, goal: f32, vel: ptr<function, f32>, k: f32, d: f32) -> f32 {
-  let force = (goal - prev) * k;
-  *vel = (*vel + force) * (1.0 - d);
-  return prev + *vel;
+// Psychedelic mycelial spectrum — neon wheel spun by the audio
+fn mycoPalette(t: f32, drive: f32) -> vec3<f32> {
+  let phase = vec3<f32>(0.25, 2.0 + drive * 1.3, 4.1 - drive * 0.9);
+  return 0.5 + 0.5 * cos(TAU * t + phase);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -94,8 +82,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fragCoord = vec2<f32>(f32(global_id.x), f32(global_id.y));
   if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
 
+  let coord = vec2<i32>(global_id.xy);
+  let uv01 = fragCoord / res;
   let uv = (fragCoord - 0.5 * res) / res.y;
+  let aspect = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
   let time = u.config.x;
+
   let bass = plasmaBuffer[0].x;
   let mid = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
@@ -105,57 +97,61 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let decaySpeed = u.zoom_params.z;
   let complexity = u.zoom_params.w;
 
-  // ═══ CHUNK: bass/mid spring-damper envelopes ═══
-  var velBass = 0.0;
-  var velMid = 0.0;
-  var velTreble = 0.0;
-  let prevBass = extraBuffer[0];
-  let prevMid = extraBuffer[1];
-  let prevTreble = extraBuffer[2];
-  let bassSmooth = spring_damper(prevBass, bass, &velBass, 0.12, 0.08);
-  let midSmooth = spring_damper(prevMid, mid, &velMid, 0.14, 0.09);
-  let trebleSmooth = spring_damper(prevTreble, treble, &velTreble, 0.16, 0.10);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[0] = bassSmooth;
-    extraBuffer[1] = midSmooth;
-    extraBuffer[2] = trebleSmooth;
+  let rawMouse = u.zoom_config.yz;
+  let held = u.zoom_config.w > 0.5;
+  let heldF = select(0.0, 1.0, held);
+
+  // ── spring cursor — the ONLY persistent state, all in the safe zone ──
+  var smoothMouse = rawMouse;
+  var cursorSpeed = 0.0;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[SPRING_INIT] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[SPRING_X], extraBuffer[SPRING_Y]);
+    cursorSpeed = length(vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]));
   }
-
-  // ═══ CHUNK: mouse state persistence (position + click/velocity) ═══
-  let mouseUV = u.zoom_config.yz;
-  let mouseClick = u.zoom_config.w;
-  let prevMouseX = extraBuffer[3];
-  let prevMouseY = extraBuffer[4];
-  let clickCount = extraBuffer[5];
-  let clickHeld = extraBuffer[6];
-
-  let mouseDelta = length(mouseUV - vec2<f32>(prevMouseX, prevMouseY));
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[3] = mouseUV.x;
-    extraBuffer[4] = mouseUV.y;
+  if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]);
+    if (extraBuffer[SPRING_INIT] <= 0.5) {
+      springPos = rawMouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[SPRING_T], 0.001, 0.05);
+      let omega = 10.5;
+      let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[SPRING_X] = springPos.x;
+    extraBuffer[SPRING_Y] = springPos.y;
+    extraBuffer[SPRING_VX] = springVel.x;
+    extraBuffer[SPRING_VY] = springVel.y;
+    extraBuffer[SPRING_T] = time;
+    extraBuffer[SPRING_INIT] = 1.0;
+    smoothMouse = springPos;
+    cursorSpeed = length(springVel);
   }
+  // Whip the cursor and the net mutates — replaces the old click-count state slot
+  let whip = clamp(cursorSpeed * 0.6, 0.0, 1.5);
 
-  var newClickCount = clickCount;
-  var newClickHeld = clickHeld;
-  if (mouseClick > 0.5 && clickHeld < 0.5) {
-    newClickCount = clickCount + 1.0;
-    newClickHeld = 1.0;
+  // ── click mutation bursts (capped, bounded) ─────────────────────────
+  var burst = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.4) {
+      let front = abs(length((uv01 - rp.xy) * aspect) - age * 0.85);
+      burst = max(burst, exp(-front * 30.0) * (1.0 - age / 1.4));
+    }
   }
-  if (mouseClick < 0.5) {
-    newClickHeld = 0.0;
-  }
-  extraBuffer[5] = newClickCount;
-  extraBuffer[6] = newClickHeld;
+  burst = min(burst, 1.0);
+  let mutationSeed = fract(burst * 0.7 + whip * 0.3 + time * 0.05);
 
-  let mousePos = (mouseUV - 0.5) * vec2<f32>(res.x / res.y, 1.0) * 2.5;
-  let mouseY = mouseUV.y;
-  let mouseWorld = vec3<f32>(mousePos.x, mouseY * 2.0, 0.0);
+  let mousePos = (smoothMouse - 0.5) * vec2<f32>(aspect.x, 1.0) * 2.5;
+  let mouseWorld = vec2<f32>(mousePos.x, smoothMouse.y * 2.0);
 
-  // Click velocity injects mutation bursts
-  let clickBurst = exp(-mouseDelta * 20.0) * mouseClick * 3.0;
-  let mutationSeed = fract(newClickCount * 0.17 + time * 0.01);
-
-  // KIFS structural lattice (nutrient hotspots) with audio chaos
+  // KIFS structural lattice (nutrient hotspots)
   var z = vec3<f32>(uv.x, uv.y, 0.0) * complexity * 3.0;
   var dr = 1.0;
   for(var i = 0; i < 5; i++) {
@@ -167,87 +163,86 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
   let hotspot = length(z) / abs(dr);
 
-  // Mycelial trail density (simulated via fbm)
-  let trailP = uv * 4.0 + time * 0.1 * growthRate;
-  let trailDensity = fbm(trailP) * fbm(trailP * 1.5 + vec2<f32>(time * 0.2, -time * 0.15));
+  // Mycelial trail density — fast motion: growth streams several times quicker
+  let flow = time * (0.9 + growthRate * 1.8 + bass * 1.4 + heldF * 0.8);
+  let trailP = uv * 4.0 + vec2<f32>(flow * 0.35, -flow * 0.2);
+  let trailDensity = fbm(trailP) * fbm(trailP * 1.5 + vec2<f32>(flow * 0.8, -flow * 0.6));
 
-  // Mouse attraction modulated by click mutation
-  let toMouse = mouseWorld.xy - uv;
+  // Hyphal filigree — fine branching striation carved over the trails
+  let filigree = 0.5 + 0.5 * sin(trailDensity * 42.0 - flow * 4.0 + hotspot * 60.0);
+  let detailedTrails = trailDensity * (0.75 + filigree * 0.5);
+
+  // Mouse attraction — held and burst both deepen the well
+  let toMouse = mouseWorld - uv;
   let mouseDist = length(toMouse);
-  let mouseAttraction = exp(-mouseDist * mouseDist * 2.0) * (3.0 + clickBurst);
+  let mouseAttraction = exp(-mouseDist * mouseDist * 2.0) * (3.0 + burst * 3.0 + heldF * 2.5 + whip * 1.5);
 
   // Audio-reactive turbulence on trails
-  let audioTurbulence = fbm(uv * 8.0 + vec2<f32>(bassSmooth * 2.0, midSmooth * 2.0));
+  let audioTurbulence = fbm(uv * 8.0 + vec2<f32>(bass * 2.0 + flow * 0.3, mid * 2.0 - flow * 0.25));
 
-  // Data pulses traveling along high-density trails
-  let pulsePhase = fract(time * 0.5 * pulseIntensity + trailDensity * 3.0 + mutationSeed);
+  // Data pulses racing the high-density trails — treble sets the fire rate
+  let pulsePhase = fract(time * (2.4 + treble * 6.0) * pulseIntensity + detailedTrails * 3.0 + mutationSeed);
   let pulse = exp(-pow(pulsePhase - 0.5, 2.0) * 50.0) * pulseIntensity;
 
-  // Audio-reactive growth
-  let audioGrowth = 1.0 + bassSmooth * 2.0 + midSmooth * 0.8;
-  let totalDensity = trailDensity * audioGrowth + mouseAttraction + audioTurbulence * 0.3;
+  let audioGrowth = 1.0 + bass * 2.0 + mid * 0.8;
+  let totalDensity = detailedTrails * audioGrowth + mouseAttraction + audioTurbulence * 0.3;
 
   // Decay
-  let age = fract(hash2(floor(uv * 20.0)) + time * decaySpeed + mutationSeed);
-  let alive = smoothstep(0.0, 0.3, age) * smoothstep(1.0, 0.7, age);
+  let age2 = fract(hash2(floor(uv * 20.0)) + time * decaySpeed * (1.0 + bass) + mutationSeed);
+  let alive = smoothstep(0.0, 0.3, age2) * smoothstep(1.0, 0.7, age2);
 
-  // Color mapping
-  // Base threads: bio-mechanical dark purples and metallic greys
+  // ── Color: bio-mechanical base under a psychedelic pulse spectrum ────
+  let baseHue = fract(detailedTrails * 0.5 + time * (0.12 + treble * 0.6) + mutationSeed);
   let bioCol = mix(
-    vec3<f32>(0.15, 0.05, 0.2),
+    mycoPalette(baseHue, mid) * 0.32,
     vec3<f32>(0.35, 0.35, 0.38),
-    trailDensity
+    trailDensity * 0.6
   );
 
-  // Data pulses: neon greens and cyans
-  let pulseCol = mix(
-    vec3<f32>(0.0, 1.0, 0.4),
-    vec3<f32>(0.0, 0.8, 1.0),
-    sin(time * 2.0 + uv.x * 5.0 + trebleSmooth * 3.0) * 0.5 + 0.5
-  ) * pulse;
+  let pulseCol = mycoPalette(baseHue + 0.4 + treble * 0.2, 1.0 + bass) * pulse * 1.4;
 
-  // Bioluminescence at intersections
   let intersection = smoothstep(0.4, 0.6, trailDensity) * smoothstep(0.6, 0.4, trailDensity);
-  let bioLum = vec3<f32>(0.2, 1.0, 0.6) * intersection * bassSmooth * 2.0;
+  let bioLum = mycoPalette(baseHue + 0.65, treble) * intersection * (0.6 + bass * 2.2);
 
-  // Mouse hotspot glow
-  let mouseGlow = vec3<f32>(0.8, 0.3, 1.0) * mouseAttraction * 0.5;
+  let mouseGlow = mycoPalette(fract(time * 0.5), bass) * mouseAttraction * 0.5;
 
-  // Combine
   var col = bioCol * alive;
   col += pulseCol;
   col += bioLum;
   col += mouseGlow;
+  col += mycoPalette(fract(time * 1.1), 1.0) * burst * 1.2;
 
-  // Organic subsurface scattering simulation
-  let sss = fbm(uv * 6.0 + time * 0.05) * 0.1;
-  col += vec3<f32>(0.1, 0.05, 0.15) * sss;
+  // Organic subsurface scattering approximation
+  let sss = fbm(uv * 6.0 + flow * 0.12) * 0.1;
+  col += mycoPalette(baseHue + 0.85, mid) * sss * 0.6;
 
   // Audio bloom
-  col += vec3<f32>(0.0, 0.2, 0.1) * bassSmooth * bassSmooth * 0.3;
-  col += vec3<f32>(0.1, 0.0, 0.2) * midSmooth * 0.25;
+  col += mycoPalette(0.35, bass) * bass * bass * 0.35;
+  col += mycoPalette(0.75, mid) * mid * 0.28;
 
   // Chromatic edge aberration on dense areas
-  let ca = totalDensity * 0.02 * (1.0 + trebleSmooth);
+  let ca = totalDensity * 0.02 * (1.0 + treble);
   col.r += noise2(uv + vec2<f32>(ca, 0.0)) * ca;
   col.b += noise2(uv - vec2<f32>(ca, 0.0)) * ca;
 
   // Depth sample for depth-aware feedback
-  let depthUV = clamp(fragCoord / res, vec2<f32>(0.0), vec2<f32>(1.0));
-  let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, depthUV, 0.0).r;
+  let depthSample = textureLoad(readDepthTexture, coord, 0).r;
 
-  // Temporal feedback from dataTextureC
-  let prevData = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
-  let prevCol = prevData.rgb;
-  let feedbackMix = 0.25 + bassSmooth * 0.15;
-  col = mix(prevCol * 0.96, col, feedbackMix);
+  // ── temporal feedback — exact load, no filtering ────────────────────
+  let prevData = textureLoad(dataTextureC, coord, 0);
+  let feedbackMix = 0.3 + bass * 0.15;
+  col = mix(prevData.rgb * 0.95, col, feedbackMix);
 
-  // Depth-aware alpha based on interaction intensity/density
-  let intensity = length(col) + totalDensity * 0.3 + bassSmooth * 0.2;
-  let alpha = clamp(intensity * 0.6 + depthSample * 0.2, 0.15, 0.95);
+  col = acesToneMap(col * (1.05 + mid * 0.25));
+
+  // Semantic alpha: mycelial density + firing energy
+  let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+  let alpha = clamp(
+    clamp(totalDensity * 0.3, 0.0, 0.7) + luma * 0.45 + pulse * 0.2 + burst * 0.25 + depthSample * 0.1,
+    0.0, 1.0);
 
   let outColor = vec4<f32>(col, alpha);
-  textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(hotspot * 0.5 + depthSample * 0.5, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
+  textureStore(writeTexture, coord, outColor);
+  textureStore(dataTextureA, coord, outColor);
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(hotspot * 0.5 + depthSample * 0.5, 0.0, 1.0), 0.0, 0.0, 0.0));
 }
