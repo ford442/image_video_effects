@@ -2,15 +2,55 @@
   "id": "ascii-shockwave",
   "name": "ASCII Shockwave",
   "url": "shaders/ascii-shockwave.wgsl",
-  "description": "A matrix-style digital shockwave that quantizes the image into procedural characters.",
+  "description": "Matrix glyph cells with traveling shock packets, held-pointer ASCII density, bounded click rings, and oil-slick phosphor color. Display RGBA is packed in A.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "glyph-cells"
   ],
   "tags": [
     "filter",
     "image-processing"
   ],
   "params": [
+    {
+      "id": "param1",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "updatedParams": [
     {
       "id": "param1",
       "name": "Intensity",

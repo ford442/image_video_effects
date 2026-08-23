@@ -5,9 +5,36 @@
 
 ---
 
-## Recently Completed (474 tracker entries)
+## Recently Completed (482 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 56 (8 shaders) — 2026-08-23 — GEOMETRY, FAST MOTION, PSYCHEDELIC COLOR
+
+The next clean single-pass effect cohort upgrades ASCII Shockwave, CMYK
+Halftone Interactive, Heat Haze Mirage gpt52, Quantum Prism, Sphere
+Projection, Fractal Kaleidoscope, RGB Iso Lines, and Chromatic Focus.
+Each keeps its core algorithm and adds shader-specific geometry (glyph
+cells, print rosettes, thermal filaments, hex grout, meridians, kaleido
+seams, iso ticks, iris blades), two continuous motion structures, held
+pointer response, and bounded click fronts. Heat haze and iso-lines move
+to 16x16x1. Source `params` stay exact; indexed `updatedParams` are
+aligned. Kaleido sliders that were previously unread now drive segments,
+speed, zoom, and detail. CMYK A remains coverage `[C,M,Y,K]`; iso-lines A
+packs `[lineR, lineG, lineB, alpha]`; the rest write display RGBA. B is
+unused and no extraBuffer access was added. Notes:
+`swarm-outputs/codex-2026-08-23-b56/`. Real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 475 | `ascii-shockwave` | 56 | 128→106 | Glyph cells, shock packets, oil-slick phosphor, held density, click rings; display A. |
+| 476 | `cmyk-halftone-interactive` | 56 | 128→135 | Rosette rings, ink conveyors, rainbow registration, held shear; CMYK A preserved. |
+| 477 | `heat-haze-gpt52` | 56 | 129→135 | 16x16, thermal filaments, rise packets, held source, click rings; display A. |
+| 478 | `quantum-prism` | 56 | 130→124 | Live sliders, hex grout/runners, oil-slick prism, click fronts; display A. |
+| 479 | `sphere-projection` | 56 | 131→110 | Meridians/parallels, held zoom, rainbow lighting, click shells; display A. |
+| 480 | `fractal-kaleidoscope` | 56 | 131→114 | Canonical bindings, live sliders, seams/conveyors, held pivot; display A. |
+| 481 | `rgb-iso-lines` | 56 | 131→106 | 16x16, iso-runners, rainbow hypsometry, held parallax; line-mask A. |
+| 482 | `chromatic-focus-interactive` | 56 | 130→105 | Aperture blades, radial packets, held pinch, click rings; display A. |
 
 ### Batch 55 (4 shaders) — 2026-08-21 — GEOMETRY, FAST MOTION, PSYCHEDELIC COLOR
 

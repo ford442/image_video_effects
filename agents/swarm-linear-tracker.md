@@ -31,6 +31,17 @@
 | 472 | `rgb-topology` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 473 | `elastic-strip` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 474 | `refraction-tunnel` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 475 | `ascii-shockwave` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 476 | `cmyk-halftone-interactive` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 477 | `heat-haze-gpt52` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 478 | `quantum-prism` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 479 | `sphere-projection` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 480 | `fractal-kaleidoscope` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 481 | `rgb-iso-lines` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 482 | `chromatic-focus-interactive` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+
+Batch 56 (8 shaders) continues the geometry / fast-motion / psychedelic
+cohort after Batch 55. Structural gates 8/8. Real-GPU visual QA remains external.
 
 Batch 55 (4 shaders) is a distinct geometry / fast-motion / psychedelic cohort
 after Batches 53–54. Structural gates 4/4. Real-GPU visual QA remains external.
