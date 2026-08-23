@@ -74,24 +74,33 @@ fn fractalZoom(uv: vec2<f32>, time: f32, depth: f32, iterations: i32) -> vec2<f3
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   var uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
+  let intensity = u.zoom_params.x;
+  let speed = mix(0.15, 2.5, u.zoom_params.y);
+  let scale = mix(0.75, 2.5, u.zoom_params.z);
+  let detail = mix(3.0, 12.0, u.zoom_params.w);
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let mouse = u.zoom_config.yz;
+  let mouseDelta = (uv - mouse) * vec2<f32>(resolution.x / resolution.y, 1.0);
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
   
   // Sample depth for this pixel
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   
   // Number of kaleidoscope segments (animated)
-  let segments = 6.0 + sin(currentTime * 0.2) * 2.0;
+  let segments = detail + sin(currentTime * speed * 0.4) * (1.0 + audio.y * 2.0);
   
   // Apply kaleidoscope effect
-  var kaleidoUV = kaleidoscopeFractal(uv, currentTime, segments);
+  var kaleidoUV = kaleidoscopeFractal(0.5 + (uv - 0.5) * scale + vec2<f32>(-mouseDelta.y, mouseDelta.x) * held * 0.08, currentTime, segments);
   
   // Apply multi-level fractal zoom based on depth
   let iterations = 3 + i32(depth * 2.0);
-  let finalUV = fractalZoom(kaleidoUV, currentTime, depth, iterations);
+  let finalUV = fractalZoom(kaleidoUV, currentTime * speed, depth, iterations);
   
   // Sample the texture multiple times for chromatic effect
-  let chromaticOffset = 0.003 * (1.0 - depth);
+  let chromaticOffset = (0.002 + audio.z * 0.004) * (1.0 - depth);
   let colorR = textureSampleLevel(readTexture, u_sampler, finalUV + vec2<f32>(chromaticOffset, 0.0), 0.0).r;
   let colorG = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
   let colorB = textureSampleLevel(readTexture, u_sampler, finalUV - vec2<f32>(chromaticOffset, 0.0), 0.0).b;
@@ -107,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor += vec3<f32>(symmetryGlow * 0.15);
   
   // Handle ripple interactions
-  let rippleCount = u32(u.config.y);
+  let rippleCount = min(u32(u.config.y), 50u);
   var rippleInfluence = 0.0;
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let rippleData = u.ripples[i];
@@ -121,7 +130,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
   
-  finalColor += vec3<f32>(rippleInfluence * 0.2);
+  let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + symmetryGlow * 5.0 + currentTime * speed);
+  finalColor += spectral * (symmetryGlow * intensity * (0.18 + audio.x * 0.12) + abs(rippleInfluence) * 0.35 + held * exp(-length(mouseDelta) * 8.0) * 0.15);
   
   // Write output
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));

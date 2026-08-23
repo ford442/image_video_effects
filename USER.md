@@ -110,6 +110,9 @@ Format specification:
 - Shader upgrade Batch 56 is implemented through tracker #482 as an eight-effect
   interactive-complexity cohort. Preserve its documented Phosphor Magnifier
   display-history repack and Vertical Slice Wave state/display separation.
+- Shader upgrade Batch 57 is implemented through tracker #490 as an eight-effect
+  kinetic image-transformation cohort. Its Mirror Drag, Temporal Distortion,
+  and Pixel Drag feedback histories use exact C loads; saved params remain fixed.
 - CRA→Vite remains deferred. Dead CRA-rewire deps to drop in #1125.
 - Keep thumbnail coverage CI reporting-only until the healthy baseline reaches 50%.
 - Shader upgrade work now includes separately closed Batches 53, 54, and 55
