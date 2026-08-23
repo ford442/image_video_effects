@@ -3,13 +3,20 @@
   "name": "Slime Mold Growth + EM Field",
   "url": "shaders/sim-slime-mold-growth-em.wgsl",
   "description": "Physarum slime mold simulation with mouse electromagnetic field interaction. Agents steer along electric field lines; click ripples spawn secondary charges.",
+  "updatedParams": [
+    { "index": 0, "name": "Sensor Angle", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Trail Decay", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "EM Influence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Ripple Charge", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = trail, electric magnitude, signed magnetic field, growth activity; pointer history uses only extraBuffer[133..138]",
   "features": [
     "simulation",
     "agent-based",
     "mouse-driven",
     "electromagnetic",
     "interactive",
-    "randomization-safe"
+    "randomization-safe", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-charge", "click-charges", "aces-tone-map", "semantic-alpha"
   ],
   "params": [
     {

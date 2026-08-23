@@ -136,7 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let toMouse = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let mDist = length(toMouse);
-  let mouseRadius = mix(0.03, 0.15, 0.5) * select(1.0, 1.25, held);
+  let mouseRadius = mix(0.03f, 0.15f, 0.5f) * select(1.0f, 1.25f, held);
   let influence = smoothstep(mouseRadius, 0.0, mDist);
   vel = vel + mouseVel * influence * 0.5;
   vel = vel + vec2<f32>(-mouseVel.y, mouseVel.x) * influence * mouseSpeed;

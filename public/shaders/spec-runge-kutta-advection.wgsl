@@ -40,6 +40,23 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     return fract((p3.xx + p3.yz) * p3.zy);
 }
 
+fn stateAt(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
+}
+
+fn stateLinear(uv: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+    let q = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * res - 0.5;
+    let p = vec2<i32>(floor(q));
+    let f = fract(q);
+    let a = mix(stateAt(p, res), stateAt(p + vec2<i32>(1, 0), res), f.x);
+    let b = mix(stateAt(p + vec2<i32>(0, 1), res), stateAt(p + vec2<i32>(1, 1), res), f.x);
+    return mix(a, b, f.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Velocity field: multi-octave noise-driven
 fn sampleVelocity(pos: vec2<f32>, time: f32) -> vec2<f32> {
     let scale = 3.0;
@@ -71,6 +88,7 @@ fn advectEuler(pos: vec2<f32>, dt: f32, time: f32) -> vec2<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let time = u.config.x;
 
@@ -81,21 +99,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let mousePos = u.zoom_config.yz;
     let isMouseDown = u.zoom_config.w > 0.5;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Read previous frame for temporal feedback
-    let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
+    let prev = stateAt(vec2<i32>(gid.xy), res);
 
     // Current velocity at this pixel
     var vel = sampleVelocity(uv, time);
 
     // Mouse vortex pair
-    if (isMouseDown || u.config.y > 0.5) {
-        let toMouse = mousePos - uv;
+    if (isMouseDown || u.config.y > 0.0) {
+        let aspect = res.x / res.y;
+        let toMouse = (mousePos - uv) * vec2<f32>(aspect, 1.0);
         let dist = length(toMouse);
         let vortex = exp(-dist * dist * 400.0) * vortexStr;
         // Counter-rotating vortex
         let perp = vec2<f32>(-toMouse.y, toMouse.x) / (dist + 0.001);
-        vel += perp * vortex * 0.4;
+        vel += perp * vortex * (0.08 + select(0.12, 0.40, isMouseDown)) * (1.0 + bass * 0.5);
         // Second vortex (counter-rotating pair)
         let offset = vec2<f32>(0.05, 0.0);
         let toMouse2 = mousePos + offset - uv;
@@ -103,16 +125,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let perp2 = vec2<f32>(-toMouse2.y, toMouse2.x) / (dist2 + 0.001);
         vel -= perp2 * exp(-dist2 * dist2 * 400.0) * vortex * 0.3;
     }
+    let hoverDelta = (mousePos - uv) * vec2<f32>(res.x / res.y, 1.0);
+    let hoverDist = length(hoverDelta);
+    let hoverPerp = vec2<f32>(-hoverDelta.y, hoverDelta.x) / (hoverDist + 0.001);
+    vel += hoverPerp * exp(-hoverDist * hoverDist * 180.0) * vortexStr * 0.025 * (1.0 + treble * 0.4);
 
     // RK4 backtrace: find where this pixel came from
-    let backtracedPos = advectRK4(uv, -dt * 0.01, time);
+    let backtracedPos = advectRK4(uv, -dt * 0.01 * (1.0 + mids * 0.35), time);
     let wrappedPos = fract(backtracedPos);
 
     // Sample dye at backtraced position
     let advectedDye = textureSampleLevel(readTexture, u_sampler, wrappedPos, 0.0).rgb;
 
     // Sample from previous frame for feedback
-    let prevDye = prev.rgb;
+    let prevDye = stateLinear(wrappedPos, res).rgb;
 
     // Blend current advected dye with feedback
     var dye = mix(advectedDye, prevDye, feedback);
@@ -144,9 +170,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     );
     dye = mix(dye, dye + curlVis * 0.3, vortexStr);
 
+    let aspect = res.x / res.y;
+    var clickEnergy = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let r = u.ripples[i];
+        let age = time - r.z;
+        if (age >= 0.0 && age < 2.0) {
+            let ring = abs(length((uv - r.xy) * vec2<f32>(aspect, 1.0)) - age * (0.18 + bass * 0.08));
+            clickEnergy += (1.0 - smoothstep(0.0, 0.025, ring)) * (1.0 - age * 0.5);
+        }
+    }
+    dye += vec3<f32>(0.3 + bass, 0.2 + mids, 0.5 + treble) * clickEnergy * 0.25;
+
     // Store for next frame
-    textureStore(dataTextureA, gid.xy, vec4<f32>(dye, 1.0));
-    textureStore(writeTexture, gid.xy, vec4<f32>(dye, length(vel)));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(clamp(dye, vec3<f32>(0.0), vec3<f32>(8.0)), clamp(length(vel), 0.0, 1.0)));
+    let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    let alpha = clamp(sourceAlpha * 0.4 + length(vel) * 0.7 + clickEnergy * 0.2, 0.0, 1.0);
+    textureStore(writeTexture, gid.xy, vec4<f32>(acesToneMap(dye), alpha));
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }
