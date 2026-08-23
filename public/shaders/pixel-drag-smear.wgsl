@@ -73,9 +73,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let brushRadius = mix(0.01, 0.25, u.zoom_params.x);
   let decay = mix(0.8, 0.99, u.zoom_params.z);
   let audioBass = plasmaBuffer[0].x;
+  let audioMids = plasmaBuffer[0].y;
+  let audioTreble = plasmaBuffer[0].z;
   let baseStrength = mix(0.1, 2.0, u.zoom_params.y);
   let clickBoost = select(0.0, 1.5, u.zoom_config.w > 0.5);
   let strength = (baseStrength + audioBass * 0.8 + clickBoost) * 0.5;
+  let mode = u.zoom_params.w;
 
   let mouse = u.zoom_config.yz;
   let dist = distance(uv * vec2(aspect, 1.0), mouse * vec2(aspect, 1.0));
@@ -91,7 +94,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let offset = dir * influence * 0.05 + jitter + curlDisp;
 
-  let historyColor = textureSampleLevel(dataTextureC, u_sampler, uv - offset, 0.0);
+  let historyUV = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
+  let historyCoord = vec2<i32>(clamp(historyUV * resolution, vec2<f32>(0.0), resolution - 1.0));
+  let historyColor = textureLoad(dataTextureC, historyCoord, 0);
   let videoColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -104,7 +109,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let warmTint = vec3(1.08, 1.02, 0.92);
   let coolTint = vec3(0.92, 0.98, 1.06);
   let tint = mix(warmTint, coolTint, clamp(velocity, 0.0, 1.0));
-  let tinted = blended * tint;
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(u.config.x - event.z, 0.0);
+    clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 60.0);
+  }
+  let comb = sin((uv.x + mode * uv.y) * (35.0 + mode * 80.0) - u.config.x * (3.0 + audioMids * 6.0));
+  let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + comb * 2.0 + audioTreble * 3.0);
+  let tinted = blended * tint + spectral * (abs(comb) * influence * mode * 0.08 + clickFront * 0.22);
 
   let toneMapped = acesToneMap(tinted);
 

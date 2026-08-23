@@ -7425,9 +7425,14 @@
       "temporal-trail",
       "chromatic-ghost",
       "audio-shatter",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "exact-feedback-loads"
     ],
-    "description": "Temporal mirror trail with chromatic ghost displacement and audio shatter. Previous frames persist as decaying echoes; R and B channels trail at different rates. Treble shatters the mirror into angular shards with glow.",
+    "description": "Exact-load temporal mirror feedback with moving shard facets, held drag pressure, chromatic ghosts, click shatter fronts, and three-band spectral glow.",
     "params": [
       {
         "id": "drag",
@@ -7465,7 +7470,42 @@
       "temporal",
       "chromatic",
       "shatter"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Drag Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mirror Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Shatter Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "moire-interference",
@@ -8983,7 +9023,7 @@
     "id": "neon-flashlight",
     "name": "Neon Flashlight",
     "url": "shaders/neon-flashlight.wgsl",
-    "description": "Dark environment illuminated by a neon-edge detecting flashlight.",
+    "description": "Depth-edge neon flashlight with animated cone ribs, radial sweeps, held beam squeeze, click flashes, and three-band spectral pulses.",
     "params": [
       {
         "id": "radius",
@@ -9018,7 +9058,12 @@
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -9026,7 +9071,42 @@
       "audio",
       "music",
       "reactive"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Beam Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Neon Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Threshold",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ambient Light",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "neon-fluid-warp",
@@ -10032,7 +10112,7 @@
     "id": "pixel-drag-smear",
     "name": "Pixel Drag Smear",
     "url": "shaders/pixel-drag-smear.wgsl",
-    "description": "Smudge and drag pixels like wet paint, creating persistent trails.",
+    "description": "Exact-load wet-paint feedback with moving curl/combing modes, held drag strength, click pigment fronts, three-band audio, and spectral paint highlights.",
     "params": [
       {
         "id": "radius",
@@ -10066,12 +10146,52 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "exact-feedback-loads"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Drag Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Decay Rate",
+        "default": 0.95,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "pixel-explode",
@@ -10390,7 +10510,7 @@
     "id": "pixel-sort-radial",
     "name": "Radial Pixel Stretch",
     "url": "shaders/pixel-sort-radial.wgsl",
-    "description": "Radially stretches pixels from the mouse position based on luminance.",
+    "description": "Kinetic radial pixel sorting with luminance gates, traveling radial runners, held stretch pressure, click fronts, chromatic separation, and spectral color.",
     "params": [
       {
         "id": "stretch",
@@ -10424,12 +10544,52 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "display-history"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Stretch Amt",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Luma Thresh",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Direction",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "pixel-stretch-cross",
@@ -10882,7 +11042,7 @@
     "id": "psychedelic-noise-flow",
     "name": "Psychedelic Noise Flow",
     "url": "shaders/psychedelic-noise-flow.wgsl",
-    "description": "Applies a liquid-like noise flow where RGB channels are separated by phase, creating colorful swirls. Mouse controls flow speed and direction.",
+    "description": "Layered noise-flow filaments with moving RGB currents, held pointer vortices, click fronts, three-band audio, and psychedelic spectral highlights.",
     "params": [
       {
         "id": "speed",
@@ -10916,12 +11076,51 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color"
     ],
     "tags": [
       "mouse-driven",
       "interactive"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Noise Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "quad-mirror",

@@ -414,8 +414,6 @@
       "filename": "2026-08-12_luminescent-quantum-silicate-diatom.md",
       "title": "Luminescent Quantum-Silicate Diatom",
       "added": "2026-08-12T15:28:58.638076"
-<<<<<<< HEAD
-=======
     },
     {
       "filename": "2026-08-13_abyssal-plasma-void-medusa.md",
@@ -450,7 +448,11 @@
       "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
       "title": "Ethereal Quantum-Glass Nautilus",
       "added": "2026-08-21T15:28:56.185053"
->>>>>>> 79f3f9a67ad49750fcbc4745e1bca43fc4b432b4
+    },
+    {
+      "filename": "2026-08-22_astral-plasma-accretion-forge.md",
+      "title": "Astral Plasma Accretion Forge",
+      "added": "2026-08-22T15:12:59.044203"
     }
   ],
   "current": null,
@@ -634,19 +636,17 @@
       "completed_at": "2026-08-13T08:11:15.164261+00:00"
     },
     {
-<<<<<<< HEAD
       "filename": "2026-08-13_abyssal-plasma-void-medusa.md",
       "title": "Abyssal Plasma Void-Medusa",
       "added": "2026-08-13T15:13:28.701419",
       "status": "completed",
       "completed_at": "2026-08-14T08:37:15.142219+00:00"
-=======
-      "filename": "2026-08-19_quantum-mycelial-neural-web.md",
+    },
+    {      "filename": "2026-08-19_quantum-mycelial-neural-web.md",
       "title": "Quantum Mycelial Neural Web",
       "added": "2026-08-19T15:41:23.433626",
       "status": "completed",
       "completed_at": "2026-08-21T08:37:33.520590+00:00"
->>>>>>> 79f3f9a67ad49750fcbc4745e1bca43fc4b432b4
     }
   ],
   "completed": [

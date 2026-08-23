@@ -2,7 +2,7 @@
   "id": "neon-flashlight",
   "name": "Neon Flashlight",
   "url": "shaders/neon-flashlight.wgsl",
-  "description": "Dark environment illuminated by a neon-edge detecting flashlight.",
+  "description": "Depth-edge neon flashlight with animated cone ribs, radial sweeps, held beam squeeze, click flashes, and three-band spectral pulses.",
   "params": [
     {
       "id": "radius",
@@ -37,7 +37,12 @@
     "mouse-driven",
     "audio-reactive",
     "audio-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "continuous-motion",
+    "held-pointer",
+    "click-reactive",
+    "psychedelic-color",
+    "depth-aware"
   ],
   "tags": [
     "filter",
@@ -45,5 +50,40 @@
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Beam Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Neon Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Edge Threshold",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Ambient Light",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }
