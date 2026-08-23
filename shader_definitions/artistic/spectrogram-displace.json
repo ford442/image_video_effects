@@ -2,11 +2,14 @@
   "id": "spectrogram-displace",
   "name": "Spectrogram Displace",
   "url": "shaders/spectrogram-displace.wgsl",
-  "description": "Audio-driven per-pixel displacements from an FFT texture.",
+  "description": "Live three-band and read-only FFT-bin displacement with sprung pointer focus, bounded click accents, and a scrolling exact-C spectrogram persisted through authoritative A display history.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive",
+    "temporal",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",
@@ -45,5 +48,11 @@
       "max": 1,
       "step": 0.01
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Intensity", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 1, "name": "Speed", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 2, "name": "Scale", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 3, "name": "Detail", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
   ]
 }

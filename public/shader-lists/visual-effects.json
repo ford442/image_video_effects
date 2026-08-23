@@ -488,13 +488,28 @@
     "id": "ascii-shockwave",
     "name": "ASCII Shockwave",
     "url": "shaders/ascii-shockwave.wgsl",
-    "description": "A matrix-style digital shockwave that quantizes the image into procedural characters.",
+    "description": "Dot-matrix terminal blast fronts: an eight-glyph 4x6 ROM is indexed by box-averaged cell luminance, and the ASCII region is the union of a continuous pointer pulse with every bounded click front, each expanding at its own rate with a trailing wake. Ring spacing is banded by the FFT, crests split chromatically, and glyphs leave a decaying phosphor trace.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "dot-matrix-glyphs",
+      "chromatic-aberration",
+      "phosphor-persistence"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "ascii",
+      "shockwave",
+      "terminal",
+      "glyph"
     ],
     "params": [
       {
@@ -528,6 +543,44 @@
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Glyph Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Character cells across the frame (40–160)."
+      },
+      {
+        "id": "param2",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Propagation rate of the pointer pulse and click fronts."
+      },
+      {
+        "id": "param3",
+        "name": "Source Tint",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Blend from terminal phosphor green toward the source colour."
+      },
+      {
+        "id": "param4",
+        "name": "Phosphor Persistence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Decay rate of the glyph afterimage through dataTextureC."
       }
     ]
   },
@@ -642,9 +695,19 @@
     "id": "chromatic-focus-interactive",
     "name": "Chromatic Focus",
     "url": "shaders/chromatic-focus-interactive.wgsl",
-    "description": "Strong chromatic aberration that increases with distance from mouse focus.",
+    "description": "Chromatic DOF with six-blade iris geometry, multi-tap blur, zone-plate caustics, oil-slick runners/packets, held focus squeeze/pinch, click iris shells, and light display history in A.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
+      "bounded-blur",
+      "psychedelic-color",
+      "upgraded-rgba",
+      "aperture-blades"
     ],
     "params": [
       {
@@ -680,7 +743,42 @@
       "vfx",
       "particles",
       "glow"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Abberation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Blur",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Focus Rad",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.8,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Falloff",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "cross-spec-alpha-spectral-bloom",
@@ -947,7 +1045,9 @@
       "holographic-scanlines",
       "data-visualization",
       "hex-grid",
-      "interference-patterns"
+      "interference-patterns",
+      "click-ripples",
+      "aces-tone-map"
     ],
     "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
     "params": [
@@ -1239,36 +1339,31 @@
     "description": "Luminance-based pixel stretching controlled by mouse position.",
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "threshold",
+        "name": "Threshold",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "id": "mode",
+        "name": "Sort Mode",
+        "default": 0,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 2,
+        "step": 1,
+        "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "glitch",
+        "name": "Glitch Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       }
     ],
     "features": [
@@ -1435,7 +1530,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -1474,6 +1571,41 @@
       "audio",
       "music",
       "reactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Holo Tint",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Focus Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1623,14 +1755,18 @@
     "id": "interactive-fresnel",
     "name": "Interactive Fresnel",
     "url": "shaders/interactive-fresnel.wgsl",
-    "description": "Gravitational and optical Fresnel lensing with 2.5D heightfield normals, concentric annular curvature, Cauchy chromatic dispersion, and exact-load temporal shimmer.",
+    "description": "2.5D Fresnel lens curvature with Cauchy dispersion, held ring squeeze, oil-slick grout, radial packets, and bounded click shells. Display RGBA in A.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "chromatic-aberration",
       "depth-mass",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color"
     ],
     "updated": true,
     "params": [
@@ -1665,32 +1801,40 @@
     ],
     "updatedParams": [
       {
+        "index": 0,
         "id": "effectStrength",
         "name": "Lensing Power",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 1,
         "id": "ringCount",
         "name": "Ring Count",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 2,
         "id": "ringThickness",
         "name": "Ring Thickness",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 3,
         "id": "dispersion",
         "name": "Dispersion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -2855,12 +2999,14 @@
     "name": "Warp Drive",
     "category": "visual-effects",
     "url": "shaders/warp_drive.wgsl",
-    "description": "Alcubierre warp metric approximation with radial compression ahead and expansion behind. Star streaks with relativistic Doppler shift, HDR bloom on contracted stars, chromatic aberration on high-velocity regions, and ACES tone mapping.",
+    "description": "Alcubierre warp streaks with Doppler aurora packets, held warp aim, analytic stars, click fronts. Diagnostic A packing preserved.",
     "features": [
       "audio-reactive",
       "upgraded-rgba",
       "radial-blur",
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "tags": [
       "warp",
@@ -2873,6 +3019,36 @@
       "alcubierre"
     ],
     "params": [
+      {
+        "id": "warp_speed",
+        "name": "Warp Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "prism_split",
+        "name": "Prism Split",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "core_glow",
+        "name": "Core Glow",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "blur_quality",
+        "name": "Blur Quality",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "warp_speed",
         "name": "Warp Speed",

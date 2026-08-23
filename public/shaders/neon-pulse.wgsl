@@ -1,11 +1,40 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Neon Pulse — Planck Blackbody Radiation Grid
-//  Category: lighting-effects
-//  Features: audio-reactive, depth-aware, procedural
-//  Complexity: Medium-High
-//  Scientific: Planck spectrum, colour temperature 1000K–18000K per cell,
-//              incandescent to blue-white arc lamp range, audio-driven heating
-//  Upgraded: Phase B — from simple sine grid to blackbody radiation
+//  Neon Pulse — Blackbody Plasma Cell Array
+//  Category: interactive-mouse
+//  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
+//            per-band-fft, blackbody, plasma-arcs, thermal-diffusion,
+//            depth-aware, upgraded-rgba, semantic-alpha, aces
+//  Upgraded: 2026-08-23 (Batch 60)
+// ═══════════════════════════════════════════════════════════════════════════════
+//  BUG FIXED IN THIS PASS — the shader was catalogued `mouse-driven` but never
+//  read the mouse. `zoom_config` appeared exactly once in the file: in the
+//  Uniforms struct declaration. The cursor did nothing at all. It is now a
+//  local heat source: hovering warms the cells under it, holding drives them
+//  toward arc breakdown, and clicks inject bounded thermal shock fronts.
+//
+//  Also fixed:
+//    - `@workgroup_size(8, 8, 1)` -> `(16, 16, 1)` (house convention).
+//    - Depth clobber: `writeDepthTexture` was fed the emission luma, so chained
+//      depth-aware shaders read glow instead of geometry. Scene depth preserved.
+//    - Unbounded additive HDR: `bg + emitted` was written straight out with
+//      `alpha = luma` uncapped. Blackbody emission times the glow term easily
+//      exceeds 1, so highlights clipped hard and alpha went out of range. Now
+//      ACES-mapped with a clamped semantic alpha.
+//    - `dataTextureA` held diagnostics that nothing read. It now carries the
+//      THERMAL STATE the diffusion below reads back (r = T/20000 K), display
+//      goes to writeTexture, and B carries the diagnostics.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Per-cell FFT band ownership — every cell hashes to one of the eight
+//       spectrum bins, which sets its base temperature and flicker rate. The
+//       array now reads as a spectrum analyser made of hot filaments rather
+//       than one globally-modulated grid.
+//
+//    2. Thermal diffusion with radiative cooling — cell temperature is carried
+//       through dataTextureC and relaxed toward its target with a Stefan-
+//       Boltzmann-style T^4 cooling term, so filaments heat quickly under the
+//       cursor and cool slowly afterwards instead of snapping instantly.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0)  var u_sampler: sampler;
@@ -55,16 +84,29 @@ fn hash11(p: f32) -> f32 {
     return fract(sin(p * 127.1 + 311.7) * 43758.5453);
 }
 
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
+}
 
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let dimsI = vec2<i32>(textureDimensions(writeTexture));
+    if (global_id.x >= u32(dimsI.x) || global_id.y >= u32(dimsI.y)) { return; }
+
+    let coord   = vec2<i32>(global_id.xy);
+    let resolution = vec2<f32>(dimsI);
     let uv      = vec2<f32>(global_id.xy) / resolution;
     let time    = u.config.x;
     let bass    = plasmaBuffer[0].x;
     let mids    = plasmaBuffer[0].y;
     let treble  = plasmaBuffer[0].z;
+    let mouse   = u.zoom_config.yz;
+    let held    = step(0.5, u.zoom_config.w);
 
     let gridN     = mix(4.0, 20.0, u.zoom_params.x);
     let baseT     = mix(800.0, 12000.0, u.zoom_params.y);   // Kelvin
@@ -80,10 +122,53 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let h    = hash22(cell);
     let h1   = hash11(cell.x * 13.7 + cell.y * 7.3);
 
-    // Temperature oscillates with audio and time
-    let osc  = 0.5 + 0.5 * sin(time * (1.0 + h.x * 3.0) + h.y * 6.28318);
-    let audioBoost = bass * audioHeat + mids * audioHeat * 0.3 + treble * audioHeat * 0.15;
-    let T    = baseT + h1 * 4000.0 + osc * 2500.0 + audioBoost;
+    // ── Structure 1: each cell owns one FFT bin ──────────────────────────────
+    // The bin sets the cell's base temperature and its flicker rate, so the
+    // array behaves like a filament spectrum analyser instead of one grid all
+    // pulsing together.
+    let bandIdx = u32(h.x * 8.0) % 8u;
+    let band = plasmaBuffer[bandIdx + 1u].x;
+
+    let osc  = 0.5 + 0.5 * sin(time * (1.0 + h.x * 3.0 + band * 4.0) + h.y * 6.28318);
+    let audioBoost = bass * audioHeat + mids * audioHeat * 0.3 + treble * audioHeat * 0.15
+                   + band * audioHeat * 0.8;
+
+    // ── Mouse as a local heat source (was never read at all) ─────────────────
+    let aspectV = vec2<f32>(aspect, 1.0);
+    let mouseDist = length((uv - mouse) * aspectV);
+    let mouseHeat = exp(-mouseDist * mouseDist * 26.0) * (2500.0 + held * 7000.0);
+
+    // ── Bounded click thermal shocks ─────────────────────────────────────────
+    var shockHeat = 0.0;
+    var shockGlow = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 2.2) {
+            let r = length((uv - rp.xy) * aspectV);
+            let front = r - age * 0.55;
+            let env = exp(-front * front * 150.0) * exp(-age * 1.5);
+            shockHeat += env * 9000.0;
+            shockGlow += env * env;
+        }
+    }
+    shockGlow = min(shockGlow, 1.2);
+
+    let targetT = baseT + h1 * 4000.0 + osc * 2500.0 + audioBoost + mouseHeat + shockHeat;
+
+    // ── Structure 2: thermal diffusion with radiative cooling ────────────────
+    // Previous cell temperature is carried in dataTextureC (r channel, scaled by
+    // 20000 K). Heating is fast; cooling follows a Stefan-Boltzmann-style T^4
+    // law, so filaments linger after the cursor leaves.
+    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevT = prevState.r * 20000.0;
+    let tNorm = clamp(prevT / 20000.0, 0.0, 1.0);
+    let t2 = tNorm * tNorm;
+    let radiative = 0.06 + 0.32 * t2 * t2;                  // ~T^4 cooling
+    let heating = 0.55;
+    let rate = select(radiative, heating, targetT > prevT);
+    let T = mix(prevT, targetT, clamp(rate, 0.02, 1.0));
 
     // Distance from cell centre: multiple emission shapes
     let centre = vec2<f32>(0.5);
@@ -125,12 +210,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shadowMask = mix(0.3, 1.0, depth);
     emitted *= shadowMask;
 
-    // Add glow onto background
-    let luma     = dot(emitted, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let finalRGB = bg + emitted;
+    emitted += vec3<f32>(1.0, 0.75, 0.45) * shockGlow * (1.2 + bass * 1.4);
+    emitted += vec3<f32>(0.35, 0.65, 1.0) * exp(-mouseDist * mouseDist * 40.0) * (0.3 + held * 0.9);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, luma));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(T / 20000.0, spot, luma, osc));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(luma, 0.0, 0.0, 0.0));
+    // Add glow onto background, then tone map (was written raw and clipped).
+    let luma     = dot(emitted, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let finalRGB = acesFilm(bg + emitted);
+
+    // Semantic alpha: emission is the content, the plate behind it is not.
+    let alpha = clamp(luma * 0.85 + shockGlow * 0.3 + 0.08, 0.0, 1.0);
+    let outColor = vec4<f32>(finalRGB, alpha);
+
+    textureStore(writeTexture, coord, outColor);
+    // A carries THERMAL STATE, not display RGBA — the diffusion above reads it
+    // back as dataTextureC next frame, and a half-colour/half-temperature
+    // packing would hand chained shaders a red channel that is really Kelvin.
+    // Same convention as the Batch 58B liquid sims: state in A, display in
+    // writeTexture, diagnostics in B.
+    textureStore(dataTextureA, coord, vec4<f32>(T / 20000.0, spot, luma, osc));
+    textureStore(dataTextureB, coord, vec4<f32>(finalRGB, shockGlow));
+
+    // Depth: scene geometry preserved (was overwritten with emission luma).
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 

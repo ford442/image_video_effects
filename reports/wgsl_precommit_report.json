@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-08-16T02:23:09.444054",
+  "timestamp": "2026-08-23T04:18:06.946648",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 8,
-  "passed": 8,
+  "total": 10,
+  "passed": 10,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -11,6 +11,66 @@
   "workgroup_grace_skipped": 0,
   "extrabuffer_violations": 0,
   "results": [
+    {
+      "file": "public/shaders/ambient-liquid.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/bubble-lens.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/crystal-facets.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/cyber-lens.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "ok": true
+    },
     {
       "file": "public/shaders/digital-mold.wgsl",
       "skipped": false,
@@ -27,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/elastic-chromatic-explosion.wgsl",
+      "file": "public/shaders/frosted-glass-lens.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/interactive-fisheye.wgsl",
+      "file": "public/shaders/glass_refraction_alpha.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/interactive-fresnel.wgsl",
+      "file": "public/shaders/liquid-metal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/magnetic-field.wgsl",
+      "file": "public/shaders/magnetic-interference.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,37 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/motion-revealer.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/swirling-void.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/velocity-field-paint.wgsl",
+      "file": "public/shaders/optical-feedback.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

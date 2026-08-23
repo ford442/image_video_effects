@@ -1,4 +1,9 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Cyber Trace — Batch 59
+//  Spring brush, capped click blooms, exact C history, ACES composite,
+//  semantic alpha, extraBuffer[133..138] at (0,0) only.
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,82 +11,68 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Decay, y=Glow, z=HueShift, w=BrushSize
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Helper function for HSL to RGB conversion
 fn hue2rgb(p: f32, q: f32, t: f32) -> f32 {
-    var t_clamped = t;
-    if (t_clamped < 0.0) { t_clamped = t_clamped + 1.0; }
-    if (t_clamped > 1.0) { t_clamped = t_clamped - 1.0; }
-    if (t_clamped < 1.0/6.0) { return p + (q - p) * 6.0 * t_clamped; }
-    if (t_clamped < 1.0/2.0) { return q; }
-    if (t_clamped < 2.0/3.0) { return p + (q - p) * (2.0/3.0 - t_clamped) * 6.0; }
+    var tc = t;
+    if (tc < 0.0) { tc = tc + 1.0; }
+    if (tc > 1.0) { tc = tc - 1.0; }
+    if (tc < 1.0 / 6.0) { return p + (q - p) * 6.0 * tc; }
+    if (tc < 1.0 / 2.0) { return q; }
+    if (tc < 2.0 / 3.0) { return p + (q - p) * (2.0 / 3.0 - tc) * 6.0; }
     return p;
 }
 
 fn hslToRgb(h: f32, s: f32, l: f32) -> vec3<f32> {
-    var r: f32;
-    var g: f32;
-    var b: f32;
-
     if (s == 0.0) {
-        r = l;
-        g = l;
-        b = l;
-    } else {
-        var q: f32;
-        if (l < 0.5) {
-            q = l * (1.0 + s);
-        } else {
-            q = l + s - l * s;
-        }
-        var p = 2.0 * l - q;
-        r = hue2rgb(p, q, h + 1.0/3.0);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1.0/3.0);
+        return vec3<f32>(l);
     }
-    return vec3<f32>(r, g, b);
+    var q: f32;
+    if (l < 0.5) {
+        q = l * (1.0 + s);
+    } else {
+        q = l + s - l * s;
+    }
+    let p = 2.0 * l - q;
+    return vec3<f32>(hue2rgb(p, q, h + 1.0 / 3.0), hue2rgb(p, q, h), hue2rgb(p, q, h - 1.0 / 3.0));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn luma(rgb: vec3<f32>) -> f32 {
+    return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dims = vec2<i32>(textureDimensions(writeTexture));
-    if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
-        return;
-    }
+    let pixel = vec2<i32>(global_id.xy);
+    let res = u.config.zw;
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    var uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
-
-    // Params
-    let decaySpeed = u.zoom_params.x; // 0.90 to 0.99
-    let glowIntensity = u.zoom_params.y; // 0.5 to 3.0
-    let hueShift = u.zoom_params.z; // 0.0 to 1.0
-    let brushSize = u.zoom_params.w; // 0.01 to 0.1
-
+    let uv = vec2<f32>(global_id.xy) / res;
+    let decaySpeed = u.zoom_params.x;
+    let glowIntensity = u.zoom_params.y;
+    let hueShift = u.zoom_params.z;
+    let brushSize = u.zoom_params.w * select(1.0, 0.75, u.zoom_config.w > 0.5);
     let time = u.config.x;
-
-    // Mouse Interaction
-    // Correct for aspect ratio to make brush circular
-    let aspect = f32(dims.x) / f32(dims.y);
+    let aspect = res.x / res.y;
     let rawMouse = u.zoom_config.yz;
+    let isMouseDown = u.zoom_config.w > 0.5;
 
-    // Spring-damper brush: the trace ribbons behind the cursor.
-    // Persistent state lives in extraBuffer[133..136] (pos.xy, vel.xy),
-    // [137] = last integration time, [138] = init flag.
-    // [0..4] reserved, [5..132] = engine FFT bins - never touched here.
     let hasSpringState = arrayLength(&extraBuffer) > 138u;
     var mousePos = rawMouse;
     if (hasSpringState && extraBuffer[138] > 0.5) {
@@ -91,11 +82,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var springPos = mousePos;
         var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
         if (extraBuffer[138] <= 0.5) {
-            // First frame: snap the spring onto the raw cursor, zero velocity.
             springPos = rawMouse;
             springVel = vec2<f32>(0.0);
         } else {
-            // Critically-damped spring toward the raw mouse (zeta = 1).
             let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
             let omega = 8.0;
             let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
@@ -110,78 +99,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[138] = 1.0;
     }
 
-    let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
+    let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
+    var brush = smoothstep(brushSize, brushSize * 0.5, dist) * select(0.5, 1.0, isMouseDown);
 
-    // Brush
-    var brush = 0.0;
-    // Always active or only when mouse down?
-    // u.zoom_config.w is 1.0 if mouse is down.
-    // Let's make it always trace but stronger when down.
-    let isMouseDown = u.zoom_config.w > 0.5;
-
-    let baseBrush = smoothstep(brushSize, brushSize * 0.5, dist);
-    brush = baseBrush * (select(0.5, 1.0, isMouseDown));
-
-    // Click stamp blooms: each live ripple paints a soft round bloom into the
-    // history through the same drawColor pipeline, so clicks leave stars
-    // without dragging. Radius ~ brushSize * 1.5, decaying over ~1.5s of age.
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let age = time - ripple.z;
-        if (age < 0.0 || age > 1.5) {
-            continue;
-        }
+        if (age < 0.0 || age > 1.5) { continue; }
         let stampDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
         let stampRadius = brushSize * 1.5;
-        let stampFade = 1.0 - clamp(age / 1.5, 0.0, 1.0);
-        brush += smoothstep(stampRadius, stampRadius * 0.5, stampDist) * stampFade;
+        brush += smoothstep(stampRadius, stampRadius * 0.5, stampDist) * (1.0 - clamp(age / 1.5, 0.0, 1.0));
     }
 
-    // Audio bands (engine truth: plasmaBuffer[0].xyz = bass/mids/treble,
-    // plasmaBuffer[1..8] = 8 FFT band energies for per-band shimmer).
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
 
-    // History (Read from C, Write to A)
-    let historyColor = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-
-    // Calculate new color to add
-    // Mids drive the hue cycle speed: the trace hue spins faster on vocals.
+    let historyColor = textureLoad(dataTextureC, pixel, 0);
     let colorTick = time * 0.2 * (1.0 + mids * 0.8) + hueShift;
     let drawColor = hslToRgb(fract(colorTick), 1.0, 0.5);
-
-    // Add brush to history
-    // SACRED history contract: A is written RAW - decayed history plus the
-    // raw draw color, clamped to 2.0. Never tonemap this write; all audio
-    // glow modulation happens at the composite stage only.
     let newHistory = clamp(historyColor.rgb * decaySpeed + drawColor * brush, vec3<f32>(0.0), vec3<f32>(2.0));
 
-    // Write State
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newHistory, 1.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(newHistory, 1.0));
 
-    // Composition
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-
-    // Composite-only audio modulation: bass pulses the glow, and each of the
-    // 8 vertical screen bands shimmers with its own FFT band energy.
-    // History stays raw - this never feeds back into dataTextureA.
     let band = min(u32(uv.x * 8.0), 7u);
-    let bandShimmer = plasmaBuffer[(band % 8u) + 1u].x * 0.3;
-    let audioGlow = glowIntensity * (1.0 + bass * 0.5) * (1.0 + bandShimmer);
+    let bandShimmer = plasmaBuffer[band + 1u].x * 0.3;
+    let audioGlow = glowIntensity * (1.0 + bass * 0.5) * (1.0 + bandShimmer) * select(1.0, 1.2, isMouseDown);
 
-    // Mix input with glowing trail
-    // Additive blending for the glow
     let rawComposite = inputColor + newHistory * audioGlow;
-    let peak = max(max(rawComposite.r, rawComposite.g), rawComposite.b);
-    let excess = max(peak - 1.0, 0.0);
-    let mappedPeak = select(peak, 1.0 + excess / (1.0 + excess * 0.5), peak > 1.0);
-    let finalColor = rawComposite * (mappedPeak / max(peak, 1e-4));
+    var finalColor = acesToneMap(rawComposite * (0.92 + mids * 0.08));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    let trailStrength = clamp(luma(newHistory) * audioGlow * 0.5 + brush * 0.4, 0.0, 1.0);
+    let alpha = clamp(0.35 + trailStrength * 0.55 + bass * 0.05, 0.0, 0.98);
 
-    // Pass-through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depth = textureLoad(readDepthTexture, pixel, 0).r;
+    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

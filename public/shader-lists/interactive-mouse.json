@@ -183,7 +183,7 @@
     "id": "bio-touch",
     "name": "Bio-Luminescent Touch",
     "url": "shaders/bio-touch.wgsl",
-    "description": "Reveals organic, glowing cellular structures beneath the image where you touch. Audio-reactive cell density and pulse speed respond to bass.",
+    "description": "Bioluminescent cellular membranes with traveling nuclei, held curl vortices, click growth fronts, three-band audio, and spectral organism color.",
     "params": [
       {
         "id": "radius",
@@ -217,7 +217,11 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color"
     ],
     "tags": [
       "filter",
@@ -226,7 +230,42 @@
       "voronoi",
       "organic",
       "glow"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Glow Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Cell Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "biomimetic-scales",
@@ -1210,7 +1249,16 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "depth-aware",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
+      "psychedelic-color",
+      "cmyk-rosette",
+      "rosette-moire"
     ],
     "params": [
       {
@@ -1247,7 +1295,43 @@
       "halftone",
       "print",
       "audio-reactive"
-    ]
+    ],
+    "description": "Rosette/moire CMYK halftone with rotating screens, registration drift and held plate shear, ink conveyors/packets, click blooms, rainbow registration glow, and three-band audio. A remains CMYK coverage masks.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dot Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Angle Offset",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Channel Spread",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ink Darkness",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "codebreaker-reveal",
@@ -2234,9 +2318,17 @@
     "url": "shaders/cyber-slit-scan.wgsl",
     "features": [
       "mouse-driven",
-      "webcam"
+      "webcam",
+      "audio-reactive",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
+      "temporal",
+      "upgraded-rgba"
     ],
-    "description": "Slit-scan effect with cyberpunk artifacts controlled by mouse position.",
+    "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Display RGBA packed in A.",
     "params": [
       {
         "name": "Scan Speed",
@@ -2275,7 +2367,42 @@
       "mouse-driven",
       "interactive"
     ],
-    "name": "Cyber Slit Scan"
+    "name": "Cyber Slit Scan",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bit Crush",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Unused",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "cyber-trace",
@@ -2721,7 +2848,7 @@
     "id": "digital-mold",
     "name": "Digital Mold",
     "url": "shaders/digital-mold.wgsl",
-    "description": "Continuous Gray-Scott reaction-diffusion kinetics with biological hyphal branching, spore dispersal inoculation, bioluminescent nutrient glow, and exact-load chemical state memory.",
+    "description": "Gray-Scott mycelium with nutrient-gradient chemotaxis — hyphae extend up the image-luminance gradient the way real mycelium forages, rather than diffusing isotropically — and per-band sporulation regimes, where each FFT bin pushes its own zone into a different region of the Gray-Scott parameter plane so the colony grows visibly different structures per frequency. Also replaces a per-frame spore hash that strobed with a coherent drifting field, and derives alpha from colony density instead of passing the source alpha through.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2729,7 +2856,15 @@
       "spore-noise",
       "depth-humidity",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "gray-scott",
+      "chemotaxis"
     ],
     "updated": true,
     "params": [
@@ -2768,28 +2903,32 @@
         "name": "Feed Rate",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Gray-Scott feed rate; per-band zones offset it."
       },
       {
         "id": "killRate",
         "name": "Kill Rate",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Gray-Scott kill rate; per-band zones offset it."
       },
       {
         "id": "diffusionA",
         "name": "Diffusion A",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Diffusion coefficient of the substrate."
       },
       {
         "id": "diffusionB",
         "name": "Diffusion B",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Diffusion coefficient of the autocatalyst."
       }
     ],
     "tags": [
@@ -2801,7 +2940,9 @@
       "mold",
       "reaction-diffusion",
       "organic",
-      "temporal"
+      "temporal",
+      "growth",
+      "bioluminescent"
     ]
   },
   {
@@ -3642,7 +3783,7 @@
     "id": "foil-impression",
     "name": "Foil Impression",
     "url": "shaders/foil-impression.wgsl",
-    "description": "Simulates a metallic foil surface. Pressing with the mouse flattens the foil to reveal the image relief and color.",
+    "description": "Embossed metallic foil with moving brushed highlights, held impression pressure, click rings, three-band audio, and iridescent spectral reflection.",
     "params": [
       {
         "id": "pressure_radius",
@@ -3674,12 +3815,53 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Pressure Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Foil Crinkle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Image Emboss",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "glass-bead-curtain",
@@ -3751,7 +3933,7 @@
     "name": "Glass Shatter",
     "category": "interactive-mouse",
     "url": "shaders/glass-shatter.wgsl",
-    "description": "Held-pointer glass-shard distortion with continuous shard and edge runners, chromatic transmission, three-band audio response, and bounded click fronts.",
+    "description": "Voronoi facets with stress birefringence: residual stress concentrates at the facet boundaries and under load, and the resulting retardation produces per-wavelength polariscope fringes along the cracks. Crack energy accumulates in dataTextureC so repeated clicks progressively craze the glass rather than each producing an isolated ring. Fixes a mask-as-colour hazard where dataTextureA held a mask tuple that nothing read, and adds ACES in place of a hard clamp.",
     "params": [
       {
         "id": "scale",
@@ -3788,47 +3970,62 @@
       "audio-reactive",
       "upgraded-rgba",
       "click-reactive",
-      "fast-motion"
+      "fast-motion",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "voronoi-facets",
+      "stress-birefringence",
+      "fresnel",
+      "crack-propagation",
+      "temporal-crack-memory"
     ],
     "updatedParams": [
       {
-        "index": 0,
-        "name": "Shard Size",
+        "id": "scale",
+        "name": "Shard Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Voronoi cell frequency — how many shards across the frame."
       },
       {
-        "index": 1,
+        "id": "displacement",
         "name": "Displacement",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "How far shards are pushed away from the pointer."
       },
       {
-        "index": 2,
-        "name": "Edge",
+        "id": "edge",
+        "name": "Edge Sharpness",
         "default": 0.2,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Bevel highlight strength and glass density."
       },
       {
-        "index": 3,
+        "id": "aberration",
         "name": "Aberration",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Chromatic split across each shard tilt."
       }
     ],
     "tags": [
       "glass",
       "shards",
       "prismatic",
-      "distortion"
+      "distortion",
+      "shatter",
+      "voronoi",
+      "birefringence",
+      "fracture"
     ]
   },
   {
@@ -4240,7 +4437,7 @@
     "id": "hypnotic-spiral",
     "name": "Hypnotic Spiral",
     "url": "shaders/hypnotic-spiral.wgsl",
-    "description": "Breathing, rotating spirals with color cycling; mouse warps and twists the spiral geometry.",
+    "description": "Bounds-safe breathing spiral geometry with corrected normalized pointer warp, held reversal, capped click waves, depth twist, three-band audio, and spectral color.",
     "params": [
       {
         "id": "arms",
@@ -4277,12 +4474,52 @@
       "visual",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Arms",
+        "default": 3,
+        "min": 1,
+        "max": 12,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 4,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Cycle",
+        "default": 0.2,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "impasto-swirl",
@@ -4562,7 +4799,7 @@
     "id": "ink-bleed",
     "name": "Ink Bleed",
     "url": "shaders/ink-bleed.wgsl",
-    "description": "Click to drop spreading ink that permanently stains the video feed.",
+    "description": "Anisotropic capillary diffusion on paper: ink wicks along a procedural fibre grain roughly four times faster than across it, so blots elongate with the grain instead of spreading as isotropic discs. Fibre angle and wicking rate are modulated by the eight FFT bins, and the nib is a spring-damped pointer in extraBuffer[133..136] whose stroke speed thins the deposit. Renames a misleading binding-5 identifier (filteringSampler on the engine's NON-filtering sampler) and moves all float32 state reads to exact textureLoad.",
     "params": [
       {
         "id": "inkHue",
@@ -4595,18 +4832,68 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "anisotropic-diffusion",
+      "paper-fibre"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "ink",
+      "paper",
+      "diffusion",
+      "artistic",
+      "brush"
+    ],
+    "updatedParams": [
+      {
+        "id": "inkHue",
+        "name": "Ink Hue",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "description": "Hue of the deposited ink."
+      },
+      {
+        "id": "spreadSpeed",
+        "name": "Wicking Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Diffusion rate along the paper fibres; treble loosens the sizing."
+      },
+      {
+        "id": "fadeSpeed",
+        "name": "Fade Speed",
+        "default": 0.05,
+        "min": 0,
+        "max": 1,
+        "description": "How quickly deposited ink dries out and fades."
+      },
+      {
+        "id": "density",
+        "name": "Ink Density",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "description": "Opacity mapping from ink concentration to alpha."
+      }
     ]
   },
   {
     "id": "interactive-emboss",
     "name": "Interactive Emboss",
     "url": "shaders/interactive-emboss.wgsl",
-    "description": "Emboss effect where the light source follows the mouse cursor.",
+    "description": "Mouse-aimed relief emboss with sprung light, bevel ridges, traveling highlight packets, oil-slick phosphor on crests, held-drag punch, and bounded click dents. Display RGBA in A.",
     "params": [
       {
         "id": "strength",
@@ -4648,7 +4935,11 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color"
     ],
     "tags": [
       "filter",
@@ -4657,6 +4948,7 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "strength",
         "name": "Strength",
         "default": 0.5,
         "min": 0,
@@ -4665,6 +4957,7 @@
       },
       {
         "index": 1,
+        "id": "mix",
         "name": "Intensity",
         "default": 1,
         "min": 0,
@@ -4673,6 +4966,7 @@
       },
       {
         "index": 2,
+        "id": "colorMode",
         "name": "Color Mode",
         "default": 0,
         "min": 0,
@@ -4681,6 +4975,7 @@
       },
       {
         "index": 3,
+        "id": "emboss_depth",
         "name": "Emboss Depth",
         "default": 0.5,
         "min": 0,
@@ -4695,7 +4990,7 @@
     "name": "Film Burn",
     "category": "interactive-mouse",
     "url": "shaders/interactive-film-burn.wgsl",
-    "description": "Simulates burning film reel with organic edges and grain, centered on the cursor.",
+    "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. A remains [hole, fire, smoke, alpha].",
     "params": [
       {
         "id": "radius",
@@ -4733,7 +5028,11 @@
       "audio-reactive",
       "click-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color"
     ],
     "supportsDepth": true,
     "tags": [
@@ -4745,6 +5044,7 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "radius",
         "name": "Burn Radius",
         "default": 0.3,
         "min": 0,
@@ -4753,6 +5053,7 @@
       },
       {
         "index": 1,
+        "id": "speed",
         "name": "Burn Speed",
         "default": 0.5,
         "min": 0,
@@ -4761,6 +5062,7 @@
       },
       {
         "index": 2,
+        "id": "grain",
         "name": "Grain Strength",
         "default": 0.3,
         "min": 0,
@@ -4769,6 +5071,7 @@
       },
       {
         "index": 3,
+        "id": "glow",
         "name": "Edge Glow",
         "default": 0.4,
         "min": 0,
@@ -4782,7 +5085,7 @@
     "id": "interactive-fisheye",
     "name": "Fluid Lens Dynamics",
     "url": "shaders/interactive-fisheye.wgsl",
-    "description": "Velocity-sensitive viscoelastic Kelvin-Voigt droplet lens with spring-mass tether, capillary ripple waves, 2.5D parabolic meniscus normal refraction, and exact-load state memory.",
+    "description": "Kelvin-Voigt droplet lens with capillary waves, held meniscus pinch, oil-slick thin-film rim, traveling caustic runners, and exact-load state memory. A remains [h, v, nx, ny].",
     "features": [
       "mouse-driven",
       "geometry",
@@ -4792,7 +5095,10 @@
       "velocity-sensitive",
       "splash-response",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "psychedelic-color"
     ],
     "updated": true,
     "params": [
@@ -4827,32 +5133,40 @@
     ],
     "updatedParams": [
       {
+        "index": 0,
         "id": "surface_tension",
         "name": "Surface Tension",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 1,
         "id": "viscosity",
         "name": "Viscosity",
         "default": 0.35,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 2,
         "id": "mass",
         "name": "Lens Mass",
         "default": 0.45,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 3,
         "id": "splash_threshold",
         "name": "Splash Threshold",
         "default": 0.35,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -4914,7 +5228,7 @@
     "id": "interactive-glitch-brush",
     "name": "Glitch Brush",
     "url": "shaders/interactive-glitch-brush.wgsl",
-    "description": "Paint digital glitches onto the screen with audio-reactive intensity.",
+    "description": "Sprung glitch brush with click grenades, traveling scan-head conveyor, oil-slick phosphor tears, held-drag density, and exact C paint persistence. Display RGBA in A.",
     "params": [
       {
         "id": "brush_size",
@@ -4953,7 +5267,12 @@
       "mouse-driven",
       "glitch",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color",
+      "click-reactive"
     ],
     "tags": [
       "glitch",
@@ -4965,6 +5284,7 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "brush_size",
         "name": "Brush Size",
         "default": 0.5,
         "min": 0,
@@ -4973,6 +5293,7 @@
       },
       {
         "index": 1,
+        "id": "intensity",
         "name": "Glitch Intensity",
         "default": 0.5,
         "min": 0,
@@ -4981,6 +5302,7 @@
       },
       {
         "index": 2,
+        "id": "block_scale",
         "name": "Block Scale",
         "default": 0.5,
         "min": 0,
@@ -4989,6 +5311,7 @@
       },
       {
         "index": 3,
+        "id": "color_split",
         "name": "Color Split",
         "default": 0.5,
         "min": 0,
@@ -5002,7 +5325,7 @@
     "id": "interactive-glitch-cubes",
     "name": "Interactive Glitch Cubes",
     "url": "shaders/interactive-glitch-cubes.wgsl",
-    "description": "Image-mapped cubes with exact prior-state settling, held-pointer extrusion, rapid grid conveyors, stable sparkle pulses, three-band audio response, and bounded click fronts.",
+    "description": "Image-mapped cubes with exact prior-state settling, beveled grout, conveyor packets, held extrusion, oil-slick edge runners, and bounded click fronts. A packs [rgb, settledHeight].",
     "params": [
       {
         "id": "size",
@@ -5046,11 +5369,14 @@
       "upgraded-rgba",
       "bounded-history",
       "click-reactive",
-      "fast-motion"
+      "fast-motion",
+      "held-drag",
+      "psychedelic-color"
     ],
     "updatedParams": [
       {
         "index": 0,
+        "id": "size",
         "name": "Cube Size",
         "default": 0.5,
         "min": 0,
@@ -5059,6 +5385,7 @@
       },
       {
         "index": 1,
+        "id": "extrusion",
         "name": "Extrusion Height",
         "default": 0.5,
         "min": 0,
@@ -5067,6 +5394,7 @@
       },
       {
         "index": 2,
+        "id": "gap",
         "name": "Grid Gap",
         "default": 0.2,
         "min": 0,
@@ -5075,6 +5403,7 @@
       },
       {
         "index": 3,
+        "id": "shadow",
         "name": "Shadow Strength",
         "default": 0.5,
         "min": 0,
@@ -5090,7 +5419,8 @@
       "audio-reactive",
       "temporal",
       "chromatic"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "interactive-glitch",
@@ -5179,7 +5509,7 @@
     "id": "interactive-halftone-spin",
     "name": "Interactive Halftone Spin",
     "url": "shaders/interactive-halftone-spin.wgsl",
-    "description": "CMYK halftone pattern where the grid rotation is driven by mouse proximity.",
+    "description": "CMYK halftone screens with held shear, ink conveyors, click splats, oil-slick registration glow, and three-band audio. A remains [C, M, Y, K] coverage.",
     "params": [
       {
         "id": "scale",
@@ -5212,21 +5542,68 @@
     ],
     "features": [
       "mouse-driven",
-      "halftone"
+      "halftone",
+      "audio-reactive",
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color",
+      "click-reactive"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "scale",
+        "name": "Dot Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "id": "rotation",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "id": "separation",
+        "name": "CMYK Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "interactive-kuwahara",
     "name": "Oil Painting (Kuwahara)",
     "url": "shaders/interactive-kuwahara.wgsl",
-    "description": "Interactive Kuwahara oil painting with live focus hardness, fast wet-paint runners, audio shimmer, and click-launched clarity fronts.",
+    "description": "Interactive Kuwahara oil painting with held wet-focus, traveling wet runners, oil-slick pigment, click clarity fronts, and exact C wetness trail. Display RGBA in A.",
     "updatedParams": [
       {
         "index": 0,
+        "id": "radius",
         "name": "Brush Size",
         "default": 0.5,
         "min": 0,
@@ -5235,6 +5612,7 @@
       },
       {
         "index": 1,
+        "id": "satBoost",
         "name": "Saturation",
         "default": 0.3,
         "min": 0,
@@ -5243,6 +5621,7 @@
       },
       {
         "index": 2,
+        "id": "mouseFalloff",
         "name": "Focus Radius",
         "default": 0.3,
         "min": 0,
@@ -5251,6 +5630,7 @@
       },
       {
         "index": 3,
+        "id": "hardness",
         "name": "Hardness",
         "default": 0.5,
         "min": 0,
@@ -5294,18 +5674,22 @@
       "audio-reactive",
       "upgraded-rgba",
       "click-reactive",
-      "fast-motion"
+      "fast-motion",
+      "held-drag",
+      "bounded-click-ripples",
+      "psychedelic-color"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "interactive-magnetic-ripple",
     "name": "Magnetic Ripple",
     "url": "shaders/interactive-magnetic-ripple.wgsl",
-    "description": "Phase B audio-reactive magnetic ripple. Bass-pulsed ripple frequency and field strength, mids-morphing hue-cycled glow, treble sparkle on field lines, plus curl-noise field lines, click-burst shockwaves, 50 ripple-point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and semantic glow-alpha.",
+    "description": "Worley magnetic field lines with curl, spring envelopes, held field punch, oil-slick domain-wall runners, and bounded click shockwaves. A remains [env, mouseXY, intensity].",
     "params": [
       {
         "id": "ripple_freq",
@@ -5345,7 +5729,10 @@
       "motion-trails",
       "chromatic-aberration",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "psychedelic-color"
     ],
     "tags": [
       "filter",
@@ -5361,6 +5748,7 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "ripple_freq",
         "name": "Ripple Frequency",
         "default": 0.5,
         "min": 0,
@@ -5369,6 +5757,7 @@
       },
       {
         "index": 1,
+        "id": "ripple_decay",
         "name": "Field-Line Mix",
         "default": 0.3,
         "min": 0,
@@ -5377,6 +5766,7 @@
       },
       {
         "index": 2,
+        "id": "field_strength",
         "name": "Spring Damping",
         "default": 0.5,
         "min": 0,
@@ -5385,6 +5775,7 @@
       },
       {
         "index": 3,
+        "id": "chromatic_split",
         "name": "Treble Sparkle",
         "default": 0.3,
         "min": 0,
@@ -5443,7 +5834,7 @@
     "name": "Interactive Ripple",
     "category": "interactive-mouse",
     "url": "shaders/interactive-ripple.wgsl",
-    "description": "2D wave equation solver with dispersion and Huygens wavelet superposition. Chromatic dispersion on ripple crests, caustic highlights in constructive interference zones, HDR bloom, subsurface scattering, and boundary reflection damping.",
+    "description": "Analytic Huygens wavelet field with interference lattices, traveling crest packets, held-pointer pressure, click ripples, and thin-film spectral color; it is not a stateful PDE solver.",
     "params": [
       {
         "id": "amplitude",
@@ -5478,7 +5869,12 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "wave"
+      "wave",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "psychedelic-color",
+      "analytic-wave-field"
     ],
     "tags": [
       "ripple",
@@ -5489,7 +5885,42 @@
       "dispersion",
       "caustics",
       "huygens"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wave Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wave Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "interactive-voronoi-lens",
@@ -6327,9 +6758,21 @@
     "url": "shaders/liquid-time-warp.wgsl",
     "features": [
       "mouse-driven",
-      "webcam"
+      "webcam",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "curl-advection",
+      "wipe-fronts",
+      "chromatic-aberration",
+      "temporal-feedback"
     ],
-    "description": "Fluid feedback loop where time is distorted by mouse movement.",
+    "description": "Temporal feedback advected by a divergence-free curl-noise field whose three octaves are driven by their own FFT bins — the previous field used raw noise directly as a velocity, which has non-zero divergence and blooms the feedback out. Clicks emit bounded wipe fronts that punch fresh video through the accumulation. History uses exact textureLoad.",
     "params": [
       {
         "name": "Distortion",
@@ -6366,9 +6809,51 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "feedback",
+      "temporal",
+      "warp",
+      "flow"
     ],
-    "name": "Liquid Time Warp"
+    "name": "Liquid Time Warp",
+    "updatedParams": [
+      {
+        "name": "Distortion",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "id": "distortion",
+        "description": "Advection distance per frame; bass adds up to +50%."
+      },
+      {
+        "name": "Flow Speed",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "id": "flow_speed",
+        "description": "Drift rate of the curl-noise octaves."
+      },
+      {
+        "name": "Scale",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "id": "scale",
+        "description": "Base spatial frequency of the flow field."
+      },
+      {
+        "name": "Decay",
+        "type": "float",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "id": "decay",
+        "description": "History retention before wipes are applied."
+      }
+    ]
   },
   {
     "id": "liquid-touch",
@@ -6465,9 +6950,21 @@
     "name": "Liquid Warp",
     "url": "shaders/liquid-warp.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "rk4-advection",
+      "strain-tensor",
+      "chromatic-aberration",
+      "fluid-simulation"
     ],
-    "description": "Fluid-like distortion where mouse movement pushes and swirls pixels.",
+    "description": "RK4 semi-Lagrangian warp whose strain tensor now comes from the flow field's ANALYTIC Jacobian instead of four extra finite-difference field evaluations (each of which ran three curl-noise octaves). Fixes an alpha bug that multiplied a UV-space magnitude by the pixel width, pinning alpha at 1.0 at every real resolution. Clicks emit bounded vortex rings; state reads use exact textureLoad.",
     "params": [
       {
         "id": "radius",
@@ -6500,7 +6997,45 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "warp",
+      "advection",
+      "vorticity",
+      "simulation"
+    ],
+    "updatedParams": [
+      {
+        "id": "radius",
+        "name": "Warp Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Pointer envelope tightness and swirl gain (maps to zoom_params.x)."
+      },
+      {
+        "id": "strength",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Curl-noise octave amplitude and radial pull gain (maps to zoom_params.y)."
+      },
+      {
+        "id": "decay",
+        "name": "Shear Stretch",
+        "default": 0.9,
+        "min": 0,
+        "max": 1,
+        "description": "How much the strain tensor's shear stretches the velocity (maps to zoom_params.z)."
+      },
+      {
+        "id": "swirl",
+        "name": "Chromatic Spread",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Width of the velocity-aligned channel split (maps to zoom_params.w)."
+      }
     ]
   },
   {
@@ -6889,7 +7424,7 @@
     "id": "magnetic-interference",
     "name": "Magnetic Interference",
     "url": "shaders/magnetic-interference.wgsl",
-    "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, canonical bass envelope, beat-pulsed magnetic field, mids-driven swirl and chromatic rotation, treble sparkle overlay, audio-amplified ripples, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
+    "description": "Magnetic interference field with a per-band domain-wall spectrum — eight wall families, each pinned at its own defect lattice and driven by its own FFT bin — and hysteresis memory: the magnetisation lags its drive and only switches past a coercive threshold, giving real magnetic lag and remanence. Fixes an unguarded ripple loop, state written into extraBuffer[0..1] (the engine's bass and mid slots), and an audio envelope smuggled through texel (0,0) of the feedback buffer.",
     "params": [
       {
         "id": "strength",
@@ -6932,12 +7467,57 @@
       "chromatic-aberration",
       "aces-tone-map",
       "temporal-feedback",
-      "velocity-trails"
+      "velocity-trails",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "semantic-alpha",
+      "aces",
+      "domain-walls",
+      "hysteresis"
     ],
     "tags": [
       "filter",
       "image-processing",
-      "audio-reactive"
+      "audio-reactive",
+      "magnetic",
+      "interference",
+      "domain-walls",
+      "glitch"
+    ],
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Field Strength",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "description": "Magnetic displacement gain."
+      },
+      {
+        "id": "radius",
+        "name": "Field Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Extent of the field influence around the pointer."
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Spectral channel split across the field."
+      },
+      {
+        "id": "scanlines",
+        "name": "Scanlines",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Interference scanline intensity."
+      }
     ]
   },
   {
@@ -7207,7 +7787,7 @@
     "name": "Matrix Curtain",
     "category": "interactive-mouse",
     "url": "shaders/matrix-curtain.wgsl",
-    "description": "Conway's Game of Life on a falling phosphor character grid with Perlin-noise column velocities, CRT glow, ghosting trails, and ACES tone mapping. Bass drives spawn rate, mouse scrubs horizontal shift and rain speed, depth creates parallax.",
+    "description": "Conway-inspired occupancy drives recognizable phosphor glyphs in layered rain with held curtain vortices, click/degauss fronts, exact display-history loads, and alternate hues.",
     "params": [
       {
         "id": "speed",
@@ -7242,7 +7822,12 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "temporal"
+      "temporal",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "psychedelic-color",
+      "glyph-grid"
     ],
     "tags": [
       "matrix",
@@ -7252,7 +7837,42 @@
       "crt",
       "audio-reactive",
       "temporal"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rain Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Column Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Curtain Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Phosphor Glow",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "mirror-drag",
@@ -7264,9 +7884,14 @@
       "temporal-trail",
       "chromatic-ghost",
       "audio-shatter",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "exact-feedback-loads"
     ],
-    "description": "Temporal mirror trail with chromatic ghost displacement and audio shatter. Previous frames persist as decaying echoes; R and B channels trail at different rates. Treble shatters the mirror into angular shards with glow.",
+    "description": "Exact-load temporal mirror feedback with moving shard facets, held drag pressure, chromatic ghosts, click shatter fronts, and three-band spectral glow.",
     "params": [
       {
         "id": "drag",
@@ -7304,7 +7929,42 @@
       "temporal",
       "chromatic",
       "shatter"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Drag Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mirror Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Shatter Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "moire-interference",
@@ -8822,7 +9482,7 @@
     "id": "neon-flashlight",
     "name": "Neon Flashlight",
     "url": "shaders/neon-flashlight.wgsl",
-    "description": "Dark environment illuminated by a neon-edge detecting flashlight.",
+    "description": "Depth-edge neon flashlight with animated cone ribs, radial sweeps, held beam squeeze, click flashes, and three-band spectral pulses.",
     "params": [
       {
         "id": "radius",
@@ -8857,7 +9517,12 @@
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -8865,7 +9530,42 @@
       "audio",
       "music",
       "reactive"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Beam Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Neon Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Threshold",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ambient Light",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "neon-fluid-warp",
@@ -8919,7 +9619,7 @@
     "id": "neon-pulse",
     "name": "Neon Pulse Distortion",
     "url": "shaders/neon-pulse.wgsl",
-    "description": "Distorts the image with a pulsating neon wave emanating from the cursor.",
+    "description": "Blackbody plasma cell array where each cell owns one of the eight FFT bins driving its base temperature and flicker rate. Cell temperature is carried through dataTextureC and relaxed with a Stefan-Boltzmann-style T^4 cooling term, so filaments heat fast under the cursor and cool slowly. Fixes a shader catalogued as mouse-driven that never read the mouse (zoom_config appeared only in the struct declaration), an 8x8 workgroup, a depth clobber, and unbounded additive HDR written with an out-of-range alpha.",
     "params": [
       {
         "id": "strength",
@@ -8956,14 +9656,61 @@
       "audio-reactive",
       "audio-driven",
       "upgraded-rgba",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "semantic-alpha",
+      "aces",
+      "blackbody",
+      "plasma-arcs",
+      "thermal-diffusion"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "neon",
+      "plasma",
+      "blackbody",
+      "thermal",
+      "grid"
+    ],
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Number of plasma cells across the frame (maps to zoom_params.x)."
+      },
+      {
+        "id": "speed",
+        "name": "Base Temperature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Cell base temperature in Kelvin, 800-12000 K (maps to zoom_params.y)."
+      },
+      {
+        "id": "glow",
+        "name": "Audio Heat Gain",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "How much spectrum energy adds to cell temperature (maps to zoom_params.z)."
+      },
+      {
+        "id": "radius",
+        "name": "Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Gaussian hotspot sigma; hotter cells glow wider (maps to zoom_params.w)."
+      }
     ]
   },
   {
@@ -9327,7 +10074,7 @@
     "name": "Optical Feedback Loop",
     "url": "shaders/optical-feedback.wgsl",
     "category": "interactive-mouse",
-    "description": "Infinite video feedback loop centered on the mouse cursor with audio-pumped zoom, domain-warped drift, hue shifting, depth-aware fade, and temporal accumulation.",
+    "description": "Infinite optical feedback tunnel with a time-correct spring-damped pointer, multi-front ripple shockwaves and per-band spectral hue rotation that separates the tunnel into rings. Fixes two serious bugs: u.config.y (the ripple count) was used as delta time, freezing the spring and hue when no clicks were alive and exploding the integrator when they were; and nine state values were written into extraBuffer[0..8], the engine's bass/mid/treble/historyHead and FFT bins, corrupting the audio every other shader reads. State now lives in extraBuffer[133..135].",
     "tags": [
       "feedback",
       "loop",
@@ -9336,7 +10083,10 @@
       "audio-reactive",
       "domain-warp",
       "depth-aware",
-      "hue-shift"
+      "hue-shift",
+      "tunnel",
+      "psychedelic",
+      "recursive"
     ],
     "features": [
       "mouse-driven",
@@ -9344,7 +10094,16 @@
       "semantic-alpha",
       "upgraded-rgba",
       "temporal-persistence",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "aces",
+      "feedback",
+      "domain-warp",
+      "spectral-hue",
+      "gravity-well",
+      "spring-damper"
     ],
     "workgroup_size": [
       16,
@@ -9387,6 +10146,48 @@
         "max": 1,
         "step": 0.01,
         "param": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "accumulation",
+        "name": "Accumulation Rate",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.x",
+        "description": "How strongly each frame accumulates into the feedback buffer."
+      },
+      {
+        "id": "zoom",
+        "name": "Feedback Zoom",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.y",
+        "description": "Per-frame scale step of the tunnel."
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.z",
+        "description": "Per-frame rotation of the feedback transform."
+      },
+      {
+        "id": "shift",
+        "name": "Hue Shift",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.w",
+        "description": "Global hue rotation, layered over the per-band spectral rings."
       }
     ]
   },
@@ -9734,7 +10535,7 @@
     "id": "particle-swarm",
     "name": "Particle Swarm",
     "url": "shaders/particle-swarm.wgsl",
-    "description": "Pixels behave like a swarm of particles attracted to the mouse, with spring physics returning them to their origin.",
+    "description": "Boid swarm with anisotropic scattering: each particle reads its neighbours out of the state texture and applies cohesion and separation, so the field forms travelling flocks instead of N independent springs. Per-particle FFT bands drive turbulence and the attractor is spring-damped through extraBuffer[133..136]. Fixes a missing bounds guard and a degenerate Henyey-Greenstein term whose cosine was dotted against vec2(0,0), making the phase function a constant.",
     "params": [
       {
         "id": "stiffness",
@@ -9768,11 +10569,62 @@
     "features": [
       "mouse-driven",
       "temporal-persistence",
-      "physics"
+      "physics",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "boid-cohesion",
+      "henyey-greenstein",
+      "motion-blur"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "particles",
+      "swarm",
+      "boids",
+      "scattering",
+      "physics"
+    ],
+    "updatedParams": [
+      {
+        "id": "stiffness",
+        "name": "Spring Stiffness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Restoring force pulling each particle back to its home pixel."
+      },
+      {
+        "id": "force",
+        "name": "Pointer Force",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Attraction/repulsion strength around the cursor (0.5 is neutral)."
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "description": "Velocity retention per frame."
+      },
+      {
+        "id": "radius",
+        "name": "Particle Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Interaction radius and particle opacity."
+      }
     ]
   },
   {
@@ -9782,12 +10634,19 @@
     "category": "interactive-mouse",
     "url": "shaders/phosphor-magnifier.wgsl",
     "icon": "search",
-    "description": "P22 phosphor decay CRT magnifier with chromatic aberration, barrel distortion, shadow mask, scanline beats, HDR bloom, ACES tone mapping, and afterimage trails. Bass drives excitation, mouse positions lens, depth controls magnification power.",
+    "description": "CRT phosphor magnifier with display-RGBA afterimage feedback, aurora scan runners, raster-beam motion, degauss rings, held lens pressure, click shells, chromatic aberration, and psychedelic phosphor hue. Intentional A feedback correction from diagnostic masks to display RGBA.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
+      "psychedelic-color",
+      "display-history"
     ],
     "params": [
       {
@@ -9825,13 +10684,48 @@
       "lens",
       "retro",
       "audio-reactive"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Zoom Level",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pixel Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Lens Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "pixel-drag-smear",
     "name": "Pixel Drag Smear",
     "url": "shaders/pixel-drag-smear.wgsl",
-    "description": "Smudge and drag pixels like wet paint, creating persistent trails.",
+    "description": "Exact-load wet-paint feedback with moving curl/combing modes, held drag strength, click pigment fronts, three-band audio, and spectral paint highlights.",
     "params": [
       {
         "id": "radius",
@@ -9865,12 +10759,52 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "exact-feedback-loads"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Drag Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Decay Rate",
+        "default": 0.95,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "pixel-explode",
@@ -10189,7 +11123,7 @@
     "id": "pixel-sort-radial",
     "name": "Radial Pixel Stretch",
     "url": "shaders/pixel-sort-radial.wgsl",
-    "description": "Radially stretches pixels from the mouse position based on luminance.",
+    "description": "Kinetic radial pixel sorting with luminance gates, traveling radial runners, held stretch pressure, click fronts, chromatic separation, and spectral color.",
     "params": [
       {
         "id": "stretch",
@@ -10223,12 +11157,52 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "display-history"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Stretch Amt",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Luma Thresh",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Direction",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "pixel-stretch-cross",
@@ -10681,7 +11655,7 @@
     "id": "psychedelic-noise-flow",
     "name": "Psychedelic Noise Flow",
     "url": "shaders/psychedelic-noise-flow.wgsl",
-    "description": "Applies a liquid-like noise flow where RGB channels are separated by phase, creating colorful swirls. Mouse controls flow speed and direction.",
+    "description": "Layered noise-flow filaments with moving RGB currents, held pointer vortices, click fronts, three-band audio, and psychedelic spectral highlights.",
     "params": [
       {
         "id": "speed",
@@ -10715,12 +11689,51 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color"
     ],
     "tags": [
       "mouse-driven",
       "interactive"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Noise Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "quad-mirror",
@@ -11035,7 +12048,18 @@
     "id": "quantum-prism",
     "url": "shaders/quantum-prism.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
+      "psychedelic-color",
+      "depth-aware",
+      "upgraded-rgba",
+      "hex-prism",
+      "hex-grout"
     ],
     "tags": [
       "filter",
@@ -11075,7 +12099,43 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "description": "Interactive honeycomb prism with beveled facets and grout, moving spectral bands, oil-slick facet runners, held cell deformation, click fronts, three-band audio, facet depth, and display history in A.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "quantum-ripples",
@@ -11996,7 +13056,7 @@
     "id": "rgb-iso-lines",
     "name": "RGB Iso Lines",
     "url": "shaders/rgb-iso-lines.wgsl",
-    "description": "Visualizes the R, G, and B channels as separated contour maps. Mouse controls the parallax separation.",
+    "description": "RGB contour maps with iso-runners, ridge ticks, held parallax, bounded click fronts, and rainbow hypsometry. A packs [lineR, lineG, lineB, alpha].",
     "params": [
       {
         "id": "thickness",
@@ -12043,11 +13103,55 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "id": "thickness",
+        "name": "Line Thickness",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Thickness of contour lines"
+      },
+      {
+        "id": "frequency",
+        "name": "Contour Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Density of contour lines"
+      },
+      {
+        "id": "parallax",
+        "name": "Parallax Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of RGB channel parallax separation"
+      },
+      {
+        "id": "bg_opacity",
+        "name": "Background Opacity",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Opacity of the original image behind contours"
+      }
     ]
   },
   {
@@ -13225,7 +14329,7 @@
     "id": "spectral-smear",
     "name": "Spectral Smear",
     "url": "shaders/spectral-smear.wgsl",
-    "description": "Paints flowing spectral trails that follow the mouse, with organic noise-warped smearing and a rainbow fringe around the brush.",
+    "description": "Paints sprung, noise-warped spectral trails with bounded click blooms, exact integer history advection, authoritative A display persistence, and ACES output.",
     "params": [
       {
         "id": "decay",
@@ -13256,12 +14360,48 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Trail Decay",
+        "default": 0.9,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Brush Radius",
+        "default": 0.1,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "history",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -13272,7 +14412,7 @@
     "id": "spectral-waves",
     "name": "Luma Ripple",
     "url": "shaders/spectral-waves.wgsl",
-    "description": "Luminance-reactive waves ripple out from the mouse cursor, displacing the image with chromatic aberration. Audio bass boosts wave amplitude.",
+    "description": "Premultiplied luminance waves from a guarded sprung origin, with bounded click trains, three-band and read-only FFT caustics, exact-C persistence, and authoritative A display history.",
     "params": [
       {
         "id": "frequency",
@@ -13311,7 +14451,11 @@
       "mouse-driven",
       "audio-reactive",
       "image",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "temporal",
+      "premultiplied-alpha",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -13360,10 +14504,16 @@
     "id": "sphere-projection",
     "name": "Sphere Projection",
     "url": "shaders/sphere-projection.wgsl",
-    "description": "Projects the image onto a 3D sphere that can be rotated with the mouse.",
+    "description": "Analytic image-mapped sphere with moving latitude bands and lighting, held zoom pressure, bounded click fronts, three-band audio, and spectral highlights.",
     "features": [
       "mouse-driven",
-      "3d"
+      "3d",
+      "audio-reactive",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "depth-aware"
     ],
     "params": [
       {
@@ -13410,7 +14560,42 @@
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sphere Zoom",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spin Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Lighting",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ambient Light",
+        "default": 0.3,
+        "min": 0,
+        "max": 0.6,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "split-dimension",
@@ -14320,7 +15505,7 @@
     "id": "vertical-slice-wave",
     "name": "Vertical Slice Wave",
     "url": "shaders/vertical-slice-wave.wgsl",
-    "description": "Splits the image into vertical strips that oscillate with spring-damped mouse follow, attack/release audio envelope, and temporal feedback trails. Mouse X/Y control frequency/amplitude with smooth lag. Audio bass drives wave amplitude.",
+    "description": "Layered vertical strip waves with seam runners, held amplitude/twist, click fronts, rainbow interference, and state-only spring/audio feedback.",
     "params": [
       {
         "id": "strips",
@@ -14355,7 +15540,12 @@
       "mouse-driven",
       "audio-reactive",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "psychedelic-color",
+      "state-feedback"
     ],
     "tags": [
       "mouse-driven",
@@ -14363,7 +15553,42 @@
       "audio-reactive",
       "distortion",
       "temporal"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Strip Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "RGB Split",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Jitter",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "vhs-jog",

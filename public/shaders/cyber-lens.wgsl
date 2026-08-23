@@ -8,6 +8,30 @@
 //  By: 4-Agent Swarm
 // ═══════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-08-23 (Batch 64)
+//
+//  Brought up to the pool standard: `dataTextureC` was never read, there was no
+//  click response, and `dataTextureA` held a mask tuple
+//  `[hudIntensity, reticle, flicker, alpha]` that nothing consumed — which also
+//  leaves C poisoned for anything reading it as colour (the mask-as-colour trap
+//  this pool has hit before). Display RGBA now goes to A and the masks to B.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Rolling-shutter scan skew — a CMOS sensor exposes rows sequentially, so
+//       anything moving fast shears diagonally and the HUD tears along scan
+//       boundaries. The lens now samples each row at its own exposure time
+//       offset, which is the physically correct behaviour for the sensor this
+//       effect is imitating and gives the readout genuine motion character
+//       instead of a static overlay.
+//
+//    2. Per-band HUD telemetry rings — eight concentric arcs around the
+//       reticle, one per FFT bin, each sweeping at its own rate with its own
+//       arc length. The HUD reports the spectrum instead of flickering as one
+//       undifferentiated mass.
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -79,6 +103,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bassPulse = 1.0 + audio.x * 0.4;
   let timeWarp = time * bassPulse;
 
+  // ── Structure 1: rolling-shutter scan skew ─────────────────────────────────
+  // Each row is exposed at its own instant, so the readout shears with motion.
+  let rowTime = uv.y * (0.012 + audio.y * 0.018);
+  let shutterPhase = time - rowTime;
+  let skew = sin(shutterPhase * 3.1 + uv.y * 24.0) * (0.002 + glitchIntensity * 0.010)
+           * (0.4 + audio.z * 1.4);
+  let shutterUV = clamp(uv + vec2<f32>(skew, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+
   // Depth controls parallax between HUD layers
   let parallax1 = (uv - 0.5) * depth * 0.04;
   let parallax2 = (uv - 0.5) * depth * 0.015;
@@ -93,17 +125,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lensMask = 1.0 - smoothstep(hudScale, hudScale + 0.03, dist);
 
   let split = dir * chroma * lensMask * (1.0 + audio.z * 0.6);
+  // Sampling happens through the rolling-shutter UV, so the per-row exposure
+  // skew reaches the visible image.
   var lensColor = vec3<f32>(
-    textureSampleLevel(readTexture, u_sampler, clamp(uv - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
-    textureSampleLevel(readTexture, u_sampler, uv, 0.0).g,
-    textureSampleLevel(readTexture, u_sampler, clamp(uv + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+    textureSampleLevel(readTexture, u_sampler, clamp(shutterUV - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, shutterUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, clamp(shutterUV + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
   );
 
   // Glitch artifacts: horizontal slice displacement driven by bass
   let glitchSeed = floor(timeWarp * 4.0);
   let glitchLine = step(0.88, hash12(vec2<f32>(glitchSeed, uv.y * 40.0))) * glitchIntensity;
   let glitchOffset = (hash12(vec2<f32>(glitchSeed, floor(uv.y * 40.0))) - 0.5) * 0.08 * bassPulse;
-  let glitchUV = vec2<f32>(uv.x + glitchOffset * glitchLine, uv.y);
+  let glitchUV = vec2<f32>(shutterUV.x + glitchOffset * glitchLine, shutterUV.y);
   let glitchColor = textureSampleLevel(readTexture, u_sampler, clamp(glitchUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   lensColor = mix(lensColor, glitchColor, glitchLine);
 
@@ -148,22 +182,68 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Radial glow under lens
   let radialGlow = exp(-dist * 4.0) * 0.12 * bassPulse;
 
-  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // ── Structure 2: per-band HUD telemetry rings ──────────────────────────────
+  // Eight arcs around the reticle, one per FFT bin, each with its own sweep
+  // rate and arc length.
+  let toReticle = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let ringR = length(toReticle);
+  let ringA = atan2(toReticle.y, toReticle.x);
+  var telemetry = 0.0;
+  for (var b = 0u; b < 8u; b = b + 1u) {
+    let fb = f32(b);
+    let energy = plasmaBuffer[b + 1u].x;
+    let radius = targetSize * (1.6 + fb * 0.42);
+    let band = exp(-pow((ringR - radius) * 210.0, 2.0));
+    // Arc length reports the bin level; sweep direction alternates per ring.
+    let sweep = ringA + time * (0.6 + fb * 0.23) * select(1.0, -1.0, (b & 1u) == 1u);
+    let arc = smoothstep(0.0, 0.35, sin(sweep) * 0.5 + 0.5 - (1.0 - energy) * 0.6);
+    telemetry += band * arc * (0.25 + energy * 1.5);
+  }
+  telemetry = min(telemetry, 2.0);
+
+  // ── Bounded click target-lock pings ────────────────────────────────────────
+  var lockPing = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 2.0) {
+      let r = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      let front = r - age * 0.45;
+      lockPing += exp(-front * front * 320.0) * exp(-age * 1.6);
+    }
+  }
+  lockPing = min(lockPing, 1.5);
+
   var finalColor = lensColor * scan + hudColor + vec3<f32>(bloom) + grain + radialGlow;
+  finalColor += vec3<f32>(0.25, 1.0, 0.75) * telemetry * 0.35;
+  finalColor += vec3<f32>(1.0, 0.55, 0.25) * lockPing * (0.5 + audio.x * 0.8);
+
+  // Phosphor persistence (exact load — dataTextureC is rgba32float).
+  let prevFrame = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
+  finalColor = max(finalColor, prevFrame.rgb * (0.70 + glitchIntensity * 0.14));
+
   finalColor = acesToneMap(finalColor);
 
   // Vignette
   let vignette = 1.0 - smoothstep(0.3, 0.8, dist) * 0.2;
   finalColor = finalColor * vignette;
 
-  let hudIntensity = clamp(lensMask + grid * 0.5 + reticle * 0.8 + corner * 0.4, 0.0, 1.0);
+  let hudIntensity = clamp(lensMask + grid * 0.5 + reticle * 0.8 + corner * 0.4
+                           + telemetry * 0.3, 0.0, 1.0);
   let targetingConfidence = smoothstep(targetSize * 2.0, 0.0, reticleDist);
-  let finalAlpha = clamp(hudIntensity * targetingConfidence * depth, 0.08, 0.98);
+  let finalAlpha = clamp(hudIntensity * targetingConfidence * depth
+                         + lockPing * 0.25 + telemetry * 0.15, 0.08, 0.98);
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let outDepth = clamp(mix(baseDepth, 0.3 + hudIntensity * 0.5, 0.25), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
-  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(hudIntensity, reticle, flicker, finalAlpha));
+  let coord = vec2<i32>(gid.xy);
+  let outColor = vec4<f32>(finalColor, finalAlpha);
+  textureStore(writeTexture, coord, outColor);
+  textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  // A carries DISPLAY RGBA so the persistence read above is meaningful; the
+  // mask tuple that used to live here (and that nothing read) moves to B.
+  textureStore(dataTextureA, coord, outColor);
+  textureStore(dataTextureB, coord, vec4<f32>(hudIntensity, reticle, flicker, telemetry));
 }

@@ -29,6 +29,7 @@ SOURCES=(
   "$SCRIPT_DIR/wasm_internal.cpp"
 )
 
+# Size-experiment stub only — product ABI is src/contracts/wasm_exports.json.
 EXPORTED="_main,_initWasmRenderer,_shutdownWasmRenderer"
 COMMON_FLAGS=(
   -std=c++20 -O2

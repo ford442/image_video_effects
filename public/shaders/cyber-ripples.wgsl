@@ -1,18 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Ripples
-//  Category: interactive-mouse
-//  Features: mouse-driven, wave, neon, audio-reactive, upgraded-rgba,
-//            temporal-feedback, depth-aware, click-shockwave, aces-tone-map,
-//            domain-warped-fbm, audio-palette, sdf-ring-mask
-//  Complexity: Medium
-//  Created: 2026-05-10
-//  Upgraded: 2026-07-08
-// ═══════════════════════════════════════════════════════════════════
-//  Hybrid techniques combined:
-//  1. Quantized mouse-driven ripple displacement
-//  2. Domain-warped FBM turbulence
-//  3. Audio-driven cyber palette shifting
-//  4. SDF ring masking with smooth minimum
+//  Cyber Ripples — Batch 59
+//  Quantized ripples, FBM warp, capped click rings, held tighten,
+//  FFT band shimmer, ACES, exact C trail, semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -127,6 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5;
+    let held = select(1.0, 1.35, mouseDown);
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -162,12 +152,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let clickPhase = dist * 30.0 - time * 12.0;
     let clickPulse = select(0.0, sin(clickPhase) * exp(-dist * 4.0), mouseDown);
 
+    var rippleShock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 1.5) {
+            let rDist = length((uv01 - rp.xy) * vec2<f32>(aspect, 1.0));
+            rippleShock += sin((rDist - age * 0.4) * 40.0) * exp(-rDist * 3.0 - age * 1.2) * 0.5;
+        }
+    }
+
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let depthAtten = 1.0 - exp(-depth * 3.0);
 
     let audioBoost = 1.0 + env * 0.6 + mids * 0.2;
-    let strength = (1.0 / (dist * ATTEN_SCALE + 0.5)) * (0.3 + 0.7 * depthAtten);
-    let displacement = dir * (wave + clickPulse * 0.5) * strength * DISP_AMP * audioBoost;
+    let strength = (1.0 / (dist * ATTEN_SCALE + 0.5)) * (0.3 + 0.7 * depthAtten) * held;
+    let displacement = dir * (wave + clickPulse * 0.5 + rippleShock) * strength * DISP_AMP * audioBoost;
     var displacedUV = uv01 + displacement;
 
     let fbmWarp = vec2<f32>(
@@ -192,7 +193,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lum = luma(color);
 
     let rings = sdfRings(uv, mouseUV, time);
-    let ringGlow = exp(-rings * 12.0) * (0.15 + env * 0.25);
+    let band = min(u32(uv01.x * 8.0), 7u);
+    let bandShimmer = plasmaBuffer[band + 1u].x * 0.25;
+    let ringGlow = exp(-rings * 12.0) * (0.15 + env * 0.25 + bandShimmer) * held;
     color = color + audioPalette(dist * 2.0 - time * 0.2, bass, treble) * ringGlow;
     color = color + vec3<f32>(treble * 0.15 * lum + clickPulse * 0.25);
 
@@ -203,7 +206,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = acesToneMap(trail * (0.9 + mids * 0.3));
 
-    let effectStrength = clamp(strength * 2.0 + length(displacement) * 50.0 + lum * 0.3 + abs(clickPulse) + ringGlow * 2.0, 0.0, 1.0);
+    let effectStrength = clamp(strength * 2.0 + length(displacement) * 50.0 + lum * 0.3 + abs(clickPulse) + abs(rippleShock) + ringGlow * 2.0, 0.0, 1.0);
     let alpha = clamp(mix(0.35, 0.95, effectStrength) * (0.6 + depthAtten * 0.4), 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));

@@ -2,7 +2,7 @@
   "id": "particle-swarm",
   "name": "Particle Swarm",
   "url": "shaders/particle-swarm.wgsl",
-  "description": "Pixels behave like a swarm of particles attracted to the mouse, with spring physics returning them to their origin.",
+  "description": "Boid swarm with anisotropic scattering: each particle reads its neighbours out of the state texture and applies cohesion and separation, so the field forms travelling flocks instead of N independent springs. Per-particle FFT bands drive turbulence and the attractor is spring-damped through extraBuffer[133..136]. Fixes a missing bounds guard and a degenerate Henyey-Greenstein term whose cosine was dotted against vec2(0,0), making the phase function a constant.",
   "params": [
     {
       "id": "stiffness",
@@ -36,10 +36,61 @@
   "features": [
     "mouse-driven",
     "temporal-persistence",
-    "physics"
+    "physics",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "spring-damper-pointer",
+    "boid-cohesion",
+    "henyey-greenstein",
+    "motion-blur"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "particles",
+    "swarm",
+    "boids",
+    "scattering",
+    "physics"
+  ],
+  "updatedParams": [
+    {
+      "id": "stiffness",
+      "name": "Spring Stiffness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Restoring force pulling each particle back to its home pixel."
+    },
+    {
+      "id": "force",
+      "name": "Pointer Force",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Attraction/repulsion strength around the cursor (0.5 is neutral)."
+    },
+    {
+      "id": "damping",
+      "name": "Damping",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "description": "Velocity retention per frame."
+    },
+    {
+      "id": "radius",
+      "name": "Particle Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Interaction radius and particle opacity."
+    }
   ]
 }

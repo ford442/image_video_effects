@@ -1,130 +1,139 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Quantum Prism
-//  Category: image
-//  Features: image, hex-prism, chromatic-aberration, mouse-driven, rotation
-//  Complexity: Medium
-//  Upgraded: 2026-06-28
-//  By: Agent 1a - Alpha Channel Specialist
+//  Quantum Prism — Batch 56 cursor+main merge
+//  Honeycomb bevels/grout, spectral bands, oil-slick facet runners,
+//  held deformation, click fronts, facet depth, display history in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config:      vec4<f32>,
+  config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
-  ripples:     array<vec4<f32>, 50>,
+  ripples: array<vec4<f32>, 50>,
 };
 
-// Function to rotate a 2D vector
+const TAU: f32 = 6.28318530718;
+
 fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
-    var s = sin(angle);
-    let c = cos(angle);
-    return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+  let s = sin(angle);
+  let c = cos(angle);
+  return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
+  let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
+  return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dims = u.config.zw;
-    if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
+  let pixel = vec2<i32>(gid.xy);
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    var uv = vec2<f32>(gid.xy) / dims;
-    let aspect = dims.x / dims.y;
-    var mouse = u.zoom_config.yz; // Mouse coordinates
-    let time = u.config.x;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let aspect = dims.x / max(dims.y, 1.0);
+  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let intensity = u.zoom_params.x;
+  let motionSpeed = mix(0.15, 3.5, u.zoom_params.y);
+  let gridScale = mix(5.0, 32.0, u.zoom_params.z);
+  let facetDetail = mix(1.0, 9.0, u.zoom_params.w);
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let prev = textureLoad(dataTextureC, pixel, 0);
 
-    // Hex Grid Config
-    let scale = 15.0; // Hex size
-    let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
+  let scale = gridScale;
+  let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
+  let s = vec2<f32>(1.7320508, 1.0);
+  let u_scaled = uv_aspect * scale;
 
-    // Find Hex Center and Local Coords (Staggered Grid approach)
-    // Normalized to r=1
-    var s = vec2<f32>(1.7320508, 1.0);
-    let u_scaled = uv_aspect * scale;
+  let ga = (fract(u_scaled / s) - 0.5) * s;
+  let ida = floor(u_scaled / s);
+  let u_off = u_scaled - s * 0.5;
+  let gb = (fract(u_off / s) - 0.5) * s;
+  let idb = floor(u_off / s);
+  let pickB = f32(dot(gb, gb) < dot(ga, ga));
+  let localUV = mix(ga, gb, pickB);
+  let cellID = mix(ida, idb + 0.5, pickB);
+  let center = mix((ida + 0.5) * s, (idb + 0.5) * s + s * 0.5, pickB);
 
-    let ga = (fract(u_scaled / s) - 0.5) * s;
-    let ida = floor(u_scaled / s);
+  let centerUV = vec2<f32>(center.x / scale / aspect, center.y / scale);
+  let mouseVec = (mouse - centerUV) * vec2<f32>(aspect, 1.0);
+  let dist = length(mouseVec);
 
-    let u_off = u_scaled - s * 0.5;
-    let gb = (fract(u_off / s) - 0.5) * s;
-    let idb = floor(u_off / s);
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.4) * 60.0);
+  }
+  let influence = smoothstep(0.45, 0.0, dist) * (0.35 + intensity * 0.65)
+    + held * smoothstep(0.32, 0.0, dist)
+    + clickFront * 0.35;
 
-    let da = dot(ga, ga);
-    let db = dot(gb, gb);
+  let rotAngle = influence * 3.14159
+    + time * motionSpeed * 0.18
+    + sin(dot(cellID, vec2<f32>(1.7, 2.3)) + time * motionSpeed) * 0.12
+    + held * 0.25;
+  let rotatedLocal = rotate(localUV, rotAngle);
+  let zoom = 1.0 - influence * 0.5;
+  let finalUV_scaled = center + rotatedLocal * zoom;
+  let finalUV = clamp(vec2<f32>(finalUV_scaled.x / scale / aspect, finalUV_scaled.y / scale), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    var localUV = ga;
-    var cellID = ida;
-    var center = (ida + 0.5) * s;
+  let ca = (0.002 + intensity * 0.025) * (influence + audio.z * 0.25);
+  let rOffset = rotate(vec2<f32>(ca, 0.0), rotAngle);
+  let bOffset = rotate(vec2<f32>(ca, 0.0), rotAngle + 2.094);
+  let gOffset = rotate(vec2<f32>(ca, 0.0), rotAngle + 4.188);
 
-    if (db < da) {
-        localUV = gb;
-        cellID = idb + 0.5;
-        center = (idb + 0.5) * s + s * 0.5;
-    }
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + gOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  var color = vec3<f32>(r, g, b);
 
-    // Center in 0..1 space
-    let centerUV = vec2<f32>(center.x / scale / aspect, center.y / scale);
+  let hexDistance = max(abs(localUV.x) * 0.866025 + abs(localUV.y) * 0.5, abs(localUV.y));
+  let hexEdge = max(abs(localUV.x), abs(localUV.x) * 0.5 + abs(localUV.y) * 0.866);
+  let edge = smoothstep(0.42, 0.50, hexDistance);
+  let grout = smoothstep(0.46, 0.5, hexEdge);
+  let bevel = pow(clamp(1.0 - hexDistance * 2.0, 0.0, 1.0), facetDetail * 0.35);
+  let spectralBand = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + hexDistance * facetDetail * 8.0 - time * motionSpeed * 2.0);
+  let facetRunner = smoothstep(0.06, 0.0, abs(fract(length(localUV) * 4.0 - time * (2.0 + audio.x)) - 0.5));
+  let runners = smoothstep(0.09, 0.0, abs(fract(hexEdge * 6.0 - time * (1.9 + audio.x * 2.0)) - 0.5));
+  let packets = smoothstep(0.08, 0.0, abs(fract(dot(cellID, vec2<f32>(0.17, 0.31)) + time * (0.7 + u.zoom_params.y)) - 0.5));
+  let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(rotAngle * 0.3 + time * 0.2) + vec3<f32>(0.0, 0.33, 0.67)));
+  let hue = fract(dot(cellID, vec2<f32>(0.07, 0.13)) + time * 0.1 + audio.y * 0.2);
+  let slick = hsv2rgb(vec3<f32>(hue, 0.72 + audio.z * 0.2, 0.95));
 
-    // Interaction
-    let mouseVec = (mouse - centerUV) * vec2<f32>(aspect, 1.0);
-    let dist = length(mouseVec);
+  color = mix(color, vec3<f32>(0.0), max(edge, grout) * influence);
+  color = mix(color, color * slick * 1.25, 0.22 + audio.z * 0.15);
+  color += spectralBand * (bevel * 0.16 + clickFront * 0.20 + audio * 0.10) * intensity;
+  color += oilSlick * facetRunner * influence * 0.14;
+  color += slick * (runners * 0.20 + packets * 0.16 + clickFront * 0.30 + influence * 0.08);
+  color = mix(color, prev.rgb * 0.88, 0.16 * influence + 0.06);
 
-    let influence = smoothstep(0.4, 0.0, dist); // 0.4 radius
+  let centerSample = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
+  let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+  let alpha = clamp(mix(centerSample.a, 0.3 + luma * 0.7, 0.55) + clickFront * 0.08, 0.0, 1.0);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  let depthOut = clamp(mix(depth, 0.18 + bevel * 0.72, 0.3 * intensity) + grout * 0.06 + clickFront * 0.04, 0.0, 1.0);
+  let finalPixel = vec4<f32>(color, alpha);
 
-    // Effects
-    // 1. Rotation based on mouse distance
-    let rotAngle = influence * 3.14159; // Rotate up to 180 degrees
-    let rotatedLocal = rotate(localUV, rotAngle);
-
-    // 2. Scale/Zoom inside cell
-    let zoom = 1.0 - influence * 0.5;
-
-    // Reconstruct UV
-    let finalUV_scaled = center + rotatedLocal * zoom;
-    let finalUV = vec2<f32>(finalUV_scaled.x / scale / aspect, finalUV_scaled.y / scale);
-
-    // 3. Chromatic Aberration (Prism effect)
-    // Split RGB based on rotation/influence
-    let ca = influence * 0.02;
-
-    // To make it look like a prism, we offset R, G, B in different directions relative to the cell center
-    let rOffset = rotate(vec2<f32>(ca, 0.0), rotAngle);
-    let bOffset = rotate(vec2<f32>(ca, 0.0), rotAngle + 2.094); // +120 deg
-    let gOffset = rotate(vec2<f32>(ca, 0.0), rotAngle + 4.188); // +240 deg
-
-    let r = textureSampleLevel(readTexture, u_sampler, finalUV + rOffset, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, finalUV + gOffset, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, finalUV + bOffset, 0.0).b;
-
-    var color = vec3<f32>(r, g, b);
-
-    // Edges (Simple distance based edge for hex approximation)
-    let edge = smoothstep(0.45, 0.5, length(localUV));
-
-    // Darken edges
-    color = mix(color, vec3<f32>(0.0), edge * influence);
-
-    // Highlight active cells
-    color += vec3<f32>(0.2, 0.5, 1.0) * influence * 0.2;
-
-    // Preserve the input alpha from the unshifted sample location
-    let centerSample = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-
-    textureStore(writeTexture, gid.xy, vec4<f32>(color, centerSample.a));
-
-    // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, pixel, finalPixel);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, finalPixel);
 }

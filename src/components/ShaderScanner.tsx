@@ -1,7 +1,9 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { ShaderEntry } from '../renderer/types';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
-import { requestPixelocityDevice } from '../utils/requestPixelocityDevice';
+import { getAdoptedRendererDevice, getAdoptedSupportsSubgroups } from '../utils/adoptedGpuDevice';
+import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
+import type { WebGpuProbeSerializable } from '../renderer/webgpuBootProbe';
 
 interface ShaderParam {
   id: string;
@@ -79,33 +81,51 @@ struct Uniforms {
   return bindings + uniforms + code;
 };
 
+function resolveProbeFailure(): WebGpuProbeSerializable | null {
+  const probe = window.webgpuProbe;
+  if (!probe || probe.ok !== true) {
+    return (
+      probe ?? {
+        ok: false,
+        finishedAt: new Date().toISOString(),
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+        userAgentBrands: [],
+        attempts: [],
+        lastError: 'WebGPU boot probe has not succeeded',
+        failedStage: 'requestAdapter',
+      }
+    );
+  }
+  if (!getAdoptedRendererDevice()) {
+    return {
+      ...probe,
+      ok: false,
+      lastError:
+        'Adopted renderer GPUDevice unavailable — WebGPU renderer must be active (boot probe device not registered)',
+      failedStage: 'requestDevice',
+    };
+  }
+  return null;
+}
+
+function deviceHasSubgroups(device: GPUDevice): boolean {
+  return (
+    getAdoptedSupportsSubgroups() ||
+    device.features.has('subgroups') ||
+    device.features.has('chromium-experimental-subgroups' as GPUFeatureName)
+  );
+}
+
 export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, onClose, onTestShader }) => {
   const [results, setResults] = useState<ShaderScanResult[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanMode, setScanMode] = useState<'compile' | 'params' | 'both'>('both');
   const [progress, setProgress] = useState(0);
-  const [webgpuSupported, setWebgpuSupported] = useState<boolean | null>(null);
   const [showParamDetails, setShowParamDetails] = useState<string | null>(null);
   const abortRef = useRef(false);
 
-  // Check WebGPU support once when opened
-  React.useEffect(() => {
-    if (isOpen && webgpuSupported === null) {
-      const checkSupport = async () => {
-        if (!navigator.gpu) {
-          setWebgpuSupported(false);
-          return;
-        }
-        try {
-          const adapter = await navigator.gpu.requestAdapter();
-          setWebgpuSupported(!!adapter);
-        } catch {
-          setWebgpuSupported(false);
-        }
-      };
-      checkSupport();
-    }
-  }, [isOpen, webgpuSupported]);
+  const probeFailure = useMemo(() => (isOpen ? resolveProbeFailure() : null), [isOpen]);
+  const gpuReady = probeFailure == null;
 
   // Validate shader parameters from JSON definition
   const validateParams = (params: any[]): { valid: boolean; errors: string[]; normalized: ShaderParam[] } => {
@@ -153,24 +173,12 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
     let supportsSubgroups = false;
     
     if (doCompileCheck) {
-      if (!navigator.gpu) {
-        alert('WebGPU is not supported in this browser');
+      device = getAdoptedRendererDevice();
+      if (!device) {
+        alert('Adopted renderer GPUDevice unavailable — WebGPU renderer must be active');
         return;
       }
-
-      const adapter = await navigator.gpu.requestAdapter();
-      if (!adapter) {
-        alert('Failed to get WebGPU adapter');
-        return;
-      }
-
-      const deviceResult = await requestPixelocityDevice(adapter);
-      if (!deviceResult) {
-        alert('Failed to get WebGPU device');
-        return;
-      }
-      device = deviceResult.device;
-      supportsSubgroups = deviceResult.supportsSubgroups;
+      supportsSubgroups = deviceHasSubgroups(device);
     }
 
     setIsScanning(true);
@@ -475,18 +483,8 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
         </button>
       </div>
 
-      {/* WebGPU Status */}
-      {webgpuSupported === false && (
-        <div style={{ 
-          background: '#330000', 
-          border: '1px solid #ff0000', 
-          padding: '15px', 
-          marginBottom: '20px',
-          color: '#ff6666'
-        }}>
-          ⚠️ WebGPU is not supported in this browser. Shader compilation scanning requires WebGPU.
-        </div>
-      )}
+      {/* WebGPU / adopted-device gate */}
+      {probeFailure && <WebGpuProbeFailureOverlay probe={probeFailure} />}
 
       {/* Controls */}
       <div style={{ 
@@ -498,16 +496,16 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
       }}>
         <button
           onClick={runScan}
-          disabled={isScanning || webgpuSupported === false}
+          disabled={isScanning || !gpuReady}
           style={{
             background: isScanning ? '#333' : '#004400',
             border: '1px solid #00ff00',
             color: '#00ff00',
             padding: '10px 20px',
-            cursor: isScanning || webgpuSupported === false ? 'not-allowed' : 'pointer',
+            cursor: isScanning || !gpuReady ? 'not-allowed' : 'pointer',
             fontFamily: 'monospace',
             fontSize: '14px',
-            opacity: isScanning || webgpuSupported === false ? 0.5 : 1
+            opacity: isScanning || !gpuReady ? 0.5 : 1
           }}
         >
           {isScanning ? 'Scanning...' : '▶️ Start Scan'}

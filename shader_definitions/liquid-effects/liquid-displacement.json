@@ -2,7 +2,7 @@
   "id": "liquid-displacement",
   "name": "Liquid Displacement",
   "url": "shaders/liquid-displacement.wgsl",
-  "description": "Navier-Stokes fluid simulation for realistic water-like displacement. Features swirling eddies, vortices, and volume-conserving flow with pressure projection.",
+  "description": "Eulerian fluid displacement: semi-Lagrangian advection, FFT-banded turbulence injection and a LOCAL JACOBI pressure projection that relaxes the centre and its four neighbours against a frozen ring, so the iteration slider now controls real convergence (it previously re-read the same unchanging neighbours every sweep). The smoothed pointer and its velocity live in extraBuffer[133..136]; clicks inject bounded divergence impulses. dataTextureA carries simulation state, not display colour.",
   "params": [
     {
       "id": "viscosity",
@@ -40,7 +40,18 @@
   "features": [
     "mouse-driven",
     "multi-pass",
-    "depth-aware"
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "spring-damper-pointer",
+    "local-jacobi-pressure",
+    "chromatic-aberration",
+    "fluid-simulation"
   ],
   "tags": [
     "navier-stokes",
@@ -51,6 +62,45 @@
     "vortex",
     "eddy",
     "interactive",
-    "physics"
+    "physics",
+    "displacement"
+  ],
+  "updatedParams": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Laplacian velocity diffusion; also scales the displacement amplitude."
+    },
+    {
+      "id": "pressure_iterations",
+      "name": "Pressure Iterations",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Local Jacobi sweeps, 1-20. Genuinely convergent as of Batch 58B \u2014 the previous loop recomputed an identical value every iteration."
+    },
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Advection timestep multiplier; bass adds up to +40%."
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbidity",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Gain on the eight FFT-banded curl cells and on Beer-Lambert absorption."
+    }
   ]
 }

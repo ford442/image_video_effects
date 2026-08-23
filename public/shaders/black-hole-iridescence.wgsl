@@ -74,6 +74,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let aspect = res.x / res.y;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
 
     // Parameters
     let gravity = u.zoom_params.x;
@@ -148,8 +152,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Tone map
     final_color = final_color / (1.0 + final_color * 0.2);
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(final_color, alpha));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(final_color, alpha));
+    
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let aspect = u.config.z / max(u.config.w, 1.0);
+    let screenUV = vec2<f32>(vec2<i32>(gid.xy)) / vec2<f32>(u.config.z, u.config.w);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let __finalRGB = vec4<f32>(final_color, alpha).rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(__finalRGB, vec4<f32>(final_color, alpha).a));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(__finalRGB, vec4<f32>(final_color, alpha).a));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

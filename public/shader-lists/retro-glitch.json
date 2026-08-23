@@ -3,7 +3,13 @@
     "id": "ascii-flow",
     "url": "shaders/ascii-flow.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "procedural-glyphs"
     ],
     "params": [
       {
@@ -44,7 +50,43 @@
       "retro",
       "vintage"
     ],
-    "name": "ASCII Flow"
+    "name": "ASCII Flow",
+    "description": "Parameterized animated ASCII current with eight procedural glyphs, held pointer vortices, click fronts, three-band audio, and shifting phosphor hues.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "bayer-dither-interactive",
@@ -400,9 +442,21 @@
     "id": "cyber-rain-interactive",
     "name": "Cyber Rain",
     "url": "shaders/cyber-rain-interactive.wgsl",
-    "description": "Matrix-style digital rain that reacts to image luminance and mouse.",
+    "description": "Layered glyph downpour: three parallax rain sheets are composited by scene depth, each with two drops per column rendered from a packed 4x6 glyph ROM that re-rolls as the drop falls. Every column owns one FFT bin that sets its fall rate and head brightness. The pointer bends drops aside, clicks emit bounded EMP rings, and image luminance acts as wetness that makes glyphs cling and pale.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "dot-matrix-glyphs",
+      "depth-parallax-layers",
+      "chromatic-aberration",
+      "temporal-trails"
     ],
     "params": [
       {
@@ -437,7 +491,45 @@
     "tags": [
       "glitch",
       "retro",
-      "vintage"
+      "vintage",
+      "matrix",
+      "rain",
+      "glyph",
+      "parallax"
+    ],
+    "updatedParams": [
+      {
+        "id": "speed",
+        "name": "Rain Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Base fall rate before the per-column band multiplier."
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Column pitch of the middle sheet (40–150 columns)."
+      },
+      {
+        "id": "glitch",
+        "name": "Glitch",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "description": "Column-coherent dropout rate and glyph scramble amount."
+      },
+      {
+        "id": "trail",
+        "name": "Trail Len",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Length of the fading tail behind each drop head."
+      }
     ]
   },
   {
@@ -595,7 +687,7 @@
     "name": "Data Moshing",
     "url": "shaders/data-moshing.wgsl",
     "category": "retro-glitch",
-    "description": "Advanced data-moshing glitch effect with structure-tensor optical flow estimation and motion-compensated smearing. Simulates MPEG macro-blocking, DCT ringing, chroma subsampling errors, and VHS head-switching bands. Bass triggers corruption events, mouse scrubs temporal buffer, and depth controls compression quality.",
+    "description": "Raw accumulated offset state in authoritative A drives motion-compensated macroblock smearing, sprung pointer scrubbing, bounded click corruption, three-band audio, ACES output, and semantic corruption alpha.",
     "tags": [
       "glitch",
       "data-mosh",
@@ -611,7 +703,10 @@
       "mouse-driven",
       "temporal",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "temporal-state",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -645,6 +740,40 @@
         "id": "quantize",
         "name": "Quantize",
         "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Smear Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Block Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Corruption",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Quantize",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -862,7 +991,15 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal-feedback",
+      "click-ripples",
+      "aces-tone-map"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "tags": [
       "filter",
@@ -1721,9 +1858,12 @@
       "mouse-driven",
       "chromatic-aberration",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "temporal",
+      "aces-tone-map"
     ],
-    "description": "Displaces pixels based on their brightness, creating a glitchy sorting effect controlled by the mouse.",
+    "description": "Brightness-gated spectral sorting with a guarded sprung epicenter, bounded click tears, read-only FFT block voices, and exact-C trails persisted through authoritative A display history.",
     "params": [
       {
         "id": "strength",
@@ -1799,7 +1939,7 @@
     "id": "spectrum-bleed",
     "name": "Spectrum Bleed",
     "url": "shaders/spectrum-bleed.wgsl",
-    "description": "Color channel separation and bleeding effects.",
+    "description": "Sprung spectrum-ink diffusion with bounded click splatters, read-only FFT shimmer, exact-C persistence, semantic display RGBA in authoritative A, and ACES output.",
     "tags": [
       "filter",
       "image-processing"
@@ -1808,7 +1948,8 @@
       "mouse-driven",
       "audio-reactive",
       "click-reactive",
-      "temporal"
+      "temporal",
+      "aces-tone-map"
     ],
     "params": [
       {

@@ -2,7 +2,7 @@
   "id": "heat-haze-gpt52",
   "name": "Heat Haze Mirage gpt52",
   "url": "shaders/heat-haze-gpt52.wgsl",
-  "description": "Layered heat shimmer with chromatic dispersion, rising mirage flow, and bass-reactive intensity.",
+  "description": "Rising heat mirage with thermal filaments, axial packets, held thermal source, bounded click rings, chromatic dispersion, and oil-slick shimmer. Display RGBA in A; 16x16x1.",
   "params": [
     {
       "id": "intensity",
@@ -42,7 +42,10 @@
     "atmospheric",
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "thermal-filaments"
   ],
   "tags": [
     "filter",
@@ -50,5 +53,39 @@
     "distortion",
     "heat",
     "atmospheric"
+  ],
+  "updatedParams": [
+    {
+      "id": "intensity",
+      "name": "Haze Intensity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "rise",
+      "name": "Rise Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "frequency",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chroma",
+      "name": "Chromatic Split",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ]
 }

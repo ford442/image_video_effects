@@ -1,9 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Kuwahara
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: High
-//  Upgraded: 2026-05-23
+//  Interactive Kuwahara — Batch 58E
+//  Four-sector oil paint with held wet-focus, traveling wet runners,
+//  oil-slick pigment, click clarity fronts, exact C wetness trail.
+//  Display RGBA in A.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,116 +26,113 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
+  let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
+  return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
+  let resolution = u.config.zw;
+  if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
 
-    let coord = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(global_id.xy) / resolution;
+  let coord = vec2<i32>(global_id.xy);
+  let uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(1.0));
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let prev = textureLoad(dataTextureC, coord, 0);
 
-    // Audio reactivity
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let radiusParam = (u.zoom_params.x * 8.0 + 2.0) * (1.0 + bass * 0.4);
+  let satBoost = u.zoom_params.y * 2.0 * (1.0 + mids * 0.3);
+  let focusRadius = mix(0.08, 0.6, u.zoom_params.z);
+  let hardness = mix(0.02, 0.22, u.zoom_params.w);
 
-    // Params (radius pulses with bass, sat with mids)
-    let radiusParam = (u.zoom_params.x * 8.0 + 2.0) * (1.0 + bass * 0.4);
-    let satBoost = u.zoom_params.y * 2.0 * (1.0 + mids * 0.3);
-    let focusRadius = mix(0.08, 0.6, u.zoom_params.z);
-    let hardness = mix(0.02, 0.22, u.zoom_params.w);
+  let mouse = u.zoom_config.yz;
+  let heldStroke = step(0.5, u.zoom_config.w);
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
 
-    let mouse = u.zoom_config.yz;
-    let heldStroke = step(0.5, u.zoom_config.w);
-    let aspect = resolution.x / resolution.y;
-    let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
+  let mouseFactor = smoothstep(max(0.0, focusRadius - hardness), focusRadius + hardness, dist);
+  let strokeDir = normalize(vec2<f32>(1.0, 0.42));
+  let wetRunner = pow(max(0.0, sin(dot(uv * vec2<f32>(aspect, 1.0), strokeDir) * 52.0 - u.config.x * 13.0)), 12.0) * (1.0 - mouseFactor) * mix(0.25, 1.0, heldStroke);
+  let packets = pow(max(0.0, sin(uv.x * aspect * 18.0 + uv.y * 22.0 - u.config.x * (6.0 + treble * 4.0))), 10.0) * (1.0 - mouseFactor);
 
-    let mouseFactor = smoothstep(max(0.0, focusRadius - hardness), focusRadius + hardness, dist);
-    let strokeDir = normalize(vec2<f32>(1.0, 0.42));
-    let wetRunner = pow(max(0.0, sin(dot(uv * vec2<f32>(aspect, 1.0), strokeDir) * 52.0 - u.config.x * 13.0)), 12.0) * (1.0 - mouseFactor) * mix(0.25, 1.0, heldStroke);
-
-    var clickClarity = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var rippleIndex = 0u; rippleIndex < rippleCount; rippleIndex = rippleIndex + 1u) {
-        let ripple = u.ripples[rippleIndex];
-        let age = u.config.x - ripple.z;
-        if (age >= 0.0 && age < 1.8) {
-            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
-            clickClarity += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.42)) * exp(-age * 1.5);
-        }
+  var clickClarity = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var rippleIndex = 0u; rippleIndex < rippleCount; rippleIndex = rippleIndex + 1u) {
+    let ripple = u.ripples[rippleIndex];
+    let age = u.config.x - ripple.z;
+    if (age >= 0.0 && age < 1.8) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      clickClarity += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.42)) * exp(-age * 1.5);
     }
-    let detailLift = clamp((1.0 - mouseFactor) * mix(0.35, 0.75, heldStroke) + wetRunner * 0.25 + clickClarity * 0.8, 0.0, 0.9);
-    let effectiveRadius = mix(radiusParam, max(1.0, radiusParam * 0.25), detailLift);
+  }
+  let detailLift = clamp((1.0 - mouseFactor) * mix(0.35, 0.75, heldStroke) + wetRunner * 0.25 + clickClarity * 0.8, 0.0, 0.9);
+  let effectiveRadius = mix(radiusParam, max(1.0, radiusParam * 0.25), detailLift);
 
-    let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let radius = min(i32(max(effectiveRadius, 1.0)), 10);
+  let pixelSize = vec2<f32>(1.0 / max(resolution.x, 1.0), 1.0 / max(resolution.y, 1.0));
 
-    let radius = min(i32(max(effectiveRadius, 1.0)), 10);
-    let pixelSize = vec2<f32>(1.0 / max(resolution.x, 1.0), 1.0 / max(resolution.y, 1.0));
-
-    // Kuwahara: 4 sectors
-    var mean: array<vec3<f32>, 4>;
-    var sigma: array<vec3<f32>, 4>;
-    for (var i = 0; i < 4; i++) {
-        mean[i] = vec3<f32>(0.0);
-        sigma[i] = vec3<f32>(0.0);
+  var mean: array<vec3<f32>, 4>;
+  var sigma: array<vec3<f32>, 4>;
+  for (var i = 0; i < 4; i++) {
+    mean[i] = vec3<f32>(0.0);
+    sigma[i] = vec3<f32>(0.0);
+  }
+  let offsets = array<vec2<i32>, 4>(
+    vec2<i32>(-radius, -radius),
+    vec2<i32>(0, -radius),
+    vec2<i32>(-radius, 0),
+    vec2<i32>(0, 0)
+  );
+  for (var k = 0; k < 4; k++) {
+    var count = 0.0;
+    let start = offsets[k];
+    for (var j = 0; j <= radius; j++) {
+      for (var i = 0; i <= radius; i++) {
+        let sampleUV = clamp(uv + vec2<f32>(f32(start.x + i), f32(start.y + j)) * pixelSize, vec2<f32>(0.0), vec2<f32>(1.0));
+        let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+        mean[k] += col;
+        sigma[k] += col * col;
+        count += 1.0;
+      }
     }
+    let safeCount = max(count, 0.001);
+    mean[k] = mean[k] / safeCount;
+    sigma[k] = abs(sigma[k] / safeCount - mean[k] * mean[k]);
+  }
 
-    let offsets = array<vec2<i32>, 4>(
-        vec2<i32>(-radius, -radius),
-        vec2<i32>(0, -radius),
-        vec2<i32>(-radius, 0),
-        vec2<i32>(0, 0)
-    );
+  var minVar = sigma[0].r + sigma[0].g + sigma[0].b;
+  var kuwaColor = mean[0];
+  let v1 = sigma[1].r + sigma[1].g + sigma[1].b;
+  kuwaColor = select(kuwaColor, mean[1], v1 < minVar);
+  minVar = select(minVar, v1, v1 < minVar);
+  let v2 = sigma[2].r + sigma[2].g + sigma[2].b;
+  kuwaColor = select(kuwaColor, mean[2], v2 < minVar);
+  minVar = select(minVar, v2, v2 < minVar);
+  let v3 = sigma[3].r + sigma[3].g + sigma[3].b;
+  kuwaColor = select(kuwaColor, mean[3], v3 < minVar);
 
-    for (var k = 0; k < 4; k++) {
-        var count = 0.0;
-        let start = offsets[k];
-        for (var j = 0; j <= radius; j++) {
-            for (var i = 0; i <= radius; i++) {
-                let sampleUV = clamp(uv + vec2<f32>(f32(start.x + i), f32(start.y + j)) * pixelSize, vec2<f32>(0.0), vec2<f32>(1.0));
-                let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-                mean[k] += col;
-                sigma[k] += col * col;
-                count += 1.0;
-            }
-        }
-        let safeCount = max(count, 0.001);
-        mean[k] = mean[k] / safeCount;
-        sigma[k] = abs(sigma[k] / safeCount - mean[k] * mean[k]);
-    }
+  let smallRadiusMix = clamp(1.0 - effectiveRadius, 0.0, 1.0);
+  let blendedRGB = mix(kuwaColor, baseSample.rgb, smallRadiusMix);
+  let lum = dot(blendedRGB, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let satColor = mix(vec3<f32>(lum), blendedRGB, 1.0 + satBoost);
+  let slick = hsv2rgb(vec3<f32>(fract(0.08 + lum * 0.3 + mids * 0.2 + u.config.x * 0.07), 0.65, 1.0));
+  let shimmer = sin(uv.x * 200.0 + u.config.x * 12.0) * treble * 0.05;
+  let wetTint = vec3<f32>(0.08, 0.16, 0.22) * wetRunner * (0.3 + treble * 0.3);
+  var finalRGB = clamp(satColor + vec3<f32>(shimmer) + wetTint, vec3<f32>(0.0), vec3<f32>(4.0));
+  finalRGB = mix(finalRGB, finalRGB * slick * 1.18, 0.14 + wetRunner * 0.2);
+  finalRGB += slick * (packets * 0.12 + clickClarity * 0.22);
+  finalRGB = mix(finalRGB, prev.rgb, 0.14 * (0.4 + wetRunner));
 
-    // Pick min-variance sector (branchless selects)
-    var minVar = sigma[0].r + sigma[0].g + sigma[0].b;
-    var kuwaColor = mean[0];
-    let v1 = sigma[1].r + sigma[1].g + sigma[1].b;
-    kuwaColor = select(kuwaColor, mean[1], v1 < minVar);
-    minVar = select(minVar, v1, v1 < minVar);
-    let v2 = sigma[2].r + sigma[2].g + sigma[2].b;
-    kuwaColor = select(kuwaColor, mean[2], v2 < minVar);
-    minVar = select(minVar, v2, v2 < minVar);
-    let v3 = sigma[3].r + sigma[3].g + sigma[3].b;
-    kuwaColor = select(kuwaColor, mean[3], v3 < minVar);
-
-    // Mix base color back in if radius is small (branchless)
-    let smallRadiusMix = clamp(1.0 - effectiveRadius, 0.0, 1.0);
-    let blendedRGB = mix(kuwaColor, baseSample.rgb, smallRadiusMix);
-
-    // Saturation boost
-    let lum = dot(blendedRGB, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let satColor = mix(vec3<f32>(lum), blendedRGB, 1.0 + satBoost);
-
-    // Treble shimmer
-    let shimmer = sin(uv.x * 200.0 + u.config.x * 12.0) * treble * 0.05;
-    let wetTint = vec3<f32>(0.08, 0.16, 0.22) * wetRunner * (0.3 + treble * 0.3);
-    let finalRGB = clamp(satColor + vec3<f32>(shimmer) + wetTint, vec3<f32>(0.0), vec3<f32>(4.0));
-
-    // Meaningful alpha: stylization strength + base alpha + audio
-    let stylization = clamp(effectiveRadius / 12.0, 0.0, 1.0);
-    let alpha = clamp(baseSample.a * 0.5 + stylization * 0.4 + (1.0 - mouseFactor) * 0.2 + bass * 0.1, 0.0, 1.0);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-    textureStore(writeTexture, coord, vec4<f32>(finalRGB, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(finalRGB, alpha));
+  let stylization = clamp(effectiveRadius / 12.0, 0.0, 1.0);
+  let alpha = clamp(baseSample.a * 0.5 + stylization * 0.4 + (1.0 - mouseFactor) * 0.2 + bass * 0.1, 0.0, 1.0);
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  let outCol = vec4<f32>(finalRGB, alpha);
+  textureStore(writeTexture, coord, outCol);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, outCol);
 }
