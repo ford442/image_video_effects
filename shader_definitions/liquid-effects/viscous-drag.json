@@ -2,7 +2,7 @@
   "id": "viscous-drag",
   "name": "Viscous Drag",
   "url": "shaders/viscous-drag.wgsl",
-  "description": "A stylized thick-liquid warp with directionally advected RG offset state, traveling vortex packets, mouse-pressure smears, and click-launched pressure fronts. Depth is passed through unchanged.",
+  "description": "Diffused drag state drives traveling jets, pressure and thickness buildup, elastic recovery, held-pointer smears, click fronts, and illuminated viscous ridges.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -47,6 +47,7 @@
       "default": 0.5
     }
   ],
+  "feedbackPacking": "A/C = offset.xy, thickness, drag energy; raw bounded state via exact loads",
   "tags": [
     "fluid",
     "liquid",

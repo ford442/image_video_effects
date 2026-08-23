@@ -104,7 +104,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i = 0u; i < rippleCount; i = i + 1u) {
     let rip = u.ripples[i];
     let age = time - rip.z;
-    if (age > 0.0 && age < 3.2) {
+    if (age < 0.0 || age > 3.2) { continue; }
+    {
       let rDelta = (uv - rip.xy) * vec2<f32>(aspect, 1.0);
       let rDist = max(length(rDelta), 0.0001);
       let rDir = rDelta / rDist;
@@ -122,9 +123,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dispMag = length(totalDisp);
   let cauchyBase = 0.002 + separation * 0.024 + audio.y * 0.008;
   let splitVector = totalDisp * (1.0 + separation * 4.0 + audio.z * 1.5);
-  let rOffset = totalDisp + splitVector * (cauchyBase * 1.25);
-  let gOffset = totalDisp;
-  let bOffset = totalDisp - splitVector * (cauchyBase * 1.45);
+  // Each wavelength follows its own advected vortex trajectory, not merely a
+  // post-sample channel offset.
+  let rFlow = complexVortexField(pAspect + vec2<f32>(0.17, -0.09), time * 0.91, turbulence) * depthFactor;
+  let gFlow = complexVortexField(pAspect, time, turbulence) * depthFactor;
+  let bFlow = complexVortexField(pAspect - vec2<f32>(0.12, 0.14), time * 1.13, turbulence) * depthFactor;
+  let rOffset = totalDisp + rFlow * (1.0 + separation * 2.0) + splitVector * (cauchyBase * 1.25);
+  let gOffset = totalDisp + gFlow * 0.65;
+  let bOffset = totalDisp + bFlow * (1.0 + separation * 2.4) - splitVector * (cauchyBase * 1.45);
 
   let uvR = clamp(uv + rOffset, vec2<f32>(0.0), vec2<f32>(1.0));
   let uvG = clamp(uv + gOffset, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -148,7 +154,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Caustic prismatic specular highlight
   let causticHue = vec3<f32>(1.0, 0.45 + separation * 0.35, 0.85);
-  let specular = causticHue * causticPotential * (0.15 + audio.z * 0.45) + fresnel * vec3<f32>(0.08, 0.16, 0.24);
+  let seam = pow(clamp(length(rOffset - bOffset) * 32.0, 0.0, 1.0), 2.0);
+  let specular = causticHue * causticPotential * (0.15 + audio.z * 0.45) + fresnel * vec3<f32>(0.08, 0.16, 0.24) + vec3<f32>(0.95, 0.2 + audio.y * 0.35, 0.72) * seam * 0.18;
   rgb += specular;
 
   let feedbackMix = clamp((0.08 + viscosity * 0.22) * history.a, 0.04, 0.35);
@@ -156,7 +163,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   rgb = acesToneMapping(rgb);
 
   let sourceAlpha = max(sampleR.a, max(sampleG.a, sampleB.a));
-  let alpha = clamp(sourceAlpha * mix(0.82, 0.98, viscosity) + fresnel * 0.12 + causticPotential * 0.15, 0.0, 1.0);
+  let alpha = clamp(sourceAlpha * mix(0.82, 0.98, viscosity) + fresnel * 0.12 + causticPotential * 0.15 + seam * 0.08, 0.0, 1.0);
   let outputColor = vec4<f32>(rgb, alpha);
 
   textureStore(writeTexture, coord, outputColor);

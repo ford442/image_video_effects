@@ -98,7 +98,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let heat = u.zoom_params.w * 0.15;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let viscosity = mix(0.3, 1.0, depth);
+    // Heat lowers viscosity; deep pixels remain more cohesive.
+    let viscosity = clamp(mix(0.35, 1.0, depth) / (1.0 + heat * 3.0 + bass * 0.35), 0.18, 1.0);
 
     let diff = uv - mousePos;
     let dist = length(vec2<f32>(diff.x * aspect, diff.y));
@@ -108,18 +109,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rippleCount = min(u32(u.config.y), 50u);
     for (var rippleIndex: u32 = 0u; rippleIndex < rippleCount; rippleIndex = rippleIndex + 1u) {
       let ripple = u.ripples[rippleIndex];
-      let rippleAge = max(time - ripple.z, 0.0);
-      let front = abs(distance(uv, ripple.xy) - rippleAge * (0.17 + bass * 0.10));
+      let rippleAge = time - ripple.z;
+      if (rippleAge < 0.0 || rippleAge > 3.2) { continue; }
+      let rippleDelta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      let front = abs(length(rippleDelta) - rippleAge * (0.17 + bass * 0.10));
       clickHeat += exp(-front * 125.0) * exp(-rippleAge * 1.55);
     }
 
     let newColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let luma = dot(newColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    let meltRunner = pow(max(0.0, sin((uv.y + uv.x * 0.22) * 46.0 - time * (13.0 + mids * 6.0))), 14.0);
-    let dripPacket = pow(max(0.0, sin(uv.y * 62.0 + fbm(uv * 7.0, 3) * 8.0 - time * (18.0 + treble * 7.0))), 18.0);
+    let meltMask = smoothstep(0.28 + heat * 0.12, 0.78 - heat * 0.08, luma);
+    let branchNoise = fbm(vec2<f32>(uv.x * 11.0, uv.y * 4.0 - time * meltSpeed * 24.0), 4);
+    let branch = smoothstep(0.54, 0.78, branchNoise + luma * 0.22) * meltMask;
+    let meltRunner = pow(max(0.0, sin((uv.y + uv.x * (0.18 + branch * 0.2)) * 46.0 - time * (13.0 + mids * 6.0))), 14.0) * meltMask;
+    let dripPacket = pow(max(0.0, sin(uv.y * 62.0 + branchNoise * 8.0 - time * (18.0 + treble * 7.0))), 18.0) * branch;
     let curl = curl2D(uv * 3.0, time * 0.2) * meltSpeed * (1.0 + bass * 0.5);
-    let gravity = vec2<f32>(0.0, meltSpeed * luma * (1.0 + meltRunner * 0.7));
+    let gravity = vec2<f32>((branch - 0.5) * meltSpeed * 0.16, meltSpeed * luma * meltMask * (1.0 + meltRunner * 0.7 + branch * 0.5));
     let flow = (curl + gravity) * viscosity;
 
     let totalFlow = flow + vec2<f32>(0.0, heat * (mouseFactor + clickHeat * 0.8 + dripPacket * 0.18));
@@ -136,7 +142,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                                      0.0);
 
     let meltAlpha = clamp(luma * 0.8 + mouseFactor * 0.3 + bass * 0.15, 0.0, 1.0);
-    let finalColor = vec4<f32>(clamp(heated.rgb, vec3<f32>(0.0), vec3<f32>(1.0)), meltAlpha);
+    let hdr = heated.rgb + vec3<f32>(0.45, 0.12 + mids * 0.18, 0.04 + treble * 0.12) * (branch + clickHeat) * heat * 0.24;
+    let mapped = clamp((hdr * (2.51 * hdr + 0.03)) / (hdr * (2.43 * hdr + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+    let finalColor = vec4<f32>(mapped, clamp(meltAlpha + branch * 0.12 + clickHeat * 0.08, 0.0, 1.0));
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);

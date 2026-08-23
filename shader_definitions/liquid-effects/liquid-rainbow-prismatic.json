@@ -2,16 +2,25 @@
   "id": "liquid-rainbow-prismatic",
   "name": "Liquid Rainbow Prismatic",
   "url": "shaders/liquid-rainbow-prismatic.wgsl",
-  "description": "Liquid Rainbow Prismatic",
+  "description": "Cauchy-separated RGB refraction through animated thin-film thickness, a six-tap caustic kernel, held lens deformation, and prismatic click fronts.",
   "tags": [
     "liquid-rainbow",
     "prismatic-dispersion",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven",
+    "thin-film",
+    "caustics"
   ],
   "features": [
     "liquid-rainbow",
     "prismatic-dispersion",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "click-reactive",
+    "bounded-history"
   ],
   "params": [
     {
@@ -51,5 +60,13 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Param 1", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Param 2", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Param 3", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Param 4", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded refractive history loads",
+  "updated": true,
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

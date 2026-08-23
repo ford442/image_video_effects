@@ -2,7 +2,7 @@
   "id": "liquid-viscous-simple",
   "name": "Liquid Viscous (Simple)",
   "url": "shaders/liquid-viscous-simple.wgsl",
-  "description": "Viscous laminar flow with cohesive smoothing, audio-reactive click vortices, depth-aware motion, and subtle spectral film.",
+  "description": "An efficient laminar streamline field with a lightweight cohesion stencil, shear-thinning response, spectral surface sheen, and held or click-driven vortices.",
   "tags": [
     "filter",
     "image-processing",
@@ -93,5 +93,6 @@
       "step": 0.01
     }
   ],
+  "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded laminar history loads",
   "updated": true
 }

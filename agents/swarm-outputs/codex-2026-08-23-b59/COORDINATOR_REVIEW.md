@@ -1,26 +1,27 @@
-# Batch 59 coordinator review — 2026-08-23
+# Batch 59 coordinator contract review
 
-Status: **STRUCTURALLY CLOSED** on tracker #511–520.
+## Accepted ownership
 
-## Critical fixes
+The renderer remains unchanged and retains B→C then A→C copy order. No shader
+writes B or accesses `extraBuffer`. Display-history shaders store final RGBA in
+A. Jelly Fluid and Magnetic Ferro EM store their documented four-channel state;
+Oil Iridescence stores spectral RGB/thickness; Metal Prismatic stores four band
+intensities. No persistent state is placed in FFT or engine-owned buffers.
 
-- **cyber-rain:** Removed illegal `extraBuffer[0..7]` writes and `config.y` as delta-time bug; spring state in [133..138] at (0,0) only; EMP rings from `u.ripples`.
-- **digital-glitch:** Workgroup 8×8 → 16×16×1 (gate blocker).
-- **cyber-scan / cyber-trace / digital-reveal:** `textureSampleLevel(dataTextureC)` → `textureLoad`.
-- **digital-reveal:** extraBuffer spring writes gated to invocation (0,0).
+## Compatibility and interaction
 
-## Feedback ownership
+All ten saved `params` arrays are preserved exactly. `updatedParams` is present
+and aligned by index/default/range. All four `zoom_params` lanes are read in each
+shader. All use real bass/mids/treble data, continuous aspect-correct pointer
+position, stronger held input, and click loops capped at 50 with age guards.
 
-- cyber-ripples, cyber-rain, edge-glow-mouse: display + trail in A/C loop.
-- cyber-scan: A stores raw smear rgb + alpha.
-- cyber-trace: A stores raw history rgb (sacred contract); composite ACES on writeTexture only.
-- digital-reveal: A stores reveal mask `.r` only (not tonemapped).
-- digital-glitch: A stores error mask diagnostics.
-- digital-haze: A stores `(mask, alpha, 0, 1)`.
-- cyber-organic, ferrofluid: A diagnostic/state channels as before.
+## Verification status
 
-B unused. extraBuffer only on cyber-rain, cyber-trace, digital-haze (spring), digital-reveal (spring) — all [133..138], (0,0) writer.
-
-## Validation
-
-Gate 10/10; dead-slider, extraBuffer, audio-mapping audits PASS. Real-GPU visual QA remains external.
+Focused structural gate: 10/10 pass for canonical bindings, 16×16×1 workgroups,
+bounds guards, and no extraBuffer violations. Naga is unavailable in the Cloud
+VM and is not claimed. Saved params: 10/10 exact. Strict interaction/feedback
+and dead-slider audits: 10/10. Catalogs: 1,333 unique entries, zero duplicates,
+relative URLs, and 10/10 definition/catalog/manifest parity. Uniform contract
+and TypeScript checks pass. Jest passes 81/81 suites (545 passed, 1 skipped).
+`SKIP_WASM_BUILD=1 npm run build` compiles successfully. Real-GPU visual and
+1080p performance QA remains external.

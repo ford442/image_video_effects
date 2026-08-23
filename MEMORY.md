@@ -1,5 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
+<<<<<<< HEAD
 **Last updated:** 2026-08-23 (remaining liquid core + ferro/fluid cohort + Batch 60)
 
 ## 2026-08-23 — Remaining liquid core + ferro/fluid simulation cohort
@@ -157,6 +158,50 @@
 - Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
   audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
   green. Real-GPU visual QA remains external.
+=======
+**Last updated:** 2026-08-23 (Codex liquid complexity batch)
+
+## 2026-08-23 — Codex Liquid Shader Complexity Batch requested
+
+- Current implementation scope is ten single-pass effects: Liquid Smear, Liquid
+  Tensor Vortex, Liquid Rainbow Prismatic, Liquid Perspective, Liquid RGB,
+  Liquid Viscous, Liquid Viscous Simple, Liquid Zoom, Luma Melt Interactive,
+  and Viscous Drag. Preserve saved params byte-for-byte, canonical bindings and
+  feedback order, use bounded exact C loads with A-only writes, all three audio
+  bands, strong held input, age-guarded capped clicks, semantic alpha, ACES, and
+  distinct shader-specific complexity. Replace Tensor Vortex's generic overlay
+  that introduced duplicate WGSL declarations. Add missing aligned metadata,
+  regenerate relative catalogs/manifest, document ownership and real-GPU QA,
+  and require actual Naga plus strict/type/Jest/build proof.
+
+## 2026-08-23 — Codex (c) Liquid Shader Complexity Batch complete
+
+- Completed all ten distinct single-pass upgrades and removed Tensor Vortex's
+  invalid generic Batch 63 clock-ring appendix/duplicate declaration. Exact
+  saved params and A/C ownership hold 10/10; B and extraBuffer are unused; all C
+  state/history reads are bounded exact loads; metadata and generated catalog
+  records document raw versus display feedback truthfully.
+- Proof: temporary Naga CLI 30.0.1 and integrated focused gate pass 10/10;
+  strict interaction/ownership and aligned metadata audits pass; liquid catalog
+  is 29 entries and unified manifest 1,333 unique IDs with ten-target parity;
+  uniforms, TypeScript, 81 Jest suites (545 pass, 1 skip), and the
+  SKIP_WASM_BUILD production build are green. Real-GPU visual/stability/1080p
+  performance QA remains external.
+
+## 2026-08-23 — Liquid Shader Upgrade Batch 59 complete
+
+- Implement the ten named liquid shaders from the supplied plan. Preserve
+  byte-exact saved params and renderer contracts; use exact bounded C loads and
+  documented feedback packing; wire all four sliders, real three-band audio,
+  aspect-correct mouse/held/capped clicks; regenerate catalogs/manifest and add
+  batch briefs, shader notes, and coordinator review with structural, type,
+  Jest, and build proof. Jelly Fluid, Magnetic Ferro EM, and Oil Iridescence
+  receive the heavier bounded sampling/state budgets; all remain single-pass.
+- Closed with exact saved params 10/10, strict focused audits and structural
+  gate 10/10 (Naga unavailable), 1,333 unique catalog/manifest entries with
+  parity, clean uniforms/TypeScript, Jest 81/81 (545 pass, 1 skip), and a green
+  SKIP_WASM_BUILD production build. Real-GPU visual/performance QA is external.
+>>>>>>> origin/new-shader-upgrades
 
 ## 2026-08-23 — Gemini shader-upgrade branch is unclosed WIP
 

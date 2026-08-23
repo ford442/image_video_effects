@@ -10,6 +10,7 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
+<<<<<<< HEAD
 - **Batch 58D:** Ten spectral/datamosh upgrades completed with A authoritative,
   exact C, B unused, guarded `[133..138]` springs, saved params unchanged, and
   raw state retained for Vortex/Data Moshing/Datamosh. Real-GPU QA is external.
@@ -39,6 +40,18 @@ _Learn about the person you're helping. Update this as you go._
   Four shaders own raw physical A state and six own HDR display history; B is
   unwritten. Naga/contract 10/10, params exact, catalogs/tests/build green;
   real-GPU visual QA remains external.
+=======
+- **Latest shader batch:** Liquid Shader Upgrade Batch 59 is a completed ten-effect
+  premium liquid cohort with a mixed performance budget. Jelly Fluid, Magnetic
+  Ferro EM, and Oil Iridescence may use heavier bounded state/optics work; the
+  other seven should remain efficient single-pass effects.
+- **Latest shader batch (2026-08-23):** The Codex (c) Liquid Shader Complexity
+  Batch is implemented across ten named single-pass effects. Exact saved params,
+  canonical A/C ownership, distinct liquid techniques, and the Tensor Vortex
+  duplicate-declaration repair are verified by actual Naga plus strict contract,
+  catalog, type, Jest, and production-build gates. Real-GPU visual QA remains the
+  explicit handoff.
+>>>>>>> origin/new-shader-upgrades
 
 ## Context
 
