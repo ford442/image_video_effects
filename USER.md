@@ -38,7 +38,11 @@ _Learn about the person you're helping. Update this as you go._
   `[133..138]` state / full interaction contract, preserving saved params.
   Four shaders own raw physical A state and six own HDR display history; B is
   unwritten. Naga/contract 10/10, params exact, catalogs/tests/build green;
-  real-GPU visual QA remains external.
+  real-GPU visual QA remains external.- **Shader upgrade branch merge (2026-08-23):** Landed cursor/8594,
+  new-shader-upgrades, and claude motion-colors Batch 63 onto `main`. Overlaps
+  kept stronger liquid/Batch 69 upgrades; unique shaders retained. PRs #1164 and
+  #1165 merged. Jest/Naga/build green; real-GPU QA external.
+
 - **Latest shader batch:** Liquid Shader Upgrade Batch 59 is a completed ten-effect
   premium liquid cohort with a mixed performance budget. Jelly Fluid, Magnetic
   Ferro EM, and Oil Iridescence may use heavier bounded state/optics work; the
