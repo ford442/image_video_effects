@@ -166,4 +166,6 @@ Format specification:
   cohort, keeping batch artifacts and validation boundaries independently clear.
 - For the next confirmed-ID fireworks cohort, preserve the characteristic shell
   geometry of each named firework while applying the same strict shader contract.
+- For the confirmed fractal/gravity cohort, preserve each named material and
+  field identity rather than homogenizing the ten shaders around one motif.
 </IMPORTANT_REMINDER>

@@ -12541,6 +12541,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "gear-scale",
+        "name": "Gear Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "teeth-count",
+        "name": "Teeth Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "rotation-speed",
+        "name": "Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "material",
+        "name": "Material",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -12587,7 +12625,8 @@
       "multi-band-material-lighting",
       "temporal-feedback",
       "depth-output"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133..138] = sprung orbit state"
   },
   {
     "name": "Fractal Ember Lattice",
@@ -12609,6 +12648,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "glow-intensity",
+        "name": "Glow Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "shard-size",
+        "name": "Shard Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "lattice-scale",
+        "name": "Lattice Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "spark-density",
+        "name": "Spark Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -12649,7 +12726,14 @@
     "updated": true,
     "id": "gen-fractal-ember-lattice",
     "url": "shaders/gen-fractal-ember-lattice.wgsl",
-    "features": []
+    "features": [
+      "rigid-shard-state",
+      "three-band-audio-reactive",
+      "mouse-shatter-reform",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = shard displacement xy, shard seed, reform progress"
   },
   {
     "id": "gen-fractal-flame-classic",
@@ -12886,6 +12970,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "fracture-spread",
+        "name": "Fracture Spread",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "levitation-speed",
+        "name": "Levitation Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glow-intensity",
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "rotation-speed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -12925,7 +13047,16 @@
     "updated": true,
     "id": "gen-fractured-monolith",
     "url": "shaders/gen-fractured-monolith.wgsl",
-    "features": []
+    "features": [
+      "raymarched-fractured-monolith",
+      "three-band-audio-reactive",
+      "mouse-orbit",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "Galactic Aether-Crystal Geode-Core",
@@ -12943,6 +13074,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "crystal-density",
+        "name": "Crystal Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "core-glow",
+        "name": "Core Glow",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fractal-iterations",
+        "name": "Fractal Iterations",
+        "default": 5,
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gas-density",
+        "name": "Gas Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -12983,7 +13152,16 @@
     "updated": true,
     "id": "gen-galactic-aether-crystal-geode-core",
     "url": "shaders/gen-galactic-aether-crystal-geode-core.wgsl",
-    "features": []
+    "features": [
+      "raymarched-kifs-crystals",
+      "three-band-audio-reactive",
+      "mouse-orbit",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "Ghost Flame",
@@ -13001,6 +13179,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "flame-height",
+        "name": "Flame Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "cooling-rate",
+        "name": "Cooling Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "diffusion",
+        "name": "Diffusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13041,7 +13257,14 @@
     "updated": true,
     "id": "gen-ghost-flame",
     "url": "shaders/gen-ghost-flame.wgsl",
-    "features": []
+    "features": [
+      "advected-flame-state",
+      "three-band-audio-reactive",
+      "mouse-and-click-heat",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = temperature, fuel, horizontal velocity, age; extraBuffer[133..134] = smoothed bass/RMS envelopes"
   },
   {
     "name": "Glacial-Aether Quantum-Cavern",
@@ -13063,6 +13286,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "ice-density",
+        "name": "Ice Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasma-glow",
+        "name": "Plasma Glow",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fracture-rate",
+        "name": "Fracture Rate",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "cavern-scale",
+        "name": "Cavern Scale",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13110,7 +13371,8 @@
       "material-palette",
       "temporal-feedback",
       "depth-output"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "id": "gen-glass-mosaic-liquid-refraction",
@@ -13137,6 +13399,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "facet-density",
+        "name": "Facet Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "bevel-width",
+        "name": "Bevel Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "refraction-strength",
+        "name": "Refraction Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "ripple-speed",
+        "name": "Ripple Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13175,7 +13475,15 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "features": []
+    "features": [
+      "liquid-voronoi-mosaic",
+      "three-band-audio-reactive",
+      "mouse-warped-refraction",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "id": "gen-gravitational-ferrofluid-singularity-engine",
@@ -13195,7 +13503,9 @@
       "click-reactive",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "tags": [
       "ferrofluid",
@@ -13283,7 +13593,8 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "updated": true
+    "updated": true,
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "id": "gen-gravitational-strain",
@@ -13310,6 +13621,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "well-count",
+        "name": "Well Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "well-mass",
+        "name": "Well Mass",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "bend-strength",
+        "name": "Bend Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "emission-scale",
+        "name": "Emission Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13357,8 +13706,10 @@
       "click-reactive",
       "bounded-raymarch",
       "semantic-alpha",
-      "generated-depth"
-    ]
+      "generated-depth",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = potential depth, ray speed, emission energy, semantic alpha"
   },
   {
     "name": "Gravito-Phononic Accretion",
@@ -13380,6 +13731,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "mass-scale",
+        "name": "Mass Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "body-count",
+        "name": "Body Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "lens-strength",
+        "name": "Lens Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gas-density",
+        "name": "Gas Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13420,7 +13809,17 @@
     "updated": true,
     "id": "gen-gravito-phononic-accretion",
     "url": "shaders/gen-gravito-phononic-accretion.wgsl",
-    "features": []
+    "features": [
+      "multi-body-accretion",
+      "three-band-audio-reactive",
+      "mouse-mass",
+      "blackbody-disk",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped temporal display RGB and semantic alpha"
   },
   {
     "name": "Graviton Plasma Lotus",

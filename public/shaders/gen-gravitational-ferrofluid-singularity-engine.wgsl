@@ -50,6 +50,11 @@ fn noise3D(p: vec3<f32>) -> f32 {
             mix(hash(i + vec3<f32>(0.0, 1.0, 1.0)), hash(i + vec3<f32>(1.0, 1.0, 1.0)), u.x), u.y), u.z);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn sdf(p: vec3<f32>, singularityMass: f32, fluidViscosity: f32, spikeDensity: f32) -> f32 {
     let time = u.config.x;
 
@@ -105,6 +110,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Audio Reactivity
     let audioBands = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
     let bass = audioBands.x;
+    let mids = audioBands.y;
+    let treble = audioBands.z;
     let audioPulse = 1.0 + bass * 0.2;
 
     // Parameters
@@ -218,7 +225,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let seed = hash(vec3<f32>(fi, fi * 1.71, 3.4));
         let phase = fract(time * (0.22 + seed * 0.16) + seed);
         let accel = phase * phase;
-        let ang = fi * 2.39996 + time * (1.3 + audioBands.y * 0.5);
+        let ang = fi * 2.39996 + time * (1.3 + mids * 0.5);
         let dir = vec2<f32>(cos(ang), sin(ang));
         let center = dir * (0.32 + accel * 1.35);
         let local = uv - center;
@@ -227,17 +234,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let streak = exp(-across * across * 900.0) * exp(-abs(along + 0.08) * 18.0) * smoothstep(0.0, 0.15, phase) * (1.0 - phase);
         dropletGlow += streak;
     }
-    color += vec3<f32>(0.18, 0.55, 1.2) * dropletGlow * (0.5 + iridescence);
+    color += vec3<f32>(0.18, 0.55, 1.2) * dropletGlow * (0.5 + iridescence) * (1.0 + treble * 0.35);
 
     // Advect prior display light around the event horizon and show the bounded
     // result. A is the next display history; B remains untouched.
     let radial = normalize(uv + vec2<f32>(0.0001));
     let tangent = vec2<f32>(-radial.y, radial.x);
     let historyUV = clamp(screenUV - tangent * (0.004 + fluidViscosity * 0.006) - radial * 0.002, vec2<f32>(0.002), vec2<f32>(0.998));
-    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let maxHistoryCoord = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
+    let historyCoord = clamp(vec2<i32>(historyUV * resolution), vec2<i32>(0), maxHistoryCoord);
+    let previous = textureLoad(dataTextureC, historyCoord, 0).rgb;
     let temporal = clamp(max(color, previous * (0.84 + 0.08 * iridescence)), vec3<f32>(0.0), vec3<f32>(6.0));
+    let mapped = acesToneMap(temporal * 1.05);
     let depth = select(1.0, clamp(dO / 20.0, 0.0, 0.995), hit);
-    textureStore(dataTextureA, pixel, vec4<f32>(temporal, 1.0));
-    textureStore(writeTexture, pixel, vec4<f32>(temporal, 1.0));
+    let luma = dot(mapped, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let hitMask = select(0.0, 1.0, hit);
+    let alpha = clamp(0.06 + hitMask * 0.66 + luma * 0.2 + rippleGlow * 0.08 + dropletGlow * 0.05, 0.0, 0.98);
+    textureStore(dataTextureA, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -33,6 +33,11 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Simple hash for 3D domain
 fn hash31(p: vec3<f32>) -> f32 {
     let p1 = fract(p * 0.3183099 + vec3<f32>(0.1, 0.1, 0.1));
@@ -74,11 +79,11 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 fn kifs(p_in: vec3<f32>) -> f32 {
     var p = p_in;
     let iterations = i32(u.zoom_params.z); // Fractal Iterations
-    let density = u.zoom_params.x; // Crystal Density
+    let density = u.zoom_params.x * (1.0 + plasmaBuffer[0].x * 0.08); // Crystal Density
     var scale = 1.0;
 
     // Rotations based on time for slight dynamic crystal shifting
-    let t = u.config.x * 0.1;
+    let t = u.config.x * (0.1 + plasmaBuffer[0].z * 0.04);
     let r2 = rot(t);
     let r3 = rot(t * 1.3);
 
@@ -104,7 +109,7 @@ fn kifs(p_in: vec3<f32>) -> f32 {
 
 // Map the SDF world
 fn map(p: vec3<f32>) -> vec2<f32> {
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
 
     // Outer Shell
     let outerSphere = length(p) - 3.5;
@@ -165,10 +170,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     let uv = (fragCoord - 0.5 * res) / res.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Mouse Interaction
-    let mx = (u.zoom_config.y / res.x) * 2.0 - 1.0;
-    let my = (u.zoom_config.z / res.y) * 2.0 - 1.0;
+    let mx = u.zoom_config.y * 2.0 - 1.0;
+    let my = u.zoom_config.z * 2.0 - 1.0;
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -8.0);
@@ -198,7 +206,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Volumetric accumulation for quantum gas (w = Gas Density)
         if (length(p) < 3.0) {
-           volLight += (0.01 * u.zoom_params.w) / (1.0 + abs(d.x));
+           volLight += (0.01 * u.zoom_params.w * (1.0 + mids * 0.35)) / (1.0 + abs(d.x));
         }
 
         if (d.x < 0.001 || t > 20.0) { break; }
@@ -217,7 +225,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Core Glow Param (y)
         let coreGlowIntensity = u.zoom_params.y;
-        let audio = u.config.y;
 
         if (d.y == 1.0) {
             // Shell
@@ -240,7 +247,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col = vec3<f32>(chrR, chrG, chrB) * 0.5 + spec * vec3<f32>(1.0, 0.8, 1.0);
 
             // Crystal glowing edges
-            col += vec3<f32>(0.1, 0.8, 0.9) * pow(1.0 - max(dot(n, viewDir), 0.0), 4.0) * coreGlowIntensity * 0.5;
+            col += vec3<f32>(0.1, 0.8, 0.9) * pow(1.0 - max(dot(n, viewDir), 0.0), 4.0) * coreGlowIntensity * (0.5 + treble * 0.2);
 
         } else if (d.y == 3.0) {
             // Plasma Core
@@ -249,7 +256,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             // Audio reactivity
             let mixFactor = sin(length(p) * 5.0 - u.config.x * 5.0) * 0.5 + 0.5;
-            col = mix(plasmaColor1, plasmaColor2, mixFactor) * coreGlowIntensity * (1.0 + audio * 2.0);
+            col = mix(plasmaColor1, plasmaColor2, mixFactor) * coreGlowIntensity * (1.0 + bass * 2.0);
             col += vec3<f32>(1.0) * spec; // core highlights
         }
     }
@@ -266,10 +273,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
        }
     }
 
-    // Tone mapping and gamma
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    let coord = vec2<i32>(id.xy);
+    let previous = textureLoad(dataTextureC, coord, 0).rgb;
+    col = max(max(col, vec3<f32>(0.0)), previous * 0.8);
+    col = acesToneMap(col * 1.08);
+    let hitMask = select(0.0, 1.0, t < 20.0);
+    let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let alpha = clamp(0.05 + hitMask * 0.7 + luma * 0.24, 0.0, 0.98);
+    let depth = select(1.0, clamp(t / 20.0, 0.0, 0.995), t < 20.0);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1068,3 +1068,24 @@
   catalog entries, URL/uniform/typecheck clean, 81 Jest suites / 545 pass / one
   skip, and production build green. Real-GPU visual/performance QA remains
   external.
+
+## Completed fractal / gravity generative cohort (2026-08-23)
+
+- Ten confirmed IDs span fractal mechanisms, ember lattice, fractured monolith,
+  aether geode/cavern, ghost flame, refractive mosaic, ferrofluid singularity,
+  gravitational strain, and gravito-phononic accretion.
+- Apply the full bindings, ACES/semantic alpha, A-only exact C feedback,
+  three-band plasma audio, bounded `[133..138]` state, Naga, and four named live
+  JSON control contract while keeping each visual system recognizably distinct.
+- Completed 10/10 in place. The older monolith and geode now consume real plasma
+  bands rather than overloaded config/resolution fields; mosaic and ferrofluid
+  have exact temporal loads plus ACES/semantic output; strain and accretion now
+  persist truthful field/display state and generated depth.
+- Clockwork retains bounded sprung-orbit slots 133–138, Ghost Flame moves its
+  two envelopes to 133–134, and no other target accesses auxiliary state.
+  All definitions expose four aligned named controls with saved
+  `updatedParams` labels/defaults preserved.
+- Proof: Naga/dead-slider/static contract 10/10, 448 generative / 1,340 total
+  catalog entries, URL/uniform/typecheck clean, 81 Jest suites / 545 pass / one
+  skip, and production build green. Real-GPU visual/performance QA remains
+  external.

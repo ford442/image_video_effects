@@ -15,6 +15,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "flame-height", "name": "Flame Height", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "turbulence", "name": "Turbulence", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "cooling-rate", "name": "Cooling Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "diffusion", "name": "Diffusion", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -54,5 +60,12 @@
   "updated": true,
   "id": "gen-ghost-flame",
   "url": "shaders/gen-ghost-flame.wgsl",
-  "features": []
+  "features": [
+    "advected-flame-state",
+    "three-band-audio-reactive",
+    "mouse-and-click-heat",
+    "semantic-alpha",
+    "aces-tone-map"
+  ],
+  "feedbackPacking": "dataTextureA/C = temperature, fuel, horizontal velocity, age; extraBuffer[133..134] = smoothed bass/RMS envelopes"
 }

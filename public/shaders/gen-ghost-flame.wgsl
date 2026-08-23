@@ -166,13 +166,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseHeat = smoothstep(0.15, 0.0, mouseDist) * (0.3 + mouseDown * 0.7);
 
   // Smooth bass for flame height, RMS for turbulence
-  var prevBass = extraBuffer[3];
-  var prevRMS = extraBuffer[4];
+  var prevBass = extraBuffer[133];
+  var prevRMS = extraBuffer[134];
   let smoothBass = bass_env(prevBass, bass, 0.12, 0.03);
   let smoothRMS = bass_env(prevRMS, rms, 0.1, 0.04);
   if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[3] = smoothBass;
-    extraBuffer[4] = smoothRMS;
+    extraBuffer[133] = smoothBass;
+    extraBuffer[134] = smoothRMS;
   }
 
   // Audio-reactive: bass drives flame height, RMS drives turbulence
@@ -206,17 +206,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ═══ FLUID ADVECTION ═══
   // Sample neighbors for diffusion and advection
-  let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let maxCoord = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+  let left = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), maxCoord), 0);
+  let right = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), maxCoord), 0);
+  let down = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), maxCoord), 0);
+  let up = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), maxCoord), 0);
 
   // Velocity field at this position
   let vel = velocityField(vec3<f32>(uv, time * 0.1), time, audioTurb);
 
   // Advection: sample from upstream
   let advectUV = uv - vel * ps * 3.0;
-  let advected = textureSampleLevel(dataTextureC, u_sampler, clamp(advectUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let advectCoord = clamp(vec2<i32>(advectUV * res), vec2<i32>(0), maxCoord);
+  let advected = textureLoad(dataTextureC, advectCoord, 0);
 
   // Mix advected and current for stability
   temperature = mix(temperature, advected.r, 0.4);
@@ -310,9 +312,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let finalAlpha = mix(coolAlpha, hotAlpha, smoothstep(0.1, 0.4, tempNorm));
 
   // Temporal smoothing for flicker reduction
-  let prevAlpha = prevState.a;
-  var finalColor = mix(flameColor, prevState.rgb, 0.1);
-  let smoothAlpha = mix(finalAlpha, prevAlpha, 0.08);
+  var finalColor = flameColor;
+  let smoothAlpha = clamp(finalAlpha * (0.94 + treble * 0.06), 0.0, 0.85);
 
   // Depth for chromatic + pass-through
   let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
