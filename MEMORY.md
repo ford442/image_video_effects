@@ -156,7 +156,9 @@
   Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
 - Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
   audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
-  green. Real-GPU visual QA remains external.**Last updated:** 2026-08-23 (Codex liquid complexity batch)
+  green. Real-GPU visual QA remains external.
+
+**Last updated:** 2026-08-23 (Codex liquid complexity batch)
 
 ## 2026-08-23 — Codex Liquid Shader Complexity Batch requested
 
