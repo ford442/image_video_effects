@@ -5,46 +5,16 @@
     "mouse-driven",
     "webcam",
     "audio-reactive",
+    "continuous-motion",
+    "click-reactive",
+    "held-pointer",
     "held-drag",
     "bounded-click-ripples",
+    "temporal",
     "upgraded-rgba"
   ],
-  "description": "Slit-scan conveyor with phosphor aurora bands, oil-slick hue quantization, held slit drag, and bounded click fronts. Display RGBA packed in A.",
+  "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Display RGBA packed in A.",
   "params": [
-    {
-      "name": "Scan Speed",
-      "type": "float",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "id": "scan_speed"
-    },
-    {
-      "name": "Bit Crush",
-      "type": "float",
-      "default": 0.1,
-      "min": 0,
-      "max": 1,
-      "id": "bit_crush"
-    },
-    {
-      "name": "Hue Shift",
-      "type": "float",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "id": "hue_shift"
-    },
-    {
-      "name": "Unused",
-      "type": "float",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "id": "unused"
-    }
-  ],
-  "updatedParams": [
     {
       "name": "Scan Speed",
       "type": "float",
@@ -82,5 +52,40 @@
     "mouse-driven",
     "interactive"
   ],
-  "name": "Cyber Slit Scan"
+  "name": "Cyber Slit Scan",
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Scan Speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Bit Crush",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Hue Shift",
+      "default": 0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Unused",
+      "default": 0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

@@ -1210,7 +1210,12 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "psychedelic-color",
+      "rosette-moire"
     ],
     "params": [
       {
@@ -1247,7 +1252,43 @@
       "halftone",
       "print",
       "audio-reactive"
-    ]
+    ],
+    "description": "Rosette and moire CMYK halftone with animated registration drift, held-pointer plate shear, click ink blooms, and three-band audio overprint.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dot Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Angle Offset",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Channel Spread",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ink Darkness",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "codebreaker-reveal",
@@ -2236,46 +2277,16 @@
       "mouse-driven",
       "webcam",
       "audio-reactive",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
       "held-drag",
       "bounded-click-ripples",
+      "temporal",
       "upgraded-rgba"
     ],
-    "description": "Slit-scan conveyor with phosphor aurora bands, oil-slick hue quantization, held slit drag, and bounded click fronts. Display RGBA packed in A.",
+    "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Display RGBA packed in A.",
     "params": [
-      {
-        "name": "Scan Speed",
-        "type": "float",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "id": "scan_speed"
-      },
-      {
-        "name": "Bit Crush",
-        "type": "float",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "id": "bit_crush"
-      },
-      {
-        "name": "Hue Shift",
-        "type": "float",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "id": "hue_shift"
-      },
-      {
-        "name": "Unused",
-        "type": "float",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "id": "unused"
-      }
-    ],
-    "updatedParams": [
       {
         "name": "Scan Speed",
         "type": "float",
@@ -2313,7 +2324,42 @@
       "mouse-driven",
       "interactive"
     ],
-    "name": "Cyber Slit Scan"
+    "name": "Cyber Slit Scan",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bit Crush",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Unused",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "cyber-trace",
@@ -5481,7 +5527,7 @@
     "name": "Interactive Ripple",
     "category": "interactive-mouse",
     "url": "shaders/interactive-ripple.wgsl",
-    "description": "2D wave equation solver with dispersion and Huygens wavelet superposition. Chromatic dispersion on ripple crests, caustic highlights in constructive interference zones, HDR bloom, subsurface scattering, and boundary reflection damping.",
+    "description": "Analytic Huygens wavelet field with interference lattices, traveling crest packets, held-pointer pressure, click ripples, and thin-film spectral color; it is not a stateful PDE solver.",
     "params": [
       {
         "id": "amplitude",
@@ -5516,7 +5562,12 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "wave"
+      "wave",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "psychedelic-color",
+      "analytic-wave-field"
     ],
     "tags": [
       "ripple",
@@ -5527,7 +5578,42 @@
       "dispersion",
       "caustics",
       "huygens"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wave Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wave Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "interactive-voronoi-lens",
@@ -7245,7 +7331,7 @@
     "name": "Matrix Curtain",
     "category": "interactive-mouse",
     "url": "shaders/matrix-curtain.wgsl",
-    "description": "Conway's Game of Life on a falling phosphor character grid with Perlin-noise column velocities, CRT glow, ghosting trails, and ACES tone mapping. Bass drives spawn rate, mouse scrubs horizontal shift and rain speed, depth creates parallax.",
+    "description": "Conway-inspired occupancy drives recognizable phosphor glyphs in layered rain with held curtain vortices, click/degauss fronts, exact display-history loads, and alternate hues.",
     "params": [
       {
         "id": "speed",
@@ -7280,7 +7366,12 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "temporal"
+      "temporal",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "psychedelic-color",
+      "glyph-grid"
     ],
     "tags": [
       "matrix",
@@ -7290,7 +7381,42 @@
       "crt",
       "audio-reactive",
       "temporal"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rain Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Column Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Curtain Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Phosphor Glow",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "mirror-drag",
@@ -9820,14 +9946,19 @@
     "category": "interactive-mouse",
     "url": "shaders/phosphor-magnifier.wgsl",
     "icon": "search",
-    "description": "CRT phosphor magnifier with aurora scan runners, held lens, click bloom fronts. Diagnostic A [lensMask, scanLine, bloom, alpha] preserved.",
+    "description": "CRT phosphor magnifier with display-RGBA afterimage feedback, aurora scan runners, raster-beam motion, degauss rings, held lens pressure, click shells, chromatic aberration, and psychedelic phosphor hue. Intentional A feedback correction from diagnostic masks to display RGBA.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
       "held-drag",
-      "bounded-click-ripples"
+      "bounded-click-ripples",
+      "psychedelic-color",
+      "display-history"
     ],
     "params": [
       {
@@ -9868,34 +9999,39 @@
     ],
     "updatedParams": [
       {
+        "index": 0,
         "name": "Zoom Level",
-        "id": "x",
+        "default": 0.5,
         "min": 0,
         "max": 1,
-        "default": 0.5
+        "step": 0.01
       },
       {
+        "index": 1,
         "name": "Pixel Size",
-        "id": "y",
+        "default": 0.5,
         "min": 0,
         "max": 1,
-        "default": 0.5
+        "step": 0.01
       },
       {
+        "index": 2,
         "name": "Glow",
-        "id": "z",
+        "default": 0.3,
         "min": 0,
         "max": 1,
-        "default": 0.3
+        "step": 0.01
       },
       {
+        "index": 3,
         "name": "Lens Size",
-        "id": "w",
+        "default": 0.4,
         "min": 0,
         "max": 1,
-        "default": 0.4
+        "step": 0.01
       }
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "pixel-drag-smear",
@@ -11106,8 +11242,14 @@
     "url": "shaders/quantum-prism.wgsl",
     "features": [
       "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
       "held-drag",
       "bounded-click-ripples",
+      "psychedelic-color",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
@@ -11149,10 +11291,10 @@
         "step": 0.01
       }
     ],
-    "description": "Hex prism cells with facet runners, oil-slick caustics, held rotation, click shock fronts. Display RGBA in A.",
+    "description": "Interactive honeycomb prism with beveled facets, moving spectral bands, oil-slick facet runners, held cell deformation, click fronts, three-band audio, meaningful facet depth, and light display history in A.",
     "updatedParams": [
       {
-        "id": "param1",
+        "index": 0,
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -11160,7 +11302,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "index": 1,
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -11168,7 +11310,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "index": 2,
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -11176,14 +11318,15 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "quantum-ripples",
@@ -14428,7 +14571,7 @@
     "id": "vertical-slice-wave",
     "name": "Vertical Slice Wave",
     "url": "shaders/vertical-slice-wave.wgsl",
-    "description": "Splits the image into vertical strips that oscillate with spring-damped mouse follow, attack/release audio envelope, and temporal feedback trails. Mouse X/Y control frequency/amplitude with smooth lag. Audio bass drives wave amplitude.",
+    "description": "Layered vertical strip waves with seam runners, held amplitude/twist, click fronts, rainbow interference, and state-only spring/audio feedback.",
     "params": [
       {
         "id": "strips",
@@ -14463,7 +14606,12 @@
       "mouse-driven",
       "audio-reactive",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "psychedelic-color",
+      "state-feedback"
     ],
     "tags": [
       "mouse-driven",
@@ -14471,7 +14619,42 @@
       "audio-reactive",
       "distortion",
       "temporal"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Strip Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "RGB Split",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Jitter",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "vhs-jog",

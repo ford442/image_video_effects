@@ -1,6 +1,7 @@
 // ────────────────────────────────────────────────────────────────────────────────
-//  Cyber Slit Scan — Batch 56
-//  Slit-scan conveyor, phosphor aurora bands, oil-slick hue, held slit drag, click fronts
+//  Cyber Slit Scan — Batch 56 merge
+//  Traveling scan heads, diagonal tears, phosphor aurora / oil-slick bands,
+//  held slit bend, click injections, conveyor decay
 // ────────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -51,12 +52,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
   let held = f32(u.zoom_config.w > 0.5);
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let bass = audio.x;
+  let mids = audio.y;
+  let treble = audio.z;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
-  let speed = 1u + u32(u.zoom_params.x * 5.0);
   let bitCrush = u.zoom_params.y;
   let hueShift = u.zoom_params.z;
   let artifactAmt = u.zoom_params.w;
@@ -64,6 +65,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var slitX = u32(mouse.x * dims.x);
   if (mouse.x < 0.0) { slitX = width / 2u; }
   slitX = clamp(slitX, 0u, width - 1u);
+
+  let scanHead = 0.5 + 0.5 * sin(time * (1.0 + u.zoom_params.x * 5.0) + f32(gid.y) * 0.025);
+  let speed = 1u + u32(clamp(u.zoom_params.x + scanHead * 0.12 + bass * 0.1, 0.0, 1.0) * 5.0);
 
   var outputColor: vec4<f32>;
   if (gid.x >= width - speed) {
@@ -73,6 +77,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bits = mix(255.0, 2.0, bitCrush);
     color = floor(color * bits) / bits;
 
+    if (fract(time * 10.0 + f32(gid.y) * 0.01) > 0.98) {
+      color *= 1.5;
+    }
+
     let scanBand = smoothstep(0.04, 0.0, abs(fract(f32(gid.y) * 0.018 - time * (2.4 + bass * 1.5)) - 0.5));
     let auroraPhase = f32(gid.y) * 0.012 + time * (3.2 + mids);
     let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(auroraPhase * 0.07) + vec3<f32>(0.0, 0.33, 0.67)));
@@ -81,26 +89,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var hsv = rgb2hsv(color.rgb);
     hsv.y = min(hsv.y * 1.2, 1.0);
     hsv.z = min(hsv.z * 1.1, 1.0);
-    hsv.x = fract(hsv.x + mouse.y * 0.35 + hueShift * 0.5 + held * 0.08);
+    hsv.x = fract(hsv.x + hueShift + mouse.y * 0.5 + mids * 0.12 + held * 0.08);
     outputColor = vec4<f32>(hsv2rgb(hsv), color.a);
   } else {
-    let histPixel = pixel + vec2<i32>(i32(speed), 0);
-    if (histPixel.x < i32(width)) {
-      outputColor = textureLoad(dataTextureC, histPixel, 0);
-    } else {
-      outputColor = vec4<f32>(0.0);
+    let diagonal = sin((f32(gid.x + gid.y) * 0.035) - time * 5.0) * artifactAmt * (2.0 + treble * 8.0);
+    let heldBend = select(0.0, (mouse.x - f32(gid.x) / dims.x) * 18.0 * artifactAmt, u.zoom_config.w > 0.5);
+    var clickKick = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+      let event = u.ripples[i];
+      let age = max(time - event.z, 0.0);
+      let d = length(vec2<f32>(gid.xy) / dims - event.xy);
+      clickKick += exp(-age * 2.0) * exp(-abs(d - age * 0.4) * 55.0) * 12.0;
     }
+    let sourceY = clamp(i32(gid.y) + i32(diagonal + heldBend + clickKick), 0, i32(height) - 1);
+    let sourceX = min(gid.x + speed, width - 1u);
+    outputColor = textureLoad(dataTextureC, vec2<i32>(i32(sourceX), sourceY), 0);
+
     let conveyor = smoothstep(0.06, 0.0, abs(fract(f32(gid.x) * 0.04 + time * (1.8 + bass)) - 0.5));
     outputColor.rgb = outputColor.rgb * (1.0 - conveyor * artifactAmt * 0.12);
   }
 
   var clickFront = 0.0;
-  let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let rp = u.ripples[i];
+  let rippleCount2 = min(u32(u.config.y), 50u);
+  for (var j = 0u; j < rippleCount2; j = j + 1u) {
+    let rp = u.ripples[j];
     let age = time - rp.z;
     if (rp.z > 0.0 && age >= 0.0 && age < 1.4) {
-      let d = length(vec2<f32>(f32(gid.x), f32(gid.y)) / dims - rp.xy);
+      let d = length(vec2<f32>(gid.xy) / dims - rp.xy);
       clickFront = max(clickFront, exp(-d * 120.0) * (1.0 - age / 1.4));
     }
   }

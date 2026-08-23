@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Chromatic Focus Interactive — Batch 56
-//  Focus runners, oil-slick aberration, held drag, bounded click iris fronts
+//  Chromatic Focus Interactive — Batch 56 merge
+//  Bounded multi-tap blur, zone-plate caustics, oil-slick runners, held squeeze,
+//  click iris shells, light display history in A
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -45,8 +46,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = dims.x / dims.y;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
-  let held = f32(u.zoom_config.w > 0.5);
-  let bass = plasmaBuffer[0].x;
+  let click = u.zoom_config.w;
+  let held = select(0.0, 1.0, click > 0.5);
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
   let prev = textureLoad(dataTextureC, pixel, 0);
 
   let strength = u.zoom_params.x * 0.05 * (1.0 + held * 0.2);
@@ -60,30 +62,55 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var amount = smoothstep(focusRad, focusRad + 0.5, dist);
   amount = pow(amount, 1.0 / hardness);
 
-  let runner = smoothstep(0.05, 0.0, abs(fract(dist * 6.0 - time * (2.0 + bass)) - 0.5));
-  let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(dist * 5.0 - time * 0.35) + vec3<f32>(0.0, 0.33, 0.67)));
+  let dir = distVec / max(dist, 1e-5);
+  let squeeze = held * exp(-dist * 8.0) * (0.015 + strength * 0.4);
 
-  var dir = normalize(distVec + vec2<f32>(0.0001, 0.0));
-  let rOffset = dir * amount * strength;
-  let bOffset = -dir * amount * strength;
-
-  let r = textureSampleLevel(readTexture, u_sampler, uv + rOffset, 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, uv + bOffset, 0.0).b;
-  var color = vec3<f32>(r, g, b) * (1.0 - amount * 0.3);
-  color += oilSlick * runner * amount * 0.12;
-
-  var clickRing = 0.0;
+  var irisShell = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let rp = u.ripples[i];
-    let age = time - rp.z;
-    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
-      let d = length(uv - rp.xy);
-      clickRing = max(clickRing, exp(-abs(d - focusRad - age * 0.2) * 80.0) * (1.0 - age / 1.5));
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    irisShell += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.36) * 65.0);
+  }
+
+  let runner = smoothstep(0.05, 0.0, abs(fract(dist * 6.0 - time * (2.0 + audio.x)) - 0.5));
+  let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(dist * 5.0 - time * 0.35) + vec3<f32>(0.0, 0.33, 0.67)));
+  let caustic = sin(dist * (35.0 + focusRad * 90.0) - time * (1.0 + audio.y * 4.0)) * amount;
+
+  let rOffset = dir * (amount * strength + squeeze + irisShell * 0.008);
+  let bOffset = -dir * (amount * strength + squeeze + irisShell * 0.008);
+  let blurRadius = blurAmt * amount * (0.002 + audio.x * 0.006);
+  let tangent = vec2<f32>(-dir.y, dir.x);
+
+  let r = (
+    textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r +
+    textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset + tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r +
+    textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset - tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r
+  ) / 3.0;
+  let g = (
+    textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g +
+    textureSampleLevel(readTexture, u_sampler, clamp(uv + tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g +
+    textureSampleLevel(readTexture, u_sampler, clamp(uv - tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g
+  ) / 3.0;
+  let b = (
+    textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b +
+    textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset + tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b +
+    textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset - tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+  ) / 3.0;
+
+  let vig = 1.0 - amount * 0.3;
+  var color = vec3<f32>(r, g, b) * vig;
+  color += oilSlick * runner * amount * 0.12;
+  color += (0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + caustic * 4.0 + time))
+    * (abs(caustic) * 0.10 + irisShell * 0.24);
+
+  if (click > 0.5) {
+    let ring = abs(dist - focusRad);
+    if (ring < 0.005) {
+      color += vec3<f32>(0.5, 0.5, 0.5);
     }
   }
-  color += oilSlick * clickRing * 0.2;
+
   color = mix(color, prev.rgb * 0.94, 0.08 * amount);
 
   let blurThickness = amount * 5.0 + blurAmt * 2.0;

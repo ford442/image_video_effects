@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Phosphor Magnifier — Batch 56
-//  Phosphor runners, aurora scan bands, held lens glide, click bloom fronts
+//  Phosphor Magnifier — Batch 56 merge
+//  Display-RGBA afterimage feedback + aurora runners, raster beam,
+//  degauss/click shells, held lens pressure
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,11 +28,11 @@ struct Uniforms {
 const TAU: f32 = 6.28318530718;
 
 fn acesFilm(x: vec3<f32>) -> vec3<f32> {
-  let a = vec3<f32>(2.51);
-  let b = vec3<f32>(0.03);
-  let c = vec3<f32>(2.43);
-  let d = vec3<f32>(0.59);
-  let e = vec3<f32>(0.14);
+  let a = vec3<f32>(2.51, 2.51, 2.51);
+  let b = vec3<f32>(0.03, 0.03, 0.03);
+  let c = vec3<f32>(2.43, 2.43, 2.43);
+  let d = vec3<f32>(0.59, 0.59, 0.59);
+  let e = vec3<f32>(0.14, 0.14, 0.14);
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
@@ -47,15 +48,17 @@ fn shadowMask(uv: vec2<f32>, pixelSize: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pixel = vec2<i32>(gid.xy);
   let dims = u.config.zw;
-  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
   let uv = vec2<f32>(gid.xy) / dims;
   let mouse = u.zoom_config.yz;
-  let held = f32(u.zoom_config.w > 0.5);
   let time = u.config.x;
   let aspect = dims.x / dims.y;
   let audio = plasmaBuffer[0].xyz;
   let bassExcite = 1.0 + audio.x * 1.2;
+  let held = f32(u.zoom_config.w > 0.5);
 
   let zoomLevel = mix(1.0, 10.0, u.zoom_params.x);
   let pixelSize = mix(20.0, 320.0, u.zoom_params.y);
@@ -65,6 +68,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let dist = length(centered);
   let lensMask = 1.0 - smoothstep(lensSize * 0.85, lensSize, dist);
+  let heldPressure = select(0.0, 1.0 - smoothstep(0.0, lensSize, dist), u.zoom_config.w > 0.5);
 
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthMag = mix(1.0, 1.0 + depth * 2.5, lensMask);
@@ -95,9 +99,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let decayFactor = exp(-time * vec3<f32>(1.2, 0.8, 1.6) * (1.0 - phosphorDecay));
   let excitation = 0.55 + 0.45 * bassExcite * decayFactor;
 
-  let scanLine = 0.55 + 0.45 * sin(snappedG.y * dims.y * 0.55 + time * 6.0);
+  var clickShell = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    clickShell += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.35) * 60.0);
+  }
+
   let runner = smoothstep(0.05, 0.0, abs(fract(snappedG.x * 24.0 - time * (4.0 + audio.y)) - 0.5));
   let aurora = 0.5 + 0.5 * cos(TAU * (vec3<f32>(snappedG.y * 6.0 + time * 0.3) + vec3<f32>(0.0, 0.33, 0.67)));
+  let rasterBeam = exp(-abs(fract(snappedG.y - time * 0.18) - 0.5) * 36.0);
+  let degauss = sin(dist * 90.0 - time * 5.0) * (heldPressure + clickShell) * 0.18;
+  let scanLine = 0.55 + 0.45 * sin(snappedG.y * dims.y * 0.55 + time * 6.0 + degauss * 9.0);
   let scanBeat = 1.0 + audio.z * 0.3 * sin(snappedG.y * 40.0 + time * 12.0);
   var phosphor = sampleColor * mask * excitation * scanLine * scanBeat;
   phosphor = phosphor + aurora * runner * lensMask * 0.08;
@@ -106,21 +120,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bloom = glow * lensMask * brightness * brightness * (0.6 + audio.x + audio.y * 0.5);
   var finalColor = phosphor + vec3<f32>(0.18, 0.92, 0.42) * bloom;
 
-  let prevDiag = textureLoad(dataTextureC, pixel, 0);
-  let trailBlend = mix(prevDiag.g, scanLine, 0.35) * lensMask * 0.06;
-  finalColor = finalColor + vec3<f32>(0.1, 0.85, 0.5) * trailBlend;
-
-  var clickFront = 0.0;
-  let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let rp = u.ripples[i];
-    let age = time - rp.z;
-    if (rp.z > 0.0 && age >= 0.0 && age < 1.4) {
-      let d = length(uv - rp.xy);
-      clickFront = max(clickFront, exp(-d * 90.0) * (1.0 - age / 1.4));
-    }
-  }
-  finalColor += vec3<f32>(0.3, 1.0, 0.6) * clickFront * bloom;
+  let historyCoord = clamp(pixel, vec2<i32>(0), vec2<i32>(i32(dims.x) - 1, i32(dims.y) - 1));
+  let afterimage = textureLoad(dataTextureC, historyCoord, 0).rgb;
+  let trail = mix(afterimage, finalColor, 0.12);
+  let phosphorHue = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + time * 0.7 + dist * 18.0);
+  finalColor = mix(finalColor, trail, 0.22 * lensMask)
+    + phosphorHue * (rasterBeam * 0.12 + clickShell * 0.25 + heldPressure * 0.08);
 
   finalColor = acesFilm(finalColor * 1.15);
 
@@ -128,8 +133,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let exciteAlpha = clamp(dot(excitation, vec3<f32>(0.333)), 0.0, 1.0);
   let finalAlpha = clamp(exciteAlpha * magnification * depth * 3.5, 0.15, 0.96);
   let depthOut = clamp(mix(depth, 0.18 + lensMask * 0.74, 0.28), 0.0, 1.0);
+  let outPixel = vec4<f32>(finalColor, finalAlpha);
 
-  textureStore(writeTexture, pixel, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeTexture, pixel, outPixel);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(lensMask, scanLine, bloom, finalAlpha));
+  // Intentional feedback correction: A stores display RGBA so afterimage reads are truthful.
+  textureStore(dataTextureA, pixel, outPixel);
 }

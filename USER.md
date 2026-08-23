@@ -24,7 +24,9 @@ _Learn about the person you're helping. Update this as you go._
   shaders through tracker #394. Shader upgrade Batch 52 closed through tracker
   #454 (interactive vector fields). Batches 53–55 closed through tracker #474
   (Batch 55 = four-shader geometry / fast-motion / psychedelic-color).
-  Generative volume is no longer the bottleneck.
+  Batch 56 dual lineages merged (tracker #475–482 claimed twice; 12 unique
+  shaders retained, 4 overlaps hand-merged). Generative volume is no longer
+  the bottleneck.
 - **2026-08-21 progress audit:** board was empty except #1080 (WASM GPU evidence)
   and #1111 (thumbnail CI; partial landing already in tree). Next work is
   foundation residual before another content wave: compile/feature SoT (#1123),
@@ -107,6 +109,9 @@ Format specification:
 - Thumbnail healthy coverage is still the discoverability bottleneck (~21%);
   #1111 CI gate is partially landed (script exists; deferral design is not).
   Capture stays discrete-GPU workstation work. Do not count black PNGs.
+- Shader upgrade Batch 56 dual lineages are merged through tracker #482 (12
+  unique shaders; 4 overlaps hand-merged). Preserve Phosphor Magnifier
+  display-history repack and Vertical Slice Wave state/display separation.
 - CRA→Vite remains deferred. Dead CRA-rewire deps to drop in #1125.
 - Keep thumbnail coverage CI reporting-only until the healthy baseline reaches 50%.
 - Shader upgrade work now includes separately closed Batches 53, 54, and 55

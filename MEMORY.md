@@ -1,6 +1,23 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-21 (getGPUTimings JS/C++ ABI)
+**Last updated:** 2026-08-23 (Batch 56 dual-lineage merge)
+
+## 2026-08-23 — Batch 56 dual-lineage merge
+
+- Two concurrent Batch 56 pushes both claimed tracker #475–482 with different
+  eight-shader sets. Merged: kept every unique upgrade; hand-merged the four
+  overlaps (cyber-slit-scan, phosphor-magnifier, chromatic-focus-interactive,
+  quantum-prism).
+- **Remote lineage kept:** cmyk-halftone-interactive, interactive-ripple,
+  vertical-slice-wave, matrix-curtain (+ overlap partners).
+- **Local lineage kept:** hyb-spectral-fbm-displace, infinite-zoom-lens,
+  liquid-warp-interactive, warp_drive (+ overlap partners).
+- **Overlap policy:** remote optical / feedback contracts + local oil-slick /
+  aurora / runner motion. Phosphor Magnifier keeps the documented display-RGBA
+  afterimage A correction.
+- Proof after merge: focused gate **12/12** (Naga absent), cohort dead-slider
+  and extraBuffer audits PASS, catalogs regenerated, focused Jest 3/3 (18 pass).
+  Real-GPU visual QA remains external.
 
 ## 2026-08-21 — WASM `getGPUTimings` bridge ABI
 
