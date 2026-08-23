@@ -115,15 +115,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let held = u.zoom_config.w > 0.5;
     let aspect = resolution.x / resolution.y;
-
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
     let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
     let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
-
     let threshold = clamp(u.zoom_params.x - bass * 0.2, 0.0, 1.0);
     let sortMode = u.zoom_params.y;
     let glitchAmount = clamp(u.zoom_params.z + mids * 0.3, 0.0, 1.0) * select(1.0, 1.25, held);
-
     var baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let baseLuma = getLuminance(baseColor.rgb);
 
