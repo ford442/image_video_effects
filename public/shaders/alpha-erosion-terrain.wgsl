@@ -34,18 +34,30 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-    let uv = vec2<f32>(gid.xy) / res;
+    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let dims = vec2<i32>(res);
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Read previous state
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = stateAt(coord, dims);
     var height = prevState.r;
     var water = prevState.g;
     var sediment = prevState.b;
@@ -66,15 +78,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     erosion = clamp(erosion, 0.0, 2.0);
 
     // === PARAMETERS ===
-    let rainRate = mix(0.001, 0.01, u.zoom_params.x);
-    let erosionRate = mix(0.01, 0.1, u.zoom_params.y);
+    let rainRate = mix(0.001, 0.01, u.zoom_params.x) * (1.0 + audio.x * 0.7);
+    let erosionRate = mix(0.01, 0.1, u.zoom_params.y) * (1.0 + audio.z * 0.35);
     let depositionRate = mix(0.01, 0.1, u.zoom_params.z);
+    let sedimentCapacity = mix(0.25, 2.5, u.zoom_params.w);
 
     // === NEIGHBOR SAMPLES ===
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+    let right = stateAt(coord + vec2<i32>(1, 0), dims);
+    let down = stateAt(coord + vec2<i32>(0, -1), dims);
+    let up = stateAt(coord + vec2<i32>(0, 1), dims);
 
     // === HEIGHT GRADIENT ===
     let gradX = (right.r - left.r) / (2.0 * ps.x);
@@ -83,7 +96,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // === WATER FLOW ===
     // Water flows downhill
-    let waterCapacity = slope * water * erosionRate;
+    let waterCapacity = slope * water * erosionRate * sedimentCapacity;
     let sedimentExcess = sediment - waterCapacity;
 
     // Erode if carrying too little sediment
@@ -133,9 +146,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ripple = u.ripples[i];
         let rDist = length(uv - ripple.xy);
         let age = time - ripple.z;
-        if (age < 0.5 && rDist < 0.08) {
-            let storm = smoothstep(0.08, 0.0, rDist) * max(0.0, 1.0 - age * 2.0);
-            water += storm * 0.2;
+        if (age >= 0.0 && age < 2.0) {
+            let storm = exp(-abs(rDist - age * 0.2) * 52.0 - age * 1.4);
+            water += storm * (0.16 + audio.x * 0.18);
+            sediment += storm * audio.y * 0.035;
         }
     }
 
@@ -174,9 +188,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let erosionColor = vec3<f32>(0.6, 0.3, 0.2);
     displayColor = mix(displayColor, erosionColor, min(erosion * 0.5, 0.3));
 
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    displayColor += audio * vec3<f32>(0.05, 0.08, 0.12) * waterVis;
 
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, water));
+    let alpha = clamp(water * 0.4 + sediment * 0.22 + erosion * 0.55, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(aces(displayColor), alpha));
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

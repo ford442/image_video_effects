@@ -1,15 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Hyper Tensor Fluid
-//  Category: simulation
-//  Features: advanced-hybrid, tensor-field, navier-stokes, depth-aware, fbm
-//  Complexity: Very High
-//  Chunks From: tensor-flow-sculpting, navier-stokes-dye, gen_grid
-//  Created: 2026-03-22
-//  By: Agent 3B - Advanced Hybrid Creator
-// ═══════════════════════════════════════════════════════════════════
-//  Fluid flows according to image structure via tensor eigendecomposition
-//  Edges create barriers, smooth areas allow flow
-// ═══════════════════════════════════════════════════════════════════
+// Hyper Tensor Fluid — Codex (e) anisotropic tensor-guided fluid field.
+// A/C packing: velocity.xy, tensor anisotropy, transported dye.
+// B and extraBuffer are intentionally unused; C loads are exact and bounded.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -32,180 +23,147 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(pixel: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC,
+    clamp(pixel, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
+fn stateUV(uv: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+  return stateAt(vec2<i32>(floor(uv * vec2<f32>(dims))), dims);
+}
+
+fn sourceAt(uv: vec2<f32>) -> vec4<f32> {
+  return textureSampleLevel(readTexture, u_sampler,
+    clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+}
+
+fn lumaAt(uv: vec2<f32>) -> f32 {
+  return dot(sourceAt(uv).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
 fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
-// ═══ CHUNK: fbm2 (from gen_grid.wgsl) ═══
-fn valueNoise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-    let a = hash12(i + vec2<f32>(0.0, 0.0));
-    let b = hash12(i + vec2<f32>(1.0, 0.0));
-    let c = hash12(i + vec2<f32>(0.0, 1.0));
-    let d = hash12(i + vec2<f32>(1.0, 1.0));
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+fn noise(p: vec2<f32>) -> f32 {
+  let cell = floor(p);
+  let f = fract(p);
+  let s = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash12(cell), hash12(cell + vec2<f32>(1.0, 0.0)), s.x),
+    mix(hash12(cell + vec2<f32>(0.0, 1.0)),
+      hash12(cell + vec2<f32>(1.0, 1.0)), s.x), s.y);
 }
 
-fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
-    var value = 0.0;
-    var amplitude = 0.5;
-    var frequency = 1.0;
-    for (var i: i32 = 0; i < octaves; i = i + 1) {
-        value = value + amplitude * valueNoise(p * frequency);
-        amplitude = amplitude * 0.5;
-        frequency = frequency * 2.0;
-    }
-    return value;
+fn spectral(t: f32) -> vec3<f32> {
+  return 0.52 + 0.48 * cos(6.283185 *
+    (vec3<f32>(t) + vec3<f32>(0.00, 0.34, 0.68)));
 }
 
-// ═══ TENSOR FIELD CALCULATION ═══
-fn calculateStructureTensor(uv: vec2<f32>, pixel: vec2<f32>) -> mat2x2<f32> {
-    // Sample image luminance for structure detection
-    let l = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let lum = dot(l, vec3<f32>(0.299, 0.587, 0.114));
-    
-    // Calculate gradient using Sobel-like operator
-    let right = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixel.x, 0.0), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let left = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixel.x, 0.0), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let up = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, pixel.y), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let down = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, pixel.y), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    
-    let dx = (right - left) * 0.5;
-    let dy = (up - down) * 0.5;
-    
-    // Structure tensor: [dx*dx, dx*dy; dy*dx, dy*dy]
-    return mat2x2<f32>(
-        dx * dx, dx * dy,
-        dy * dx, dy * dy
-    );
-}
-
-fn calculateTensorEigen(tensor: mat2x2<f32>) -> vec4<f32> {
-    // Eigenvalues of 2x2 matrix [[a, b], [b, d]]
-    let a = tensor[0][0];
-    let b = tensor[0][1];
-    let d = tensor[1][1];
-    
-    let trace = a + d;
-    let det = a * d - b * b;
-    let discriminant = sqrt(max(trace * trace - 4.0 * det, 0.0));
-    
-    let lambda1 = (trace + discriminant) * 0.5;
-    let lambda2 = (trace - discriminant) * 0.5;
-    
-    // Eigenvectors
-    let vec1 = normalize(vec2<f32>(lambda1 - d, b + 0.0001));
-    let vec2 = normalize(vec2<f32>(-vec1.y, vec1.x));
-    
-    return vec4<f32>(vec1, vec2); // vec_pos in xy, vec_neg in zw
-}
-
-// ═══ FLUID ADVECTION ═══
-fn advectFluid(uv: vec2<f32>, velocity: vec2<f32>, dt: f32, pixel: vec2<f32>) -> vec3<f32> {
-    // Backtrace for advection
-    let prevUV = uv - velocity * dt;
-    return textureSampleLevel(readTexture, u_sampler, clamp(prevUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-}
-
-// ═══ MAIN ═══
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let pixel = 1.0 / resolution;
-    let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
 
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
-    let id = vec2<i32>(global_id.xy);
-    
-    // Parameters
-    let tensorStrength = mix(0.0, 2.0, u.zoom_params.x);  // x: Tensor strength
-    let viscosity = mix(0.1, 0.99, u.zoom_params.y);      // y: Viscosity
-    let turbulence = mix(0.0, 0.5, u.zoom_params.z);      // z: Turbulence amount
-    let advectionSpeed = mix(0.5, 3.0, u.zoom_params.w);  // w: Advection speed
-    
-    // Calculate structure tensor from image
-    let tensor = calculateStructureTensor(uv, pixel);
-    let eigen = calculateTensorEigen(tensor);
-    
-    // Principal flow direction (along edges)
-    let flowDirection = eigen.xy;
-    let edgeStrength = length(eigen.xy);
-    
-    // Get previous velocity from data texture
-    var velocity = textureLoad(dataTextureC, id, 0).xy;
-    
-    // Apply tensor field influence - flow follows image structure
-    velocity += flowDirection * tensorStrength * 0.01;
-    
-    // Add FBM turbulence
-    let turb = fbm2(uv * 8.0 + time * 0.1 * audioReactivity, 4);
-    velocity += vec2<f32>(
-        fbm2(uv * 4.0 + vec2<f32>(time * 0.1 * audioReactivity, 0.0), 3) - 0.5,
-        fbm2(uv * 4.0 + vec2<f32>(0.0, time * 0.1 * audioReactivity), 3) - 0.5
-    ) * turbulence;
-    
-    // Apply viscosity (damping)
-    velocity *= viscosity;
-    
-    // Store velocity for next frame
-    textureStore(dataTextureA, id, vec4<f32>(velocity, 0.0, 1.0));
-    
-    // Advect color along flow field
-    let dt = 0.016 * advectionSpeed;
-    let advectedUV = uv + velocity * dt;
-    
-    // Sample with advected coordinates
-    var color = textureSampleLevel(readTexture, u_sampler, clamp(advectedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-    
-    // Depth-aware distortion
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthFactor = 1.0 - depth * 0.5;
-    
-    // Apply flow-based color modulation
-    let flowIntensity = length(velocity) * 5.0;
-    color = mix(color, color * (1.0 + flowIntensity), edgeStrength * 2.0);
-    
-    // Add iridescent highlights along flow
-    let hueShift = flowIntensity * 0.1 + time * 0.05 * audioReactivity;
-    let highlight = vec3<f32>(
-        0.5 + 0.5 * cos(hueShift * 6.28),
-        0.5 + 0.5 * cos(hueShift * 6.28 + 2.09),
-        0.5 + 0.5 * cos(hueShift * 6.28 + 4.18)
-    );
-    color += highlight * flowIntensity * 0.3 * depthFactor;
-    
-    // Alpha based on motion and depth
-    let alpha = mix(0.7, 1.0, flowIntensity);
-    
-    
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(id) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+  let coord = vec2<i32>(gid.xy);
+  let dims = vec2<i32>(res);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+  let texel = 1.0 / res;
+  let aspect = res.x / max(res.y, 1.0);
+  let time = u.config.x;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+
+  let tensorStrength = mix(0.15, 2.4, u.zoom_params.x);
+  let viscosity = mix(0.035, 0.32, u.zoom_params.y);
+  let turbulence = mix(0.02, 0.55, u.zoom_params.z);
+  let advectionSpeed = mix(0.35, 2.8, u.zoom_params.w);
+
+  let gx = lumaAt(uv + vec2<f32>(texel.x, 0.0)) -
+    lumaAt(uv - vec2<f32>(texel.x, 0.0));
+  let gy = lumaAt(uv + vec2<f32>(0.0, texel.y)) -
+    lumaAt(uv - vec2<f32>(0.0, texel.y));
+  let gradient = vec2<f32>(gx, gy);
+  let gradientLength = max(length(gradient), 0.0001);
+  let tangent = vec2<f32>(-gradient.y, gradient.x) / gradientLength;
+  let lambdaMajor = dot(gradient, gradient);
+  let lambdaMinor = abs(gx * gy) * 0.15;
+  let anisotropy = clamp((lambdaMajor - lambdaMinor) /
+    max(lambdaMajor + lambdaMinor, 0.0001), 0.0, 1.0);
+
+  let previous = stateAt(coord, dims);
+  var velocity = previous.xy;
+  let averageVelocity = (stateAt(coord + vec2<i32>(-1, 0), dims).xy +
+    stateAt(coord + vec2<i32>(1, 0), dims).xy +
+    stateAt(coord + vec2<i32>(0, -1), dims).xy +
+    stateAt(coord + vec2<i32>(0, 1), dims).xy) * 0.25;
+  velocity = mix(velocity, averageVelocity, viscosity);
+  velocity += tangent * anisotropy * tensorStrength * 0.0035;
+
+  let n0 = noise(uv * 7.0 + vec2<f32>(time * 0.21, -time * 0.17));
+  let nx = noise(uv * 7.0 + vec2<f32>(texel.x * 3.0, 0.0) +
+    vec2<f32>(time * 0.21, -time * 0.17));
+  let ny = noise(uv * 7.0 + vec2<f32>(0.0, texel.y * 3.0) +
+    vec2<f32>(time * 0.21, -time * 0.17));
+  velocity += vec2<f32>(n0 - ny, nx - n0) * turbulence *
+    (0.008 + audio.z * 0.009);
+
+  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseP = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseDelta = p - mouseP;
+  let mouseDist = max(length(mouseDelta), 0.0001);
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
+  let stir = exp(-mouseDist * mouseDist * 42.0) * held;
+  velocity += vec2<f32>(-mouseDelta.y / aspect, mouseDelta.x) / mouseDist *
+    stir * 0.024 * tensorStrength;
+
+  var clickFront = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = time - event.z;
+    if (age >= 0.0 && age < 3.0) {
+      let q = (uv - event.xy) * vec2<f32>(aspect, 1.0);
+      let d = max(length(q), 0.0001);
+      let front = sin((d - age * 0.38) * 68.0) *
+        exp(-abs(d - age * 0.38) * 25.0 - age * 0.9);
+      velocity += vec2<f32>(q.x / aspect, q.y) / d * front * 0.014;
+      clickFront += abs(front);
     }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+  }
 
-    let __finalRGB = color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, id, vec4<f32>(__finalRGB, alpha));
-    textureStore(writeDepthTexture, id, vec4<f32>(depth * (1.0 - flowIntensity * 0.2), 0.0, 0.0, 0.0));
+  velocity *= 0.986 + audio.x * 0.006;
+  velocity = clamp(velocity, vec2<f32>(-0.07), vec2<f32>(0.07));
+  let advectedUV = clamp(uv - velocity * advectionSpeed,
+    vec2<f32>(0.0), vec2<f32>(1.0));
+  let advected = stateUV(advectedUV, dims);
+  var dye = advected.w * 0.985 + lumaAt(uv) * 0.012 + audio.y * 0.004;
+  dye += stir * 0.035 + clickFront * 0.018;
+  dye = clamp(dye, 0.0, 1.4);
+  textureStore(dataTextureA, coord,
+    vec4<f32>(velocity, anisotropy, dye));
+
+  let source = sourceAt(clamp(uv + velocity * advectionSpeed * 0.7,
+    vec2<f32>(0.0), vec2<f32>(1.0)));
+  let flowAngle = atan2(velocity.y, velocity.x) * 0.15915494 + time * 0.035;
+  let tint = spectral(flowAngle + anisotropy * 0.18 + audio.y * 0.12);
+  let tensorRibbon = pow(anisotropy, 1.6) *
+    (0.5 + 0.5 * sin(dot(p, tangent) * 54.0 - time * (3.0 + audio.x * 3.0)));
+  var rgb = mix(source.rgb, tint * (0.32 + dye),
+    clamp(dye * 0.42 + tensorRibbon * 0.34, 0.0, 0.82));
+  rgb += tint * (tensorRibbon * 0.24 + clickFront * 0.12 + audio.z * 0.035);
+  let alpha = clamp(source.a * 0.7 + dye * 0.2 +
+    tensorRibbon * 0.08 + stir * 0.08, 0.0, 1.0);
+  textureStore(writeTexture, coord, vec4<f32>(aces(rgb), alpha));
+
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler,
+    advectedUV, 0.0).r;
+  textureStore(writeDepthTexture, coord,
+    vec4<f32>(clamp(depth - tensorRibbon * 0.018 - dye * 0.006, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

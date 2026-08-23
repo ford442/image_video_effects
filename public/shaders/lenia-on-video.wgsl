@@ -53,6 +53,16 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
 // ── Lenia bell-curve growth / kernel functions ────────────────────────────────
 fn leniaBell(x: f32, mu: f32, sigma: f32) -> f32 {
   let d = (x - mu) / (sigma + 0.0001);
@@ -121,10 +131,10 @@ fn leniaColor(value: f32, hueShift: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res   = vec2<f32>(u.config.z, u.config.w);
   let coord = vec2<i32>(global_id.xy);
+  let dims = vec2<i32>(res);
   if (coord.x >= i32(res.x) || coord.y >= i32(res.y)) { return; }
 
   let uv   = (vec2<f32>(global_id.xy) + 0.5) / res;
-  let pixSz = 1.0 / res;
   let time  = u.config.x;
 
   let bass      = plasmaBuffer[0].x;
@@ -149,7 +159,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let growthSigma = mix(0.015, 0.06, vidSat  * videoCoupling + 0.04 * (1.0 - videoCoupling));
 
   // ── Read previous CA state from ping-pong buffer ──────────────────────────
-  let prevState = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
+  let prevState = stateAt(coord, dims).r;
 
   // ── Lenia kernel convolution over a (2r+1)×(2r+1) window ─────────────────
   //    Kernel radius in UV space
@@ -160,11 +170,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   for (var dy = -rPix; dy <= rPix; dy++) {
     for (var dx = -rPix; dx <= rPix; dx++) {
-      let off    = vec2<f32>(f32(dx), f32(dy)) * pixSz;
-      let p      = clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0));
       let rNorm  = length(vec2<f32>(f32(dx), f32(dy))) / kernelRadius;
       let kw     = leniaKernel(rNorm, 1.0);
-      let cellVal = textureSampleLevel(dataTextureC, u_sampler, p, 0.0).r;
+      let cellVal = stateAt(coord + vec2<i32>(dx, dy), dims).r;
       convAcc    += cellVal * kw;
       kernSum    += kw;
     }
@@ -194,8 +202,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     newState = mix(newState, 0.0, smoothstep(15.0, 0.0, mDist));
   }
 
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = time - event.z;
+    if (age >= 0.0 && age < 2.4) {
+      let q = (uv - event.xy) * vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+      let ring = exp(-abs(length(q) - age * 0.16) * 56.0 - age * 1.25);
+      let species = 0.5 + 0.5 * sin(f32(i) * 2.39996 + treble * 3.0);
+      newState = mix(newState, species, ring * (0.35 + mids * 0.25));
+    }
+  }
+
   // Store new CA state
-  textureStore(dataTextureA, coord, vec4<f32>(newState, newState, newState, 1.0));
+  let growthSignal = leniaGrowth(neighborhood, growthMu, growthSigma);
+  textureStore(dataTextureA, coord, vec4<f32>(newState, neighborhood,
+    growthSignal * 0.5 + 0.5, vidLuma));
 
   // ── Colour mapping + glow ────────────────────────────────────────────────
   let hueShift  = vidHue * videoCoupling + time * 0.02;
@@ -203,11 +225,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Additive glow bloom approximation: sample 4 neighbours
   var bloom = caColor;
-  let bOff  = pixSz * 2.0;
-  bloom += leniaColor(textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(bOff.x, 0.0), 0.0).r, hueShift) * 0.25;
-  bloom += leniaColor(textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(bOff.x, 0.0), 0.0).r, hueShift) * 0.25;
-  bloom += leniaColor(textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, bOff.y), 0.0).r, hueShift) * 0.25;
-  bloom += leniaColor(textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(0.0, bOff.y), 0.0).r, hueShift) * 0.25;
+  bloom += leniaColor(stateAt(coord + vec2<i32>(2, 0), dims).r, hueShift) * 0.25;
+  bloom += leniaColor(stateAt(coord + vec2<i32>(-2, 0), dims).r, hueShift) * 0.25;
+  bloom += leniaColor(stateAt(coord + vec2<i32>(0, 2), dims).r, hueShift) * 0.25;
+  bloom += leniaColor(stateAt(coord + vec2<i32>(0, -2), dims).r, hueShift) * 0.25;
 
   let caFinal = caColor + bloom * 0.15 * glowInt;
 
@@ -216,6 +237,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha   = clamp(newState * 1.5 + 0.3 + bass * 0.2, 0.0, 1.0);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeTexture, coord, vec4<f32>(output, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(aces(output), alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

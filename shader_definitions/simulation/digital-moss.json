@@ -2,7 +2,7 @@
   "id": "digital-moss",
   "name": "Digital Moss",
   "url": "shaders/digital-moss.wgsl",
-  "description": "Organic moss grows on dark pixels with spring cursor, held plant/clean modes, capped spore ripples, iridescent palette, scanlines, and ACES composite.",
+  "description": "Four-state digital moss colonizes dark regions through moisture and spores; held input cleans colonies while clicks launch new growth fronts.",
   "workgroup_size": [16, 16, 1],
   "features": [
     "mouse-driven",
@@ -69,5 +69,6 @@
     "organic",
     "moss"
   ],
+  "feedbackPacking": "A/C = moss growth, moisture, spores, colony age",
   "updated": true
 }

@@ -81,14 +81,14 @@ describe('multipassGraph', () => {
     expect(expanded[6].entry).toBe('ripple-tank-pass3');
     expect(expanded[1].copiesBefore[0]?.from).toBe('dataA');
     expect(expanded[4].copiesBefore[0]?.from).toBe('dataA');
-    expect(expanded[5].copiesBefore[0]?.from).toBe('dataB');
+    expect(expanded[5].copiesBefore[0]?.from).toBe('dataA');
   });
 
   it('analyzes ripple-tank graph binding usage', () => {
     const graph = resolveGraphForShader('ripple-tank');
     const usage = analyzeGraphBindingUsage(graph!);
     expect(usage.writesDataA).toBe(true);
-    expect(usage.writesDataB).toBe(true);
+    expect(usage.writesDataB).toBe(false);
     expect(usage.readsDataC).toBe(true);
   });
 

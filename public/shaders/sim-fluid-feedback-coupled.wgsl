@@ -1,21 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  sim-fluid-feedback-coupled
-//  Category: simulation
-//  Features: simulation, mouse-driven, fluid-coupling, temporal, multi-technique
-//  Complexity: Very High
-//  Chunks From: sim-fluid-feedback-field (curl noise, velocity advection,
-//               density advection, glow composite), mouse-fluid-coupling
-//               (mouse stirring, vortex force, specular highlights)
-//  Created: 2026-04-18
-//  By: Agent CB-7 — Flow & Multi-Pass Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Single-pass coupled fluid: Navier-Stokes velocity advection + density
-//  transport combined with mouse-steerable viscous fluid coupling.
-//  Mouse drags fluid creating vortex streets; click ripples inject
-//  bursts. Fluid thickness determines color absorption and blur.
-//  Uses dataTextureC for temporal velocity feedback, dataTextureA
-//  for storing next frame state.
-// ═══════════════════════════════════════════════════════════════════
+// Fluid Feedback Coupled — Codex (e) velocity/pressure/dye feedback solver.
+// A/C packing: velocity.xy, pressure, density.
+// B and extraBuffer are intentionally unused; C loads are exact and bounded.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -38,184 +23,130 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
-fn hash12(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn noise(p: vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash12(i + vec2<f32>(0.0, 0.0)), hash12(i + vec2<f32>(1.0, 0.0)), u.x),
-    mix(hash12(i + vec2<f32>(0.0, 1.0)), hash12(i + vec2<f32>(1.0, 1.0)), u.x),
-    u.y
-  );
+fn stateAt(pixel: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC,
+    clamp(pixel, vec2<i32>(0), dims - vec2<i32>(1)), 0);
 }
 
-// ═══ CHUNK: curlNoise (from sim-fluid-feedback-field) ═══
-fn curlNoise(p: vec2<f32>) -> vec2<f32> {
-  let eps = 0.01;
-  let n1 = noise(p + vec2<f32>(eps, 0.0));
-  let n2 = noise(p - vec2<f32>(eps, 0.0));
-  let n3 = noise(p + vec2<f32>(0.0, eps));
-  let n4 = noise(p - vec2<f32>(0.0, eps));
-  return vec2<f32>((n4 - n3) / (2.0 * eps), (n1 - n2) / (2.0 * eps));
+fn stateUV(uv: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+  return stateAt(vec2<i32>(floor(uv * vec2<f32>(dims))), dims);
 }
 
-fn sampleVelocity(tex: texture_2d<f32>, uv: vec2<f32>) -> vec2<f32> {
-  return textureSampleLevel(tex, u_sampler, uv, 0.0).xy;
+fn curlAt(pixel: vec2<i32>, dims: vec2<i32>) -> f32 {
+  let left = stateAt(pixel + vec2<i32>(-1, 0), dims).xy;
+  let right = stateAt(pixel + vec2<i32>(1, 0), dims).xy;
+  let top = stateAt(pixel + vec2<i32>(0, -1), dims).xy;
+  let bottom = stateAt(pixel + vec2<i32>(0, 1), dims).xy;
+  return 0.5 * ((right.y - left.y) - (bottom.x - top.x));
 }
 
-fn sampleDensity(tex: texture_2d<f32>, uv: vec2<f32>) -> f32 {
-  return textureSampleLevel(tex, u_sampler, uv, 0.0).a;
+fn spectral(t: f32) -> vec3<f32> {
+  return 0.5 + 0.5 * cos(6.283185 *
+    (vec3<f32>(t) + vec3<f32>(0.00, 0.32, 0.66)));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let dims = vec2<i32>(res);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+  let aspect = res.x / max(res.y, 1.0);
   let time = u.config.x;
-  let id = vec2<i32>(global_id.xy);
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  // Parameters
-  let viscosity = mix(0.88, 0.995, u.zoom_params.x);
-  let turbulence = u.zoom_params.y * 2.5;
-  let fadeRate = mix(0.92, 0.998, u.zoom_params.z);
-  let glowAmount = mix(0.3, 1.8, u.zoom_params.w);
+  let viscosity = mix(0.015, 0.18, u.zoom_params.x);
+  let turbulence = mix(0.04, 0.62, u.zoom_params.y);
+  let fade = mix(0.998, 0.94, u.zoom_params.z);
+  let glow = mix(0.12, 1.7, u.zoom_params.w);
 
-  let mouseRadius = mix(0.03f, 0.15f, 0.5f);
-  let colorShift = 0.6;
-  let vortexStrength = 1.5;
+  let center = stateAt(coord, dims);
+  var velocity = clamp(center.xy, vec2<f32>(-0.07), vec2<f32>(0.07));
+  let advected = stateUV(clamp(uv - velocity,
+    vec2<f32>(0.0), vec2<f32>(1.0)), dims);
+  velocity = advected.xy;
+  var density = clamp(advected.w, 0.0, 1.6);
 
-  // Mouse state
-  let mousePos = u.zoom_config.yz;
-  let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
-  let mouseVel = (mousePos - prevMouse) * 60.0;
-  let mouseSpeed = length(mouseVel);
+  let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+  let right = stateAt(coord + vec2<i32>(1, 0), dims);
+  let top = stateAt(coord + vec2<i32>(0, -1), dims);
+  let bottom = stateAt(coord + vec2<i32>(0, 1), dims);
+  velocity += viscosity * (left.xy + right.xy + top.xy + bottom.xy - 4.0 * velocity);
+  let divergence = 0.5 * ((right.x - left.x) + (bottom.y - top.y));
+  let pressure = clamp((left.z + right.z + top.z + bottom.z - divergence) * 0.25,
+    -0.45, 0.45);
+  velocity -= vec2<f32>(right.z - left.z, bottom.z - top.z) * 0.22;
 
-  // Store current mouse position at (0,0) for next frame
-  if (global_id.x == 0u && global_id.y == 0u) {
-    textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(mousePos, 0.0, 0.0));
-  }
+  let curl = curlAt(coord, dims);
+  let curlGradient = vec2<f32>(
+    abs(curlAt(coord + vec2<i32>(1, 0), dims)) -
+      abs(curlAt(coord + vec2<i32>(-1, 0), dims)),
+    abs(curlAt(coord + vec2<i32>(0, 1), dims)) -
+      abs(curlAt(coord + vec2<i32>(0, -1), dims)));
+  let curlNormal = curlGradient / max(length(curlGradient), 0.0001);
+  velocity += vec2<f32>(curlNormal.y, -curlNormal.x) * curl *
+    turbulence * (0.06 + audio.z * 0.08);
 
-  let px = vec2<f32>(1.0) / resolution;
+  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let oscillation = vec2<f32>(
+    sin(p.y * 15.0 + time * (2.0 + audio.x * 3.0)),
+    cos(p.x * 13.0 - time * (1.7 + audio.y * 2.5)));
+  velocity += oscillation * turbulence * 0.0012;
 
-  // ═══ FEEDBACK FIELD VELOCITY ═══
-  // Read previous velocity and density from dataTextureC
-  let prevVel = sampleVelocity(dataTextureC, uv);
-  let prevDens = sampleDensity(dataTextureC, uv);
+  let mouseP = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseDelta = p - mouseP;
+  let mouseDist = max(length(mouseDelta), 0.0001);
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
+  let stir = exp(-mouseDist * mouseDist * 50.0) * held;
+  velocity += vec2<f32>(-mouseDelta.y / aspect, mouseDelta.x) / mouseDist *
+    stir * (0.018 + turbulence * 0.026);
+  density += stir * (0.045 + audio.x * 0.045);
 
-  // Advect velocity (semi-Lagrangian backtrace)
-  let backUV = uv - prevVel * px * 2.5;
-  var vel = sampleVelocity(dataTextureC, clamp(backUV, vec2<f32>(0.0), vec2<f32>(1.0))) * viscosity;
-
-  // Advect density
-  let densBackUV = uv - prevVel * px * 3.0;
-  var dens = sampleDensity(dataTextureC, clamp(densBackUV, vec2<f32>(0.0), vec2<f32>(1.0))) * fadeRate;
-
-  // Curl noise base turbulence (from feedback field)
-  let curl = curlNoise(uv * 5.0 + time * 0.1);
-  vel += curl * turbulence * 0.015;
-
-  // ═══ MOUSE FLUID COUPLING ═══
-  let toMouse = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-  let dist = length(toMouse);
-  let influence = smoothstep(mouseRadius, 0.0, dist);
-
-  // Mouse velocity as body force
-  vel = vel + mouseVel * influence * 0.5;
-
-  // Vortex force: perpendicular to mouse motion
-  let vortexDir = vec2<f32>(-mouseVel.y, mouseVel.x);
-  vel = vel + vortexDir * influence * vortexStrength * mouseSpeed;
-
-  // Click ripples = fluid injection points
-  let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let ripple = u.ripples[i];
-    let elapsed = time - ripple.z;
-    if (elapsed > 0.0 && elapsed < 2.0) {
-      let rToMouse = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
-      let rDist = length(rToMouse);
-      let rInfluence = smoothstep(0.2, 0.0, rDist) * exp(-elapsed * 1.5);
-      let outward = select(vec2<f32>(0.0), normalize(rToMouse / vec2<f32>(aspect, 1.0)), rDist > 0.001);
-      vel = vel + outward * rInfluence * 0.3;
-      dens = dens + rInfluence * 0.5;
+  var clickFront = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = time - event.z;
+    if (age >= 0.0 && age < 3.0) {
+      let q = (uv - event.xy) * vec2<f32>(aspect, 1.0);
+      let d = max(length(q), 0.0001);
+      let front = sin((d - age * 0.40) * 70.0) *
+        exp(-abs(d - age * 0.40) * 25.0 - age * 0.9);
+      velocity += vec2<f32>(q.x / aspect, q.y) / d * front * 0.015;
+      density += max(front, 0.0) * 0.065;
+      clickFront += abs(front);
     }
   }
 
-  // Mouse density injection (colorful source)
-  let hue = fract(time * 0.1);
-  let sourceColor = vec3<f32>(
-    0.5 + 0.5 * cos(hue * 6.28),
-    0.5 + 0.5 * cos(hue * 6.28 + 2.09),
-    0.5 + 0.5 * cos(hue * 6.28 + 4.18)
-  );
-  dens += length(mouseVel) * influence * 2.0;
+  velocity = clamp(velocity, vec2<f32>(-0.075), vec2<f32>(0.075));
+  density = clamp(density * fade + 0.002 * (1.0 + audio.y), 0.0, 1.6);
+  textureStore(dataTextureA, coord,
+    vec4<f32>(velocity, pressure, density));
 
-  // Damping at edges
-  let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-  let edgeDamp = smoothstep(0.05, 0.1, edgeDist);
-  vel = vel * edgeDamp;
+  let sourceUV = clamp(uv + velocity * (1.2 + turbulence),
+    vec2<f32>(0.0), vec2<f32>(1.0));
+  let source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
+  let phase = atan2(velocity.y, velocity.x) * 0.15915494 +
+    density * 0.19 + time * 0.045;
+  let tint = spectral(phase + audio.y * 0.12);
+  let speed = length(velocity);
+  var rgb = mix(source.rgb, tint * (0.25 + density),
+    clamp(density * 0.42, 0.0, 0.82));
+  rgb += tint * glow * (speed * 2.2 + abs(curl) * 0.35 + clickFront * 0.08);
+  let alpha = clamp(source.a * 0.68 + density * 0.24 +
+    speed * 1.1 + stir * 0.06, 0.0, 1.0);
+  textureStore(writeTexture, coord, vec4<f32>(aces(rgb), alpha));
 
-  // Clamp to prevent explosion
-  vel = clamp(vel, vec2<f32>(-0.5), vec2<f32>(0.5));
-  dens = clamp(dens, 0.0, 3.0);
-
-  // ═══ COMPOSITE WITH IMAGE ═══
-  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-
-  // Blur and color shift based on fluid thickness
-  let blurAmount = dens * colorShift * 0.015;
-  let blurUV = uv + vel * blurAmount * 5.0;
-  let blurredColor = textureSampleLevel(readTexture, u_sampler, clamp(blurUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-
-  // Color absorption: thicker fluid = warmer tint
-  let fluidTint = mix(vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(1.0, 0.85, 0.6), dens * colorShift * 0.3);
-  let tinted = blurredColor * fluidTint;
-
-  // Glow approximation (radial samples)
-  var glow = vec3<f32>(0.0);
-  let glowSamples = 8;
-  for (var g = 0; g < glowSamples; g++) {
-    let angle = f32(g) * 6.28318 / f32(glowSamples);
-    let radius = 0.015 * (1.0 + f32(g % 3) * 0.5);
-    let offset = vec2<f32>(cos(angle), sin(angle)) * radius;
-    let gUV = clamp(uv + vel * 0.05 + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-    glow += textureSampleLevel(readTexture, u_sampler, gUV, 0.0).rgb;
-  }
-  glow = glow / f32(glowSamples) * glowAmount * dens;
-
-  // Specular highlight on fluid surface near mouse
-  let specNoise = hash12(uv * 300.0 + time * 2.0);
-  let specular = pow(specNoise, 20.0) * influence * dens * 3.0;
-
-  // Combine: base + density color + glow + specular
-  let densityColor = sourceColor * dens * 0.4;
-  var color = mix(baseColor, tinted, min(dens * 0.3, 0.7));
-  color += densityColor;
-  color += glow;
-  color += vec3<f32>(0.9, 0.95, 1.0) * specular;
-
-  // Color grading - boost saturation
-  let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-  color = mix(vec3<f32>(luma), color, 1.3);
-
-  // Store velocity (RG) and density (A) for next frame
-  let vorticity = vel.x - vel.y;
-  textureStore(dataTextureA, id, vec4<f32>(vel, vorticity, dens));
-
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let alpha = mix(0.7, 1.0, dens * 0.3);
-
-  textureStore(writeTexture, id, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(2.0)), alpha));
-  textureStore(writeDepthTexture, id, vec4<f32>(depth * (1.0 - dens * 0.15), 0.0, 0.0, 0.0));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler,
+    sourceUV, 0.0).r;
+  textureStore(writeDepthTexture, coord,
+    vec4<f32>(clamp(depth - density * 0.014 - speed * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

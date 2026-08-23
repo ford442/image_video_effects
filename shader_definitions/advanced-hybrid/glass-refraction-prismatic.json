@@ -2,7 +2,16 @@
   "id": "glass-refraction-prismatic",
   "name": "Glass Refraction Prismatic",
   "url": "shaders/glass-refraction-prismatic.wgsl",
-  "description": "Raymarched glass blobs with 4-band spectral dispersion using Cauchy's equation and CIE color matching. Each wavelength refracts at a different angle through animated SDF glass surfaces.",
+  "description": "Raymarched optical glass prism with 4-band Cauchy spectral dispersion. Physical Snell refraction rays split wavelengths internally with Fresnel dielectric reflections and Beer-Lambert spectral absorption.",
+  "tags": [
+    "glass",
+    "refraction",
+    "spectral",
+    "prismatic",
+    "physical",
+    "chromatic",
+    "advanced-hybrid"
+  ],
   "features": [
     "advanced-hybrid",
     "raymarched",
@@ -10,7 +19,10 @@
     "physical-refraction",
     "mouse-driven",
     "depth-aware",
-    "randomization-safe"
+    "audio-reactive",
+    "exact-feedback",
+    "temporal-state",
+    "ACES-tonemapped"
   ],
   "params": [
     {
@@ -54,20 +66,13 @@
       "description": "Surface roughness affecting specular highlights"
     }
   ],
-  "chunks_used": [
-    "sdSphere, smoothUnion, map, calcNormal (glass_refraction_alpha.wgsl)",
-    "fresnel, refractRay (glass_refraction_alpha.wgsl)",
-    "cauchyIOR, wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
+  "updatedParams": [
+    { "index": 0, "name": "Transparency", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Cauchy B Coefficient", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Thickness Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Surface Roughness", "default": 0, "min": 0, "max": 1, "step": 0.01 }
   ],
-  "performance_target": "60 FPS (GTX 1060)",
-  "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-  "created_date": "2026-04-18",
-  "tags": [
-    "glass",
-    "refraction",
-    "spectral",
-    "prismatic",
-    "physical",
-    "chromatic"
-  ]
+  "feedbackPacking": "A/C = display RGBA with spectrally refracted raymarched prism transmission",
+  "updated": true,
+  "target_rating": 4.8
 }

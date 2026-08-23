@@ -382,22 +382,24 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
           "dataA"
         ],
         "writes": [
-          "dataB"
+          "dataA"
         ]
       },
       {
         "id": "gather",
         "entry": "ripple-tank-pass2",
         "reads": [
-          "dataB"
+          "dataA"
         ],
-        "writes": []
+        "writes": [
+          "dataA"
+        ]
       },
       {
         "id": "render",
         "entry": "ripple-tank-pass3",
         "reads": [
-          "dataB"
+          "dataA"
         ],
         "writes": [
           "color",

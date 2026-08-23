@@ -1,9 +1,1068 @@
 {
-  "generated": "2026-08-23T15:29:49.984362+00:00",
-  "defs_scanned": 20,
-  "defs_with_params": 20,
-  "new_dead_sliders": [],
-  "known_dead_sliders": [],
+  "generated": "2026-08-23T15:51:24.304653+00:00",
+  "defs_scanned": 1108,
+  "defs_with_params": 1108,
+  "new_dead_sliders": [
+    {
+      "id": "hyper-space-jump-blackbody",
+      "category": "advanced-hybrid",
+      "param_id": "chromatic_spread",
+      "name": "Chromatic Spread",
+      "field": "w"
+    },
+    {
+      "id": "boids",
+      "category": "artistic",
+      "param_id": "motion_blur",
+      "name": "Motion Blur",
+      "field": "w"
+    },
+    {
+      "id": "parallax_depth_layers",
+      "category": "artistic",
+      "param_id": "depth_of_field",
+      "name": "Depth of Field",
+      "field": "z"
+    },
+    {
+      "id": "particle_dreams_alpha",
+      "category": "artistic",
+      "param_id": "color_shift",
+      "name": "Color Shift",
+      "field": "z"
+    },
+    {
+      "id": "plasma",
+      "category": "artistic",
+      "param_id": "orb_radius",
+      "name": "Orb Radius",
+      "field": "x"
+    },
+    {
+      "id": "plasma",
+      "category": "artistic",
+      "param_id": "orbit_speed",
+      "name": "Orbit Speed",
+      "field": "y"
+    },
+    {
+      "id": "plasma",
+      "category": "artistic",
+      "param_id": "plasma_intensity",
+      "name": "Plasma Intensity",
+      "field": "z"
+    },
+    {
+      "id": "plasma",
+      "category": "artistic",
+      "param_id": "shadow_depth",
+      "name": "Shadow Depth",
+      "field": "w"
+    },
+    {
+      "id": "spectrogram-displace-pass2",
+      "category": "artistic",
+      "param_id": "horizontal_displace",
+      "name": "Horizontal Displace",
+      "field": "x"
+    },
+    {
+      "id": "spectrogram-displace-pass2",
+      "category": "artistic",
+      "param_id": "vertical_displace",
+      "name": "Vertical Displace",
+      "field": "y"
+    },
+    {
+      "id": "spectrogram-displace-pass2",
+      "category": "artistic",
+      "param_id": "spectrogram_blend",
+      "name": "Spectrogram Blend",
+      "field": "w"
+    },
+    {
+      "id": "stella-orbit",
+      "category": "artistic",
+      "param_id": "orbit_speed",
+      "name": "Orbit Speed",
+      "field": "x"
+    },
+    {
+      "id": "stella-orbit",
+      "category": "artistic",
+      "param_id": "star_scale",
+      "name": "Star Scale",
+      "field": "y"
+    },
+    {
+      "id": "stella-orbit",
+      "category": "artistic",
+      "param_id": "glow_intensity",
+      "name": "Glow Intensity",
+      "field": "z"
+    },
+    {
+      "id": "stella-orbit",
+      "category": "artistic",
+      "param_id": "rotation",
+      "name": "Rotation",
+      "field": "w"
+    },
+    {
+      "id": "phase-shift",
+      "category": "distortion",
+      "param_id": "edge_glow",
+      "name": "Edge Glow",
+      "field": "z"
+    },
+    {
+      "id": "gen-bioreactor-bloom",
+      "category": "generative",
+      "param_id": "cell_scale",
+      "name": "Cell Scale",
+      "field": "x"
+    },
+    {
+      "id": "gen-bioreactor-bloom",
+      "category": "generative",
+      "param_id": "mitosis",
+      "name": "Mitosis",
+      "field": "y"
+    },
+    {
+      "id": "gen-bioreactor-bloom",
+      "category": "generative",
+      "param_id": "reactivity",
+      "name": "Reactivity",
+      "field": "z"
+    },
+    {
+      "id": "gen-bioreactor-bloom",
+      "category": "generative",
+      "param_id": "toxicity",
+      "name": "Toxicity",
+      "field": "w"
+    },
+    {
+      "id": "gen-celestial-weave",
+      "category": "generative",
+      "param_id": "weave_scale",
+      "name": "Weave Scale",
+      "field": "x"
+    },
+    {
+      "id": "gen-celestial-weave",
+      "category": "generative",
+      "param_id": "twist",
+      "name": "Twist",
+      "field": "y"
+    },
+    {
+      "id": "gen-celestial-weave",
+      "category": "generative",
+      "param_id": "shimmer",
+      "name": "Shimmer",
+      "field": "z"
+    },
+    {
+      "id": "gen-celestial-weave",
+      "category": "generative",
+      "param_id": "void_depth",
+      "name": "Void Depth",
+      "field": "w"
+    },
+    {
+      "id": "gen-cymatic-quantum-silk-loom",
+      "category": "generative",
+      "param_id": "silk_density",
+      "name": "Silk Density",
+      "field": "x"
+    },
+    {
+      "id": "gen-cymatic-quantum-silk-loom",
+      "category": "generative",
+      "param_id": "cymatic_frequency",
+      "name": "Cymatic Frequency",
+      "field": "y"
+    },
+    {
+      "id": "gen-cymatic-quantum-silk-loom",
+      "category": "generative",
+      "param_id": "luminescence",
+      "name": "Luminescence",
+      "field": "z"
+    },
+    {
+      "id": "gen-cymatic-quantum-silk-loom",
+      "category": "generative",
+      "param_id": "weave_speed",
+      "name": "Weave Speed",
+      "field": "w"
+    },
+    {
+      "id": "hex-lens",
+      "category": "image",
+      "param_id": "tile_size",
+      "name": "Tile Size",
+      "field": "x"
+    },
+    {
+      "id": "hex-lens",
+      "category": "image",
+      "param_id": "lens_zoom",
+      "name": "Lens Zoom",
+      "field": "y"
+    },
+    {
+      "id": "hex-lens",
+      "category": "image",
+      "param_id": "rotation",
+      "name": "Rotation",
+      "field": "z"
+    },
+    {
+      "id": "hex-lens",
+      "category": "image",
+      "param_id": "mouse_influence",
+      "name": "Mouse Influence",
+      "field": "w"
+    },
+    {
+      "id": "pyramid-bandprocess-pass2",
+      "category": "image",
+      "param_id": "roiradius",
+      "name": "Roiradius",
+      "field": "w"
+    },
+    {
+      "id": "pyramid-downsample-pass1",
+      "category": "image",
+      "param_id": "high_freq_amp",
+      "name": "High Freq Amp",
+      "field": "x"
+    },
+    {
+      "id": "pyramid-downsample-pass1",
+      "category": "image",
+      "param_id": "mid_freq_amp",
+      "name": "Mid Freq Amp",
+      "field": "y"
+    },
+    {
+      "id": "pyramid-downsample-pass1",
+      "category": "image",
+      "param_id": "low_freq_amp",
+      "name": "Low Freq Amp",
+      "field": "z"
+    },
+    {
+      "id": "pyramid-downsample-pass1",
+      "category": "image",
+      "param_id": "roiradius",
+      "name": "Roiradius",
+      "field": "w"
+    },
+    {
+      "id": "flux-core",
+      "category": "interactive-mouse",
+      "param_id": "arc_sharpness",
+      "name": "Arc Sharpness",
+      "field": "x"
+    },
+    {
+      "id": "flux-core",
+      "category": "interactive-mouse",
+      "param_id": "bolt_conductivity",
+      "name": "Bolt Conductivity",
+      "field": "y"
+    },
+    {
+      "id": "flux-core",
+      "category": "interactive-mouse",
+      "param_id": "core_energy",
+      "name": "Core Energy",
+      "field": "z"
+    },
+    {
+      "id": "flux-core",
+      "category": "interactive-mouse",
+      "param_id": "shockwave_distortion",
+      "name": "Shockwave Distortion",
+      "field": "w"
+    },
+    {
+      "id": "glass-wall",
+      "category": "interactive-mouse",
+      "param_id": "refraction_strength",
+      "name": "Refraction Strength",
+      "field": "x"
+    },
+    {
+      "id": "glass-wall",
+      "category": "interactive-mouse",
+      "param_id": "grid_scale",
+      "name": "Grid Scale",
+      "field": "y"
+    },
+    {
+      "id": "glass-wall",
+      "category": "interactive-mouse",
+      "param_id": "interaction_radius",
+      "name": "Interaction Radius",
+      "field": "z"
+    },
+    {
+      "id": "rgb-ripple-waves",
+      "category": "interactive-mouse",
+      "param_id": "wave_frequency",
+      "name": "Wave Frequency",
+      "field": "x"
+    },
+    {
+      "id": "rgb-ripple-waves",
+      "category": "interactive-mouse",
+      "param_id": "wave_speed",
+      "name": "Wave Speed",
+      "field": "y"
+    },
+    {
+      "id": "rgb-ripple-waves",
+      "category": "interactive-mouse",
+      "param_id": "wave_amplitude",
+      "name": "Wave Amplitude",
+      "field": "z"
+    },
+    {
+      "id": "rgb-ripple-waves",
+      "category": "interactive-mouse",
+      "param_id": "channel_phase",
+      "name": "Channel Phase",
+      "field": "w"
+    },
+    {
+      "id": "aurora-rift-2-pass1",
+      "category": "lighting-effects",
+      "param_id": "diffusion_rate",
+      "name": "Diffusion Rate",
+      "field": "z"
+    },
+    {
+      "id": "aurora-rift-2-pass2",
+      "category": "lighting-effects",
+      "param_id": "scale",
+      "name": "Scale",
+      "field": "x"
+    },
+    {
+      "id": "aurora-rift-2-pass2",
+      "category": "lighting-effects",
+      "param_id": "flow_speed",
+      "name": "Flow Speed",
+      "field": "y"
+    },
+    {
+      "id": "aurora-rift-2-pass2",
+      "category": "lighting-effects",
+      "param_id": "fbm_octaves",
+      "name": "FBM Octaves",
+      "field": "w"
+    },
+    {
+      "id": "aurora-rift-pass1",
+      "category": "lighting-effects",
+      "param_id": "diffusion_rate",
+      "name": "Diffusion Rate",
+      "field": "z"
+    },
+    {
+      "id": "aurora-rift-pass2",
+      "category": "lighting-effects",
+      "param_id": "scale",
+      "name": "Scale",
+      "field": "x"
+    },
+    {
+      "id": "aurora-rift-pass2",
+      "category": "lighting-effects",
+      "param_id": "flow_speed",
+      "name": "Flow Speed",
+      "field": "y"
+    },
+    {
+      "id": "aurora-rift-pass2",
+      "category": "lighting-effects",
+      "param_id": "fbm_octaves",
+      "name": "FBM Octaves",
+      "field": "w"
+    },
+    {
+      "id": "matrix_digital_rain",
+      "category": "lighting-effects",
+      "param_id": "edge_glow",
+      "name": "Edge Glow",
+      "field": "z"
+    },
+    {
+      "id": "temporal-feedback-zoom-tracer",
+      "category": "post-processing",
+      "param_id": "zoom",
+      "name": "Zoom",
+      "field": "x"
+    },
+    {
+      "id": "temporal-feedback-zoom-tracer",
+      "category": "post-processing",
+      "param_id": "rotation",
+      "name": "Rotation",
+      "field": "y"
+    },
+    {
+      "id": "temporal-feedback-zoom-tracer",
+      "category": "post-processing",
+      "param_id": "persistence",
+      "name": "Persistence",
+      "field": "z"
+    },
+    {
+      "id": "temporal-feedback-zoom-tracer",
+      "category": "post-processing",
+      "param_id": "blend",
+      "name": "Blend",
+      "field": "w"
+    },
+    {
+      "id": "temporal-phosphor-burn",
+      "category": "post-processing",
+      "param_id": "r_decay",
+      "name": "R-decay",
+      "field": "x"
+    },
+    {
+      "id": "temporal-phosphor-burn",
+      "category": "post-processing",
+      "param_id": "g_decay",
+      "name": "G-decay",
+      "field": "y"
+    },
+    {
+      "id": "temporal-phosphor-burn",
+      "category": "post-processing",
+      "param_id": "b_decay",
+      "name": "B-decay",
+      "field": "z"
+    },
+    {
+      "id": "temporal-phosphor-burn",
+      "category": "post-processing",
+      "param_id": "mask_strength",
+      "name": "Mask Strength",
+      "field": "w"
+    },
+    {
+      "id": "temporal-rgb-ghost",
+      "category": "post-processing",
+      "param_id": "g_delay",
+      "name": "G-delay",
+      "field": "x"
+    },
+    {
+      "id": "temporal-rgb-ghost",
+      "category": "post-processing",
+      "param_id": "b_delay",
+      "name": "B-delay",
+      "field": "y"
+    },
+    {
+      "id": "temporal-rgb-ghost",
+      "category": "post-processing",
+      "param_id": "blend",
+      "name": "Blend",
+      "field": "z"
+    },
+    {
+      "id": "temporal-rgb-ghost",
+      "category": "post-processing",
+      "param_id": "displace",
+      "name": "Displace",
+      "field": "w"
+    },
+    {
+      "id": "quantum-foam-pass2",
+      "category": "simulation",
+      "param_id": "octave_count",
+      "name": "Octave Count",
+      "field": "w"
+    },
+    {
+      "id": "quantum-foam-pass3",
+      "category": "simulation",
+      "param_id": "foam_scale",
+      "name": "Foam Scale",
+      "field": "x"
+    },
+    {
+      "id": "quantum-foam-pass3",
+      "category": "simulation",
+      "param_id": "flow_speed",
+      "name": "Flow Speed",
+      "field": "y"
+    },
+    {
+      "id": "quantum-foam-pass3",
+      "category": "simulation",
+      "param_id": "diffusion_rate",
+      "name": "Diffusion Rate",
+      "field": "z"
+    },
+    {
+      "id": "quantum-foam-pass3",
+      "category": "simulation",
+      "param_id": "octave_count",
+      "name": "Octave Count",
+      "field": "w"
+    },
+    {
+      "id": "hyper-space-jump",
+      "category": "visual-effects",
+      "param_id": "streak_decay",
+      "name": "Streak Decay",
+      "field": "y"
+    },
+    {
+      "id": "hyper-space-jump",
+      "category": "visual-effects",
+      "param_id": "chromatic_spread",
+      "name": "Chromatic Spread",
+      "field": "z"
+    },
+    {
+      "id": "hyper-space-jump",
+      "category": "visual-effects",
+      "param_id": "vignette_size",
+      "name": "Vignette Size",
+      "field": "w"
+    }
+  ],
+  "known_dead_sliders": [
+    {
+      "id": "alucinate-hdr",
+      "category": "advanced-hybrid",
+      "param_id": "glyphProminence",
+      "name": "Glyph Prominence",
+      "field": "w"
+    },
+    {
+      "id": "boids-rgba-ecosystem",
+      "category": "advanced-hybrid",
+      "param_id": "diffusion",
+      "name": "Diffusion Rate",
+      "field": "z"
+    },
+    {
+      "id": "boids-rgba-ecosystem",
+      "category": "advanced-hybrid",
+      "param_id": "toxinStrength",
+      "name": "Toxin Strength",
+      "field": "w"
+    },
+    {
+      "id": "multi-fractal-compositor",
+      "category": "advanced-hybrid",
+      "param_id": "domain_warp",
+      "name": "Domain Warp",
+      "field": "z"
+    },
+    {
+      "id": "neural-raymarcher",
+      "category": "advanced-hybrid",
+      "param_id": "glow",
+      "name": "Glow Intensity",
+      "field": "z"
+    },
+    {
+      "id": "predator-prey-rgba",
+      "category": "advanced-hybrid",
+      "param_id": "toxinStrength",
+      "name": "Toxin Strength",
+      "field": "w"
+    },
+    {
+      "id": "alpha-paint-thickness",
+      "category": "artistic",
+      "param_id": "specularPower",
+      "name": "Specular Power",
+      "field": "z"
+    },
+    {
+      "id": "alpha-paint-thickness",
+      "category": "artistic",
+      "param_id": "dryingRate",
+      "name": "Drying Rate",
+      "field": "w"
+    },
+    {
+      "id": "alpha-watercolor-wetness",
+      "category": "artistic",
+      "param_id": "flowStrength",
+      "name": "Flow Strength",
+      "field": "w"
+    },
+    {
+      "id": "echo-trace",
+      "category": "artistic",
+      "param_id": "velocity_threshold",
+      "name": "Velocity Threshold",
+      "field": "w"
+    },
+    {
+      "id": "mouse-pixel-sort",
+      "category": "artistic",
+      "param_id": "threshold",
+      "name": "Threshold",
+      "field": "x"
+    },
+    {
+      "id": "mouse-pixel-sort",
+      "category": "artistic",
+      "param_id": "length",
+      "name": "Sort Length",
+      "field": "y"
+    },
+    {
+      "id": "mouse-pixel-sort",
+      "category": "artistic",
+      "param_id": "direction",
+      "name": "Direction (V/H)",
+      "field": "z"
+    },
+    {
+      "id": "mouse-pixel-sort",
+      "category": "artistic",
+      "param_id": "mode",
+      "name": "Invert Sort",
+      "field": "w"
+    },
+    {
+      "id": "data-slicer",
+      "category": "distortion",
+      "param_id": "slideSpeed",
+      "name": "Jitter Speed",
+      "field": "x"
+    },
+    {
+      "id": "data-slicer",
+      "category": "distortion",
+      "param_id": "sliceHeight",
+      "name": "Slice Thickness",
+      "field": "y"
+    },
+    {
+      "id": "data-slicer",
+      "category": "distortion",
+      "param_id": "chaos",
+      "name": "Chaos Amount",
+      "field": "z"
+    },
+    {
+      "id": "data-slicer",
+      "category": "distortion",
+      "param_id": "aberration",
+      "name": "Color Split",
+      "field": "w"
+    },
+    {
+      "id": "dimension-slicer",
+      "category": "distortion",
+      "param_id": "sliceAngle",
+      "name": "Slice Angle",
+      "field": "x"
+    },
+    {
+      "id": "dimension-slicer",
+      "category": "distortion",
+      "param_id": "zoomWarp",
+      "name": "Zoom Warp",
+      "field": "y"
+    },
+    {
+      "id": "dimension-slicer",
+      "category": "distortion",
+      "param_id": "chromaticAmount",
+      "name": "Chromatic Amount",
+      "field": "z"
+    },
+    {
+      "id": "dimension-slicer",
+      "category": "distortion",
+      "param_id": "depthModulation",
+      "name": "Depth Modulation",
+      "field": "w"
+    },
+    {
+      "id": "prism-displacement",
+      "category": "distortion",
+      "param_id": "zoomAmount",
+      "name": "Zoom Amount",
+      "field": "x"
+    },
+    {
+      "id": "prism-displacement",
+      "category": "distortion",
+      "param_id": "chromatic",
+      "name": "Chromatic Amount",
+      "field": "y"
+    },
+    {
+      "id": "prism-displacement",
+      "category": "distortion",
+      "param_id": "rotationSpeed",
+      "name": "Rotation Speed",
+      "field": "z"
+    },
+    {
+      "id": "prism-displacement",
+      "category": "distortion",
+      "param_id": "depthWeight",
+      "name": "Depth Weight",
+      "field": "w"
+    },
+    {
+      "id": "prismatic-mosaic",
+      "category": "distortion",
+      "param_id": "saturation_boost",
+      "name": "Saturation Boost",
+      "field": "z"
+    },
+    {
+      "id": "hyb-chromatic-circuit",
+      "category": "hybrid",
+      "param_id": "grid_scale",
+      "name": "Grid Scale",
+      "field": "x"
+    },
+    {
+      "id": "hyb-chromatic-circuit",
+      "category": "hybrid",
+      "param_id": "trace_width",
+      "name": "Trace Width",
+      "field": "y"
+    },
+    {
+      "id": "hyb-chromatic-circuit",
+      "category": "hybrid",
+      "param_id": "chroma_spread",
+      "name": "Chroma Spread",
+      "field": "z"
+    },
+    {
+      "id": "hyb-chromatic-circuit",
+      "category": "hybrid",
+      "param_id": "effect_mix",
+      "name": "Effect Mix",
+      "field": "w"
+    },
+    {
+      "id": "hyb-temporal-fbm-ghost",
+      "category": "hybrid",
+      "param_id": "temporal_shift",
+      "name": "Temporal Shift",
+      "field": "x"
+    },
+    {
+      "id": "hyb-temporal-fbm-ghost",
+      "category": "hybrid",
+      "param_id": "fbm_scale",
+      "name": "FBM Scale",
+      "field": "y"
+    },
+    {
+      "id": "hyb-temporal-fbm-ghost",
+      "category": "hybrid",
+      "param_id": "warp_amount",
+      "name": "Warp Amount",
+      "field": "z"
+    },
+    {
+      "id": "hyb-temporal-fbm-ghost",
+      "category": "hybrid",
+      "param_id": "effect_mix",
+      "name": "Effect Mix",
+      "field": "w"
+    },
+    {
+      "id": "color-blindness",
+      "category": "image",
+      "param_id": "unused",
+      "name": "Unused",
+      "field": "w"
+    },
+    {
+      "id": "dynamic-halftone",
+      "category": "interactive-mouse",
+      "param_id": "density",
+      "name": "Dot Density",
+      "field": "x"
+    },
+    {
+      "id": "dynamic-halftone",
+      "category": "interactive-mouse",
+      "param_id": "radius",
+      "name": "Mouse Radius",
+      "field": "y"
+    },
+    {
+      "id": "dynamic-halftone",
+      "category": "interactive-mouse",
+      "param_id": "contrast",
+      "name": "Contrast",
+      "field": "z"
+    },
+    {
+      "id": "glitch-cathedral",
+      "category": "interactive-mouse",
+      "param_id": "rgbSplit",
+      "name": "RGB Split",
+      "field": "y"
+    },
+    {
+      "id": "glitch-cathedral",
+      "category": "interactive-mouse",
+      "param_id": "sortStrength",
+      "name": "Sort Strength",
+      "field": "z"
+    },
+    {
+      "id": "glitch-cathedral",
+      "category": "interactive-mouse",
+      "param_id": "patternSpeed",
+      "name": "Pattern Speed",
+      "field": "w"
+    },
+    {
+      "id": "liquid-volumetric-zoom",
+      "category": "interactive-mouse",
+      "param_id": "parallax",
+      "name": "Parallax",
+      "field": "z"
+    },
+    {
+      "id": "parallax-glow-compositor",
+      "category": "interactive-mouse",
+      "param_id": "aberration",
+      "name": "Aberration",
+      "field": "z"
+    },
+    {
+      "id": "liquid-optimized-pass1",
+      "category": "liquid-effects",
+      "param_id": "turbidity",
+      "name": "Turbidity",
+      "field": "w"
+    },
+    {
+      "id": "liquid-optimized-pass2",
+      "category": "liquid-effects",
+      "param_id": "gravityScale",
+      "name": "Gravity Scale",
+      "field": "y"
+    },
+    {
+      "id": "liquid-optimized-pass2",
+      "category": "liquid-effects",
+      "param_id": "damping",
+      "name": "Damping",
+      "field": "z"
+    },
+    {
+      "id": "liquid-pass1",
+      "category": "liquid-effects",
+      "param_id": "color_shift",
+      "name": "Color Shift",
+      "field": "w"
+    },
+    {
+      "id": "liquid-pass2",
+      "category": "liquid-effects",
+      "param_id": "turbulence",
+      "name": "Turbulence",
+      "field": "y"
+    },
+    {
+      "id": "liquid-pass2",
+      "category": "liquid-effects",
+      "param_id": "ripple_strength",
+      "name": "Ripple Strength",
+      "field": "z"
+    },
+    {
+      "id": "soft-vignette-bloom",
+      "category": "post-processing",
+      "param_id": "vignetteStrength",
+      "name": "Vignette Strength",
+      "field": "x"
+    },
+    {
+      "id": "soft-vignette-bloom",
+      "category": "post-processing",
+      "param_id": "bloomRadius",
+      "name": "Bloom Radius",
+      "field": "y"
+    },
+    {
+      "id": "soft-vignette-bloom",
+      "category": "post-processing",
+      "param_id": "hazeAmount",
+      "name": "Haze Amount",
+      "field": "z"
+    },
+    {
+      "id": "soft-vignette-bloom",
+      "category": "post-processing",
+      "param_id": "bloomIntensity",
+      "name": "Bloom Intensity",
+      "field": "w"
+    },
+    {
+      "id": "digital-glitch-pass1",
+      "category": "retro-glitch",
+      "param_id": "error_propagation",
+      "name": "Error Propagation",
+      "field": "z"
+    },
+    {
+      "id": "digital-glitch-pass1",
+      "category": "retro-glitch",
+      "param_id": "decay_rate",
+      "name": "Decay Rate",
+      "field": "w"
+    },
+    {
+      "id": "digital-glitch-pass2",
+      "category": "retro-glitch",
+      "param_id": "corruption_intensity",
+      "name": "Corruption Intensity",
+      "field": "x"
+    },
+    {
+      "id": "digital-glitch-pass2",
+      "category": "retro-glitch",
+      "param_id": "bit_manipulation",
+      "name": "Bit Manipulation",
+      "field": "y"
+    },
+    {
+      "id": "pixel-rain",
+      "category": "retro-glitch",
+      "param_id": "trail_fade",
+      "name": "Trail Fade",
+      "field": "w"
+    },
+    {
+      "id": "xerox-degrade",
+      "category": "retro-glitch",
+      "param_id": "contrast",
+      "name": "Contrast",
+      "field": "x"
+    },
+    {
+      "id": "xerox-degrade",
+      "category": "retro-glitch",
+      "param_id": "grain",
+      "name": "Grain",
+      "field": "y"
+    },
+    {
+      "id": "xerox-degrade",
+      "category": "retro-glitch",
+      "param_id": "smear",
+      "name": "Smear",
+      "field": "z"
+    },
+    {
+      "id": "xerox-degrade",
+      "category": "retro-glitch",
+      "param_id": "threshold",
+      "name": "Threshold",
+      "field": "w"
+    },
+    {
+      "id": "sim-fluid-feedback-field",
+      "category": "simulation",
+      "param_id": "glow",
+      "name": "Glow Intensity",
+      "field": "w"
+    },
+    {
+      "id": "alpha-depth-fog-volumetric",
+      "category": "visual-effects",
+      "param_id": "colorTemp",
+      "name": "Color Temperature",
+      "field": "w"
+    },
+    {
+      "id": "alpha-hdr-bloom-chain",
+      "category": "visual-effects",
+      "param_id": "saturation",
+      "name": "Saturation",
+      "field": "w"
+    },
+    {
+      "id": "chroma-vortex",
+      "category": "visual-effects",
+      "param_id": "twist",
+      "name": "Vortex Twist",
+      "field": "x"
+    },
+    {
+      "id": "chroma-vortex",
+      "category": "visual-effects",
+      "param_id": "spread",
+      "name": "RGB Split",
+      "field": "y"
+    },
+    {
+      "id": "chroma-vortex",
+      "category": "visual-effects",
+      "param_id": "radius",
+      "name": "Vortex Radius",
+      "field": "z"
+    },
+    {
+      "id": "chroma-vortex",
+      "category": "visual-effects",
+      "param_id": "centerBias",
+      "name": "Center Stability",
+      "field": "w"
+    },
+    {
+      "id": "cyber-scan",
+      "category": "visual-effects",
+      "param_id": "scanWidth",
+      "name": "Scan Width",
+      "field": "x"
+    },
+    {
+      "id": "cyber-scan",
+      "category": "visual-effects",
+      "param_id": "gridIntensity",
+      "name": "Trail Length",
+      "field": "y"
+    },
+    {
+      "id": "cyber-scan",
+      "category": "visual-effects",
+      "param_id": "colorSpeed",
+      "name": "Scan Width",
+      "field": "z"
+    },
+    {
+      "id": "cyber-scan",
+      "category": "visual-effects",
+      "param_id": "edgeStrength",
+      "name": "Color Shift",
+      "field": "w"
+    }
+  ],
   "errors": [],
   "baseline": "reports/dead_sliders_audit_baseline.json"
 }

@@ -8266,13 +8266,8 @@
     "supportsDepth": true,
     "updated": true,
     "updatedParams": [
-      0,
-      1,
-      2,
-      3
-    ],
-    "params": [
       {
+        "index": 0,
         "name": "Prism Hue Shift",
         "default": 1,
         "min": 0,
@@ -8280,6 +8275,7 @@
         "step": 0.1
       },
       {
+        "index": 1,
         "name": "Tail Count",
         "default": 0.8,
         "min": 0.1,
@@ -8287,6 +8283,7 @@
         "step": 0.05
       },
       {
+        "index": 2,
         "name": "Weave Tightness",
         "default": 0.5,
         "min": 0,
@@ -8294,11 +8291,50 @@
         "step": 0.1
       },
       {
+        "index": 3,
         "name": "Chrono Echo",
         "default": 0.95,
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ],
+    "params": [
+      {
+        "id": "prism_hue_shift",
+        "name": "Prism Hue Shift",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "tail_count",
+        "name": "Tail Count",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "weave_tightness",
+        "name": "Weave Tightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "chrono_echo",
+        "name": "Chrono Echo",
+        "default": 0.95,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
       }
     ],
     "features": [
@@ -8371,7 +8407,45 @@
     "updated": true,
     "id": "gen-chrono-mycelial-tapestry",
     "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
-    "features": []
+    "features": [],
+    "params": [
+      {
+        "id": "growth_rate",
+        "name": "Growth Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "temporal_depth",
+        "name": "Temporal Depth",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "color_warmth",
+        "name": "Color Warmth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Chrono-Voronoi Mycelium",
@@ -8439,6 +8513,44 @@
       "temporal",
       "fast-motion",
       "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "growth_rate",
+        "name": "Growth Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "generations",
+        "name": "Generations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "tip_glow",
+        "name": "Tip Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -8461,7 +8573,7 @@
     "updatedParams": [
       {
         "index": 0,
-        "name": "Intensity",
+        "name": "Thread Count",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8469,7 +8581,7 @@
       },
       {
         "index": 1,
-        "name": "Speed",
+        "name": "Loom Rotation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8477,7 +8589,7 @@
       },
       {
         "index": 2,
-        "name": "Scale",
+        "name": "Aether Bloom",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8485,7 +8597,7 @@
       },
       {
         "index": 3,
-        "name": "Mouse Influence",
+        "name": "Temporal Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8497,7 +8609,45 @@
     "updated": true,
     "id": "gen-chronodynamic-aether-weaver-automata",
     "url": "shaders/gen-chronodynamic-aether-weaver-automata.wgsl",
-    "features": []
+    "features": [],
+    "params": [
+      {
+        "id": "thread_count",
+        "name": "Thread Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "loom_rotation_speed",
+        "name": "Loom Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "aether_bloom",
+        "name": "Aether Bloom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "temporal_decay",
+        "name": "Temporal Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "id": "gen-chronos-biomechanical-void-leviathan",
@@ -8539,7 +8689,7 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "brightness",
+        "id": "aurora_brightness",
         "name": "Brightness / Aurora Intensity",
         "default": 1,
         "min": 0.5,
@@ -8626,7 +8776,7 @@
     ],
     "params": [
       {
-        "id": "labyrinth-complexity",
+        "id": "labyrinth_complexity",
         "name": "Labyrinth Complexity",
         "default": 1,
         "min": 0.5,
@@ -8635,7 +8785,7 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "shift-speed",
+        "id": "shift_speed",
         "name": "Shift Speed",
         "default": 0.5,
         "min": 0,
@@ -8644,7 +8794,7 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "temporal-rifts",
+        "id": "temporal_rifts",
         "name": "Temporal Rifts",
         "default": 0.8,
         "min": 0,
@@ -8653,7 +8803,7 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "atmospheric-perspective",
+        "id": "atmospheric_perspective",
         "name": "Atmospheric Perspective",
         "default": 0.5,
         "min": 0,
@@ -9203,7 +9353,7 @@
     "description": "A psychedelic-inspired velvet spiral well with soft chromatic arms, counter-spirals, and moving moire. Drags torque persistent trails and clicks send luminous hypnosis halos outward.",
     "params": [
       {
-        "id": "spiral-arms",
+        "id": "spiral_arms",
         "name": "Spiral Arms",
         "default": 0.55,
         "min": 0,
@@ -9212,7 +9362,7 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "spin-rate",
+        "id": "spin_rate",
         "name": "Spin Rate",
         "default": 0.5,
         "min": 0,
@@ -9221,7 +9371,7 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "velvet-softness",
+        "id": "velvet_softness",
         "name": "Velvet Softness",
         "default": 0.6,
         "min": 0,
@@ -9326,7 +9476,7 @@
     ],
     "params": [
       {
-        "id": "warp-strength",
+        "id": "warp_strength",
         "name": "Warp Strength",
         "default": 0.33,
         "min": 0,
@@ -9335,7 +9485,7 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "filament-density",
+        "id": "filament_density",
         "name": "Filament Density",
         "default": 0.4,
         "min": 0,
@@ -9344,7 +9494,7 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "evolution-speed",
+        "id": "evolution_speed",
         "name": "Evolution Speed",
         "default": 0.35,
         "min": 0,
@@ -9353,7 +9503,7 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "void-pull",
+        "id": "void_pull",
         "name": "Void Pull",
         "default": 0.4,
         "min": 0,
@@ -9621,6 +9771,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "symmetry",
+        "name": "Symmetry",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "growth_rate",
+        "name": "Growth Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "hue",
+        "name": "Hue",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "thickness",
+        "name": "Thickness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -9660,7 +9848,16 @@
     "updated": true,
     "id": "gen-crystal-lattice-growth",
     "url": "shaders/gen-crystal-lattice-growth.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "id": "gen-crystalline-chrono-dyson",
@@ -9689,6 +9886,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "panel_density",
+        "name": "Panel Density",
+        "default": 4,
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "quasar_glow",
+        "name": "Quasar Glow",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "flux_speed",
+        "name": "Flux Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "swarm_count",
+        "name": "Swarm Count",
+        "default": 50,
+        "min": 10,
+        "max": 100,
+        "step": 10,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -9727,7 +9962,17 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "features": []
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Crystalline Mandala Bloom",
@@ -9745,6 +9990,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "symmetry_segments",
+        "name": "Symmetry Segments",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "facet_zoom",
+        "name": "Facet Zoom",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "bloom_strength",
+        "name": "Bloom Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue_rotation",
+        "name": "Hue Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -9785,13 +10068,22 @@
     "updated": true,
     "id": "gen-crystalline-mandala-bloom",
     "url": "shaders/gen-crystalline-mandala-bloom.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "id": "gen-crystalline-nebula-weaver-void-spider",
     "name": "Crystalline Nebula-Weaver Void-Spider",
     "type": "generative",
-    "url": "/shaders/gen-crystalline-nebula-weaver-void-spider.wgsl",
+    "url": "shaders/gen-crystalline-nebula-weaver-void-spider.wgsl",
     "controls": [
       {
         "name": "Web Complexity",
@@ -9828,6 +10120,44 @@
         "default": 1.5,
         "step": 0.1,
         "uniform": "zoom_params.w"
+      }
+    ],
+    "params": [
+      {
+        "id": "web_complexity",
+        "name": "Web Complexity",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "gravity_distortion",
+        "name": "Gravity Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "void_depth",
+        "name": "Void Depth",
+        "default": 1.5,
+        "min": 0.1,
+        "max": 4,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
       }
     ],
     "updatedParams": [
@@ -9877,11 +10207,23 @@
       "semantic-alpha"
     ],
     "supportsDepth": true,
+    "supportsDof": false,
     "workgroup_size": [
       16,
       16,
       1
-    ]
+    ],
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Cyber-Organic Liquid-Neon Pulsar",
@@ -9899,6 +10241,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "base_color_hue",
+        "name": "Base Color Hue",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "fiber_density",
+        "name": "Fiber Density",
+        "default": 0.5,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "pulsation_speed",
+        "name": "Pulsation Speed",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -9939,7 +10319,17 @@
     "updated": true,
     "id": "gen-cyber-organic-liquid-neon-pulsar",
     "url": "shaders/gen-cyber-organic-liquid-neon-pulsar.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Procedural Cyber Terminal (ASCII)",
@@ -9959,6 +10349,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "grid_density",
+        "name": "Grid Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "glyph_sharpness",
+        "name": "Glyph Sharpness",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "character_brightness",
+        "name": "Character Brightness",
+        "default": 1,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "scanline_bloom",
+        "name": "Scanline Bloom",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -9999,7 +10427,14 @@
     "updated": true,
     "id": "gen-cyber-terminal",
     "url": "shaders/gen-cyber-terminal.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Cybernetic Aether-Moth Chrysalis",
@@ -10018,10 +10453,48 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "pointDensity",
+        "name": "Point Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "pointSize",
+        "name": "Point Size",
+        "default": 0.4,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
-        "name": "Point Density",
+        "name": "Chrysalis Complexity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10037,7 +10510,7 @@
       },
       {
         "index": 2,
-        "name": "Point Size",
+        "name": "Shell Thickness",
         "default": 0.4,
         "min": 0.1,
         "max": 1,
@@ -10057,7 +10530,17 @@
     "updated": true,
     "id": "gen-cybernetic-aether-moth-chrysalis",
     "url": "shaders/gen-cybernetic-aether-moth-chrysalis.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Cybernetic Crystalline Neuro-Lattice",
@@ -10075,6 +10558,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "node_density",
+        "name": "Node Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "growth_speed",
+        "name": "Growth Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glitch_intensity",
+        "name": "Glitch Intensity",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "neon_hue_shift",
+        "name": "Neon Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -10110,12 +10631,22 @@
         "step": 0.01
       }
     ],
-    "supportsDepth": false,
+    "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
     "id": "gen-cybernetic-crystalline-neuro-lattice",
     "url": "shaders/gen-cybernetic-crystalline-neuro-lattice.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Cybernetic Ferro-Coral",
@@ -10132,6 +10663,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "spikeIntensity",
+        "name": "Spike Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "coreGlow",
+        "name": "Core Glow",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -10186,7 +10755,8 @@
       "turing-banding",
       "multi-scale-detail",
       "ripple-reactive"
-    ]
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Cybernetic Liquid-Chrome Engine",
@@ -10203,6 +10773,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouseInfluence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -10248,8 +10856,12 @@
       "mouse-driven",
       "temporal",
       "fast-motion",
-      "depth-aware"
-    ]
+      "depth-aware",
+      "ripple-reactive",
+      "semantic-alpha",
+      "aces-tone-mapping"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Cybernetic-Mycelium Neural-Web",
@@ -10312,7 +10924,45 @@
     "updated": true,
     "id": "gen-cybernetic-mycelium-neural-web",
     "url": "shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-    "features": []
+    "features": [],
+    "params": [
+      {
+        "id": "growth_rate",
+        "name": "Growth Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "pulse_intensity",
+        "name": "Pulse Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "decay_speed",
+        "name": "Decay Speed",
+        "default": 0.2,
+        "min": 0.01,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "network_complexity",
+        "name": "Network Complexity",
+        "default": 0.6,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Cycloid Bloom",
@@ -10379,6 +11029,44 @@
       "click-reactive",
       "temporal",
       "depth-output"
+    ],
+    "params": [
+      {
+        "id": "spin_speed",
+        "name": "Spin Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "petal_multiplier",
+        "name": "Petal Multiplier",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glow_width",
+        "name": "Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "persistence",
+        "name": "Persistence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -10448,6 +11136,44 @@
       "click-nodal-rings",
       "temporal-feedback",
       "depth-output"
+    ],
+    "params": [
+      {
+        "id": "symmetry_order",
+        "name": "Symmetry Order",
+        "default": 6,
+        "min": 1,
+        "max": 12,
+        "step": 1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasma_density",
+        "name": "Plasma Density",
+        "default": 2,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "cymatic_frequency",
+        "name": "Cymatic Frequency",
+        "default": 10,
+        "min": 0.5,
+        "max": 30,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "swirl_chaos",
+        "name": "Swirl Chaos",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -10509,7 +11235,45 @@
     "updated": true,
     "id": "gen-cymatic-quantum-silk-loom",
     "url": "shaders/gen-cymatic-quantum-silk-loom.wgsl",
-    "features": []
+    "features": [],
+    "params": [
+      {
+        "id": "silk_density",
+        "name": "Silk Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "cymatic_frequency",
+        "name": "Cymatic Frequency",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "luminescence",
+        "name": "Luminescence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "weave_speed",
+        "name": "Weave Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Peter de Jong Attractor",
