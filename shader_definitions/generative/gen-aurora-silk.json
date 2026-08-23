@@ -70,5 +70,43 @@
     "audio-reactive",
     "temporal-feedback",
     "chromatic-aberration"
+  ],
+  "params": [
+    {
+      "id": "band_density",
+      "name": "Band Density",
+      "default": 0.52,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "default": 0.44,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "atmosphere",
+      "name": "Atmosphere",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "bloom",
+      "name": "Bloom",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }
