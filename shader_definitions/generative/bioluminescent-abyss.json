@@ -22,7 +22,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "worm_density",
       "name": "Worm Density",
       "default": 0.5,
       "min": 0,
@@ -31,7 +31,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "current_strength",
       "name": "Current Strength",
       "default": 0.5,
       "min": 0,
@@ -40,7 +40,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "glow_intensity",
       "name": "Glow Intensity",
       "default": 0.8,
       "min": 0,
@@ -49,7 +49,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "water_clarity",
       "name": "Water Clarity",
       "default": 0.5,
       "min": 0,

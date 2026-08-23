@@ -19,7 +19,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "pulse_speed",
       "name": "Pulse Speed",
       "default": 0.5,
       "min": 0,
@@ -29,7 +29,7 @@
       "audio": "bass"
     },
     {
-      "id": "param2",
+      "id": "tentacle_activity",
       "name": "Tentacle Activity",
       "default": 0.5,
       "min": 0,
@@ -39,7 +39,7 @@
       "audio": "mid"
     },
     {
-      "id": "param3",
+      "id": "hue_shift",
       "name": "Hue Shift",
       "default": 0,
       "min": 0,
@@ -49,7 +49,7 @@
       "audio": "treble"
     },
     {
-      "id": "param4",
+      "id": "glow_intensity",
       "name": "Glow Intensity",
       "default": 1,
       "min": 0,

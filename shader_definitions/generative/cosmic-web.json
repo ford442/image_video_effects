@@ -22,7 +22,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "warp_strength",
       "name": "Warp Strength",
       "default": 0.5,
       "min": 0,
@@ -32,7 +32,7 @@
       "audio": "bass"
     },
     {
-      "id": "param2",
+      "id": "filament_density",
       "name": "Filament Density",
       "default": 1,
       "min": 0.1,
@@ -42,7 +42,7 @@
       "audio": "mid"
     },
     {
-      "id": "param3",
+      "id": "flow_speed",
       "name": "Flow Speed",
       "default": 0.2,
       "min": 0,
@@ -52,7 +52,7 @@
       "audio": "treble"
     },
     {
-      "id": "param4",
+      "id": "color_shift",
       "name": "Color Shift",
       "default": 0,
       "min": 0,
