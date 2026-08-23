@@ -49,6 +49,31 @@
 | 498 | `interactive-kuwahara` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
 | 499 | `interactive-magnetic-ripple` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
 | 500 | `interactive-origami` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 501 | `gravitational-lensing` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 502 | `holographic-contour` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 503 | `neon-pulse` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 504 | `kaleidoscope` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 505 | `particle-swarm` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 506 | `ink-bleed` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 507 | `glass-shatter` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 508 | `magnetic-field` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 509 | `heat-haze-mirage` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 510 | `vortex-warp` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 511 | `cyber-ripples` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 512 | `cyber-scan` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 513 | `cyber-trace` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 514 | `cyber-organic` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 515 | `cyber-rain` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 516 | `digital-glitch` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 517 | `digital-haze` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 518 | `digital-reveal` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 519 | `edge-glow-mouse` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 520 | `ferrofluid` | 59 | ✅ Done | WGSL, naga, strict buffers |
+
+Batch 59 (10 shaders) — CYBER & DIGITAL — tracker #511–520. Merged to main
+2026-08-23. Gate 10/10; notes `swarm-outputs/codex-2026-08-23-b59/`.
+
+Batch 60 (10 shaders) — DEAD FEATURES & FEEDBACK CONTRACTS — tracker #501–510.
 
 Batch 58E (10 shaders) is a distinct interactive cohort after Batch 57
 (#483–490). Structural gates 10/10 naga+bindgroup. Real-GPU visual QA remains

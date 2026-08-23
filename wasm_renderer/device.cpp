@@ -524,6 +524,65 @@ bool WebGPURenderer::CreateDevice() {
 
     queue_.reset(wgpuDeviceGetQueue(device_.get()));
 
+    // Tiny STORAGE_BINDING creates — measure rgba16/32float instead of assuming
+    // float32-filterable implies storage. Same GPUDevice as requestDevice (no second device).
+    {
+        auto probeFmt = [&](WGPUTextureFormat format, const char* label) -> bool {
+            wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_Validation);
+
+            WGPUTextureDescriptor texDesc = {};
+            texDesc.nextInChain = nullptr;
+            texDesc.label = MakeStringView(label);
+            texDesc.dimension = WGPUTextureDimension_2D;
+            texDesc.size = {1, 1, 1};
+            texDesc.format = format;
+            texDesc.mipLevelCount = 1;
+            texDesc.sampleCount = 1;
+            texDesc.usage = WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopyDst
+                          | WGPUTextureUsage_TextureBinding;
+
+            WGPUTexture tex = wgpuDeviceCreateTexture(device_.get(), &texDesc);
+
+            struct PopResult { bool hadError = false; };
+            PopResult pop;
+            auto popCb = [](WGPUPopErrorScopeStatus status, WGPUErrorType type,
+                            WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+                auto* out = static_cast<PopResult*>(userdata1);
+                const bool okStatus = status == WGPUPopErrorScopeStatus_Success;
+                const bool isGpuError =
+                    type == WGPUErrorType_Validation
+                    || type == WGPUErrorType_OutOfMemory
+                    || type == WGPUErrorType_Internal;
+                if (!okStatus || isGpuError) {
+                    out->hadError = true;
+                    if (message.data && message.length > 0) {
+                        printf("[WASM] Format probe validation: %.*s\n",
+                               (int)message.length, message.data);
+                    }
+                }
+            };
+
+            WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
+                nullptr, WGPUCallbackMode_WaitAnyOnly, popCb, &pop, nullptr
+            });
+            WGPUFutureWaitInfo popWait = {};
+            popWait.future = popFuture;
+            wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+
+            const bool ok = tex != nullptr && !pop.hadError;
+            if (tex) wgpuTextureRelease(tex);
+            return ok;
+        };
+
+        supportsRgba16FloatStorage_ = probeFmt(WGPUTextureFormat_RGBA16Float, "probe-rgba16float");
+        supportsRgba32FloatStorage_ = probeFmt(WGPUTextureFormat_RGBA32Float, "probe-rgba32float");
+        printf("[WASM] Storage format probe: rgba16float=%s rgba32float=%s Float32Filterable=%s Float32Blendable=%s\n",
+               supportsRgba16FloatStorage_ ? "yes" : "no",
+               supportsRgba32FloatStorage_ ? "yes" : "no",
+               hasFloat32Filterable ? "yes" : "no",
+               hasFloat32Blendable ? "yes" : "no");
+    }
+
     // ── Device limits ─────────────────────────────────────────────────────
     // Re-check against the same minimums as the adapter: a device can clamp
     // limits below what the adapter advertised (e.g. due to requiredLimits

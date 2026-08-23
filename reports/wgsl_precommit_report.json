@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-23T02:54:01.408222",
+  "timestamp": "2026-08-23T05:14:43.299572",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/glass-shatter.wgsl",
+      "file": "public/shaders/cyber-organic.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gravitational-lensing.wgsl",
+      "file": "public/shaders/cyber-rain.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/heat-haze-mirage.wgsl",
+      "file": "public/shaders/cyber-ripples.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-contour.wgsl",
+      "file": "public/shaders/cyber-scan.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/ink-bleed.wgsl",
+      "file": "public/shaders/cyber-trace.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/kaleidoscope.wgsl",
+      "file": "public/shaders/digital-glitch.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/magnetic-field.wgsl",
+      "file": "public/shaders/digital-haze.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neon-pulse.wgsl",
+      "file": "public/shaders/digital-reveal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/particle-swarm.wgsl",
+      "file": "public/shaders/edge-glow-mouse.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/vortex-warp.wgsl",
+      "file": "public/shaders/ferrofluid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

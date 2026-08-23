@@ -462,6 +462,8 @@ private:
     // Adapter capability (set during CreateDevice)
     uint32_t maxComputeInvocations_ = 256;
     bool     supportsDeepWorkgroup_ = false;
+    bool     supportsRgba32FloatStorage_ = false;
+    bool     supportsRgba16FloatStorage_ = false;
     policy::InternalColorFormat colorFormat_ = policy::kUltraColorFormat;
 
     // Wall-clock render timings from last frame (ms) — always updated.
@@ -492,6 +494,8 @@ private:
     // Reused across frames for UploadRGBA8ToReadTexture().
     // Grows on demand but never shrinks.
     std::vector<float> videoStagingBuffer_;
+    // Packed texel bytes for rgba16float (and rgba32float copies) queue writes.
+    std::vector<uint8_t> packedUploadBuffer_;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // ASYNC FRAME CAPTURE STATE
