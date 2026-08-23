@@ -178,7 +178,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let peak = max(col.r, max(col.g, col.b));
     let displayScale = select(1.0, 3.0 / max(peak, 1e-4), peak > 3.0);
     let displayColor = col * displayScale;
-    textureStore(writeTexture, global_id.xy, vec4<f32>(displayColor, semantic_alpha));
+    
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let aspect = u.config.z / max(u.config.w, 1.0);
+    let screenUV = vec2<f32>(global_id.xy) / vec2<f32>(u.config.z, u.config.w);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let __finalRGB = displayColor + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, global_id.xy, vec4<f32>(__finalRGB, semantic_alpha));
 
     // Depth carries caustic energy for downstream effects
     let d = clamp(0.25 + causticMask * 0.55 + anamorph * 0.3, 0.0, 0.97);
