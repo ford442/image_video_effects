@@ -9,6 +9,20 @@
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
 
+### Batch 64 (10 shaders) — 2026-08-23 — LIQUID / OPTICAL / CRYSTAL / CYBER
+
+**CLAIMED — work in progress on tracker #511–520.** Parallel agents should take
+#521+. Briefs: `swarm-outputs/claude-2026-08-23-b64/BRIEFS.md`.
+
+Ten shaders: `optical-feedback`, `glass_refraction_alpha`, `crystal-facets`,
+`ambient-liquid`, `frosted-glass-lens`, `cyber-lens`, `bubble-lens`,
+`liquid-metal`, `magnetic-interference`, `digital-mold`.
+
+(The request named `glass-refraction.wgsl`, which does not exist;
+`glass_refraction_alpha` is the confirmed target.)
+
+Results table lands when the batch closes.
+
 ### Batch 60 (10 shaders) — 2026-08-23 — DEAD FEATURES & FEEDBACK CONTRACTS
 
 Ten shaders across interactive-mouse, distortion, advanced-hybrid, artistic and
