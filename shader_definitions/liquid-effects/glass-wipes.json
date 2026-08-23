@@ -13,7 +13,9 @@
     "spring-interaction",
     "exact-load-feedback",
     "aces-tone-map",
-    "semantic-alpha"
+    "semantic-alpha",
+    "fast-motion",
+    "psychedelic"
   ],
   "params": [
     {
@@ -52,35 +54,47 @@
   "updatedParams": [
     {
       "index": 0,
+      "id": "intensity",
       "name": "Rain Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Bead density on the scrolling lattice conveyor; bass adds up to +80%. The cell hash keys on position only, never on time."
     },
     {
       "index": 1,
+      "id": "wiper",
       "name": "Wiper Size",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Blade half-width for both the hand wiper and the autonomous sweep; also sets the sweep rate."
     },
     {
       "index": 2,
+      "id": "distortion",
       "name": "Distortion",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Refraction offset through the water film."
     },
     {
       "index": 3,
+      "id": "dry_speed",
       "name": "Drying Speed",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Evaporation rate of the water film."
     }
   ],
   "updated": true

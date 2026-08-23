@@ -1489,7 +1489,8 @@
       "temporal-flicker",
       "chromatic-ghosting",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "click-reactive"
     ],
     "tags": [
       "hologram",

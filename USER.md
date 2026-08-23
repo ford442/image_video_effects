@@ -67,6 +67,15 @@ _Learn about the person you're helping. Update this as you go._
   contract with exact presets. Optical Flow Dream is now canonical single-pass
   without binding 13; Pixel Sand raw state now belongs to A. Naga/Jest/build
   are green; real-GPU QA remains external.
+- **Completed Batch 70 (2026-08-23):** The requested fluid/paint/reaction/slime
+  cohort is upgraded across 17 WGSL members. Chromatographic and Gray-Scott are
+  A-only graphs; saved params are exact; Naga 17/17, focused contracts, graph
+  tests, 84-suite Jest, and the WASM-skipped production build are green.
+  Real-GPU visual and long-running simulation QA remains external.
+- **Main reconcile (2026-08-23):** Merged local optical/branch-union `main` with
+  origin Batch 70, generative named-params #1167/#1169, and Batch 67 (#1170).
+  Kept local optical `holographic-flicker`; took Batch 67 `glass-wipes`,
+  `liquid-jelly`, and `ferrofluid-spikes`. Real-GPU QA remains external.
 ## Context
 
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.

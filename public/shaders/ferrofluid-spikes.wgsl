@@ -187,6 +187,19 @@ fn rosensweigHeight(p: vec2<f32>, magnet: vec2<f32>, density: f32, time: f32) ->
     return exp(-radius * radius * 4.2) * (peaks * 0.82 + radialRibs * 0.18);
 }
 
+// IQ cosine palette — iridescent metal ramp keyed to a scalar quantity.
+fn ferroSpectrum(t: f32) -> vec3<f32> {
+    return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.2831853 * (
+        vec3<f32>(1.0, 1.0, 1.0) * t + vec3<f32>(0.00, 0.28, 0.62)));
+}
+
+// Push channel spread away from luma so the iridescence stays vivid instead of
+// averaging toward the dark grey of the base metal.
+fn vivify(c: vec3<f32>, amount: f32) -> vec3<f32> {
+    let luma = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    return max(vec3<f32>(0.0), mix(vec3<f32>(luma), c, 1.0 + amount));
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -230,6 +243,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Magnetic field falls off with distance
     let field = smoothstep(0.5, 0.0, dist) * magnetStrength;
 
+    // ── Fast motion B: travelling field conveyor ─────────────────────────
+    // The whole Rosensweig lattice is sampled through a moving frame, so the
+    // spike field streams past the magnet rather than sitting still. Closed
+    // form in time; the conveyor rate is clamped so it can never blur out.
+    let conveyorRate = clamp(0.06 + spikeDensity * 0.10 + mids * 0.08, 0.0, 0.28);
+    let conveyor = vec2<f32>(time * conveyorRate, time * conveyorRate * 0.43);
+
     // True Rosensweig-like hexagonal peak family plus fine carrier ripples.
     let liquid = fbm(uv * (8.0 + spikeDensity * 20.0) + time * 0.1, 4);
     var clickHeight = 0.0;
@@ -247,14 +267,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     let held = select(0.62, 1.0, u.zoom_config.w > 0.5);
-    let spikeBase = rosensweigHeight(aspectUV, aspectMouse, spikeDensity, time * (1.0 + treble * 0.18));
-    let spikeHeight = (spikeBase * field * (1.2 + magnetStrength) + clickHeight * 0.5 + length(magnetVelocity) * field * 0.018)
+    let convUV = aspectUV + conveyor;
+    let spikeBase = rosensweigHeight(convUV, aspectMouse + conveyor, spikeDensity, time * (1.0 + treble * 0.18));
+
+    // ── Fast motion A: spike eruption packets ────────────────────────────
+    // Gaussian envelopes racing outward from the magnet at a clamped speed.
+    // Each packet is a closed-form function of (radius, time), so eruptions
+    // travel coherently instead of popping in place.
+    let eruptSpeed = clamp(0.30 + magnetStrength * 0.55 + bass * 0.45, 0.0, 1.4);
+    var erupt = 0.0;
+    for (var k = 0u; k < 3u; k = k + 1u) {
+        let phase = fract(time * (0.55 + f32(k) * 0.21) * eruptSpeed);
+        let packetR = phase * 0.62;
+        let d = dist - packetR;
+        erupt += exp(-d * d * 620.0) * (1.0 - phase) * (0.55 + bass * 0.7);
+    }
+    erupt = clamp(erupt, 0.0, 2.2);
+
+    let spikeHeight = (spikeBase * field * (1.2 + magnetStrength) + clickHeight * 0.5
+        + erupt * field * 0.55 + length(magnetVelocity) * field * 0.018)
         * mix(1.25, 0.62, fluidViscosity) * held;
     let eps = 1.3 / resolution.y;
-    let hL = rosensweigHeight(aspectUV - vec2<f32>(eps, 0.0), aspectMouse, spikeDensity, time);
-    let hR = rosensweigHeight(aspectUV + vec2<f32>(eps, 0.0), aspectMouse, spikeDensity, time);
-    let hD = rosensweigHeight(aspectUV - vec2<f32>(0.0, eps), aspectMouse, spikeDensity, time);
-    let hU = rosensweigHeight(aspectUV + vec2<f32>(0.0, eps), aspectMouse, spikeDensity, time);
+    let convMouse = aspectMouse + conveyor;
+    let hL = rosensweigHeight(convUV - vec2<f32>(eps, 0.0), convMouse, spikeDensity, time);
+    let hR = rosensweigHeight(convUV + vec2<f32>(eps, 0.0), convMouse, spikeDensity, time);
+    let hD = rosensweigHeight(convUV - vec2<f32>(0.0, eps), convMouse, spikeDensity, time);
+    let hU = rosensweigHeight(convUV + vec2<f32>(0.0, eps), convMouse, spikeDensity, time);
     let normal = normalize(vec3<f32>((hL - hR) * field * 5.0 + clickSlope.x,
         (hD - hU) * field * 5.0 + clickSlope.y, 0.18));
     let viewDir = normalize(vec3<f32>(uv.x - 0.5, uv.y - 0.5, 1.0));
@@ -287,9 +325,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = litColor + sheenColor + rimColor;
     color = color + vec3<f32>(turb, turb * 0.5, turb * 0.8) * 0.5;
 
-    // Subsurface glow for thin spike tips (purple/magenta)
+    // Subsurface glow for thin spike tips, now on an iridescent ramp keyed to
+    // spike height rather than a fixed purple, with a per-band FFT hue offset
+    // so the colour field reacts across the spectrum, and prismatic dispersion
+    // along the eruption front.
+    let bandIdx = u32(clamp(uv.x, 0.0, 0.999) * 8.0);
+    let band = clamp(plasmaBuffer[bandIdx + 1u].x, 0.0, 1.0);
+    let hue = fract(spikeHeight * 0.9 + erupt * 0.35 + time * 0.07
+                    + band * 0.26 + field * 0.2);
+    let disperse = clamp(erupt * 0.04 + conveyorRate * 0.12, 0.0, 0.06);
+    let irid = vivify(vec3<f32>(
+        ferroSpectrum(hue - disperse).r,
+        ferroSpectrum(hue).g,
+        ferroSpectrum(hue + disperse).b), 0.7);
+
     let sss = pow(max(0.0, spikeHeight - 0.3), 2.0) * 2.0 * mids;
-    color = color + vec3<f32>(0.5, 0.1, 0.4) * sss;
+    color = color + irid * sss;
+    // Eruption crests flare on the same palette, half a turn round the wheel.
+    color = color + vivify(ferroSpectrum(fract(hue + 0.5)), 0.7) * erupt * field * (0.35 + treble * 0.5);
 
     // Audio-reactive pulse: bass drives light intensity
     let pulse = 1.0 + bass * 0.3 + sin(time * 3.0 + dist * 10.0) * bass * 0.2;

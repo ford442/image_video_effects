@@ -61,5 +61,43 @@
   "updated": true,
   "id": "gen-audiovisual-mandelbulb-raymarcher",
   "url": "shaders/gen-audiovisual-mandelbulb-raymarcher.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "iterations",
+      "name": "Iterations",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "escape_radius",
+      "name": "Escape Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "video_blend",
+      "name": "Video Blend",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

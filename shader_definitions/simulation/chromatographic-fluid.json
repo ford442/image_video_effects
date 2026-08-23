@@ -11,7 +11,7 @@
         { "id": "force", "entry": "chromatographic-force", "reads": ["dataC"], "writes": ["dataA"] },
         { "id": "advect", "entry": "chromatographic-advect", "reads": ["dataC"], "writes": ["dataA"] },
         { "id": "diffuse", "entry": "chromatographic-diffuse", "reads": ["dataC"], "writes": ["dataA"], "repeat": 2 },
-        { "id": "interact", "entry": "chromatographic-interact", "reads": ["dataC"], "writes": ["dataB"] },
+        { "id": "interact", "entry": "chromatographic-interact", "reads": ["dataC"], "writes": ["dataA"] },
         { "id": "phase", "entry": "chromatographic-phase", "reads": ["dataC"], "writes": ["dataA"] },
         { "id": "render", "entry": "chromatographic-render", "reads": ["dataC"], "writes": ["color", "dataA"] }
       ]
@@ -59,6 +59,13 @@
       "description": "Hold-paint and click-splash amount"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Viscosity Split", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Wind", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Temperature", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Dye Inject", "default": 0.6, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = separated dye RGB and solvent temperature; all seven graph dispatches hand off through A only",
   "features": [
     "simulation",
     "multi-pass",
@@ -66,7 +73,7 @@
     "physics",
     "mouse-driven",
     "audio-reactive",
-    "interactive"
+    "interactive", "exact-load-feedback", "a-only-feedback", "held-drag", "click-reactive", "aces-tone-map", "semantic-alpha"
   ],
   "tags": [
     "fluid",

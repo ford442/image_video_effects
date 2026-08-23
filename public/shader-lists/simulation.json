@@ -333,10 +333,53 @@
       "colorful",
       "rgba-state-machine"
     ],
+    "requiresRgba32Float": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Dye Brightness",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Vorticity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = velocity.xy, signed pressure, dye density; raw simulation state via exact bounded loads",
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-drag",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -830,7 +873,7 @@
               "dataC"
             ],
             "writes": [
-              "dataB"
+              "dataA"
             ]
           },
           {
@@ -899,6 +942,41 @@
         "description": "Hold-paint and click-splash amount"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity Split",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wind",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Temperature",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Dye Inject",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = separated dye RGB and solvent temperature; all seven graph dispatches hand off through A only",
     "features": [
       "simulation",
       "multi-pass",
@@ -906,7 +984,13 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "held-drag",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "fluid",
@@ -1255,7 +1339,9 @@
       "spring-interaction",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "fast-motion",
+      "psychedelic"
     ],
     "params": [
       {
@@ -1299,6 +1385,52 @@
       "3-point-lighting",
       "anisotropic",
       "ambient-occlusion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "magnet",
+        "name": "Magnet Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Rosensweig spike amplitude; bass adds up to +50% and drives the eruption-packet speed."
+      },
+      {
+        "index": 1,
+        "id": "density",
+        "name": "Spike Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Lattice frequency of the Rosensweig peaks; also sets the travelling field-conveyor rate."
+      },
+      {
+        "index": 2,
+        "id": "viscosity",
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Damping on the magnet spring and the spike relaxation; higher values slow the snap-back."
+      },
+      {
+        "index": 3,
+        "id": "highlight",
+        "name": "Highlight Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "GGX roughness for the metallic specular lobe on the spike tips."
+      }
     ]
   },
   {
@@ -1480,6 +1612,41 @@
         "description": "Hold-paint and click seed amplitude"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Feed",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Kill",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Diffusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Seed Strength",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = Gray-Scott U, V, reaction age, seed mask; six graph dispatches use A-only handoffs",
     "features": [
       "simulation",
       "multi-pass",
@@ -1487,7 +1654,13 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "held-seeding",
+      "click-seeding",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "reaction-diffusion",
@@ -2775,12 +2948,54 @@
     "name": "Heat Haze Field",
     "url": "shaders/sim-heat-haze-field.wgsl",
     "description": "Temperature simulation with convection currents. Desert mirage effect with rising heat patterns.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Temperature Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Convection Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Distortion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Heat Source Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = temperature, gradient.xy, refractive activity; raw thermal state via exact bounded loads",
     "features": [
       "simulation",
       "temperature-field",
       "convection",
       "refraction",
-      "randomization-safe"
+      "randomization-safe",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-heat",
+      "click-fronts",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -3159,13 +3374,55 @@
     "name": "Slime Mold Growth + EM Field",
     "url": "shaders/sim-slime-mold-growth-em.wgsl",
     "description": "Physarum slime mold simulation with mouse electromagnetic field interaction. Agents steer along electric field lines; click ripples spawn secondary charges.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sensor Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "EM Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ripple Charge",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = trail, electric magnitude, signed magnetic field, growth activity; pointer history uses only extraBuffer[133..138]",
     "features": [
       "simulation",
       "agent-based",
       "mouse-driven",
       "electromagnetic",
       "interactive",
-      "randomization-safe"
+      "randomization-safe",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-charge",
+      "click-charges",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -3234,12 +3491,54 @@
     "name": "Slime Mold Growth",
     "url": "shaders/sim-slime-mold-growth.wgsl",
     "description": "Physarum-style slime mold with trail following. Branching network of glowing trails exploring space.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sensor Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Particle Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Randomness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = trail, diffused nutrient, growth activity, deposit strength; exact Physarum state",
     "features": [
       "simulation",
       "agent-based",
       "chemoattractant",
       "sensor-steering",
-      "randomization-safe"
+      "randomization-safe",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-growth",
+      "click-growth-fronts",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -3428,6 +3727,7 @@
     "category": "simulation",
     "url": "shaders/slime-mold-on-video.wgsl",
     "description": "Video luminance feeds a slime-mold trail simulation with velocity-biased history advection, traveling chemotactic pulse packets, and click food fronts. Audio shifts tendril colors, depth boosts glow, and the mouse deposits food.",
+    "feedbackPacking": "A/C = trail, video food luminance, encoded drift.xy; exact bounded video-guided state",
     "features": [
       "simulation",
       "temporal",
@@ -3439,7 +3739,12 @@
       "click-reactive",
       "fast-motion",
       "upgraded-rgba",
-      "chromatic-tendril"
+      "chromatic-tendril",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "held-food",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "slime",
@@ -3535,12 +3840,54 @@
       "vortex",
       "temporal"
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Time Step",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Diffusion",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Vortex Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Temporal Feedback",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = un-tonemapped advected dye RGB and flow speed; exact manually reconstructed history",
     "features": [
       "runge-kutta",
       "RK4",
       "fluid-advection",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-vortex",
+      "click-fronts",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {

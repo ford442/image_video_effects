@@ -1,6 +1,18 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Optical / Glass / Holographic / Crystal set upgrade complete)
+**Last updated:** 2026-08-23 (origin/main reconcile: Batch 67/70 + named-params)
+
+## 2026-08-23 — Reconciled local main with origin/main (Batch 67/70 + #1167/#1169)
+
+- Merged the 8 remote commits (Batch 70 fluid/slime, generative named-params
+  #1167/#1169, Batch 67 fast-motion/psychedelic #1170) into local `main`, which
+  already carried the optical/glass/holographic/crystal batch plus earlier
+  branch-union upgrades.
+- Overlap policy: kept local optical `holographic-flicker` (ACES + clamp; Batch
+  67 still used undefined `saturate` and non-canonical spring slots). Took Batch
+  67 versions of `glass-wipes`, `liquid-jelly`, and `ferrofluid-spikes` (contract
+  base + fast-motion/psychedelic). Unique remote shaders and named-params kept.
+- Catalogs regenerated after conflict resolution. Real-GPU QA remains external.
 
 ## 2026-08-23 — Optical / Glass / Holographic / Crystal Upgrade Batch (10 shaders)
 
@@ -18,6 +30,29 @@
 - Agent contract applied 10/10: Full 13-binding layout, ACES tonemapping, semantic alpha, writeback only to dataTextureA (and writeTexture/writeDepthTexture), exact textureLoad from dataTextureC, plasmaBuffer three-band audio reactivity, bounded extraBuffer[133..138] state only (single-writer), preserved mouse / held / click-ripple interactivity, and naga-clean WGSL.
 - Preserved saved parameter contracts byte-for-byte in JSONs with aligned updatedParams.
 - Proof: Naga 10/10, wgsl_precommit_gate 10/10, extraBuffer audit PASS, dead-sliders audit PASS (all 4 sliders live across all 10), URL policy PASS, Jest 84/84 suites (559 pass, 1 skip), and SKIP_WASM_BUILD=1 production build PASS. Real-GPU visual QA remains external handoff.
+
+## 2026-08-23 — Remaining fluid / paint / reaction / slime batch requested
+
+- Scope: alpha-fluid-simulation-paint, chromatographic-fluid,
+  sim-heat-haze-field, sim-slime-mold-growth, sim-slime-mold-growth-em,
+  slime-mold-on-video, gray-scott-tank, spec-runge-kutta-advection,
+  painterly-oil-bilateral, and cyber-ripples-coupled.
+- Preserve saved params and apply canonical exact-C, A-only, ACES, semantic
+  alpha, three-band plasma audio, bounded `[133..138]` state, full pointer/click
+  interaction, and Naga-clean requirements across all 17 WGSL members.
+- Completed as Batch 70. Chromatographic and Gray-Scott retain seven/six graph
+  dispatches with A-only handoffs. All 17 WGSL files pass Naga 30.0.1; params,
+  focused contracts, graph tests, Jest, catalogs, and build are green. EM Slime
+  no longer corrupts pixel `(0,0)` with pointer state; Cyber's abstract-literal
+  Naga failure is repaired. Real-GPU stability/visual QA remains external.
+
+## 2026-08-23 — Reconciled main: Batch 70 + #1167 + Batch 67 (#1170)
+
+- Merged local Batch 70 fluid/slime with origin named-params #1167, then Batch 67
+  fast-motion/psychedelic ten-pack (#1170). No WGSL conflicts between B70 and B67.
+- Regenerated audits after report conflicts; focused gate 25/25; cohort dead
+  sliders 0. Full-tree dead-slider noise (65 unrelated) left as regenerated truth.
+- User chose main↔origin reconcile only; leftover upgrade remotes left alone.
 
 ## 2026-08-23 — Merged shader upgrade branches into main
 

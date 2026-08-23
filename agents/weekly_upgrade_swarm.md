@@ -23,18 +23,106 @@ real-GPU QA remains external. Notes:
 
 ### Batch 67 (10 shaders) — 2026-08-23 — FAST MOTION / PSYCHEDELIC / HIGH ENERGY
 
-**CLAIMED — work in progress on tracker #521–530.** Parallel agents should take
-#531+. Briefs: `agents/swarm-outputs/claude-2026-08-23-b67/BRIEFS.md`.
+Ten shaders on tracker #521–530, upgraded under an extra creative brief on top
+of the usual contract: **two distinct closed-form fast-motion techniques per
+shader** (no frame-hash strobing, velocities clamped), **vivid multi-hue
+psychedelic colour**, and **playful high-energy personality** coherent with each
+shader's original identity.
 
-Ten shaders: `bubble-chamber`, `crystal-freeze`, `ferrofluid-spikes`,
-`frost-reveal`, `glass-wipes`, `heat-haze`, `holographic-flicker`,
-`liquid-jelly`, `magnetic-dipole`, `radial-blur`.
+Every shader carries the pool standard — ACES, semantic alpha, `dataTextureA`
+writeback, `plasmaBuffer[0].xyz` audio with per-band `[1..8]` bins, held-pointer
+response, bounded click fronts guarded by `min(u32(u.config.y), 50u)`, exact
+`textureLoad` from `dataTextureC`, `@workgroup_size(16, 16, 1)` and a bounds
+guard. `extraBuffer` writes stay in `[133..138]`, written by invocation `(0,0)`
+only.
 
-Creative brief on top of the usual contract: two distinct analytic fast-motion
-techniques per shader (no frame-hash strobing, clamped velocities), vivid
-multi-hue psychedelic colour, and playful high-energy personality.
+**Note on the base.** Four of the ten (`ferrofluid-spikes`, `glass-wipes`,
+`holographic-flicker`, `liquid-jelly`) were rewritten on `main` by concurrent
+agents while this batch was in flight. The finished Batch 67 versions of those
+four were discarded and **re-derived on top of main's newer code** rather than
+force-landed over it, so those agents' contract fixes are preserved and this
+batch adds only the creative brief. Worth noting for process: a per-batch claim
+range is no longer preventing overlap, because the claim reaches `main` well
+before the work does.
 
-Results table lands when the batch closes.
+**Headline: `holographic-flicker` did not compile on `main`.** `let target = …`
+uses a WGSL reserved keyword and naga rejects it outright, so the gate was not
+run on that file before it merged. The same shader read `u.config.y` — the
+ripple count — as a mouse-down flag, which latched the press spring on after the
+first click of the session and never released it, and treated `ripples[i].z` as
+an elapsed age when it is a start time. All three are fixed here, along with the
+two time-hash strobe sites the brief targets.
+
+Other bugs fixed:
+
+- **`heat-haze` depth clobber.** It wrote its heat field into
+  `writeDepthTexture` — simulation state smuggled through the depth target, so
+  every depth-aware shader downstream read a temperature as scene geometry. The
+  heat sim now lives in `dataTextureA`/`dataTextureC` where feedback state
+  belongs, and the depth target passes real geometry through.
+- **`radial-blur` never wrote `dataTextureA` on either exit path**, so nothing
+  downstream saw it in the feedback chain, and its early-return path wrote a
+  hardcoded alpha of `0.0` — an invisible frame whenever that path was taken. It
+  also derived pointer velocity from `u.ripples[0].zw`: `.z` is a ripple start
+  time and `.w` is padding the engine always leaves at `0.0`, so the "velocity"
+  was a timestamp paired with a constant. Velocity now comes from a bounded
+  spring-damper in `extraBuffer[133..136]`.
+- **`magnetic-dipole` bound `plasmaBuffer` and never read it** — catalogued
+  audio-reactive with no audio path at all. It also packed `dataTextureA` as
+  `[fieldDirection.xy, fieldStrength, …]` while reading channel `b` back as
+  *alignment*, so the persistence term consumed the wrong quantity; A is
+  repacked as `[fieldDir.xy, alignment, fieldStrength]`.
+- **`frost-reveal` had no bounds guard**, so invocations past the image edge ran
+  the full body.
+- **`bubble-chamber` quantised its spawn field with `floor(time * 3.0)`** and
+  sampled `dataTextureC` through the *filtering* sampler, which is unsafe on
+  `rgba32float` because `float32-filterable` is an optional device feature.
+- **`crystal-freeze` ran at `@workgroup_size(8, 8, 1)`** and sampled C rather
+  than loading it exactly.
+- **Four `holographic-flicker` sliders were carried in the dead-slider
+  baseline.** They were in fact wired, but through a whole-`vec4` clamp the
+  audit's pattern matcher could not see; the reads are now per-field and the
+  four grandfathered entries are retired from
+  `reports/dead_sliders_audit_baseline.json` (89 → 88 entries).
+
+Fast-motion pairs, one per shader: relativistic streak stretch + helical
+momentum spiral (`bubble-chamber`); dendrite growth fronts + facet light-burst
+whip (`crystal-freeze`); spike eruption packets + travelling field conveyor
+(`ferrofluid-spikes`); crystallisation wavefronts + radial shatter streaks
+(`frost-reveal`); elastic wiper sweep with snap-back recoil + bead conveyor
+(`glass-wipes`); buoyant updraft packets + shear-layer shimmer streaks
+(`heat-haze`); scan-line conveyor + parallax ghost whip
+(`holographic-flicker`); finite-speed shear wave propagation
+(`c = sqrt(G/rho)`) + jiggle overshoot streaks (`liquid-jelly`); field-line
+particle dance + pole-flip orbital whip (`magnetic-dipole`); zoom-burst speed
+lines + rotational shear streaks (`radial-blur`).
+
+Colour is IQ cosine palettes keyed to a physical quantity per shader (momentum,
+freeze fraction, spike height, film thickness, field strength, blur radius),
+with prismatic dispersion along the motion direction and per-band FFT hue
+offsets. Saturation is boosted by extrapolating away from luma rather than
+averaging, which is what keeps summed multi-hue palettes from collapsing to
+grey.
+
+Gate, dead-slider, `extraBuffer`, audio-mapping and `config.y` audits pass
+10/10; the strobe grep comes back clean of motion-driving hits; lists, URL and
+uniform checks pass. Notes: `swarm-outputs/claude-2026-08-23-b67/`. Real-GPU
+visual QA remains external — the vividness and motion claims are verified
+structurally (palette maths, clamped velocity bounds, analytic phases), not
+visually.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 521 | `bubble-chamber` | 67 | 229→371 (+142) | Relativistic streak stretch (Lorentz gamma, beta clamped 0.985), helical momentum spiral, momentum-keyed prismatic fan; `floor(time*3)` spawn quantisation and filtering-sampler C reads fixed. |
+| 522 | `crystal-freeze` | 67 | 193→296 (+103) | Dendrite growth fronts, facet light-burst whip, IOR-blended dispersion palette; 8×8 workgroup and sampled C fixed. |
+| 523 | `ferrofluid-spikes` | 67 | 317→370 (+53) | Spike eruption packets, travelling field conveyor, iridescent height-keyed palette. Rebased on main's concurrent rewrite. |
+| 524 | `frost-reveal` | 67 | 163→279 (+116) | Crystallisation wavefronts, radial shatter streaks, prismatic ice palette; missing bounds guard, audio, ripples and ACES fixed. |
+| 525 | `glass-wipes` | 67 | 107→166 (+59) | Elastic wiper sweep with `exp(-t*6)sin(34t)` snap-back recoil, thin-film iridescence keyed to film thickness. Rebased on main's concurrent rewrite, which already carried the bead conveyor. |
+| 526 | `heat-haze` | 67 | 144→231 (+87) | Buoyant updraft packets, shear-layer shimmer streaks, thermal-gradient palette; **depth clobber** fixed by moving the heat sim into A/C, plus missing C read and ACES. |
+| 527 | `holographic-flicker` | 67 | 183→259 (+76) | Scan-line conveyor, parallax ghost whip, per-band spectrum palette; **reserved-keyword compile failure**, `config.y`-as-mouse-down, `ripples[].z`-as-age, two time-hash strobe sites and four baseline-listed dead sliders all fixed. |
+| 528 | `liquid-jelly` | 67 | 184→249 (+65) | Finite-speed shear wave with arrival gating, jiggle overshoot streaks, IQ candy palette replacing a warm/cool two-tone lerp. Rebased on main's concurrent rewrite. |
+| 529 | `magnetic-dipole` | 67 | 214→312 (+98) | Field-line particle dance, pole-flip orbital whip, field-strength spectral palette; **dead `plasmaBuffer`**, mismatched A channel packing, sampled C and hardcoded alpha fixed. |
+| 530 | `radial-blur` | 67 | 225→372 (+147) | Zoom-burst speed lines, rotational shear streaks, radius-keyed dispersion palette; **no A writeback on either exit path**, hardcoded `0.0` alpha and `ripples[0].zw` fake velocity fixed. |
 
 ### Batch 64 (10 shaders) — 2026-08-23 — LIQUID / OPTICAL / CRYSTAL / CYBER
 

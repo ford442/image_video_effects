@@ -43,12 +43,16 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     return fract((p3.xx + p3.yz) * p3.zy);
 }
 
-// Sensor sampling
-fn sense(trailMap: texture_2d<f32>, pos: vec2<f32>, angle: f32, sensorOffset: f32, sensorDist: f32) -> f32 {
-    let sensorDir = vec2<f32>(cos(angle), sin(angle));
-    let sensorPos = pos + sensorDir * sensorDist;
-    let sensorUV = clamp(sensorPos, vec2<f32>(0.0), vec2<f32>(1.0));
-    return textureSampleLevel(trailMap, u_sampler, sensorUV, 0.0).r;
+fn stateAt(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
+}
+
+fn trailAtUV(pos: vec2<f32>, res: vec2<f32>) -> f32 {
+    return stateAt(vec2<i32>(floor(clamp(pos, vec2<f32>(0.0), vec2<f32>(1.0)) * res)), res).r;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -58,6 +62,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     let uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
+    let coord = vec2<i32>(gid.xy);
+    let aspect = resolution.x / resolution.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     
     // Parameters
     let sensorAngle = mix(0.2, 1.0, u.zoom_params.x);     // x: Sensor angle
@@ -66,13 +75,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let randomness = mix(0.0, 0.3, u.zoom_params.w);      // w: Randomness/jitter
     
     // Read trail map
-    let trail = textureLoad(dataTextureC, gid.xy, 0).r;
+    let trail = stateAt(coord, resolution).r;
     
     // Diffuse and decay trails
     var sum = 0.0;
     for (var y: i32 = -1; y <= 1; y++) {
         for (var x: i32 = -1; x <= 1; x++) {
-            sum += textureLoad(dataTextureC, vec2<i32>(gid.xy) + vec2<i32>(x, y), 0).r;
+            sum += stateAt(coord + vec2<i32>(x, y), resolution).r;
         }
     }
     let diffused = sum / 9.0;
@@ -102,12 +111,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let rightAngle = agentAngle + sensorAngle;
             
             // Sample trail at sensors (use current trail map)
-            let leftSense = textureSampleLevel(dataTextureC, u_sampler, 
-                clamp(agentPos + vec2<f32>(cos(leftAngle), sin(leftAngle)) * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-            let centerSense = textureSampleLevel(dataTextureC, u_sampler,
-                clamp(agentPos + vec2<f32>(cos(agentAngle), sin(agentAngle)) * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-            let rightSense = textureSampleLevel(dataTextureC, u_sampler,
-                clamp(agentPos + vec2<f32>(cos(rightAngle), sin(rightAngle)) * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+            let leftSense = trailAtUV(agentPos + vec2<f32>(cos(leftAngle), sin(leftAngle)) * 0.02, resolution);
+            let centerSense = trailAtUV(agentPos + vec2<f32>(cos(agentAngle), sin(agentAngle)) * 0.02, resolution);
+            let rightSense = trailAtUV(agentPos + vec2<f32>(cos(rightAngle), sin(rightAngle)) * 0.02, resolution);
             
             // Steer based on sensor readings
             if (centerSense < leftSense && centerSense < rightSense) {
@@ -120,7 +126,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             }
             
             // Move agent
-            agentPos += vec2<f32>(cos(agentAngle), sin(agentAngle)) * 0.003;
+            agentPos += vec2<f32>(cos(agentAngle), sin(agentAngle)) * 0.003 * (1.0 + mids * 0.35);
             agentPos = fract(agentPos); // Wrap around
             
             // Check if agent is near this pixel
@@ -133,15 +139,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Add deposit from mouse
     let mousePos = u.zoom_config.yz;
-    let mouseDist = length(uv - mousePos);
-    if (mouseDist < 0.03) {
-        deposit += 0.1 * (1.0 - mouseDist / 0.03);
+    let mouseDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
+    let mouseField = smoothstep(0.09, 0.0, mouseDist);
+    deposit += mouseField * (0.006 + u.zoom_config.w * 0.12) * (1.0 + bass * 0.5);
+
+    var clickGrowth = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let r = u.ripples[i];
+        let age = time - r.z;
+        if (age >= 0.0 && age < 3.0) {
+            let ring = abs(length((uv - r.xy) * vec2<f32>(aspect, 1.0)) - age * (0.08 + bass * 0.06));
+            clickGrowth += (1.0 - smoothstep(0.0, 0.025, ring)) * (1.0 - age / 3.0);
+        }
     }
+    deposit += clickGrowth * (0.08 + treble * 0.06);
     
     newTrail = min(newTrail + deposit, 1.0);
     
     // Store trail
-    textureStore(dataTextureA, gid.xy, vec4<f32>(newTrail, 0.0, 0.0, 1.0));
+    let activity = clamp(abs(newTrail - trail) * 8.0 + clickGrowth, 0.0, 1.0);
+    textureStore(dataTextureA, coord, vec4<f32>(newTrail, diffused, activity, clamp(deposit, 0.0, 1.0)));
     
     // Render
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -157,10 +175,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var color = mix(baseColor * 0.2, trailColor, newTrail * 0.9);
     
     // Add glow
-    color += vec3<f32>(0.0, newTrail * 0.3, newTrail * 0.4) * newTrail;
+    color += vec3<f32>(0.05 + bass * 0.15, 0.3 + mids * 0.25, 0.4 + treble * 0.3) * newTrail * newTrail;
+    color = acesToneMap(color);
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
-    textureStore(writeTexture, gid.xy, vec4<f32>(color, mix(0.7, 1.0, newTrail)));
+    let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    let alpha = clamp(sourceAlpha * 0.2 + newTrail * 0.75 + activity * 0.15, 0.0, 1.0);
+    textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - newTrail * 0.2), 0.0, 0.0, 0.0));
 }

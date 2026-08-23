@@ -179,7 +179,7 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
           "dataC"
         ],
         "writes": [
-          "dataB"
+          "dataA"
         ]
       },
       {
