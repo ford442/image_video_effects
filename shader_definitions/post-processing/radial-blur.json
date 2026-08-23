@@ -44,7 +44,12 @@
   ],
   "features": [
     "mouse-driven",
-    "depth-aware"
+    "depth-aware",
+    "audio-reactive",
+    "click-reactive",
+    "fast-motion",
+    "psychedelic",
+    "upgraded-rgba"
   ],
   "tags": [
     "blur",
@@ -52,5 +57,51 @@
     "depth-of-field",
     "post-processing",
     "chromatic"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "id": "sigma",
+      "name": "Blur Sigma",
+      "default": 0.3,
+      "min": 0.01,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base blur radius; also the length scale of the zoom-burst speed lines."
+    },
+    {
+      "index": 1,
+      "id": "shape",
+      "name": "Bokeh Shape",
+      "default": 0,
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "mapping": "zoom_params.y",
+      "description": "Aperture shape for the bokeh kernel."
+    },
+    {
+      "index": 2,
+      "id": "focalDepth",
+      "name": "Focal Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Depth plane held in focus by the circle-of-confusion term."
+    },
+    {
+      "index": 3,
+      "id": "maxBlur",
+      "name": "Max Blur",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Upper clamp on the circle of confusion; also gains the rotational shear streaks."
+    }
   ]
 }

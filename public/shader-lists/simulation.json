@@ -1150,7 +1150,9 @@
       "spring-interaction",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "fast-motion",
+      "psychedelic"
     ],
     "params": [
       {
@@ -1194,6 +1196,52 @@
       "3-point-lighting",
       "anisotropic",
       "ambient-occlusion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "magnet",
+        "name": "Magnet Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Rosensweig spike amplitude; bass adds up to +50% and drives the eruption-packet speed."
+      },
+      {
+        "index": 1,
+        "id": "density",
+        "name": "Spike Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Lattice frequency of the Rosensweig peaks; also sets the travelling field-conveyor rate."
+      },
+      {
+        "index": 2,
+        "id": "viscosity",
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Damping on the magnet spring and the spike relaxation; higher values slow the snap-back."
+      },
+      {
+        "index": 3,
+        "id": "highlight",
+        "name": "Highlight Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "GGX roughness for the metallic specular lobe on the spike tips."
+      }
     ]
   },
   {

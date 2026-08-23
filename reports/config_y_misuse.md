@@ -3,12 +3,12 @@
 `config = [time, rippleCount, resW, resH]` — see `src/contracts/uniforms_layout.json`.
 Every row below reads `config.y` (or a legacy `config` swizzle) as something else.
 
-**Total: 81 reads across 68 shaders**
+**Total: 80 reads across 67 shaders**
 
 | Category | Count |
 |----------|-------|
 | `audio` | 41 |
-| `unclassified` | 17 |
+| `unclassified` | 16 |
 | `click_or_frame_count` | 12 |
 | `delta_time` | 11 |
 
@@ -79,7 +79,6 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/glass-brick-wall.wgsl` | 83 | delta_time | `let dt = u.config.y;` |
 | `public/shaders/holographic-crystal.wgsl` | 53 | delta_time | `let dt = min(u.config.y, 0.05);` |
 | `public/shaders/holographic-entropy-vortex.wgsl` | 156 | click_or_frame_count | `let clicks = u.config.y;` |
-| `public/shaders/holographic-flicker.wgsl` | 77 | unclassified | `let mouseClick = u.config.y;` |
 | `public/shaders/hybrid-chromatic-liquid.wgsl` | 79 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/hybrid-magnetic-field.wgsl` | 98 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/interactive-voronoi-lens.wgsl` | 81 | delta_time | `let dt = u.config.y;` |

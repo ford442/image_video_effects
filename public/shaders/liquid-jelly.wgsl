@@ -3,8 +3,20 @@
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  A/C packing: display RGBA, exact bounded advected history. B/extraBuffer unused.
+//  A/C packing: display RGBA, exact bounded advected history. B unused.
+//  extraBuffer[133..138]: sprung pointer position/velocity + init flag.
 //  Upgraded: 2026-08-23
+//
+//  Batch 67 — fast motion / psychedelic / high energy:
+//    A. Finite-speed shear wave. A real gel does not deform everywhere at
+//       once; a shear disturbance travels at c = sqrt(G/rho). Click fronts
+//       are gated on arrival time r/c, so the wobble visibly races outward
+//       instead of appearing simultaneously across the frame.
+//    B. Jiggle overshoot streaks — the refraction tap is smeared backwards
+//       along the displacement direction, length proportional to the local
+//       shear rate and clamped, so fast wobbles leave motion trails.
+//    Colour: IQ candy palette keyed to gel thickness with per-band FFT hue
+//    offsets and prismatic dispersion, replacing a warm/cool two-tone lerp.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -45,6 +57,19 @@ fn viscoelasticModalFlow(p: vec2<f32>, time: f32, elast: f32, damp: f32) -> vec2
   let dispX = sin(p.y * k1 + time * omega1) * cos(p.x * k2 - time * omega2 * 0.7);
   let dispY = cos(p.x * k1 - time * omega1 * 0.85) * sin(p.y * k2 + time * omega2);
   return vec2<f32>(dispX, dispY) * (0.0035 / (1.0 + damp * 0.5));
+}
+
+// IQ cosine palette — high-chroma candy ramp keyed to a scalar quantity.
+fn candy(t: f32) -> vec3<f32> {
+    return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.2831853 * (
+        vec3<f32>(1.0, 0.9, 1.1) * t + vec3<f32>(0.10, 0.42, 0.78)));
+}
+
+// Push channel spread away from luma so multi-hue mixes stay vivid rather
+// than averaging toward grey.
+fn vivify(c: vec3<f32>, amount: f32) -> vec3<f32> {
+    let luma = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    return max(vec3<f32>(0.0), mix(vec3<f32>(luma), c, 1.0 + amount));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -130,19 +155,49 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let rDelta = (uv - rip.xy) * vec2<f32>(aspect, 1.0);
       let rDist = max(length(rDelta), 0.0001);
       let rDir = rDelta / rDist;
-      let spring = sin(age * (elasticity + audio.x * 5.0) - rDist * 18.0) * exp(-age * damping);
+
+      // ── Fast motion A: finite shear-wave speed ────────────────────────
+      // c = sqrt(G / rho) for a shear wave in an elastic solid; rho is folded
+      // into the constant. Nothing moves until the front arrives, so the
+      // deformation races outward at a visible, clamped speed instead of
+      // appearing across the whole frame at once.
+      let shearSpeed = clamp(sqrt(max(elasticity, 0.01)) * 0.16 + audio.x * 0.10, 0.05, 0.9);
+      let arrival = rDist / shearSpeed;
+      let sinceArrival = age - arrival;
+      let arrived = step(0.0, sinceArrival);
+      let front = arrived * smoothstep(0.0, 0.05, sinceArrival);
+
+      let spring = sin(max(sinceArrival, 0.0) * (elasticity + audio.x * 5.0) - rDist * 18.0)
+                 * exp(-max(sinceArrival, 0.0) * damping);
       let shape = exp(-rDist * mix(16.0, 4.5, u.zoom_params.z));
-      let local = spring * shape;
+      let local = spring * shape * front;
 
       displacement += vec2<f32>(rDir.x / aspect, rDir.y) * local * wobbleStrength * (1.0 + audio.x * 0.65) * foreground;
       wobbleEnergy += abs(local);
-      edgeEnergy += abs(spring) * pow(clamp(1.0 - abs(rDist - 0.15) * 7.5, 0.0, 1.0), 3.0);
+      edgeEnergy += abs(spring) * front * pow(clamp(1.0 - abs(rDist - 0.15) * 7.5, 0.0, 1.0), 3.0);
     }
   }
 
   // Optical refraction and subsurface scattering
   let displacedUV = clamp(uv - displacement, vec2<f32>(0.0), vec2<f32>(1.0));
-  let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
+
+  // ── Fast motion B: jiggle overshoot streaks ──────────────────────────
+  // Smear the refraction tap backwards along the direction of travel. The
+  // streak length tracks the local shear rate and is clamped, so a violent
+  // wobble leaves a trail without the sample ever leaving the frame.
+  let shearRate = clamp(length(displacement) * 26.0 + wobbleEnergy * 0.35, 0.0, 1.0);
+  let streakDir = select(vec2<f32>(0.0), normalize(displacement), length(displacement) > 1e-5);
+  let streakLen = clamp(shearRate * (0.010 + wobbleStrength * 0.35), 0.0, 0.045);
+  var smear = vec4<f32>(0.0);
+  var smearW = 0.0;
+  for (var s = 0u; s < 5u; s = s + 1u) {
+    let t = f32(s) / 4.0;
+    let w = 1.0 - t * 0.72;
+    let tapUV = clamp(displacedUV + streakDir * streakLen * t, vec2<f32>(0.0), vec2<f32>(1.0));
+    smear += textureSampleLevel(readTexture, u_sampler, tapUV, 0.0) * w;
+    smearW += w;
+  }
+  let baseColor = smear / max(smearW, 1e-4);
 
   // Exact-load temporal state feedback from dataTextureC
   let histCoord = clamp(vec2<i32>(floor((uv - displacement * (0.35 + 0.25 * u.zoom_params.x)) * resolution)), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
@@ -161,9 +216,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fresnel = fresnelSchlick(max(normal.z, 0.0), 0.045);
 
   let thickness = clamp(0.12 + length(displacement) * 22.0 + wobbleEnergy * 0.12, 0.0, 1.8);
-  let warmTint = vec3<f32>(1.0, 0.24, 0.16);
-  let coolTint = vec3<f32>(0.02, 0.88, 0.9);
-  let scatterTint = mix(warmTint, coolTint, tintShift);
+
+  // Palette keyed to gel THICKNESS, with a per-band FFT hue offset so the
+  // colour field reacts across the spectrum instead of pumping on one level,
+  // and prismatic dispersion along the direction of travel.
+  let bandIdx = u32(clamp(uv.x, 0.0, 0.999) * 8.0);
+  let band = clamp(plasmaBuffer[bandIdx + 1u].x, 0.0, 1.0);
+  let hue = fract(thickness * 0.55 + tintShift + time * 0.06
+                  + band * 0.22 + shearRate * 0.30);
+  let disperse = clamp(shearRate * 0.05, 0.0, 0.05);
+  let scatterTint = vivify(vec3<f32>(
+      candy(hue - disperse).r,
+      candy(hue).g,
+      candy(hue + disperse).b), 0.6);
   let absorption = exp(-thickness * vec3<f32>(1.6, 1.05, 0.6));
 
   let bioLime = vec3<f32>(0.48, 1.0, 0.18) * soliton * (0.08 + audio.z * 0.2);

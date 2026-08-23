@@ -344,16 +344,6 @@
       ]
     },
     {
-      "id": "holographic-flicker",
-      "category": "visual-effects",
-      "dead_param_ids": [
-        "flickerSpeed",
-        "glitchAmt",
-        "hologramIntensity",
-        "ghostAmt"
-      ]
-    },
-    {
       "id": "hyb-chromatic-circuit",
       "category": "hybrid",
       "dead_param_ids": [
