@@ -642,9 +642,15 @@
     "id": "chromatic-focus-interactive",
     "name": "Chromatic Focus",
     "url": "shaders/chromatic-focus-interactive.wgsl",
-    "description": "Strong chromatic aberration that increases with distance from mouse focus.",
+    "description": "Bounded chromatic focus blur with safe radial normalization, zone-plate caustics, held focus squeeze, click iris shells, and stylized wavelength attenuation.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "bounded-blur",
+      "psychedelic-color"
     ],
     "params": [
       {
@@ -680,7 +686,42 @@
       "vfx",
       "particles",
       "glow"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Abberation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Blur",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Focus Rad",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.8,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Falloff",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "cross-spec-alpha-spectral-bloom",
@@ -2362,12 +2403,16 @@
     "name": "RGB Topology",
     "category": "visual-effects",
     "url": "shaders/rgb-topology.wgsl",
-    "description": "Topographic contour extraction per RGB channel with 3D terrain visualization. Each channel is a heightfield with independent contour intervals, hypsometric tinting, HDR specular peaks, and chromatic blending at crossings.",
+    "description": "Topographic contour extraction per RGB channel with index isolines, ridge ticks, traveling iso-runners, psychedelic hypsometric ramps, held shear, and bounded click fronts. Feedback A stays [lineR, lineG, lineB, alpha].",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "isoline-runners",
+      "psychedelic-hypsometry"
     ],
     "tags": [
       "topology",
@@ -2380,6 +2425,36 @@
       "hdr-specular"
     ],
     "params": [
+      {
+        "id": "contour_density",
+        "name": "Contour Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "line_thickness",
+        "name": "Line Thickness",
+        "default": 0.22,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "channel_separation",
+        "name": "Channel Separation",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "source_blend",
+        "name": "Source Blend",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "contour_density",
         "name": "Contour Density",

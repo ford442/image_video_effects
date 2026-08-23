@@ -2,8 +2,43 @@
   "id": "tesseract-fold",
   "name": "Tesseract Fold",
   "url": "shaders/tesseract-fold.wgsl",
-  "description": "A 4D kaleidoscopic folding effect centered on the mouse. Features HDR tone mapping, iridescent color grading, atmospheric vignette, treble-driven edge glow, and bloom-weight alpha for chained rendering.",
+  "description": "Neon stained-glass tesseract faces with spectral edge diffraction, inner-face interference, held projection-plane deformation, bounded click-pulsed fold shells, closed-form 4D-style rotation, and depth-aware alpha.",
+  "updated": true,
   "params": [
+    {
+      "id": "param1",
+      "name": "4D Rotation Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Projection Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Edge Glow Width",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Face Opacity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "updatedParams": [
     {
       "id": "param1",
       "name": "4D Rotation Speed",
@@ -41,7 +76,11 @@
     "mouse-driven",
     "upgraded-rgba",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "stained-glass",
+    "spectral-diffraction",
+    "bounded-click-ripples",
+    "held-drag"
   ],
   "tags": [
     "filter",

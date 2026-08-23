@@ -6,7 +6,12 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "continuous-motion",
+    "click-reactive",
+    "held-pointer",
+    "psychedelic-color",
+    "rosette-moire"
   ],
   "params": [
     {
@@ -43,5 +48,41 @@
     "halftone",
     "print",
     "audio-reactive"
-  ]
+  ],
+  "description": "Rosette and moire CMYK halftone with animated registration drift, held-pointer plate shear, click ink blooms, and three-band audio overprint.",
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Dot Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Angle Offset",
+      "default": 0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Channel Spread",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Ink Darkness",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

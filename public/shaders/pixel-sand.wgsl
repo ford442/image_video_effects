@@ -111,7 +111,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
 
   var cell = readState(pixel.x, pixel.y);
-  let spawnR = hashf(f32(global_id.x) * 73.0 + f32(global_id.y) * 37.0 + 1.0 + time);
+  let grainSeed = hashf(f32(global_id.x) * 73.0 + f32(global_id.y) * 37.0 + 1.0);
+  let spawnR = 0.5 + 0.5 * sin(time * (2.1 + grainSeed * 1.7) + grainSeed * TAU);
 
   // Domain-warped FBM flow field
   let flow = flowField(uv01, time, p3 * 0.5);
@@ -138,13 +139,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     cell = vec4<f32>(echo.rgb * (1.0 + mids * 0.5), 1.0);
   }
 
-  // Ripple shockwaves deposit hot grains
-  for (var i: i32 = 0; i < 50; i++) {
+  // Capped click fronts launch hot avalanche shelves.
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let rp = u.ripples[i];
-    if (rp.z > 0.0 && time - rp.z > 0.0 && time - rp.z < 0.5 && distance(uv01, rp.xy) < 0.025) {
-      let temp = 2500.0 + bass * 2000.0 + mids * 1500.0;
-      cell = vec4<f32>(blackbodyRGB(temp), 1.0);
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
+      let ring = exp(-abs(distance(uv01, rp.xy) - age * 0.42) * 85.0) * (1.0 - age / 1.5);
+      clickWave = max(clickWave, ring);
     }
+  }
+  if (clickWave > 0.18 && cell.a < 0.5) {
+    let temp = 2500.0 + bass * 2000.0 + mids * 1500.0 + clickWave * 1800.0;
+    cell = vec4<f32>(blackbodyRGB(temp), 1.0);
   }
 
   if (cell.a < 0.5) {
@@ -159,6 +167,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let grav = mix(0.5, 2.5, p1) * (1.0 + bass * 0.5) * heightWeight;
   var vy = cell.b + grav * (0.04 + p2 * 0.08);
   var vx = cell.g;
+
+  // Two smooth fast-motion structures: diagonal avalanche sheets and rising jets.
+  let avalanche = sin((uv01.x * 18.0 + uv01.y * 7.0) * TAU - time * (4.0 + p1 * 5.0));
+  let jetLane = exp(-pow(abs(fract(uv01.x * 7.0 - time * 0.55) - 0.5) * 8.0, 2.0));
+  vx += avalanche * (0.16 + p3 * 0.34) * (0.5 + mids);
+  vy += jetLane * (0.35 + p2 * 0.7) * (0.6 + bass) + clickWave * 1.2;
 
   vx += flow.x; vy += flow.y;
 

@@ -101,6 +101,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = vec2<f32>(pixel) / res;
   let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
 
   // Audio features
   let bass = plasmaBuffer[0].x;
@@ -152,12 +154,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let warp = fbm(vec2<f32>(uv.y * 3.0 + f32(nearestIdx), time * 0.5), warpOctaves) * 0.05 * needsRefine;
 
   let nearPos = slitPosition(nearestIdx, time, speed);
-  let warpedPos = fract(nearPos + warp);
+  let dragBand = exp(-abs(uv.y - mouse.y) * 24.0) * held;
+  let warpedPos = fract(nearPos + warp + (mouse.x - nearPos) * dragBand * 0.35);
   let dWarp = abs(uv.x - warpedPos);
   dist = mix(dist, smin(dist, dWarp, 0.15), needsRefine);
 
-  // Feathered slit mask
-  let mask = 1.0 - smoothstep(slitW * feather, slitW, dist);
+  // Fast moving slit heads and click-launched temporal scan fronts.
+  let headY = 0.5 + 0.48 * sin(time * (2.8 + u.zoom_params.z * 4.0) + f32(nearestIdx) * 2.1);
+  let slitHead = exp(-abs(uv.y - headY) * 70.0) * exp(-dist * 90.0);
+  let crossRunner = exp(-abs(fract(uv.y * 3.0 - time * 0.65) - 0.5) * 35.0) * exp(-dist * 45.0);
+
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.4) {
+      clickWave = max(clickWave,
+        exp(-abs(distance(uv, rp.xy) - age * 0.48) * 78.0) * (1.0 - age / 1.4));
+    }
+  }
+
+  // Feathered slit mask enriched by the moving heads and bounded click fronts.
+  let mask = max(1.0 - smoothstep(slitW * feather, slitW, dist),
+                 max(slitHead * 0.85, max(crossRunner * 0.5, clickWave * 0.75)));
 
   // Spatially-varying temporal decay
   let decayNoise = fbm(uv * 4.0 + time * 0.1, 3);
@@ -183,7 +203,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Compose: freshly scanned regions pick up current color and intensity
   let alpha = mix(history.a * decay, saturate(luma(current.rgb) + 0.2), mask);
-  let color = mix(history.rgb * decay, current.rgb, mask);
+  var color = mix(history.rgb * decay, current.rgb, mask);
+  let spectralHead = 0.5 + 0.5 * cos(TAU * (vec3<f32>(uv.y + time * 0.1)
+                                         + vec3<f32>(0.0, 0.33, 0.67)));
+  color += spectralHead * (slitHead * 0.22 + clickWave * 0.18) * (0.5 + treble);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
