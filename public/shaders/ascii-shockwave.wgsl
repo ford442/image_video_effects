@@ -1,29 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  ASCII Shockwave — Dot-Matrix Terminal Blast Fronts
+//  ASCII Shockwave
 //  Category: visual-effects
-//  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
-//            per-band-fft, dot-matrix-glyphs, chromatic-aberration,
-//            phosphor-persistence, depth-aware, upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 56 — Turbulent Vortex)
-// ═══════════════════════════════════════════════════════════════════
-//  The original drew four hand-written shapes with an if/else chain and hard
-//  edges, driven by a single sine pulse. Two structures replace that:
-//
-//    1. Packed 4x6 dot-matrix glyph ROM — eight glyphs are stored as 24-bit
-//       masks and indexed by cell luminance, giving a real character ramp
-//       (space · : + * o # █). Cell luminance is a 2x2 box average of the
-//       source rather than a single tap, so glyph choice is stable instead of
-//       flickering on high-frequency detail, and the dot is rendered with a
-//       soft footprint so the matrix anti-aliases at any cell size.
-//
-//    2. Dispersive multi-front wave field — the ASCII region is the union of a
-//       continuous pointer pulse and every bounded click front (u.ripples,
-//       capped at 50), each expanding at its own rate with a trailing wake.
-//       The wave number is banded by the 8 FFT bins, so the ring spacing
-//       breathes with the spectrum.
-//
-//  The crest of every front is drawn with a chromatic split, and glyphs leave a
-//  decaying phosphor trace through dataTextureC.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware,
+//            glyph-cells, held-drag, bounded-click-ripples
+//  Complexity: High
+//  Upgraded: 2026-08-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -41,160 +22,85 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=CellDensity, y=WaveSpeed, z=Tint, w=Persistence
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// ── Glyph ROM ────────────────────────────────────────────────────────────────
-// 4 columns x 6 rows, bit index = row * 4 + col, col 0 = left, row 0 = top.
-// Ordered by ink coverage so the index doubles as a luminance ramp.
-var<private> GLYPHS: array<u32, 8> = array<u32, 8>(
-    0x000000u,  // ' '  empty
-    0x020000u,  // '.'  single low dot
-    0x020020u,  // ':'  two stacked dots
-    0x002F20u,  // '+'  cross
-    0x009690u,  // '*'  diagonal star
-    0x069960u,  // 'o'  ring
-    0x05F5F5u,  // '#'  hatch
-    0xFFFFFFu   // '█'  solid block
-);
-
-fn glyphInk(index: u32, cellUV: vec2<f32>, softness: f32) -> f32 {
-    let bits = GLYPHS[min(index, 7u)];
-    // Nearest dot centre in the 4x6 matrix.
-    let g = cellUV * vec2<f32>(4.0, 6.0);
-    let cell = clamp(floor(g), vec2<f32>(0.0), vec2<f32>(3.0, 5.0));
-    let bit = u32(cell.y) * 4u + u32(cell.x);
-    let on = f32((bits >> bit) & 1u);
-    // Soft round footprint per dot so the matrix anti-aliases.
-    let d = length(fract(g) - vec2<f32>(0.5));
-    return on * smoothstep(0.52, 0.52 - softness, d);
-}
-
-fn acesFilm(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
-}
-
-fn luma(c: vec3<f32>) -> f32 {
-    return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
+    let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
+    return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dimsI = vec2<i32>(textureDimensions(writeTexture));
-    if (global_id.x >= u32(dimsI.x) || global_id.y >= u32(dimsI.y)) { return; }
+    let pixel = vec2<i32>(global_id.xy);
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
-    let coord = vec2<i32>(global_id.xy);
-    let resolution = vec2<f32>(dimsI);
+    let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
+    let aspect = resolution.x / max(resolution.y, 1.0);
     let time = u.config.x;
-    let aspect = resolution.x / resolution.y;
+    let held = f32(u.zoom_config.w > 0.5);
     let mouse = u.zoom_config.yz;
-    let held = step(0.5, u.zoom_config.w);
-
+    let prev = textureLoad(dataTextureC, pixel, 0);
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // ── Params ───────────────────────────────────────────────────────────────
-    let cells = mix(40.0, 160.0, clamp(u.zoom_params.x, 0.0, 1.0));
-    let waveSpeed = mix(4.0, 16.0, clamp(u.zoom_params.y, 0.0, 1.0)) * (1.0 + mids * 0.35);
-    let tintMix = clamp(u.zoom_params.z, 0.0, 1.0);
-    let persistence = mix(0.55, 0.94, clamp(u.zoom_params.w, 0.0, 1.0));
+    let intensity = u.zoom_params.x;
+    let speed = u.zoom_params.y;
+    let scale = u.zoom_params.z;
+    let detail = u.zoom_params.w;
 
-    // ── Structure 2: dispersive multi-front wave field ───────────────────────
-    // Ring spacing is banded by the FFT: each horizontal band gets its own bin.
-    let bandIdx = u32(clamp(uv.y * 8.0, 0.0, 7.999));
-    let band = plasmaBuffer[bandIdx + 1u].x;
-    let waveNumber = 20.0 + band * 26.0 + bass * 10.0;
+    let uvA = vec2<f32>(uv.x * aspect, uv.y);
+    let mouseA = vec2<f32>(mouse.x * aspect, mouse.y);
+    let dist = distance(uvA, mouseA);
+    let waveSpeed = mix(4.0, 14.0, speed) * (1.0 + bass * 0.4);
+    let pulse = sin(dist * mix(10.0, 28.0, scale) - time * waveSpeed);
+    let asciiAmt = smoothstep(0.15, 0.72, pulse) * (0.45 + intensity * 0.7 + held * 0.2);
 
-    let uv_aspect = uv * vec2<f32>(aspect, 1.0);
-    let mouse_aspect = mouse * vec2<f32>(aspect, 1.0);
-    let dist = distance(uv_aspect, mouse_aspect);
+    let cells = mix(36.0, 110.0, scale) * (1.0 + treble * 0.15);
+    let local = fract(uv * cells);
+    let grid = floor(uv * cells) / cells;
+    let src = textureSampleLevel(readTexture, u_sampler, clamp(grid + 0.5 / cells, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let lum = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Continuous pointer pulse — holding the button raises its amplitude.
-    var pulse = sin(dist * waveNumber - time * waveSpeed) * (0.55 + held * 0.45);
+    let box = 1.0 - smoothstep(0.08, 0.16, min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y)));
+    let cross = 1.0 - smoothstep(0.04, 0.11, min(abs(local.x - local.y), abs(local.x - (1.0 - local.y))));
+    let dotm = 1.0 - smoothstep(0.12 + detail * 0.12, 0.28, distance(local, vec2<f32>(0.5)));
+    let fill = smoothstep(0.55, 0.92, lum);
+    let glyph = mix(mix(dotm, cross, smoothstep(0.18, 0.55, lum)), mix(box, fill, fill), smoothstep(0.45, 0.82, lum));
 
-    // Bounded click fronts with a trailing wake.
-    var frontGlow = 0.0;
+    let conveyor = smoothstep(0.1, 0.0, abs(fract(grid.x * cells * 0.08 - time * (1.8 + speed * 2.4)) - 0.5));
+    let packets = smoothstep(0.09, 0.0, abs(fract(dist * mix(6.0, 16.0, scale) - time * (2.2 + bass * 2.0)) - 0.5));
+
+    var click = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let rp = u.ripples[i];
         let age = time - rp.z;
-        if (age >= 0.0 && age < 2.8) {
-            let rDist = distance(uv_aspect, rp.xy * vec2<f32>(aspect, 1.0));
-            let radius = age * 0.6;
-            let front = rDist - radius;
-            let decay = exp(-age * 1.1);
-            // Crest plus a wake that trails behind the front.
-            pulse += cos(front * waveNumber) * exp(-front * front * 24.0) * decay * 1.2;
-            frontGlow += exp(-front * front * 320.0) * decay;
+        if (rp.z > 0.0 && age >= 0.0 && age < 1.4) {
+            click = max(click, exp(-abs(distance(uv, rp.xy) - age * 0.52) * 70.0) * (1.0 - age / 1.4));
         }
     }
-    frontGlow = min(frontGlow, 1.6);
-    pulse = clamp(pulse, -1.5, 1.5);
 
-    // ── ASCII region ─────────────────────────────────────────────────────────
-    let asciiMask = smoothstep(0.42, 0.58, pulse);
+    let hue = fract(lum * 1.4 + time * 0.11 + mids * 0.25 + dist * 0.35);
+    let slick = hsv2rgb(vec3<f32>(hue, 0.78, 0.95));
+    let plain = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    var color = mix(plain.rgb, src.rgb * glyph * slick * 1.25, asciiAmt);
+    color += slick * (conveyor * 0.22 + packets * 0.28 + click * 0.55) * (0.35 + intensity);
+    color *= 1.0 + bass * 0.12 + held * 0.1 + click * 0.25;
 
-    // Structure 1: box-averaged cell luminance → glyph index → dot matrix.
-    let cellSize = 1.0 / cells;
-    let cellOrigin = floor(uv * cells) / cells;
-    let q = cellSize * 0.25;
-    let s0 = textureSampleLevel(readTexture, u_sampler, cellOrigin + vec2<f32>(q, q), 0.0);
-    let s1 = textureSampleLevel(readTexture, u_sampler, cellOrigin + vec2<f32>(3.0 * q, q), 0.0);
-    let s2 = textureSampleLevel(readTexture, u_sampler, cellOrigin + vec2<f32>(q, 3.0 * q), 0.0);
-    let s3 = textureSampleLevel(readTexture, u_sampler, cellOrigin + vec2<f32>(3.0 * q, 3.0 * q), 0.0);
-    let cellColor = (s0 + s1 + s2 + s3) * 0.25;
-    let cellLuma = luma(cellColor.rgb);
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.28 + luma * 0.62 + asciiAmt * 0.18 + click * 0.2, 0.0, 1.0);
+    let trail = vec4<f32>(mix(color, prev.rgb * 0.86, 0.28), mix(alpha, prev.a * 0.86, 0.28));
+    let depth = textureLoad(readDepthTexture, pixel, 0).r;
+    let outDepth = clamp(depth + glyph * asciiAmt * 0.08 + click * 0.06, 0.0, 1.0);
 
-    // Crest brightness pushes the cell up the ramp, so the wave "burns in".
-    let ramp = clamp(cellLuma * (1.0 + asciiMask * 0.5 + treble * 0.25), 0.0, 1.0);
-    let glyphIndex = u32(ramp * 7.999);
-    let localUV = fract(uv * cells);
-    let softness = clamp(cells / resolution.y * 2.5, 0.04, 0.35);
-    let ink = glyphInk(glyphIndex, localUV, softness);
-
-    // Terminal phosphor colour, tinted back toward the source by Param3.
-    let phosphor = vec3<f32>(0.15, 1.0, 0.35);
-    let glyphColor = mix(phosphor * (0.35 + cellLuma), cellColor.rgb, tintMix) * ink;
-
-    // ── Composite: source outside the wave, glyphs inside ────────────────────
-    // Chromatic split scales with the crest, so fronts fringe as they pass.
-    let ca = (0.0015 + treble * 0.004) * (asciiMask + frontGlow);
-    let dir = normalize(uv_aspect - mouse_aspect + vec2<f32>(1e-6)) / vec2<f32>(aspect, 1.0);
-    let pR = textureSampleLevel(readTexture, u_sampler, uv + dir * ca, 0.0).r;
-    let pG = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let pB = textureSampleLevel(readTexture, u_sampler, uv - dir * ca, 0.0).b;
-    let plain = vec3<f32>(pR, pG.g, pB);
-
-    var color = mix(plain * (1.0 - asciiMask * 0.85), glyphColor, asciiMask);
-
-    // Front crest glows green-white; the wave edge stays legible on dark frames.
-    color += vec3<f32>(0.35, 1.0, 0.5) * frontGlow * (0.5 + bass * 0.7);
-
-    // ── Phosphor persistence ─────────────────────────────────────────────────
-    let prev = textureLoad(dataTextureC, coord, 0);
-    color = max(color, prev.rgb * persistence);
-
-    color = acesFilm(color);
-
-    // ── Alpha ────────────────────────────────────────────────────────────────
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let inkPresence = max(ink * asciiMask, frontGlow * 0.7);
-    let base = mix(0.7, 1.0, luma(color));
-    let alpha = clamp(mix(base * 0.8, base, depth) + inkPresence * 0.25, 0.0, 1.0);
-
-    let outColor = vec4<f32>(color, alpha);
-    textureStore(writeTexture, coord, outColor);
-    textureStore(dataTextureA, coord, outColor);
-
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, trail);
+    textureStore(dataTextureA, pixel, trail);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
 }

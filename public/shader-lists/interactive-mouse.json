@@ -2621,35 +2621,44 @@
     "id": "data-stream",
     "name": "Digital Stream",
     "url": "shaders/data-stream.wgsl",
-    "description": "Digital matrix-style data stream disrupted by mouse interaction. Audio-reactive bass pulses accelerate the flow.",
+    "description": "Matrix data strips with hex glyphs, spring wake, cyber palette, capped click ripples, held turbulence boost, regional FFT strip bins, and ACES output.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "speed",
         "name": "Flow Speed",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "density",
         "name": "Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "turbulence",
         "name": "Turbulence",
         "default": 0.8,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "glow",
         "name": "Digital Glow",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "updatedParams": [
@@ -2691,7 +2700,10 @@
       "glitch",
       "audio-reactive",
       "upgraded-rgba",
-      "click-reactive"
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map"
     ],
     "tags": [
       "digital",
@@ -2709,35 +2721,78 @@
     "id": "digital-compression",
     "name": "Digital Compression",
     "url": "shaders/digital-compression.wgsl",
-    "description": "Simulates digital artifacts and compression blocks. Mouse controls the clear focus area.",
+    "description": "YUV block crush with spring focus window, held widen, capped ripples, block-edge geometry, exact C artifact memory, and ACES tone map.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "blockSize",
         "name": "Block Size",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "colorDepth",
         "name": "Bit Crush",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "artifacts",
         "name": "Artifacts",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "focus",
         "name": "Focus Radius",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bit Crush",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Artifacts",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Focus Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
@@ -2745,12 +2800,20 @@
       "glitch",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "compression",
+      "blocky",
+      "yuv"
+    ],
+    "updated": true
   },
   {
     "id": "digital-haze",
@@ -2759,7 +2822,17 @@
       "mouse-driven",
       "audio-reactive",
       "click-reactive",
-      "upgraded-rgba"
+      "held-drag",
+      "upgraded-rgba",
+      "spring-cursor",
+      "aces-tone-map",
+      "hex-overlay",
+      "iridescent-haze"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -2805,9 +2878,13 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "fog",
+      "haze",
+      "hex"
     ],
     "name": "Digital Haze",
+    "description": "Beer-Lambert digital haze with hex grid overlay, iridescent scatter, sprung clear window, capped click pulses, and per-cell FFT static.",
     "updatedParams": [
       {
         "index": 0,
@@ -2950,35 +3027,44 @@
     "name": "Digital Rain Reveal",
     "category": "interactive-mouse",
     "url": "shaders/digital-reveal.wgsl",
-    "description": "Hides the image behind chromatic digital rain; move the mouse to reveal content. Audio shifts rain colors (bass green, treble white). Depth makes near objects reveal faster.",
+    "description": "Matrix rain with glyph shapes hides the image; sprung brush reveals content. Held enlarges brush, clicks add capped ripples, regional FFT colors, depth-weighted reveal, ACES composite.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "density",
         "name": "Rain Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "size",
         "name": "Reveal Size",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "fade",
         "name": "Trail Fade",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "speed",
         "name": "Rain Speed",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "features": [
@@ -2987,7 +3073,12 @@
       "depth-aware",
       "upgraded-rgba",
       "temporal-digital-rain",
-      "chromatic-drops"
+      "chromatic-drops",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "glyph-shapes",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -7524,7 +7615,7 @@
     "id": "magnetic-luma-sort",
     "name": "Magnetic Luma Sort",
     "url": "shaders/magnetic-luma-sort.wgsl",
-    "description": "Pixels are magnetically pulled by the cursor based on brightness, creating trails.",
+    "description": "Luma-gated magnetic sorting with a guarded spring, canonical plasma bands and read-only FFT voices, exact-load trail advection, bounded click vortices, ACES, and semantic trail alpha.",
     "params": [
       {
         "id": "pullStrength",
@@ -7557,7 +7648,13 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal",
+      "exact-history",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",
@@ -11571,7 +11668,7 @@
     "id": "prismatic-feedback-loop",
     "name": "Prismatic Feedback Loop (Pass 2)",
     "url": "shaders/prismatic-feedback-loop.wgsl",
-    "description": "Consumes displacement from Pass 1 to create chromatic aberration, temporal feedback, and glowing halos.",
+    "description": "Raw prismatic accumulation with exact feedback loads, sprung held-pointer deformation, bounded click bursts, live plasma dispersion, ACES output glow, semantic alpha, and source-depth pass-through.",
     "params": [
       {
         "id": "feedbackAmount",
@@ -11609,7 +11706,13 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "exact-history",
+      "raw-state-feedback",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",
@@ -14609,16 +14712,14 @@
     "id": "sphere-projection",
     "name": "Sphere Projection",
     "url": "shaders/sphere-projection.wgsl",
-    "description": "Analytic image-mapped sphere with moving latitude bands and lighting, held zoom pressure, bounded click fronts, three-band audio, and spectral highlights.",
+    "description": "Equirectangular sphere with meridians/parallels, held zoom, bounded click shells, audio spin, and liquid-rainbow lighting. Display RGBA in A.",
     "features": [
       "mouse-driven",
       "3d",
       "audio-reactive",
-      "continuous-motion",
-      "held-pointer",
-      "click-reactive",
-      "psychedelic-color",
-      "depth-aware"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "params": [
       {
@@ -14668,39 +14769,46 @@
     ],
     "updatedParams": [
       {
-        "index": 0,
+        "id": "zoom",
         "name": "Sphere Zoom",
         "default": 0.6,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Zoom level of the sphere projection"
       },
       {
-        "index": 1,
+        "id": "rotation",
         "name": "Spin Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Auto-rotation speed of the sphere"
       },
       {
-        "index": 2,
+        "id": "light",
         "name": "Lighting",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of directional lighting"
       },
       {
-        "index": 3,
+        "id": "ambient",
         "name": "Ambient Light",
         "default": 0.3,
         "min": 0,
         "max": 0.6,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Ambient light level on the sphere"
       }
-    ],
-    "updated": true
+    ]
   },
   {
     "id": "split-dimension",

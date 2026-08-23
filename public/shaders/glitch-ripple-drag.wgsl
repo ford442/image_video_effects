@@ -1,9 +1,5 @@
-// ═══════════════════════════════════════════════════════════════
-//  Glitch Ripple Drag — Batch 60
-//  Liquid glitch smear: spring cursor, capped click ripples, held
-//  drag boost, quantized wave geometry, exact C feedback, ACES + audio.
-// ═══════════════════════════════════════════════════════════════
-
+// Glitch Ripple Drag — Batch 68 exact display-history upgrade.
+// A owns semantic display RGBA; B is intentionally unwritten.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -17,142 +13,70 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-const PI: f32 = 3.14159265359;
-
-fn hash21(p: vec2<f32>) -> f32 {
-  var n = dot(p, vec2<f32>(127.1, 311.7));
-  return fract(sin(n) * 43758.5453123);
-}
-
-fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
-  let len = length(v);
-  return select(v / len, vec2<f32>(0.0), len < 0.001);
-}
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+  return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-  let coord = vec2<i32>(global_id.xy);
-  let dims = vec2<i32>(i32(resolution.x), i32(resolution.y));
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
-  let time = u.config.x;
-  let held = u.zoom_config.w > 0.5;
-  let mouse = u.zoom_config.yz;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw; let pixel = vec2<i32>(gid.xy);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+  let uv = (vec2<f32>(pixel) + 0.5) / res; let time = u.config.x;
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let dims = vec2<i32>(textureDimensions(dataTextureC));
+  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
+  let dragStrength = u.zoom_params.x * 0.05 * (1.0 + bass * 0.8);
+  let waveFreq = 10.0 + u.zoom_params.y * 40.0 + mids * 8.0;
+  let persistence = 0.9 + u.zoom_params.z * 0.099;
+  let glitchAmt = u.zoom_params.w * (1.0 + treble * 0.6);
 
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var origin = rawMouse; var velocity = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) { origin = vec2<f32>(extraBuffer[133], extraBuffer[134]); velocity = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+  if (!initialized) { origin = rawMouse; velocity = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 11.0; let springDecay = exp(-omega * dt); let delta = origin - rawMouse; let temp = (velocity + omega * delta) * dt;
+  velocity = (velocity - omega * temp) * springDecay; origin = rawMouse + (delta + temp) * springDecay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) { extraBuffer[133] = origin.x; extraBuffer[134] = origin.y; extraBuffer[135] = velocity.x; extraBuffer[136] = velocity.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
 
-  let dragStrength = u.zoom_params.x * 0.06 * (1.0 + bass * 0.3) * select(1.0, 1.5, held);
-  let waveFreq = 10.0 + u.zoom_params.y * 45.0 + treble * 8.0;
-  let persistence = 0.9 + (u.zoom_params.z * 0.099);
-  let glitchAmt = u.zoom_params.w;
-  let alphaFade = 1.0 - (u.zoom_params.z * 0.05);
-
-  var smoothMouse = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring) {
-    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      springPos = mouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 10.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
-  }
-
-  let uvAspect = uv * vec2<f32>(aspect, 1.0);
-  let mouseAspect = vec2<f32>(smoothMouse.x * aspect, smoothMouse.y);
-  let dVec = uvAspect - mouseAspect;
-  let dist = length(dVec);
-
-  var waveMask = 0.0;
-  let wave = sin(dist * waveFreq - time * 5.5);
-  waveMask = smoothstep(0.45, 0.85, wave) * smoothstep(1.0, 0.0, dist * 1.8);
-
+  let deltaMouse = (uv - origin) * aspectVec; let mouseDist = length(deltaMouse);
+  var direction = select(vec2<f32>(0.0), deltaMouse / mouseDist, mouseDist > 0.001);
+  let angle = atan2(direction.y, direction.x);
+  let quant = 3.14159265 / (4.0 + glitchAmt * 8.0);
+  direction = mix(direction, vec2<f32>(cos(floor(angle / quant) * quant), sin(floor(angle / quant) * quant)), clamp(glitchAmt, 0.0, 1.0));
+  let heldWave = smoothstep(0.62, 0.9, sin(mouseDist * waveFreq - time * (5.0 + mids * 2.0))) * smoothstep(0.9, 0.0, mouseDist) * (0.3 + 0.7 * u.zoom_config.w);
+  var displacement = direction / aspectVec * dragStrength * heldWave + velocity * heldWave * 0.16;
+  var clickEnergy = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
-  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
-    let rp = u.ripples[ri];
-    let age = time - rp.z;
-    if (age >= 0.0 && age < 1.4) {
-      let rAspect = vec2<f32>(rp.x * aspect, rp.y);
-      let rDist = length(uvAspect - rAspect);
-      let ring = abs(rDist - age * 0.35);
-      waveMask += smoothstep(0.04, 0.0, ring) * (1.0 - age * 0.7);
-    }
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age < 0.0 || age > 2.2) { continue; }
+    let deltaClick = (uv - ripple.xy) * aspectVec; let dist = length(deltaClick);
+    let front = exp(-pow((dist - age * 0.34) * 32.0, 2.0)) * (1.0 - age / 2.2);
+    let dir = select(vec2<f32>(0.0), deltaClick / dist, dist > 0.001);
+    displacement += dir / aspectVec * front * dragStrength * 1.8;
+    clickEnergy += front;
   }
 
-  var dir = safeNormalize(dVec);
-  if (glitchAmt > 0.0) {
-    let angle = atan2(dir.y, dir.x);
-    let quant = PI / (4.0 + glitchAmt * 10.0);
-    let qAngle = floor(angle / quant) * quant;
-    dir = vec2<f32>(cos(qAngle), sin(qAngle));
-  }
-
-  let displacement = dir * dragStrength * waveMask;
-  let sampleCoord = clamp(coord - vec2<i32>(displacement * resolution), vec2<i32>(0), dims - vec2<i32>(1));
-
-  var history = textureLoad(dataTextureC, sampleCoord, 0);
-  let inputSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-  if (history.a < 0.1) {
-    history = inputSample;
-  }
-
-  var finalColor = mix(inputSample.rgb, history.rgb, persistence);
-  var finalAlpha = mix(inputSample.a, history.a * alphaFade, persistence);
-
-  if (glitchAmt > 0.35 && waveMask > 0.08) {
-    let rCoord = clamp(sampleCoord + vec2<i32>(i32(resolution.x * 0.005), 0), vec2<i32>(0), dims - vec2<i32>(1));
-    let bCoord = clamp(sampleCoord - vec2<i32>(i32(resolution.x * 0.005), 0), vec2<i32>(0), dims - vec2<i32>(1));
-    let r = textureLoad(dataTextureC, rCoord, 0).r;
-    let b = textureLoad(dataTextureC, bCoord, 0).b;
-    finalColor = vec3<f32>(r, finalColor.g, b);
-    finalAlpha = finalAlpha * 0.97;
-    let glitchTint = vec3<f32>(1.1, 0.85, 1.2) * (0.9 + mids * 0.15);
-    finalColor = mix(finalColor, finalColor * glitchTint, glitchAmt * waveMask * 0.4);
-  }
-
-  let band = min(u32(uv.x * 8.0), 7u);
-  finalColor += vec3<f32>(0.05, 0.02, 0.08) * plasmaBuffer[band + 1u].x * waveMask * 0.3;
-
-  finalAlpha = clamp(finalAlpha, 0.1, 1.0);
-  finalColor = acesToneMap(finalColor * (0.95 + bass * 0.08));
-  let output = vec4<f32>(finalColor, finalAlpha);
-
-  textureStore(writeTexture, coord, output);
-  textureStore(dataTextureA, coord, output);
-
-  let depth = textureLoad(readDepthTexture, coord, 0).r;
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let historyUV = clamp(uv - displacement, vec2<f32>(0.0), vec2<f32>(1.0));
+  let history = textureLoad(dataTextureC, historyCoord(historyUV, dims), 0);
+  let redHistory = textureLoad(dataTextureC, historyCoord(clamp(historyUV + vec2<f32>(glitchAmt * 0.006, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), dims), 0).r;
+  let blueHistory = textureLoad(dataTextureC, historyCoord(clamp(historyUV - vec2<f32>(glitchAmt * 0.006, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), dims), 0).b;
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let prior = select(source, history, history.a > 0.001);
+  var trailRgb = mix(source.rgb, prior.rgb, persistence);
+  trailRgb = mix(trailRgb, vec3<f32>(redHistory, trailRgb.g, blueHistory), clamp(glitchAmt * (heldWave + clickEnergy), 0.0, 1.0));
+  let trailEnergy = clamp(length(trailRgb - source.rgb) + heldWave + clickEnergy * 0.6, 0.0, 1.0);
+  let alpha = clamp(source.a + (1.0 - source.a) * trailEnergy, 0.0, 1.0);
+  let display = vec4<f32>(acesToneMap(max(trailRgb, vec3<f32>(0.0))), alpha);
+  textureStore(dataTextureA, pixel, display); textureStore(writeTexture, pixel, display);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

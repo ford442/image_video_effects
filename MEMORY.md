@@ -138,6 +138,38 @@
   audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
   green. Real-GPU visual QA remains external.
 
+## 2026-08-23 — Gemini shader-upgrade branch is unclosed WIP
+
+- `new-shader-upgrades` is 10 commits ahead of `main`, pushed through
+  `20d71453`; it changes 58 unique committed shaders and leaves Glass Wall plus
+  Holographic Flicker dirty.
+- Treat it as salvageable input, not an accepted batch: no briefs/coordinator
+  review or complete validation were recorded, 39 edits share a generic overlay,
+  seven temporary rewrite scripts were committed, and at least two committed
+  shaders plus one dirty shader use undefined `saturate`.
+- Structural binding/workgroup and strict extraBuffer checks are clean, but Naga
+  and real-GPU proof are absent. Before continuation, audit interaction/ripple
+  semantics, saved-slider liveness, exact C feedback reads, and distinct effect
+  identity across the whole branch.
+
+## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
+
+- User changed cohort selection policy: use an objective backlog rule such as
+  smallest codewise or missing params, not adjacency to prior batches.
+- Applied rule: eight smallest cataloged single-pass compute WGSL files with
+  exactly four saved params but no `updatedParams`, excluding declared
+  multipass and pass-ID files. Selected Triangle Mosaic, Polka Wave, Sphere
+  Projection, Foil Impression, Bio Touch, Hypnotic Spiral, Spirograph Reveal,
+  and Voronoi Chaos (tracker #491–498).
+- Preserved params 8/8; added continuous geometry, held/click response, spectral
+  color, three-band audio, truthful metadata, and aligned `updatedParams`.
+  Triangle Mosaic now writes display RGBA to A to match its existing exact C
+  feedback. Repaired Hypnotic normalized pointer/click coordinates and event cap,
+  Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
+- Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
+  audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
+  green. Real-GPU visual QA remains external.
+
 ## 2026-08-23 — Shader upgrade Batch 57 — KINETIC IMAGE TRANSFORMATIONS
 
 - Upgraded tracker #483–490: Pixel Sort Radial, Mirror Drag, Psychedelic Noise

@@ -3,7 +3,7 @@
   "name": "Neural Synapse Web",
   "url": "shaders/neural-synapse-web.wgsl",
   "category": "generative",
-  "description": "Pulsing neural network nodes connected by synaptic signal lines, with audio-triggered pulses traveling connections.",
+  "description": "Pulsing neural nodes and synaptic signals with guarded six-float spring state, uniform bounded click waves, live plasma audio, exact display history, ACES, semantic alpha, and source depth.",
   "tags": [
     "generative",
     "neural",
@@ -19,7 +19,12 @@
     "upgraded-rgba",
     "temporal",
     "chromatic",
-    "depth-aware"
+    "depth-aware",
+    "exact-history",
+    "spring-interaction",
+    "click-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "params": [
     {

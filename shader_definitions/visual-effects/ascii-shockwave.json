@@ -2,28 +2,19 @@
   "id": "ascii-shockwave",
   "name": "ASCII Shockwave",
   "url": "shaders/ascii-shockwave.wgsl",
-  "description": "Dot-matrix terminal blast fronts: an eight-glyph 4x6 ROM is indexed by box-averaged cell luminance, and the ASCII region is the union of a continuous pointer pulse with every bounded click front, each expanding at its own rate with a trailing wake. Ring spacing is banded by the FFT, crests split chromatically, and glyphs leave a decaying phosphor trace.",
+  "description": "Matrix glyph cells with traveling shock packets, held-pointer ASCII density, bounded click rings, and oil-slick phosphor color. Display RGBA is packed in A.",
   "features": [
     "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "depth-aware",
     "held-drag",
     "bounded-click-ripples",
-    "audio-reactive",
-    "per-band-fft",
-    "depth-aware",
-    "upgraded-rgba",
-    "semantic-alpha",
-    "aces",
-    "dot-matrix-glyphs",
-    "chromatic-aberration",
-    "phosphor-persistence"
+    "glyph-cells"
   ],
   "tags": [
     "filter",
-    "image-processing",
-    "ascii",
-    "shockwave",
-    "terminal",
-    "glyph"
+    "image-processing"
   ],
   "params": [
     {
@@ -62,39 +53,35 @@
   "updatedParams": [
     {
       "id": "param1",
-      "name": "Glyph Density",
+      "name": "Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Character cells across the frame (40\u2013160)."
+      "step": 0.01
     },
     {
       "id": "param2",
-      "name": "Wave Speed",
+      "name": "Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Propagation rate of the pointer pulse and click fronts."
+      "step": 0.01
     },
     {
       "id": "param3",
-      "name": "Source Tint",
+      "name": "Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Blend from terminal phosphor green toward the source colour."
+      "step": 0.01
     },
     {
       "id": "param4",
-      "name": "Phosphor Persistence",
+      "name": "Detail",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Decay rate of the glyph afterimage through dataTextureC."
+      "step": 0.01
     }
   ]
 }

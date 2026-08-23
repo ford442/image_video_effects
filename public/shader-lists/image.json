@@ -1940,7 +1940,12 @@
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
-    "description": "Brown-Conrady digital lens with continuous caustic zoom streaks, spectral radial runners, held gravity-well focus, bounded click iris waves, chromatic dispersion, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+    "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion, caustic streaks, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "updated": true,
     "params": [
       {
@@ -1948,58 +1953,66 @@
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "dispersion",
         "name": "Dispersion",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "vignette",
         "name": "Vignette",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "focus",
         "name": "Focus Point",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "updatedParams": [
       {
-        "id": "distortion",
+        "index": 0,
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "dispersion",
+        "index": 1,
         "name": "Dispersion",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "vignette",
+        "index": 2,
         "name": "Vignette",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "focus",
+        "index": 3,
         "name": "Focus Point",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
@@ -2014,7 +2027,9 @@
       "alpha-layered",
       "luminance-key",
       "continuous-motion",
-      "bounded-click-ripples"
+      "bounded-click-ripples",
+      "spring-cursor",
+      "held-drag"
     ],
     "tags": [
       "filter",
@@ -2895,10 +2910,21 @@
   {
     "id": "glitch-reveal",
     "name": "Glitch Reveal",
-    "description": "A chaotic digital noise field that is stabilized and clarified by the proximity of the cursor.",
+    "description": "Chaotic block-scatter noise field stabilized by a sprung cursor reveal window; held widens radius, clicks add capped ripples, exact C feedback, ACES composite.",
     "url": "shaders/glitch-reveal.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "held-drag",
+      "upgraded-rgba",
+      "spring-cursor",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -2906,34 +2932,76 @@
         "name": "Block Size",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "scatter",
         "name": "Scatter Amount",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "radius",
         "name": "Reveal Radius",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "speed",
         "name": "Jitter Speed",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Scatter Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reveal Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Jitter Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "glitch",
+      "reveal",
+      "spring-cursor"
+    ],
+    "updated": true
   },
   {
     "id": "glitch-ripple-drag",
@@ -2953,6 +3021,50 @@
       16,
       16,
       1
+    "description": "Exact-load liquid glitch feedback with plasma-driven drag, a sprung origin, bounded click ripple trains, chromatic tearing, ACES display output, and semantic trail alpha.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "exact-history",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Drag Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ripple Freq",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Persistence",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glitch Factor",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {

@@ -2,7 +2,7 @@
   "id": "magnetic-luma-sort",
   "name": "Magnetic Luma Sort",
   "url": "shaders/magnetic-luma-sort.wgsl",
-  "description": "Pixels are magnetically pulled by the cursor based on brightness, creating trails.",
+  "description": "Luma-gated magnetic sorting with a guarded spring, canonical plasma bands and read-only FFT voices, exact-load trail advection, bounded click vortices, ACES, and semantic trail alpha.",
   "params": [
     {
       "id": "pullStrength",
@@ -35,7 +35,13 @@
   ],
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal",
+    "exact-history",
+    "spring-interaction",
+    "click-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "filter",
