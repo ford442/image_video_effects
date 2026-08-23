@@ -60,6 +60,11 @@ _Learn about the person you're helping. Update this as you go._
   painterly-oil-bilateral, and cyber-ripples-coupled. Apply the canonical
   exact-C / A-only / ACES / semantic-alpha / three-band-audio /
   `extraBuffer[133..138]` / full pointer interaction contract and Naga proof.
+- **Main reconcile (2026-08-23):** Merged diverged tips so `main` carries
+  Batch 70 fluid/slime, generative named-params #1167, and Batch 67
+  fast-motion/psychedelic (#1170). Focused Naga/bindgroup 25/25 on the unioned
+  cohorts; real-GPU QA remains external.
+
 - **Completed Batch 70 (2026-08-23):** The requested fluid/paint/reaction/slime
   cohort is upgraded across 17 WGSL members. Chromatographic and Gray-Scott are
   A-only graphs; saved params are exact; Naga 17/17, focused contracts, graph
