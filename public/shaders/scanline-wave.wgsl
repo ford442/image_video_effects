@@ -1,13 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Scanline Wave
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, audio-envelope, treble-sparkle,
-//            temporal-persistence, chromatic-CRT, HDR-color-grading,
-//            ACES-tone-map, IGN-dither, premultiplied-alpha
-//  Complexity: High
-//  Chunks From: scanline-wave, bass_env, temporal-feedback
-//  Created: 2024-01-01
-//  Upgraded: 2026-07-08
+//  Scanline Wave — Batch 62
+//  CRT phosphor aurora: spring cursor, held local distortion, capped
+//  click shockwaves, exact C envelope trail, ACES + premultiplied alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -112,7 +106,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01 = vec2<f32>(pixel) / res;
     let time = u.config.x;
     let mouse = u.zoom_config.yz;
-    let isMouseDown = u.zoom_config.w;
+    let held = u.zoom_config.w > 0.5;
+    let isMouseDown = select(u.zoom_config.w, 1.0, held);
+
+    var smoothMouse = mouse;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[138] > 0.5) {
+      smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+      var springPos = smoothMouse;
+      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+      if (extraBuffer[138] <= 0.5) {
+        springPos = mouse;
+        springVel = vec2<f32>(0.0);
+      } else {
+        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+        let omega = 9.0;
+        let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+        springVel += accel * dt;
+        springPos += springVel * dt;
+      }
+      extraBuffer[133] = springPos.x;
+      extraBuffer[134] = springPos.y;
+      extraBuffer[135] = springVel.x;
+      extraBuffer[136] = springVel.y;
+      extraBuffer[137] = time;
+      extraBuffer[138] = 1.0;
+      smoothMouse = springPos;
+    }
 
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
@@ -131,8 +153,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let drive      = mix(bass, smoothBass, audioMix);
 
     // Mouse proximity boosts local distortion
-    let mouseDist  = distance(uv01, mouse);
-    let mouseBoost = (1.0 - smoothstep(0.0, 0.4, mouseDist)) * (0.5 + isMouseDown * 0.5);
+    let mouseDist  = distance(uv01, smoothMouse);
+    let mouseBoost = (1.0 - smoothstep(0.0, 0.4, mouseDist)) * (0.5 + isMouseDown * 0.5) * select(1.0, 1.3, held);
     let localWave  = waveAmount * audio_gain(drive, mids) * (1.0 + mouseBoost);
 
     var clickWave = 0.0;
