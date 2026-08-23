@@ -72,6 +72,10 @@ function makeMockDevice(pipelineThrows = false): GPUDevice {
     features: new Set<GPUFeatureName>(),
     createShaderModule: jest.fn(() => ({} as GPUShaderModule)),
     createComputePipeline,
+    createTexture: jest.fn((desc: GPUTextureDescriptor) => ({
+      destroy: jest.fn(),
+      format: desc.format,
+    } as unknown as GPUTexture)),
     destroy: jest.fn(),
     addEventListener: jest.fn(),
   } as unknown as GPUDevice;
@@ -222,6 +226,9 @@ describe('webgpuBootProbe', () => {
     const result = await runWebGpuBootProbe(canvas, 1024, 1024);
     expect(result.ok).toBe(true);
     expect(result.handoff?.device).toBeDefined();
+    expect(result.handoff?.formatCapabilities.supportsRgba32FloatStorage).toBe(true);
+    expect(result.handoff?.formatCapabilities.supportsRgba16FloatStorage).toBe(true);
+    expect(result.formatCapabilities?.supportsRgba32FloatStorage).toBe(true);
     expect(result.adapterAttemptLabel).toBe('HighPerformance');
     const crumb = toWebGpuProbeBreadcrumb(result);
     expect(crumb.ok).toBe(true);
