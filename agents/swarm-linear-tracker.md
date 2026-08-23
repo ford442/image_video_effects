@@ -69,6 +69,19 @@
 | 518 | `digital-reveal` | 59 | ✅ Done | WGSL, naga, strict buffers |
 | 519 | `edge-glow-mouse` | 59 | ✅ Done | WGSL, naga, strict buffers |
 | 520 | `ferrofluid` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 521 | `cyber-glitch-hologram` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 522 | `cyber-physical-portal` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 523 | `data-scanner` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 524 | `data-slicer` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 525 | `data-stream` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 526 | `digital-moss` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 527 | `glitch-cathedral` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 528 | `glitch-pixel-sort` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 529 | `glitch-slice-mirror` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 530 | `scanline-cyberpunk` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+
+Batch 66 (10 shaders) — CYBER GLITCH & DATA FX — tracker #521–530. fp128
+base+mantissa math, dual fast-motion structures per shader, full binding contract.
 
 Batch 59 (10 shaders) — CYBER & DIGITAL — tracker #511–520. Merged to main
 2026-08-23. Gate 10/10; notes `swarm-outputs/codex-2026-08-23-b59/`.
