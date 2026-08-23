@@ -6,9 +6,15 @@
     "quantum",
     "cosmic",
     "particle systems",
-    "audio-reactive"
+    "audio-reactive",
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
-  "description": "A towering, slowly rotating cosmic engine composed of interlocking brass-like fractal gears floating in a deep-space nebula, powered by an intensely glowing core of quantum particle systems that spew audio-reactive aether plasma.",
+  "description": "A brass KIFS gear-train run hot and fast around a quantum plasma furnace, with cut teeth and rivet rows carved into every gear and exhaust streaming through a psychedelic spectrum. The spring-smoothed cursor warps a magnetic well through the machine, holding overdrives the spin and pulls the camera in, and clicks touch off detonation rings. Audio now comes from the three plasmaBuffer bands rather than the rippleCount misread.",
   "workgroup_size": [
     16,
     16,

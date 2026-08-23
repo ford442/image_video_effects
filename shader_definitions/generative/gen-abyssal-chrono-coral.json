@@ -9,9 +9,15 @@
     "gravitational",
     "geological-time",
     "audio-reactive",
-    "sediment-bloom"
+    "sediment-bloom",
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
-  "description": "A vast abyssal coral reef drifting through gravitational time. Slow geological growth rings expand over eons. Mids and treble drive bioluminescent pulses. Mouse clicks create sediment disturbance events that trigger sudden bloom explosions across the reef. Gravitational lensing bends light around dense coral structures.",
+  "description": "A vast abyssal coral reef torn along a fast current. Growth rings race instead of creeping, polyp corrugation carves micro-detail into every branch, and bioluminescent nodes pulse through a psychedelic cyan-magenta spectrum driven by mids and treble. The spring-smoothed cursor opens a time-dilation well, holding the button blooms the reef, and clicks raise sediment rings that surge across the structure.",
   "workgroup_size": [
     16,
     16,

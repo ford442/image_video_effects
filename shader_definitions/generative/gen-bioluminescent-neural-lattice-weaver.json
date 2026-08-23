@@ -8,7 +8,14 @@
     "lattice",
     "bioluminescence",
     "neural",
-    "crystalline"
+    "crystalline",
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "audio-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "controls": [
     {
@@ -47,5 +54,47 @@
       "default": 2.0,
       "mapping": "zoom_params.w"
     }
+  ],
+  "description": "An octahedral crystal lattice woven through an organic neural field, firing fast. Hollow shells carry strut greeble, pulses race the pathways at a treble-driven rate, and emission is graded through a psychedelic spectrum. The spring-smoothed cursor is a gravity well that bends the whole structure toward it, holding deepens the pull and draws the camera in, and clicks fire synapse bursts across the net.",
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Synapse Density",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.05
+    },
+    {
+      "index": 1,
+      "name": "Growth Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "index": 2,
+      "name": "Lattice Hardness",
+      "default": 1.0,
+      "min": 0.2,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "index": 3,
+      "name": "Bioluminescence",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.05
+    }
+  ],
+  "supportsDepth": true,
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
   ]
 }
