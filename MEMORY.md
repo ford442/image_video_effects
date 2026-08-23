@@ -15,7 +15,15 @@
   no longer corrupts pixel `(0,0)` with pointer state; Cyber's abstract-literal
   Naga failure is repaired. Real-GPU stability/visual QA remains external.
 
-**Last updated:** 2026-08-23 (remaining liquid core + ferro/fluid cohort + Batch 60)
+
+## 2026-08-23 — Reconciled main: Batch 70 + #1167 + Batch 67 (#1170)
+
+- Merged local Batch 70 fluid/slime with origin named-params #1167, then Batch 67
+  fast-motion/psychedelic ten-pack (#1170). No WGSL conflicts between B70 and B67.
+- Regenerated audits after report conflicts; focused gate 25/25; cohort dead
+  sliders 0. Full-tree dead-slider noise (65 unrelated) left as regenerated truth.
+- User chose main↔origin reconcile only; leftover upgrade remotes left alone.
+
 
 ## 2026-08-23 — Merged shader upgrade branches into main
 
