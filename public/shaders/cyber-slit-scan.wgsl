@@ -50,6 +50,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var mouse = u.zoom_config.yz; // Normalized 0-1
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let tearAmount = u.zoom_params.w;
 
     // Slit Source X position determined by mouse X
     // Default to center if mouse not active
@@ -74,7 +76,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Pixel at (width-1, y) takes value from Video(slitX, y).
 
     // Scroll Speed Control (skip pixels to go faster?)
-    let speed = 1u + u32(u.zoom_params.x * 5.0); // 1 to 6 pixels per frame
+    let scanHead = 0.5 + 0.5 * sin(time * (1.0 + u.zoom_params.x * 5.0) + f32(gid.y) * 0.025);
+    let speed = 1u + u32(clamp(u.zoom_params.x + scanHead * 0.12 + audio.x * 0.1, 0.0, 1.0) * 5.0);
 
     if (gid.x >= width - speed) {
         // This is the "fresh" zone at the right edge.
@@ -101,7 +104,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         hsv.z = min(hsv.z * 1.1, 1.0); // Brightness boost
 
         // Shift hue based on mouse Y
-        hsv.x = fract(hsv.x + mouse.y * 0.5);
+        hsv.x = fract(hsv.x + u.zoom_params.z + mouse.y * 0.5 + audio.y * 0.12);
 
         outputColor = vec4<f32>(hsv2rgb(hsv), color.a);
 
@@ -112,10 +115,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Since we are using textureLoad or integer coordinates, we need to be careful.
         // Using textureSample with UV is easier.
 
-        let uvHistory = vec2<f32>(f32(gid.x + speed) / dims.x, f32(gid.y) / dims.y);
+        let diagonal = sin((f32(gid.x + gid.y) * 0.035) - time * 5.0) * tearAmount * (2.0 + audio.z * 8.0);
+        let heldBend = select(0.0, (mouse.x - f32(gid.x) / dims.x) * 18.0 * tearAmount, u.zoom_config.w > 0.5);
+        var clickKick = 0.0;
+        let rippleCount = min(u32(u.config.y), 50u);
+        for (var i = 0u; i < rippleCount; i = i + 1u) {
+            let event = u.ripples[i];
+            let age = max(time - event.z, 0.0);
+            let d = length(vec2<f32>(gid.xy) / dims - event.xy);
+            clickKick += exp(-age * 2.0) * exp(-abs(d - age * 0.4) * 55.0) * 12.0;
+        }
+        let sourceY = clamp(i32(gid.y) + i32(diagonal + heldBend + clickKick), 0, i32(height) - 1);
+        let sourceX = min(gid.x + speed, width - 1u);
 
         // Sample from previous frame (dataTextureC)
-        outputColor = textureSampleLevel(dataTextureC, u_sampler, uvHistory, 0.0);
+        outputColor = textureLoad(dataTextureC, vec2<i32>(i32(sourceX), sourceY), 0);
 
         // Slight decay or color shift over time as it scrolls?
         // Let's keep it clean for a true slit-scan, maybe just a tiny bit of fade if desired.

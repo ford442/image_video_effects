@@ -44,9 +44,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let aspect = dims.x / dims.y;
     var mouse = u.zoom_config.yz; // Mouse coordinates
     let time = u.config.x;
+    let intensity = u.zoom_params.x;
+    let motionSpeed = mix(0.15, 3.5, u.zoom_params.y);
+    let gridScale = mix(5.0, 32.0, u.zoom_params.z);
+    let facetDetail = mix(1.0, 9.0, u.zoom_params.w);
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Hex Grid Config
-    let scale = 15.0; // Hex size
+    let scale = gridScale;
     let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
 
     // Find Hex Center and Local Coords (Staggered Grid approach)
@@ -81,11 +86,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseVec = (mouse - centerUV) * vec2<f32>(aspect, 1.0);
     let dist = length(mouseVec);
 
-    let influence = smoothstep(0.4, 0.0, dist); // 0.4 radius
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.4) * 60.0);
+    }
+    let influence = smoothstep(0.4, 0.0, dist) * (0.35 + intensity * 0.65) + held * smoothstep(0.32, 0.0, dist) + clickFront * 0.35;
 
     // Effects
     // 1. Rotation based on mouse distance
-    let rotAngle = influence * 3.14159; // Rotate up to 180 degrees
+    let rotAngle = influence * 3.14159 + time * motionSpeed * 0.18 + sin(dot(cellID, vec2<f32>(1.7, 2.3)) + time * motionSpeed) * 0.12;
     let rotatedLocal = rotate(localUV, rotAngle);
 
     // 2. Scale/Zoom inside cell
@@ -97,7 +110,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // 3. Chromatic Aberration (Prism effect)
     // Split RGB based on rotation/influence
-    let ca = influence * 0.02;
+    let ca = (0.002 + intensity * 0.025) * (influence + audio.z * 0.25);
 
     // To make it look like a prism, we offset R, G, B in different directions relative to the cell center
     let rOffset = rotate(vec2<f32>(ca, 0.0), rotAngle);
@@ -111,13 +124,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var color = vec3<f32>(r, g, b);
 
     // Edges (Simple distance based edge for hex approximation)
-    let edge = smoothstep(0.45, 0.5, length(localUV));
+    let hexDistance = max(abs(localUV.x) * 0.866025 + abs(localUV.y) * 0.5, abs(localUV.y));
+    let edge = smoothstep(0.42, 0.50, hexDistance);
+    let bevel = pow(clamp(1.0 - hexDistance * 2.0, 0.0, 1.0), facetDetail * 0.35);
+    let spectralBand = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + hexDistance * facetDetail * 8.0 - time * motionSpeed * 2.0);
 
     // Darken edges
     color = mix(color, vec3<f32>(0.0), edge * influence);
 
     // Highlight active cells
-    color += vec3<f32>(0.2, 0.5, 1.0) * influence * 0.2;
+    color += spectralBand * (bevel * 0.18 + clickFront * 0.25 + audio * 0.12) * intensity;
 
     // Preserve the input alpha from the unshifted sample location
     let centerSample = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
@@ -126,5 +142,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(clamp(mix(depth, 0.18 + bevel * 0.72, 0.3 * intensity), 0.0, 1.0), 0.0, 0.0, 0.0));
 }

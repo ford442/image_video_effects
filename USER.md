@@ -107,6 +107,9 @@ Format specification:
 - Thumbnail healthy coverage is still the discoverability bottleneck (~21%);
   #1111 CI gate is partially landed (script exists; deferral design is not).
   Capture stays discrete-GPU workstation work. Do not count black PNGs.
+- Shader upgrade Batch 56 is implemented through tracker #482 as an eight-effect
+  interactive-complexity cohort. Preserve its documented Phosphor Magnifier
+  display-history repack and Vertical Slice Wave state/display separation.
 - CRA→Vite remains deferred. Dead CRA-rewire deps to drop in #1125.
 - Keep thumbnail coverage CI reporting-only until the healthy baseline reaches 50%.
 - Shader upgrade work now includes separately closed Batches 53, 54, and 55

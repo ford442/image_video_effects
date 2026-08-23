@@ -77,22 +77,42 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     amount = pow(amount, 1.0 / hardness);
 
     // Direction for displacement
-    var dir = normalize(distVec);
+    let dir = distVec / max(dist, 1e-5);
+    let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let held = select(0.0, 1.0, click > 0.5);
+    let squeeze = held * exp(-dist * 8.0) * (0.015 + strength * 0.4);
 
     // Chromatic Aberration
-    let rOffset = dir * amount * strength;
-    let bOffset = -dir * amount * strength;
+    var irisShell = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        irisShell += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.36) * 65.0);
+    }
+    let caustic = sin(dist * (35.0 + focusRad * 90.0) - time * (1.0 + audio.y * 4.0)) * amount;
+    let rOffset = dir * (amount * strength + squeeze + irisShell * 0.008);
+    let bOffset = -dir * (amount * strength + squeeze + irisShell * 0.008);
     let gOffset = vec2<f32>(0.0);
 
-    // Simple 3-tap sample for CA
-    let r = textureSampleLevel(readTexture, u_sampler, uv + rOffset, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv + gOffset, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + bOffset, 0.0).b;
+    let blurRadius = blurAmt * amount * (0.002 + audio.x * 0.006);
+    let tangent = vec2<f32>(-dir.y, dir.x);
+    let r = (textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r +
+      textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset + tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r +
+      textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset - tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r) / 3.0;
+    let g = (textureSampleLevel(readTexture, u_sampler, clamp(uv + gOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g +
+      textureSampleLevel(readTexture, u_sampler, clamp(uv + tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g +
+      textureSampleLevel(readTexture, u_sampler, clamp(uv - tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g) / 3.0;
+    let b = (textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b +
+      textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset + tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b +
+      textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset - tangent * blurRadius, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b) / 3.0;
 
     // Vignette
     let vig = 1.0 - amount * 0.3;
 
     var color = vec3<f32>(r, g, b) * vig;
+    color += (0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + caustic * 4.0 + time)) * (abs(caustic) * 0.10 + irisShell * 0.24);
 
     // Show focus ring if clicking
     if (click > 0.5) {
