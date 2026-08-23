@@ -1,72 +1,8 @@
 {
-  "generated": "2026-08-23T01:40:48.232695+00:00",
-  "defs_scanned": 1032,
-  "defs_with_params": 1031,
-  "new_dead_sliders": [
-    {
-      "id": "gen-astro-orrery-blackbody",
-      "category": "advanced-hybrid",
-      "param_id": "complexity",
-      "name": "Ring Complexity",
-      "field": "x"
-    },
-    {
-      "id": "gen-astro-orrery-blackbody",
-      "category": "advanced-hybrid",
-      "param_id": "speed",
-      "name": "Orbital Speed",
-      "field": "y"
-    },
-    {
-      "id": "gen-astro-orrery-blackbody",
-      "category": "advanced-hybrid",
-      "param_id": "glow",
-      "name": "Glow Intensity",
-      "field": "z"
-    },
-    {
-      "id": "gen-astro-orrery-blackbody",
-      "category": "advanced-hybrid",
-      "param_id": "audio",
-      "name": "Audio Reactivity",
-      "field": "w"
-    },
-    {
-      "id": "gen-string-theory-structure",
-      "category": "advanced-hybrid",
-      "param_id": "param1",
-      "name": "Param 1",
-      "field": "x"
-    },
-    {
-      "id": "gen-string-theory-structure",
-      "category": "advanced-hybrid",
-      "param_id": "param2",
-      "name": "Param 2",
-      "field": "y"
-    },
-    {
-      "id": "gen-string-theory-structure",
-      "category": "advanced-hybrid",
-      "param_id": "param3",
-      "name": "Param 3",
-      "field": "z"
-    },
-    {
-      "id": "gen-string-theory-structure",
-      "category": "advanced-hybrid",
-      "param_id": "param4",
-      "name": "Param 4",
-      "field": "w"
-    },
-    {
-      "id": "glitch-pixel-sort",
-      "category": "visual-effects",
-      "param_id": "param4",
-      "name": "Detail",
-      "field": "w"
-    }
-  ],
+  "generated": "2026-08-23T02:38:40.030767+00:00",
+  "defs_scanned": 1030,
+  "defs_with_params": 1030,
+  "new_dead_sliders": [],
   "known_dead_sliders": [
     {
       "id": "alucinate-hdr",
@@ -325,34 +261,6 @@
       "category": "distortion",
       "param_id": "depthModulation",
       "name": "Depth Modulation",
-      "field": "w"
-    },
-    {
-      "id": "fractal-kaleidoscope",
-      "category": "distortion",
-      "param_id": "param1",
-      "name": "Intensity",
-      "field": "x"
-    },
-    {
-      "id": "fractal-kaleidoscope",
-      "category": "distortion",
-      "param_id": "param2",
-      "name": "Speed",
-      "field": "y"
-    },
-    {
-      "id": "fractal-kaleidoscope",
-      "category": "distortion",
-      "param_id": "param3",
-      "name": "Scale",
-      "field": "z"
-    },
-    {
-      "id": "fractal-kaleidoscope",
-      "category": "distortion",
-      "param_id": "param4",
-      "name": "Detail",
       "field": "w"
     },
     {
@@ -627,13 +535,6 @@
       "param_id": "aberration",
       "name": "Aberration",
       "field": "z"
-    },
-    {
-      "id": "pixel-drag-smear",
-      "category": "interactive-mouse",
-      "param_id": "mode",
-      "name": "Mode",
-      "field": "w"
     },
     {
       "id": "rgb-ripple-waves",
@@ -934,34 +835,6 @@
       "category": "post-processing",
       "param_id": "param4",
       "name": "Luma Boost",
-      "field": "w"
-    },
-    {
-      "id": "ascii-flow",
-      "category": "retro-glitch",
-      "param_id": "param1",
-      "name": "Intensity",
-      "field": "x"
-    },
-    {
-      "id": "ascii-flow",
-      "category": "retro-glitch",
-      "param_id": "param2",
-      "name": "Speed",
-      "field": "y"
-    },
-    {
-      "id": "ascii-flow",
-      "category": "retro-glitch",
-      "param_id": "param3",
-      "name": "Scale",
-      "field": "z"
-    },
-    {
-      "id": "ascii-flow",
-      "category": "retro-glitch",
-      "param_id": "param4",
-      "name": "Detail",
       "field": "w"
     },
     {
@@ -1329,12 +1202,6 @@
       "field": "w"
     }
   ],
-  "errors": [
-    {
-      "id": "gen-luminescent-silica-diatom-swarm",
-      "def": "shader_definitions/generative/gen-luminescent-silica-diatom-swarm.json",
-      "error": "json parse: [Errno 2] No such file or directory: '/home/runner/work/image_video_effects/image_video_effects/shader_definitions/generative/gen-luminescent-silica-diatom-swarm.json'"
-    }
-  ],
+  "errors": [],
   "baseline": "reports/dead_sliders_audit_baseline.json"
 }

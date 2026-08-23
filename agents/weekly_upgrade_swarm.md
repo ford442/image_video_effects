@@ -9,6 +9,28 @@
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
 
+### Batch 59 (10 shaders) — 2026-08-23 — CYBER & DIGITAL
+
+Ten cyber/digital shaders (tracker #501–510). Source `params` stay exact.
+Canonical 13 bindings / 16×16×1. B unused. extraBuffer writes only [133..138]
+from pixel (0,0). Capped click ripples, held-pointer, `plasmaBuffer[0].xyz` +
+bins 1..8, exact `textureLoad(dataTextureC)` on feedback paths, ACES + semantic
+alpha. Gate 10/10; dead-slider and extraBuffer audits PASS. Jest 84/84 (550 pass);
+build green. Notes: `swarm-outputs/codex-2026-08-23-b59/`.
+
+| Shader | Lines (approx) | Key changes |
+|--------|----------------|-------------|
+| `cyber-ripples` | 212→215 | Ripple shockwaves, held tighten, FFT band shimmer |
+| `cyber-scan` | 234→250 | textureLoad C, ACES, click bursts, semantic alpha |
+| `cyber-trace` | 187→139 | textureLoad C, ACES composite, semantic alpha |
+| `cyber-organic` | 260→274 | Ripple pulses, held reveal, thin-film rim, unpremult |
+| `cyber-rain` | 205→177 | extraBuffer[0..7] removed; spring [133..138]; EMP ripples |
+| `digital-glitch` | 293→315 | 16×16, C error mask, ripples, held, ACES |
+| `digital-haze` | 198→189 | ACES, held clear, C residue, semantic alpha |
+| `digital-reveal` | 166→138 | textureLoad C, gated spring, ACES, held brush |
+| `edge-glow-mouse` | 136→141 | C trail, ripples, held, mids/treble |
+| `ferrofluid` | 142→123 | ACES, semantic alpha, mids/treble runners |
+
 ### Batch 58C (10 shaders) — 2026-08-23 — HOLOGRAPHIC & QUANTUM
 
 Ten holographic/quantum shaders across advanced-hybrid, visual-effects, image,

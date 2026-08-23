@@ -49,6 +49,19 @@
 | 498 | `interactive-kuwahara` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
 | 499 | `interactive-magnetic-ripple` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
 | 500 | `interactive-origami` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 501 | `cyber-ripples` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 502 | `cyber-scan` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 503 | `cyber-trace` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 504 | `cyber-organic` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 505 | `cyber-rain` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 506 | `digital-glitch` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 507 | `digital-haze` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 508 | `digital-reveal` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 509 | `edge-glow-mouse` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 510 | `ferrofluid` | 59 | ✅ Done | WGSL, naga, strict buffers |
+
+Batch 59 (10 shaders) — CYBER & DIGITAL — 2026-08-23. Branch
+`upgrade/batch-59-cyber-digital`. Gate 10/10; notes `swarm-outputs/codex-2026-08-23-b59/`.
 
 Batch 58E (10 shaders) is a distinct interactive cohort after Batch 57
 (#483–490). Structural gates 10/10 naga+bindgroup. Real-GPU visual QA remains
