@@ -12,45 +12,75 @@
   ],
   "params": [
     {
-      "id": "controls_the_overall_strength_of_the_generated_effect",
-      "name": "Controls the overall strength of the generated effect.",
+      "id": "hud_intensity",
+      "name": "HUD Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Controls the overall strength of the generated effect."
+      "mapping": "zoom_params.x"
     },
     {
-      "id": "controls_animation_and_temporal_evolution_speed",
-      "name": "Controls animation and temporal evolution speed.",
+      "id": "scan_speed",
+      "name": "Scan Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Controls animation and temporal evolution speed."
+      "mapping": "zoom_params.y"
     },
     {
-      "id": "controls_spatial_scale_frequency_or_detail_contrast",
-      "name": "Controls spatial scale, frequency, or detail contrast.",
+      "id": "display_contrast",
+      "name": "Display Contrast",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Controls spatial scale, frequency, or detail contrast."
+      "mapping": "zoom_params.z"
     },
     {
-      "id": "controls_mouse_driven_or_secondary_variation_influence",
-      "name": "Controls mouse-driven or secondary variation influence.",
+      "id": "mouse_influence",
+      "name": "Mouse Influence",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Controls mouse-driven or secondary variation influence."
+      "mapping": "zoom_params.w"
     }
   ],
-  "category": "generative"
+  "category": "generative",
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "HUD Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Scan Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Display Contrast",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

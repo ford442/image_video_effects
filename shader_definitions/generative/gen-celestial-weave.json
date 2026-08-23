@@ -54,5 +54,43 @@
   "updated": true,
   "id": "gen-celestial-weave",
   "url": "shaders/gen-celestial-weave.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "weave_scale",
+      "name": "Weave Scale",
+      "default": 0.46,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "twist",
+      "name": "Twist",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "shimmer",
+      "name": "Shimmer",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "void_depth",
+      "name": "Void Depth",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }
