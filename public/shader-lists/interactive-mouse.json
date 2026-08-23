@@ -13421,28 +13421,36 @@
     "id": "scanline-sorting",
     "name": "Scanline Sorting",
     "url": "shaders/scanline-sorting.wgsl",
-    "description": "Sorts pixels by luminance within a moving scanline band using a tile-wide early-exit and a shared-memory bitonic sort over local 16-pixel segments. Reacts to audio bass for intensified sorting, applies ACES tone mapping, and preserves depth and semantic alpha.",
+    "description": "Bitonic luminance sort within a sprung scan band: held widen, capped click sort bursts, regional FFT palette overlay, ACES tone map, semantic alpha.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "thresh",
         "name": "Sort Threshold",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "width",
         "name": "Scan Width",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "speed",
         "name": "Auto Speed",
         "default": 0,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "dir",
@@ -13453,7 +13461,42 @@
         "labels": [
           "Horizontal",
           "Vertical"
-        ]
+        ],
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sort Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Scan Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Auto Speed",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Dir (H/V)",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
@@ -13464,53 +13507,96 @@
       "chromatic-edge",
       "upgraded-rgba",
       "aces-tone-map",
-      "early-exit",
-      "branchless",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
       "shared-memory",
       "bitonic-sort"
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "sort",
+      "scanline"
+    ],
+    "updated": true
   },
   {
     "id": "scanline-tear",
     "name": "Scanline Tear",
     "url": "shaders/scanline-tear.wgsl",
-    "description": "Authentic analog video interlacing simulation with field-based temporal offset, HSync/VSync modeling, and VHS-style tracking errors.",
+    "description": "NTSC interlace simulation with sprung tracking focus, held boost, capped sync-loss ripples, exact C field memory, regional FFT phase, and ACES output.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "interlaceStrength",
         "name": "Interlace Strength",
-        "description": "Controls interlacing artifact intensity, field persistence, and combing on motion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "hsyncError",
+        "name": "HSync Error",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "vsyncError",
+        "name": "VSync Error",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "colorBurstError",
+        "name": "Color Burst Error",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Interlace Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "hsyncError",
+        "index": 1,
         "name": "HSync Error",
-        "description": "Horizontal sync instability - creates rolling bars and horizontal displacement",
         "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "vsyncError",
+        "index": 2,
         "name": "VSync Error",
-        "description": "Vertical sync roll - creates image rolling and retrace bars",
         "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "colorBurstError",
+        "index": 3,
         "name": "Color Burst Error",
-        "description": "Chroma phase errors causing hue shifts and chroma noise",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -13520,7 +13606,14 @@
     "features": [
       "multi-pass",
       "glitch",
-      "temporal"
+      "temporal",
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "tags": [
       "interlacing",
@@ -13532,12 +13625,19 @@
       "tracking",
       "video",
       "ntsc"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "scanline-wave",
     "name": "Scanline Wave",
     "url": "shaders/scanline-wave.wgsl",
+    "description": "CRT phosphor aurora with sprung cursor, held local distortion, capped click shockwaves, exact C bass-envelope trail, ACES premultiplied alpha. Preserves [premultipliedRGB, drive] A packing.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -13553,9 +13653,9 @@
       "phosphor-aurora",
       "lissajous-bands",
       "bounded-click-ripples",
-      "smooth-sparkles"
+      "spring-cursor",
+      "held-drag"
     ],
-    "description": "Psychedelic phosphor auroras and rainbow Lissajous scan bands with held local distortion, bounded CRT click shockwaves, smooth seeded sparkles, audio-reactive persistence, and preserved [premultipliedRGB, drive] A packing.",
     "updated": true,
     "params": [
       {
@@ -13563,58 +13663,66 @@
         "name": "Wave Amount",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "lineCount",
         "name": "Line Count",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "persistence",
         "name": "Persistence",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "audioMix",
         "name": "Audio Mix",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "updatedParams": [
       {
-        "id": "waveAmount",
+        "index": 0,
         "name": "Wave Amount",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "lineCount",
+        "index": 1,
         "name": "Line Count",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "persistence",
+        "index": 2,
         "name": "Persistence",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "audioMix",
+        "index": 3,
         "name": "Audio Mix",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -13626,9 +13734,6 @@
       "temporal",
       "chromatic",
       "audio-reactive",
-      "audio-envelope",
-      "treble-sparkle",
-      "HDR",
       "ACES",
       "dither"
     ]
