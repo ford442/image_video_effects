@@ -5,9 +5,24 @@
 
 ---
 
-## Recently Completed (492 tracker entries)
+## Recently Completed (502 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 67 (10 shaders) — 2026-08-23 — FAST MOTION / PSYCHEDELIC / HIGH ENERGY
+
+**CLAIMED — work in progress on tracker #521–530.** Parallel agents should take
+#531+. Briefs: `agents/swarm-outputs/claude-2026-08-23-b67/BRIEFS.md`.
+
+Ten shaders: `bubble-chamber`, `crystal-freeze`, `ferrofluid-spikes`,
+`frost-reveal`, `glass-wipes`, `heat-haze`, `holographic-flicker`,
+`liquid-jelly`, `magnetic-dipole`, `radial-blur`.
+
+Creative brief on top of the usual contract: two distinct analytic fast-motion
+techniques per shader (no frame-hash strobing, clamped velocities), vivid
+multi-hue psychedelic colour, and playful high-energy personality.
+
+Results table lands when the batch closes.
 
 ### Batch 64 (10 shaders) — 2026-08-23 — LIQUID / OPTICAL / CRYSTAL / CYBER
 
