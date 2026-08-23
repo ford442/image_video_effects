@@ -20,11 +20,15 @@
     "held-drag",
     "aces-tone-map"
   ],
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "moss_density",
+      "name": "Moss Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -33,8 +37,8 @@
       "description": "RD feed rate"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "growth_rate",
+      "name": "Growth Rate",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -43,8 +47,8 @@
       "description": "RD kill rate"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "color_shift",
+      "name": "Color Shift",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -53,8 +57,8 @@
       "description": "Cross-inhibition mix"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "moisture",
+      "name": "Moisture",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -64,9 +68,37 @@
     }
   ],
   "updatedParams": [
-    { "index": 0, "name": "Feed Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Kill Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Cross Inhibit", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Growth Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "index": 0,
+      "name": "Moss Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Growth Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Moisture",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ]
 }

@@ -15,7 +15,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "dot_size",
       "name": "Dot Size",
       "default": 0.5,
       "min": 0,
@@ -24,7 +24,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "edge_threshold",
       "name": "Edge Threshold",
       "default": 0.5,
       "min": 0,
@@ -33,7 +33,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "posterize_levels",
       "name": "Posterize Levels",
       "default": 0.5,
       "min": 0,
@@ -42,7 +42,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "ink_density",
       "name": "Ink Density",
       "default": 0.5,
       "min": 0,

@@ -24,7 +24,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "sigma",
       "name": "Sigma (\u03c3)",
       "default": 0.45,
       "min": 0,
@@ -33,7 +33,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "rho",
       "name": "Rho (\u03c1)",
       "default": 0.5,
       "min": 0,
@@ -42,7 +42,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "beta",
       "name": "Beta (\u03b2)",
       "default": 0.4,
       "min": 0,
@@ -51,7 +51,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "trail_persistence",
       "name": "Trail Persistence",
       "default": 0.7,
       "min": 0,

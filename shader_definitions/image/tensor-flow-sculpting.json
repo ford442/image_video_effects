@@ -2,7 +2,7 @@
   "id": "tensor-flow-sculpting",
   "name": "Tensor Flow Sculpting",
   "url": "shaders/tensor-flow-sculpting.wgsl",
-  "description": "Depth is treated as a 4-D strain tensor that warps and sculpts the image like clay — bulk regions bend dramatically while high-frequency edge details stay crisp.",
+  "description": "Depth is treated as a 4-D strain tensor that warps and sculpts the image like clay \u2014 bulk regions bend dramatically while high-frequency edge details stay crisp.",
   "tags": [
     "depth",
     "tensor",
@@ -23,8 +23,8 @@
   "author": "AI",
   "params": [
     {
-      "id": "param1",
-      "name": "Strain Scale",
+      "id": "amplitude_of_the_tensor_field_deformation",
+      "name": "Amplitude of the tensor-field deformation.",
       "min": 0,
       "max": 1,
       "default": 0.4,
@@ -32,8 +32,8 @@
       "description": "Amplitude of the tensor-field deformation."
     },
     {
-      "id": "param2",
-      "name": "Detail Preserve",
+      "id": "how_much_high_frequency_detail_is_added_back_after_warping",
+      "name": "How much high-frequency detail is added back after warping.",
       "min": 0,
       "max": 1,
       "default": 0.6,
@@ -41,8 +41,8 @@
       "description": "How much high-frequency detail is added back after warping."
     },
     {
-      "id": "param3",
-      "name": "Flow Speed",
+      "id": "speed_of_the_time_varying_noise_flow_that_modulates_the_tensor",
+      "name": "Speed of the time-varying noise flow that modulates the tensor.",
       "min": 0,
       "max": 1,
       "default": 0.3,
@@ -50,8 +50,8 @@
       "description": "Speed of the time-varying noise flow that modulates the tensor."
     },
     {
-      "id": "param4",
-      "name": "Tensor Mode",
+      "id": "blend_from_stretch_dominant_0_to_shear_dominant_1_deformation",
+      "name": "Blend from stretch-dominant (0) to shear-dominant (1) deformation.",
       "min": 0,
       "max": 1,
       "default": 0,

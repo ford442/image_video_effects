@@ -19,7 +19,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "power",
       "name": "Power",
       "default": 0.5,
       "min": 0,
@@ -28,7 +28,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "zoom",
       "name": "Zoom",
       "default": 0.3,
       "min": 0,
@@ -37,7 +37,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "fog_density",
       "name": "Fog Density",
       "default": 0.2,
       "min": 0,
@@ -46,7 +46,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "color_shift",
       "name": "Color Shift",
       "default": 0.5,
       "min": 0,

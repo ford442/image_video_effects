@@ -18,32 +18,32 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "glyph_density",
+      "name": "Glyph Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "wave_speed",
+      "name": "Wave Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "source_tint",
+      "name": "Source Tint",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
+      "id": "phosphor_persistence",
+      "name": "Phosphor Persistence",
       "default": 0.5,
       "min": 0,
       "max": 1,
