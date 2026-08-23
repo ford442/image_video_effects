@@ -52,7 +52,7 @@ const OCTAVE_BIN_GAIN: f32 = 0.5;    // audio gain per octave bin
 
 // Spring-damper gravity well (critically damped, extraBuffer[133..136])
 const SPRING_FREQ: f32 = 6.0;        // natural frequency (rad/s)
-const SPRING_DT: f32 = 0.016;        // fixed integration step (~60 fps)
+const SPRING_DT: f32 = 0.016;        // first-frame fallback step
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var p3 = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -153,7 +153,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
-    let prev = textureLoad(dataTextureC, pixel, 0);
+    var prev = textureLoad(dataTextureC, pixel, 0);
 
     // ── Spring-damper gravity well ────────────────────────────────
     // Critically-damped spring eases the well center toward the cursor so the
@@ -163,22 +163,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rawMouse = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0) + 0.5;
     var wellPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     var wellVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    // First-frame init: snap the spring to the cursor (avoids a corner swoop)
-    if (u.config.x < SPRING_DT) {
+    let springInitialized = extraBuffer[137] >= 0.5;
+    // Explicit init makes top-left a valid cursor target instead of a sentinel.
+    if (!springInitialized) {
         wellPos = rawMouse;
         wellVel = vec2<f32>(0.0);
     }
+    let springDt = select(SPRING_DT, clamp(u.config.x - extraBuffer[138], 0.0005, 0.05), springInitialized);
     // Critical damping: accel = w²·(target − pos) − 2w·vel
     let springAccel = SPRING_FREQ * SPRING_FREQ * (rawMouse - wellPos)
                     - 2.0 * SPRING_FREQ * wellVel;
-    wellVel += springAccel * SPRING_DT;
-    wellPos += wellVel * SPRING_DT;
+    wellVel += springAccel * springDt;
+    wellPos += wellVel * springDt;
     // Single invocation commits the shared spring state (benign 1-frame lag)
     if (global_id.x == 0u && global_id.y == 0u) {
         extraBuffer[133] = wellPos.x;
         extraBuffer[134] = wellPos.y;
         extraBuffer[135] = wellVel.x;
         extraBuffer[136] = wellVel.y;
+        extraBuffer[137] = 1.0;
+        extraBuffer[138] = u.config.x;
     }
 
     // Mouse gravity well — branchless normalization
@@ -187,10 +191,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dirToMouse = select(vec2<f32>(0.0), toMouse / distMouse, distMouse > 0.001);
     uv += dirToMouse * (0.3 * smoothstep(0.8, 0.0, distMouse));
 
+    // Held pointer winds an accretion disk around the gravity well; clicks
+    // launch alternating compressive waves through the filament network.
+    let wellAngle = atan2(toMouse.y, toMouse.x);
+    let held = select(0.35, 1.0, u.zoom_config.w > 0.5);
+    let accretionEnvelope = exp(-distMouse * distMouse * 12.0) * held;
+    let accretion = pow(abs(sin(wellAngle * 7.0 + distMouse * 54.0 - u.config.x * 3.2)), 12.0)
+        * accretionEnvelope;
+    var clickWave = 0.0;
+    var clickFlow = vec2<f32>(0.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri += 1u) {
+        let ripple = u.ripples[ri];
+        let age = u.config.x - ripple.z;
+        if (age >= 0.0 && age < 2.8) {
+            let rippleCenter = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0) + 0.5;
+            let delta = uv - rippleCenter;
+            let radius = length(delta);
+            let front = smoothstep(0.024, 0.0, abs(radius - age * 0.24)) * exp(-age * 0.75);
+            let direction = delta / max(radius, 0.001);
+            clickWave += front;
+            clickFlow += vec2<f32>(-direction.y, direction.x) * front
+                * select(-1.0, 1.0, (ri % 2u) == 0u);
+        }
+    }
+    uv += clickFlow * 0.045 + vec2<f32>(-dirToMouse.y, dirToMouse.x) * accretionEnvelope * 0.025;
+
     // Domain warp with audio-driven pulse
     var p = vec3<f32>(uv * BASE_FREQ, time * TIME_SCALE);
     let warp = fbm(p);
     p += vec3<f32>(warp * (warpStrength + bass * 0.15));
+    p = vec3<f32>(p.xy + clickFlow * (0.8 + warpStrength * 0.5), p.z);
 
     // ── Per-octave filament stack ─────────────────────────────────
     // Octave o reads spectrum bin plasmaBuffer[(o % 8) + 1].x, so large-scale
@@ -242,11 +273,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     color += vec3<f32>(1.0, 0.85, 0.6) * (nodeMetric * nodeMetric) * (1.3 + treble * 0.5);
     color += gTint * galaxy * (1.5 + bass * 0.6);
+    color += hueShift(vec3<f32>(0.4, 0.72, 1.2), colorShift * TAU)
+        * (accretion * (0.8 + mids * 0.5) + clickWave * (0.55 + treble * 0.45));
 
     // Depth-aware intensity boost
     color *= 1.0 + depth * 0.25;
 
     // Temporal feedback — now applied to voids and filaments alike
+    let historyDrift = vec2<i32>(round((clickFlow + vec2<f32>(-dirToMouse.y, dirToMouse.x)
+        * accretionEnvelope) * 2.5));
+    prev = textureLoad(dataTextureC, clamp(pixel - historyDrift, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
     let temporal = mix(prev.rgb * DECAY, color, FEEDBACK);
 
     // Chromatic aberration + ACES tone map
@@ -255,12 +291,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Layered alpha: luminance-keyed, edge-preserved, depth-layered.
     // voidColor luma ≈ 0.018 → lumaKey = 0 → void alpha stays 0 (unchanged).
-    let alpha = compositeAlpha(color, density, galaxy, nodeMetric, depth);
+    let alpha = clamp(compositeAlpha(color, density, galaxy, nodeMetric, depth)
+        + accretion * 0.18 + clickWave * 0.16, 0.0, 0.98);
     let temporalAlpha = mix(prev.a * DECAY, alpha, FEEDBACK);
 
     // dataTextureA carries pre-ACES HDR color (no clamp — feedback equilibrium)
     textureStore(dataTextureA, pixel, vec4<f32>(temporal, temporalAlpha));
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     // Preserve the original void depth output (0.0) exactly
-    textureStore(writeDepthTexture, pixel, vec4<f32>(select(density, 0.0, isVoid), 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(select(density, 0.0, isVoid)
+        + accretion * 0.12 + clickWave * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

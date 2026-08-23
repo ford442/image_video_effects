@@ -2,7 +2,7 @@
   "id": "cosmic-jellyfish",
   "name": "Cosmic Jellyfish",
   "url": "shaders/cosmic-jellyfish.wgsl",
-  "description": "A majestic, translucent jellyfish floating in a cosmic void, with bioluminescent glow and rhythmic pulsation.",
+  "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails.",
   "tags": [
     "3d",
     "raymarching",
@@ -15,7 +15,13 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal"
+    "click-reactive",
+    "audio-reactive",
+    "temporal",
+    "raymarching",
+    "bioluminescent",
+    "depth-aware",
+    "aces-tone-map"
   ],
   "params": [
     {

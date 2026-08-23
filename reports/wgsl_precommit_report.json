@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-23T07:15:34.685983",
+  "timestamp": "2026-08-23T08:10:20.271697",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/cellular-automata-3d.wgsl",
+      "file": "public/shaders/cosmic-flow.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/elastic-chromatic-explosion.wgsl",
+      "file": "public/shaders/cosmic-jellyfish.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/fire_smoke_volumetric.wgsl",
+      "file": "public/shaders/cosmic-web.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/glitch-ripple-drag.wgsl",
+      "file": "public/shaders/deep-sea-thermal-vent.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/ink-marbling.wgsl",
+      "file": "public/shaders/ferrofluid-em.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/magnetic-luma-sort.wgsl",
+      "file": "public/shaders/ferrofluid-spikes.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neural-synapse-web.wgsl",
+      "file": "public/shaders/ferrofluid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/phase-memory-weave.wgsl",
+      "file": "public/shaders/fluid-grid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/prismatic-feedback-loop.wgsl",
+      "file": "public/shaders/liquid-chrome-ripple.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/temporal-phosphor-burn.wgsl",
+      "file": "public/shaders/liquid-metal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

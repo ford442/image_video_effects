@@ -1,6 +1,24 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Batch 68 stateful simulation/feedback upgrade)
+**Last updated:** 2026-08-23 (Batch 69 cosmic/ferrofluid/liquid detail)
+
+## 2026-08-23 — Batch 69 cosmic / ferrofluid / liquid detail
+
+- Upgraded cosmic-flow, cosmic-jellyfish, cosmic-web, deep-sea-thermal-vent,
+  ferrofluid, ferrofluid-spikes, ferrofluid-em, fluid-grid,
+  liquid-chrome-ripple, and liquid-metal with distinct MHD, SDF-organic,
+  cosmological, hydrothermal, magnetic, electromagnetic, lattice, capillary,
+  and mercury-simulation identities.
+- Exact C, authoritative A, unused B, real plasma audio, bounded clicks,
+  held-pointer response, ACES, semantic alpha/depth, and 16x16x1 are universal.
+  Cosmic Web and Fluid Grid keep guarded `[133..138]` springs. Liquid Metal
+  alone owns raw A as height/velocity/foam/wetness; the other nine own HDR
+  display history.
+- Naga/bind-group 10/10, extraBuffer and dead-slider audits clean, saved params
+  exact, 1,333 catalog IDs across 14 categories with relative URLs, uniform
+  sync green, Jest 81/81 (545 pass, 1 skip), and production build PASS.
+  Real-GPU performance, stability, visual continuity, interaction, alpha/depth,
+  and preset fidelity remain external.
 
 ## 2026-08-23 — Batch 68 stateful simulation and feedback
 

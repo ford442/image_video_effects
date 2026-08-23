@@ -14,6 +14,10 @@ _Learn about the person you're helping. Update this as you go._
   same contract. Raw A belongs to Fire, Ink, Phase, and Prismatic; Temporal
   alone keeps binding 13/history ring. Structural/Jest/build gates are green;
   real-GPU stability and composition QA remain external.
+- **Batch 69:** Ten cosmic/ferrofluid/liquid detail upgrades completed. Nine
+  shaders own HDR display history; Liquid Metal owns raw
+  height/velocity/foam/wetness A state. Saved params are exact, structural,
+  Jest, catalog, and build gates are green; real-GPU visual QA is external.
 
 ## Context
 

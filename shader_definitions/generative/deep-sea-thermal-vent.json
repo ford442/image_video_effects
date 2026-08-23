@@ -3,7 +3,7 @@
   "name": "Deep Sea Thermal Vent",
   "category": "generative",
   "url": "shaders/deep-sea-thermal-vent.wgsl",
-  "description": "Hydrothermal vent on the ocean floor: billowing mineral-rich plumes rise upward, glowing with chemosynthetic life. Bass swells the plumes, mids add particle turbulence, treble creates bioluminescent microbe flashes. Mouse distorts vent flow.",
+  "description": "A layered black-smoker ecosystem with carbonate chimneys, mineral crust, stratified billows, rising bubbles and microbes, mouse-steered jets, click heat fronts, and advected HDR plume history.",
   "features": [
     "audio-reactive",
     "temporal-feedback",
@@ -11,6 +11,9 @@
     "hydrothermal-plumes",
     "bioluminescence",
     "mouse-driven",
+    "click-reactive",
+    "chimney-geology",
+    "stratified-billows",
     "upgraded-rgba",
     "temporal"
   ],

@@ -171,6 +171,27 @@ fn rimLighting(viewDir: vec3<f32>, normal: vec3<f32>, strength: f32) -> f32 {
     return pow(rim, 3.0) * strength;
 }
 
+fn rosensweigHeight(p: vec2<f32>, magnet: vec2<f32>, density: f32, time: f32) -> f32 {
+    let delta = p - magnet;
+    let radius = length(delta);
+    let frequency = mix(18.0, 58.0, density);
+    let k0 = vec2<f32>(1.0, 0.0);
+    let k1 = vec2<f32>(0.5, 0.8660254);
+    let k2 = vec2<f32>(-0.5, 0.8660254);
+    let lattice = (cos(dot(p, k0) * frequency + time * 0.24)
+        + cos(dot(p, k1) * frequency - time * 0.19)
+        + cos(dot(p, k2) * frequency + time * 0.13)) / 3.0;
+    let peaks = pow(clamp(lattice * 0.5 + 0.5, 0.0, 1.0), 7.0);
+    let radialRibs = pow(abs(cos(atan2(delta.y, delta.x) * (7.0 + density * 9.0)
+        + radius * frequency * 0.35 - time * 0.8)), 12.0);
+    return exp(-radius * radius * 4.2) * (peaks * 0.82 + radialRibs * 0.18);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -196,15 +217,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Magnetic field falls off with distance
     let field = smoothstep(0.5, 0.0, dist) * magnetStrength;
 
-    // Base liquid surface
+    // True Rosensweig-like hexagonal peak family plus fine carrier ripples.
     let liquid = fbm(uv * (8.0 + spikeDensity * 20.0) + time * 0.1, 4);
-
-    // Spikes rise toward mouse
-    let spikeNoise = fbm(uv * 15.0 + vec2<f32>(time * 0.2, 0.0), 3);
-    let spikeHeight = spikeNoise * field * 2.0 * fluidViscosity;
-
-    // Build 3D normal for lighting
-    let normal = normalize(vec3<f32>(spikeNoise - 0.5, 0.5, spikeHeight * 0.3));
+    var clickHeight = 0.0;
+    var clickSlope = vec2<f32>(0.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri += 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let radius = length(delta);
+            let front = smoothstep(0.026, 0.0, abs(radius - age * 0.34)) * exp(-age * 1.15);
+            clickHeight += front;
+            clickSlope += delta / max(radius, 0.001) * front;
+        }
+    }
+    let held = select(0.62, 1.0, u.zoom_config.w > 0.5);
+    let spikeBase = rosensweigHeight(aspectUV, aspectMouse, spikeDensity, time * (1.0 + treble * 0.18));
+    let spikeHeight = (spikeBase * field * (1.2 + magnetStrength) + clickHeight * 0.5)
+        * mix(1.25, 0.62, fluidViscosity) * held;
+    let eps = 1.3 / resolution.y;
+    let hL = rosensweigHeight(aspectUV - vec2<f32>(eps, 0.0), aspectMouse, spikeDensity, time);
+    let hR = rosensweigHeight(aspectUV + vec2<f32>(eps, 0.0), aspectMouse, spikeDensity, time);
+    let hD = rosensweigHeight(aspectUV - vec2<f32>(0.0, eps), aspectMouse, spikeDensity, time);
+    let hU = rosensweigHeight(aspectUV + vec2<f32>(0.0, eps), aspectMouse, spikeDensity, time);
+    let normal = normalize(vec3<f32>((hL - hR) * field * 5.0 + clickSlope.x,
+        (hD - hU) * field * 5.0 + clickSlope.y, 0.18));
     let viewDir = normalize(vec3<f32>(uv.x - 0.5, uv.y - 0.5, 1.0));
     let worldPos = vec3<f32>(uv, spikeHeight);
     let lightPos = vec3<f32>(mousePos, 0.5);
@@ -245,10 +284,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Bloom-weighted alpha
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.6 + field * 0.4 + luma * 0.3 + bass * 0.05, 0.0, 1.0);
+    let alphaLive = clamp(0.48 + field * 0.35 + spikeHeight * 0.22 + luma * 0.2 + bass * 0.05, 0.0, 1.0);
+
+    // Exact display history trails behind viscous spike relaxation.
+    let drift = vec2<i32>(round((aspectUV - aspectMouse) / max(dist, 0.001)
+        * mix(0.4, 2.2, fluidViscosity) + clickSlope));
+    let prev = textureLoad(dataTextureC, clamp(vec2<i32>(global_id.xy) - drift,
+        vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0);
+    let persistence = mix(0.18, 0.68, fluidViscosity) * clamp(field + clickHeight, 0.0, 1.0);
+    color = mix(color, prev.rgb * 0.968, persistence);
+    let alpha = mix(alphaLive, prev.a * 0.96, persistence * 0.5);
 
     // Premultiplied alpha writeback
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * alpha, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(field, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(color) * alpha, alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(min(color, vec3<f32>(8.0)), alpha));
+    let sourceDepth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(max(sourceDepth * 0.82,
+        clamp(field * 0.45 + spikeHeight * 0.48, 0.0, 0.95)), 0.0, 0.0, 0.0));
 }

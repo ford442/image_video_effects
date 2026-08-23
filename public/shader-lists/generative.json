@@ -1296,7 +1296,7 @@
     "id": "cosmic-jellyfish",
     "name": "Cosmic Jellyfish",
     "url": "shaders/cosmic-jellyfish.wgsl",
-    "description": "A majestic, translucent jellyfish floating in a cosmic void, with bioluminescent glow and rhythmic pulsation.",
+    "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails.",
     "tags": [
       "3d",
       "raymarching",
@@ -1309,7 +1309,13 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal"
+      "click-reactive",
+      "audio-reactive",
+      "temporal",
+      "raymarching",
+      "bioluminescent",
+      "depth-aware",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -1394,7 +1400,7 @@
     "id": "cosmic-web",
     "name": "Cosmic Web Filament",
     "url": "shaders/cosmic-web.wgsl",
-    "description": "Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well; audio and depth drive intensity and color shifts. Alpha is layered via luminance keying, edge preservation, and depth fade.",
+    "description": "A multiscale cosmic filament network with dark voids, clustered galaxy nodes, a spring-smoothed gravity well, held-pointer accretion lanes, and click-launched gravitational fronts.",
     "tags": [
       "space",
       "procedural",
@@ -1410,7 +1416,10 @@
       "depth-aware",
       "aces-tone-map",
       "chromatic-aberration",
-      "alpha-layered"
+      "alpha-layered",
+      "click-reactive",
+      "spring-gravity-well",
+      "accretion-disk"
     ],
     "params": [
       {
@@ -1705,7 +1714,7 @@
     "name": "Deep Sea Thermal Vent",
     "category": "generative",
     "url": "shaders/deep-sea-thermal-vent.wgsl",
-    "description": "Hydrothermal vent on the ocean floor: billowing mineral-rich plumes rise upward, glowing with chemosynthetic life. Bass swells the plumes, mids add particle turbulence, treble creates bioluminescent microbe flashes. Mouse distorts vent flow.",
+    "description": "A layered black-smoker ecosystem with carbonate chimneys, mineral crust, stratified billows, rising bubbles and microbes, mouse-steered jets, click heat fronts, and advected HDR plume history.",
     "features": [
       "audio-reactive",
       "temporal-feedback",
@@ -1713,6 +1722,9 @@
       "hydrothermal-plumes",
       "bioluminescence",
       "mouse-driven",
+      "click-reactive",
+      "chimney-geology",
+      "stratified-billows",
       "upgraded-rgba",
       "temporal"
     ],

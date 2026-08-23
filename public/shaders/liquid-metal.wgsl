@@ -1,19 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Liquid Metal — Phase A Upgrade
-//  Category: liquid-effects
-//  Features: mouse-driven, depth-aware, temporal, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Chunks From: original liquid-metal.wgsl
-//  Created: 2026-05-23
-//  By: Claude (Sonnet 4.6)
+//  Liquid Metal — persistent mercury height/velocity simulation
+//  Raw A ownership: R height, G vertical velocity, B foam, A wetness.
+//  C is the exact previous A copy; output is a projection of current state.
 // ═══════════════════════════════════════════════════════════════════
-//
-//  Param1: viscosity        — how slowly the height field evolves
-//  Param2: reflectivity     — F0 metallic base reflectance
-//  Param3: chromatic_spread — RGB dispersion on reflections
-//  Param4: flow_speed       — gravity-like flow toward depth attractor
-//
-//  dataTextureC.r = height field (persists across frames)
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -30,169 +19,172 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Viscosity, y=Reflectivity, z=ChromaticSpread, w=FlowSpeed
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265;
+const TAU: f32 = 6.28318530718;
 
-// ─── Helpers ──────────────────────────────────────────────────────
-
-fn hash1(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+fn hash21(p: vec2<f32>) -> f32 {
+  let h = dot(p, vec2<f32>(127.1, 311.7));
+  return fract(sin(h) * 43758.5453123);
 }
 
-fn vnoise(p: vec2<f32>) -> f32 {
-    let i = floor(p); let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash1(i), hash1(i + vec2<f32>(1.0, 0.0)), u.x),
-               mix(hash1(i + vec2<f32>(0.0, 1.0)), hash1(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+fn noise2(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), w.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
 }
 
-// FBM height field for liquid surface
-fn fbmHeight(p: vec2<f32>, t: f32) -> f32 {
-    var v = 0.0; var amp = 0.5; var pp = p;
-    for (var i = 0; i < 4; i = i + 1) {
-        v += amp * vnoise(pp + vec2<f32>(t * 0.07, t * 0.05));
-        pp = pp * 2.1 + vec2<f32>(1.7, 9.2);
-        amp *= 0.5;
-    }
-    return v;
+fn restHeight(p0: vec2<f32>, time: f32) -> f32 {
+  var p = p0;
+  var sum = 0.0;
+  var amp = 0.5;
+  for (var octave = 0; octave < 4; octave += 1) {
+    sum += amp * noise2(p + vec2<f32>(time * 0.035, -time * 0.027));
+    p = mat2x2<f32>(0.82, -0.57, 0.57, 0.82) * p * 2.03 + vec2<f32>(8.1, 3.7);
+    amp *= 0.5;
+  }
+  return sum;
 }
 
-// Schlick Fresnel reflectance
-fn schlick(cosTheta: f32, F0: f32) -> f32 {
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+fn schlick(cosTheta: f32, f0: vec3<f32>) -> vec3<f32> {
+  return f0 + (vec3<f32>(1.0) - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-// Surface normal from height field gradient
-fn heightNormal(uv: vec2<f32>, px: vec2<f32>, t: f32) -> vec3<f32> {
-    let scale = 3.5;
-    let hL = fbmHeight(uv * scale - vec2<f32>(px.x, 0.0), t);
-    let hR = fbmHeight(uv * scale + vec2<f32>(px.x, 0.0), t);
-    let hD = fbmHeight(uv * scale - vec2<f32>(0.0, px.y), t);
-    let hU = fbmHeight(uv * scale + vec2<f32>(0.0, px.y), t);
-    return normalize(vec3<f32>(hL - hR, hD - hU, 0.04));
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// ─── Main ─────────────────────────────────────────────────────────
+fn clampPixel(pixel: vec2<i32>, dims: vec2<i32>) -> vec2<i32> {
+  return clamp(pixel, vec2<i32>(0), dims - vec2<i32>(1));
+}
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
-    let uv      = vec2<f32>(global_id.xy) / resolution;
-    let time    = u.config.x;
-    let px      = 1.0 / resolution;
-    let aspect  = resolution.x / resolution.y;
-    let mouse   = u.zoom_config.yz;
+  let pixel = vec2<i32>(gid.xy);
+  let dims = vec2<i32>(resolution);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let aspect = resolution.x / resolution.y;
+  let aspectVec = vec2<f32>(aspect, 1.0);
+  let time = u.config.x;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // Audio reactivity
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  // Saved-preset contract: viscosity, reflectivity, chromatic_spread, flow_speed.
+  let viscosity = u.zoom_params.x;
+  let reflectivity = u.zoom_params.y;
+  let chromaSpread = u.zoom_params.z;
+  let flowSpeed = u.zoom_params.w;
 
-    // Params
-    let viscosity      = u.zoom_params.x * 0.9 + 0.05;
-    let reflectivity   = u.zoom_params.y;
-    let chromaSpread   = u.zoom_params.z * 0.025;
-    let flowSpeed      = u.zoom_params.w;
+  let stateC = textureLoad(dataTextureC, pixel, 0);
+  let stateL = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(-1, 0), dims), 0);
+  let stateR = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(1, 0), dims), 0);
+  let stateD = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(0, -1), dims), 0);
+  let stateU = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(0, 1), dims), 0);
+  let stateLD = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(-1, -1), dims), 0);
+  let stateRU = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(1, 1), dims), 0);
 
-    // Depth (1=near foreground, 0=far background)
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let rest = restHeight(uv * vec2<f32>(4.2 * aspect, 4.2), time * (0.2 + flowSpeed * 0.8));
+  let equilibrium = 0.18 + rest * 0.16;
+  let initialized = dot(abs(stateC), vec4<f32>(1.0)) > 0.000001;
+  var height = select(equilibrium, max(stateC.r, 0.0), initialized);
+  var velocity = select(0.0, clamp(stateC.g, -1.5, 1.5), initialized);
+  let hL = select(equilibrium, stateL.r, initialized);
+  let hR = select(equilibrium, stateR.r, initialized);
+  let hD = select(equilibrium, stateD.r, initialized);
+  let hU = select(equilibrium, stateU.r, initialized);
+  let hLD = select(equilibrium, stateLD.r, initialized);
+  let hRU = select(equilibrium, stateRU.r, initialized);
+  let laplacian = hL + hR + hD + hU - 4.0 * height;
+  let diagonalShear = (hRU - hLD) * 0.5;
 
-    // ── Temporal height field ─────────────────────────────────────
-    // Read previous height from dataTextureC, evolve toward FBM target
-    let prevH = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
-    var targetH = fbmHeight(uv * 3.0, time);
+  // A zeroed buffer initializes immediately as a low mercury sheet; later
+  // frames are governed by surface tension, damping, depth flow, and impulses.
+  let tension = mix(0.22, 0.07, viscosity);
+  let damping = mix(0.93, 0.985, viscosity);
+  var acceleration = laplacian * tension + (equilibrium - height) * 0.012;
+  acceleration += diagonalShear * flowSpeed * 0.025;
 
-    // Flow: height field drains toward high-depth (foreground) regions
-    // Sample depth gradient to get flow direction
-    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(px.x, 0.0), 0.0).r;
-    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(px.x, 0.0), 0.0).r;
-    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, px.y), 0.0).r;
-    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, px.y), 0.0).r;
-    let depthGrad = vec2<f32>(dR - dL, dU - dD);
-    let flowUV = uv + depthGrad * flowSpeed * 0.02;
-    let flowH = textureSampleLevel(dataTextureC, non_filtering_sampler,
-                                   clamp(flowUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  // Existing scene depth acts as a gravity basin.
+  let depthC = textureLoad(readDepthTexture, pixel, 0).r;
+  let depthL = textureLoad(readDepthTexture, clampPixel(pixel + vec2<i32>(-1, 0), dims), 0).r;
+  let depthR = textureLoad(readDepthTexture, clampPixel(pixel + vec2<i32>(1, 0), dims), 0).r;
+  let depthD = textureLoad(readDepthTexture, clampPixel(pixel + vec2<i32>(0, -1), dims), 0).r;
+  let depthU = textureLoad(readDepthTexture, clampPixel(pixel + vec2<i32>(0, 1), dims), 0).r;
+  let depthGradient = vec2<f32>(depthR - depthL, depthU - depthD);
+  acceleration += dot(depthGradient, vec2<f32>(hR - hL, hU - hD))
+    * flowSpeed * 0.08;
 
-    // Mouse pour: add height under cursor
-    if (mouse.x >= 0.0) {
-        let mDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
-        if (mDist < 0.08) {
-            let pour = (1.0 - smoothstep(0.0, 0.08, mDist)) * 0.6;
-            targetH = max(targetH, pour);
-        }
+  let mouseDelta = (uv - u.zoom_config.yz) * aspectVec;
+  let mouseRadius = length(mouseDelta);
+  let heldPour = exp(-mouseRadius * mouseRadius * 95.0) * select(0.18, 1.0, u.zoom_config.w > 0.5);
+  acceleration += heldPour * (0.035 + flowSpeed * 0.07);
+
+  var impulse = 0.0;
+  var foamImpulse = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri += 1u) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.3) {
+      let radius = length((uv - ripple.xy) * aspectVec);
+      let front = smoothstep(0.028, 0.0, abs(radius - age * (0.22 + flowSpeed * 0.24))) * exp(-age * 1.0);
+      impulse += front * cos(age * 7.0) * 0.13;
+      foamImpulse += front;
     }
+  }
+  acceleration += impulse + (bass - 0.18) * 0.006 * sin(time * 2.6 + rest * TAU);
 
-    // Ripple impulses add height
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
-        let r = u.ripples[ri];
-        let elapsed = time - r.z;
-        if (elapsed >= 0.0 && elapsed < 1.5) {
-            let rDist = length((uv - r.xy) * vec2<f32>(aspect, 1.0));
-            let splash = exp(-rDist * 10.0) * exp(-elapsed * 3.0);
-            targetH = max(targetH, splash * 0.8);
-        }
-    }
+  velocity = clamp(velocity * damping + acceleration, -1.25, 1.25);
+  height = clamp(height + velocity * mix(0.11, 0.045, viscosity), 0.0, 1.6);
+  let curvature = abs(laplacian) * 4.0 + abs(velocity) * 0.9;
+  let foam = clamp(max(stateC.b * mix(0.88, 0.97, viscosity),
+    smoothstep(0.16, 0.72, curvature) + foamImpulse * 0.55 + treble * curvature * 0.08), 0.0, 1.0);
+  let wetness = clamp(max(stateC.a * 0.992, smoothstep(0.05, 0.38, height) + heldPour * 0.3), 0.0, 1.0);
+  textureStore(dataTextureA, pixel, vec4<f32>(height, velocity, foam, wetness));
 
-    // Audio pulses the surface
-    targetH = targetH * (1.0 + bass * 0.3);
+  // Project the newly evolved raw state into a mercury surface.
+  let gradient = vec2<f32>(hL - hR, hD - hU) * (2.0 + height * 4.0);
+  let normal = normalize(vec3<f32>(gradient, 0.12 + viscosity * 0.12));
+  let viewDir = normalize(vec3<f32>((uv - 0.5) * aspectVec * 0.48, 1.0));
+  let refraction = normal.xy * (0.018 + height * 0.065) / aspectVec;
+  let spread = chromaSpread * (0.015 + treble * 0.006);
+  let rUV = clamp(uv + refraction * (1.0 - spread), vec2<f32>(0.001), vec2<f32>(0.999));
+  let gUV = clamp(uv + refraction, vec2<f32>(0.001), vec2<f32>(0.999));
+  let bUV = clamp(uv + refraction * (1.0 + spread), vec2<f32>(0.001), vec2<f32>(0.999));
+  let source = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
+  );
 
-    // Viscosity: slow blend from prev to target (high viscosity = slow)
-    let blendRate = (1.0 - viscosity) * 0.15 + 0.01;
-    let newH = mix(mix(prevH, flowH, flowSpeed * 0.1), targetH, blendRate);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newH, depth, 0.0, 1.0));
+  let f0 = mix(vec3<f32>(0.46, 0.50, 0.56), vec3<f32>(0.91, 0.94, 0.98), reflectivity);
+  let fresnel = schlick(max(dot(normal, viewDir), 0.0), f0);
+  let key = normalize(vec3<f32>(-0.38, 0.58, 0.72));
+  let rim = normalize(vec3<f32>(0.65, -0.22, 0.73));
+  let specKey = pow(max(dot(normal, normalize(viewDir + key)), 0.0), mix(26.0, 170.0, reflectivity));
+  let specRim = pow(max(dot(normal, normalize(viewDir + rim)), 0.0), mix(18.0, 90.0, reflectivity));
+  let iridescence = 0.55 + 0.45 * cos(TAU * (vec3<f32>(0.86, 1.0, 1.16)
+    * (height * 0.62 + curvature * 0.08 + time * 0.018) + vec3<f32>(0.0, 0.18, 0.35)));
+  let environment = mix(vec3<f32>(0.16, 0.2, 0.28), iridescence, 0.22 + chromaSpread * 0.45);
+  var color = source * (vec3<f32>(1.0) - fresnel * 0.72)
+    + environment * fresnel * (0.8 + reflectivity * 0.55)
+    + vec3<f32>(1.08, 1.02, 0.92) * specKey * (1.2 + bass * 0.5)
+    + vec3<f32>(0.42, 0.68, 1.0) * specRim * 0.48;
+  color = mix(color, color + vec3<f32>(0.72, 0.84, 1.0) * foam * (0.38 + mids * 0.35), foam * 0.52);
+  let alpha = clamp(wetness * (0.62 + reflectivity * 0.28) + fresnel.g * 0.14 + foam * 0.08, 0.0, 1.0);
+  textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
 
-    // ── Surface normal from height gradient ───────────────────────
-    let effTime = time * (1.0 - viscosity * 0.7);
-    let normal = heightNormal(uv, px, effTime);
-
-    // ── Fresnel reflectance ───────────────────────────────────────
-    let viewDir = normalize(vec3<f32>((uv - 0.5) * vec2<f32>(aspect, 1.0), 1.0));
-    let cosTheta = clamp(dot(viewDir, normal), 0.0, 1.0);
-    let F0 = mix(0.04, 0.95, reflectivity);
-    let F  = schlick(cosTheta, F0);
-
-    // ── Chromatic dispersion on refraction ────────────────────────
-    // Normal displaces UV differently per channel (RGB split by wavelength)
-    let refractBase = vec2<f32>(normal.xy) * (newH * 0.06 + 0.01);
-    let rUV = clamp(uv + refractBase * (1.0 - chromaSpread), vec2<f32>(0.0), vec2<f32>(1.0));
-    let gUV = clamp(uv + refractBase,                        vec2<f32>(0.0), vec2<f32>(1.0));
-    let bUV = clamp(uv + refractBase * (1.0 + chromaSpread), vec2<f32>(0.0), vec2<f32>(1.0));
-
-    let sampR = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-    let sampG = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
-    let sampB = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
-    let refractedColor = vec3<f32>(sampR, sampG, sampB);
-
-    // ── Metallic reflection colour ────────────────────────────────
-    // Silver-grey tinted by iridescence from height and time
-    let iridPhase = newH * 4.0 + time * 0.3;
-    let irid = vec3<f32>(
-        0.75 + 0.25 * sin(iridPhase),
-        0.80 + 0.20 * sin(iridPhase + 2.09),
-        0.85 + 0.15 * sin(iridPhase + 4.19)
-    );
-    let metalColor = mix(vec3<f32>(0.8, 0.85, 0.9), irid, reflectivity * 0.7);
-
-    // Specular highlight
-    let halfV = normalize(viewDir + vec3<f32>(0.3, 0.5, 0.8));
-    let spec = pow(max(dot(normal, halfV), 0.0), mix(16.0, 128.0, reflectivity));
-
-    // Blend refracted image with metallic reflection via Fresnel
-    var finalRGB = mix(refractedColor, metalColor, F);
-    finalRGB += vec3<f32>(spec * reflectivity * (0.8 + bass * 0.4));
-
-    // Semantic alpha: wetness / reflectivity drives opacity
-    let alpha = F * (0.6 + newH * 0.4);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy),
-                 vec4<f32>(depth * 0.7 + newH * 0.3, 0.0, 0.0, 0.0));
+  let generatedDepth = clamp(height * 0.48 + foam * 0.08, 0.0, 0.92);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(max(depthC * 0.82, generatedDepth), 0.0, 0.0, 0.0));
 }

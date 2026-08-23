@@ -2,7 +2,7 @@
   "id": "cosmic-web",
   "name": "Cosmic Web Filament",
   "url": "shaders/cosmic-web.wgsl",
-  "description": "Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well; audio and depth drive intensity and color shifts. Alpha is layered via luminance keying, edge preservation, and depth fade.",
+  "description": "A multiscale cosmic filament network with dark voids, clustered galaxy nodes, a spring-smoothed gravity well, held-pointer accretion lanes, and click-launched gravitational fronts.",
   "tags": [
     "space",
     "procedural",
@@ -18,7 +18,10 @@
     "depth-aware",
     "aces-tone-map",
     "chromatic-aberration",
-    "alpha-layered"
+    "alpha-layered",
+    "click-reactive",
+    "spring-gravity-well",
+    "accretion-disk"
   ],
   "params": [
     {

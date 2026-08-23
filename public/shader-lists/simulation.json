@@ -1070,7 +1070,7 @@
     "name": "Ferrofluid Spikes",
     "category": "simulation",
     "url": "shaders/ferrofluid-spikes.wgsl",
-    "description": "Mouse-driven ferrofluid simulation. The cursor acts as a magnet, pulling up metallic spikes from a dark liquid surface. Enhanced with full 3-point studio lighting (key/fill/rim), GGX PBR specular, Fresnel-Schlick reflections, anisotropic metallic sheen, ambient occlusion, and subsurface scattering glow.",
+    "description": "A mouse-driven Rosensweig ferrofluid lattice with hexagonal peaks, click-launched spike fronts, viscous display persistence, honest generated depth, and studio-lit GGX metallic shading.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1083,7 +1083,11 @@
       "anisotropic-sheen",
       "ambient-occlusion",
       "subsurface-scattering",
-      "light-attenuation"
+      "light-attenuation",
+      "click-reactive",
+      "temporal",
+      "depth-aware",
+      "rosensweig-lattice"
     ],
     "params": [
       {

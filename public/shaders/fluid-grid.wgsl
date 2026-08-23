@@ -70,6 +70,11 @@ fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.4 + mids * 0.15;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -124,15 +129,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distVecCorrected = distVec * aspectVec;
     let dist = length(distVecCorrected);
     let offsetDir = distVecCorrected / max(dist, 0.001);
+    let held = select(0.62, 1.0, u.zoom_config.w > 0.5);
     let push = smoothstep(0.45 + legacyRestitution * 0.1, 0.0, dist)
-        * repulsion * (0.12 + bass * 0.04);
+        * repulsion * (0.12 + bass * 0.04) * held;
 
     let cellCoord = vec2<u32>(floor(clamp(tileUV * gridSize, vec2<f32>(0.0), vec2<f32>(65535.0))));
     let cellBand = (cellCoord.x + cellCoord.y) % 8u;
     let cellVoice = plasmaBuffer[(cellBand % 8u) + 1u].x;
-    let curl = curl2D(uv * (2.2 + turbulence * 0.6), time * flowSpeed)
-        * 0.03 * turbulence * bass_env(bass, mids) * (1.0 + cellVoice * 0.25);
+    let curlDomain = uv * (2.2 + turbulence * 0.6);
+    let curlRaw = curl2D(curlDomain, time * flowSpeed);
+    let curl = curlRaw * 0.03 * turbulence * bass_env(bass, mids) * (1.0 + cellVoice * 0.25);
     var uvOffset = vec2<f32>(offsetDir.x / aspect, offsetDir.y) * push + curl;
+
+    // Depth contours behave like submerged obstacles in the grid flow.
+    let pixel = vec2<i32>(global_id.xy);
+    let dims = vec2<i32>(resolution);
+    let dL = textureLoad(readDepthTexture, clamp(pixel + vec2<i32>(-1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0).r;
+    let dR = textureLoad(readDepthTexture, clamp(pixel + vec2<i32>(1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0).r;
+    let dD = textureLoad(readDepthTexture, clamp(pixel + vec2<i32>(0, -1), vec2<i32>(0), dims - vec2<i32>(1)), 0).r;
+    let dU = textureLoad(readDepthTexture, clamp(pixel + vec2<i32>(0, 1), vec2<i32>(0), dims - vec2<i32>(1)), 0).r;
+    let depthTangent = vec2<f32>(dU - dD, dL - dR);
+    uvOffset += depthTangent * repulsion * 0.035;
 
     // Clicks inject localized, alternating eddies into the otherwise smooth
     // grid flow. Directions are computed in aspect space and mapped to UV.
@@ -153,20 +170,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sampleUV = clamp(uv - uvOffset, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-    let gridLine = fract(uv * gridSize);
+
+    // Draw the lattice in the deformed domain. Major rails, minor rails, and
+    // glowing junctions retain different weights under local strain.
+    let deformedGrid = sampleUV * gridSize;
+    let gridLine = fract(deformedGrid);
     let cellEdge = min(min(gridLine.x, 1.0 - gridLine.x), min(gridLine.y, 1.0 - gridLine.y));
     let lineWeight = 0.015 + (1.0 - legacyViscosity) * 0.035;
-    let lineMask = 1.0 - smoothstep(lineWeight, lineWeight + 0.01, cellEdge);
+    let minorMask = 1.0 - smoothstep(lineWeight, lineWeight + 0.012, cellEdge);
+    let majorLine = fract(deformedGrid / 5.0);
+    let majorEdge = min(min(majorLine.x, 1.0 - majorLine.x), min(majorLine.y, 1.0 - majorLine.y));
+    let majorMask = 1.0 - smoothstep(lineWeight * 0.75, lineWeight * 0.75 + 0.01, majorEdge);
+    let junction = pow(clamp((1.0 - smoothstep(0.08, 0.18, abs(gridLine.x - 0.5)))
+        * (1.0 - smoothstep(0.08, 0.18, abs(gridLine.y - 0.5))), 0.0, 1.0), 2.0);
+    let curlX = curl2D(curlDomain + vec2<f32>(0.025, 0.0), time * flowSpeed);
+    let curlY = curl2D(curlDomain + vec2<f32>(0.0, 0.025), time * flowSpeed);
+    let strain = clamp((length(curlX - curlRaw) + length(curlY - curlRaw))
+        * 0.16 * turbulence, 0.0, 1.0);
+    let lineMask = clamp(minorMask * 0.62 + majorMask * 0.72 + junction * (0.18 + strain), 0.0, 1.0);
 
-    let flowColor = vec3<f32>(0.05 + treble * 0.1, 0.15 + mids * 0.1, 0.28 + bass * 0.1)
-        * lineMask * (1.0 + cellVoice * 0.2);
-    let finalColor = mix(baseColor.rgb, baseColor.rgb * 0.45 + flowColor, lineMask * 0.7);
-    let alpha = clamp(baseColor.a * 0.45 + push * 1.8 + lineMask * 0.12 + bass * 0.05, 0.08, 1.0);
+    let flowColor = (vec3<f32>(0.05 + treble * 0.1, 0.15 + mids * 0.1, 0.28 + bass * 0.1)
+        * minorMask + vec3<f32>(0.18, 0.58, 0.92) * majorMask
+        + vec3<f32>(0.85, 0.94, 1.1) * junction * (0.45 + treble * 0.8))
+        * (1.0 + cellVoice * 0.2 + strain * 0.35);
+    var finalColor = mix(baseColor.rgb, baseColor.rgb * 0.42 + flowColor, lineMask * 0.78);
+    let alphaLive = clamp(baseColor.a * 0.45 + push * 1.8 + lineMask * 0.16
+        + junction * 0.12 + bass * 0.05, 0.08, 1.0);
 
-    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + push * 0.2, 0.0, 1.0);
-    let finalPixel = vec4<f32>(finalColor, alpha);
+    // Exact display history follows the local velocity field, giving stretched
+    // rails and junction afterimages while A stays the authoritative display.
+    let historyDrift = vec2<i32>(round((uvOffset * resolution) * mix(0.08, 0.22, turbulence)));
+    let prev = textureLoad(dataTextureC, clamp(pixel - historyDrift, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+    let historyWeight = clamp((0.12 + turbulence * 0.24 + strain * 0.15) * lineMask, 0.0, 0.55);
+    finalColor = mix(finalColor, prev.rgb * 0.965, historyWeight);
+    let alpha = mix(alphaLive, prev.a * 0.96, historyWeight * 0.5);
+
+    let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;
+    let depth = clamp(sourceDepth * 0.86 + push * 0.2 + lineMask * 0.08 + strain * 0.06, 0.0, 1.0);
+    let finalPixel = vec4<f32>(acesToneMap(finalColor), alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalPixel);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(min(finalColor, vec3<f32>(7.0)), alpha));
 }
