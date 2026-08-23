@@ -8,32 +8,32 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param1",
+      "id": "scan_speed",
+      "name": "Scan Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Param2",
+      "id": "audio_pulse",
+      "name": "Audio Pulse",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Param3",
+      "id": "scan_width",
+      "name": "Scan Width",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Param4",
+      "id": "warp_intensity",
+      "name": "Warp Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,

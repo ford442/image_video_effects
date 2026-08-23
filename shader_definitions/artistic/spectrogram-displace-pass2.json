@@ -23,32 +23,32 @@
   },
   "params": [
     {
-      "id": "missing_1",
-      "name": "Missing 1",
+      "id": "horizontal_displace",
+      "name": "Horizontal Displace",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "missing_2",
-      "name": "Missing 2",
+      "id": "vertical_displace",
+      "name": "Vertical Displace",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "effective_mag",
-      "name": "Effective Mag",
+      "id": "displacement_magnitude",
+      "name": "Displacement Magnitude",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "missing_4",
-      "name": "Missing 4",
+      "id": "spectrogram_blend",
+      "name": "Spectrogram Blend",
       "default": 0.5,
       "min": 0,
       "max": 1,
