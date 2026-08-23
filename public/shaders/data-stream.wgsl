@@ -1,8 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Data Stream — Batch 66
-//  fp128 strip flow integration, spring wake [133..138], racing head
-//  packets per strip, C smear trails, capped click wakes, held
-//  amplifies turbulence, ACES + semantic alpha.
+//  Data Stream — Batch 61
+//  Matrix data strips: spring wake, hex glyphs, cyber palette,
+//  capped ripples, held turbulence, ACES + regional FFT bins.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,43 +25,24 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-struct Fp128 {
-  base: f32,
-  mant: f32,
-}
-
-fn fp128(x: f32) -> Fp128 {
-  return Fp128(x, 0.0);
-}
-
-fn fp128_sum(a: Fp128, b: Fp128) -> Fp128 {
-  let s = a.base + b.base;
-  let e = (a.base - s) + b.base + a.mant + b.mant;
-  let t = s + e;
-  let f = e - (t - s);
-  return Fp128(t, f);
-}
-
-fn fp128_mul(a: Fp128, b: Fp128) -> Fp128 {
-  let p = a.base * b.base;
-  let e = a.base * b.mant + a.mant * b.base;
-  let t = p + e;
-  let f = e - (t - p);
-  return Fp128(t, f);
-}
-
-fn fp128_val(x: Fp128) -> f32 {
-  return x.base + x.mant;
+fn hash12(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn strip_head_packet(uv: vec2<f32>, stripIdx: f32, time: f32, speed: f32) -> f32 {
-  let head = fract(time * speed * (0.4 + fract(sin(stripIdx * 12.9898) * 43758.5453) * 0.6));
-  let d = abs(uv.y - head);
-  return pow(max(0.0, 1.0 - d * 20.0), 4.0);
+fn cyberPalette(t: f32) -> vec3<f32> {
+  return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.28318 * (vec3<f32>(1.0) * t + vec3<f32>(0.0, 0.33, 0.67)));
+}
+
+fn glyphMask(cellUV: vec2<f32>, id: f32) -> f32 {
+  let bar = step(0.25, cellUV.x) * step(cellUV.x, 0.75) * step(0.15, cellUV.y);
+  let dot = step(length(cellUV - vec2<f32>(0.5)), 0.2);
+  return max(bar, dot * step(fract(id * 0.41), 0.5));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -72,21 +52,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     let coord = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
-    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
-    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
-    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
-    let held = u.zoom_config.w > 0.5;
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    let speed = max(u.zoom_params.x * (1.0 + bass * 0.3), 0.001);
-    let density = max(u.zoom_params.y, 0.001);
-    let turbulence = clamp(u.zoom_params.z * select(1.0, 1.4, held), 0.0, 1.0);
-    let glow = clamp(u.zoom_params.w, 0.0, 1.0);
+    // Params
+    let speed = max(u.zoom_params.x * (1.0 + bass * 0.3), 0.001); // Flow Speed
+    let density = max(u.zoom_params.y, 0.001); // Strip Density
+    let turbulence = clamp(u.zoom_params.z, 0.0, 1.0); // Mouse turbulence
+    let glow = clamp(u.zoom_params.w, 0.0, 1.0); // Digital Glow
 
     let time = u.config.x;
     let aspect = resolution.x / max(resolution.y, 0.001);
+    let held = u.zoom_config.w > 0.5;
 
+    // Spring-following wake center in persistent-safe slots [133..138].
     let rawMouse = u.zoom_config.yz;
     let hasSpringState = arrayLength(&extraBuffer) > 138u;
     var mousePos = rawMouse;
@@ -114,16 +97,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[138] = 1.0;
     }
 
+    // Aspect-correct interaction keeps the wake circular on wide canvases.
     let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
-    let interact = smoothstep(0.3, 0.0, dist) * turbulence;
+    let interactRadius = 0.3 * select(1.0, 1.3, held);
+    let interact = smoothstep(interactRadius, 0.0, dist) * turbulence;
 
+    // Create Strips
     let numStrips = 20.0 + density * 100.0;
     let stripIdx = floor(uv.x * numStrips);
+
+    // Random per strip
     let rand = fract(sin(stripIdx * 12.9898) * 43758.5453);
 
+    // Vertical Flow
     let stripBin = (u32(abs(stripIdx)) % 8u) + 1u;
     let fftStrip = plasmaBuffer[stripBin].x;
     let flowSpeed = (rand * 0.5 + 0.5) * speed * 0.5 * (1.0 + fftStrip * 0.28);
+    // Mouse slows down or speeds up flow? Or deflects?
+    // Let's make mouse create a "wake" that pushes pixels sideways
 
     var clickWake = 0.0;
     var clickGlow = 0.0;
@@ -143,37 +134,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let xOffset = interact * sin(uv.y * 10.0 + time * 5.0) * 0.05 + clickWake * turbulence * 0.045;
 
-    let flowPhase = fp128_sum(fp128_mul(fp128(time), fp128(flowSpeed)), fp128(-uv.y));
     var sampleUV = uv;
     sampleUV.x = sampleUV.x + xOffset;
-    sampleUV.y = fract(fp128_val(flowPhase));
+    sampleUV.y = sampleUV.y - time * flowSpeed; // Flow down
 
-    let packet = strip_head_packet(uv, stripIdx, time, flowSpeed);
+    // Wrap Y
+    sampleUV.y = fract(sampleUV.y);
+
+    // Glitch effect on strips (branchless)
     sampleUV.y = sampleUV.y + select(0.0, sin(time * 10.0) * 0.01, rand > 0.8);
 
     let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-    let prev = textureLoad(dataTextureC, coord, 0);
 
+    // Digital artifacts
     let blockY = floor(uv.y * 50.0);
     let noise = fract(sin(dot(vec2<f32>(stripIdx, blockY), vec2<f32>(12.9898, 78.233))) * 43758.5453);
 
+    // Green tint / glow
     let lum = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let digitalColor = vec3<f32>(0.0, lum * 1.5, lum * 0.2);
+    let digitalColor = vec3<f32>(0.0, lum * 1.5, lum * 0.2); // Green matrix style
 
+    // Random "bright" characters
     let brightThreshold = 0.98 - treble * 0.04 - fftStrip * 0.035;
     let bright = step(brightThreshold, noise * (sin(time * 2.0 + stripIdx) * 0.5 + 0.5));
 
-    var outputColor = mix(color.rgb, digitalColor, glow);
-    outputColor = mix(outputColor, prev.rgb * 0.88, packet * glow * 0.25);
-    outputColor = outputColor + vec3<f32>(0.0, bright * glow + clickGlow * glow * 0.65 + packet * 0.4, clickGlow * glow * 0.12 + packet * mids * 0.15);
-    outputColor = acesToneMap(outputColor);
+    let finalRGB = mix(color.rgb, digitalColor, glow);
+    let gridSize = vec2<f32>(24.0 + density * 40.0, (24.0 + density * 40.0) * aspect);
+    let cellUV = fract(uv * gridSize);
+    let glyph = glyphMask(cellUV, stripIdx + time * 0.1);
+    var outputColor = finalRGB + vec3<f32>(0.0, bright * glow + clickGlow * glow * 0.65, clickGlow * glow * 0.12);
+    outputColor = mix(outputColor, outputColor + cyberPalette(stripIdx * 0.05 + time * 0.03) * 0.25, glyph * glow * 0.4);
+    outputColor = acesToneMap(outputColor * (0.95 + bass * 0.08));
 
+    // Alpha: digital glow and stream brightness drive compositing weight
     let streamLuma = dot(outputColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(glow * 0.5 + bright * 0.3 + streamLuma * 0.3 + packet * 0.15 + clickGlow * 0.1, 0.06, 0.98);
+    let alpha = clamp(glow * 0.5 + bright * 0.3 + streamLuma * 0.3, 0.0, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(outputColor, alpha));
+    let outColor = vec4<f32>(outputColor, alpha);
 
-    let depth = textureLoad(readDepthTexture, vec2<i32>(clamp(vec2<i32>(sampleUV * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1))), 0).r;
+    textureStore(writeTexture, coord, outColor);
+
+    // Passthrough depth
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(outputColor, alpha));
+    textureStore(dataTextureA, coord, outColor);
 }

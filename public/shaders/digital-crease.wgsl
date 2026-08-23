@@ -1,11 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Crease v2
-//  Category: geometric
-//  Features: mouse-driven, audio-reactive, temporal-paper-fold, depth-curve-distortion, chromatic-folding, upgraded-rgba, origami
-//  Complexity: Very High
-//  Chunks From: digital-crease
-//  Created: 2026-05-31
-//  By: 4-Agent Swarm
+//  Digital Crease — Batch 61
+//  Origami folds: spring local crease, held deepen, capped ripples,
+//  exact C fold memory, Kawasaki damping, chromatic folding.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -66,9 +62,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = vec2<f32>(gid.xy) / dims;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
+  let held = u.zoom_config.w > 0.5;
   let aspect = dims.x / dims.y;
   let audio = plasmaBuffer[0].xyz;
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let coord = vec2<i32>(gid.xy);
+
+  var smoothMouse = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring) { smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); }
+  if (gid.x == 0u && gid.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) { springPos = mouse; springVel = vec2<f32>(0.0); }
+    else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 9.0;
+      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time; extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
+  }
+
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
 
   // Param mapping: x=FoldCount, y=FoldDepth, z=FoldSoftness, w=ChromaOffset
   let foldCount = mix(2.0, 16.0, u.zoom_params.x);
@@ -87,10 +106,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dist = length(dToCenter);
 
   // Mouse performs local folds
-  let mouseDelta = uv - mouse;
+  let mouseDelta = uv - smoothMouse;
   let mouseAngle = atan2(mouseDelta.y, mouseDelta.x);
   let mouseDist = length(mouseDelta * vec2<f32>(aspect, 1.0));
-  let mouseFold = sin(mouseAngle * 4.0 + speed) * exp(-mouseDist * 5.0) * 0.4 * bassEnv;
+  let mouseFold = sin(mouseAngle * 4.0 + speed) * exp(-mouseDist * 5.0) * 0.45 * bassEnv * select(1.0, 1.5, held);
+
+  var rippleFold = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.2) {
+      let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      rippleFold += sin(rDist * 30.0 - age * 8.0) * smoothstep(0.14, 0.0, rDist) * (1.0 - age);
+    }
+  }
 
   // Mountain/valley assignment via sine folding
   let baseFold = angle * foldCount + speed * 0.25;
@@ -101,12 +131,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let signFold = select(-1.0, 1.0, rawFold > 0.0);
 
   // Crease angle with depth-curve distortion
-  let foldAngle = (rawFold * foldDepth * kawasaki * (1.0 - dist * 0.8) + mouseFold) * bassEnv;
+  let foldAngle = (rawFold * foldDepth * kawasaki * (1.0 - dist * 0.8) + mouseFold + rippleFold * 0.15) * bassEnv;
   let softness = foldSoftness * (1.0 - dist);
   let mask = smoothstep(-softness, 0.0, foldAngle) * smoothstep(softness, 0.0, foldAngle);
 
   // Temporal fold history for paper memory
-  let prevFold = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+  let prevFold = textureLoad(dataTextureC, coord, 0).r;
   let persistentMask = mix(mask, prevFold * 0.88, 0.22);
 
   // Depth controls paper layer ordering and shadow casting

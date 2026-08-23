@@ -785,35 +785,39 @@
     "id": "datamosh-brush",
     "name": "Datamosh Brush",
     "url": "shaders/datamosh-brush.wgsl",
-    "description": "Interactive datamosh effect. Mouse drags and corrupts pixels like P-frame compression artifacts.",
+    "description": "Interactive MPEG datamosh brush with spring smear vector, macroblock edge geometry, capped click corruption bursts, alpha ghost trails, and three-band audio.",
     "params": [
       {
         "id": "brush_size",
         "name": "Brush Size",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "block_size",
         "name": "Block Crush",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "decay",
         "name": "Decay Rate",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "threshold",
         "name": "Effect Threshold",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "features": [
@@ -822,22 +826,73 @@
       "stateful",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-ripples",
+      "held-drag",
+      "aces-tone-map"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "datamosh",
+      "temporal"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Block Crush",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Ghost Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
     "id": "digital-decay",
     "name": "Digital Decay",
     "url": "shaders/digital-decay.wgsl",
-    "description": "Simulates data corruption: block displacement, sub-pixel jitter, chromatic aberration, bit-flip channel noise, scanline static, and ghost-frame persistence — all scaling with audio bass and depth.",
+    "description": "Data corruption with spring hotspot, held burst, capped ripples, exact C ghost frames, block displacement, chromatic jitter, and ACES semantic alpha.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "audio-reactive",
       "depth-aware",
-      "temporal"
+      "temporal",
+      "mouse-driven",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "upgraded-rgba",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -846,7 +901,8 @@
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "block_size",
@@ -854,7 +910,8 @@
         "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "ghost_decay",
@@ -862,10 +919,46 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "depth_influence",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Corruption Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Block Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ghost Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Depth Influence",
         "default": 0.5,
         "min": 0,
@@ -883,23 +976,33 @@
       "chromatic",
       "temporal",
       "audio"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "digital-glitch-pass1",
     "name": "Digital Glitch (Pass 1)",
     "url": "shaders/digital-glitch-pass1.wgsl",
-    "description": "Glitch field generation: block displacement, scanline tearing, bitwise corruption seeds, and per-pixel corruption masks. Outputs glitch field to dataTextureA.",
+    "description": "Glitch field generation pass: spring corruption hotspot, held intensify, capped ripples, bitwise seeds, block displacement, and regional audio bands. Outputs field to dataTextureA.",
     "tags": [
       "glitch",
       "bitwise",
       "corruption",
       "multi-pass",
-      "digital"
+      "digital",
+      "audio-reactive"
     ],
     "features": [
       "multi-pass-1",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "multipass": {
       "pass": 1,
@@ -913,7 +1016,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "bit_manipulation",
@@ -921,7 +1025,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "error_propagation",
@@ -929,10 +1034,46 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Corruption Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bit Manipulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Error Propagation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Decay Rate",
         "default": 0.5,
         "min": 0,
@@ -1010,10 +1151,28 @@
     "id": "digital-waves",
     "name": "Digital Waves",
     "url": "shaders/digital-waves.wgsl",
-    "description": "Digital wave interference patterns.",
+    "description": "Cyber wave interference with hex quantization, spring cursor focus, held boost, capped ripples, regional FFT bins, and ACES tone map.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "held-drag",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "spring-cursor"
+    ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "cyber",
+      "waves",
+      "hex",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1022,7 +1181,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "param2",
@@ -1030,7 +1190,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "param3",
@@ -1038,7 +1199,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "param4",
@@ -1046,9 +1208,45 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "film-gate-weave",
