@@ -1263,11 +1263,25 @@
     "id": "glass-brick-distortion",
     "name": "Glass Brick Distortion",
     "url": "shaders/glass-brick-distortion.wgsl",
-    "description": "Physical glass brick wall with per-channel IOR chromatic dispersion (Snell's law), Schlick-Fresnel highlights, Beer-Lambert absorption, depth-aware thickness, audio-reactive refraction pulse, and ripple-driven brick wobble. Mouse cursor clears a window through the glass.",
+    "description": "Architectural glass brick wall with plano-convex lens distortion, chromatic aberration, Fresnel reflection, and depth-based thickness variation.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "audio-reactive",
+      "temporal",
+      "chromatic-aberration",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "distortion",
+      "glass",
+      "brick",
+      "refraction",
+      "fresnel",
+      "chromatic",
+      "grid",
+      "audio-reactive",
+      "depth-aware",
       "temporal"
     ],
     "params": [
@@ -1304,16 +1318,40 @@
         "step": 0.01
       }
     ],
-    "tags": [
-      "glass",
-      "brick",
-      "refraction",
-      "distortion",
-      "chromatic",
-      "ior",
-      "dispersion",
-      "physical",
-      "lens"
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brick Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "IOR Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Aberration",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1330,7 +1368,8 @@
       "caustic-refraction",
       "depth-layers",
       "chromatic-dispersion",
-      "fbm-texture"
+      "fbm-texture",
+      "temporal"
     ],
     "tags": [
       "glass",
@@ -1375,8 +1414,38 @@
     ],
     "updated": true,
     "updatedParams": [
-      "distortion",
-      "glass_density"
+      {
+        "index": 0,
+        "name": "Brick Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Mortar Size",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glass Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2449,7 +2518,8 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal"
     ],
     "description": "Physically-based refraction shader where luminance drives glass refractive index. Features Sellmeier chromatic dispersion, caustic highlights, Fresnel reflections, and subsurface scattering.",
     "params": [
@@ -2493,14 +2563,55 @@
       "refraction",
       "chromatic-dispersion",
       "caustics"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Refraction Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Surface Smoothness",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Specular Shine",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Light Distance",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "luminescent-glass-tiles",
+    "name": "Luminescent Glass",
     "url": "shaders/luminescent-glass-tiles.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
+    "description": "Glass tiles that refract based on video brightness and mouse interaction.",
     "params": [
       {
         "id": "density",
@@ -2535,13 +2646,49 @@
         "max": 1
       }
     ],
-    "description": "Glass tiles that refract based on video brightness and mouse interaction.",
     "tags": [
       "warp",
       "distort",
-      "transform"
+      "transform",
+      "glass",
+      "refraction",
+      "tiles"
     ],
-    "name": "Luminescent Glass"
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Density",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Mouse Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mouse Chaos",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "magnetic-field",
@@ -3097,20 +3244,70 @@
   },
   {
     "id": "prism-displacement",
-    "name": "Prism Lens",
+    "name": "Prism Displacement",
+    "category": "distortion",
     "url": "shaders/prism-displacement.wgsl",
-    "description": "Prismatic lens effect with chromatic angular dispersion, temporal lens rotation memory, depth-weighted magnification, audio-reactive refraction responding to bass, and edge shine.",
     "features": [
-      "mouse-driven",
       "audio-reactive",
+      "chromatic-aberration",
       "upgraded-rgba",
-      "temporal",
-      "chromatic",
-      "depth-aware"
+      "temporal-lens-rotation",
+      "chromatic-angular-dispersion",
+      "depth-magnification",
+      "spectral-wavelength-sampling",
+      "lens-distortion",
+      "anamorphic-streak",
+      "mouse-driven",
+      "temporal"
     ],
+    "description": "Prismatic displacement with anamorphic spectral lens dispersion, depth-weighted magnification, and chromatic rotation.",
     "params": [
       {
         "id": "zoomAmount",
+        "name": "Zoom Amount",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromatic",
+        "name": "Chromatic Amount",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rotationSpeed",
+        "name": "Rotation Speed",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "depthWeight",
+        "name": "Depth Weight",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "prism",
+      "distortion",
+      "chromatic",
+      "dispersion",
+      "lens",
+      "spectral",
+      "anamorphic"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
         "name": "Zoom Amount",
         "default": 0.5,
         "min": 0,
@@ -3118,7 +3315,7 @@
         "step": 0.01
       },
       {
-        "id": "chromatic",
+        "index": 1,
         "name": "Chromatic Amount",
         "default": 0.5,
         "min": 0,
@@ -3126,7 +3323,7 @@
         "step": 0.01
       },
       {
-        "id": "rotationSpeed",
+        "index": 2,
         "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
@@ -3134,82 +3331,104 @@
         "step": 0.01
       },
       {
-        "id": "depthWeight",
+        "index": 3,
         "name": "Depth Weight",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       }
-    ],
-    "tags": [
-      "warp",
-      "distort",
-      "transform",
-      "prism",
-      "chromatic",
-      "lens",
-      "temporal",
-      "audio-reactive",
-      "depth-aware"
     ]
   },
   {
     "id": "prismatic-mosaic",
     "name": "Prismatic Mosaic",
+    "category": "distortion",
     "url": "shaders/prismatic-mosaic.wgsl",
-    "description": "Color tiles break apart and reassemble into shifting prisms, turning strong colors into a kaleidoscopic mosaic that ripples across the image.",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
+    ],
+    "description": "Multi-layer prismatic facet tiles with volumetric fog, chromatic dispersion, vortex distortion, and depth-gradient edge glows.",
     "params": [
       {
         "id": "min_speed",
         "name": "Min Speed",
+        "type": "float",
         "default": 0.3,
         "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Minimum layer animation speed"
+        "max": 1
       },
       {
         "id": "max_speed",
         "name": "Max Speed",
+        "type": "float",
         "default": 0.7,
         "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Maximum layer animation speed"
+        "max": 1
       },
       {
         "id": "saturation_boost",
         "name": "Saturation Boost",
+        "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Saturation boost amount"
+        "max": 1
       },
       {
         "id": "fog_density",
         "name": "Fog Density",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "mosaic",
+      "prism",
+      "distortion",
+      "zoom",
+      "chromatic",
+      "fog"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Min Speed",
         "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Volumetric fog density"
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Max Speed",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Saturation Boost",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Fog Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
-    ],
-    "features": [
-      "depth-aware",
-      "temporal-persistence",
-      "colour-masking",
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -3636,7 +3855,11 @@
       "bicubic",
       "catmull-rom",
       "crystalline",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -3665,6 +3888,41 @@
       },
       {
         "id": "chroma",
+        "name": "Chromatic Sep",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Crystal Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Facet Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Chromatic Sep",
         "default": 0.1,
         "min": 0,
@@ -4114,7 +4372,7 @@
     "id": "voronoi-faceted-glass",
     "name": "Voronoi Faceted Glass",
     "url": "shaders/voronoi-faceted-glass.wgsl",
-    "description": "Cellular glass distortion effect.",
+    "description": "Cellular glass distortion effect with Voronoi facet refraction, mouse push/pull physics, and edge shading.",
     "params": [
       {
         "id": "density",
@@ -4150,11 +4408,54 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "voronoi",
+      "glass",
+      "refraction",
+      "faceted"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Shimmer",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {

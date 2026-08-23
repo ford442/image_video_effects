@@ -51,7 +51,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let starSize = mix(0.004, 0.014, u.zoom_params.y);
   let tubeSpread = mix(0.3, 1.0, u.zoom_params.z);
   let trailLen = mix(0.88, 0.96, u.zoom_params.w);
-  let bass = plasmaBuffer[0].x; let treble = plasmaBuffer[0].z;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let trebleDetail = clamp(treble, 0.0, 1.5);
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
   var col = vec3<f32>(0.01, 0.008, 0.022);
@@ -72,7 +74,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       if (age < 0.0 || age > 3.5) { continue; }
       let energy = (0.7+bass*0.5)*(1.0+seed*0.2);
       let starY = tubeY + age*1.8*energy;
-      let starPos = vec2<f32>(tubeX + sin(age*3.0+seed*10.0)*0.02, starY);
+      let starPos = vec2<f32>(tubeX + sin(age*(3.0+mids*1.5)+seed*10.0)*0.02*(1.0+mids), starY);
       let fade = smoothstep(3.0, 0.1, age);
       let sz = starSize*(1.0+bass*0.2);
       col += starCol(seed+sf*0.1)*softGlow(uv, starPos, sz, fade*energy*2.0);
@@ -143,9 +145,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dust = step(0.987-treble*0.03, hash1(dot(uv, vec2<f32>(127.1,311.7))+time*8.0));
   col += vec3<f32>(0.7,0.85,1.0)*dust*treble*0.5;
   col = acesToneMap(col*1.08);
-  textureStore(dataTextureB, pixel, vec4<f32>(col*0.5+prev*0.4, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(writeTexture, pixel, vec4<f32>(col, clamp(length(col)*1.1+0.14, 0.14, 0.96)));
+  let alpha = clamp(length(col)*1.1+0.14, 0.14, 0.96);
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   let depthOut = clamp(dot(col, vec3<f32>(0.299, 0.587, 0.114)) * 0.95, 0.0, 1.0);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

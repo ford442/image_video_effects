@@ -58,8 +58,9 @@ fn wheelColor(n: f32, total: f32) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let time = u.config.x;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
   let coord = vec2<i32>(global_id.xy);
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -67,7 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseUV = u.zoom_config.yz;
   let mouseDown = step(0.5, u.zoom_config.w);
 
-  let prevState = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prevState = textureLoad(dataTextureC, coord, 0);
   let bassEnv = bass_env(prevState.r, bass, 0.8, 0.15);
 
   let speed = (0.25 + bassEnv * 0.6) * (1.0 + u.zoom_params.x * 2.0);

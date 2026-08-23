@@ -1,6 +1,23 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Optical / Glass / Prism / Crystal / Lens set upgrade complete)
+**Last updated:** 2026-08-23 (Optical / Prism / Crystal / Lens / Caustic set upgrade complete)
+
+## 2026-08-23 — Optical / Prism / Crystal / Lens / Caustic Upgrade Batch (10 shaders)
+
+- Upgraded 10 optical / prism / crystal / lens / caustic shaders:
+  1. `prism-displacement` (distortion): Anamorphic spectral lens dispersion with depth-weighted magnification, rotation, ACES tonemap, exact C loads, and spring cursor in `extraBuffer[133..138]`. Added aligned updatedParams.
+  2. `prismatic-mosaic` (distortion): Multi-layer prismatic facet tiles with volumetric fog, chromatic dispersion, vortex distortion, ACES tonemap, exact C loads, live saturation boost slider, writeback to dataTextureA, and spring cursor. Added aligned updatedParams.
+  3. `refraction-tunnel` (distortion): Curvature-warped prismatic tunnel with hoop rails, liquid-rainbow caustics, ACES tonemap, exact C loads, and spring cursor.
+  4. `spec-bicubic-crystal` (distortion): Bicubic Catmull-Rom crystalline distortion, resolved mask write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  5. `spiral-lens` (distortion): Möbius kaleidoscope & domain-warped spiral refraction, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor.
+  6. `voronoi-faceted-glass` (distortion): Cellular glass distortion with Voronoi facet refraction, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  7. `gravitational-lensing` (advanced-hybrid): Schwarzschild geodesic raytracing with Shakura-Sunyaev disk, Planck blackbody fit, standard clamp tonemap, exact C loads, and spring cursor.
+  8. `gravitational-lensing-nlm` (advanced-hybrid): Relativistic geodesics with Non-Local Means patch filtering, ACES tonemap, exact C loads, writeback to dataTextureA, and spring cursor. Added aligned updatedParams.
+  9. `digital-lens-prismatic` (advanced-hybrid): Digital prismatic lens with hex grid, Cauchy dispersion, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor.
+  10. `crystal-illuminator-iridescence` (advanced-hybrid): Faceted glass and gemstone crystal with thin-film rainbow iridescence, ACES tonemap, exact C loads, writeback to dataTextureA, and spring cursor. Added aligned updatedParams.
+- Agent contract applied 10/10: Full 13-binding layout, ACES tonemapping, semantic alpha, writeback only to dataTextureA (and writeTexture/writeDepthTexture), exact textureLoad from dataTextureC, plasmaBuffer three-band audio reactivity, bounded extraBuffer[133..138] state only (single-writer), preserved mouse / held / click-ripple interactivity, and naga-clean WGSL.
+- Preserved saved parameter contracts byte-for-byte in JSONs with aligned updatedParams.
+- Proof: Naga 10/10, wgsl_precommit_gate 10/10, extraBuffer audit PASS, dead-sliders audit PASS (all 4 sliders live across all 10), URL policy PASS, Jest 84/84 suites (559 pass, 1 skip), and SKIP_WASM_BUILD=1 production build PASS. Real-GPU visual QA remains external handoff.
 
 ## 2026-08-23 — Optical / Glass / Prism / Crystal / Lens Upgrade Batch (10 shaders)
 
@@ -1183,6 +1200,21 @@
   Hummingbird gained its missing ACES/C/A/semantic-alpha path.
 - Focused Naga/contract/dead-slider gates, catalogs, duplicates, URLs, Jest and
   canonical build pass. Real-GPU visual/performance acceptance remains external.
+
+## Fireworks / atmospheric / fractal generative cohort (2026-08-23)
+
+- Ring Shell, Roman Candle, Smoke Bloom, Strobe Shell, Willow Cascade, Wind
+  Ripple, Fluffy Raincloud, Fourier Epicycles, Spore Network, and Chrono
+  Dendrite Forge now satisfy the bindings 0–12, ACES, semantic-alpha, exact-C,
+  A-only, plasma-XYZ contract with 40 named controls.
+- Preserve Raincloud raw A packing `[density,vx,vy,moisture]` and Fourier packed
+  `[bass envelope,trail R,trail G,alpha]`; all B writebacks are intentionally
+  absent. Raincloud alone uses extraBuffer state, bounded to `[133..136]`.
+- Important repairs: `gen-fluffy-raincloud` uses the underscore WGSL/JSON path;
+  its WGSL time wrap must not use unsupported `mod()`. Smoke bloom uses exact
+  five-tap C bloom; Chrono must not read engine FFT slots; Spore and Chrono now
+  have exact-load history and bounded click rings. Naga/Jest/build pass; GPU QA
+  remains external.
 
 ## Reaction / flow / sand / optical-fluid cohort (2026-08-23)
 

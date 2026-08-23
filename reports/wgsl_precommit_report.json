@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-23T17:59:03.408202",
+  "timestamp": "2026-08-23T18:55:34.139269",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
+      "file": "public/shaders/crystal-illuminator-iridescence.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-cycloid-bloom.wgsl",
+      "file": "public/shaders/digital-lens-prismatic.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-cymatic-plasma-mandalas.wgsl",
+      "file": "public/shaders/gravitational-lensing-nlm.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-cymatic-quantum-silk-loom.wgsl",
+      "file": "public/shaders/gravitational-lensing.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-de-jong-attractor.wgsl",
+      "file": "public/shaders/prism-displacement.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
+      "file": "public/shaders/prismatic-mosaic.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-dla-copper-deposition.wgsl",
+      "file": "public/shaders/refraction-tunnel.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-dmt-fractal-zoom.wgsl",
+      "file": "public/shaders/spec-bicubic-crystal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-dragon-curve.wgsl",
+      "file": "public/shaders/spiral-lens.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen_cyclic_automaton.wgsl",
+      "file": "public/shaders/voronoi-faceted-glass.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

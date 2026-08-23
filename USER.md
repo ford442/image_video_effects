@@ -10,6 +10,15 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
+- **Optical / Prism / Crystal / Lens / Caustic Batch (2026-08-23):** Upgraded
+  prism-displacement, prismatic-mosaic, refraction-tunnel, spec-bicubic-crystal,
+  spiral-lens, voronoi-faceted-glass, gravitational-lensing,
+  gravitational-lensing-nlm, digital-lens-prismatic, and
+  crystal-illuminator-iridescence under the full 13-binding / ACES /
+  semantic alpha / A-authoritative / exact C loads / three-band plasmaBuffer /
+  guarded extraBuffer[133..138] contract with byte-exact saved params.
+  Naga 10/10, workgroups 16x16, all 4 sliders live, Jest 84/84 (559 pass),
+  and production build green; real-GPU visual QA remains external.
 - **Optical / Glass / Prism / Crystal / Lens Batch (2026-08-23):** Upgraded
   bubble-lens, crystal-facets, cyber-lens, fractal-glass-distort,
   glass-brick-distortion, glass-brick-wall, infinite-zoom-lens,
@@ -91,6 +100,12 @@ _Learn about the person you're helping. Update this as you go._
   Mycelium through Dragon Curve now meet the exact-C, A-only, ACES,
   semantic-alpha, three-band-audio, bounded-state, interaction, and Naga
   contract. Every definition exposes four live named params.
+- **Fireworks/fractal generative cohort (2026-08-23):** Ring Shell through
+  Chrono Dendrite Forge now meet the exact-C/A-only/ACES/semantic-alpha/
+  plasma-XYZ contract with 40 named params. Raincloud retains raw A simulation
+  state in its underscore-backed WGSL and only `[133..136]` spring state;
+  Fourier retains packed envelope/trail A state. Naga/Jest/build are green;
+  real-GPU visual QA remains external.
 - **Main reconcile (2026-08-23):** Merged local optical/branch-union `main` with
   origin Batch 70, generative named-params #1167/#1169, and Batch 67 (#1170).
   Kept local optical `holographic-flicker`; took Batch 67 `glass-wipes`,
