@@ -7455,18 +7455,26 @@
     "id": "liquid-jelly-fluid",
     "name": "Liquid Jelly Fluid",
     "url": "shaders/liquid-jelly-fluid.wgsl",
-    "description": "Catalog entry for Liquid Jelly Fluid.",
+    "description": "Vortical cyan, ultraviolet, and lime elastic dye with Kelvin–Helmholtz curls, pressure projection, vorticity confinement, and strong pointer stirring.",
     "tags": [
       "liquid-jelly",
       "fluid-simulation",
       "elastic-bounce",
-      "subsurface-scattering"
+      "subsurface-scattering",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "features": [
       "liquid-jelly",
       "fluid-simulation",
       "elastic-bounce",
-      "subsurface-scattering"
+      "subsurface-scattering",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "params": [
       {
@@ -7506,13 +7514,49 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Dye Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Vorticity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Elasticity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = velocity.xy, pressure, density; exact bounded state loads",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "liquid-magnetic-ferro-em",
     "name": "Liquid Magnetic Ferro EM",
     "url": "shaders/liquid-magnetic-ferro-em.wgsl",
-    "description": "Ferrofluid simulation coupled with electromagnetic wave propagation. Rosensweig instability spikes are driven by both static magnetic dipoles and time-varying EM waves, with metallic iridescence colored by field direction.",
+    "description": "Black-iron Rosensweig spike lattices driven by a transported electromagnetic field, rotating dipoles, traveling field packets, and violet/cyan/electric-red arcs.",
     "features": [
       "advanced-hybrid",
       "ferrofluid",
@@ -7520,7 +7564,9 @@
       "wave-propagation",
       "mouse-driven",
       "temporal",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "exact-feedback"
     ],
     "params": [
       {
@@ -7564,6 +7610,42 @@
         "description": "Number of orbiting magnetic dipoles"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Field Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spike Sharpness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "EM Coupling",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Dipole Motion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = EM field.xy, scalar potential, charge; exact bounded state loads",
+    "updated": true,
     "chunks_used": [
       "Magnetic dipole field, Rosensweig spikes (liquid_magnetic_ferro.wgsl)",
       "EM wave propagation, charge injection (alpha-em-field-simulation.wgsl)",
@@ -7585,7 +7667,7 @@
     "id": "liquid-metal-prismatic",
     "name": "Liquid Metal Prismatic",
     "url": "shaders/liquid-metal-prismatic.wgsl",
-    "description": "Liquid metal ripple distortion combined with 4-band spectral prismatic dispersion. Curved metal surface acts as a dynamic liquid prism — ripples create varying curvature that refracts light into separated wavelength bands via Cauchy's equation.",
+    "description": "Flowing silver facets split the image into four persistent spectral bands, with moving shard seams, curvature ribbons, rotating light sweeps, and click refraction fronts.",
     "tags": [
       "prismatic",
       "dispersion",
@@ -7600,7 +7682,11 @@
       "liquid",
       "metallic",
       "physical-dispersion",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "params": [
       {
@@ -7636,24 +7722,68 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ripple Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ripple Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Prism Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Spectral Saturation",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = violet, cyan, amber, red spectral-band intensities",
+    "updated": true,
     "target_rating": 4.8
   },
   {
     "id": "liquid-oil-iridescence",
     "name": "Liquid Oil Iridescence",
     "url": "shaders/liquid-oil-iridescence.wgsl",
-    "description": "Liquid Oil Iridescence",
+    "description": "Pearl-black film islands transport magenta, cyan, and lime interference contours through fast capillary streams with held-pointer thinning.",
     "tags": [
       "liquid-oil",
       "thin-film-interference",
       "depth-aware",
-      "spectral-render"
+      "spectral-render",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "features": [
       "liquid-oil",
       "thin-film-interference",
       "depth-aware",
-      "spectral-render"
+      "spectral-render",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "params": [
       {
@@ -7693,6 +7823,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Film Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Film IOR",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Interference Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Capillary Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = spectral interference RGB, normalized film thickness",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {

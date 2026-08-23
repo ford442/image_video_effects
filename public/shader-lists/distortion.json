@@ -1904,9 +1904,12 @@
     "url": "shaders/liquid-prism.wgsl",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "upgraded-rgba"
     ],
-    "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens. Audio reactivity pulses ripple strength and prism highlights with the beat.",
+    "description": "Fast rotating triangular glass shards split the image into laser RGB dispersion with caustic spokes, refractive sweeps, click fronts, and held-pointer facet bending.",
     "params": [
       {
         "id": "strength",
@@ -1941,6 +1944,38 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Prism Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Shard Frequency",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA history",
+    "updated": true,
     "tags": [
       "warp",
       "distort",

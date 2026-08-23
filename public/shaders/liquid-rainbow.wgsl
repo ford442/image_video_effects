@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Liquid Rainbow (Upgraded Batch 51)
+//  Liquid Rainbow (Deep-polished Batch 59; Batch 51 wave foundation)
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-15
+//  A/C packing: display RGBA exact-load history. B/extraBuffer unused.
+//  Upgraded: 2026-08-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -71,11 +72,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Dual continuous motion: Trochoidal Gerstner wave array + ambient vortex drift
   let pAspect = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-  let wave1 = trochoidalWave(pAspect, normalize(vec2<f32>(1.0, 0.6)), 12.0 + turbulence * 14.0, 0.003 * depthFactor, 1.8 + audio.x * 2.0, time);
-  let wave2 = trochoidalWave(pAspect, normalize(vec2<f32>(-0.7, 1.0)), 18.0 + turbulence * 18.0, 0.002 * depthFactor, 2.4 + audio.y * 2.5, time);
+  let wave1 = trochoidalWave(pAspect, normalize(vec2<f32>(1.0, 0.6)), 12.0 + turbulence * 14.0, 0.003 * depthFactor, 4.2 + audio.x * 3.0, time);
+  let wave2 = trochoidalWave(pAspect, normalize(vec2<f32>(-0.7, 1.0)), 18.0 + turbulence * 18.0, 0.002 * depthFactor, 5.1 + audio.y * 3.4, time);
+  let wave3 = trochoidalWave(pAspect, normalize(vec2<f32>(0.35, -1.0)), 27.0 + turbulence * 11.0, 0.0014 * depthFactor, 7.0 + audio.z * 4.0, time);
 
-  var totalDisp = (wave1.xy + wave2.xy) * mix(1.25, 0.55, viscosity);
-  var waveCrest = (wave1.z + wave2.z) * 150.0;
+  let braidA = sin(pAspect.x * 15.0 + sin(pAspect.y * 7.0 - time * 3.5) * 2.0 - time * 6.0);
+  let braidB = cos(pAspect.y * 18.0 + sin(pAspect.x * 9.0 + time * 4.0) * 1.7 + time * 7.2);
+  let braidFlow = vec2<f32>(braidA, braidB) * (0.0012 + turbulence * 0.0025);
+  var totalDisp = (wave1.xy + wave2.xy + wave3.xy + braidFlow) * mix(1.25, 0.55, viscosity);
+  var waveCrest = (wave1.z + wave2.z + wave3.z) * 150.0 + (braidA + braidB) * 0.3;
 
   // Interactive pointer drag / vortex shear
   let mousePos = u.zoom_config.yz;
@@ -111,7 +116,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fresnel = fresnelSchlick(max(normal.z, 0.0), 0.038);
 
   // Thin-film interference phase calculation
-  let filmAngle = time * (0.12 + audio.y * 0.2) + dot(uv, vec2<f32>(3.0, 5.0));
+  let filmAngle = time * (1.8 + audio.y * 1.4) + dot(uv, vec2<f32>(7.0, 11.0)) + braidA * 0.45;
   let filmThickness = waveCrest * 0.15 + length(totalDisp) * 12.0 + dispersion * 0.5;
   let phaseShift = filmThickness + filmAngle * 0.1;
   let iridescentColor = spectralPalette(fract(phaseShift));

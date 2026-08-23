@@ -435,7 +435,7 @@
     "id": "liquid-jelly",
     "name": "Liquid Jelly",
     "url": "shaders/liquid-jelly.wgsl",
-    "description": "Spring-damped jelly deformation with subsurface scattering, audio-responsive elasticity, depth masking, and temporal wobble trails.",
+    "description": "Coral/aqua bioluminescent Kelvin–Voigt jelly with layered gelatin lobes, traveling soliton ridges, fast shear, sharp subsurface highlights, and bounded advected trails.",
     "features": [
       "audio-reactive",
       "depth-aware",
@@ -444,7 +444,9 @@
       "subsurface-scattering",
       "temporal",
       "upgraded-rgba",
-      "volume-shading"
+      "volume-shading",
+      "soliton-ridges",
+      "exact-feedback"
     ],
     "tags": [
       "filter",
@@ -527,6 +529,7 @@
         "step": 0.01
       }
     ],
+    "feedbackPacking": "A/C = display RGBA history; exact bounded advected loads",
     "updated": true
   },
   {
@@ -590,7 +593,7 @@
     "id": "liquid-mirror",
     "name": "Liquid Mirror",
     "url": "shaders/liquid-mirror.wgsl",
-    "description": "Metallic liquid surface that reflects the image and ripples under the mouse.",
+    "description": "Fast mercury ribbons fold into mirror seams with cobalt/rose accents, moving reflection sweeps, click waves, and held push/pull deformation.",
     "params": [
       {
         "id": "distort",
@@ -621,8 +624,43 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Ribbon Smoothness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Reflectivity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Push Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA history",
+    "updated": true,
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -633,7 +671,7 @@
     "id": "liquid-oil",
     "name": "Liquid Oil",
     "url": "shaders/liquid-oil.wgsl",
-    "description": "",
+    "description": "Warm petrol marbling in black, amber, teal, and oxidized orange, driven by advected vortex cells, tendrils, click stirring, and a fast conveyor flow.",
     "tags": [
       "filter",
       "image-processing"
@@ -680,8 +718,47 @@
         "description": "Color manipulation amount"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Stir Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Petrol Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA history",
+    "updated": true,
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
     ]
   },
   {
@@ -1005,13 +1082,15 @@
     "id": "liquid-rainbow",
     "name": "Liquid Rainbow",
     "url": "shaders/liquid-rainbow.wgsl",
-    "description": "Thin-film liquid refraction with spectral ripple crests, Fresnel edge color, audio-reactive dispersion, and depth-aware compositing.",
+    "description": "Braided spectral ribbons and layered trochoidal crests race through vortex transport, sharp thin-film bands, and energetic click fronts.",
     "tags": [
       "filter",
       "image-processing",
       "liquid",
       "rainbow",
-      "iridescent"
+      "iridescent",
+      "braided-ribbons",
+      "exact-feedback"
     ],
     "params": [
       {
@@ -1096,6 +1175,7 @@
         "step": 0.01
       }
     ],
+    "feedbackPacking": "A/C = display RGBA history; exact bounded loads",
     "updated": true
   },
   {

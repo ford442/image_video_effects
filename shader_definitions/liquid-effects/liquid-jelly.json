@@ -2,7 +2,7 @@
   "id": "liquid-jelly",
   "name": "Liquid Jelly",
   "url": "shaders/liquid-jelly.wgsl",
-  "description": "Spring-damped jelly deformation with subsurface scattering, audio-responsive elasticity, depth masking, and temporal wobble trails.",
+  "description": "Coral/aqua bioluminescent Kelvin–Voigt jelly with layered gelatin lobes, traveling soliton ridges, fast shear, sharp subsurface highlights, and bounded advected trails.",
   "features": [
     "audio-reactive",
     "depth-aware",
@@ -11,7 +11,9 @@
     "subsurface-scattering",
     "temporal",
     "upgraded-rgba",
-    "volume-shading"
+    "volume-shading",
+    "soliton-ridges",
+    "exact-feedback"
   ],
   "tags": [
     "filter",
@@ -94,5 +96,6 @@
       "step": 0.01
     }
   ],
+  "feedbackPacking": "A/C = display RGBA history; exact bounded advected loads",
   "updated": true
 }

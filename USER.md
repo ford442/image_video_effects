@@ -10,6 +10,10 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
+- **Latest shader batch:** Liquid Shader Upgrade Batch 59 is a completed ten-effect
+  premium liquid cohort with a mixed performance budget. Jelly Fluid, Magnetic
+  Ferro EM, and Oil Iridescence may use heavier bounded state/optics work; the
+  other seven should remain efficient single-pass effects.
 
 ## Context
 

@@ -2,7 +2,7 @@
   "id": "liquid-metal-prismatic",
   "name": "Liquid Metal Prismatic",
   "url": "shaders/liquid-metal-prismatic.wgsl",
-  "description": "Liquid metal ripple distortion combined with 4-band spectral prismatic dispersion. Curved metal surface acts as a dynamic liquid prism — ripples create varying curvature that refracts light into separated wavelength bands via Cauchy's equation.",
+  "description": "Flowing silver facets split the image into four persistent spectral bands, with moving shard seams, curvature ribbons, rotating light sweeps, and click refraction fronts.",
   "tags": [
     "prismatic",
     "dispersion",
@@ -17,7 +17,11 @@
     "liquid",
     "metallic",
     "physical-dispersion",
-    "HDR"
+    "HDR",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-state",
+    "exact-feedback"
   ],
   "params": [
     {
@@ -53,5 +57,13 @@
       "step": 0.01
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Ripple Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Ripple Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Prism Curvature", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Spectral Saturation", "default": 0.7, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = violet, cyan, amber, red spectral-band intensities",
+  "updated": true,
   "target_rating": 4.8
 }

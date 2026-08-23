@@ -2,18 +2,26 @@
   "id": "liquid-jelly-fluid",
   "name": "Liquid Jelly Fluid",
   "url": "shaders/liquid-jelly-fluid.wgsl",
-  "description": "Catalog entry for Liquid Jelly Fluid.",
+  "description": "Vortical cyan, ultraviolet, and lime elastic dye with Kelvin–Helmholtz curls, pressure projection, vorticity confinement, and strong pointer stirring.",
   "tags": [
     "liquid-jelly",
     "fluid-simulation",
     "elastic-bounce",
-    "subsurface-scattering"
+    "subsurface-scattering",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-state",
+    "exact-feedback"
   ],
   "features": [
     "liquid-jelly",
     "fluid-simulation",
     "elastic-bounce",
-    "subsurface-scattering"
+    "subsurface-scattering",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-state",
+    "exact-feedback"
   ],
   "params": [
     {
@@ -53,5 +61,13 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Dye Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Vorticity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Elasticity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = velocity.xy, pressure, density; exact bounded state loads",
+  "updated": true,
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

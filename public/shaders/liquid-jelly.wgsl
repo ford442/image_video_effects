@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Liquid Jelly (Upgraded Batch 51)
+//  Liquid Jelly (Deep-polished Batch 59; Kelvin-Voigt foundation from Batch 51)
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-15
+//  A/C packing: display RGBA, exact bounded advected history. B/extraBuffer unused.
+//  Upgraded: 2026-08-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -68,17 +69,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let centerDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let foreground = 1.0 - smoothstep(0.72, 0.98, centerDepth);
 
-  // Dual continuous motion: Primary viscoelastic standing mode + Secondary gelatin shear
+  // Four smooth mechanisms: Kelvin-Voigt modes, fast shear, lobe orbit, soliton ridge.
   let pAspect = (uv - 0.5) * vec2<f32>(aspect, 1.0);
   let modalFlow = viscoelasticModalFlow(pAspect, time, elasticity, damping) * foreground;
   let gelatinShear = vec2<f32>(
-    sin(pAspect.y * 11.0 + time * (1.2 + audio.x * 2.0)),
-    cos(pAspect.x * 10.0 - time * (1.0 + audio.y * 1.5))
+    sin(pAspect.y * 11.0 + time * (3.1 + audio.x * 3.0)),
+    cos(pAspect.x * 10.0 - time * (2.7 + audio.y * 2.4))
   ) * (0.0018 / (1.0 + damping * 0.3)) * foreground;
+  let lobeCenter = vec2<f32>(0.22 * sin(time * 2.1), 0.16 * cos(time * 2.7));
+  let lobeDelta = pAspect - lobeCenter;
+  let lobeDist = max(length(lobeDelta), 0.0001);
+  let lobePulse = exp(-lobeDist * lobeDist * 18.0) * sin(lobeDist * 25.0 - time * 7.0);
+  let soliton = 1.0 / cosh(clamp((pAspect.x + 0.22 * sin(pAspect.y * 8.0) - sin(time * 1.7) * 0.48) * 8.0, -8.0, 8.0));
+  let lobeFlow = vec2<f32>(lobeDelta.x / aspect, lobeDelta.y) / lobeDist * lobePulse * wobbleStrength * 0.24;
+  let solitonFlow = vec2<f32>(0.0, cos(pAspect.y * 13.0 + time * 4.0)) * soliton * wobbleStrength * 0.16;
 
-  var displacement = modalFlow + gelatinShear;
-  var wobbleEnergy = 0.0;
-  var edgeEnergy = 0.0;
+  var displacement = modalFlow + gelatinShear + lobeFlow + solitonFlow;
+  var wobbleEnergy = abs(lobePulse) * 0.32 + soliton * 0.42;
+  var edgeEnergy = soliton * 0.28;
 
   // Interactive pointer drag / spring mass tether
   let mousePos = u.zoom_config.yz;
@@ -115,7 +123,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
   // Exact-load temporal state feedback from dataTextureC
-  let histCoord = clamp(vec2<i32>(floor((uv + displacement * 0.25) * resolution)), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+  let histCoord = clamp(vec2<i32>(floor((uv - displacement * (0.35 + 0.25 * u.zoom_params.x)) * resolution)), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
   let history = textureLoad(dataTextureC, histCoord, 0);
 
   // 2.5D surface normal & Fresnel rim
@@ -123,14 +131,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fresnel = fresnelSchlick(max(normal.z, 0.0), 0.045);
 
   let thickness = clamp(0.12 + length(displacement) * 22.0 + wobbleEnergy * 0.12, 0.0, 1.8);
-  let warmTint = vec3<f32>(1.0, 0.42, 0.22);
-  let coolTint = vec3<f32>(0.16, 0.62, 1.0);
+  let warmTint = vec3<f32>(1.0, 0.24, 0.16);
+  let coolTint = vec3<f32>(0.02, 0.88, 0.9);
   let scatterTint = mix(warmTint, coolTint, tintShift);
   let absorption = exp(-thickness * vec3<f32>(1.6, 1.05, 0.6));
 
-  var rgb = mix(scatterTint, baseColor.rgb, absorption) + scatterTint * edgeEnergy * (0.14 + audio.y * 0.35) + fresnel * vec3<f32>(0.15, 0.22, 0.3);
+  let bioLime = vec3<f32>(0.48, 1.0, 0.18) * soliton * (0.08 + audio.z * 0.2);
+  var rgb = mix(scatterTint, baseColor.rgb, absorption) + scatterTint * edgeEnergy * (0.2 + audio.y * 0.42) + fresnel * vec3<f32>(0.22, 0.34, 0.42) + bioLime;
 
-  let trailMix = clamp((0.08 + u.zoom_params.x * 0.18) * history.a, 0.05, 0.32);
+  let trailMix = clamp((0.06 + u.zoom_params.x * 0.2) * clamp(history.a, 0.0, 1.0), 0.03, 0.3);
   rgb = mix(rgb, history.rgb, trailMix);
   rgb = acesToneMapping(rgb);
 

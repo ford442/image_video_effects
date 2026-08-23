@@ -2,6 +2,20 @@
 
 **Last updated:** 2026-08-21 (getGPUTimings JS/C++ ABI)
 
+## 2026-08-23 — Liquid Shader Upgrade Batch 59 complete
+
+- Implement the ten named liquid shaders from the supplied plan. Preserve
+  byte-exact saved params and renderer contracts; use exact bounded C loads and
+  documented feedback packing; wire all four sliders, real three-band audio,
+  aspect-correct mouse/held/capped clicks; regenerate catalogs/manifest and add
+  batch briefs, shader notes, and coordinator review with structural, type,
+  Jest, and build proof. Jelly Fluid, Magnetic Ferro EM, and Oil Iridescence
+  receive the heavier bounded sampling/state budgets; all remain single-pass.
+- Closed with exact saved params 10/10, strict focused audits and structural
+  gate 10/10 (Naga unavailable), 1,333 unique catalog/manifest entries with
+  parity, clean uniforms/TypeScript, Jest 81/81 (545 pass, 1 skip), and a green
+  SKIP_WASM_BUILD production build. Real-GPU visual/performance QA is external.
+
 ## 2026-08-23 — Gemini shader-upgrade branch is unclosed WIP
 
 - `new-shader-upgrades` is 10 commits ahead of `main`, pushed through
