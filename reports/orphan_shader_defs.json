@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-07-26T11:25:19.533454+00:00",
-  "definitions_scanned": 1313,
-  "wgsl_files_scanned": 1326,
+  "timestamp": "2026-08-23T01:03:19.135666+00:00",
+  "definitions_scanned": 1345,
+  "wgsl_files_scanned": 1367,
   "manifests": {
     "shader_coordinates": "public/shader_coordinates.json",
     "shader_coordinates_count": 645,
@@ -9,17 +9,17 @@
     "seed_shaders_count": 20
   },
   "summary": {
-    "local": 1313,
+    "local": 1345,
     "storage-only": 0,
     "allowlisted": 0,
     "likely-broken": 0,
     "parse-error": 0
   },
   "wgsl_summary": {
-    "cataloged": 1310,
+    "cataloged": 1342,
     "template-prefix": 4,
     "subgroup-variant": 0,
-    "multipass-secondary": 12,
+    "multipass-secondary": 21,
     "orphan": 0
   },
   "only_def_count": 0,
@@ -3566,10 +3566,30 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-abyssal-plasma-void-medusa",
+      "def_path": "shader_definitions/generative/gen-abyssal-plasma-void-medusa.json",
+      "expected_wgsl": "gen-abyssal-plasma-void-medusa.wgsl",
+      "local_path": "public/shaders/gen-abyssal-plasma-void-medusa.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-abyssal-quantum-leviathan-skeleton",
       "def_path": "shader_definitions/generative/gen-abyssal-quantum-leviathan-skeleton.json",
       "expected_wgsl": "gen-abyssal-quantum-leviathan-skeleton.wgsl",
       "local_path": "public/shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-abyssal-silicate-geode-weaver",
+      "def_path": "shader_definitions/generative/gen-abyssal-silicate-geode-weaver.json",
+      "expected_wgsl": "gen-abyssal-silicate-geode-weaver.wgsl",
+      "local_path": "public/shaders/gen-abyssal-silicate-geode-weaver.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -3806,6 +3826,26 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-bioluminescent-cyber-aether-void-seahorse",
+      "def_path": "shader_definitions/generative/gen-bioluminescent-cyber-aether-void-seahorse.json",
+      "expected_wgsl": "gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
+      "local_path": "public/shaders/gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-bioluminescent-neural-lattice-weaver",
+      "def_path": "shader_definitions/generative/gen-bioluminescent-neural-lattice-weaver.json",
+      "expected_wgsl": "gen-bioluminescent-neural-lattice-weaver.wgsl",
+      "local_path": "public/shaders/gen-bioluminescent-neural-lattice-weaver.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-bioluminescent-reaction-diffusion",
       "def_path": "shader_definitions/generative/gen-bioluminescent-reaction-diffusion.json",
       "expected_wgsl": "gen-bioluminescent-reaction-diffusion.wgsl",
@@ -3880,6 +3920,16 @@
       "def_path": "shader_definitions/generative/gen-celestial-aether-seraphim-wings.json",
       "expected_wgsl": "gen-celestial-aether-seraphim-wings.wgsl",
       "local_path": "public/shaders/gen-celestial-aether-seraphim-wings.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-celestial-clockwork-plasma-loom",
+      "def_path": "shader_definitions/generative/gen-celestial-clockwork-plasma-loom.json",
+      "expected_wgsl": "gen-celestial-clockwork-plasma-loom.wgsl",
+      "local_path": "public/shaders/gen-celestial-clockwork-plasma-loom.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -4006,6 +4056,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-chromatic-oracle-jelly",
+      "def_path": "shader_definitions/generative/gen-chromatic-oracle-jelly.json",
+      "expected_wgsl": "gen-chromatic-oracle-jelly.wgsl",
+      "local_path": "public/shaders/gen-chromatic-oracle-jelly.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-chromatic-singularity-loom",
       "def_path": "shader_definitions/generative/gen-chromatic-singularity-loom.json",
       "expected_wgsl": "gen-chromatic-singularity-loom.wgsl",
@@ -4030,6 +4090,16 @@
       "def_path": "shader_definitions/generative/gen-chromodynamic-plasma-collider.json",
       "expected_wgsl": "gen-chromodynamic-plasma-collider.wgsl",
       "local_path": "public/shaders/gen-chromodynamic-plasma-collider.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-chrono-kinetic-fractal-engine",
+      "def_path": "shader_definitions/generative/gen-chrono-kinetic-fractal-engine.json",
+      "expected_wgsl": "gen-chrono-kinetic-fractal-engine.wgsl",
+      "local_path": "public/shaders/gen-chrono-kinetic-fractal-engine.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -4070,6 +4140,16 @@
       "def_path": "shader_definitions/generative/gen-chronodynamic-aether-weaver-automata.json",
       "expected_wgsl": "gen-chronodynamic-aether-weaver-automata.wgsl",
       "local_path": "public/shaders/gen-chronodynamic-aether-weaver-automata.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-chronos-biomechanical-void-leviathan",
+      "def_path": "shader_definitions/generative/gen-chronos-biomechanical-void-leviathan.json",
+      "expected_wgsl": "gen-chronos-biomechanical-void-leviathan.wgsl",
+      "local_path": "public/shaders/gen-chronos-biomechanical-void-leviathan.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -4130,6 +4210,16 @@
       "def_path": "shader_definitions/generative/gen-cosmic-slime-mold.json",
       "expected_wgsl": "gen-cosmic-slime-mold.wgsl",
       "local_path": "public/shaders/gen-cosmic-slime-mold.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-cosmic-velvet-hypnosis",
+      "def_path": "shader_definitions/generative/gen-cosmic-velvet-hypnosis.json",
+      "expected_wgsl": "gen-cosmic-velvet-hypnosis.wgsl",
+      "local_path": "public/shaders/gen-cosmic-velvet-hypnosis.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -4223,6 +4313,26 @@
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": true,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-cybernetic-aether-moth-chrysalis",
+      "def_path": "shader_definitions/generative/gen-cybernetic-aether-moth-chrysalis.json",
+      "expected_wgsl": "gen-cybernetic-aether-moth-chrysalis.wgsl",
+      "local_path": "public/shaders/gen-cybernetic-aether-moth-chrysalis.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-cybernetic-crystalline-neuro-lattice",
+      "def_path": "shader_definitions/generative/gen-cybernetic-crystalline-neuro-lattice.json",
+      "expected_wgsl": "gen-cybernetic-crystalline-neuro-lattice.wgsl",
+      "local_path": "public/shaders/gen-cybernetic-crystalline-neuro-lattice.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
       "in_seed_shaders": false
     },
     {
@@ -4436,6 +4546,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-ethereal-bismuth-resonance-void-owl",
+      "def_path": "shader_definitions/generative/gen-ethereal-bismuth-resonance-void-owl.json",
+      "expected_wgsl": "gen-ethereal-bismuth-resonance-void-owl.wgsl",
+      "local_path": "public/shaders/gen-ethereal-bismuth-resonance-void-owl.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-ethereal-chrono-plasma-void-manta",
       "def_path": "shader_definitions/generative/gen-ethereal-chrono-plasma-void-manta.json",
       "expected_wgsl": "gen-ethereal-chrono-plasma-void-manta.wgsl",
@@ -4500,6 +4620,16 @@
       "def_path": "shader_definitions/generative/gen-ethereal-quantum-hologram-bonsai.json",
       "expected_wgsl": "gen-ethereal-quantum-hologram-bonsai.wgsl",
       "local_path": "public/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-ethereal-quantum-holographic-fractal-coral",
+      "def_path": "shader_definitions/generative/gen-ethereal-quantum-holographic-fractal-coral.json",
+      "expected_wgsl": "gen-ethereal-quantum-holographic-fractal-coral.wgsl",
+      "local_path": "public/shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -4726,6 +4856,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-fractal-chrono-dendrite-forge",
+      "def_path": "shader_definitions/generative/gen-fractal-chrono-dendrite-forge.json",
+      "expected_wgsl": "gen-fractal-chrono-dendrite-forge.wgsl",
+      "local_path": "public/shaders/gen-fractal-chrono-dendrite-forge.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-fractal-clockwork",
       "def_path": "shader_definitions/generative/gen-fractal-clockwork.json",
       "expected_wgsl": "gen-fractal-clockwork.wgsl",
@@ -4790,6 +4930,16 @@
       "def_path": "shader_definitions/generative/gen-glass-mosaic-liquid-refraction.json",
       "expected_wgsl": "gen-glass-mosaic-liquid-refraction.wgsl",
       "local_path": "public/shaders/gen-glass-mosaic-liquid-refraction.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-gravitational-ferrofluid-singularity-engine",
+      "def_path": "shader_definitions/generative/gen-gravitational-ferrofluid-singularity-engine.json",
+      "expected_wgsl": "gen-gravitational-ferrofluid-singularity-engine.wgsl",
+      "local_path": "public/shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -5066,6 +5216,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-kaleidoscopic-synapse-bloom",
+      "def_path": "shader_definitions/generative/gen-kaleidoscopic-synapse-bloom.json",
+      "expected_wgsl": "gen-kaleidoscopic-synapse-bloom.wgsl",
+      "local_path": "public/shaders/gen-kaleidoscopic-synapse-bloom.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-kinetic-neo-brutalist-megastructure",
       "def_path": "shader_definitions/generative/gen-kinetic-neo-brutalist-megastructure.json",
       "expected_wgsl": "gen-kinetic-neo-brutalist-megastructure.wgsl",
@@ -5140,6 +5300,16 @@
       "def_path": "shader_definitions/generative/gen-lichtenberg-storm.json",
       "expected_wgsl": "gen-lichtenberg-storm.wgsl",
       "local_path": "public/shaders/gen-lichtenberg-storm.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-liquid-cathedral-dream",
+      "def_path": "shader_definitions/generative/gen-liquid-cathedral-dream.json",
+      "expected_wgsl": "gen-liquid-cathedral-dream.wgsl",
+      "local_path": "public/shaders/gen-liquid-cathedral-dream.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -5270,6 +5440,16 @@
       "def_path": "shader_definitions/generative/gen-luminescent-quantum-glass-phoenix-egg.json",
       "expected_wgsl": "gen-luminescent-quantum-glass-phoenix-egg.wgsl",
       "local_path": "public/shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-luminescent-quantum-silicate-diatom",
+      "def_path": "shader_definitions/generative/gen-luminescent-quantum-silicate-diatom.json",
+      "expected_wgsl": "gen-luminescent-quantum-silicate-diatom.wgsl",
+      "local_path": "public/shaders/gen-luminescent-quantum-silicate-diatom.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -5450,6 +5630,16 @@
       "def_path": "shader_definitions/generative/gen-murmuration-phantom.json",
       "expected_wgsl": "gen-murmuration-phantom.wgsl",
       "local_path": "public/shaders/gen-murmuration-phantom.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-mushroom-mandala-garden",
+      "def_path": "shader_definitions/generative/gen-mushroom-mandala-garden.json",
+      "expected_wgsl": "gen-mushroom-mandala-garden.wgsl",
+      "local_path": "public/shaders/gen-mushroom-mandala-garden.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -5856,6 +6046,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-prismatic-cyber-chrono-void-tortoise",
+      "def_path": "shader_definitions/generative/gen-prismatic-cyber-chrono-void-tortoise.json",
+      "expected_wgsl": "gen-prismatic-cyber-chrono-void-tortoise.wgsl",
+      "local_path": "public/shaders/gen-prismatic-cyber-chrono-void-tortoise.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-prismatic-fractal-dunes",
       "def_path": "shader_definitions/generative/gen-prismatic-fractal-dunes.json",
       "expected_wgsl": "gen-prismatic-fractal-dunes.wgsl",
@@ -5890,6 +6090,26 @@
       "def_path": "shader_definitions/generative/gen-prismatic-quantum-fractal-nautilus-engine.json",
       "expected_wgsl": "gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
       "local_path": "public/shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-prismatic-quantum-glass-chrysalis-engine",
+      "def_path": "shader_definitions/generative/gen-prismatic-quantum-glass-chrysalis-engine.json",
+      "expected_wgsl": "gen-prismatic-quantum-glass-chrysalis-engine.wgsl",
+      "local_path": "public/shaders/gen-prismatic-quantum-glass-chrysalis-engine.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-prismatic-serpent-river",
+      "def_path": "shader_definitions/generative/gen-prismatic-serpent-river.json",
+      "expected_wgsl": "gen-prismatic-serpent-river.wgsl",
+      "local_path": "public/shaders/gen-prismatic-serpent-river.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -5940,6 +6160,16 @@
       "def_path": "shader_definitions/generative/gen-psychedelic-time-warp-kaleidoscope.json",
       "expected_wgsl": "gen-psychedelic-time-warp-kaleidoscope.wgsl",
       "local_path": "public/shaders/gen-psychedelic-time-warp-kaleidoscope.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-quantum-acoustic-bioluminescent-void-urchin",
+      "def_path": "shader_definitions/generative/gen-quantum-acoustic-bioluminescent-void-urchin.json",
+      "expected_wgsl": "gen-quantum-acoustic-bioluminescent-void-urchin.wgsl",
+      "local_path": "public/shaders/gen-quantum-acoustic-bioluminescent-void-urchin.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -6010,6 +6240,26 @@
       "def_path": "shader_definitions/generative/gen-quantum-foam.json",
       "expected_wgsl": "gen-quantum-foam.wgsl",
       "local_path": "public/shaders/gen-quantum-foam.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-quantum-liquid-metal-chronosphere",
+      "def_path": "shader_definitions/generative/gen-quantum-liquid-metal-chronosphere.json",
+      "expected_wgsl": "gen-quantum-liquid-metal-chronosphere.wgsl",
+      "local_path": "public/shaders/gen-quantum-liquid-metal-chronosphere.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-quantum-mycelial-neural-web",
+      "def_path": "shader_definitions/generative/gen-quantum-mycelial-neural-web.json",
+      "expected_wgsl": "gen-quantum-mycelial-neural-web.wgsl",
+      "local_path": "public/shaders/gen-quantum-mycelial-neural-web.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -6190,6 +6440,16 @@
       "def_path": "shader_definitions/generative/gen-resonant-crystal-canyons.json",
       "expected_wgsl": "gen-resonant-crystal-canyons.wgsl",
       "local_path": "public/shaders/gen-resonant-crystal-canyons.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-resonant-quantum-obsidian-astro-manta",
+      "def_path": "shader_definitions/generative/gen-resonant-quantum-obsidian-astro-manta.json",
+      "expected_wgsl": "gen-resonant-quantum-obsidian-astro-manta.wgsl",
+      "local_path": "public/shaders/gen-resonant-quantum-obsidian-astro-manta.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -6416,6 +6676,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-stellar-acoustic-resonance-manifold",
+      "def_path": "shader_definitions/generative/gen-stellar-acoustic-resonance-manifold.json",
+      "expected_wgsl": "gen-stellar-acoustic-resonance-manifold.wgsl",
+      "local_path": "public/shaders/gen-stellar-acoustic-resonance-manifold.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-stellar-plasma-ouroboros",
       "def_path": "shader_definitions/generative/gen-stellar-plasma-ouroboros.json",
       "expected_wgsl": "gen-stellar-plasma-ouroboros.wgsl",
@@ -6480,6 +6750,16 @@
       "def_path": "shader_definitions/generative/gen-symbiotic-chrono-mycelium-engine.json",
       "expected_wgsl": "gen-symbiotic-chrono-mycelium-engine.wgsl",
       "local_path": "public/shaders/gen-symbiotic-chrono-mycelium-engine.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-symbiotic-cyber-fungal-core-reactor",
+      "def_path": "shader_definitions/generative/gen-symbiotic-cyber-fungal-core-reactor.json",
+      "expected_wgsl": "gen-symbiotic-cyber-fungal-core-reactor.wgsl",
+      "local_path": "public/shaders/gen-symbiotic-cyber-fungal-core-reactor.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -6620,6 +6900,16 @@
       "def_path": "shader_definitions/generative/gen-vitreous-chrono-chandelier.json",
       "expected_wgsl": "gen-vitreous-chrono-chandelier.wgsl",
       "local_path": "public/shaders/gen-vitreous-chrono-chandelier.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-vitreous-quantum-lotus-singularity",
+      "def_path": "shader_definitions/generative/gen-vitreous-quantum-lotus-singularity.json",
+      "expected_wgsl": "gen-vitreous-quantum-lotus-singularity.wgsl",
+      "local_path": "public/shaders/gen-vitreous-quantum-lotus-singularity.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -12296,6 +12586,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "chromatographic-fluid",
+      "def_path": "shader_definitions/simulation/chromatographic-fluid.json",
+      "expected_wgsl": "chromatographic-force.wgsl",
+      "local_path": "public/shaders/chromatographic-force.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "cymatic-sand",
       "def_path": "shader_definitions/simulation/cymatic-sand.json",
       "expected_wgsl": "cymatic-sand.wgsl",
@@ -12356,6 +12656,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gray-scott-tank",
+      "def_path": "shader_definitions/simulation/gray-scott-tank.json",
+      "expected_wgsl": "gray-scott-step.wgsl",
+      "local_path": "public/shaders/gray-scott-step.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "lenia-on-video",
       "def_path": "shader_definitions/simulation/lenia-on-video.json",
       "expected_wgsl": "lenia-on-video.wgsl",
@@ -12393,6 +12703,16 @@
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": true,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "optical-flow-dream",
+      "def_path": "shader_definitions/simulation/optical-flow-dream.json",
+      "expected_wgsl": "optical-flow-estimate.wgsl",
+      "local_path": "public/shaders/optical-flow-estimate.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
       "in_seed_shaders": false
     },
     {
@@ -13833,6 +14153,36 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "chromatographic-advect.wgsl",
+      "stem": "chromatographic-advect",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "chromatographic-diffuse.wgsl",
+      "stem": "chromatographic-diffuse",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "chromatographic-force.wgsl",
+      "stem": "chromatographic-force",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "chromatographic-interact.wgsl",
+      "stem": "chromatographic-interact",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "chromatographic-phase.wgsl",
+      "stem": "chromatographic-phase",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "chromatographic-render.wgsl",
+      "stem": "chromatographic-render",
+      "classification": "multipass-secondary"
+    },
+    {
       "wgsl": "chromatographic-separation.wgsl",
       "stem": "chromatographic-separation",
       "classification": "cataloged"
@@ -14868,8 +15218,18 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-abyssal-plasma-void-medusa.wgsl",
+      "stem": "gen-abyssal-plasma-void-medusa",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-abyssal-quantum-leviathan-skeleton.wgsl",
       "stem": "gen-abyssal-quantum-leviathan-skeleton",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-abyssal-silicate-geode-weaver.wgsl",
+      "stem": "gen-abyssal-silicate-geode-weaver",
       "classification": "cataloged"
     },
     {
@@ -15008,6 +15368,16 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
+      "stem": "gen-bioluminescent-cyber-aether-void-seahorse",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-bioluminescent-neural-lattice-weaver.wgsl",
+      "stem": "gen-bioluminescent-neural-lattice-weaver",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-bioluminescent-reaction-diffusion.wgsl",
       "stem": "gen-bioluminescent-reaction-diffusion",
       "classification": "cataloged"
@@ -15055,6 +15425,11 @@
     {
       "wgsl": "gen-celestial-aether-seraphim-wings.wgsl",
       "stem": "gen-celestial-aether-seraphim-wings",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-celestial-clockwork-plasma-loom.wgsl",
+      "stem": "gen-celestial-clockwork-plasma-loom",
       "classification": "cataloged"
     },
     {
@@ -15118,6 +15493,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-chromatic-oracle-jelly.wgsl",
+      "stem": "gen-chromatic-oracle-jelly",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-chromatic-singularity-loom.wgsl",
       "stem": "gen-chromatic-singularity-loom",
       "classification": "cataloged"
@@ -15143,6 +15523,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-chrono-kinetic-fractal-engine.wgsl",
+      "stem": "gen-chrono-kinetic-fractal-engine",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-chrono-kitsune-prism-weaver.wgsl",
       "stem": "gen-chrono-kitsune-prism-weaver",
       "classification": "cataloged"
@@ -15160,6 +15545,11 @@
     {
       "wgsl": "gen-chronodynamic-aether-weaver-automata.wgsl",
       "stem": "gen-chronodynamic-aether-weaver-automata",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-chronos-biomechanical-void-leviathan.wgsl",
+      "stem": "gen-chronos-biomechanical-void-leviathan",
       "classification": "cataloged"
     },
     {
@@ -15190,6 +15580,11 @@
     {
       "wgsl": "gen-cosmic-slime-mold.wgsl",
       "stem": "gen-cosmic-slime-mold",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-cosmic-velvet-hypnosis.wgsl",
+      "stem": "gen-cosmic-velvet-hypnosis",
       "classification": "cataloged"
     },
     {
@@ -15235,6 +15630,16 @@
     {
       "wgsl": "gen-cyber-terminal.wgsl",
       "stem": "gen-cyber-terminal",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-cybernetic-aether-moth-chrysalis.wgsl",
+      "stem": "gen-cybernetic-aether-moth-chrysalis",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-cybernetic-crystalline-neuro-lattice.wgsl",
+      "stem": "gen-cybernetic-crystalline-neuro-lattice",
       "classification": "cataloged"
     },
     {
@@ -15343,6 +15748,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-ethereal-bismuth-resonance-void-owl.wgsl",
+      "stem": "gen-ethereal-bismuth-resonance-void-owl",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-ethereal-chrono-plasma-void-manta.wgsl",
       "stem": "gen-ethereal-chrono-plasma-void-manta",
       "classification": "cataloged"
@@ -15375,6 +15785,11 @@
     {
       "wgsl": "gen-ethereal-quantum-hologram-bonsai.wgsl",
       "stem": "gen-ethereal-quantum-hologram-bonsai",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-ethereal-quantum-holographic-fractal-coral.wgsl",
+      "stem": "gen-ethereal-quantum-holographic-fractal-coral",
       "classification": "cataloged"
     },
     {
@@ -15488,6 +15903,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-fractal-chrono-dendrite-forge.wgsl",
+      "stem": "gen-fractal-chrono-dendrite-forge",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-fractal-clockwork.wgsl",
       "stem": "gen-fractal-clockwork",
       "classification": "cataloged"
@@ -15520,6 +15940,11 @@
     {
       "wgsl": "gen-glass-mosaic-liquid-refraction.wgsl",
       "stem": "gen-glass-mosaic-liquid-refraction",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-gravitational-ferrofluid-singularity-engine.wgsl",
+      "stem": "gen-gravitational-ferrofluid-singularity-engine",
       "classification": "cataloged"
     },
     {
@@ -15658,6 +16083,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-kaleidoscopic-synapse-bloom.wgsl",
+      "stem": "gen-kaleidoscopic-synapse-bloom",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-kinetic-neo-brutalist-megastructure.wgsl",
       "stem": "gen-kinetic-neo-brutalist-megastructure",
       "classification": "cataloged"
@@ -15695,6 +16125,11 @@
     {
       "wgsl": "gen-lichtenberg-storm.wgsl",
       "stem": "gen-lichtenberg-storm",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-liquid-cathedral-dream.wgsl",
+      "stem": "gen-liquid-cathedral-dream",
       "classification": "cataloged"
     },
     {
@@ -15755,6 +16190,11 @@
     {
       "wgsl": "gen-luminescent-quantum-glass-phoenix-egg.wgsl",
       "stem": "gen-luminescent-quantum-glass-phoenix-egg",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-luminescent-quantum-silicate-diatom.wgsl",
+      "stem": "gen-luminescent-quantum-silicate-diatom",
       "classification": "cataloged"
     },
     {
@@ -15845,6 +16285,11 @@
     {
       "wgsl": "gen-murmuration-phantom.wgsl",
       "stem": "gen-murmuration-phantom",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-mushroom-mandala-garden.wgsl",
+      "stem": "gen-mushroom-mandala-garden",
       "classification": "cataloged"
     },
     {
@@ -16053,6 +16498,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-prismatic-cyber-chrono-void-tortoise.wgsl",
+      "stem": "gen-prismatic-cyber-chrono-void-tortoise",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-prismatic-fractal-dunes.wgsl",
       "stem": "gen-prismatic-fractal-dunes",
       "classification": "cataloged"
@@ -16070,6 +16520,16 @@
     {
       "wgsl": "gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
       "stem": "gen-prismatic-quantum-fractal-nautilus-engine",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-prismatic-quantum-glass-chrysalis-engine.wgsl",
+      "stem": "gen-prismatic-quantum-glass-chrysalis-engine",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-prismatic-serpent-river.wgsl",
+      "stem": "gen-prismatic-serpent-river",
       "classification": "cataloged"
     },
     {
@@ -16095,6 +16555,11 @@
     {
       "wgsl": "gen-psychedelic-time-warp-kaleidoscope.wgsl",
       "stem": "gen-psychedelic-time-warp-kaleidoscope",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-quantum-acoustic-bioluminescent-void-urchin.wgsl",
+      "stem": "gen-quantum-acoustic-bioluminescent-void-urchin",
       "classification": "cataloged"
     },
     {
@@ -16130,6 +16595,16 @@
     {
       "wgsl": "gen-quantum-foam.wgsl",
       "stem": "gen-quantum-foam",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-quantum-liquid-metal-chronosphere.wgsl",
+      "stem": "gen-quantum-liquid-metal-chronosphere",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-quantum-mycelial-neural-web.wgsl",
+      "stem": "gen-quantum-mycelial-neural-web",
       "classification": "cataloged"
     },
     {
@@ -16230,6 +16705,11 @@
     {
       "wgsl": "gen-resonant-crystal-canyons.wgsl",
       "stem": "gen-resonant-crystal-canyons",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-resonant-quantum-obsidian-astro-manta.wgsl",
+      "stem": "gen-resonant-quantum-obsidian-astro-manta",
       "classification": "cataloged"
     },
     {
@@ -16348,6 +16828,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-stellar-acoustic-resonance-manifold.wgsl",
+      "stem": "gen-stellar-acoustic-resonance-manifold",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-stellar-plasma-ouroboros.wgsl",
       "stem": "gen-stellar-plasma-ouroboros",
       "classification": "cataloged"
@@ -16385,6 +16870,11 @@
     {
       "wgsl": "gen-symbiotic-chrono-mycelium-engine.wgsl",
       "stem": "gen-symbiotic-chrono-mycelium-engine",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-symbiotic-cyber-fungal-core-reactor.wgsl",
+      "stem": "gen-symbiotic-cyber-fungal-core-reactor",
       "classification": "cataloged"
     },
     {
@@ -16455,6 +16945,11 @@
     {
       "wgsl": "gen-vitreous-chrono-chandelier.wgsl",
       "stem": "gen-vitreous-chrono-chandelier",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-vitreous-quantum-lotus-singularity.wgsl",
+      "stem": "gen-vitreous-quantum-lotus-singularity",
       "classification": "cataloged"
     },
     {
@@ -16745,6 +17240,21 @@
     {
       "wgsl": "gravity-well.wgsl",
       "stem": "gravity-well",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gray-scott-inject.wgsl",
+      "stem": "gray-scott-inject",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "gray-scott-render.wgsl",
+      "stem": "gray-scott-render",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "gray-scott-step.wgsl",
+      "stem": "gray-scott-step",
       "classification": "cataloged"
     },
     {
@@ -18096,6 +18606,21 @@
       "wgsl": "optical-feedback.wgsl",
       "stem": "optical-feedback",
       "classification": "cataloged"
+    },
+    {
+      "wgsl": "optical-flow-advect.wgsl",
+      "stem": "optical-flow-advect",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "optical-flow-estimate.wgsl",
+      "stem": "optical-flow-estimate",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "optical-flow-grade.wgsl",
+      "stem": "optical-flow-grade",
+      "classification": "multipass-secondary"
     },
     {
       "wgsl": "optical-flow-tracer.wgsl",

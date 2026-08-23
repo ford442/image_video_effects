@@ -49,7 +49,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / max(resolution.y, 0.001);
-  let rawMouse = u.zoom_config.yz;  // raw cursor stays the spring target
+  let rawMouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
   // ── Priority 1: critically-damped spring for the field center ──
   // The quantized zone trails the cursor instead of snapping to it.
@@ -87,7 +88,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Params with guards and audio reactivity
-  let radius = max(mix(0.05, 0.5, u.zoom_params.x) * (1.0 + bass * 0.3), 0.001);
+  let radius = max(mix(0.05, 0.5, u.zoom_params.x) * (1.0 + bass * 0.3 + held * 0.15), 0.001);
   let mosaic_scale = mix(50.0, 5.0, clamp(u.zoom_params.y, 0.0, 1.0));
   let aberration = clamp(u.zoom_params.z, 0.0, 1.0) * 0.05;
   var chaos = clamp(u.zoom_params.w * (1.0 + bass * 0.5 + mids * 0.2), 0.0, 1.0);
@@ -162,7 +163,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rimGlow = rim * clamp(springSpeed * 2.0, 0.0, 1.0);
 
   let finalRGB = mix(colOrig.rgb, colEffect.rgb, mask);
-  let decoTint = vec3<f32>(0.35, 0.85, 1.0);  // quantum cyan
+  let holoTint = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + blockHash * 6.0 + u.config.x * 0.2 + mids);
+  let decoTint = mix(vec3<f32>(0.35, 0.85, 1.0), holoTint, 0.45);
   let rgbRing = finalRGB + ringGlow * mask * decoTint * 0.4;
   let rgbOut = rgbRing + rimGlow * decoTint * 0.25;
   let effectStrength = mask * (0.5 + chaos * 0.3 + treble * 0.1);

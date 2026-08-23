@@ -162,8 +162,10 @@ export function useLiveControl({
         setAutoTransitionEnabled,
     ]);
 
+    // MIDI must stay live after learn closes the panel — bindings only fire while
+    // the adapter is subscribed. Gate on midiEnabled alone (not liveControlOpen).
     useEffect(() => {
-        if (!liveControlOpen || !midiEnabled) {
+        if (!midiEnabled) {
             midiAdapterRef.current?.disable();
             midiAdapterRef.current = null;
             setMidiDevices([]);
@@ -182,10 +184,12 @@ export function useLiveControl({
             adapter.disable();
             midiAdapterRef.current = null;
         };
-    }, [liveControlOpen, midiEnabled]);
+    }, [midiEnabled]);
 
+    // Keyboard bindings stay active when the panel is open OR any binding exists.
+    const hasKeyBindings = bindings.some((b) => b.trigger.source === 'key');
     useEffect(() => {
-        if (!liveControlOpen) return;
+        if (!liveControlOpen && !hasKeyBindings) return;
         keyUnsubscribeRef.current = subscribeKeyEvents((event: ControlEvent) =>
             handleControlEventRef.current(event)
         );
@@ -193,7 +197,7 @@ export function useLiveControl({
             keyUnsubscribeRef.current?.();
             keyUnsubscribeRef.current = null;
         };
-    }, [liveControlOpen]);
+    }, [liveControlOpen, hasKeyBindings]);
 
     useEffect(() => {
         if (armed !== 'key') return;

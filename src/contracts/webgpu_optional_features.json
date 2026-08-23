@@ -1,0 +1,20 @@
+{
+  "description": "Optional WebGPU features requested when the adapter offers them. Order is contract: float32-filterable, then timestamp-query (#1007 always-on when available), then one subgroup variant. Mirrors collectOptionalDeviceFeatures() and wasm_renderer/device.cpp.",
+  "requestOrder": [
+    "float32-filterable",
+    "timestamp-query",
+    "subgroups"
+  ],
+  "subgroupPreference": [
+    "subgroups",
+    "chromium-experimental-subgroups"
+  ],
+  "timestampQueryAlwaysOnWhenAvailable": true,
+  "requiredFeaturesArrayMin": 3,
+  "cppEnums": {
+    "float32-filterable": "WGPUFeatureName_Float32Filterable",
+    "timestamp-query": "WGPUFeatureName_TimestampQuery",
+    "subgroups": "WGPUFeatureName_Subgroups",
+    "chromium-experimental-subgroups": "WGPUFeatureName_ChromiumExperimentalSubgroups"
+  }
+}

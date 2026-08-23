@@ -109,19 +109,23 @@ describe('webgpuDevicePolicy', () => {
         .mockResolvedValueOnce(mockAdapter);
 
       const gpu = { requestAdapter } as unknown as GPU;
-      const { adapter, attemptLabel } = await requestAdapterWithFallback(gpu);
+      const { adapter, attemptLabel, attemptLogs } = await requestAdapterWithFallback(gpu);
 
       expect(adapter).toBe(mockAdapter);
       expect(attemptLabel).toBe('LowPower');
       expect(requestAdapter).toHaveBeenCalledTimes(3);
+      expect(attemptLogs.length).toBe(3);
+      expect(attemptLogs[2].adapterPresent).toBe(true);
     });
 
     it('returns null after all ladder attempts fail', async () => {
       const requestAdapter = jest.fn().mockResolvedValue(null);
       const gpu = { requestAdapter } as unknown as GPU;
-      const { adapter } = await requestAdapterWithFallback(gpu);
+      const { adapter, attemptLogs } = await requestAdapterWithFallback(gpu);
       expect(adapter).toBeNull();
       expect(requestAdapter).toHaveBeenCalledTimes(ADAPTER_ATTEMPT_LADDER.length);
+      expect(attemptLogs.length).toBe(ADAPTER_ATTEMPT_LADDER.length);
+      expect(attemptLogs.every((l) => !l.adapterPresent)).toBe(true);
     });
 
     it('passes forceFallbackAdapter on the final attempt', async () => {

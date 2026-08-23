@@ -10,6 +10,7 @@ import {
 import './ShaderBrowser.css';
 import { getAudioReactiveBadgeLabel } from '../utils/audioReactiveBadge';
 import { isMultipass } from '../utils/multipass';
+import { hasGraph } from '../renderer/multipassRegistry';
 import { PassBadge } from './PassBadge';
 import { useThumbnailManifest } from '../hooks/useThumbnailManifest';
 import { ShaderThumbPlaceholder } from './ShaderThumbPlaceholder';
@@ -88,6 +89,7 @@ export const ShaderBrowser: React.FC<{
   const [searchQuery, setSearchQuery] = useState('');
   const [category, setCategory] = useState('');
   const [multipassOnly, setMultipassOnly] = useState(false);
+  const [physicsLabOnly, setPhysicsLabOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [previewShader, setPreviewShader] = useState<ShaderMeta | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -100,6 +102,7 @@ export const ShaderBrowser: React.FC<{
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const deferredFilter = useDeferredValue(filter);
   const deferredMultipassOnly = useDeferredValue(multipassOnly);
+  const deferredPhysicsLabOnly = useDeferredValue(physicsLabOnly);
 
   useEffect(() => {
     loadShaders();
@@ -211,7 +214,8 @@ export const ShaderBrowser: React.FC<{
       s.tags.some(t => t.toLowerCase().includes(query.toLowerCase()))
     );
     const matchesMultipass = !deferredMultipassOnly || isMultipass(s.id);
-    return matchesSearch && matchesMultipass;
+    const matchesPhysicsLab = !deferredPhysicsLabOnly || hasGraph(s.id);
+    return matchesSearch && matchesMultipass && matchesPhysicsLab;
   });
 
   return (
@@ -243,6 +247,13 @@ export const ShaderBrowser: React.FC<{
           title="Show only multipass shaders"
         >
           ◈ Multipass
+        </button>
+        <button
+          className={`shader-filter-chip ${physicsLabOnly ? 'active' : ''}`}
+          onClick={() => startTransition(() => setPhysicsLabOnly(v => !v))}
+          title="Show only Tier C GraphRunner Physics Lab stacks"
+        >
+          Physics Lab
         </button>
         <label className="shader-upload-btn">
           Upload .wgsl

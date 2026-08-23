@@ -3,6 +3,7 @@ import {
   expandGraph,
   createWaveTankGraph,
   countGraphPasses,
+  capGraphDispatches,
 } from '../renderer/multipassGraph';
 import { resolveGraphForShader } from '../renderer/multipassRegistry';
 import { analyzeGraphBindingUsage } from '../renderer/GraphRunner';
@@ -100,6 +101,18 @@ describe('multipassGraph', () => {
     expect(countGraphPasses(photonic!)).toBe(4);
   });
 
+  it('validates the three new Physics Lab graphs', () => {
+    const chroma = resolveGraphForShader('chromatographic-fluid');
+    const rd = resolveGraphForShader('gray-scott-tank');
+    const dream = resolveGraphForShader('optical-flow-dream');
+    expect(validateGraph(chroma!)).toEqual([]);
+    expect(validateGraph(rd!)).toEqual([]);
+    expect(validateGraph(dream!)).toEqual([]);
+    expect(countGraphPasses(chroma!)).toBe(7);
+    expect(countGraphPasses(rd!)).toBe(6);
+    expect(countGraphPasses(dream!)).toBe(4);
+  });
+
   it('prefers dataA→dataC copy after a sibling dataB write (fabric handoff)', () => {
     const fabric = resolveGraphForShader('fabric-of-reality');
     const expanded = expandGraph(fabric!);
@@ -115,5 +128,21 @@ describe('multipassGraph', () => {
     expect(usage.writesDataA).toBe(true);
     expect(usage.writesDataB).toBe(true);
     expect(usage.readsDataC).toBe(true);
+  });
+
+  it('keeps the color write when shrinking under a tight pass cap', () => {
+    const graph = createWaveTankGraph();
+    const capped = capGraphDispatches(graph, 2);
+    expect(capped.map((d) => d.entry)).toEqual(['wave-step', 'wave-render']);
+    expect(capped[capped.length - 1].writes).toContain('color');
+  });
+
+  it('reduces Jacobi repeats before dropping inject/render on ripple-tank', () => {
+    const graph = resolveGraphForShader('ripple-tank');
+    expect(graph).not.toBeNull();
+    const capped = capGraphDispatches(graph!, 4);
+    expect(capped).toHaveLength(4);
+    expect(capped[capped.length - 1].entry).toBe('ripple-tank-pass3');
+    expect(capped.filter((d) => d.entry === 'ripple-tank-step')).toHaveLength(1);
   });
 });

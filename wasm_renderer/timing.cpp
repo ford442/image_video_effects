@@ -137,7 +137,10 @@ void WebGPURenderer::ResolveTimestampQueries() {
     if (!supportsTimestampQuery_ || !timestampQuerySet_.get() || !queue_.get() || !device_.get()) {
         return;
     }
-    if (!tsFrameStartWritten_ || timestampReadbackPending_) {
+    // Must resolve every frame that wrote timestamps. Gating resolve on
+    // mapAsync completion left query indices written, so the next frame's
+    // double-write failed validation and dropped the present (black flicker).
+    if (!tsFrameStartWritten_) {
         return;
     }
 
@@ -154,11 +157,16 @@ void WebGPURenderer::ResolveTimestampQueries() {
         timestampResolveBuffer_.get(),
         0);
 
-    wgpuCommandEncoderCopyBufferToBuffer(
-        enc,
-        timestampResolveBuffer_.get(), 0,
-        timestampReadbackBuffer_.get(), 0,
-        TS_QUERY_COUNT * sizeof(uint64_t));
+    // When a prior readback is still mapped, resolve-only (frees query set)
+    // and skip the CPU copy/map for this frame.
+    const bool canReadback = !timestampReadbackPending_ && timestampReadbackBuffer_.get();
+    if (canReadback) {
+        wgpuCommandEncoderCopyBufferToBuffer(
+            enc,
+            timestampResolveBuffer_.get(), 0,
+            timestampReadbackBuffer_.get(), 0,
+            TS_QUERY_COUNT * sizeof(uint64_t));
+    }
 
     WGPUCommandBufferDescriptor cbDesc = {};
     cbDesc.label = MakeStringView("Timestamp Resolve CmdBuf");
@@ -166,6 +174,10 @@ void WebGPURenderer::ResolveTimestampQueries() {
     wgpuQueueSubmit(queue_.get(), 1, &cb);
     wgpuCommandBufferRelease(cb);
     wgpuCommandEncoderRelease(enc);
+
+    if (!canReadback) {
+        return;
+    }
 
     timestampReadbackPending_ = true;
     wgpuBufferMapAsync(

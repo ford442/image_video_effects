@@ -4,14 +4,14 @@
   "url": "shaders/liquid-jelly.wgsl",
   "description": "Spring-damped jelly deformation with subsurface scattering, audio-responsive elasticity, depth masking, and temporal wobble trails.",
   "features": [
-    "upgraded-rgba",
+    "audio-reactive",
     "depth-aware",
     "elastic-bounce",
-    "volume-shading",
-    "subsurface-scattering",
     "mouse-driven",
-    "audio-reactive",
-    "temporal"
+    "subsurface-scattering",
+    "temporal",
+    "upgraded-rgba",
+    "volume-shading"
   ],
   "tags": [
     "filter",
@@ -61,10 +61,38 @@
     }
   ],
   "updatedParams": [
-    { "index": 0, "name": "Damping", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Elasticity", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Wobble Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Scatter Tint", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "index": 0,
+      "name": "Damping",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Elasticity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Wobble Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Scatter Tint",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ],
   "updated": true
 }

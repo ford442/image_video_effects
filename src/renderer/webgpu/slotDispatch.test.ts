@@ -30,7 +30,7 @@ describe('slotDispatch helpers', () => {
 
     expect(getCappedGraphDispatches(graph, 2).map((dispatch) => dispatch.entry)).toEqual([
       'wave-step',
-      'wave-step',
+      'wave-render',
     ]);
     expect(countSlotComputePasses(program, 2, () => true)).toBe(2);
     expect(countSlotComputePasses(program, 2, () => false)).toBe(0);

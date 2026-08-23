@@ -103,6 +103,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv01 = vec2<f32>(pixel) / res;
   let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
 
   // Params
   let scanIntensity = u.zoom_params.x;
@@ -147,14 +149,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Audio-driven band distortion
   let bandDistort = (1.0 + mids * 3.0) * (1.0 + bass * 0.6);
   let lineId = floor(warped.y * lines * 0.05);
-  let jit1 = (hash21(vec2<f32>(lineId, floor(time * 24.0))) - 0.5) * glitch * bandDistort;
-  let jit2 = (hash21(vec2<f32>(lineId + 100.0, floor(time * 18.0))) - 0.5) * glitch * bandDistort * 1.5;
-  let jit3 = (hash21(vec2<f32>(lineId + 200.0, floor(time * 30.0))) - 0.5) * glitch * bandDistort * 0.7;
+  let phase1 = hash21(vec2<f32>(lineId, 11.0)) * TAU;
+  let phase2 = hash21(vec2<f32>(lineId + 100.0, 19.0)) * TAU;
+  let phase3 = hash21(vec2<f32>(lineId + 200.0, 29.0)) * TAU;
+  let jit1 = sin(time * 7.0 + phase1) * glitch * bandDistort * 0.5;
+  let jit2 = sin(time * 5.3 + phase2) * glitch * bandDistort * 0.75;
+  let jit3 = sin(time * 8.1 + phase3) * glitch * bandDistort * 0.35;
 
   let blockId = floor(warped.y * 30.0);
-  let blockNoise = hash21(vec2<f32>(blockId, floor(time * 12.0)));
-  let blockJitter = (blockNoise - 0.5) * glitch * step(blockNoise, scanIntensity * 0.6);
-  let totalOffset = vec2<f32>(jit1 * b1 + jit2 * b2 + jit3 * b3 + blockJitter, 0.0);
+  let blockNoise = hash21(vec2<f32>(blockId, 37.0));
+  let blockJitter = sin(time * (2.4 + blockNoise * 3.0) + blockNoise * TAU)
+                  * glitch * 0.5 * step(blockNoise, scanIntensity * 0.6);
+
+  // Two continuous tear structures: opposing scan heads and a diagonal tear conveyor.
+  let scanHead = exp(-abs(fract(warped.y - time * 0.32) - 0.5) * 52.0);
+  let tearRunner = sin((warped.y * 9.0 + warped.x * 2.5) * TAU - time * 8.0);
+  let pointerBand = exp(-abs(warped.y - mouse.y) * 45.0) * held;
+
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.2) {
+      clickWave = max(clickWave,
+        exp(-abs(distance(uv01, rp.xy) - age * 0.58) * 80.0) * (1.0 - age / 1.2));
+    }
+  }
+  let tearOffset = (scanHead * tearRunner * 0.018 + pointerBand * (mouse.x - uv01.x) * 0.12 + clickWave * 0.025)
+                 * scanIntensity;
+  let totalOffset = vec2<f32>(jit1 * b1 + jit2 * b2 + jit3 * b3 + blockJitter + tearOffset, 0.0);
 
   // Chromatic tear
   let aberr = (scanIntensity * 0.01 + 0.002) * (1.0 + treble * 1.5);
@@ -166,8 +190,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = toLinear(vec3<f32>(r, g, b)) * scanBoost;
 
   // Film grain
-  let grain = (hash21(uv01 * res + time) - 0.5) * 0.03
-            + (hash21(uv01 * res * 1.3 - time * 0.7) - 0.5) * 0.015;
+  let grainPhase = hash21(vec2<f32>(pixel)) * TAU;
+  let grain = sin(time * 17.0 + grainPhase) * 0.018
+            + sin(time * 11.0 - grainPhase * 1.7) * 0.009;
   color = color + vec3<f32>(grain) * scanIntensity;
 
   // Depth haze
@@ -187,6 +212,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Audio-driven palette overlay
   let palette = audioPalette(lum + time * 0.05, bass, mids, treble);
   color = mix(color, color * palette * 1.4, chromaticMix * 0.35);
+  color += audioPalette(time * 0.08 + uv01.y, treble, bass, mids)
+         * (scanHead * 0.08 + clickWave * 0.22);
 
   // Rim glow + vignette
   let rim = pow(radius * 1.6, 3.0);

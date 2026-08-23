@@ -130,6 +130,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mouse down triples well strength and adds a click burst.
   let mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w > 0.5;
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
+      clickWave = max(clickWave,
+        exp(-abs(distance(uv01, rp.xy) - age * 0.46) * 72.0) * (1.0 - age / 1.5));
+    }
+  }
   let gravityStrength = p4 * 0.08 * (1.0 + f32(mouseDown) * 2.0);
   let gravity = gravityWell(uv01, mouse, gravityStrength);
   let focusPoint = mouse + gravity * 0.15;
@@ -146,6 +156,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var p = (uv01 - center + gravity * 0.02) * vec2<f32>(aspect, 1.0);
   p.x = p.x * (1.0 + anamorphicSqueeze * 0.3);
 
+  // Smooth caustic zoom streaks ride over the Brown-Conrady lens surface.
+  let polarAngle = atan2(p.y, p.x);
+  let zoomRunner = sin(length(p) * 42.0 - time * (5.0 + p1 * 6.0));
+  let causticStreak = pow(max(0.0, sin(polarAngle * 9.0 + time * 3.4 + zoomRunner)), 8.0);
+  let streakDir = select(vec2<f32>(0.0), p / max(length(p), 0.0001), length(p) > 0.0001);
+  p += streakDir * (zoomRunner * 0.004 + causticStreak * 0.008 + clickWave * 0.018);
   let distortedP = brownConrady(p, k1, k2, k1 * 0.05, k1 * 0.03);
   let sampleCenter = center + distortedP / vec2<f32>(aspect, 1.0) + (focusPoint - 0.5) * 0.06;
 
@@ -169,11 +185,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
 
   // ── Film grain + treble sparkle ──────────────────────────────────
-  let grain = hash22(uv01 * 800.0 + time * 60.0).x - 0.5;
+  let grainPhase = hash22(uv01 * 800.0).x * TAU;
+  let grain = sin(time * 15.0 + grainPhase) * 0.5;
   color += grain * 0.03 * (1.0 + treble * 0.6);
 
+  let spectralCaustic = 0.5 + 0.5 * cos(TAU * (vec3<f32>(polarAngle / TAU + time * 0.08)
+                              + vec3<f32>(0.0, 0.33, 0.67)));
+  color += spectralCaustic * (causticStreak * 0.18 + clickWave * 0.24) * (0.5 + mids);
+
   // ── Click burst around mouse ─────────────────────────────────────
-  let clickPulse = f32(mouseDown) * exp(-distance(uv01, mouse) * 8.0) * bassEnv;
+  let clickPulse = f32(mouseDown) * exp(-distance(uv01, mouse) * 8.0) * bassEnv + clickWave;
   color += vec3<f32>(clickPulse * 0.25);
 
   // ── Vignette (Param3) ────────────────────────────────────────────

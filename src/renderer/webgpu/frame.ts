@@ -82,6 +82,7 @@ export class WebGPUFrameRenderer {
 
     const encoder = state.device.createCommandEncoder({ label: 'frame' });
     this.presenter.encodeInputCopy(state, encoder);
+    state.encodePreFxChores?.(encoder);
     const dispatch = dispatchFrameSlots(state, encoder, slotPlan);
 
     if (slotPlan.anyUsesHistory) {
@@ -95,6 +96,7 @@ export class WebGPUFrameRenderer {
     this.presenter.updateBlitBindGroup(state);
     this.presenter.encodePresent(state, encoder);
     this.presenter.submitFrame(state, encoder);
+    state.afterFrameSubmitChores?.();
 
     if (!state.timestampRuntime.hasRealGpuTimings) {
       state.timestampRuntime.gpuTimings.parallelTime = dispatch.wallParallel;

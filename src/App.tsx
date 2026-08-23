@@ -565,8 +565,21 @@ function MainApp() {
                 wasmAdapterInfo: diags.wasm?.adapterInfo,
                 wasmFailedStageName: diags.wasm?.failedStageName,
                 wasmLastInitError: diags.wasm?.lastInitError || undefined,
+                graphShaderId: diags.webgpu?.graph?.shaderId ?? null,
+                graphRequested: diags.webgpu?.graph?.requested,
+                graphExecuted: diags.webgpu?.graph?.executed,
+                graphTruncated: diags.webgpu?.graph?.truncated,
+                graphCap: diags.webgpu?.graph?.cap,
+                graphErrors: diags.webgpu?.graph?.errors,
+                gpuComputeAvailable: diags.webgpu?.gpuChores?.gpuComputeAvailable,
+                gpuChoresReason: diags.webgpu?.gpuChores?.reason,
+                gpuChoresLastOp: diags.webgpu?.gpuChores?.lastOp ?? null,
+                gpuChoresBackend: diags.webgpu?.gpuChores?.backend,
+                gpuChoresEv: diags.webgpu?.gpuChores?.autoUniforms.exposureEv,
             };
             setRendererDiagnostics((prev) => {
+                const errEq = (a?: string[], b?: string[]) =>
+                    (a?.length ?? 0) === (b?.length ?? 0) && (a ?? []).every((e, i) => e === (b ?? [])[i]);
                 if (
                     prev &&
                     prev.backend === nextDiags.backend &&
@@ -576,7 +589,18 @@ function MainApp() {
                     prev.wasmInitSummary === nextDiags.wasmInitSummary &&
                     prev.wasmAdapterInfo === nextDiags.wasmAdapterInfo &&
                     prev.wasmFailedStageName === nextDiags.wasmFailedStageName &&
-                    prev.wasmLastInitError === nextDiags.wasmLastInitError
+                    prev.wasmLastInitError === nextDiags.wasmLastInitError &&
+                    prev.graphShaderId === nextDiags.graphShaderId &&
+                    prev.graphRequested === nextDiags.graphRequested &&
+                    prev.graphExecuted === nextDiags.graphExecuted &&
+                    prev.graphTruncated === nextDiags.graphTruncated &&
+                    prev.graphCap === nextDiags.graphCap &&
+                    errEq(prev.graphErrors, nextDiags.graphErrors) &&
+                    prev.gpuComputeAvailable === nextDiags.gpuComputeAvailable &&
+                    prev.gpuChoresReason === nextDiags.gpuChoresReason &&
+                    prev.gpuChoresLastOp === nextDiags.gpuChoresLastOp &&
+                    prev.gpuChoresBackend === nextDiags.gpuChoresBackend &&
+                    prev.gpuChoresEv === nextDiags.gpuChoresEv
                 ) {
                     return prev;
                 }

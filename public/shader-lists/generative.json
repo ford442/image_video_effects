@@ -2484,6 +2484,107 @@
     ]
   },
   {
+    "id": "gen-abyssal-plasma-void-medusa",
+    "name": "Abyssal Plasma Void-Medusa",
+    "description": "A majestic, deep-space biomechanical entity undulating through a quantum fluidic void, driven by audio-reactive bioluminescent plasma nodes.",
+    "category": "generative",
+    "url": "shaders/gen-abyssal-plasma-void-medusa.wgsl",
+    "features": [
+      "organic",
+      "fluid",
+      "bioluminescent",
+      "plasma",
+      "audio-reactive"
+    ],
+    "tags": [
+      "organic",
+      "fluid",
+      "bioluminescent",
+      "plasma",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "bioluminescence",
+        "name": "Bioluminescence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "fluidDistortion",
+        "name": "Fluid Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "tentacleLength",
+        "name": "Tentacle Length",
+        "default": 0.8,
+        "min": 0.2,
+        "max": 1.5,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "plasmaHue",
+        "name": "Plasma Hue",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "bioluminescence",
+        "name": "Bioluminescence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "index": 1,
+        "id": "fluidDistortion",
+        "name": "Fluid Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "index": 2,
+        "id": "tentacleLength",
+        "name": "Tentacle Length",
+        "default": 0.8,
+        "min": 0.2,
+        "max": 1.5,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "index": 3,
+        "id": "plasmaHue",
+        "name": "Plasma Hue",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Abyssal Quantum-Leviathan Skeleton",
     "category": "generative",
     "tags": [
@@ -5904,6 +6005,90 @@
     ]
   },
   {
+    "id": "gen-chrono-kinetic-fractal-engine",
+    "url": "shaders/gen-chrono-kinetic-fractal-engine.wgsl",
+    "name": "Chrono-Kinetic Fractal Engine",
+    "category": "generative",
+    "author": "Jules",
+    "description": "A highly dynamic, continuously unfolding 4D mechanism where temporal gears and non-euclidean clockwork structures weave together into an infinite, hypnotic mandala of light and motion.",
+    "params": [
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "warpStrength",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "kineticSpeed",
+        "name": "Kinetic Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "id": "warpStrength",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "id": "kineticSpeed",
+        "name": "Kinetic Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-chrono-kitsune-prism-weaver",
     "name": "Chrono-Kitsune Prism Weaver",
     "url": "shaders/gen-chrono-kitsune-prism-weaver.wgsl",
@@ -7278,6 +7463,64 @@
     "updated": true,
     "id": "gen-cyber-terminal",
     "url": "shaders/gen-cyber-terminal.wgsl",
+    "features": []
+  },
+  {
+    "name": "Cybernetic Aether-Moth Chrysalis",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "cybernetic",
+      "fractal",
+      "bioluminescence",
+      "plasma",
+      "audio-reactive"
+    ],
+    "description": "A hyper-intricate cyber-organic cocoon pulses with bioluminescent plasma trails and crystalline micro-circuitry, breathing and evolving over time.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Point Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Point Size",
+        "default": 0.4,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-cybernetic-aether-moth-chrysalis",
+    "url": "shaders/gen-cybernetic-aether-moth-chrysalis.wgsl",
     "features": []
   },
   {
@@ -14791,6 +15034,44 @@
     "features": []
   },
   {
+    "id": "gen-luminescent-silica-diatom-swarm",
+    "name": "Luminescent Silica Diatom Swarm",
+    "category": "generative",
+    "url": "/shaders/gen-luminescent-silica-diatom-swarm.wgsl",
+    "uniforms": {
+      "zoom_params": {
+        "x": {
+          "name": "Swarm Density",
+          "default": 1,
+          "min": 0.1,
+          "max": 5,
+          "step": 0.1
+        },
+        "y": {
+          "name": "Bioluminescence",
+          "default": 1.5,
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        },
+        "z": {
+          "name": "Glass Refraction",
+          "default": 1.33,
+          "min": 1,
+          "max": 2.5,
+          "step": 0.01
+        },
+        "w": {
+          "name": "Audio Reactivity",
+          "default": 1,
+          "min": 0,
+          "max": 3,
+          "step": 0.1
+        }
+      }
+    }
+  },
+  {
     "name": "Luminous Cauldron",
     "category": "generative",
     "tags": [
@@ -19791,6 +20072,106 @@
     ]
   },
   {
+    "id": "gen-quantum-mycelial-neural-web",
+    "name": "Quantum Mycelial Neural Web",
+    "url": "shaders/gen-quantum-mycelial-neural-web.wgsl",
+    "category": "generative",
+    "description": "An emergent, bioluminescent network of mycelial structures that pulses and evolves like a cosmic brain, bridging organic growth patterns with quantum probabilistic entanglement.",
+    "features": [
+      "volumetric-network",
+      "bioluminescent-pulse",
+      "curl-noise",
+      "audio-reactive",
+      "subsurface-scattering",
+      "mouse-attractor"
+    ],
+    "tags": [
+      "organic",
+      "network",
+      "volumetric",
+      "mycelial",
+      "bioluminescence",
+      "raymarching"
+    ],
+    "params": [
+      {
+        "id": "webDensity",
+        "name": "Web Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the mycelial web"
+      },
+      {
+        "id": "pulseSpeed",
+        "name": "Pulse Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y",
+        "description": "Speed of bioluminescent pulsing"
+      },
+      {
+        "id": "bioluminescence",
+        "name": "Bioluminescence",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.z",
+        "description": "Intensity of the bioluminescence"
+      },
+      {
+        "id": "entanglement",
+        "name": "Entanglement",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Amount of curl noise distortion"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Web Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pulse Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Bioluminescence",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 3,
+        "name": "Entanglement",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
+  },
+  {
     "name": "Quantum Mycelium",
     "category": "generative",
     "tags": [
@@ -22504,6 +22885,50 @@
     "id": "gen-stardust-nebula",
     "url": "shaders/gen-stardust-nebula.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-stellar-acoustic-resonance-manifold",
+    "name": "Stellar-Acoustic Resonance-Manifold",
+    "category": "generative",
+    "url": "shaders/gen-stellar-acoustic-resonance-manifold.wgsl",
+    "parameters": [
+      {
+        "name": "Audio Reactivity",
+        "type": "slider",
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "default": 1,
+        "uniform": "zoom_params.x"
+      },
+      {
+        "name": "Plasma Density",
+        "type": "slider",
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05,
+        "default": 0.5,
+        "uniform": "zoom_params.y"
+      },
+      {
+        "name": "Orbital Speed",
+        "type": "slider",
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "default": 1,
+        "uniform": "zoom_params.z"
+      },
+      {
+        "name": "Core Temperature",
+        "type": "slider",
+        "min": 1000,
+        "max": 10000,
+        "step": 100,
+        "default": 6000,
+        "uniform": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Stellar Plasma-Ouroboros",

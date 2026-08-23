@@ -24,6 +24,7 @@ TypeScript WebGPU renderer split mirrors the C++ WASM layout (#965).
 | [`webgpu/webgpuConstants.ts`](webgpu/webgpuConstants.ts) | Shared constants and slot types |
 | [`webgpu/frameState.ts`](webgpu/frameState.ts) | Renderer-owned state adapter for frame modules |
 | [`webgpuDevicePolicy.ts`](webgpuDevicePolicy.ts) | Adapter contract (shared with C++) |
+| [`../gpuChores/`](../gpuChores/) | Tier 4b pre-FX analysis (histogram / reduce / LUT / downsample); adopts this device |
 
 ## Pure dependencies (unchanged)
 

@@ -70,13 +70,35 @@ Params: Stiffness, Tear Threshold, Gravity, Self Heal.
 
 Params: IOR, Light Size, Dispersion, Intensity.
 
+### Chromatographic Fluid (`chromatographic-fluid`, 7 passes)
+
+- **Hold** paints dye + local swirl; **move** steers the wind vane
+- **Click** solvent splashes; bass gusts, mids heat, treble sparkle
+- Shared velocity — R/G/B dyes separate by viscosity, not three NS solvers
+
+Params: Viscosity Split, Wind, Temperature, Dye Inject.
+
+### Gray-Scott Tank (`gray-scott-tank`, 6 passes)
+
+- **Hold** paints V; **click** seeds spots; four Jacobi steps per frame at balanced
+- Feed/Kill sliders map to classic Gray–Scott ranges (clamped U/V)
+
+Params: Feed, Kill, Diffusion, Seed Strength.
+
+### Optical Flow Dream (`optical-flow-dream`, 4 passes)
+
+- History ring (binding 13) estimates flow; **hold** freezes the lens; **click** tears time
+- Battery-friendly like photonic; decay + chroma smear along the flow
+
+Params: Flow Scale, Decay, Chroma Smear, Dream Mix.
+
 ### Pass budget in the HUD
 
-**Controls → Render Quality** shows `≤N passes/frame`. That is `performancePolicy.maxPassesPerFrame` (battery 4 / balanced 8 / ultra 16). Graphs that need more than N dispatches drop the tail of the expanded node list. Prefer **balanced+** for the 7-pass stacks.
+**Controls → Render Quality** shows `≤N passes/frame`. That is `performancePolicy.maxPassesPerFrame` (battery 4 / balanced 8 / ultra 16). Over budget, Jacobi/diffuse repeats shrink first so the color pass still runs. Prefer **balanced+** for the 6–7-pass stacks.
 
 ### Preset pack
 
-Open **Preset Packs** in VJ Studio for **Physics Lab · Ripple / Fabric / Photonic** (and the Triptych stack), or load [`public/presets/physics-lab.json`](../public/presets/physics-lab.json).
+Open **Preset Packs** in VJ Studio for **Physics Lab** solos (Ripple / Fabric / Photonic / Chroma / Gray-Scott / Dream) and the original Triptych, or load [`public/presets/physics-lab.json`](../public/presets/physics-lab.json).
 
 ## Troubleshooting
 

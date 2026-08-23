@@ -2,7 +2,7 @@
   "version": 1,
   "id": "physics-lab",
   "name": "Physics Lab",
-  "description": "Tier C multipass flagships — living wave tanks, tearing cloth, and photonic caustic pools. Prefer balanced quality or higher (rgba32float).",
+  "description": "Tier C multipass flagships — wave tanks, cloth, caustics, chromatographic dyes, Gray–Scott, and optical-flow dreams. Prefer balanced quality or higher (rgba32float).",
   "packs": [
     {
       "id": "physics-lab-ripple",
@@ -56,6 +56,63 @@
               "zoomParam2": 0.4,
               "zoomParam3": 0.55,
               "zoomParam4": 0.65
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-chroma",
+      "name": "Chromatographic Fluid Solo",
+      "description": "RGB viscosity dyes in a shared wind field. graph · 7 passes.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "chromatographic-fluid",
+            "params": {
+              "zoomParam1": 0.55,
+              "zoomParam2": 0.45,
+              "zoomParam3": 0.4,
+              "zoomParam4": 0.6
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-gray-scott",
+      "name": "Gray-Scott Tank Solo",
+      "description": "True Jacobi Gray–Scott RD. graph · 6 passes.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "gray-scott-tank",
+            "params": {
+              "zoomParam1": 0.42,
+              "zoomParam2": 0.55,
+              "zoomParam3": 0.5,
+              "zoomParam4": 0.65
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-dream",
+      "name": "Optical Flow Dream Solo",
+      "description": "History-ring optical flow + decay. graph · 4 passes — battery-friendly.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "optical-flow-dream",
+            "params": {
+              "zoomParam1": 0.55,
+              "zoomParam2": 0.7,
+              "zoomParam3": 0.45,
+              "zoomParam4": 0.75
             }
           }
         ]

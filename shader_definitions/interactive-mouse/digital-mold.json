@@ -2,7 +2,17 @@
   "id": "digital-mold",
   "name": "Digital Mold",
   "url": "shaders/digital-mold.wgsl",
-  "description": "Reaction-diffusion growth with spore noise and depth humidity. Gray-Scott simulation grows mold patterns from the mouse cursor; depth modulates growth speed. Bass injects spores, treble adds bright sporulation highlights.",
+  "description": "Continuous Gray-Scott reaction-diffusion kinetics with biological hyphal branching, spore dispersal inoculation, bioluminescent nutrient glow, and exact-load chemical state memory.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "reaction-diffusion",
+    "spore-noise",
+    "depth-humidity",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "updated": true,
   "params": [
     {
       "id": "feedRate",
@@ -33,13 +43,35 @@
       "max": 1
     }
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "reaction-diffusion",
-    "spore-noise",
-    "depth-humidity",
-    "upgraded-rgba"
+  "updatedParams": [
+    {
+      "id": "feedRate",
+      "name": "Feed Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "killRate",
+      "name": "Kill Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "diffusionA",
+      "name": "Diffusion A",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "diffusionB",
+      "name": "Diffusion B",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
   ],
   "tags": [
     "filter",
@@ -49,6 +81,7 @@
     "reactive",
     "mold",
     "reaction-diffusion",
-    "organic"
+    "organic",
+    "temporal"
   ]
 }

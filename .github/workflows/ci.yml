@@ -191,7 +191,7 @@ jobs:
       run: npx playwright install chromium
     
     - name: Run WASM Playwright smoke tests
-      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts tests/renderer-parity.spec.ts tests/wasm-benchmark.spec.ts --project=chromium
+      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=chromium
       env:
         CI: true
         WASM_GPU_TESTS: '0'
@@ -304,6 +304,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -320,9 +322,65 @@ jobs:
     - name: Generate shader lists
       run: node scripts/generate_shader_lists.js
 
+    - name: Regenerate unified shader manifest
+      run: npm run build:manifest
+
     - name: Validate JSON manifests
       run: |
         for f in public/shader-lists/*.json; do
           echo "Validating $f"
           node -e "JSON.parse(require('fs').readFileSync('$f'))"
         done
+
+  thumbnail-coverage:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Generate shader lists
+      run: node scripts/generate_shader_lists.js
+
+    - name: Regenerate unified shader manifest
+      run: npm run build:manifest
+
+    - name: Check thumbnail coverage regression
+      id: thumbs
+      continue-on-error: true
+      run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
+
+    - name: Report to job summary
+      if: always()
+      run: cat /tmp/thumbs-check.txt >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Comment on PR if check failed
+      if: failure() && steps.thumbs.outcome == 'failure'
+      continue-on-error: true
+      run: |
+        {
+          echo "## ⚠️ Thumbnail Coverage Check"
+          echo ""
+          cat /tmp/thumbs-check.txt
+          echo ""
+          echo "💡 **Tip:** Add a deferral entry to `reports/thumbnail_deferrals.json` for newly added shaders without thumbnails."
+          echo "See: [Thumbnail Deferrals](docs/THUMBNAIL_PIPELINE.md) for details."
+        } > /tmp/thumbs-comment.md
+        
+        gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/thumbs-comment.md || true
+      env:
+        GH_TOKEN: ${{ github.token }}

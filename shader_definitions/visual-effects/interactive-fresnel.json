@@ -2,14 +2,20 @@
   "id": "interactive-fresnel",
   "name": "Interactive Fresnel",
   "url": "shaders/interactive-fresnel.wgsl",
-  "description": "Gravitational lensing with chromatic Einstein rings and depth mass simulation. Concentric rings warp the image with per-channel dispersion; depth acts as gravitational mass. Bass multiplies lensing power, treble sharpens chromatic separation.",
+  "description": "2.5D Fresnel lens curvature with Cauchy dispersion, held ring squeeze, oil-slick grout, radial packets, and bounded click shells. Display RGBA in A.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "chromatic-aberration",
     "depth-mass",
-    "upgraded-rgba"
+    "temporal",
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "continuous-motion",
+    "psychedelic-color"
   ],
+  "updated": true,
   "params": [
     {
       "id": "effectStrength",
@@ -40,6 +46,44 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "id": "effectStrength",
+      "name": "Lensing Power",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "id": "ringCount",
+      "name": "Ring Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "id": "ringThickness",
+      "name": "Ring Thickness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "tags": [
     "filter",
     "image-processing",
@@ -48,6 +92,7 @@
     "reactive",
     "fresnel",
     "lensing",
-    "chromatic"
+    "chromatic",
+    "temporal"
   ]
 }

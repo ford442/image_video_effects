@@ -7,7 +7,7 @@ echo "=== Building Pixelocity WASM Renderer (2026 version) ==="
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "Source directory: $SCRIPT_DIR"
 
-# Always assemble bridge from wasm_renderer/bridge/*.js (no emcc required).
+# Always sync JS bridge from src/wasm/bridge/*.js (no emcc required).
 bash "$SCRIPT_DIR/concat_bridge.sh"
 
 # Source Emscripten from wherever emsdk lives
@@ -31,7 +31,7 @@ if ! command -v emcc &> /dev/null; then
     if [ "${SKIP_WASM_BUILD:-}" = "1" ]; then
         echo "[INFO] SKIP_WASM_BUILD=1 — skipping WASM build (emcc not found)."
         echo "       Use committed artifacts in public/wasm/ or run on a machine with emsdk."
-        echo "       Bridge was still concatenated from wasm_renderer/bridge/*.js."
+        echo "       Bridge was still synced from src/wasm/bridge/*.js."
         exit 0
     fi
     echo "❌ Error: emcc not found. Install the Emscripten SDK to build the WASM renderer."
@@ -41,7 +41,7 @@ if ! command -v emcc &> /dev/null; then
 fi
 
 if [ "${SKIP_WASM_BUILD:-}" = "1" ]; then
-    echo "[INFO] SKIP_WASM_BUILD=1 — skipping emcc compile (bridge was concatenated above)."
+    echo "[INFO] SKIP_WASM_BUILD=1 — skipping emcc compile (bridge was synced above)."
     echo "       Use committed artifacts in public/wasm/."
     exit 0
 fi
@@ -62,49 +62,10 @@ unset EMCC_CFLAGS
 BUILD_DIR="$SCRIPT_DIR/build"
 mkdir -p "$BUILD_DIR"
 
-EXPORTED="_main,\
-_initWasmRenderer,\
-_shutdownWasmRenderer,\
-_loadShader,\
-_reloadShader,\
-_setActiveShader,\
-_setSlotShader,\
-_setSlotParams,\
-_setSlotMode,\
-_updateUniforms,\
-_updateMousePos,\
-_setMouseDown,\
-_updateAudioData,\
-_updateAudioFrequencyBins,\
-_updateDepthMap,\
-_setInputSource,\
-_addRipple,\
-_clearRipples,\
-_setTime,\
-_setZoomParams,\
-_getFPS,\
-_getSupportsDeepWorkgroup,\
-_getSlotShaderId,\
-_getSlotEnabled,\
-_getSlotMode,\
-_getGPUTimings,\
-_setRecording,\
-_isRecording,\
-_getAdapterSummary,\
-_getLastInitErrorStage,\
-_getLastInitErrorMessage,\
-_isRendererInitialized,\
-_loadImageData,\
-_uploadVideoFrame,\
-_resizeCanvas,\
-_beginFrameCapture,\
-_getFrameCaptureState,\
-_readCapturedFrame,\
-_endFrameCapture,\
-_getCanvasWidth,\
-_getCanvasHeight,\
-_malloc,\
-_free"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Export lists live in src/contracts/wasm_exports.json — do not hardcode them here.
+EXPORTED="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" functions)"
+RUNTIME_METHODS="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" runtime)"
 
 # Single-pass compile+link via emcc.
 # --use-port=emdawnwebgpu runs emdawnwebgpu.py's process_args() exactly once
@@ -152,7 +113,7 @@ em++ -std=c++20 -O2 \
     "${SOURCES[@]}" \
     "-I$SCRIPT_DIR" \
     -sEXPORTED_FUNCTIONS="${EXPORTED}" \
-    -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8,HEAPF32 \
+    -sEXPORTED_RUNTIME_METHODS="${RUNTIME_METHODS}" \
     -sALLOW_MEMORY_GROWTH=1 \
     -sGROWABLE_ARRAYBUFFERS=0 \
     -sNO_EXIT_RUNTIME=1 \
@@ -162,11 +123,10 @@ em++ -std=c++20 -O2 \
     -o "$BUILD_DIR/pixelocity_wasm.js"
 
 # Copy output to public folder (repo-relative path)
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PUBLIC_WASM="$REPO_ROOT/public/wasm"
 mkdir -p "$PUBLIC_WASM"
 cp "$BUILD_DIR/pixelocity_wasm.js" "$BUILD_DIR/pixelocity_wasm.wasm" "$PUBLIC_WASM/"
 echo "✅ WASM build complete!"
 echo "   Emscripten output: public/wasm/pixelocity_wasm.{js,wasm}"
 echo "   Bridge copies:     public/wasm/wasm_bridge.js, src/wasm/wasm_bridge.js"
-echo "   Edit bridge only:  wasm_renderer/bridge/*.js (concat via concat_bridge.sh)"
+echo "   Edit JS bridge:    src/wasm/bridge/*.js (sync via concat_bridge.sh)"

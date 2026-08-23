@@ -1,0 +1,104 @@
+.webgpu-probe-failure-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+  background: rgba(8, 10, 16, 0.92);
+  color: #e8ecf4;
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+  overflow: auto;
+}
+
+.webgpu-probe-failure-overlay__card {
+  width: min(640px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  background: #141a24;
+  border: 1px solid #2a3548;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.webgpu-probe-failure-overlay__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ff8a8a;
+}
+
+.webgpu-probe-failure-overlay__summary {
+  margin: 0 0 0.75rem;
+  line-height: 1.45;
+  color: #c5cddc;
+}
+
+.webgpu-probe-failure-overlay__error {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255, 80, 80, 0.12);
+  border-left: 3px solid #ff6b6b;
+  color: #ffc9c9;
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+.webgpu-probe-failure-overlay__meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+}
+
+.webgpu-probe-failure-overlay__meta dt {
+  margin: 0;
+  color: #8b97ad;
+  font-weight: 600;
+}
+
+.webgpu-probe-failure-overlay__meta dd {
+  margin: 0;
+  color: #e8ecf4;
+  word-break: break-word;
+}
+
+.webgpu-probe-failure-overlay__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.webgpu-probe-failure-overlay__actions button {
+  cursor: pointer;
+  border: 1px solid #3a4a66;
+  background: #1e2838;
+  color: #e8ecf4;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.webgpu-probe-failure-overlay__actions button:hover {
+  background: #283448;
+}
+
+.webgpu-probe-failure-overlay__log {
+  margin: 0;
+  padding: 0.75rem;
+  max-height: 40vh;
+  overflow: auto;
+  background: #0b0f16;
+  border: 1px solid #243044;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #b8c4d8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

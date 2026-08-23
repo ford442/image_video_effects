@@ -60,6 +60,8 @@ function makeDevice(featureNames: GPUFeatureName[] = []): GPUDevice {
     addEventListener: jest.fn(),
     destroy: jest.fn(),
     lost: Promise.resolve({ reason: 'destroyed', message: '' }),
+    createShaderModule: jest.fn().mockReturnValue({}),
+    createComputePipeline: jest.fn().mockReturnValue({}),
   } as unknown as GPUDevice;
 }
 
@@ -110,6 +112,8 @@ describe('formatEnabledDeviceFeatures', () => {
 });
 
 describe('buildCanvasConfigureOptions', () => {
+  // WASM also calls ConfigureSurface() after JS_CreateSurfaceFromCanvas
+  // (Fifo + width/height). Do not "unify" away that second configure.
   it('sets opaque alpha and RENDER_ATTACHMENT usage', () => {
     const device = makeDevice();
     const opts = buildCanvasConfigureOptions(device, 'bgra8unorm');

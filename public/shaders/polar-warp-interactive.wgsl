@@ -83,8 +83,9 @@ fn hueRotate(rgb: vec3<f32>, angle: f32) -> vec3<f32> {
 }
 fn sparkle(uv: vec2<f32>, time: f32, treble: f32) -> f32 {
     let id = floor(uv * 64.0);
-    let h = hash33(vec3<f32>(id, time * 30.0));
-    return smoothstep(0.985, 1.0, h) * treble * 0.6;
+    let seed = hash33(vec3<f32>(id, 17.0));
+    let pulse = pow(0.5 + 0.5 * sin(time * (4.0 + seed * 5.0) + seed * TAU), 18.0);
+    return step(0.82, seed) * pulse * treble * 0.6;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -99,6 +100,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let mouseRaw = u.zoom_config.yz;
     let mouse = select(mouseRaw, vec2<f32>(0.5), mouseRaw.x < 0.0);
+    let held = f32(u.zoom_config.w > 0.5);
 
     let bassRaw = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -127,19 +129,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (radius < EPS) {
         textureStore(writeTexture, pixel, vec4<f32>(0.0));
         textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-        textureStore(dataTextureA, pixel, vec4<f32>(bassSmooth, mouse.x, mouse.y, mouseSpeed));
+        textureStore(dataTextureA, pixel, vec4<f32>(bassSmooth, mouse.x, mouse.y, 0.0));
         return;
     }
 
     // Polar distortion: radius warped by Param1 + pinch from Param4
     let zoom = 0.1 + warpStrength * 2.0;
-    let r_new = pow(radius, 1.0 / zoom) - pinchExpand;
-    var a_new = angle + radius * spiralAmount + time * 0.1 * midsMorph;
+    let heldPinch = held * exp(-radius * 5.0) * (0.08 + pinchExpand * 0.12);
+    let r_new = pow(radius, 1.0 / zoom) - pinchExpand - heldPinch;
+    var a_new = angle + radius * spiralAmount + time * 0.1 * midsMorph
+              + held * sin(radius * 18.0 - time * 3.2) * 0.45;
 
     // Click-triggered ripple bursts from u.ripples, boosted by bass hits
     let bassHit = smoothstep(0.6, 1.2, bassSmooth);
-    for (var i: i32 = 0; i < 50; i = i + 1) {
-        a_new += rippleAngle(uv, aspect, time, u.ripples[i], rippleDecay) * (1.0 + bassHit * 1.5);
+    let rippleCount = min(u32(u.config.y), 50u);
+    var clickSpiral = 0.0;
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let twist = rippleAngle(uv, aspect, time, u.ripples[i], rippleDecay) * (1.0 + bassHit * 1.5);
+        a_new += twist;
+        clickSpiral += abs(twist);
     }
 
     // Map polar coordinates back into UV space with mirrored-repeat edges
@@ -147,6 +155,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tunnel_v = 1.0 / (r_new + EPS);
     let fuv = fract(vec2<f32>(tunnel_u, tunnel_v));
     let sampleUV = abs(fuv * 2.0 - 1.0);
+    let tunnelBands = pow(0.5 + 0.5 * sin(log(max(radius, EPS)) * 24.0 - time * 4.0 + angle * 5.0), 7.0);
+    let mandala = pow(0.5 + 0.5 * cos(angle * (8.0 + u.zoom_params.y * 12.0)
+                                           + radius * 30.0 - time * 2.8), 8.0);
 
     // Organic drift driven by treble + mouse motion vector + bass pulse
     let drift = vec2<f32>(
@@ -172,11 +183,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Treble sparkle overlay
     col += vec3<f32>(sparkle(sampleUV, time, treble));
-
-    // Temporal feedback trail: previous frame bleeds through, increased by motion
-    let trailDecay = 0.94 - treble * 0.02;
-    let trailMix = 0.25 + mouseSpeed * 0.5;
-    col = mix(prev.rgb * trailDecay, col, trailMix);
+    let spectral = 0.5 + 0.5 * cos(TAU * (vec3<f32>(radius * 1.7 + time * 0.06)
+                                      + vec3<f32>(0.0, 0.33, 0.67)));
+    col += spectral * (tunnelBands * 0.16 + mandala * 0.12 + clickSpiral * 0.45)
+         * (0.5 + mids);
 
     // Semantic alpha encodes interaction intensity + distortion + depth + audio energy
     let alpha = mix(luma(col), 0.85, smoothstep(0.5, 1.5, warpDistort)) * fade * depthFade * (0.7 + mouseSpeed * 2.0 + bassSmooth * 0.5);

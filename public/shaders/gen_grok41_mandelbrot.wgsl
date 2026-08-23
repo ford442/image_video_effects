@@ -103,7 +103,7 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let time = u.config.x;
+    let time = u.config.x * 5.0; // Fast motion upgrade
 
     // ─── OOB bounds guard: dispatch is rounded up to workgroup multiples ───
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {

@@ -52,6 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   let speed_param = u.zoom_params.x * (1.0 + bass * 0.3);
   let scale_param = u.zoom_params.y;
@@ -63,11 +64,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let mouse = u.zoom_config.yz;
   let mouse_dist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
-  let mouse_dir = normalize(uv - mouse + vec2<f32>(0.001));
+  let mouse_delta = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let mouse_dir = mouse_delta / max(length(mouse_delta), 0.001);
   let mouse_influence = smoothstep(0.4, 0.0, mouse_dist);
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+  }
 
   let t = time * (speed_param * 2.0 + 0.1);
-  let n_r = noise(uv * noise_scale + vec2<f32>(t, t * 0.5) - mouse_influence * mouse_dir);
+  let vortex = vec2<f32>(-mouse_dir.y, mouse_dir.x) * mouse_influence * held;
+  let n_r = noise(uv * noise_scale + vec2<f32>(t, t * 0.5) - mouse_influence * mouse_dir + vortex);
   let n_g = noise(uv * noise_scale + vec2<f32>(t + 10.0, t * 0.6 + 10.0) + mouse_influence * mouse_dir * 0.5);
   let n_b = noise(uv * noise_scale + vec2<f32>(t + 20.0, t * 0.7 + 20.0));
 
@@ -84,11 +95,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + final_d_b, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
+  let filament = sin((n_r + n_g - n_b) * 18.0 + time * 2.0) * 0.5 + 0.5;
+  let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + filament * 5.0 + time * (0.4 + treble));
+  let finalRgb = vec3<f32>(r, g, b) + spectral * (filament * 0.08 + clickFront * 0.22 + held * mouse_influence * 0.1);
   let alpha = clamp(baseColor.a * 0.5 + (length(d_r) + length(d_g) + length(d_b)) * 5.0 + mouse_influence * 0.2, 0.0, 1.0);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  textureStore(writeTexture, coord, vec4<f32>(r, g, b, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(finalRgb, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(r, g, b, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(finalRgb, alpha));
 }
