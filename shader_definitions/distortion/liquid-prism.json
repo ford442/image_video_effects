@@ -3,9 +3,20 @@
   "url": "shaders/liquid-prism.wgsl",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "cauchy-dispersion",
+    "fresnel",
+    "caustic-fronts",
+    "temporal-afterglow"
   ],
-  "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens. Audio reactivity pulses ripple strength and prism highlights with the beat.",
+  "description": "Ripple glass with wavelength-correct Cauchy dispersion: n(lambda) = A + B/lambda^2 sets each channel's sample offset, so blue bends hardest as real glass does. Fixes the dead-audio bug where u.config.y (the ripple count) was read as an audio level. Clicks emit bounded caustic wavefronts.",
   "params": [
     {
       "id": "strength",
@@ -45,7 +56,50 @@
     "distort",
     "transform",
     "audio",
-    "music"
+    "music",
+    "prism",
+    "dispersion",
+    "glass",
+    "refraction",
+    "chromatic"
   ],
-  "name": "Liquid Prism"
+  "name": "Liquid Prism",
+  "updatedParams": [
+    {
+      "id": "strength",
+      "name": "Prism Strength",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Displacement amplitude of the refraction ripple."
+    },
+    {
+      "id": "frequency",
+      "name": "Wave Frequency",
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Ripple wavenumber; mids and the local FFT band modulate it."
+    },
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "type": "float",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "description": "Phase speed of the pointer ripple."
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration / Transparency",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Dual-purpose: scales the Cauchy index spread AND sets base glass transparency."
+    }
+  ]
 }

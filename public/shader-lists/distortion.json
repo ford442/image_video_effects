@@ -1925,11 +1925,28 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "kaleidoscope",
+      "mirror",
+      "symmetry",
+      "rose-curve"
     ],
     "features": [
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "rose-segments",
+      "mirror-pivot",
+      "chromatic-aberration",
+      "temporal-persistence"
     ],
     "params": [
       {
@@ -1963,6 +1980,45 @@
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ],
+    "description": "Rose-FBM kaleidoscope whose mirror bank is now steerable: the segment fan pivots and re-centres on a spring-damped pointer in extraBuffer[133..134] instead of being pinned to frame centre, and each mirror segment owns one FFT bin driving its own petal amplitude and Gabor texture gain. Fixes a shader that never read the mouse at all, and adds the dataTextureA writeback the slot was missing.",
+    "updatedParams": [
+      {
+        "id": "segments",
+        "name": "Segments",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Number of mirror wedges in the fan."
+      },
+      {
+        "id": "speed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Lissajous and epicycloid drift rate."
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Radial magnification inside each wedge."
+      },
+      {
+        "id": "edge_softness",
+        "name": "Edge Softness",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Wedge edge feathering; also sets the superellipse aperture exponent and the per-segment RGB split."
       }
     ]
   },
@@ -2299,7 +2355,7 @@
     "id": "magnetic-field",
     "name": "Magnetic Field",
     "url": "shaders/magnetic-field.wgsl",
-    "description": "Multi-pole magnetic vector field with Lorentz particle conveyor dynamics, ferromagnetic dipole alignment caustic ridges, 4-mode field topology, and exact-load flux memory.",
+    "description": "Multipole magnetic field where each pole draws its moment from one of the eight FFT bins, so the field geometry itself reshapes with the music. Luminous tracer bands advect along the field lines at a cyclotron rate set by local |B|, streaming fast in strong regions and stalling in weak ones. Fixes a mask-as-colour feedback bug: dataTextureA stored the raw B-field vector while the temporal blend read it back as RGB, injecting signed field components into the displayed colour.",
     "features": [
       "animated",
       "physics",
@@ -2308,7 +2364,18 @@
       "curl-noise",
       "field-lines",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "dipole-field",
+      "cyclotron-drift",
+      "field-line-caustics",
+      "chromatic-aberration",
+      "temporal-persistence"
     ],
     "updated": true,
     "params": [
@@ -2347,28 +2414,32 @@
         "name": "Field Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Lorentz displacement gain applied to the image."
       },
       {
         "id": "radius",
-        "name": "Radius",
+        "name": "Field Radius",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Extent of the field envelope around the pointer."
       },
       {
         "id": "density",
-        "name": "Field Density",
+        "name": "Line Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Spacing of the field-line caustic ridges and tracer bands."
       },
       {
         "id": "mode",
-        "name": "Mode",
+        "name": "Field Mode",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Monopole / dipole / multipole / solenoid vortex geometry."
       }
     ],
     "tags": [
@@ -2380,7 +2451,11 @@
       "magnetic",
       "curl",
       "particles",
-      "temporal"
+      "temporal",
+      "field-lines",
+      "physics",
+      "lorentz",
+      "aurora"
     ]
   },
   {
@@ -3759,7 +3834,7 @@
     "id": "voronoi-chaos",
     "name": "Voronoi Chaos",
     "url": "shaders/voronoi-chaos.wgsl",
-    "description": "Breaks the image into Voronoi cells that shift chaotically based on time and mouse proximity.",
+    "description": "Animated Voronoi mosaic with moving ridge runners, held cell repulsion, click fronts, three-band audio, bounded source sampling, and psychedelic cell color.",
     "params": [
       {
         "name": "Cell Scale",
@@ -3795,13 +3870,53 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color"
     ],
     "tags": [
       "warp",
       "distort",
       "transform"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cell Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Chaos Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Mix",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Center Dot Size",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "voronoi-faceted-glass",
@@ -3963,6 +4078,20 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "audio-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "angular-chromatic-dispersion",
+      "temporal-smear",
+      "spring-damper-pointer",
+      "rankine-vortex"
+    ],
+    "description": "Rankine vortex warp: solid-body rotation inside the core radius and free-vortex circulation (omega ~ 1/r^2) outside it, giving a tightly spun core with a slower, longer-reaching outer flow instead of a rigidly rotating disc. The vortex eye is spring-damped through extraBuffer[133..136] and its own velocity shears the flow, so whipping the cursor drags the vortex behind the pointer. Retains the FFT-banded azimuthal turbulence and flow-aligned angular dispersion from Batch 56.",
       "audio-driven"
     ],
     "description": "Swirls the image around the mouse cursor.",
@@ -4004,7 +4133,47 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "vortex",
+      "turbulence",
+      "chromatic",
+      "distortion"
+    ],
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Vortex Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "description": "Circulation gain of the Rankine profile; bass adds up to +45%."
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Vortex extent; also sets the solid-body core radius."
+      },
+      {
+        "id": "twist",
+        "name": "Spiral Twist",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Radius-dependent spiral layered on the circulation."
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Gain on the FFT-banded azimuthal lobes."
+      }
     ]
   },
   {

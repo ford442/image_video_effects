@@ -1,9 +1,30 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Liquid Rainbow (Upgraded Batch 51)
+//  Liquid Rainbow — Spectral Gerstner Sea with Spring-Damped Drag
 //  Category: liquid-effects
-//  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
+//  Features: mouse-driven, held-drag, spring-damper-pointer,
+//            bounded-click-ripples, audio-reactive, per-band-fft,
+//            gerstner-spectrum, thin-film, chromatic-dispersion, fresnel,
+//            depth-aware, temporal, upgraded-rgba, semantic-alpha, aces
 //  Complexity: High
-//  Upgraded: 2026-08-15
+//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+// ═══════════════════════════════════════════════════════════════════
+//  This shader already met the batch standard (ACES, exact-load feedback,
+//  guarded 50-ripple loop, plasmaBuffer audio, dataTextureA writeback), so this
+//  pass adds structure rather than compliance:
+//
+//    1. Per-band Gerstner spectrum — the surface was two fixed trochoidal wave
+//       trains with hardcoded directions and wavenumbers. It is now an eight-
+//       train spectrum, one per plasmaBuffer[1..8] bin, with directions fanned
+//       across a spreading angle and deep-water dispersion (omega = sqrt(g·k))
+//       so long swells genuinely travel slower than short chop. A real sea
+//       surface is a spectrum; two waves can only ever beat against each other.
+//
+//    2. Spring-damped pointer drag — the drag vortex previously locked to the
+//       raw cursor, so it teleported on every mouse jump. The smoothed pointer
+//       and its velocity now live in extraBuffer[133..136] (written by
+//       invocation (0,0) only), and the drag is applied along the pointer's
+//       actual travel direction with its speed as the gain, so sweeping the
+//       cursor shears the surface along the stroke.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -69,22 +90,60 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rawDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthFactor = mix(1.0, 0.35, clamp(rawDepth, 0.0, 1.0));
 
-  // Dual continuous motion: Trochoidal Gerstner wave array + ambient vortex drift
+  // ── Structure 1: eight-train Gerstner spectrum, one per FFT bin ─────────
+  // Deep-water dispersion omega = sqrt(g*k): long swells run slow, short chop
+  // runs fast. Directions fan across a spreading angle so the sea is confused
+  // rather than a single marching front.
   let pAspect = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-  let wave1 = trochoidalWave(pAspect, normalize(vec2<f32>(1.0, 0.6)), 12.0 + turbulence * 14.0, 0.003 * depthFactor, 1.8 + audio.x * 2.0, time);
-  let wave2 = trochoidalWave(pAspect, normalize(vec2<f32>(-0.7, 1.0)), 18.0 + turbulence * 18.0, 0.002 * depthFactor, 2.4 + audio.y * 2.5, time);
+  var dispSum = vec2<f32>(0.0);
+  var crestSum = 0.0;
+  for (var b: u32 = 0u; b < 8u; b = b + 1u) {
+    let fb = f32(b);
+    let energy = plasmaBuffer[b + 1u].x;
+    let k = (8.0 + fb * 5.5) * (1.0 + turbulence * 1.2);
+    let omega = sqrt(9.81 * k) * 0.12;                 // deep-water dispersion
+    let spread = (fb - 3.5) * 0.34;                    // fan the wave normals
+    let baseAng = 0.54 + spread + sin(time * 0.05 + fb) * 0.12;
+    let dirW = vec2<f32>(cos(baseAng), sin(baseAng));
+    // Longer waves carry more amplitude, as a real spectrum does.
+    let amp = (0.0032 / (1.0 + fb * 0.55)) * depthFactor * (0.45 + energy * 1.9);
+    let w = trochoidalWave(pAspect, dirW, k, amp, omega, time);
+    dispSum += w.xy;
+    crestSum += w.z;
+  }
 
-  var totalDisp = (wave1.xy + wave2.xy) * mix(1.25, 0.55, viscosity);
-  var waveCrest = (wave1.z + wave2.z) * 150.0;
+  var totalDisp = dispSum * mix(1.25, 0.55, viscosity);
+  var waveCrest = crestSum * 150.0;
 
-  // Interactive pointer drag / vortex shear
-  let mousePos = u.zoom_config.yz;
+  // ── Structure 2: spring-damped pointer drag ────────────────────────────
+  // extraBuffer[133..134] = smoothed position, [135..136] = smoothed velocity;
+  // only invocation (0,0) writes, per the house pattern.
+  let rawMouse = u.zoom_config.yz;
+  if (gid.x == 0u && gid.y == 0u) {
+    var sm = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    if (sm.x == 0.0 && sm.y == 0.0) { sm = rawMouse; }
+    let dt = 0.016;
+    let kSpring = 1.0 - exp(-8.0 * dt);
+    let next = sm + (rawMouse - sm) * kSpring;
+    var sv = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    sv = mix(sv, (next - sm) / dt, 0.28);
+    extraBuffer[133] = next.x;
+    extraBuffer[134] = next.y;
+    extraBuffer[135] = sv.x;
+    extraBuffer[136] = sv.y;
+  }
+  let mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  let pointerVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
   let isMouseDown = u.zoom_config.w;
+
   let mouseDelta = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let mouseDist = max(length(mouseDelta), 0.001);
   let dragCore = exp(-mouseDist * mix(8.0, 3.5, viscosity));
   let dragTangent = vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDist;
-  let dragForce = dragTangent * dragCore * (0.008 + turbulence * 0.015) * (1.0 + isMouseDown * 2.2);
+  // Tangential swirl plus a shear along the pointer's actual travel.
+  let strokeSpeed = clamp(length(pointerVel), 0.0, 4.0);
+  let dragForce = dragTangent * dragCore * (0.008 + turbulence * 0.015) * (1.0 + isMouseDown * 2.2)
+                + pointerVel * dragCore * strokeSpeed * 0.004 * (1.0 + isMouseDown);
   totalDisp += vec2<f32>(dragForce.x / aspect, dragForce.y);
 
   // 50-ripple shockwaves with dispersion

@@ -38,15 +38,25 @@ fn hash2(p: vec2<f32>) -> vec2<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     var mousePos = u.zoom_config.yz;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
     // Params
     let cellsScale = u.zoom_params.x * 20.0 + 4.0;
     let chaos = u.zoom_params.y;
     let colorMix = u.zoom_params.z;
     let dotSize = u.zoom_params.w * 0.1;
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let event = u.ripples[ri];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length(uv - event.xy) - age * 0.38) * 62.0);
+    }
 
     // Aspect corrected coordinates for voronoi calculation
     let aspect = resolution.x / resolution.y;
@@ -70,7 +80,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Animate point
             // Base movement
-            point = 0.5 + 0.5 * sin(time * 0.5 + 6.2831 * point);
+            point = 0.5 + 0.5 * sin(time * (0.5 + audio.y) + 6.2831 * point);
 
             // Mouse interaction: push points away from mouse
             if (mousePos.x >= 0.0) {
@@ -79,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                  cellCenterUV.x /= aspect; // revert aspect
 
                  let dToMouse = distance(cellCenterUV, mousePos);
-                 let repulsion = smoothstep(0.5, 0.0, dToMouse) * chaos;
+                 let repulsion = smoothstep(0.5, 0.0, dToMouse) * chaos * (0.4 + held * 1.6);
 
                  // Shift point relative to cell center
                  point = point + vec2<f32>(sin(dToMouse * 20.0 - time * 5.0), cos(dToMouse * 20.0 - time * 5.0)) * repulsion;
@@ -111,13 +121,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sampleUV_Grid = cellCenterGrid / cellsScale;
     let sampleUV = vec2<f32>(sampleUV_Grid.x / aspect, sampleUV_Grid.y);
 
-    let colDistorted = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let colDistorted = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
     // 2. Cell Color (random)
-    let colCell = vec4<f32>(hash2(m_id), 0.5 + 0.5*sin(m_id.x), 1.0);
+    let ridge = sin(m_dist * (70.0 + chaos * 80.0) - time * (3.0 + audio.x * 5.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + ridge * 2.0 + time + audio.z * 2.0);
+    let colCell = vec4<f32>(mix(vec3<f32>(hash2(m_id), 0.5 + 0.5*sin(m_id.x)), spectral, 0.45), 1.0);
 
     // Mix
-    var color = mix(colDistorted, colCell, colorMix * 0.2); // Keep mostly image by default
+    var color = mix(colDistorted, colCell, colorMix * 0.35); // Keep mostly image by default
+    color = color + vec4<f32>(spectral * (abs(ridge) * 0.08 + clickFront * 0.24), 0.0);
 
     // Add center dots
     if (m_dist < dotSize) {

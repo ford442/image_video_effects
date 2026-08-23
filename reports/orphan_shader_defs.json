@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-08-23T01:03:19.135666+00:00",
-  "definitions_scanned": 1345,
-  "wgsl_files_scanned": 1367,
+  "timestamp": "2026-08-23T01:37:00.378238+00:00",
+  "definitions_scanned": 1346,
+  "wgsl_files_scanned": 1368,
   "manifests": {
     "shader_coordinates": "public/shader_coordinates.json",
     "shader_coordinates_count": 645,
@@ -9,14 +9,14 @@
     "seed_shaders_count": 20
   },
   "summary": {
-    "local": 1345,
+    "local": 1346,
     "storage-only": 0,
     "allowlisted": 0,
     "likely-broken": 0,
     "parse-error": 0
   },
   "wgsl_summary": {
-    "cataloged": 1342,
+    "cataloged": 1343,
     "template-prefix": 4,
     "subgroup-variant": 0,
     "multipass-secondary": 21,
@@ -5470,6 +5470,16 @@
       "def_path": "shader_definitions/generative/gen-luminescent-quantum-void-astral-turtle.json",
       "expected_wgsl": "gen-luminescent-quantum-void-astral-turtle.wgsl",
       "local_path": "public/shaders/gen-luminescent-quantum-void-astral-turtle.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-luminescent-silica-diatom-swarm",
+      "def_path": "shader_definitions/generative/gen-luminescent-silica-diatom-swarm.json",
+      "expected_wgsl": "gen-luminescent-silica-diatom-swarm.wgsl",
+      "local_path": "public/shaders/gen-luminescent-silica-diatom-swarm.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -16205,6 +16215,11 @@
     {
       "wgsl": "gen-luminescent-quantum-void-astral-turtle.wgsl",
       "stem": "gen-luminescent-quantum-void-astral-turtle",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-luminescent-silica-diatom-swarm.wgsl",
+      "stem": "gen-luminescent-silica-diatom-swarm",
       "classification": "cataloged"
     },
     {

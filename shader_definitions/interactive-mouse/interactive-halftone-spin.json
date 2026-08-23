@@ -2,7 +2,7 @@
   "id": "interactive-halftone-spin",
   "name": "Interactive Halftone Spin",
   "url": "shaders/interactive-halftone-spin.wgsl",
-  "description": "CMYK halftone pattern where the grid rotation is driven by mouse proximity.",
+  "description": "CMYK halftone screens with held shear, ink conveyors, click splats, oil-slick registration glow, and three-band audio. A remains [C, M, Y, K] coverage.",
   "params": [
     {
       "id": "scale",
@@ -35,10 +35,56 @@
   ],
   "features": [
     "mouse-driven",
-    "halftone"
+    "halftone",
+    "audio-reactive",
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "continuous-motion",
+    "psychedelic-color",
+    "click-reactive"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "id": "scale",
+      "name": "Dot Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "id": "rotation",
+      "name": "Rotation Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "id": "separation",
+      "name": "CMYK Spread",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "id": "contrast",
+      "name": "Contrast",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

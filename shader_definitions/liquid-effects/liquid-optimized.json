@@ -2,7 +2,7 @@
   "id": "liquid-optimized",
   "name": "Liquid Surface Tension (Optimized)",
   "url": "shaders/liquid-optimized.wgsl",
-  "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement. Audio reactivity drives ambient wave amplitude and virtual ripple sources.",
+  "description": "Capillary surface tension with an ANALYTIC height gradient: the field is evaluated once and its exact derivative accumulated in the same loop, replacing five full evaluations (up to 250 ripple iterations per pixel) with one. The saved budget buys an eight-train FFT capillary spectrum with dispersion-correct phase speeds and Fresnel-weighted Beer-Lambert absorption along the true slant path.",
   "tags": [
     "liquid",
     "surface-tension",
@@ -10,12 +10,25 @@
     "optimized",
     "shared-memory",
     "audio",
-    "music"
+    "music",
+    "capillary",
+    "refraction"
   ],
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "depth-aware",
+    "semantic-alpha",
+    "aces",
+    "capillary-waves",
+    "analytic-gradient",
+    "fresnel",
+    "spectral-absorption",
+    "temporal-sheen"
   ],
   "params": [
     {
@@ -49,6 +62,44 @@
       "min": 0,
       "max": 1,
       "step": 0.01
+    }
+  ],
+  "updatedParams": [
+    {
+      "id": "surfaceTension",
+      "name": "Surface Tension",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Height scale and refraction strength of the film."
+    },
+    {
+      "id": "gravityScale",
+      "name": "Gravity Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Wavenumber and phase speed of the click ripple packets."
+    },
+    {
+      "id": "damping",
+      "name": "Damping",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Ripple packet amplitude retention."
+    },
+    {
+      "id": "turbidity",
+      "name": "Turbidity",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Absorption path multiplier; also dulls the specular."
     }
   ]
 }

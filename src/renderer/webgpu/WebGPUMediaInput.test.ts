@@ -14,6 +14,7 @@ function makeCtx(overrides: Partial<{
   canvasH: number;
   readW: number;
   readH: number;
+  colorFormat: WebGPUMediaInputContext['colorFormat'];
 }> = {}): {
   ctx: WebGPUMediaInputContext;
   writeTexture: jest.Mock;
@@ -35,7 +36,7 @@ function makeCtx(overrides: Partial<{
     readTex,
     canvasW: overrides.canvasW ?? 64,
     canvasH: overrides.canvasH ?? 48,
-    colorFormat: 'rgba32float',
+    colorFormat: overrides.colorFormat ?? 'rgba32float',
     filterSampler: {} as GPUSampler,
     supportsExternalTexture: false,
     videoCopyPipeline: null,
@@ -56,6 +57,18 @@ describe('WebGPUMediaInput', () => {
     expect(writeTexture).toHaveBeenCalledTimes(1);
     expect(writeTexture.mock.calls[0][0].texture).toBe(sourceTex);
     expect(writeTexture.mock.calls[0][0].texture).not.toBe(readTex);
+  });
+
+  it('uploadSourceRGBA8 packs rgba16float with 8 bytes per pixel', () => {
+    const { ctx, writeTexture } = makeCtx({ colorFormat: 'rgba16float' });
+    const pixels = new Uint8ClampedArray(64 * 48 * 4);
+    pixels[0] = 255;
+
+    uploadSourceRGBA8(ctx, pixels, 64, 48);
+
+    expect(writeTexture).toHaveBeenCalledTimes(1);
+    expect(writeTexture.mock.calls[0][2].bytesPerRow).toBe(64 * 8);
+    expect(writeTexture.mock.calls[0][1].byteLength).toBe(64 * 48 * 8);
   });
 
   it('uploadRGBA8 skips readTex when it is resolution-scaled', () => {
