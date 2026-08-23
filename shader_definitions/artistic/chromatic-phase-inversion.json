@@ -21,8 +21,8 @@
   "author": "AI",
   "params": [
     {
-      "id": "param1",
-      "name": "Phase Speed",
+      "id": "speed_of_the_temporal_phase_oscillation_per_channel",
+      "name": "Speed of the temporal phase oscillation per channel.",
       "min": 0,
       "max": 1,
       "default": 0.35,
@@ -30,8 +30,8 @@
       "description": "Speed of the temporal phase oscillation per channel."
     },
     {
-      "id": "param2",
-      "name": "Ghost Offset",
+      "id": "spatial_displacement_of_each_color_ghost_from_the_source",
+      "name": "Spatial displacement of each color ghost from the source.",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -39,8 +39,8 @@
       "description": "Spatial displacement of each color ghost from the source."
     },
     {
-      "id": "param3",
-      "name": "Inversion Depth",
+      "id": "how_much_depth_accumulates_extra_phase_near_objects_phase_faster",
+      "name": "How much depth accumulates extra phase (near objects phase faster).",
       "min": 0,
       "max": 1,
       "default": 0.4,
@@ -48,8 +48,8 @@
       "description": "How much depth accumulates extra phase (near objects phase faster)."
     },
     {
-      "id": "param4",
-      "name": "Spatial Coherence",
+      "id": "mix_of_spatial_noise_field_into_the_phase_low_global_high_local",
+      "name": "Mix of spatial noise field into the phase (low=global, high=local).",
       "min": 0,
       "max": 1,
       "default": 0.5,
