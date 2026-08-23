@@ -2,7 +2,7 @@
   "id": "spectral-vortex",
   "name": "Spectral Vortex",
   "url": "shaders/spectral-vortex.wgsl",
-  "description": "Spectral color vortex with twisted distortions and alpha-channel translucency blending. Alpha encodes curl magnitude / maxCurl for energy-based translucency, with depth-aware compositing and audio-reactive twist.",
+  "description": "Spectral curl distortion whose authoritative A feedback packs phase, curl, and energy; sprung pointer and bounded click vortices drive three-band motion while source depth passes through unchanged.",
   "tags": [
     "filter",
     "image-processing"
@@ -11,7 +11,10 @@
     "mouse-driven",
     "depth-aware",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive",
+    "temporal-state",
+    "aces-tone-map"
   ],
   "params": [
     {
@@ -54,5 +57,11 @@
       "mapping": "zoom_params.w",
       "description": "Amplification of curl velocity field"
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Twist Scale", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 1, "name": "Distortion Step", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 2, "name": "Color Shift", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 3, "name": "Curl Amplification", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
   ]
 }

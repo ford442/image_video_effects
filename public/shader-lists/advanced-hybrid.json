@@ -6102,7 +6102,7 @@
     "id": "gravitational-lensing",
     "name": "Gravitational Lensing",
     "url": "shaders/gravitational-lensing.wgsl",
-    "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
+    "description": "Schwarzschild geodesic raytracing with a Shakura-Sunyaev accretion disk: temperature follows T(r) ~ r^-3/4 through a Planck blackbody fit, and Keplerian orbital velocity v ~ r^-1/2 drives relativistic Doppler beaming (delta^3) so the approaching limb brightens correctly. Each of the eight FFT bins owns a disk annulus. Fixes a bug where zoom_config.x (time, not audio) was read as an audio level, making the camera orbit accelerate quadratically forever.",
     "features": [
       "mouse-driven",
       "advanced-hybrid",
@@ -6110,7 +6110,17 @@
       "geodesic-raytracing",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "keplerian-disk",
+      "doppler-beaming",
+      "temporal-accretion"
     ],
     "params": [
       {
@@ -6168,7 +6178,53 @@
       "cursor",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "black-hole",
+      "relativity",
+      "lensing",
+      "accretion"
+    ],
+    "updatedParams": [
+      {
+        "id": "black_hole_mass",
+        "name": "Black Hole Mass",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Schwarzschild radius and Einstein ring size; also sets the ISCO."
+      },
+      {
+        "id": "disk_brightness",
+        "name": "Disk Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Accretion disk emission gain."
+      },
+      {
+        "id": "camera_orbit",
+        "name": "Camera Orbit",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Static offset added to the orbit angle."
+      },
+      {
+        "id": "redshift",
+        "name": "Redshift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Gravitational redshift applied to the escaping background."
+      }
     ]
   },
   {
@@ -6472,7 +6528,10 @@
       "phase-coloring",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "mouse-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -6528,6 +6587,41 @@
       "audio",
       "music",
       "reactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fringe Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Coherence Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reconstruction Angle",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -9443,7 +9537,7 @@
     "id": "spectral-flow-structure",
     "name": "Spectral Flow Structure",
     "url": "shaders/spectral-flow-structure.wgsl",
-    "description": "Structure-tensor-guided pixel sorting with Line Integral Convolution. Eigenvectors from the structure tensor drive sort direction; coherency modulates blend strength. LIC adds flow-line texture. Audio-reactive with mouse vortices.",
+    "description": "Audio-driven structure-tensor LIC and coherent pixel sorting with sprung mouse vortices, bounded click turbulence, and truthful exact-C Temporal Smoothing through authoritative A display history.",
     "features": [
       "advanced-hybrid",
       "pixel-sorting",
@@ -9452,7 +9546,44 @@
       "audio-reactive",
       "mouse-driven",
       "randomization-safe",
-      "audio-driven"
+      "audio-driven",
+      "click-reactive",
+      "temporal",
+      "aces-tone-map"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "LIC Steps",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Coherency Boost",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Sort Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Temporal Smoothing",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {

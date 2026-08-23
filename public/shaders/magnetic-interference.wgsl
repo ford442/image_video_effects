@@ -6,7 +6,46 @@
 //            chromatic-aberration, aces-tone-map, temporal-feedback,
 //            velocity-trails
 //  Complexity: Medium
-//  Upgraded: 2026-07-08
+//  Upgraded: 2026-08-23 (Batch 64)
+//
+//  FIXED IN THIS PASS — three defects.
+//
+//  (a) State written into the engine's audio slots. The shader stored the
+//      previous mouse position at `extraBuffer[0]` and `extraBuffer[1]` — which
+//      per docs/BINDING_CONTRACT.md are BASS and MID. It was overwriting the
+//      audio every other shader in the chain reads, and reading back values the
+//      engine rewrites each frame, so its own mouse-velocity term was garbage
+//      too. Moved to the scratch range `[133..134]`, written only by invocation
+//      (0,0). The extraBuffer audit carried these as two baseline violations.
+//
+//  (b) Audio envelope smuggled through texel (0,0). The envelope was stashed in
+//      `dataTextureA` at pixel (0,0) — corrupting the feedback buffer's corner
+//      texel and making the whole frame depend on one arbitrary pixel. It now
+//      lives in `extraBuffer[135]` alongside the pointer state, so A carries
+//      display RGBA everywhere.
+//
+//  (c) The ripple loop bound was unguarded:
+//
+//      let rippleCount = u32(u.config.y);
+//
+//  The contract requires `min(u32(u.config.y), 50u)` (docs/BINDING_CONTRACT.md).
+//  `config.y` is engine-supplied and normally within range, but an unclamped
+//  `u32` conversion of a float is undefined for negative or oversized values
+//  and would index past the 50-element ripple array.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Per-band domain-wall spectrum — magnetic domain walls are pinned at
+//       defects and each wall responds at its own frequency. Eight wall
+//       families, one per FFT bin, now carry their own pinning sites and
+//       oscillation rate, so the interference pattern separates into spectral
+//       bands rather than one field breathing globally.
+//
+//    2. Hysteresis memory — ferromagnets remember their magnetisation history;
+//       the field lags the drive and only flips past a coercive threshold.
+//       The previous magnetisation is read back from dataTextureC and relaxed
+//       toward the driven state with a coercivity gate, so the pattern shows
+//       real magnetic lag and remanence rather than instantaneous response.
 //  Transform: Tightened bass envelope to canonical attack/release,
 //             added beat-pulsed magnetic field, mids-driven swirl,
 //             rotating chromatic aberration, and treble sparkle.
@@ -101,12 +140,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
     let depth  = textureLoad(readDepthTexture, pixel, 0).r;
 
-    // ─── Audio envelope read from feedback pixel (0,0) ───
-    let prevEnv = textureLoad(dataTextureC, vec2<i32>(0), 0).r;
+    // ─── Persistent state, scratch range only ───
+    // [133..134] = previous pointer, [135] = audio envelope. Indices 0..132 are
+    // ENGINE-OWNED (bass/mid/treble, historyHead, FFT bins) — see the header.
+    let prevEnv = extraBuffer[135];
     let env = bass_env(prevEnv, bass);
 
-    // ─── Mouse velocity from persistent storage ───
-    let prevMouse = vec2<f32>(extraBuffer[0], extraBuffer[1]);
+    let prevMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     let mouseVel = select(mouse - prevMouse, vec2<f32>(0.0), length(prevMouse) < 0.001);
     let mouseSpeed = length(mouseVel);
 
@@ -139,7 +179,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Ripple system integration (audio-amplified shockwaves) ───
     var rippleDisp = vec2<f32>(0.0);
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rElapsed = time - ripple.z;
@@ -157,17 +197,52 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gravityDisp = gWell * influence * 0.02;
     let velDisp = mouseVel * influence * (0.1 + env * 0.1);
 
-    let totalDisp = magneticDisp + rippleDisp + gravityDisp + velDisp;
+    // ── Structure 1: per-band domain-wall spectrum ──────────────────────────
+    // Eight wall families, each pinned at its own defect lattice and
+    // oscillating at its own rate, driven by its own FFT bin.
+    var wallDisp = vec2<f32>(0.0);
+    var wallEnergy = 0.0;
+    for (var w = 0u; w < 8u; w = w + 1u) {
+        let fw = f32(w);
+        let bandE = plasmaBuffer[w + 1u].x;
+        // Pinning lattice: walls sit on a rotated grid unique to each family.
+        let ang = fw * 0.7853981634;
+        let dir = vec2<f32>(cos(ang), sin(ang));
+        let k = 18.0 + fw * 11.0;
+        let phase = dot(uv, dir) * k - time * (0.8 + fw * 0.35);
+        // A domain wall is a narrow transition, not a sine — hence the power.
+        let wall = pow(abs(sin(phase)), 14.0);
+        wallDisp += dir * wall * bandE * 0.004;
+        wallEnergy += wall * bandE;
+    }
+    wallEnergy = min(wallEnergy, 2.0);
+
+    let totalDisp = magneticDisp + rippleDisp + gravityDisp + velDisp + wallDisp;
     let displacedUV = clamp(uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // ─── Sample video input at displaced UV ───
     let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
-    // ─── Temporal feedback for smearing ───
-    let prevColor = textureLoad(dataTextureC, pixel, 0).rgb;
+    // ─── Structure 2: hysteresis memory ───
+    // Ferromagnets lag their drive and only flip past a coercive field. The
+    // previous magnetisation relaxes toward the driven state at a rate gated by
+    // how far the drive exceeds coercivity, giving real lag and remanence.
+    let prevState = textureLoad(dataTextureC, pixel, 0);
+    let prevColor = prevState.rgb;
     let fieldMag = length(totalDisp) * 20.0;
-    let feedbackMix = tentAlpha(fieldMag) * (0.1 + mouseSpeed * 2.0 + env * 0.15);
-    let feedbackColor = mix(baseColor, prevColor, feedbackMix);
+
+    let coercivity = 0.18 + (1.0 - env) * 0.22;
+    let drive = clamp(fieldMag + wallEnergy * 0.3 + bass * 0.4, 0.0, 3.0);
+    // Below coercivity the domain is pinned and barely moves; above it, it
+    // switches quickly. smoothstep is the soft switching curve.
+    let switching = smoothstep(coercivity, coercivity + 0.45, drive);
+    let remanence = mix(0.92, 0.35, switching);
+
+    let feedbackMix = clamp(tentAlpha(fieldMag) * (0.1 + mouseSpeed * 2.0 + env * 0.15)
+                            + remanence * 0.35, 0.0, 0.92);
+    var feedbackColor = mix(baseColor, prevColor, feedbackMix);
+    // Domain walls glow where they are actively sweeping.
+    feedbackColor += vec3<f32>(0.45, 0.72, 1.0) * wallEnergy * switching * 0.22;
 
     // Spectral tint via mix, not per-channel sampling
     let tint = vec3<f32>(1.0 + aberration * 0.3, 1.0, 1.0 - aberration * 0.3);
@@ -201,9 +276,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
 
     if (pixel.x == 0 && pixel.y == 0) {
-        textureStore(dataTextureA, pixel, vec4<f32>(env, 0.0, 0.0, 0.0));
-        extraBuffer[0] = mouse.x;
-        extraBuffer[1] = mouse.y;
+        extraBuffer[133] = mouse.x;
+        extraBuffer[134] = mouse.y;
+        extraBuffer[135] = env;
+        // A now carries display RGBA here too — the envelope no longer needs to
+        // squat on this texel.
+        textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
     } else {
         textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
     }

@@ -2,13 +2,16 @@
   "id": "liquid-rainbow",
   "name": "Liquid Rainbow",
   "url": "shaders/liquid-rainbow.wgsl",
-  "description": "Thin-film liquid refraction with spectral ripple crests, Fresnel edge color, audio-reactive dispersion, and depth-aware compositing.",
+  "description": "Spectral Gerstner sea: eight trochoidal wave trains, one per FFT bin, fanned across a spreading angle with deep-water dispersion (omega = sqrt(g*k)) so swells and chop travel at different speeds. Thin-film interference, chromatic dispersion and a spring-damped pointer whose stroke direction shears the surface.",
   "tags": [
     "filter",
     "image-processing",
     "liquid",
     "rainbow",
-    "iridescent"
+    "iridescent",
+    "gerstner",
+    "thin-film",
+    "iridescence"
   ],
   "params": [
     {
@@ -57,40 +60,58 @@
     "depth-aware",
     "mouse-driven",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "semantic-alpha",
+    "aces",
+    "spring-damper-pointer",
+    "gerstner-spectrum",
+    "thin-film",
+    "chromatic-dispersion",
+    "fresnel"
   ],
   "updatedParams": [
     {
-      "index": 0,
+      "id": "viscosity",
       "name": "Viscosity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Damps the wave displacement and tightens the pointer drag core."
     },
     {
-      "index": 1,
+      "id": "turbulence",
       "name": "Turbulence",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Wavenumber multiplier across the spectrum and drag gain."
     },
     {
-      "index": 2,
+      "id": "ripple_strength",
       "name": "Ripple Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Amplitude of the bounded click shockwaves."
     },
     {
-      "index": 3,
+      "id": "color_shift",
       "name": "Dispersion",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Thin-film phase offset and chromatic channel spread."
     }
   ],
   "updated": true

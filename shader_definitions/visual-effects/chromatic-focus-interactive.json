@@ -2,15 +2,19 @@
   "id": "chromatic-focus-interactive",
   "name": "Chromatic Focus",
   "url": "shaders/chromatic-focus-interactive.wgsl",
-  "description": "Bounded chromatic focus blur with safe radial normalization, zone-plate caustics, held focus squeeze, click iris shells, and stylized wavelength attenuation.",
+  "description": "Chromatic DOF with six-blade iris geometry, multi-tap blur, zone-plate caustics, oil-slick runners/packets, held focus squeeze/pinch, click iris shells, and light display history in A.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "continuous-motion",
     "click-reactive",
     "held-pointer",
+    "held-drag",
+    "bounded-click-ripples",
     "bounded-blur",
-    "psychedelic-color"
+    "psychedelic-color",
+    "upgraded-rgba",
+    "aperture-blades"
   ],
   "params": [
     {

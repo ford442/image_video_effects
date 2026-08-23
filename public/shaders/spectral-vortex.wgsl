@@ -1,10 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Spectral Vortex — Alpha Translucency Upgrade
-//  Category: distortion
-//  Features: mouse-driven, depth-aware, audio-reactive, upgraded-rgba
-//  Complexity: High
-//  Upgraded: 2026-05-17
-// ═══════════════════════════════════════════════════════════════════
+// Spectral Vortex — Batch 58D state-ownership upgrade
+// A packs phase, curl.xy, and energy; B is intentionally unwritten.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -21,158 +16,113 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=TwistScale, y=DistortionStep, z=ColorShift, w=CurlAmp
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// ── Hash & Noise ─────────────────────────────────────────────
-fn hash21(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3(p.x, p.y, p.x) * vec3(0.1031, 0.1030, 0.0973));
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
-}
-
-fn valueNoise(p: vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
-             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
-}
-
-fn fbm(p: vec2<f32>) -> f32 {
-    var a = 0.5; var s = 0.0; var q = p;
-    for (var i = 0; i < 5; i = i + 1) {
-        s = s + a * valueNoise(q);
-        q = q * 2.02; a = a * 0.5;
-    }
-    return s;
-}
-
-fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
-    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)), fbm(p + vec2<f32>(5.2, 1.3)));
-    let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)), fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
-    return fbm(p + 4.0*r);
-}
-
-// ── HSV Helpers ──────────────────────────────────────────────
-fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    var c = v * s;
-    var x = c * (1.0 - abs(((h * 6.0) % 2.0) - 1.0));
-    let m = v - c;
-    var rgb = vec3<f32>(0.0, 0.0, 0.0);
-    if (h < 1.0/6.0) { rgb = vec3<f32>(c, x, 0.0); }
-    else if (h < 2.0/6.0) { rgb = vec3<f32>(x, c, 0.0); }
-    else if (h < 3.0/6.0) { rgb = vec3<f32>(0.0, c, x); }
-    else if (h < 4.0/6.0) { rgb = vec3<f32>(0.0, x, c); }
-    else if (h < 5.0/6.0) { rgb = vec3<f32>(x, 0.0, c); }
-    else { rgb = vec3<f32>(c, 0.0, x); }
-    return rgb + m;
-}
+const TAU: f32 = 6.28318530718;
 
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
-    let cmax = max(c.r, max(c.g, c.b));
-    let cmin = min(c.r, min(c.g, c.b));
-    let delta = cmax - cmin;
-    var h = 0.0;
-    if (delta > 0.0) {
-        if (cmax == c.r) { h = (c.g - c.b) / delta % 6.0; }
-        else if (cmax == c.g) { h = (c.b - c.r) / delta + 2.0; }
-        else { h = (c.r - c.g) / delta + 4.0; }
-        h = h / 6.0;
-        if (h < 0.0) { h = h + 1.0; }
-    }
-    var s = select(0.0, delta / cmax, cmax > 0.0);
-    return vec3<f32>(h, s, cmax);
+  let mx = max(max(c.r, c.g), c.b); let mn = min(min(c.r, c.g), c.b); let d = mx - mn;
+  var h = 0.0;
+  if (d > 0.00001) {
+    if (mx == c.r) { h = (c.g - c.b) / d + select(0.0, 6.0, c.g < c.b); }
+    else if (mx == c.g) { h = (c.b - c.r) / d + 2.0; }
+    else { h = (c.r - c.g) / d + 4.0; }
+    h /= 6.0;
+  }
+  return vec3<f32>(h, select(0.0, d / mx, mx > 0.0), mx);
 }
 
-// ── Spectral Tint ────────────────────────────────────────────
-fn wavelengthToRGB(w: f32) -> vec3<f32> {
-  return 0.5 + 0.5 * cos(vec3<f32>(w, w + 2.09, w + 4.18));
+fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
+  let k = abs(fract(hsv.x + vec3<f32>(0.0, 0.6666667, 0.3333333)) * 6.0 - vec3<f32>(3.0));
+  return hsv.z * mix(vec3<f32>(1.0), clamp(k - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
 }
 
-// ── Energy Normalization ─────────────────────────────────────
-fn normalizeEnergy(curlMag: f32, audioBoost: f32) -> f32 {
-    let maxCurl = 5.0 * audioBoost;
-    return clamp(curlMag / maxCurl, 0.0, 1.0);
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let texelSize = 1.0 / resolution;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw; let pixel = vec2<i32>(gid.xy);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+  let uv = (vec2<f32>(pixel) + 0.5) / res; let texel = 1.0 / res; let time = u.config.x;
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
 
-    // Parameters
-    let twistScale = u.zoom_params.x;
-    let distortionStep = u.zoom_params.y;
-    let colorShift = u.zoom_params.z;
-    let curlAmp = u.zoom_params.w;
+  // Saved mapping: twist scale, distortion step, color shift, curl amplification.
+  let twistScale = u.zoom_params.x; let distortionStep = u.zoom_params.y;
+  let colorShift = u.zoom_params.z; let curlAmp = u.zoom_params.w;
 
-    // Audio-reactive twist from bass
-    let bass = plasmaBuffer[0].x;
-    let audioTwist = 1.0 + bass * 3.0;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) {
+    springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5;
+  }
+  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 8.5; let decay = exp(-omega * dt); let springDelta = springPos - rawMouse;
+  let temp = (springVel + omega * springDelta) * dt;
+  springVel = (springVel - omega * temp) * decay; springPos = rawMouse + (springDelta + temp) * decay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time; extraBuffer[138] = 1.0;
+  }
 
-    // 1. Calculate Curl of Source Image Luminance
-    let l = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(texelSize.x, 0.0), 0.0).r;
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
-    let t = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, texelSize.y), 0.0).r;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
+  let left = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let right = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let top = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let bottom = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let gx = dot(right - left, vec3<f32>(0.299, 0.587, 0.114));
+  let gy = dot(bottom - top, vec3<f32>(0.299, 0.587, 0.114));
+  var curl = vec2<f32>(gy, -gx) * mix(1.0, 20.0, curlAmp) * (1.0 + bass * 2.0);
 
-    let dx = (r - l) * 0.5;
-    let dy = (b - t) * 0.5;
+  let pointerDelta = (uv - springPos) * aspectVec; let pointerDist = length(pointerDelta);
+  let held = select(0.35, 1.0, u.zoom_config.w > 0.5);
+  curl += vec2<f32>(-pointerDelta.y, pointerDelta.x) / max(pointerDist, 0.001) * exp(-pointerDist * 6.0) * held * (0.4 + mids);
+  var clickEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age < 0.0 || age > 1.8) { continue; }
+    let deltaR = (uv - ripple.xy) * aspectVec; let dist = length(deltaR);
+    let front = exp(-pow((dist - age * 0.2) * 20.0, 2.0)) * (1.0 - age / 1.8);
+    curl += vec2<f32>(-deltaR.y, deltaR.x) / max(dist, 0.001) * front * 0.9;
+    clickEnergy += front;
+  }
 
-    // Curl vector (velocity) with audio amplification
-    let vel = vec2<f32>(dy, -dx) * mix(1.0, 20.0, curlAmp) * audioTwist;
+  // Exact C restores the authoritative state written to A last frame.
+  let previous = textureLoad(dataTextureC, pixel, 0);
+  let previousPhase = max(previous.x, 0.0);
+  let previousCurl = previous.yz;
+  let previousEnergy = max(previous.w, 0.0);
+  let curlState = mix(previousCurl * 0.94, curl, 0.18 + mids * 0.04);
+  let curlEnergy = length(curlState);
+  let energy = mix(previousEnergy * 0.96, clamp(curlEnergy * 0.22 + clickEnergy * 0.4, 0.0, 1.0), 0.24);
+  let phase = fract(previousPhase + (0.006 + curlEnergy * 0.025 + bass * 0.008));
+  textureStore(dataTextureA, pixel, vec4<f32>(phase, curlState, energy));
 
-    // 2. Accumulate Phase in Depth Buffer
-    let prevPhase = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let curlMag = length(vel);
-    let normalizedCurl = normalizeEnergy(curlMag, audioTwist);
-    let newPhase = prevPhase + curlMag * 0.1 + 0.01;
-
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(newPhase, 0.0, 0.0, 0.0));
-
-    // 3. Distort UVs based on Phase and Velocity
-    let angle = newPhase * twistScale;
-    var s = sin(angle);
-    var c = cos(angle);
-    let rotMat = mat2x2<f32>(c, -s, s, c);
-
-    // Domain-warped displacement for organic flow
-    let warp = warpedFBM(uv * 3.0, u.config.x * 0.15);
-    let offset = rotMat * vel * distortionStep * (1.0 + sin(u.config.x * 0.5)) * (1.0 + warp * 0.3);
-    let distortedUV = uv + offset;
-
-    // 4. Sample Source with single unified displacement
-    let srcCol = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
-
-    // 5. Apply Hue Rotation with spectral tint via mix
-    var hsv = rgb2hsv(srcCol.rgb);
-    hsv.x = fract(hsv.x + angle * 0.1 + colorShift * u.config.x);
-    hsv.z = hsv.z * (1.0 + normalizedCurl * 2.0);
-
-    var finalRGB = hsv2rgb(hsv.x, hsv.y, hsv.z);
-    if (hsv.z < 0.2) {
-        finalRGB = 1.0 - finalRGB;
-    }
-
-    // Spectral tint blended via mix, NOT channel splitting
-    let spectralTint = wavelengthToRGB(u.config.x * 0.3 + normalizedCurl * 6.28);
-    finalRGB = mix(finalRGB, finalRGB * spectralTint, normalizedCurl * colorShift);
-
-    // 6. Depth-aware compositing
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthFactor = mix(0.6, 1.0, depth);
-    finalRGB = finalRGB * depthFactor;
-
-    // Alpha = curl magnitude / maxCurl (translucency based on energy)
-    let alpha = mix(0.35, 1.0, normalizedCurl);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+  let angle = phase * TAU * (0.3 + twistScale * 2.2);
+  let c = cos(angle); let s = sin(angle);
+  let rotatedCurl = mat2x2<f32>(c, -s, s, c) * curlState;
+  let offset = rotatedCurl * distortionStep * (0.003 + energy * 0.018);
+  let distortedUv = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+  let source = textureSampleLevel(readTexture, u_sampler, distortedUv, 0.0);
+  var hsv = rgb2hsv(max(source.rgb, vec3<f32>(0.0)));
+  hsv.x = fract(hsv.x + phase * colorShift + time * colorShift * 0.03 + treble * 0.05);
+  hsv.z *= 1.0 + energy * 1.2;
+  var hdr = hsv2rgb(hsv);
+  hdr += (vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(phase * TAU) + vec3<f32>(0.0, 2.09, 4.18))) * energy * 0.35;
+  let effectEnergy = clamp(energy + length(offset) * 18.0 + clickEnergy * 0.25, 0.0, 1.0);
+  let alpha = clamp(source.a + (1.0 - source.a) * effectEnergy, 0.0, 1.0);
+  let display = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), alpha);
+  textureStore(writeTexture, pixel, display);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

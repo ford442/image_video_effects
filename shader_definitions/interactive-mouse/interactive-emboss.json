@@ -2,7 +2,7 @@
   "id": "interactive-emboss",
   "name": "Interactive Emboss",
   "url": "shaders/interactive-emboss.wgsl",
-  "description": "Emboss effect where the light source follows the mouse cursor.",
+  "description": "Mouse-aimed relief emboss with sprung light, bevel ridges, traveling highlight packets, oil-slick phosphor on crests, held-drag punch, and bounded click dents. Display RGBA in A.",
   "params": [
     {
       "id": "strength",
@@ -44,7 +44,11 @@
     "mouse-driven",
     "upgraded-rgba",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "continuous-motion",
+    "psychedelic-color"
   ],
   "tags": [
     "filter",
@@ -53,34 +57,38 @@
   "updatedParams": [
     {
       "index": 0,
+      "id": "strength",
       "name": "Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 1,
+      "id": "mix",
       "name": "Intensity",
       "default": 1,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 2,
+      "id": "colorMode",
       "name": "Color Mode",
       "default": 0,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 3,
+      "id": "emboss_depth",
       "name": "Emboss Depth",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],

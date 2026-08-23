@@ -5,7 +5,7 @@
   "category": "interactive-mouse",
   "url": "shaders/phosphor-magnifier.wgsl",
   "icon": "search",
-  "description": "CRT magnifier with display-RGBA afterimage feedback, raster-beam motion, degauss rings, held lens pressure, click shells, chromatic aberration, and psychedelic phosphor palettes.",
+  "description": "CRT phosphor magnifier with display-RGBA afterimage feedback, aurora scan runners, raster-beam motion, degauss rings, held lens pressure, click shells, chromatic aberration, and psychedelic phosphor hue. Intentional A feedback correction from diagnostic masks to display RGBA.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -14,6 +14,8 @@
     "continuous-motion",
     "click-reactive",
     "held-pointer",
+    "held-drag",
+    "bounded-click-ripples",
     "psychedelic-color",
     "display-history"
   ],

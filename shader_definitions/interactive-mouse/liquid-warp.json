@@ -3,9 +3,21 @@
   "name": "Liquid Warp",
   "url": "shaders/liquid-warp.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "rk4-advection",
+    "strain-tensor",
+    "chromatic-aberration",
+    "fluid-simulation"
   ],
-  "description": "Fluid-like distortion where mouse movement pushes and swirls pixels.",
+  "description": "RK4 semi-Lagrangian warp whose strain tensor now comes from the flow field's ANALYTIC Jacobian instead of four extra finite-difference field evaluations (each of which ran three curl-noise octaves). Fixes an alpha bug that multiplied a UV-space magnitude by the pixel width, pinning alpha at 1.0 at every real resolution. Clicks emit bounded vortex rings; state reads use exact textureLoad.",
   "params": [
     {
       "id": "radius",
@@ -38,6 +50,44 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "warp",
+    "advection",
+    "vorticity",
+    "simulation"
+  ],
+  "updatedParams": [
+    {
+      "id": "radius",
+      "name": "Warp Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Pointer envelope tightness and swirl gain (maps to zoom_params.x)."
+    },
+    {
+      "id": "strength",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Curl-noise octave amplitude and radial pull gain (maps to zoom_params.y)."
+    },
+    {
+      "id": "decay",
+      "name": "Shear Stretch",
+      "default": 0.9,
+      "min": 0,
+      "max": 1,
+      "description": "How much the strain tensor's shear stretches the velocity (maps to zoom_params.z)."
+    },
+    {
+      "id": "swirl",
+      "name": "Chromatic Spread",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "description": "Width of the velocity-aligned channel split (maps to zoom_params.w)."
+    }
   ]
 }
