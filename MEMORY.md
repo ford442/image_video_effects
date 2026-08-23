@@ -1,6 +1,5 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-<<<<<<< HEAD
 **Last updated:** 2026-08-23 (remaining liquid core + ferro/fluid cohort + Batch 60)
 
 ## 2026-08-23 — Remaining liquid core + ferro/fluid simulation cohort
@@ -157,9 +156,7 @@
   Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
 - Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
   audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
-  green. Real-GPU visual QA remains external.
-=======
-**Last updated:** 2026-08-23 (Codex liquid complexity batch)
+  green. Real-GPU visual QA remains external.**Last updated:** 2026-08-23 (Codex liquid complexity batch)
 
 ## 2026-08-23 — Codex Liquid Shader Complexity Batch requested
 
@@ -201,8 +198,6 @@
   gate 10/10 (Naga unavailable), 1,333 unique catalog/manifest entries with
   parity, clean uniforms/TypeScript, Jest 81/81 (545 pass, 1 skip), and a green
   SKIP_WASM_BUILD production build. Real-GPU visual/performance QA is external.
->>>>>>> origin/new-shader-upgrades
-
 ## 2026-08-23 — Gemini shader-upgrade branch is unclosed WIP
 
 - `new-shader-upgrades` is 10 commits ahead of `main`, pushed through

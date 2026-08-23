@@ -10,7 +10,6 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
-<<<<<<< HEAD
 - **Batch 58D:** Ten spectral/datamosh upgrades completed with A authoritative,
   exact C, B unused, guarded `[133..138]` springs, saved params unchanged, and
   raw state retained for Vortex/Data Moshing/Datamosh. Real-GPU QA is external.
@@ -39,9 +38,7 @@ _Learn about the person you're helping. Update this as you go._
   `[133..138]` state / full interaction contract, preserving saved params.
   Four shaders own raw physical A state and six own HDR display history; B is
   unwritten. Naga/contract 10/10, params exact, catalogs/tests/build green;
-  real-GPU visual QA remains external.
-=======
-- **Latest shader batch:** Liquid Shader Upgrade Batch 59 is a completed ten-effect
+  real-GPU visual QA remains external.- **Latest shader batch:** Liquid Shader Upgrade Batch 59 is a completed ten-effect
   premium liquid cohort with a mixed performance budget. Jelly Fluid, Magnetic
   Ferro EM, and Oil Iridescence may use heavier bounded state/optics work; the
   other seven should remain efficient single-pass effects.
@@ -51,8 +48,6 @@ _Learn about the person you're helping. Update this as you go._
   duplicate-declaration repair are verified by actual Naga plus strict contract,
   catalog, type, Jest, and production-build gates. Real-GPU visual QA remains the
   explicit handoff.
->>>>>>> origin/new-shader-upgrades
-
 ## Context
 
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.
