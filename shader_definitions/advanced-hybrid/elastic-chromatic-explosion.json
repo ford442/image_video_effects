@@ -2,7 +2,7 @@
   "id": "elastic-chromatic-explosion",
   "name": "Elastic Chromatic Explosion",
   "url": "shaders/elastic-chromatic-explosion.wgsl",
-  "description": "Prismatic Snell refraction with Cauchy angular dispersion, viscoelastic shockwave propagation, triple-phase temporal EMA lag, and exact-load chromatic persistence.",
+  "description": "Exact chromatic EMA persistence with sprung prism focus, bounded click shockwaves, live three-band plasma audio, canonical ACES, semantic alpha, and source-depth pass-through.",
   "tags": [
     "chromatic-lag",
     "prism-explosion",
@@ -16,7 +16,12 @@
     "mouse-driven",
     "temporal",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "exact-history",
+    "spring-interaction",
+    "click-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "updated": true,
   "params": [

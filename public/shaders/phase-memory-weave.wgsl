@@ -7,7 +7,7 @@
 //            TAU-constant, pm-alpha, reduced-sqrt-calls
 //  v4: gradient-keyed opalescence (mix ~0.3), latch-proof memory
 //      (clamp ~1.2 + epsilon decay), expanding gaussian mouse heat
-//      ring (rising-edge via extraBuffer[133..136]), shader-specific
+//      ring (bounded uniform ripples), shader-specific
 //      slider rewiring (phase bias / memory kernel / turbulence /
 //      ring forcing)
 // ═══════════════════════════════════════════════════════════════════
@@ -78,20 +78,31 @@ fn opalescentPalette(phase: f32, gradMag: f32, t: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
   if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
-  let uv = vec2<f32>(gid.xy) / res;
+  let pixel = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
   let time = u.config.x * 0.5;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let mouse = u.zoom_config.yz;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
   let mouseDown = u.zoom_config.w;
-  let clicks = u.config.y;
   let p1 = u.zoom_params.x; // Phase: fluid ↔ crystalline bias
   let p2 = u.zoom_params.y; // Memory Strength: kernel blend + lerp rate
   let p3 = u.zoom_params.z; // Turbulence: GL epsilon + chaotic jitter
   let p4 = u.zoom_params.w; // Mouse Disturbance: thermal + ring forcing
 
-  let cur = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var mouse = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) { mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+  if (!initialized) { mouse = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 8.0; let springDecay = exp(-omega * dt); let springDelta = mouse - rawMouse; let springTemp = (springVel + omega * springDelta) * dt;
+  springVel = (springVel - omega * springTemp) * springDecay; mouse = rawMouse + (springDelta + springTemp) * springDecay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) { extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
+
+  let dims = vec2<i32>(textureDimensions(dataTextureC));
+  let maxCoord = dims - vec2<i32>(1);
+  let cur = textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), maxCoord), 0);
   let psiR = cur.r;
   let psiI = cur.g;
   let slowMem = cur.b;
@@ -100,11 +111,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let theta = fast_atan2(psiI, psiR);
 
   // Neighbor samples for laplacian + curvature
-  let ps = 1.0 / res;
-  let rx = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let lx = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let uy = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let dy = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let rx = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(1, 0), vec2<i32>(0), maxCoord), 0);
+  let lx = textureLoad(dataTextureC, clamp(pixel - vec2<i32>(1, 0), vec2<i32>(0), maxCoord), 0);
+  let uy = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, 1), vec2<i32>(0), maxCoord), 0);
+  let dy = textureLoad(dataTextureC, clamp(pixel - vec2<i32>(0, 1), vec2<i32>(0), maxCoord), 0);
 
   let lapR = rx.r + lx.r + uy.r + dy.r - 4.0 * psiR;
   let lapI = rx.g + lx.g + uy.g + dy.g - 4.0 * psiI;
@@ -114,27 +124,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gradI = vec2<f32>(rx.g - lx.g, uy.g - dy.g);
   let gradMag = sqrt(dot(gradR, gradR) + dot(gradI, gradI)) * 0.5;
 
-  // ── Mouse thermal ring state (extraBuffer[133..136]; [0..4] reserved, [5..132]=FFT) ─
-  // Rising-edge detection: every thread derives identical values, so
-  // the write race is benign.
-  let prevDown = extraBuffer[133];
-  let isHeat = fract(clicks * 0.5) > 0.25;
-  if (mouseDown > 0.5 && prevDown <= 0.5) {
-    extraBuffer[134] = time;    // ring emission time
-    extraBuffer[135] = mouse.x; // ring origin u
-    extraBuffer[136] = mouse.y; // ring origin v
-  }
-  extraBuffer[133] = mouseDown;
-
-  // Expanding gaussian heat ring: forces phase change where it passes
-  let ringAge = time - extraBuffer[134];
-  let ringOrigin = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  // Bounded aspect-correct thermal rings from the engine click queue.
   let ringSpeed = 0.20 + p4 * 0.45;        // p4: ring expansion rate
   let ringWidth = 0.018 + p4 * 0.03;       // p4: gaussian ring width
-  let ringFade = max(0.0, 1.0 - ringAge / RING_LIFETIME);
-  let ringDelta = (length(uv - ringOrigin) - ringAge * ringSpeed) / max(ringWidth, 1e-4);
-  let ringGauss = exp(-0.5 * ringDelta * ringDelta) * ringFade;
-  let ringForcing = ringGauss * select(-1.0, 1.0, isHeat) * (0.4 + p4 * 1.2);
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  var ringForcing = 0.0;
+  var ringActivity = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i]; let ringAge = time - ripple.z;
+    if (ringAge < 0.0 || ringAge > RING_LIFETIME) { continue; }
+    let ringFade = 1.0 - ringAge / RING_LIFETIME;
+    let ringDelta = (length((uv - ripple.xy) * aspectVec) - ringAge * ringSpeed) / max(ringWidth, 1e-4);
+    let ringGauss = exp(-0.5 * ringDelta * ringDelta) * ringFade;
+    ringForcing += ringGauss * select(-1.0, 1.0, (i & 1u) == 0u) * (0.4 + p4 * 1.2);
+    ringActivity += ringGauss;
+  }
 
   // Ginzburg-Landau / Allen-Cahn dynamics
   // p1 (Phase) shifts the equilibrium amplitude: fluid ↔ crystalline
@@ -153,9 +158,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let newI = mix(psiI + dI * mobility, theta * 0.1, memStrength * 0.03);
 
   // Branchless audio seeding (replaces bass>0.55 per-pixel branch)
-  let seedNoise = max(bass - 0.55, 0.0)
-                * (fract(dot(uv, vec2<f32>(12.9898, 78.233)) + time * 0.2) - 0.5)
-                * 0.4;
+  let seedValue = fract(dot(uv, vec2<f32>(12.9898, 78.233)) + time * 0.2) - 0.5;
+  let initializationSeed = select(0.0, seedValue * 0.12, rho2 < 1e-7);
+  let seedNoise = initializationSeed + max(bass - 0.55, 0.0) * seedValue * 0.4;
 
   // Turbulent jitter, gated to the fluid state (p3: chaos strength)
   let fluidGate = smoothstep(0.7, 0.3, rho);
@@ -169,7 +174,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                 * treble * 0.06;
   let mouseDist = length(uv - mouse);
   let thermal = smoothstep(0.15, 0.0, mouseDist) * mouseDown * (1.0 + p4 * 2.0);
-  let thermalEffect = select(-thermal * 0.9, thermal * 0.6, isHeat);
+  let thermalEffect = thermal * sin(time * 0.7) * 0.75;
 
   let finalR = clamp(newR + seedNoise + capillary + turbulence
                    + thermalEffect + ringForcing, -1.2, 1.2);
@@ -187,19 +192,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Multi-scale memory accumulation: epsilon decay + clamp (no latch)
   let memLerp = 0.05 + p2 * 0.12;          // p2: memory write rate
   let newSlow = clamp(mix(slowMem * MEM_DECAY, finalR, memLerp), -MEM_CLAMP, MEM_CLAMP);
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;
 
   // ── Early exit for quiescent background pixels ─────────────────
   if (finalRho < 0.03 && curvature < 0.02) {
-    textureStore(dataTextureA, gid.xy, vec4<f32>(finalR, finalI, newSlow, 0.0));
-    textureStore(dataTextureB, gid.xy, vec4<f32>(newSlow, finalTheta, curvature, 0.0));
-    textureStore(writeTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(finalR, finalI, newSlow, ringActivity));
+    textureStore(writeTexture, gid.xy, vec4<f32>(acesToneMap(source.rgb * 0.08), source.a));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(sourceDepth, 0.0, 0.0, 0.0));
     return;
   }
 
   // State writeback for slot chaining
-  textureStore(dataTextureA, gid.xy, vec4<f32>(finalR, finalI, newSlow, 0.0));
-  textureStore(dataTextureB, gid.xy, vec4<f32>(newSlow, finalTheta, curvature, 0.0));
+  textureStore(dataTextureA, gid.xy, vec4<f32>(finalR, finalI, newSlow, clamp(finalRho + curvature + ringActivity, 0.0, 1.0)));
 
   // Opalescent thin-film interference + subsurface
   let irid = thinFilmIridescence(finalTheta, curvature * 5.0)
@@ -226,8 +231,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let tone = acesToneMap(baseCol * (0.7 + finalRho * 0.8));
 
   // Alpha encodes bloom weight (curvature = interface glow)
-  let alpha = clamp(finalRho * 0.9 + curvature * 0.5, 0.0, 1.0);
+  let effectEnergy = clamp(finalRho * 0.9 + curvature * 0.5 + ringActivity * 0.4, 0.0, 1.0);
+  let alpha = clamp(source.a + (1.0 - source.a) * effectEnergy, 0.0, 1.0);
 
-  textureStore(writeTexture, gid.xy, vec4<f32>(tone * alpha, alpha));
-  textureStore(writeDepthTexture, gid.xy, vec4<f32>(finalRho * 0.6 + crystalMask * 0.2, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, gid.xy, vec4<f32>(tone, alpha));
+  textureStore(writeDepthTexture, gid.xy, vec4<f32>(sourceDepth, 0.0, 0.0, 0.0));
 }

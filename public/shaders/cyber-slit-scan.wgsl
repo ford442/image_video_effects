@@ -1,7 +1,7 @@
 // ────────────────────────────────────────────────────────────────────────────────
-//  Cyber Slit Scan — Batch 67
-//  fp128 conveyor phase, traveling scan heads, phosphor aurora bands,
-//  exact C conveyor, capped click injections, held slit bend, ACES.
+//  Cyber Slit Scan — Batch 56 merge
+//  Traveling scan heads, diagonal tears, phosphor aurora / oil-slick bands,
+//  held slit bend, click injections, conveyor decay
 // ────────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,26 +26,6 @@ struct Uniforms {
 
 const TAU: f32 = 6.28318530718;
 
-struct Fp128 {
-  base: f32,
-  mant: f32,
-}
-
-fn fp128(x: f32) -> Fp128 { return Fp128(x, 0.0); }
-fn fp128_sum(a: Fp128, b: Fp128) -> Fp128 {
-  let s = a.base + b.base;
-  let e = (a.base - s) + b.base + a.mant + b.mant;
-  let t = s + e;
-  return Fp128(t, e - (t - s));
-}
-fn fp128_mul(a: Fp128, b: Fp128) -> Fp128 {
-  let p = a.base * b.base;
-  let e = a.base * b.mant + a.mant * b.base;
-  let t = p + e;
-  return Fp128(t, e - (t - p));
-}
-fn fp128_val(x: Fp128) -> f32 { return x.base + x.mant; }
-
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
   let K = vec4<f32>(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
   let p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
@@ -61,15 +41,6 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
   return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
-fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
-fn aurora_runner(y: f32, time: f32, mids: f32) -> f32 {
-  let phase = fp128_sum(fp128_mul(fp128(y), fp128(0.012)), fp128_mul(fp128(time), fp128(3.2 + mids)));
-  return 0.5 + 0.5 * cos(fp128_val(phase) * TAU * 0.07);
-}
-
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pixel = vec2<i32>(gid.xy);
@@ -80,7 +51,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
-  let held = u.zoom_config.w > 0.5;
+  let held = f32(u.zoom_config.w > 0.5);
   let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
   let bass = audio.x;
   let mids = audio.y;
@@ -106,37 +77,36 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bits = mix(255.0, 2.0, bitCrush);
     color = floor(color * bits) / bits;
 
-    let scanPhase = fp128_sum(fp128_mul(fp128(time), fp128(10.0)), fp128(f32(gid.y) * 0.01));
-    if (fract(fp128_val(scanPhase)) > 0.98) { color *= 1.5; }
+    if (fract(time * 10.0 + f32(gid.y) * 0.01) > 0.98) {
+      color *= 1.5;
+    }
 
     let scanBand = smoothstep(0.04, 0.0, abs(fract(f32(gid.y) * 0.018 - time * (2.4 + bass * 1.5)) - 0.5));
-    let oilSlick = vec3<f32>(aurora_runner(f32(gid.y), time, mids));
+    let auroraPhase = f32(gid.y) * 0.012 + time * (3.2 + mids);
+    let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(auroraPhase * 0.07) + vec3<f32>(0.0, 0.33, 0.67)));
     color.rgb = color.rgb + oilSlick * scanBand * (0.25 + artifactAmt * 0.35) * (1.0 + treble * 0.3);
 
     var hsv = rgb2hsv(color.rgb);
     hsv.y = min(hsv.y * 1.2, 1.0);
     hsv.z = min(hsv.z * 1.1, 1.0);
-    hsv.x = fract(hsv.x + hueShift + mouse.y * 0.5 + mids * 0.12 + select(0.0, 0.08, held));
+    hsv.x = fract(hsv.x + hueShift + mouse.y * 0.5 + mids * 0.12 + held * 0.08);
     outputColor = vec4<f32>(hsv2rgb(hsv), color.a);
   } else {
     let diagonal = sin((f32(gid.x + gid.y) * 0.035) - time * 5.0) * artifactAmt * (2.0 + treble * 8.0);
-    let heldBend = select(0.0, (mouse.x - f32(gid.x) / dims.x) * 18.0 * artifactAmt, held);
+    let heldBend = select(0.0, (mouse.x - f32(gid.x) / dims.x) * 18.0 * artifactAmt, u.zoom_config.w > 0.5);
     var clickKick = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
       let event = u.ripples[i];
       let age = max(time - event.z, 0.0);
-      if (age < 1.4) {
-        let d = length(vec2<f32>(gid.xy) / dims - event.xy);
-        clickKick += exp(-age * 2.0) * exp(-abs(d - age * 0.4) * 55.0) * 12.0;
-      }
+      let d = length(vec2<f32>(gid.xy) / dims - event.xy);
+      clickKick += exp(-age * 2.0) * exp(-abs(d - age * 0.4) * 55.0) * 12.0;
     }
     let sourceY = clamp(i32(gid.y) + i32(diagonal + heldBend + clickKick), 0, i32(height) - 1);
     let sourceX = min(gid.x + speed, width - 1u);
     outputColor = textureLoad(dataTextureC, vec2<i32>(i32(sourceX), sourceY), 0);
 
-    let conveyorPhase = fp128_sum(fp128_mul(fp128(f32(gid.x)), fp128(0.04)), fp128_mul(fp128(time), fp128(1.8 + bass)));
-    let conveyor = smoothstep(0.06, 0.0, abs(fract(fp128_val(conveyorPhase)) - 0.5));
+    let conveyor = smoothstep(0.06, 0.0, abs(fract(f32(gid.x) * 0.04 + time * (1.8 + bass)) - 0.5));
     outputColor.rgb = outputColor.rgb * (1.0 - conveyor * artifactAmt * 0.12);
   }
 
@@ -152,10 +122,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   outputColor.rgb += vec3<f32>(0.2, 0.85, 1.0) * clickFront * (0.5 + bass);
 
-  let rgb = acesToneMap(outputColor.rgb);
-  let alpha = clamp(outputColor.a * 0.85 + clickFront * 0.12 + scanHead * 0.05, 0.06, 0.98);
-
-  textureStore(dataTextureA, pixel, vec4<f32>(rgb, alpha));
-  textureStore(writeTexture, pixel, vec4<f32>(rgb, alpha));
+  textureStore(dataTextureA, pixel, outputColor);
+  textureStore(writeTexture, pixel, outputColor);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

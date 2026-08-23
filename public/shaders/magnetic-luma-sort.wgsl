@@ -25,11 +25,20 @@ fn get_luma(color: vec3<f32>) -> f32 {
     return dot(color, vec3(0.299, 0.587, 0.114));
 }
 
-// Persistent spring state lives in extraBuffer[133..137] (shader-owned region
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+    return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
+}
+
+// Persistent spring state lives in extraBuffer[133..138] (shader-owned region
 // is [133..255]; [0..4] reserved, [5..132] = engine FFT bins):
 //   [133] = smoothed magnet x, [134] = smoothed magnet y
 //   [135] = spring velocity x, [136] = spring velocity y
-//   [137] = last frame timestamp (for a stable dt)
+//   [137] = last frame timestamp, [138] = initialization flag
 // Every invocation integrates the SAME previous state, so all threads agree on
 // the result; only thread (0,0) writes the advanced state back.
 
@@ -40,9 +49,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = vec2<f32>(global_id.xy) / resolution;
 
-    // --- Audio wiring (plasmaBuffer was declared but never sampled) ---
-    // plasmaBuffer[1..8].x are the engine's 8 FFT bands; bands 1-2 are the bass.
-    let bass = clamp((plasmaBuffer[1].x + plasmaBuffer[2].x) * 0.5, 0.0, 1.0);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Params
     let pullStrength = u.zoom_params.x * 0.05; // Scaling for reasonable speed
@@ -55,12 +64,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // The raw mouse stays the spring TARGET; the magnet itself glides.
     let time = u.config.x;
     let rawMouse = u.zoom_config.yz;
-    let prevTime = extraBuffer[137];
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var prevTime = time;
+    var initialized = false;
+    if (hasSpring) { prevTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
     let dt = clamp(time - prevTime, 0.001, 0.05);
 
-    var magnetPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var magnetVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (prevTime <= 0.0) {
+    var magnetPos = rawMouse;
+    var magnetVel = vec2<f32>(0.0);
+    if (hasSpring) {
+        magnetPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        magnetVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    }
+    if (!initialized) {
         // First frame after init: snap to the cursor so we don't glide in from origin.
         magnetPos = rawMouse;
         magnetVel = vec2<f32>(0.0, 0.0);
@@ -72,12 +88,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     magnetVel = magnetVel + springAccel * dt;
     magnetPos = magnetPos + magnetVel * dt;
 
-    if (global_id.x == 0u && global_id.y == 0u) {
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
         extraBuffer[133] = magnetPos.x;
         extraBuffer[134] = magnetPos.y;
         extraBuffer[135] = magnetVel.x;
         extraBuffer[136] = magnetVel.y;
         extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
     }
 
     var mousePos = magnetPos;
@@ -109,10 +126,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         speed = pullStrength * (luma - threshold) / (1.0 - threshold + 0.001);
     }
 
-    // Per-row FFT drift: 8 horizontal bands, each scales its speed by its own
-    // band energy, so the smear dances across the spectrum.
-    let band = min(u32(uv.y * 8.0), 7u);
-    speed = speed * (1.0 + plasmaBuffer[(band % 8u) + 1u].x * 0.4);
+    // Per-row read-only FFT voice lives in engine slots [5..132].
+    let band = min(u32(uv.y * 128.0), 127u);
+    var fftVoice = 0.0;
+    if (arrayLength(&extraBuffer) >= 133u) { fftVoice = clamp(extraBuffer[5u + band], 0.0, 1.0); }
+    speed = speed * (1.0 + bass * 0.35 + mids * 0.2 + treble * 0.15 + fftVoice * 0.4);
 
     // Dampen speed by distance? Maybe infinite reach is better.
     // Let's dampen slightly so the edge of screen doesn't pull too hard if mouse is center.
@@ -146,8 +164,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let offset = -pull;
 
     // Sample history at the upstream position
-    let historyUV = uv + offset;
-    var historyColor = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0);
+    let historyUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+    let historyDims = vec2<i32>(textureDimensions(dataTextureC));
+    let historyColor = textureLoad(dataTextureC, historyCoord(historyUV, historyDims), 0);
 
     // Combine
     // If we are just moving the image, we should primarily see the history moving.
@@ -174,13 +193,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // New Value = (Old Value at Upstream P) * Decay + (Current Input) * Blend
 
     let mixed = mix(srcColor, historyColor, decay);
+    let trailEnergy = clamp(length(mixed.rgb - srcColor.rgb) * 1.5 + speed * 7.0, 0.0, 1.0);
+    let alpha = clamp(srcColor.a + (1.0 - srcColor.a) * trailEnergy, 0.0, 1.0);
+    let display = vec4<f32>(acesToneMap(max(mixed.rgb, vec3<f32>(0.0))), alpha);
 
     // If luma is low, we don't move history much?
     // Actually, if luma is low (speed 0), offset is 0. So we sample history at current UV.
     // This results in a standard feedback trail.
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), mixed);
-    textureStore(dataTextureA, global_id.xy, mixed); // Write to history
+    textureStore(writeTexture, vec2<i32>(global_id.xy), display);
+    textureStore(dataTextureA, global_id.xy, display);
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

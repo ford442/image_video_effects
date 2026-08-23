@@ -5,7 +5,7 @@
 //            chromatic-temperature, temporal-smoke, audio-turbulence,
 //            worley-embers, treble-edge-flicker, feedback-clamped
 //  Complexity: High
-//  Upgraded: 2026-07-22 (Visualist swarm pass)
+//  Upgraded: 2026-08-23 (Batch 68 stateful smoke advection and ignition)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -88,6 +88,10 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+    return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
+}
+
 // ── Ember field: rising worley cells, tinted by temperature ───────
 fn emberField(uv: vec2<f32>, time: f32, turbOffset: f32, fireShape: f32, tempColor: vec3<f32>, intensity: f32) -> vec3<f32> {
     // Cells scroll upward; turbulence bends the ember column sideways
@@ -112,11 +116,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    let mouse = u.zoom_config.yz;
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
     let mouseDown = u.zoom_config.w;
 
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var mouse = rawMouse;
+    var springVel = vec2<f32>(0.0);
+    var lastTime = time;
+    var initialized = false;
+    if (hasSpring) {
+        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        lastTime = extraBuffer[137];
+        initialized = extraBuffer[138] > 0.5;
+    }
+    if (!initialized) { mouse = rawMouse; springVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+    let omega = 9.0;
+    let springDecay = exp(-omega * dt);
+    let springDelta = mouse - rawMouse;
+    let springTemp = (springVel + omega * springDelta) * dt;
+    springVel = (springVel - omega * springTemp) * springDecay;
+    mouse = rawMouse + (springDelta + springTemp) * springDecay;
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+        extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time; extraBuffer[138] = 1.0;
+    }
+
     // ── Slider params (saved-preset contract: ids/defaults unchanged) ──
-    let dM = length(uv - mouse);
+    let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+    let dM = length((uv - mouse) * aspectVec);
     let mouseHeat = exp(-dM * dM * 8.0) * (mouseDown * 0.6 + 0.2);
     // p1 Fire Intensity → core heat / brightness scale
     let fireIntensity = u.zoom_params.x * 2.0 * (1.0 + bass * 0.4 + mouseHeat * 0.5);
@@ -134,7 +164,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Flame silhouette: animated turbulence distorts the vertical falloff
     let n = hash(vec3<f32>(uv * 50.0, time * 5.0));
-    let fireShape = smoothstep(0.3, 0.7, 1.0 - uv.y + n * turbulence);
+    var ignition = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i]; let age = time - ripple.z;
+        if (age < 0.0 || age > 2.4) { continue; }
+        let rippleDist = length((uv - ripple.xy) * aspectVec);
+        ignition += exp(-pow((rippleDist - age * 0.22) * 30.0, 2.0)) * (1.0 - age / 2.4);
+    }
+    let baseFireShape = smoothstep(0.3, 0.7, 1.0 - uv.y + n * turbulence);
+    let fireShape = clamp(baseFireShape + mouseHeat * 0.45 + ignition * 0.75, 0.0, 1.0);
     let density = fireShape * smokeDensity;
 
     // Chromatic temperature gradient: hot core = white-yellow, cool edges = red-orange
@@ -151,12 +190,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Worley-noise ember sparks riding the flame, tinted by the same gradient
     let emberColor = emberField(uv, time, turbulence, fireShape, tempColor, fireIntensity);
 
-    // Temporal smoke persistence via dataTextureC (feedback path)
-    let prevSmoke = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    // Exact-load semi-Lagrangian smoke advection from authoritative C state.
+    let historyDims = vec2<i32>(textureDimensions(dataTextureC));
+    let curl = vec2<f32>(sin(uv.y * 13.0 + time), cos(uv.x * 11.0 - time * 0.7));
+    let advectedUV = clamp(uv + vec2<f32>(curl.x * 0.004, 0.008 + curl.y * 0.002) * turbulence - springVel * mouseHeat * 0.018, vec2<f32>(0.0), vec2<f32>(1.0));
+    let prevState = textureLoad(dataTextureC, historyCoord(advectedUV, historyDims), 0);
+    let prevSmoke = prevState.rgb;
     let decay = 0.92 + smokeDensity * 0.04;
     // Feedback stability: clamp accumulation pre-write at 1.2 (luma-echo-warp lesson)
     let decayedPrev = min(prevSmoke * decay, vec3<f32>(1.2));
-    let smokeBlend = clamp(0.08 + bass * 0.02 + smokeDensity * 0.05, 0.0, 0.5);
+    let smokeBlend = clamp(0.18 + bass * 0.04 + smokeDensity * 0.18, 0.0, 0.65);
     let persistentSmoke = mix(effectColor, decayedPrev, smokeBlend);
 
     // Physical transmittance through the smoke slab
@@ -168,7 +211,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let volAlpha = volumetricAlpha(density, slabThickness);
     let effectAlpha = volAlpha * depthLayeredAlpha(uv, depthWeight);
     let emberAlpha = clamp(dot(emberColor, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.6, 0.0, 0.25);
-    let combinedAlpha = clamp(effectAlpha + emberAlpha, 0.0, 1.0);
+    let combinedAlpha = clamp(effectAlpha + emberAlpha + ignition * 0.25, 0.0, 1.0);
 
     let finalColor = mix(baseColor.rgb, transmitted, combinedAlpha);
     let finalAlpha = mix(baseColor.a, 1.0, combinedAlpha * 0.7);
@@ -176,6 +219,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(finalColor * 1.1), finalAlpha));
     // dataTextureA feeds next frame's dataTextureC: write the clamped smoke state
     let smokeState = min(persistentSmoke, vec3<f32>(1.2));
-    textureStore(dataTextureA, pixel, vec4<f32>(smokeState, combinedAlpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(smokeState, clamp(density + ignition * 0.3, 0.0, 1.2)));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

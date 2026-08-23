@@ -1544,7 +1544,7 @@
     "id": "cellular-automata-3d",
     "name": "Cellular Automata 3D",
     "url": "shaders/cellular-automata-3d.wgsl",
-    "description": "3D Game of Life rendered with volume raymarching. Glowing 3D structures that evolve frame-by-frame.",
+    "description": "Stateful 3D cellular volume raymarch with exact projected-history persistence, live plasma audio, sprung camera attraction, and bounded click-birth shock fronts.",
     "features": [
       "advanced-hybrid",
       "3d-ca",
@@ -1552,7 +1552,46 @@
       "transfer-function",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "temporal",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Evolution Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Initial Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Cycling",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Camera Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -4330,7 +4369,7 @@
     "id": "elastic-chromatic-explosion",
     "name": "Elastic Chromatic Explosion",
     "url": "shaders/elastic-chromatic-explosion.wgsl",
-    "description": "Prismatic Snell refraction with Cauchy angular dispersion, viscoelastic shockwave propagation, triple-phase temporal EMA lag, and exact-load chromatic persistence.",
+    "description": "Exact chromatic EMA persistence with sprung prism focus, bounded click shockwaves, live three-band plasma audio, canonical ACES, semantic alpha, and source-depth pass-through.",
     "tags": [
       "chromatic-lag",
       "prism-explosion",
@@ -4344,7 +4383,12 @@
       "mouse-driven",
       "temporal",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "exact-history",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "updated": true,
     "params": [

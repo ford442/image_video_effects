@@ -82,6 +82,11 @@ fn rgbToLuma(rgb: vec3<f32>) -> f32 {
   return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ── Scanline bloom ───────────────────────────────────────────────
 fn scanlineBloom(uv: vec2<f32>, luma: f32, strength: f32) -> f32 {
   let scan = sin(uv.y * u.config.z * PI);
@@ -120,6 +125,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
 
   // Clamp params
   let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
@@ -134,8 +141,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let historyHead = u32(extraBuffer[4]);
 
-  // Accumulate phosphor burn across history ages
-  var burned = current.rgb;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var beam = rawMouse; var beamVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) { beam = vec2<f32>(extraBuffer[133], extraBuffer[134]); beamVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+  if (!initialized) { beam = rawMouse; beamVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 12.0; let springDecay = exp(-omega * dt); let springDelta = beam - rawMouse; let springTemp = (beamVel + omega * springDelta) * dt;
+  beamVel = (beamVel - omega * springTemp) * springDecay; beam = rawMouse + (springDelta + springTemp) * springDecay;
+  if (hasSpring && global_id.x == 0u && global_id.y == 0u) { extraBuffer[133] = beam.x; extraBuffer[134] = beam.y; extraBuffer[135] = beamVel.x; extraBuffer[136] = beamVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
+
+  // Immediate authoritative display history plus seven older ring frames.
+  let historyDims = vec2<i32>(textureDimensions(dataTextureC));
+  let immediate = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), historyDims - vec2<i32>(1)), 0);
+  var burned = max(current.rgb, vec3<f32>(immediate.r * decayR, immediate.g * decayG, immediate.b * decayB));
   for (var age: u32 = 1u; age <= 7u; age = age + 1u) {
     let layer = (historyHead + HISTORY_DEPTH - age) % HISTORY_DEPTH;
     let hist  = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
@@ -149,6 +168,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   burned = max(burned, vec3<f32>(lumFloor));
+
+  let beamDist = length((uv - beam) * aspectVec);
+  let beamBurn = exp(-beamDist * beamDist * 120.0) * (0.2 + 0.8 * u.zoom_config.w) * (1.0 + treble * 0.6);
+  var clickBurn = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age < 0.0 || age > 3.2) { continue; }
+    let dist = length((uv - ripple.xy) * aspectVec);
+    let core = exp(-dist * dist * 95.0) * exp(-age * 0.8);
+    let ring = exp(-pow((dist - age * 0.15) * 30.0, 2.0)) * (1.0 - age / 3.2);
+    clickBurn += core + ring * 0.45;
+  }
+  burned += vec3<f32>(1.0, 0.45 + mids * 0.2, 0.12 + treble * 0.2) * (beamBurn + clickBurn);
 
   // Halation glow around bright edges
   let curLuma = rgbToLuma(current.rgb);
@@ -166,9 +199,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Alpha: luminance of burn excess above current, boosted by bass
   let burnLuma = dot(max(burned - current.rgb, vec3<f32>(0.0)), vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = clamp(current.a * 0.6 + burnLuma * 2.0 + bass * 0.15, 0.0, 1.0);
-  let finalOut = vec4<f32>(burned, alpha);
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let burnEnergy = clamp(burnLuma * 2.0 + beamBurn + clickBurn + immediate.a * 0.25, 0.0, 1.0);
+  let alpha = clamp(current.a + (1.0 - current.a) * burnEnergy, 0.0, 1.0);
+  let finalOut = vec4<f32>(acesToneMap(max(burned, vec3<f32>(0.0))), alpha);
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
 
   textureStore(writeTexture, coord, finalOut);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
