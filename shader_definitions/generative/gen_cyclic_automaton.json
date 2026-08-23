@@ -20,7 +20,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "states",
       "name": "States",
       "default": 0.45,
       "min": 0,
@@ -29,7 +29,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "spontaneity",
       "name": "Spontaneity",
       "default": 0.3,
       "min": 0,
@@ -38,7 +38,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "bloom",
       "name": "Bloom",
       "default": 0.6,
       "min": 0,
@@ -47,7 +47,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "cooldown",
       "name": "Cooldown",
       "default": 0.4,
       "min": 0,

@@ -62,8 +62,8 @@
   "features": [],
   "params": [
     {
-      "id": "param1",
-      "name": "Parameter 1",
+      "id": "petal_count",
+      "name": "Petal Count",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -72,8 +72,8 @@
       "audio": "bass"
     },
     {
-      "id": "param2",
-      "name": "Parameter 2",
+      "id": "ring_complexity",
+      "name": "Ring Complexity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -82,8 +82,8 @@
       "audio": "mid"
     },
     {
-      "id": "param3",
-      "name": "Parameter 3",
+      "id": "petal_openness",
+      "name": "Petal Openness",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -92,8 +92,8 @@
       "audio": "treble"
     },
     {
-      "id": "param4",
-      "name": "Parameter 4",
+      "id": "spin_speed",
+      "name": "Spin Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,

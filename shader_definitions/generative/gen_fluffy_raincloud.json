@@ -20,7 +20,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "coverage",
       "name": "Coverage",
       "default": 0.6,
       "min": 0,
@@ -30,7 +30,7 @@
       "audio": "bass"
     },
     {
-      "id": "param2",
+      "id": "turbulence",
       "name": "Turbulence",
       "default": 0.65,
       "min": 0,
@@ -40,7 +40,7 @@
       "audio": "mid"
     },
     {
-      "id": "param3",
+      "id": "rain",
       "name": "Rain",
       "default": 0.55,
       "min": 0,
@@ -50,7 +50,7 @@
       "audio": "treble"
     },
     {
-      "id": "param4",
+      "id": "wind",
       "name": "Wind",
       "default": 0.5,
       "min": 0,
