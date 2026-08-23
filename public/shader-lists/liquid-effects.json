@@ -583,13 +583,23 @@
     "id": "liquid-metal",
     "name": "Liquid Metal",
     "url": "shaders/liquid-metal.wgsl",
-    "description": "PBR mercury surface with FBM height field, Schlick-Fresnel reflectance, chromatic RGB dispersion, depth-aware pooling, and audio-reactive surface pulsing.",
+    "description": "Liquid metal with the Rosensweig instability: above a critical field set by the surface-tension/gravity balance, the flat surface breaks into a hexagonal lattice of standing peaks whose amplitude saturates as the square root of the supercritical excess — the actual mechanism behind ferrofluid spikes. Shading uses an anisotropic Ward-style lobe stretched perpendicular to the flow with FFT-banded anisotropy. Height state stays in dataTextureA; reads move to exact textureLoad and the output gains ACES.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "temporal",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "semantic-alpha",
+      "aces",
+      "rosensweig-instability",
+      "anisotropic-brdf",
+      "fresnel",
+      "height-field",
+      "chromatic-aberration"
     ],
     "tags": [
       "liquid",
@@ -599,7 +609,11 @@
       "chromatic",
       "distortion",
       "organic",
-      "futuristic"
+      "futuristic",
+      "liquid-metal",
+      "ferrofluid",
+      "chrome",
+      "reflective"
     ],
     "params": [
       {
@@ -633,6 +647,44 @@
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Surface relaxation rate; also raises the critical field for spiking."
+      },
+      {
+        "id": "reflectivity",
+        "name": "Reflectivity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Metallic reflectance and specular tightness."
+      },
+      {
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Channel split through the refracted surface."
+      },
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Rate the height field drains along the depth gradient."
       }
     ]
   },

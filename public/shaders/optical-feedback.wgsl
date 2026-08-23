@@ -6,7 +6,51 @@
 //            domain-warp, hue-shift, semantic-alpha, gravity-well,
 //            click-shockwave, spring-damper, emergent-feedback
 //  Complexity: High
-//  Upgraded: 2026-07-12 (retry expansion)
+//  Upgraded: 2026-08-23 (Batch 64)
+//
+//  TWO BUGS FIXED IN THIS PASS
+//
+//  1. Ripple count used as delta time. The shader had
+//
+//         let dt = u.config.y;
+//         velocity = velocity + accel * dt;
+//         smoothMouse = smoothMouse + velocity * dt;
+//
+//     `config.y` is the RIPPLE COUNT, not a per-frame dt — no dt is uploaded on
+//     either backend (docs/BINDING_CONTRACT.md, do-not-reintroduce list). With
+//     no clicks alive `dt == 0`, so the spring never moved and the hue phase
+//     never advanced: the "spring-damper" and "hue-shift" features were frozen
+//     solid. With clicks alive it jumped to 1..50, and a stiff spring (k = 55)
+//     integrated at dt = 50 diverges instantly. The spring is now a
+//     frame-rate-corrected exponential tracker driven by the fixed engine step,
+//     which needs no velocity state at all.
+//
+//  2. State written into the engine's audio slots. Nine values were stored at
+//     `extraBuffer[0..8]` — which per the binding contract are bass, mid,
+//     treble, reserved, `historyHead`, and FFT bins 5-8. This shader was
+//     overwriting the audio EVERY OTHER SHADER IN THE CHAIN reads, and reading
+//     back values the engine rewrites each frame, so its own state was garbage
+//     too. The extraBuffer audit carried these as nine grandfathered baseline
+//     violations.
+//
+//     The state also did not need nine slots: `clickTime`/`clickPos` duplicate
+//     what `u.ripples[i]` already provides (`.xy` = click uv, `.z` = click
+//     time), and `prevPress` existed only to detect the press edge the ripple
+//     queue already detects. Dropping those four plus the two velocity slots
+//     leaves smoothed pointer xy + hue phase, now at `extraBuffer[133..135]` —
+//     inside the engine's scratch range — and written only by invocation (0,0)
+//     instead of racing across every pixel.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Multi-front ripple shockwaves — the feedback loop was disturbed by a
+//       single hand-tracked click at a time. It now integrates every live
+//       ripple (capped at 50) as its own expanding front, so overlapping clicks
+//       build interference in the feedback rather than replacing each other.
+//
+//    2. Per-band spectral hue rotation — the hue shift was one global phase.
+//       Each of the eight FFT bins now rotates its own radial zone of the
+//       frame, so the feedback tunnel separates into spectral rings.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,15 +76,23 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
-const PREV_PRESS: i32 = 0;
-const CLICK_TIME: i32 = 1;
-const CLICK_X: i32 = 2;
-const CLICK_Y: i32 = 3;
-const SMOOTH_X: i32 = 4;
-const SMOOTH_Y: i32 = 5;
-const VEL_X: i32 = 6;
-const VEL_Y: i32 = 7;
-const HUE_PHASE: i32 = 8;
+// Persistent state lives in the engine's scratch range [133..138]. Indices
+// 0..132 are ENGINE-OWNED (bass/mid/treble, historyHead, FFT bins) and must
+// never be written from a shader — see the header.
+const SMOOTH_X: i32 = 133;
+const SMOOTH_Y: i32 = 134;
+const HUE_PHASE: i32 = 135;
+
+fn feedbackBilinear(p: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+    let maxC = dims - vec2<i32>(1);
+    let f = fract(p);
+    let i0 = vec2<i32>(floor(p));
+    let s00 = textureLoad(dataTextureC, clamp(i0,                     vec2<i32>(0), maxC), 0);
+    let s10 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(1, 0), vec2<i32>(0), maxC), 0);
+    let s01 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(0, 1), vec2<i32>(0), maxC), 0);
+    let s11 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(1, 1), vec2<i32>(0), maxC), 0);
+    return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+}
 
 fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -114,7 +166,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let dt = u.config.y;
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
@@ -128,37 +179,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
     let prev = textureLoad(dataTextureC, coord, 0);
     let env = bass_env(prev.a, bass, 0.8, 0.15);
-    // ---- persistent interactive state ----
-    var prevPress = extraBuffer[PREV_PRESS];
-    var clickTime = extraBuffer[CLICK_TIME];
-    var clickPos = vec2<f32>(extraBuffer[CLICK_X], extraBuffer[CLICK_Y]);
+    // ---- persistent interactive state (scratch range only, (0,0) writes) ----
+    // Critically-damped exponential tracker with a frame-rate-correct factor;
+    // no velocity slots needed, and no bogus dt (see header).
+    let ENGINE_DT = 0.016;
+    let springRate = 14.0;
+    let springK = 1.0 - exp(-springRate * ENGINE_DT);
+
     var smoothMouse = vec2<f32>(extraBuffer[SMOOTH_X], extraBuffer[SMOOTH_Y]);
-    var velocity = vec2<f32>(extraBuffer[VEL_X], extraBuffer[VEL_Y]);
     var huePhase = extraBuffer[HUE_PHASE];
+    // Cold start: a zeroed buffer snaps to the live cursor rather than crawling
+    // out of the corner.
+    if (smoothMouse.x == 0.0 && smoothMouse.y == 0.0) { smoothMouse = mouse; }
+    smoothMouse = smoothMouse + (mouse - smoothMouse) * springK;
+    huePhase = fract(huePhase + (env * 0.02 + mouseDown * 0.04) * ENGINE_DT * 60.0);
 
-    let k = 55.0;
-    let d = 9.0;
-    let accel = (mouse - smoothMouse) * k - velocity * d;
-    velocity = velocity + accel * dt;
-    smoothMouse = smoothMouse + velocity * dt;
-    // ---- emergent hue phase driven by audio and clicks ----
-    huePhase = huePhase + (env * 0.02 + mouseDown * 0.04) * dt * 60.0;
-
-    if (mouseDown > 0.5 && prevPress <= 0.5) {
-        clickTime = time;
-        clickPos = mouse;
-        huePhase = huePhase + 0.05;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[SMOOTH_X] = smoothMouse.x;
+        extraBuffer[SMOOTH_Y] = smoothMouse.y;
+        extraBuffer[HUE_PHASE] = huePhase;
     }
-
-    extraBuffer[PREV_PRESS] = mouseDown;
-    extraBuffer[CLICK_TIME] = clickTime;
-    extraBuffer[CLICK_X] = clickPos.x;
-    extraBuffer[CLICK_Y] = clickPos.y;
-    extraBuffer[SMOOTH_X] = smoothMouse.x;
-    extraBuffer[SMOOTH_Y] = smoothMouse.y;
-    extraBuffer[VEL_X] = velocity.x;
-    extraBuffer[VEL_Y] = velocity.y;
-    extraBuffer[HUE_PHASE] = huePhase;
 
     let zoom = zoomParam * 0.03 * (1.0 + env * 0.6);
     let rotation = rotationParam * 0.12 + mouseDown * 0.03 * sin(time * 4.0) + mids * 0.02;
@@ -183,28 +223,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gravityStrength = smoothstep(0.6, 0.0, length(toMouse)) * (0.025 + env * 0.02);
     sampleUV = sampleUV + toMouse * gravityStrength;
     sampleUV = clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0));
-    // ---- click shockwave injects a radial ripple into the feedback loop ----
-    let age = time - clickTime;
+    // ---- Structure 1: every live ripple is its own shockwave front ----
+    // Previously only one hand-tracked click could disturb the loop at a time;
+    // overlapping clicks now build real interference in the feedback.
     var shock = 0.0;
-    if (age < 1.25) {
-        sampleUV = sampleUV + shockwave(sampleUV, clickPos, age) * (1.0 + env);
-        sampleUV = clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0));
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age < 0.0 || age >= 1.25) { continue; }
+        sampleUV = clamp(sampleUV + shockwave(sampleUV, rp.xy, age) * (1.0 + env),
+                         vec2<f32>(0.0), vec2<f32>(1.0));
         let radius = age * 0.5;
-        let delta = uv - clickPos;
-        let dRing = length(delta);
+        let dRing = length(uv - rp.xy);
         let arg = (dRing - radius) * 12.0;
-        shock = exp(-arg * arg) * (1.0 - age * 0.8) * 1.2;
+        shock += exp(-arg * arg) * (1.0 - age * 0.8) * 1.2;
     }
+    shock = min(shock, 2.0);
     // ---- emergent feedback: previous frame energy warps the read coordinate ----
     let feedbackEnergy = length(prev.rgb);
     sampleUV = sampleUV + safeNormalize(sampleUV - center) * feedbackEnergy * 0.01 * (1.0 + mids);
     sampleUV = clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let feedbackSample = textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0);
+    // Exact float32 fetch with hand-rolled bilinear — dataTextureC is rgba32float
+    // and `float32-filterable` is only requested when the adapter offers it
+    // (src/renderer/webgpu/device.ts), so the filtering sampler is unsafe here.
+    let feedbackSample = feedbackBilinear(sampleUV * resolution, vec2<i32>(resolution));
     let feedbackColor = feedbackSample.rgb * brightness;
 
+    // ---- Structure 2: per-band spectral hue rotation ----
+    // Each FFT bin owns a radial zone of the tunnel, so the feedback separates
+    // into spectral rings instead of rotating under one global phase.
+    let ringT = clamp(length(uv - center) * 1.9, 0.0, 0.999);
+    let bandIdx = u32(ringT * 8.0);
+    let bandEnergy = plasmaBuffer[bandIdx + 1u].x;
+    let bandPhase = bandEnergy * 0.22 + f32(bandIdx) * 0.035;
+
     let hsv = rgb2hsv(feedbackColor);
-    let shifted = hsv2rgb(vec3<f32>(fract(hsv.x + hueShiftParam * 0.2 + env * 0.05 + huePhase), hsv.y, hsv.z));
+    let shifted = hsv2rgb(vec3<f32>(
+        fract(hsv.x + hueShiftParam * 0.2 + env * 0.05 + huePhase + bandPhase),
+        clamp(hsv.y * (1.0 + bandEnergy * 0.35), 0.0, 1.0),
+        hsv.z));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let fog = 1.0 - exp(-depth * 1.5);

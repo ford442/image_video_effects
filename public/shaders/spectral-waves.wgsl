@@ -1,13 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Spectral Waves
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, image, upgraded-rgba
-//  Complexity: Medium
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-23
-//  Upgraded: 2026-08-02 - sprung wave origin, click wave trains,
-//            per-ring FFT voices (swarm b27, Visualist pass)
-// ═══════════════════════════════════════════════════════════════════
+// Spectral Waves — Batch 58D caustic-history upgrade
+// A owns premultiplied display RGBA history; B is intentionally unwritten.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -24,157 +16,116 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=RippleFreq, y=WaveSpeed, z=Intensity, w=ChromaticSplit
-  ripples: array<vec4<f32>, 50>, // xy=click pos (uv), z=click time, w=unused
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
 };
 
-fn getLuminance(color: vec3<f32>) -> f32 {
-    return dot(color, vec3<f32>(0.299, 0.587, 0.114));
-}
+const TAU: f32 = 6.28318530718;
+
+fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.299, 0.587, 0.114)); }
 
 fn palette(t: f32) -> vec3<f32> {
-    return vec3<f32>(0.50, 0.49, 0.52) +
-           vec3<f32>(0.48, 0.44, 0.42) *
-           cos(6.28318 * (vec3<f32>(1.0, 0.82, 0.58) * t + vec3<f32>(0.06, 0.30, 0.54)));
+  return vec3<f32>(0.50, 0.49, 0.52) + vec3<f32>(0.48, 0.44, 0.42) *
+         cos(TAU * (vec3<f32>(1.0, 0.82, 0.58) * t + vec3<f32>(0.06, 0.30, 0.54)));
 }
 
-fn aces(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn ign(p: vec2<f32>) -> f32 {
-    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+  return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
-    let coords = vec2<i32>(global_id.xy);
-    var uv = vec2<f32>(global_id.xy) / u.config.zw;
-    let aspect = u.config.z / u.config.w;
-    let time = u.config.x;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  let pixel = vec2<i32>(gid.xy);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+  let uv = (vec2<f32>(pixel) + 0.5) / res;
+  let dims = vec2<i32>(textureDimensions(dataTextureC));
+  let time = u.config.x;
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // Engine FFT: plasmaBuffer[0] = (bass, mids, treble, level)
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  // Saved mapping: frequency, speed, amplitude, chromatic split.
+  let frequency = 10.0 + u.zoom_params.x * 90.0;
+  let speed = u.zoom_params.y * 5.0;
+  let maxAmplitude = u.zoom_params.z * 0.1 * (1.0 + bass * 0.3 + treble * 0.15);
+  let aberration = u.zoom_params.w * 0.05;
 
-    // Slider params (JSON contract: frequency/speed/amplitude/aberration)
-    let frequency = 10.0 + u.zoom_params.x * 90.0;
-    let speed = u.zoom_params.y * 5.0;
-    let maxAmplitude = u.zoom_params.z * 0.1 * (1.0 + bass * 0.3 + treble * 0.15);
-    let aberration = u.zoom_params.w * 0.05;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) {
+    springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5;
+  }
+  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 9.0; let springDecay = exp(-omega * dt); let delta = springPos - rawMouse;
+  let temp = (springVel + omega * delta) * dt;
+  springVel = (springVel - omega * temp) * springDecay;
+  springPos = rawMouse + (delta + temp) * springDecay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time; extraBuffer[138] = 1.0;
+  }
 
-    // ── Sprung wave origin ─────────────────────────────────────────
-    // Critically-damped spring eases the ripple epicenter toward the
-    // raw cursor so the water glides instead of snapping. Persistent
-    // state lives in extraBuffer[133..137] ([0..4] reserved, [5..132]
-    // = engine FFT bins): [133]=pos.x [134]=pos.y [135..136]=velocity,
-    // [137]=initialized flag.
-    let rawMouse = u.zoom_config.yz;
-    var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) {
-        springPos = rawMouse; // first frame: snap, don't glide from corner
-    }
-    let springOmega = 9.0;
-    let springDt = 1.0 / 60.0;
-    let springDecay = exp(-springOmega * springDt);
-    let springDelta = springPos - rawMouse;
-    let springTemp = (springVel + springOmega * springDelta) * springDt;
-    let newVel = (springVel - springOmega * springTemp) * springDecay;
-    let newPos = rawMouse + (springDelta + springTemp) * springDecay;
-    // Deterministic: every thread integrates the same state locally;
-    // thread (0,0) alone persists it back for the next frame.
-    if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133] = newPos.x;
-        extraBuffer[134] = newPos.y;
-        extraBuffer[135] = newVel.x;
-        extraBuffer[136] = newVel.y;
-        extraBuffer[137] = 1.0;
-    }
-    let mousePos = newPos;
+  let p = uv * aspectVec;
+  let center = springPos * aspectVec;
+  let dist = length(p - center);
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let sourceLuma = luma(source.rgb);
+  let wave = sin(dist * frequency - time * speed);
+  let echo = sin(dist * frequency * 0.47 + time * speed * 0.72 + bass * 3.0);
+  var displacement = (wave * 0.78 + echo * 0.22) * maxAmplitude * (0.35 + sourceLuma * 0.95);
+  var clickEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age < 0.0 || age > 2.0) { continue; }
+    let rd = length(p - ripple.xy * aspectVec);
+    let fade = exp(-age * 1.5) * (1.0 - smoothstep(1.6, 2.0, age));
+    let train = sin(rd * frequency * 0.8 - age * 8.0) * fade * exp(-rd * 3.0);
+    displacement += train * maxAmplitude * (0.35 + sourceLuma * 0.95);
+    clickEnergy += abs(train);
+  }
 
-    // Aspect-corrected space keeps the rings circular on wide canvases
-    let uv_c = vec2<f32>(uv.x * aspect, uv.y);
-    let mouse_c = vec2<f32>(mousePos.x * aspect, mousePos.y);
-    let dist = distance(uv_c, mouse_c);
+  let safeDir = ((p - center) / max(dist, 0.001)) / aspectVec;
+  let uvR = clamp(uv - safeDir * displacement * (1.0 + aberration), vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvG = clamp(uv - safeDir * displacement, vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvB = clamp(uv - safeDir * displacement * (1.0 - aberration), vec2<f32>(0.0), vec2<f32>(1.0));
+  var hdr = vec3<f32>(textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+                      textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
+                      textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b);
 
-    let centerColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let luma = getLuminance(centerColor);
+  let crest = smoothstep(0.58, 1.0, wave) + smoothstep(0.74, 1.0, echo) * 0.55;
+  let ring = u32(clamp(dist * 16.0, 0.0, 127.0));
+  let fftVoice = extraBuffer[5u + ring] * 0.35;
+  let caustic = pow(max(crest, 0.0), 2.6) * (0.35 + sourceLuma) * (1.0 + treble * 0.8) +
+                 pow(max(crest, 0.0), 2.0) * fftVoice + clickEnergy * 0.4;
+  hdr = hdr * (0.94 + crest * 0.2) + palette(wave * 0.18 + dist * 0.7 - time * 0.04 + mids * 0.2) * caustic * 1.55;
 
-    // Dual-wave construction: primary ripple + bass-phased echo
-    let wave = sin(dist * frequency - time * speed);
-    let echoWave = sin(dist * frequency * 0.47 + time * speed * 0.72 + bass * 3.0);
-    let crest = smoothstep(0.58, 1.0, wave) + smoothstep(0.74, 1.0, echoWave) * 0.55;
-    var displacement = (wave * 0.78 + echoWave * 0.22) * maxAmplitude * (0.35 + luma * 0.95);
+  // Persist caustics through exact A→C display history.
+  let historyUv = clamp(uv - safeDir * displacement * 0.35, vec2<f32>(0.0), vec2<f32>(1.0));
+  let previous = textureLoad(dataTextureC, historyCoord(historyUv, dims), 0);
+  let persistence = clamp(0.08 + caustic * 0.16 + u.zoom_config.w * 0.08, 0.0, 0.48);
+  hdr = mix(hdr, previous.rgb * 0.96, persistence);
 
-    // ── Click wave trains ──────────────────────────────────────────
-    // Each live ripple splashes an expanding, decaying train of rings
-    // from its click point (~2s life), composed with the main wave
-    // BEFORE the chromatic taps so clicks visibly splash rings.
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let click = u.ripples[i];
-        let rippleAge = time - click.z;
-        if (rippleAge < 0.0 || rippleAge > 2.0) { continue; }
-        let click_c = vec2<f32>(click.x * aspect, click.y);
-        let distR = distance(uv_c, click_c);
-        let ringFade = 1.0 - smoothstep(1.6, 2.0, rippleAge);
-        let falloff = exp(-distR * 3.0) * ringFade;
-        let train = sin(distR * frequency * 0.8 - rippleAge * 8.0) *
-                    exp(-rippleAge * 1.5) * maxAmplitude * 0.8;
-        displacement = displacement + train * falloff * (0.35 + luma * 0.95);
-    }
-
-    // 3-tap chromatic aberration along the safe radial direction
-    let safeDirCorrected = (uv_c - mouse_c) / max(dist, 0.001);
-    let safeDir = safeDirCorrected / vec2<f32>(aspect, 1.0);
-    let uv_r = clamp(uv - safeDir * displacement * (1.0 + aberration), vec2<f32>(0.0), vec2<f32>(1.0));
-    let uv_g = clamp(uv - safeDir * displacement, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uv_b = clamp(uv - safeDir * displacement * (1.0 - aberration), vec2<f32>(0.0), vec2<f32>(1.0));
-
-    let r = textureSampleLevel(readTexture, u_sampler, uv_r, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv_b, 0.0).b;
-
-    // ── Per-ring FFT voices ────────────────────────────────────────
-    // Radial distance quantized into 8 rings; each ring's crest glow
-    // rides its own spectrum bin, so the spectrum ripples outward
-    // spatially instead of pulsing the whole image at once.
-    let ring = u32(clamp(dist * 8.0, 0.0, 7.99));
-    let ringVoice = plasmaBuffer[(ring % 8u) + 1u].x * 0.35;
-
-    // HDR assembly: displaced image + spectral caustics + bass glow
-    var hdr = vec3<f32>(r, g, b);
-    let spectral = palette(wave * 0.18 + dist * 0.7 - time * 0.04 + mids * 0.2);
-    let caustic = pow(crest, 2.6) * (0.35 + luma) * (1.0 + treble * 0.8) + pow(crest, 2.0) * ringVoice;
-    hdr = hdr * (0.94 + crest * 0.2) + spectral * caustic * 1.55;
-    hdr = hdr + vec3<f32>(0.16, 0.28, 0.8) * pow(max(0.0, 1.0 - dist * 1.8), 3.0) * bass * 0.55;
-
-    // Radial vignette + IGN dither, then ACES tonemap
-    let radial = length(uv - vec2<f32>(0.5)) * 1.414;
-    hdr = hdr * mix(1.06, 0.72, smoothstep(0.45, 1.0, radial));
-    let dither = (ign(vec2<f32>(global_id.xy) + time * 19.0) - 0.5) / 255.0;
-    let finalColor = clamp(aces(hdr * 1.18) + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
-
-    let wave_pos = clamp(wave * 0.5 + 0.5, 0.0, 1.0);
-    let hdr_luma = getLuminance(hdr);
-    let alpha = clamp(0.16 + wave_pos * 0.18 + pow(max(0.0, hdr_luma - 0.55), 2.0) * 2.8, 0.0, 1.0);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-    // PREMULTIPLIED output: rgb is already scaled by alpha
-    let finalRGBA = vec4<f32>(finalColor * alpha, alpha);
-
-    textureStore(writeTexture, coords, finalRGBA);
-    textureStore(dataTextureA, coords, finalRGBA); // display color, same premultiplied value
-    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let effectEnergy = clamp(abs(displacement) * 9.0 + caustic * 0.3 + previous.a * persistence, 0.0, 1.0);
+  let alpha = clamp(source.a + (1.0 - source.a) * effectEnergy, 0.0, 1.0);
+  let mapped = acesToneMap(max(hdr, vec3<f32>(0.0)));
+  let display = vec4<f32>(mapped * alpha, alpha);
+  textureStore(dataTextureA, pixel, display);
+  textureStore(writeTexture, pixel, display);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
