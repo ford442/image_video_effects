@@ -1210,7 +1210,11 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "cmyk-rosette"
     ],
     "params": [
       {
@@ -1247,7 +1251,38 @@
       "halftone",
       "print",
       "audio-reactive"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "id": "density",
+        "name": "Dot Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "angle_offset",
+        "name": "Angle Offset",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "separation",
+        "name": "Channel Spread",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "darkness",
+        "name": "Ink Darkness",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "description": "CMYK print rosettes with rotating screens, traveling ink packets, held registration shear, bounded click splats, and rainbow registration glow. A stays CMYK coverage."
   },
   {
     "id": "codebreaker-reveal",
@@ -11035,7 +11070,12 @@
     "id": "quantum-prism",
     "url": "shaders/quantum-prism.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "hex-prism",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "tags": [
       "filter",
@@ -11075,7 +11115,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "description": "Hex-prism cells with grout, runners, held rotation/zoom, bounded click fronts, and oil-slick prism palettes. Display RGBA packed in A."
   },
   {
     "id": "quantum-ripples",
@@ -11996,7 +12071,7 @@
     "id": "rgb-iso-lines",
     "name": "RGB Iso Lines",
     "url": "shaders/rgb-iso-lines.wgsl",
-    "description": "Visualizes the R, G, and B channels as separated contour maps. Mouse controls the parallax separation.",
+    "description": "RGB contour maps with iso-runners, ridge ticks, held parallax, bounded click fronts, and rainbow hypsometry. A packs [lineR, lineG, lineB, alpha].",
     "params": [
       {
         "id": "thickness",
@@ -12043,11 +12118,55 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "id": "thickness",
+        "name": "Line Thickness",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Thickness of contour lines"
+      },
+      {
+        "id": "frequency",
+        "name": "Contour Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Density of contour lines"
+      },
+      {
+        "id": "parallax",
+        "name": "Parallax Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of RGB channel parallax separation"
+      },
+      {
+        "id": "bg_opacity",
+        "name": "Background Opacity",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Opacity of the original image behind contours"
+      }
     ]
   },
   {
@@ -13360,10 +13479,14 @@
     "id": "sphere-projection",
     "name": "Sphere Projection",
     "url": "shaders/sphere-projection.wgsl",
-    "description": "Projects the image onto a 3D sphere that can be rotated with the mouse.",
+    "description": "Equirectangular sphere with meridians/parallels, held zoom, bounded click shells, audio spin, and liquid-rainbow lighting. Display RGBA in A.",
     "features": [
       "mouse-driven",
-      "3d"
+      "3d",
+      "audio-reactive",
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "params": [
       {
@@ -13410,6 +13533,48 @@
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "id": "zoom",
+        "name": "Sphere Zoom",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Zoom level of the sphere projection"
+      },
+      {
+        "id": "rotation",
+        "name": "Spin Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Auto-rotation speed of the sphere"
+      },
+      {
+        "id": "light",
+        "name": "Lighting",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of directional lighting"
+      },
+      {
+        "id": "ambient",
+        "name": "Ambient Light",
+        "default": 0.3,
+        "min": 0,
+        "max": 0.6,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Ambient light level on the sphere"
+      }
     ]
   },
   {

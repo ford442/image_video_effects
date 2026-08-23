@@ -952,7 +952,7 @@
     "id": "fractal-kaleidoscope",
     "name": "Fractal Kaleidoscope",
     "url": "shaders/fractal-kaleidoscope.wgsl",
-    "description": "Fractal patterns in a kaleidoscope arrangement.",
+    "description": "Fractal kaleidoscope with live sliders, facet seams, radial conveyors, held pivot, bounded iris clicks, and oil-slick color. Display RGBA in A.",
     "tags": [
       "filter",
       "image-processing"
@@ -990,6 +990,48 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples"
     ]
   },
   {
@@ -1366,7 +1408,7 @@
     "id": "heat-haze-gpt52",
     "name": "Heat Haze Mirage gpt52",
     "url": "shaders/heat-haze-gpt52.wgsl",
-    "description": "Layered heat shimmer with chromatic dispersion, rising mirage flow, and bass-reactive intensity.",
+    "description": "Rising heat mirage with thermal filaments, axial packets, held thermal source, bounded click rings, chromatic dispersion, and oil-slick shimmer. Display RGBA in A; 16x16x1.",
     "params": [
       {
         "id": "intensity",
@@ -1406,7 +1448,10 @@
       "atmospheric",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "thermal-filaments"
     ],
     "tags": [
       "filter",
@@ -1414,6 +1459,40 @@
       "distortion",
       "heat",
       "atmospheric"
+    ],
+    "updatedParams": [
+      {
+        "id": "intensity",
+        "name": "Haze Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "rise",
+        "name": "Rise Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "frequency",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Split",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
