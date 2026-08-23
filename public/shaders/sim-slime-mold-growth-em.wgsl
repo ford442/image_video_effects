@@ -69,6 +69,18 @@ fn magneticField(pos: vec2<f32>, chargePos: vec2<f32>, velocity: vec2<f32>, char
   return charge * (velocity.x * r.y - velocity.y * r.x) / (dist * dist * dist);
 }
 
+fn stateAt(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
+}
+
+fn trailAtUV(pos: vec2<f32>, res: vec2<f32>) -> f32 {
+  return stateAt(vec2<i32>(floor(clamp(pos, vec2<f32>(0.0), vec2<f32>(1.0)) * res)), res).r;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
@@ -78,6 +90,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let mousePos = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   // Parameters
   let sensorAngle = mix(0.2, 1.0, u.zoom_params.x);
@@ -90,18 +105,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let emInfluence = mix(0.0, 1.0, u.zoom_params.z);
   let rippleCharge = mix(0.5, 2.0, u.zoom_params.w);
 
-  // Store mouse pos at (0,0) for velocity tracking next frame
-  if (gid.x == 0u && gid.y == 0u) {
-    textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(mousePos, 0.0, 0.0));
+  // Guarded pointer history lives only in the reserved six-float state window.
+  let hasPointerState = arrayLength(&extraBuffer) > 138u;
+  var prevMouse = mousePos;
+  var mouseVel = vec2<f32>(0.0);
+  if (hasPointerState && extraBuffer[138] > 0.5) {
+    prevMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    let pointerDt = clamp(time - extraBuffer[137], 0.001, 0.05);
+    mouseVel = (mousePos - prevMouse) / pointerDt;
+  }
+  if (gid.x == 0u && gid.y == 0u && hasPointerState) {
+    extraBuffer[133] = mousePos.x;
+    extraBuffer[134] = mousePos.y;
+    extraBuffer[135] = mouseVel.x;
+    extraBuffer[136] = mouseVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
   }
 
-  // Previous mouse for velocity
-  let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
-  let mouseVel = (mousePos - prevMouse) * 60.0;
-
   // Compute EM field at this pixel
-  let eField = electricField(uv, mousePos, chargeStrength);
-  let bField = magneticField(uv, mousePos, mouseVel, chargeStrength);
+  let heldGain = select(0.16, 1.0, u.zoom_config.w > 0.5);
+  let eField = electricField(uv, mousePos, chargeStrength * heldGain * (1.0 + bass * 0.4));
+  let bField = magneticField(uv, mousePos, mouseVel * 0.02, chargeStrength) * (1.0 + mids * 0.5);
 
   // Secondary charges from ripples
   var totalE = eField;
@@ -113,7 +138,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (elapsed > 0.0 && elapsed < 3.0) {
       let orbitAngle = elapsed * 2.0 + f32(i) * 1.256;
       let orbitRadius = 0.05 + 0.1 * smoothstep(0.0, 1.0, elapsed);
-      let orbitPos = mousePos + vec2<f32>(cos(orbitAngle), sin(orbitAngle)) * orbitRadius;
+      let orbitPos = ripple.xy + vec2<f32>(cos(orbitAngle), sin(orbitAngle)) * orbitRadius;
       let secondaryCharge = -rippleCharge * exp(-elapsed * 0.8);
       let secVel = vec2<f32>(-sin(orbitAngle), cos(orbitAngle)) * 2.0;
       totalE = totalE + electricField(uv, orbitPos, secondaryCharge);
@@ -126,13 +151,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let emAngle = atan2(totalE.y, totalE.x);
 
   // Read trail map
-  let trail = textureLoad(dataTextureC, gid.xy, 0).r;
+  let coord = vec2<i32>(gid.xy);
+  let previousState = stateAt(coord, resolution);
+  let trail = previousState.r;
 
   // Diffuse and decay trails
   var sum = 0.0;
   for (var y: i32 = -1; y <= 1; y = y + 1) {
     for (var x: i32 = -1; x <= 1; x = x + 1) {
-      sum = sum + textureLoad(dataTextureC, vec2<i32>(gid.xy) + vec2<i32>(x, y), 0).r;
+      sum = sum + stateAt(coord + vec2<i32>(x, y), resolution).r;
     }
   }
   let diffused = sum / 9.0;
@@ -155,12 +182,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let leftAngle = agentAngle - sensorAngle;
       let rightAngle = agentAngle + sensorAngle;
 
-      let leftSense = textureSampleLevel(dataTextureC, u_sampler,
-        clamp(agentPos + vec2<f32>(cos(leftAngle), sin(leftAngle)) * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-      let centerSense = textureSampleLevel(dataTextureC, u_sampler,
-        clamp(agentPos + vec2<f32>(cos(agentAngle), sin(agentAngle)) * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-      let rightSense = textureSampleLevel(dataTextureC, u_sampler,
-        clamp(agentPos + vec2<f32>(cos(rightAngle), sin(rightAngle)) * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+      let leftSense = trailAtUV(agentPos + vec2<f32>(cos(leftAngle), sin(leftAngle)) * 0.02, resolution);
+      let centerSense = trailAtUV(agentPos + vec2<f32>(cos(agentAngle), sin(agentAngle)) * 0.02, resolution);
+      let rightSense = trailAtUV(agentPos + vec2<f32>(cos(rightAngle), sin(rightAngle)) * 0.02, resolution);
 
       var steerAngle = 0.0;
       if (centerSense < leftSense && centerSense < rightSense) {
@@ -177,7 +201,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       if (angleDiff < -3.14159) { angleDiff = angleDiff + 6.28318; }
       agentAngle = agentAngle + steerAngle + angleDiff * emInfluence * 0.2 + totalB * emInfluence * 0.05;
 
-      agentPos = agentPos + vec2<f32>(cos(agentAngle), sin(agentAngle)) * 0.003;
+      agentPos = agentPos + vec2<f32>(cos(agentAngle), sin(agentAngle)) * 0.003 * (1.0 + treble * 0.3);
       agentPos = fract(agentPos);
 
       let distToCell = length(agentPos - uv);
@@ -188,17 +212,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   // Mouse direct deposit
-  let mouseDist = length(uv - mousePos);
-  if (mouseDist < 0.03) {
-    deposit = deposit + 0.1 * (1.0 - mouseDist / 0.03);
-  }
+  let mouseDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
+  let mouseField = smoothstep(0.09, 0.0, mouseDist);
+  deposit = deposit + mouseField * (0.004 + u.zoom_config.w * 0.11) * (1.0 + bass * 0.5);
 
   newTrail = min(newTrail + deposit, 1.0);
 
-  // Store trail (except at 0,0 which stores mousePos)
-  if (gid.x != 0u || gid.y != 0u) {
-    textureStore(dataTextureA, gid.xy, vec4<f32>(newTrail, fieldMag * 0.1, 0.0, 1.0));
-  }
+  let activity = clamp(abs(newTrail - trail) * 8.0 + abs(totalB) * 0.02, 0.0, 1.0);
+  textureStore(dataTextureA, coord, vec4<f32>(newTrail, clamp(fieldMag * 0.05, 0.0, 4.0), clamp(totalB * 0.05, -2.0, 2.0), activity));
 
   // Render
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -224,12 +245,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Core glow near mouse
   let coreDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
   let coreGlow = exp(-coreDist * coreDist * 400.0) * chargeStrength;
-  color = color + vec3<f32>(0.6, 0.9, 1.0) * coreGlow * fieldVis;
+  color = color + vec3<f32>(0.6 + bass * 0.3, 0.9 + mids * 0.2, 1.0 + treble * 0.4) * coreGlow * fieldVis;
+  color = acesToneMap(color);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   // Alpha = EM field magnitude blended with trail
-  let alpha = clamp(fieldMag * 0.3 + newTrail * 0.7, 0.0, 1.0);
+  let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+  let alpha = clamp(sourceAlpha * 0.15 + fieldMag * 0.12 + newTrail * 0.72 + activity * 0.12, 0.0, 1.0);
 
   textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - newTrail * 0.2), 0.0, 0.0, 0.0));
