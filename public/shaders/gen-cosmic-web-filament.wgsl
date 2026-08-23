@@ -274,12 +274,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   }
   shock = min(shock, 1.0);
 
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-  let warpStrength = zp.x * 3.0 + bass * 0.8 + shock * 1.2;
-  let densityParam = zp.y * 3.5 + 0.5;
+  let zp = u.zoom_params;
+  let warpStrength = clamp(zp.x, 0.0, 1.0) * 3.0 + bass * 0.8 + shock * 1.2;
+  let densityParam = clamp(zp.y, 0.0, 1.0) * 3.5 + 0.5;
   // Fast motion: cosmic evolution runs an order faster, bass and held on the throttle
-  let speed = zp.z * (6.0 + bass * 5.0 + heldF * 3.0) + 0.6;
-  let voidPull = zp.w;
+  let speed = clamp(zp.z, 0.0, 1.0) * (6.0 + bass * 5.0 + heldF * 3.0) + 0.6;
+  let voidPull = clamp(zp.w, 0.0, 1.0);
 
   // Void well at the smoothed cursor — held collapses the web into it
   let mouseC = (smoothMouse - 0.5) * vec2<f32>(aspect.x, -1.0);
@@ -330,6 +330,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var col = starCol * structDensity * (0.9 + evolution * 0.5);
   col += cosmicPalette(popHue + 0.35, treble) * tempGrad * 0.55;
   col += cosmicPalette(popHue + 0.6, bass) * glow * (0.35 + voidPull * 0.6);
+
+  // Quasar junctions ignite where Voronoi strands nearly intersect.
+  let junction = pow(clamp(1.0 - (v.y - v.x) * (7.0 + densityParam), 0.0, 1.0), 12.0) * structDensity;
+  let quasarPulse = 0.45 + 0.55 * sin(time * (3.0 + treble * 8.0) + age * 31.0);
+  col += cosmicPalette(popHue + 0.18, 1.0 + mids) * junction * quasarPulse * (0.7 + bass * 1.2);
 
   // Shock flash + cursor void halo
   col += cosmicPalette(fract(time * 0.9), 1.0) * shock * 1.3;

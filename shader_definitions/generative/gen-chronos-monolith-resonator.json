@@ -16,6 +16,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "temporal-flow-speed", "name": "Temporal Flow Speed", "default": 0.27, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "plasma-density", "name": "Plasma Density", "default": 0.33, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "monolith-complexity", "name": "Monolith Complexity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "core-resonance", "name": "Core Resonance", "default": 0.25, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,

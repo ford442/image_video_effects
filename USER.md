@@ -10,6 +10,15 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
+- **Optical / Glass / Holographic / Crystal Batch (2026-08-23):** Upgraded
+  holographic-projection, holographic-projection-gpt52, holographic-flicker,
+  holographic-sticker, alpha-multi-layer-glass, anamorphic-caustic-flare,
+  glass-shatter-morph, glass-bead-curtain-iridescence, gemstone-fractures-crystal,
+  and bismuth-crystal-growth under the full 13-binding / ACES / semantic alpha /
+  A-authoritative / exact C loads / three-band plasmaBuffer / guarded
+  extraBuffer[133..138] contract with byte-exact saved params. Naga 10/10,
+  workgroups 16x16, all 4 sliders live, Jest 84/84 (559 pass), and production
+  build green; real-GPU visual QA remains external.
 - **Batch 58D:** Ten spectral/datamosh upgrades completed with A authoritative,
   exact C, B unused, guarded `[133..138]` springs, saved params unchanged, and
   raw state retained for Vortex/Data Moshing/Datamosh. Real-GPU QA is external.
@@ -53,6 +62,11 @@ _Learn about the person you're helping. Update this as you go._
   duplicate-declaration repair are verified by actual Naga plus strict contract,
   catalog, type, Jest, and production-build gates. Real-GPU visual QA remains the
   explicit handoff.
+- **Reaction/flow/sand cohort (2026-08-23):** Ten selected simulation effects
+  completed under the exact-C/A-only/ACES/semantic-alpha/audio/interaction
+  contract with exact presets. Optical Flow Dream is now canonical single-pass
+  without binding 13; Pixel Sand raw state now belongs to A. Naga/Jest/build
+  are green; real-GPU QA remains external.
 ## Context
 
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.
@@ -176,4 +190,8 @@ Format specification:
   `cursor/effect-shaders-complexity-8594` were unioned onto main in 99d09e5c
   without reverting #1137 or Batch 57 fractal-kaleidoscope. Batch 58E closed
   tracker #491–500 across ten interactive shaders.
+- For the 2026-08-23 generative-only cohort, the user explicitly requires the
+  literal ten supplied IDs, full 13-binding/ACES/semantic-alpha/exact-C/A-only
+  contract, three-band plasma audio, bounded [133..138] state, preserved
+  interaction, Naga-clean WGSL, and four named params in every JSON definition.
 </IMPORTANT_REMINDER>

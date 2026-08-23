@@ -2,7 +2,7 @@
   "id": "pixel-sand",
   "name": "Pixel Sand",
   "url": "shaders/pixel-sand.wgsl",
-  "description": "Falling granular automata with smooth avalanche sheets, rising jet lanes, held-pointer gravity, bounded click shelves, domain-warped FBM flow, audio color, depth shading, and preserved B-state feedback.",
+  "description": "Granular density and velocity automaton with avalanche sheets, rising jet lanes, held-pointer gravity, bounded click shelves, three-band spectral heat, depth shading, ACES display, semantic alpha, and raw A-only state feedback.",
   "features": [
     "upgraded-rgba",
     "mouse-driven",

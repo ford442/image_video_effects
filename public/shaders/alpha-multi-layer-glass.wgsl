@@ -1,15 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Alpha Multi-Layer Glass
+//  Alpha Multi-Layer Glass — Refractive Glass Stack
 //  Category: visual-effects
-//  Features: mouse-driven, rgba-data-channel
-//  Complexity: Medium
-//  RGBA Channels:
-//    R = Refracted red (post-distortion)
-//    G = Refracted green (with chromatic offset)
-//    B = Refracted blue (with larger chromatic offset)
-//    A = Accumulated transmittance (how much light passes through)
-//  Why f32: Transmittance is the product of multiple layer factors
-//  and needs precision to avoid total darkness after 3+ layers.
+//  Features: mouse-driven, audio-reactive, multi-layer-glass, fresnel,
+//            chromatic-aberration, ggx-roughness, semantic-transmittance
+//  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,131 +27,182 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from chunk-library.md / gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
 fn valueNoise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-    let a = hash12(i + vec2<f32>(0.0, 0.0));
-    let b = hash12(i + vec2<f32>(1.0, 0.0));
-    let c = hash12(i + vec2<f32>(0.0, 1.0));
-    let d = hash12(i + vec2<f32>(1.0, 1.0));
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  let i = floor(p);
+  let f = fract(p);
+  let sm = f * f * (3.0 - 2.0 * f);
+  let a = hash12(i + vec2<f32>(0.0, 0.0));
+  let b = hash12(i + vec2<f32>(1.0, 0.0));
+  let c = hash12(i + vec2<f32>(0.0, 1.0));
+  let d = hash12(i + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, sm.x), mix(c, d, sm.x), sm.y);
 }
 
-fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
-    var value = 0.0;
-    var amplitude = 0.5;
-    var frequency = 1.0;
-    for (var i: i32 = 0; i < octaves; i = i + 1) {
-        value = value + amplitude * valueNoise(p * frequency);
-        amplitude = amplitude * 0.5;
-        frequency = frequency * 2.0;
-    }
-    return value;
+fn fbm2(p: vec2<f32>) -> f32 {
+  var v = 0.0;
+  var a = 0.5;
+  var freq = 1.0;
+  for (var i = 0; i < 3; i = i + 1) {
+    v += a * valueNoise(p * freq);
+    a *= 0.5;
+    freq *= 2.0;
+  }
+  return v;
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let res = u.config.zw;
-    if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
 
-    let uv = vec2<f32>(gid.xy) / res;
-    let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-    let time = u.config.x;
+  let pixel = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / res;
+  let aspect = res.x / max(res.y, 1.0);
+  let time = u.config.x;
 
-    // === PARAMETERS ===
-    let layerCount = 3.0;
-    let iorBase = mix(1.1, 1.6, u.zoom_params.x);
-    let thickness = mix(0.001, 0.01, u.zoom_params.y);
-    let chromaticStrength = u.zoom_params.z * 0.003;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // === GLASS SURFACE NORMAL (procedural) ===
-    let noiseUV = uv * 4.0 + vec2<f32>(time * 0.01, time * 0.008);
-    let normalX = (fbm2(noiseUV, 3) - 0.5) * 2.0;
-    let normalY = (fbm2(noiseUV + vec2<f32>(50.0), 3) - 0.5) * 2.0;
-    let surfaceNormal = normalize(vec2<f32>(normalX, normalY));
+  // Sliders: exact parameter contracts
+  let iorParam = u.zoom_params.x;     // 0..1, def 0.5 -> IOR 1.1 to 1.7
+  let thickParam = u.zoom_params.y;   // 0..1, def 0.3 -> thickness
+  let chromParam = u.zoom_params.z;   // 0..1, def 0.3 -> chromatic dispersion
+  let roughParam = u.zoom_params.w;   // 0..1, def 0.4 -> surface roughness
 
-    // === MOUSE DISTORTION ===
-    let mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
-    let mouseDist = length(uv - mousePos);
-    let mouseInfluence = smoothstep(0.3, 0.0, mouseDist) * mouseDown;
-    let mouseNormal = normalize(uv - mousePos + vec2<f32>(0.0001));
-    let finalNormal = normalize(mix(surfaceNormal, mouseNormal, mouseInfluence * 0.5));
+  let iorBase = mix(1.15, 1.75, iorParam);
+  let thickness = mix(0.003, 0.025, thickParam);
+  let chromaticStrength = chromParam * (0.008 + mids * 0.006);
+  let roughness = roughParam * (0.012 + treble * 0.008);
 
-    // === RIPPLE DISTORTION ===
-    let rippleCount = min(u32(u.config.y), 50u);
-    var rippleNormal = vec2<f32>(0.0);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let rDist = length(uv - ripple.xy);
-        let age = time - ripple.z;
-        if (age < 1.5 && rDist < 0.15) {
-            let strength = smoothstep(0.15, 0.0, rDist) * max(0.0, 1.0 - age * 0.7);
-            let dir = normalize(uv - ripple.xy + vec2<f32>(0.0001));
-            rippleNormal += dir * strength;
-        }
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let rawMouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  let isWriter = (gid.x == 0u && gid.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var mouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.1);
+    var sPos = mouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
     }
-    let totalNormal = normalize(finalNormal + rippleNormal * 0.3);
+    let stiffness = 36.0;
+    let damping = 12.0;
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel = sVel + accel * dt;
+    sPos = sPos + sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
 
-    // === MULTI-LAYER REFRACTION ===
-    var totalTransmittance = 1.0;
-    var finalColor = vec3<f32>(0.0);
+  // Procedural glass surface normals + acoustic plate vibrations
+  let noiseUV = uv * 3.5 + vec2<f32>(time * 0.015, time * 0.01);
+  let plateWave = sin(uv.x * 20.0 + time * 2.0) * sin(uv.y * 20.0 - time * 1.5) * bass * 0.4;
+  let normalX = (fbm2(noiseUV) - 0.5) * 2.0 + plateWave;
+  let normalY = (fbm2(noiseUV + vec2<f32>(43.12, 17.89)) - 0.5) * 2.0;
+  let surfaceNormal = normalize(vec2<f32>(normalX, normalY));
 
-    for (var layer = 0; layer < 3; layer = layer + 1) {
-        let layerF = f32(layer);
-        let ior = iorBase + layerF * 0.05;
+  // Touch deflection & pointer influence
+  let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  let mouseInfluence = smoothstep(0.35, 0.0, mouseDist) * (0.5 + held * 0.5);
+  let mouseNormal = normalize(uv - mouse + vec2<f32>(0.0001));
+  let combinedNormal = normalize(mix(surfaceNormal, mouseNormal, mouseInfluence * 0.6));
 
-        // Fresnel reflectance (Schlick approximation)
-        let cosI = max(0.0, totalNormal.y);
-        let R0 = pow((1.0 - ior) / (1.0 + ior), 2.0);
-        let reflectance = R0 + (1.0 - R0) * pow(1.0 - cosI, 5.0);
-        let layerTransmittance = 1.0 - reflectance * 0.3;
+  // Click ripple shocks on glass surface
+  let rippleCount = min(u32(u.config.y), 50u);
+  var rippleNormal = vec2<f32>(0.0);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 2.0) { continue; }
+    let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+    let wave = sin((rDist - age * 0.6) * 40.0) * exp(-rDist * 4.5) * exp(-age * 1.6);
+    let dir = normalize(uv - ripple.xy + vec2<f32>(0.0001));
+    rippleNormal += dir * wave * 0.4;
+  }
+  let totalNormal = normalize(combinedNormal + rippleNormal * 0.5);
 
-        // Refraction offset per layer
-        let refractOffset = totalNormal * thickness * (layerF + 1.0);
+  // Multi-layer glass refraction stack (3 distinct physical panes)
+  var totalTransmittance = 1.0;
+  var accumulatedColor = vec3<f32>(0.0);
+  var specularTotal = 0.0;
 
-        // Chromatic aberration: different IOR per channel
-        let refractR = uv + refractOffset * (1.0 + chromaticStrength * 1.0);
-        let refractG = uv + refractOffset * (1.0 + chromaticStrength * 1.5);
-        let refractB = uv + refractOffset * (1.0 + chromaticStrength * 2.0);
+  for (var layer = 0; layer < 3; layer = layer + 1) {
+    let layerF = f32(layer);
+    let ior = iorBase + layerF * 0.08;
 
-        let sampleR = textureSampleLevel(readTexture, u_sampler, clamp(refractR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-        let sampleG = textureSampleLevel(readTexture, u_sampler, clamp(refractG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-        let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(refractB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    // Schlick Fresnel
+    let R0 = pow((1.0 - ior) / (1.0 + ior), 2.0);
+    let cosI = clamp(abs(totalNormal.y * 0.8 + 0.2), 0.0, 1.0);
+    let fresnel = R0 + (1.0 - R0) * pow(1.0 - cosI, 5.0);
+    let layerTransmittance = clamp(1.0 - fresnel * 0.65, 0.05, 1.0);
 
-        // Layer tint
-        let tint = vec3<f32>(
-            1.0 - layerF * 0.1,
-            1.0 - layerF * 0.05,
-            1.0 - layerF * 0.02
-        );
+    // Refraction offset per pane with physical dispersion
+    let paneOffset = totalNormal * thickness * (layerF + 1.0);
+    let roughJitter = (hash12(uv * 200.0 + f32(layer) * 17.0) - 0.5) * roughness * (layerF + 1.0);
 
-        let layerColor = vec3<f32>(sampleR, sampleG, sampleB) * tint;
-        finalColor += layerColor * totalTransmittance * layerTransmittance;
-        totalTransmittance *= layerTransmittance;
-    }
+    let refractR = clamp(uv + paneOffset * (1.0 + chromaticStrength * 1.5) + vec2<f32>(roughJitter, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let refractG = clamp(uv + paneOffset + vec2<f32>(roughJitter * 0.5, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let refractB = clamp(uv + paneOffset * (1.0 - chromaticStrength * 1.5) - vec2<f32>(roughJitter, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Add background through remaining transmittance
-    let bgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    finalColor += bgColor * totalTransmittance;
+    let sampleR = textureSampleLevel(readTexture, u_sampler, refractR, 0.0).r;
+    let sampleG = textureSampleLevel(readTexture, u_sampler, refractG, 0.0).g;
+    let sampleB = textureSampleLevel(readTexture, u_sampler, refractB, 0.0).b;
 
-    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    // Physical absorption tint per pane (Beer-Lambert law)
+    let tint = vec3<f32>(
+      1.0 - layerF * 0.08,
+      1.0 - layerF * 0.03,
+      0.95 + layerF * 0.02
+    );
 
-    // === STORE STATE ===
-    textureStore(dataTextureA, coord, vec4<f32>(finalColor, totalTransmittance));
+    let layerColor = vec3<f32>(sampleR, sampleG, sampleB) * tint;
+    accumulatedColor += layerColor * (totalTransmittance * layerTransmittance);
+    totalTransmittance *= layerTransmittance;
 
-    // === WRITE DISPLAY ===
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, totalTransmittance));
+    // Specular glint on pane surface
+    let lightDir = normalize(vec2<f32>(0.7, -0.7));
+    let spec = pow(max(dot(totalNormal, lightDir), 0.0), mix(25.0, 8.0, roughParam)) * fresnel;
+    specularTotal += spec * (0.35 + treble * 0.25);
+  }
 
-    // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Internal multi-bounce reflection from exact dataTextureC load
+  let prevInternal = textureLoad(dataTextureC, pixel, 0).rgb;
+  accumulatedColor = mix(accumulatedColor, prevInternal, 0.08 + thickParam * 0.05);
+  accumulatedColor += vec3<f32>(1.0, 0.98, 0.95) * specularTotal;
+
+  // ACES Tonemap
+  let finalRGB = aces(accumulatedColor);
+
+  // Semantic transmittance alpha
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let finalAlpha = clamp(totalTransmittance * 0.75 + (1.0 - totalTransmittance) * 0.95 + mouseInfluence * 0.1, 0.2, 1.0);
+  let finalPixel = vec4<f32>(finalRGB, finalAlpha);
+
+  textureStore(writeTexture, pixel, finalPixel);
+  textureStore(dataTextureA, pixel, finalPixel);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

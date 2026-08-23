@@ -2,18 +2,26 @@
   "id": "gemstone-fractures-crystal",
   "name": "Gemstone Fractures Crystal",
   "url": "shaders/gemstone-fractures-crystal.wgsl",
-  "description": "Gemstone Fractures Crystal",
+  "description": "Faceted gemstone shards with live interior crystal growth, orientation-dependent birefringence iridescence, and physical quartz-to-diamond refraction.",
   "tags": [
     "voronoi-shards",
     "crystal-growth",
     "physical-refraction",
-    "temporal"
+    "temporal",
+    "gemstone",
+    "birefringence",
+    "audio-reactive",
+    "mouse-driven"
   ],
   "features": [
     "voronoi-shards",
     "crystal-growth",
     "physical-refraction",
-    "temporal"
+    "temporal",
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -53,5 +61,39 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "IOR Mix",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Rotation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Fracture Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
 }

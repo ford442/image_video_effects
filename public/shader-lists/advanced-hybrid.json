@@ -1102,16 +1102,25 @@
     "id": "bismuth-crystal-growth",
     "name": "Bismuth Crystal Growth",
     "url": "shaders/bismuth-crystal-growth.wgsl",
-    "description": "Bismuth Crystal Growth",
+    "description": "Phase-field simulation of bismuth hopper crystal step-pyramid growth with 4-fold cubic anisotropy, thin-film oxide rainbow iridescence, and metallic luster.",
     "tags": [
       "phase-field-crystal",
       "hopper-crystals",
-      "iridescence"
+      "iridescence",
+      "bismuth",
+      "crystal-growth",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "features": [
       "phase-field-crystal",
       "hopper-crystals",
-      "iridescence"
+      "iridescence",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -1151,7 +1160,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Supercooling",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Anisotropy",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Growth Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "black-hole-iridescence",
@@ -5408,18 +5451,26 @@
     "id": "gemstone-fractures-crystal",
     "name": "Gemstone Fractures Crystal",
     "url": "shaders/gemstone-fractures-crystal.wgsl",
-    "description": "Gemstone Fractures Crystal",
+    "description": "Faceted gemstone shards with live interior crystal growth, orientation-dependent birefringence iridescence, and physical quartz-to-diamond refraction.",
     "tags": [
       "voronoi-shards",
       "crystal-growth",
       "physical-refraction",
-      "temporal"
+      "temporal",
+      "gemstone",
+      "birefringence",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "features": [
       "voronoi-shards",
       "crystal-growth",
       "physical-refraction",
-      "temporal"
+      "temporal",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5459,7 +5510,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "IOR Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Fracture Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "gen-abyssal-leviathan-iridescence",
@@ -6076,13 +6161,18 @@
       "interference",
       "spectral",
       "refraction",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "features": [
       "mouse-driven",
       "thin-film-interference",
       "spectral-render",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -6111,6 +6201,41 @@
       },
       {
         "id": "film_thickness",
+        "name": "Film Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bead Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Iridescence",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Film Thickness",
         "default": 0.5,
         "min": 0,
@@ -6205,7 +6330,9 @@
       "voronoi",
       "erosion",
       "dilation",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "refraction"
     ],
     "features": [
       "mouse-driven",
@@ -6213,7 +6340,8 @@
       "advanced-convolution",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "temporal"
     ],
     "params": [
       {
@@ -6242,6 +6370,41 @@
       },
       {
         "id": "edge_width",
+        "name": "Edge Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Shard Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Displacement",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Morph Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Edge Width",
         "default": 0.3,
         "min": 0,

@@ -13,10 +13,10 @@ describe('multipassBadge', () => {
     expect(getMultipassBadgeLabel('photonic-caustics-graph')).toBe('graph · 4 passes');
   });
 
-  it('returns graph pass counts for the new Physics Lab flagships', () => {
+  it('returns graph pass counts for the remaining graph flagships', () => {
     expect(getMultipassBadgeLabel('chromatographic-fluid')).toBe('graph · 7 passes');
     expect(getMultipassBadgeLabel('gray-scott-tank')).toBe('graph · 6 passes');
-    expect(getMultipassBadgeLabel('optical-flow-dream')).toBe('graph · 4 passes');
+    expect(getMultipassBadgeLabel('optical-flow-dream')).toBeNull();
   });
 
   it('returns graph pass count for quantum-foam graph entry', () => {
