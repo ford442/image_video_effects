@@ -137,8 +137,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let mousePos = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
     let mouseDist = length(uvA - mousePos);
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    var clickInk = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = t - ripple.z;
+        if (age >= 0.0 && age < 4.0) {
+            let rp = vec2<f32>(ripple.x * aspect, ripple.y);
+            let front = abs(length(uvA - rp) - age * 0.11);
+            clickInk += (1.0 - smoothstep(0.0, 0.018, front)) * (1.0 - age / 4.0);
+        }
+    }
+    clickInk = min(clickInk, 2.0);
     // Mouse introduces invasive species disturbance
-    let invasiveBoost = exp(-mouseDist * mouseDist * 25.0) * (1.0 + bass * 2.0);
+    let invasiveBoost = exp(-mouseDist * mouseDist * 25.0) * (0.3 + held * 0.9) * (1.0 + bass * 2.0);
 
     // Lotka-Volterra predator-prey oscillations
     // Prey = green flora, Predators = red-orange fauna
@@ -214,6 +227,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse invasive species pulse: a bright seed planted by click
     let seedPulse = exp(-mouseDist * mouseDist * 100.0) * (0.5 + bass * 0.5);
     color += mix(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.8, 0.6, 1.0), neonMode) * seedPulse;
+    color += mix(vec3<f32>(0.18, 0.06, 0.02), vec3<f32>(0.3, 1.0, 0.65), neonMode) * clickInk * (0.25 + treble * 0.5);
 
     // Chromatic aberration
     let caStr = 0.003 * (1.0 + bass);
@@ -223,13 +237,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = acesToneMap(color * 1.1);
 
     // Semantic alpha
-    let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+    let alpha = clamp(totalInk * 0.72 + invasiveBoost * 0.15 + clickInk * 0.2 + length(color) * 0.12, 0.04, 0.96);
 
     // Temporal feedback: ecosystem succession
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
     let feedback = mix(prev.rgb * 0.96, color, 0.25);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(feedback, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(feedback, alpha));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(feedback, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0));
 }

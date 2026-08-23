@@ -1,6 +1,23 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (origin/main reconcile: Batch 67/70 + named-params)
+**Last updated:** 2026-08-23 (Optical / Glass / Prism / Crystal / Lens set upgrade complete)
+
+## 2026-08-23 — Optical / Glass / Prism / Crystal / Lens Upgrade Batch (10 shaders)
+
+- Upgraded 10 optical / glass / prism / crystal / lens distortion shaders:
+  1. `bubble-lens` (distortion): Marangoni surfactant convection + per-band membrane resonance modes, thin-film interference, removed dataTextureB write (A-only writeback), ACES tonemap, exact C loads, and spring cursor in `extraBuffer[133..138]`.
+  2. `crystal-facets` (distortion): Prismatic facet refraction & birefringence, canonical three-band audio, ACES tonemap, exact C loads, and spring cursor.
+  3. `cyber-lens` (distortion): Tactical holographic HUD with rolling-shutter scan skew, telemetry rings, removed dataTextureB write (A-only writeback), ACES tonemap, exact C loads, and spring cursor.
+  4. `fractal-glass-distort` (distortion): IFS attractor glass with wired live aberration slider, chromatic dispersion, ACES tonemap, exact C loads, and spring cursor.
+  5. `glass-brick-distortion` (distortion): Fluted architectural glass brick wall with Snell's law dispersion, Schlick Fresnel, Beer-Lambert absorption, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  6. `glass-brick-wall` (distortion): Textured architectural glass with FBM normals, fixed dt calculation and click logic, ACES tonemap, exact C loads, and spring cursor. Normalized updatedParams.
+  7. `infinite-zoom-lens` (distortion): Droste spiral recursion with chromatic dispersion, resolved mask-as-colour trap (stores display RGBA to dataTextureA), ACES tonemap, exact C loads, and spring cursor.
+  8. `liquid-prism` (distortion): Cauchy wavelength dispersion ripple glass, replaced non-standard saturate with clamp, bounded caustic fronts, ACES tonemap, exact C loads, and spring cursor.
+  9. `luma-glass` (distortion): Luminance-driven Sellmeier dispersion, caustic trace, subsurface scatter, click ripples, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  10. `luminescent-glass-tiles` (distortion): Luminance-warped glass tiles, resolved mask write to dataTextureA (stores display RGBA), Beer-Lambert absorption, click ripples, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+- Agent contract applied 10/10: Full 13-binding layout, ACES tonemapping, semantic alpha, writeback only to dataTextureA (and writeTexture/writeDepthTexture), exact textureLoad from dataTextureC, plasmaBuffer three-band audio reactivity, bounded extraBuffer[133..138] state only (single-writer), preserved mouse / held / click-ripple interactivity, and naga-clean WGSL.
+- Preserved saved parameter contracts byte-for-byte in JSONs with aligned updatedParams.
+- Proof: Naga 10/10, wgsl_precommit_gate 10/10, extraBuffer audit PASS, dead-sliders audit PASS (all 4 sliders live across all 10), URL policy PASS, Jest 84/84 suites (559 pass, 1 skip), and SKIP_WASM_BUILD=1 production build PASS. Real-GPU visual QA remains external handoff.
 
 ## 2026-08-23 — Reconciled local main with origin/main (Batch 67/70 + #1167/#1169)
 
@@ -1152,6 +1169,20 @@
   writeback; Monolith/Coral/Slime filtered C; Dyson missing C/ACES; Crystal
   Purity wiring. Structural, catalog, Jest, and build gates pass; GPU QA remains
   external.
+
+## Eldritch / emergent / ethereal generative cohort (2026-08-23)
+
+- Ten verified live generative IDs now meet the canonical bindings 0–12,
+  ACES, semantic-alpha, exact-C, A-only, plasma-XYZ contract with 40 truthful
+  named controls.
+- Preserve Script Gardens A.a as ink occupancy. Owl, Manta, Hummingbird,
+  Kaleidoscope, Erosion, Orchid, Anemone and calligraphic effects own HDR or
+  display history in A; Eldritch A.a remains generated depth.
+- Important repairs: no filtered C; Owl no longer reads engine FFT bins through
+  extraBuffer; Manta/Hummingbird no longer treat rippleCount as audio;
+  Hummingbird gained its missing ACES/C/A/semantic-alpha path.
+- Focused Naga/contract/dead-slider gates, catalogs, duplicates, URLs, Jest and
+  canonical build pass. Real-GPU visual/performance acceptance remains external.
 
 ## Reaction / flow / sand / optical-fluid cohort (2026-08-23)
 

@@ -158,6 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let fragCoord = vec2<f32>(pixel);
     var uv = (fragCoord - vec2<f32>(0.5) * resolution) / resolution.y;
+    let uv01 = (fragCoord + 0.5) / resolution;
     let time = u.config.x;
 
     // Audio (plasmaBuffer only) — bass/mids/treble
@@ -182,6 +183,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rotation_speed = u.zoom_params.x;    // p1 — governs 4D spin AND motion energy
     let swarm_density = u.zoom_params.y;     // p2 — sentinel swarm density
     let iridescence_shift = u.zoom_params.w; // p4 — thin-film phase shift
+
+    var shock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.8) {
+            let front = abs(length((uv01 - ripple.xy) * vec2<f32>(resolution.x / resolution.y, 1.0)) - age * 0.26);
+            shock += (1.0 - smoothstep(0.0, 0.028, front)) * (1.0 - age / 2.8);
+        }
+    }
+    shock = min(shock, 2.0);
 
     // Time-warp easing: fast surges, smooth settle — no strobing
     let warpT = time + 0.4 * sin(time * 0.31) * (0.5 + rotation_speed * 0.5);
@@ -261,6 +274,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth_mask = 1.0 - smoothstep(0.0, 12.0, d);
     let swarm_color = vec3<f32>(0.1, 1.0, 0.55) * tempTint * vec3<f32>(swarm_val * depth_mask * (2.2 + burst * 2.0));
     col += swarm_color;
+    col += iridescence(vec3<f32>(0.0, 0.0, 1.0), normalize(vec3<f32>(uv, 1.0)), iridescence_shift + time * 0.1)
+         * shock * (0.8 + treble * 1.2);
 
     // Atmospheric Fog — depth atmosphere, temperature-tinted shadows
     let fogCol = mix(vec3<f32>(0.02, 0.0, 0.05), vec3<f32>(0.05, 0.025, 0.0), tempMix * 0.5);
@@ -285,7 +300,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Semantic alpha: luminous intensity + structural hit, never flat 1.0
     let hitMask = 1.0 - f32(d > MAX_DIST);
-    let alpha = clamp(0.18 + luma(outCol) * 1.2 + swarm_val * depth_mask * 0.3 + hitMask * 0.15, 0.0, 1.0);
+    let alpha = clamp(0.12 + luma(outCol) * 1.2 + swarm_val * depth_mask * 0.3 + hitMask * 0.15 + shock * 0.2, 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(outCol, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));

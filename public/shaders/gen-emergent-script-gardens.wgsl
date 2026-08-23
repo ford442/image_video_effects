@@ -136,10 +136,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
     let mouseDown = step(0.5, u.zoom_config.w);
     let mouseDist = length(p - mouse);
+    var clickSeed = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 4.5) {
+            let rp = vec2<f32>(ripple.x * aspect, ripple.y);
+            let front = abs(length(p - rp) - age * 0.09 * GOLDEN);
+            clickSeed += (1.0 - smoothstep(0.0, 0.016, front)) * (1.0 - age / 4.5);
+        }
+    }
+    clickSeed = min(clickSeed, 2.0);
     // Mouse click plants new seed with golden-ratio intensity boost
     let plantedSeed = exp(-mouseDist * mouseDist * 70.0)
                       * (0.35 + bass * 0.65)
-                      * select(0.35, 1.0 + GOLDEN * 0.2, mouseDown > 0.5);
+                      * select(0.35, 1.0 + GOLDEN * 0.2, mouseDown > 0.5)
+                      + clickSeed * 0.45;
 
     let grid = p * gardenScale;
     let cell = floor(grid);
@@ -188,9 +201,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ACES tone mapping + semantic alpha
     let finalColor = acesToneMap(color * 1.1);
-    let alpha = clamp(length(finalColor) * 1.2, 0.2, 0.95);
+    let alpha = clamp(totalInk * 0.82 + plantedSeed * 0.22, 0.04, 0.96);
 
-    textureStore(dataTextureA, gid.xy, vec4<f32>(color, alpha));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(color, totalInk));
     textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(totalInk, 0.0, 0.0, 0.0));
 }

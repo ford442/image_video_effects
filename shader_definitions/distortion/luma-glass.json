@@ -6,7 +6,8 @@
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal"
   ],
   "description": "Physically-based refraction shader where luminance drives glass refractive index. Features Sellmeier chromatic dispersion, caustic highlights, Fresnel reflections, and subsurface scattering.",
   "params": [
@@ -50,5 +51,40 @@
     "refraction",
     "chromatic-dispersion",
     "caustics"
+  ],
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Refraction Depth",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Surface Smoothness",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Specular Shine",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Light Distance",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
   ]
 }

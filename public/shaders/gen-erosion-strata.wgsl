@@ -89,6 +89,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let density = u.zoom_params.y;
   let veins = u.zoom_params.z;
   let water = u.zoom_params.w;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  let aspect = res.x / res.y;
+  let pointerDist = length((uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0));
+  var quake = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = t - ripple.z;
+    if (age >= 0.0 && age < 3.6) {
+      let front = abs(length((uv - ripple.xy) * vec2<f32>(aspect, 1.0)) - age * 0.13);
+      quake += (1.0 - smoothstep(0.0, 0.02, front)) * (1.0 - age / 3.6);
+    }
+  }
+  quake = min(quake, 2.0);
   let warp = vec2<f32>(fbm(uv * 3.0 + t * 0.05 * (1.0 + bass)), fbm(uv * 3.0 + t * 0.05 * (1.0 + bass) + 5.2));
   let wuv = uv + warp * erosion * 0.3;
   let freq = mix(6.0, 24.0, density);
@@ -128,17 +142,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fossil = smoothstep(0.12, 0.0, length(fract(wuv * 15.0 + li * 4.0) - vec2<f32>(h12(vec2<f32>(li, 3.0)), h12(vec2<f32>(li, 4.0))))) * smoothstep(0.7, 1.0, h12(vec2<f32>(li, 2.0))) * exposed;
   col *= 1.0 - fossil * 0.4;
   col += vec3<f32>(0.08, 0.06, 0.04) * fossil;
+  col += vec3<f32>(0.95, 0.48, 0.14) * quake * vein * (0.4 + treble);
+  col += vec3<f32>(0.12, 0.32, 0.42) * exp(-pointerDist * 8.0) * held * (0.3 + bass * 0.4);
   let depth = fbm(uv * 2.0 + vec2<f32>(0.0, 0.5)) * 0.5 + 0.5;
   let haze = 1.0 - exp(-depth * 2.0 * (1.0 + uv.y));
   col = mix(col, vec3<f32>(0.5, 0.55, 0.6), haze * 0.4);
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
   col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
 
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
   col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
   col = acesToneMap(col * 1.2);
-  let alpha = exposed * weather * (1.0 - haze * 0.5);
+  let alpha = exposed * weather * (1.0 - haze * 0.5) + quake * 0.18 + held * exp(-pointerDist * 8.0) * 0.1;
   let a = clamp(alpha, 0.0, 1.0);
   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(col * a, a));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(mix(0.2, 0.9, depth * (1.0 - wet * 0.3)), 0.0, 0.0, 0.0));

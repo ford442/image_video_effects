@@ -12027,6 +12027,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "tesseract-rotation-speed",
+        "name": "Tesseract Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "swarm-density",
+        "name": "Swarm Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "voxel-tearing-intensity",
+        "name": "Voxel Tearing Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "iridescence-shift",
+        "name": "Iridescence Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -12096,6 +12134,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "bolt-intensity",
+        "name": "Bolt Intensity",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "flicker-speed",
+        "name": "Flicker Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "symmetry",
+        "name": "Symmetry",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color-shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -12157,6 +12233,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "stroke-density",
+        "name": "Stroke Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "ink-width",
+        "name": "Ink Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "neon-mode",
+        "name": "Neon Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -12222,6 +12336,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "stroke-density",
+        "name": "Stroke Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "curvature",
+        "name": "Curvature",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "garden-scale",
+        "name": "Garden Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "ink-neon",
+        "name": "Ink / Neon",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -12286,6 +12438,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "erosion-depth",
+        "name": "Erosion Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "layer-density",
+        "name": "Layer Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "mineral-veins",
+        "name": "Mineral Veins",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "water-level",
+        "name": "Water Level",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -12345,6 +12535,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "current-speed",
+        "name": "Current Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "tentacle-density",
+        "name": "Tentacle Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "bioluminescence-glow",
+        "name": "Bioluminescence Glow",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "water-murkiness",
+        "name": "Water Murkiness",
+        "default": 0.8,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -12416,6 +12644,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "petal-complexity",
+        "name": "Petal Complexity",
+        "default": 3,
+        "min": 1,
+        "max": 10,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "aurora-intensity",
+        "name": "Aurora Intensity",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "audio-reactivity",
+        "name": "Audio Reactivity",
+        "default": 1.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "pollen-density",
+        "name": "Pollen Density",
+        "default": 5,
+        "min": 0,
+        "max": 10,
+        "step": 0.5,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -12523,6 +12789,44 @@
         "uniform": "zoom_params.w"
       }
     ],
+    "params": [
+      {
+        "id": "crystal-complexity",
+        "name": "Crystal Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "audio-reactivity-scale",
+        "name": "Audio Reactivity Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "iridescence-shift",
+        "name": "Iridescence Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "orbital-debris-density",
+        "name": "Orbital Debris Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -12598,6 +12902,49 @@
         "step": 0.05
       }
     ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "manta-speed",
+        "name": "Manta Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "bio-luminescence-intensity",
+        "name": "Bio-Luminescence Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "wing-ripple-frequency",
+        "name": "Wing Ripple Frequency",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "dark-matter-density",
+        "name": "Dark Matter Density",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -12649,6 +12996,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "flutter-speed",
+        "name": "Flutter Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "aura-intensity",
+        "name": "Aura Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "pollen-density",
+        "name": "Pollen Density",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {

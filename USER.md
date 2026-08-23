@@ -10,6 +10,15 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
+- **Optical / Glass / Prism / Crystal / Lens Batch (2026-08-23):** Upgraded
+  bubble-lens, crystal-facets, cyber-lens, fractal-glass-distort,
+  glass-brick-distortion, glass-brick-wall, infinite-zoom-lens,
+  liquid-prism, luma-glass, and luminescent-glass-tiles under the full
+  13-binding / ACES / semantic alpha / A-authoritative / exact C loads /
+  three-band plasmaBuffer / guarded extraBuffer[133..138] contract with
+  byte-exact saved params. Naga 10/10, workgroups 16x16, all 4 sliders live,
+  Jest 84/84 (559 pass), and production build green; real-GPU visual QA
+  remains external.
 - **Optical / Glass / Holographic / Crystal Batch (2026-08-23):** Upgraded
   holographic-projection, holographic-projection-gpt52, holographic-flicker,
   holographic-sticker, alpha-multi-layer-glass, anamorphic-caustic-flare,
@@ -213,4 +222,7 @@ Format specification:
   literal ten supplied IDs, full 13-binding/ACES/semantic-alpha/exact-C/A-only
   contract, three-band plasma audio, bounded [133..138] state, preserved
   interaction, Naga-clean WGSL, and four named params in every JSON definition.
+- When a supplied shader list is discovered to contain invented IDs, stop and
+  verify against the live catalog; the user will provide real IDs rather than
+  authorizing substitutions or accidental net-new catalog entries.
 </IMPORTANT_REMINDER>
