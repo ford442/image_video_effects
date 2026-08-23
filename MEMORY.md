@@ -1,5 +1,20 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
+## 2026-08-23 — Remaining fluid / paint / reaction / slime batch requested
+
+- Scope: alpha-fluid-simulation-paint, chromatographic-fluid,
+  sim-heat-haze-field, sim-slime-mold-growth, sim-slime-mold-growth-em,
+  slime-mold-on-video, gray-scott-tank, spec-runge-kutta-advection,
+  painterly-oil-bilateral, and cyber-ripples-coupled.
+- Preserve saved params and apply canonical exact-C, A-only, ACES, semantic
+  alpha, three-band plasma audio, bounded `[133..138]` state, full pointer/click
+  interaction, and Naga-clean requirements across all 17 WGSL members.
+- Completed as Batch 70. Chromatographic and Gray-Scott retain seven/six graph
+  dispatches with A-only handoffs. All 17 WGSL files pass Naga 30.0.1; params,
+  focused contracts, graph tests, Jest, catalogs, and build are green. EM Slime
+  no longer corrupts pixel `(0,0)` with pointer state; Cyber's abstract-literal
+  Naga failure is repaired. Real-GPU stability/visual QA remains external.
+
 **Last updated:** 2026-08-23 (remaining liquid core + ferro/fluid cohort + Batch 60)
 
 ## 2026-08-23 — Merged shader upgrade branches into main

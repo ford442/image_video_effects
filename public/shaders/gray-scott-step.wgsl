@@ -36,6 +36,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
   let uv = (vec2<f32>(pixel) + 0.5) / res;
@@ -43,7 +44,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Classic Gray–Scott ranges (spots / stripes), sliders 0–1.
   let F = mix(0.022, 0.058, u.zoom_params.x) + bass * 0.004;
   let K = mix(0.051, 0.065, u.zoom_params.y) + (mouse.x - 0.5) * 0.004 + treble * 0.002;
-  let Du = mix(0.12, 0.22, u.zoom_params.z);
+  let Du = mix(0.12, 0.22, u.zoom_params.z) * (1.0 + mids * 0.12);
   let Dv = Du * 0.5;
   let dt = 0.85;
 

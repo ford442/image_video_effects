@@ -53,6 +53,24 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     return rgb + vec3(m);
 }
 
+fn loadState(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+    let hi = vec2<i32>(res) - vec2<i32>(1);
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0);
+}
+
+fn loadStateLinear(uv: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+    let p = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * res - 0.5;
+    let i = vec2<i32>(floor(p));
+    let f = fract(p);
+    let a = mix(loadState(i, res), loadState(i + vec2<i32>(1, 0), res), f.x);
+    let b = mix(loadState(i + vec2<i32>(0, 1), res), loadState(i + vec2<i32>(1, 1), res), f.x);
+    return mix(a, b, f.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -64,7 +82,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
 
     // Read previous simulation state from dataTextureC
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = loadState(coord, res);
     var vel = prevState.rg;
     var pressure = prevState.b;
     var density = prevState.a;
@@ -75,19 +93,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // === ADVECTION (semi-Lagrangian backtrace) ===
     let backtraceUV = clamp(uv - vel * dt, vec2<f32>(0.0), vec2<f32>(1.0));
-    let advected = textureSampleLevel(dataTextureC, u_sampler, backtraceUV, 0.0);
+    let advected = loadStateLinear(backtraceUV, res);
     vel = advected.rg;
     density = advected.a;
 
     // === DIFFUSION (viscosity now seasonal) ===
     // bass = thicker fluid (honey), treble = thinner (water)
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let visc = mix(0.0008f, 0.0022f, u.zoom_params.x) * (0.6 + bass * 0.7 - treble * 0.4);
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = loadState(coord + vec2<i32>(-1, 0), res);
+    let right = loadState(coord + vec2<i32>(1, 0), res);
+    let down = loadState(coord + vec2<i32>(0, -1), res);
+    let up = loadState(coord + vec2<i32>(0, 1), res);
     vel += visc * (left.rg + right.rg + down.rg + up.rg - 4.0 * vel);
 
     // === PRESSURE PROJECTION (single Jacobi step) ===
@@ -116,18 +135,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // === MOUSE FORCE ===
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
-    let mouseDist = length(uv - mousePos);
+    let aspect = res.x / res.y;
+    let mouseDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
     let mouseInfluence = smoothstep(0.15, 0.0, mouseDist);
-    let mouseForce = normalize(uv - mousePos + vec2<f32>(0.0001)) * mouseInfluence * -0.3 * mouseDown;
-    vel += mouseForce * dt * 15.0;
+    let mouseForce = normalize(uv - mousePos + vec2<f32>(0.0001)) * mouseInfluence * -0.3;
+    vel += mouseForce * dt * (2.0 + mouseDown * 13.0) * (1.0 + mids * 0.5);
+    density += mouseInfluence * (0.004 + mouseDown * 0.08) * (1.0 + bass * 0.4);
 
     // === RIPPLE DYE INJECTION ===
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
-        let rippleDist = length(uv - ripple.xy);
+        let rippleDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
         let age = u.config.x - ripple.z;
-        if (age < 2.0 && rippleDist < 0.08) {
+        if (age >= 0.0 && age < 2.0 && rippleDist < 0.16) {
             let inject = smoothstep(0.08, 0.0, rippleDist) * max(0.0, 1.0 - age * 0.5);
             density += inject * 0.5;
             // Inject velocity from ripple center
@@ -148,10 +169,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let speed = length(vel);
     let hue = atan2(vel.y, vel.x) / 6.283185307 + 0.5;
     let sat = smoothstep(0.0, 0.02, speed) * 0.8;
-    let val = density * u.zoom_params.y * 1.5 + 0.15;
-    let displayColor = hsv2rgb(vec3<f32>(hue, sat, min(val, 1.0)));
+    let val = density * u.zoom_params.y * (1.5 + bass * 0.5) + 0.15;
+    var displayColor = hsv2rgb(vec3<f32>(fract(hue + mids * 0.08), sat, val));
+    displayColor += vec3<f32>(0.25, 0.65, 1.0) * abs(curl) * treble * 0.25;
+    displayColor = acesToneMap(displayColor);
 
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, density));
+    let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    let alpha = clamp(sourceAlpha * 0.35 + 1.0 - exp(-density * 1.4), 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(displayColor, alpha));
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
