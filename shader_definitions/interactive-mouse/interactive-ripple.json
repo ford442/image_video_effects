@@ -3,7 +3,7 @@
   "name": "Interactive Ripple",
   "category": "interactive-mouse",
   "url": "shaders/interactive-ripple.wgsl",
-  "description": "2D wave equation solver with dispersion and Huygens wavelet superposition. Chromatic dispersion on ripple crests, caustic highlights in constructive interference zones, HDR bloom, subsurface scattering, and boundary reflection damping.",
+  "description": "Analytic Huygens wavelet field with interference lattices, traveling crest packets, held-pointer pressure, click ripples, and thin-film spectral color; it is not a stateful PDE solver.",
   "params": [
     {
       "id": "amplitude",
@@ -38,7 +38,12 @@
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "wave"
+    "wave",
+    "continuous-motion",
+    "click-reactive",
+    "held-pointer",
+    "psychedelic-color",
+    "analytic-wave-field"
   ],
   "tags": [
     "ripple",
@@ -49,5 +54,40 @@
     "dispersion",
     "caustics",
     "huygens"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Wave Height",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Wave Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Damping",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

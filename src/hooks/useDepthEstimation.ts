@@ -87,6 +87,7 @@ export function useDepthEstimation({
           setStatus(msg);
         },
         onStateChange: setLoadState,
+        rendererDeviceActive: !!rendererRef.current?.getDevice(),
       });
 
       setDepthEstimator(() => pipeline);

@@ -2,7 +2,7 @@
   "id": "voronoi-chaos",
   "name": "Voronoi Chaos",
   "url": "shaders/voronoi-chaos.wgsl",
-  "description": "Breaks the image into Voronoi cells that shift chaotically based on time and mouse proximity.",
+  "description": "Agitated cellular refraction: F1/F2 seam tracking turns each Voronoi cell into a bevelled glass facet whose border normal refracts and chromatically splits the image, and every cell is assigned one of the eight FFT bins so the mosaic breaks up frequency by frequency. Held pointer strengthens repulsion; clicks send bounded shatter fronts. Seam energy persists through dataTextureC.",
   "params": [
     {
       "name": "Cell Scale",
@@ -38,11 +38,64 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "edge-refraction",
+    "chromatic-dispersion",
+    "temporal-seam-glow"
   ],
   "tags": [
     "warp",
     "distort",
-    "transform"
+    "transform",
+    "voronoi",
+    "cellular",
+    "refraction",
+    "glass"
+  ],
+  "updatedParams": [
+    {
+      "name": "Cell Scale",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "id": "cell_scale",
+      "description": "Voronoi grid frequency (4\u201324 cells across)."
+    },
+    {
+      "name": "Chaos Amount",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "id": "chaos_amount",
+      "description": "Pointer repulsion and jitter gain; bass, hold and click fronts add on top."
+    },
+    {
+      "name": "Color Mix",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "id": "color_mix",
+      "description": "Blend between the refracted image sample and the per-cell ID tint."
+    },
+    {
+      "name": "Center Dot Size",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "default": 0.2,
+      "id": "center_dot_size",
+      "description": "Radius of the dark marker at each cell centre."
+    }
   ]
 }

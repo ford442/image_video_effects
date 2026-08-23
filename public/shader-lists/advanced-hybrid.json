@@ -5217,40 +5217,7 @@
       "raymarched",
       "temporal"
     ],
-    "params": [
-      {
-        "id": "complexity",
-        "name": "Ring Complexity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "speed",
-        "name": "Orbital Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "glow",
-        "name": "Glow Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "audio",
-        "name": "Audio Reactivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "params": []
   },
   {
     "id": "gen-audio-spirograph-julia",
@@ -5661,44 +5628,7 @@
       "structure-tensor",
       "LIC"
     ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Param 1",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
-      },
-      {
-        "id": "param2",
-        "name": "Param 2",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
-      },
-      {
-        "id": "param3",
-        "name": "Param 3",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
-      },
-      {
-        "id": "param4",
-        "name": "Param 4",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
-      }
-    ],
+    "params": [],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -6542,7 +6472,10 @@
       "phase-coloring",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "mouse-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -6598,6 +6531,41 @@
       "audio",
       "music",
       "reactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fringe Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Coherence Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reconstruction Angle",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {

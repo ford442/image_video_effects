@@ -1,6 +1,104 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-17 (black flicker — timestamp query resolve)
+**Last updated:** 2026-08-23 (Batch 58C)
+
+## 2026-08-23 — Shader upgrade Batch 58C — HOLOGRAPHIC & QUANTUM
+
+- Upgraded ten shaders: holographic-interferometry, holographic-projection,
+  quantum-smear, quantum-wormhole, quantum-foam, holographic-entropy-vortex,
+  holographic_interference, holographic-shatter, holographic-sticker, quantum-cursor.
+- Fixed interferometry fake-audio (`config.y` ripple-count collision); rebuilt
+  projection as holo projector; repaired quantum-smear/wormhole zoom_config
+  hijacks; quantum-foam 8×8→16×16.
+- Cohort standard: held-pointer, capped ripples, plasmaBuffer audio + bins,
+  textureLoad on C, semantic alpha, dataTextureA writes. Gate 10/10; Jest
+  84/84 (550 pass); build green. Real-GPU QA external.
+
+## 2026-08-23 — Shader upgrade Batch 58E — INTERACTIVE COHORT
+
+- Upgraded tracker #491–500: interactive-emboss, film-burn, fisheye, fresnel,
+  glitch-brush, glitch-cubes, halftone-spin, kuwahara, magnetic-ripple, origami.
+- Source `params` exact. Held-drag, capped clicks, oil-slick color, exact C
+  loads. Existing extraBuffer springs kept (0,0 writer). A packing documented
+  per shader. Gate 10/10 naga+bindgroup. Real-GPU QA remains external.
+
+## 2026-08-23 — Unique alternate-branch upgrades unioned onto main
+
+- Fast-forwarded local `main` to `origin/main` (already had #1105, #1132, #1137).
+- Copied unique positive Batch 56 WGSL/JSON from `cursor/effect-shaders-complexity-8594` (#1136, dirty/unmergeable) without reverting #1137 or Batch 57 `fractal-kaleidoscope`.
+- Kept: chromatic-focus, cmyk-halftone, cyber-slit-scan, heat-haze-gpt52, hyb-spectral-fbm-displace, infinite-zoom-lens, liquid-warp-interactive, phosphor-magnifier, quantum-prism, rgb-iso-lines, sphere-projection, warp_drive.
+- Dropped: chrono branch (conflict-marker deletions vs main), claude weekly-plan-only branches (already landed as #1133), cursor `ascii-shockwave` (main #1137 version is the fuller upgrade).
+- Resolved leftover `<<<<<<<` from earlier landings in `gen-abyssal-plasma-void-medusa` and `gen-chrono-kinetic-fractal-engine` (JSON now canonical `params`/`updatedParams`).
+- #1126 device-adoption WIP remains stashed as `wip-1126-and-local-before-branch-union`.
+
+## 2026-08-23 — Shader upgrade Batch 57 — KINETIC IMAGE TRANSFORMATIONS
+
+- Upgraded tracker #483–490: Pixel Sort Radial, Mirror Drag, Psychedelic Noise
+  Flow, Neon Flashlight, ASCII Flow, Temporal Distortion Field, Pixel Drag
+  Smear, and Fractal Kaleidoscope.
+- Added continuous shader-specific geometry, held-pointer deformation, capped
+  click fronts, psychedelic color, and truthful three-band audio. Wired all
+  previously dead ASCII/Fractal controls plus Pixel Drag mode and Temporal
+  Distortion depth weight.
+- Replaced filtered rgba32float history reads with bounded exact loads in Mirror
+  Drag, Temporal Distortion, and Pixel Drag; preserved display-RGBA A ownership,
+  unused B, canonical bindings, and zero `extraBuffer` access.
+- Proof: focused gate 8/8 (Naga unavailable), params exact 8/8, strict focused
+  buffer/dead-slider audits clean, TypeScript clean, Jest 81/81 (545 pass,
+  1 skip), production build green. Real-GPU visual QA remains external.
+
+## 2026-08-23 — Shader upgrade Batch 56 — INTERACTIVE COMPLEXITY
+
+- Upgraded tracker #475–482: CMYK Halftone Interactive, Cyber Slit Scan,
+  Interactive Ripple, Phosphor Magnifier, Vertical Slice Wave, Chromatic Focus,
+  Quantum Prism, and Matrix Curtain.
+- Added shader-specific geometry, continuous motion, psychedelic color,
+  three-band audio, held-pointer response, and click loops capped at 50 while
+  preserving all saved `params`, canonical bindings, unused B, and no
+  `extraBuffer` access.
+- Deliberate feedback corrections: Phosphor Magnifier A now stores display RGBA
+  for truthful afterimages; Vertical Slice Wave A stays envelope/spring/velocity
+  state and is no longer read as RGB/alpha history. Ripple is documented as an
+  analytic Huygens field and Matrix occupancy as Conway-inspired.
+- Proof: focused structural gate 8/8 (Naga binary absent), strict cohort buffer
+  and dead-slider audits pass, params exact 8/8, catalogs/URLs/uniforms clean,
+  TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build green.
+  Real-GPU visual QA remains external.
+
+## 2026-08-21 — WASM `getGPUTimings` bridge ABI
+
+- JS SoT is **`src/wasm/bridge/*.js`**. `concat_bridge.sh` copies src → `wasm_renderer/bridge` + `public/wasm/bridge`. Editing `wasm_renderer/bridge` gets overwritten. JS-only: no emcc; Playwright still needs a CRA rebuild.
+- Do **not** change C++ `getGPUTimings` to a JSON string. Match out-params via `_malloc` / `ccall` / `getValue` / `_free`. Never return `{}` — always the `GPUTimings` shape (`timingSource` synthesized in JS).
+
+## 2026-08-21 — Progress audit: foundation residual before next content
+
+- Catalog ~1,343 defs / ~1,366 WGSL / manifest ~1,328; thumbs ~353 PNGs (~27%
+  nominal, ~21% healthy). Renderer modularization, GraphRunner Physics Lab set 1,
+  gpu-chores kit, TS 5.4, format-tier *types*, and WASM init ladder are in tree.
+- Open board was only #1080 (WASM real-GPU promotion/demotion) and #1111
+  (thumbnail regression gate). #1111 body is stale: `thumbs:check-regression`
+  exists and runs on PRs, but still lacks deferrals, skip/integrity eligibility,
+  and set-difference `newlyEligible` (comment posted).
+- **Strategic call: build foundation, not another generative swarm.**
+  - Adapter ladder / opaque canvas / limits JSON / B→C then A→C: **leave alone**.
+  - WASM stays Tier B; no GraphRunner C++ port until #1080.
+  - CRA+CRACO stays; Vite deferred.
+- Filed **#1123–#1129**:
+  1. #1123 WASM compile SoT (CMake export drift; C++ cannot request subgroups —
+     `requiredFeatures[2]`; scanner feature set is a third variant)
+  2. #1124 rgba16float tiers real (`probeFormatCapabilities` hardcodes true;
+     C++ `writeTexture` always fp32 bytesPerRow)
+  3. #1125 bridge SoT is `src/wasm` (concat copies src→wasm_renderer); drop
+     unused `react-app-rewired` / `customize-cra` / `webpack-cli`; TS the JS glue
+  4. #1126 second devices: ShaderValidator/Scanner + depth `requestAdapter`
+  5. #1127 gpu-chores opt-in auto-exposure on catalog source (not just 64×64 preview)
+  6. #1128 catalog hygiene (hyphen/underscore ids, graph parents, 44 leftover 8×8,
+     parseWorkgroupSize fallback 8×8 vs canonical 16×16)
+  7. #1129 later: Physics Lab set 2 (DLA, Kuwahara, Droste, ecology, Poincaré,
+     byte-mosh) + audio mapping for **all slots** / simulation graphs
+     (`useAudioReactiveParams` is slot-0 generative only)
+- Audio-reactive slider mapping **exists** but is opt-in and slot-0/generative-only.
+- Attract mode + Physics Lab chip already exist.
 
 ## 2026-08-17 — Repeating black present flicker (timestamp queries)
 
@@ -737,3 +835,27 @@
   accepts `--require-priority` for GPU-workstation enforcement.
 - Current VM proof: nominal 349/1,324 (26.4%), healthy 272/1,323 (20.6%),
   priority 20/21 (95.2%); capture remains blocked until discrete-GPU access.
+
+## Shader upgrade Batches 53–54 (2026-08-21)
+
+- Tracker #455–470 is complete in two sequential, independently gated cohorts:
+  Batch 53 Fast Motion Encore and Batch 54 Psychedelic Upgrade. Preserve their
+  closeouts separately when auditing or reporting.
+- Batch 54's intentional contract repairs are Tile Twist A
+  `[bassEnvelope, trailRGB]` plus corrected Tile Size/Twist mapping, and Polar
+  Warp A `[bassEnvelope, mouseX, mouseY, alpha]` with no RGB-history read. B is
+  unused throughout Batch 54; no extraBuffer access was introduced.
+- Current committed baseline has malformed
+  `shader_definitions/generative/gen-chrono-kinetic-fractal-engine.json`.
+  Generators skip it and Jest catalog hygiene fails on it; do not attribute that
+  pre-existing defect to Batches 53, 54, or 55. Structural/build gates pass, but
+  psychedelic identity and motion/trail acceptance still require a real GPU.
+
+## Shader upgrade Batch 55 (2026-08-21)
+
+- Tracker #471–474: Kaleido-Scope Prism grokcf1, RGB Topology, Elastic Strip,
+  Refraction Tunnel. Geometry detail + fast motion + psychedelic color.
+- Kaleido 8x8→16x16; origin A `[env, springXY, vel]`; topology mask A
+  preserved; B unused; no extraBuffer writes. Tunnel no longer uses
+  `floor(time)` hash caustics.
+- Structural proof 4/4; visual QA remains real-GPU workstation work.

@@ -87,14 +87,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
+    let intensity = u.zoom_params.x;
+    let speed = mix(0.1, 2.5, u.zoom_params.y);
+    let scale = mix(24.0, 120.0, u.zoom_params.z);
+    let detail = mix(1.0, 6.0, u.zoom_params.w);
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Grid Setup
-    let grid_dims = vec2<f32>(80.0, 45.0); // Characters
+    let grid_dims = vec2<f32>(scale, scale * resolution.y / resolution.x);
     let cell_uv = fract(uv * grid_dims);
     let cell_id = floor(uv * grid_dims);
 
     // Flow Field
-    let noise = hash22(cell_id * 0.1 + vec2<f32>(time * 0.1));
+    let noise = hash22(cell_id * 0.1 + vec2<f32>(time * speed * (0.1 + audio.y * 0.08)));
     var flow = (noise - 0.5) * 2.0; // Direction
 
     // Mouse Interaction
@@ -104,8 +109,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dist_mouse = length(to_mouse);
 
     // Repel from mouse
-    let repel = normalize(to_mouse) * smoothstep(0.3, 0.0, dist_mouse);
-    flow += repel * 2.0;
+    let repel = to_mouse / max(dist_mouse, 0.001) * smoothstep(0.3, 0.0, dist_mouse);
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    let vortex = vec2<f32>(-repel.y, repel.x) * held;
+    flow += repel * (1.0 + intensity * 2.0) + vortex * detail;
+
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length(uv - event.xy) - age * 0.4) * 60.0);
+    }
 
     // Sample texture at offset position (simulate flow source)
     // We sample 'upstream'
@@ -117,12 +132,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let num_glyphs = 8;
     let glyph_idx = i32(gray * f32(num_glyphs));
 
-    let shape = draw_glyph(cell_uv, glyph_idx);
+    let scanGlyph = sin((cell_uv.x + cell_uv.y) * detail * 6.283 + time * speed * 2.0) * 0.5 + 0.5;
+    let shape = draw_glyph(cell_uv, glyph_idx) * mix(0.65, 1.0, scanGlyph);
 
     // Green phosphor look or keep original color?
     // Let's do a mix: Tint green but keep some hue.
-    let tint = vec3<f32>(0.2, 1.0, 0.4);
-    let final_color = mix(color, tint, 0.7) * shape;
+    let tint = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + gray * 5.0 + time * (0.3 + audio.z));
+    let final_color = mix(color, tint, 0.45 + intensity * 0.4) * shape * (1.0 + audio.x * 0.35) + tint * clickFront * 0.3;
 
     // Sample depth for alpha calculation
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

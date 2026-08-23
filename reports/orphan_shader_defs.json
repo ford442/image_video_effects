@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-08-15T12:42:43.004087+00:00",
-  "definitions_scanned": 1340,
-  "wgsl_files_scanned": 1362,
+  "timestamp": "2026-08-23T01:03:19.135666+00:00",
+  "definitions_scanned": 1345,
+  "wgsl_files_scanned": 1367,
   "manifests": {
     "shader_coordinates": "public/shader_coordinates.json",
     "shader_coordinates_count": 645,
@@ -9,14 +9,14 @@
     "seed_shaders_count": 20
   },
   "summary": {
-    "local": 1340,
+    "local": 1345,
     "storage-only": 0,
     "allowlisted": 0,
     "likely-broken": 0,
     "parse-error": 0
   },
   "wgsl_summary": {
-    "cataloged": 1337,
+    "cataloged": 1342,
     "template-prefix": 4,
     "subgroup-variant": 0,
     "multipass-secondary": 21,
@@ -3566,6 +3566,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-abyssal-plasma-void-medusa",
+      "def_path": "shader_definitions/generative/gen-abyssal-plasma-void-medusa.json",
+      "expected_wgsl": "gen-abyssal-plasma-void-medusa.wgsl",
+      "local_path": "public/shaders/gen-abyssal-plasma-void-medusa.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-abyssal-quantum-leviathan-skeleton",
       "def_path": "shader_definitions/generative/gen-abyssal-quantum-leviathan-skeleton.json",
       "expected_wgsl": "gen-abyssal-quantum-leviathan-skeleton.wgsl",
@@ -4086,6 +4096,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-chrono-kinetic-fractal-engine",
+      "def_path": "shader_definitions/generative/gen-chrono-kinetic-fractal-engine.json",
+      "expected_wgsl": "gen-chrono-kinetic-fractal-engine.wgsl",
+      "local_path": "public/shaders/gen-chrono-kinetic-fractal-engine.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-chrono-kitsune-prism-weaver",
       "def_path": "shader_definitions/generative/gen-chrono-kitsune-prism-weaver.json",
       "expected_wgsl": "gen-chrono-kitsune-prism-weaver.wgsl",
@@ -4293,6 +4313,16 @@
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": true,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-cybernetic-aether-moth-chrysalis",
+      "def_path": "shader_definitions/generative/gen-cybernetic-aether-moth-chrysalis.json",
+      "expected_wgsl": "gen-cybernetic-aether-moth-chrysalis.wgsl",
+      "local_path": "public/shaders/gen-cybernetic-aether-moth-chrysalis.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
       "in_seed_shaders": false
     },
     {
@@ -6226,6 +6256,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-quantum-mycelial-neural-web",
+      "def_path": "shader_definitions/generative/gen-quantum-mycelial-neural-web.json",
+      "expected_wgsl": "gen-quantum-mycelial-neural-web.wgsl",
+      "local_path": "public/shaders/gen-quantum-mycelial-neural-web.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-quantum-mycelium",
       "def_path": "shader_definitions/generative/gen-quantum-mycelium.json",
       "expected_wgsl": "gen-quantum-mycelium.wgsl",
@@ -6630,6 +6670,16 @@
       "def_path": "shader_definitions/generative/gen-stardust-nebula.json",
       "expected_wgsl": "gen-stardust-nebula.wgsl",
       "local_path": "public/shaders/gen-stardust-nebula.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-stellar-acoustic-resonance-manifold",
+      "def_path": "shader_definitions/generative/gen-stellar-acoustic-resonance-manifold.json",
+      "expected_wgsl": "gen-stellar-acoustic-resonance-manifold.wgsl",
+      "local_path": "public/shaders/gen-stellar-acoustic-resonance-manifold.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -15168,6 +15218,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-abyssal-plasma-void-medusa.wgsl",
+      "stem": "gen-abyssal-plasma-void-medusa",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-abyssal-quantum-leviathan-skeleton.wgsl",
       "stem": "gen-abyssal-quantum-leviathan-skeleton",
       "classification": "cataloged"
@@ -15468,6 +15523,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-chrono-kinetic-fractal-engine.wgsl",
+      "stem": "gen-chrono-kinetic-fractal-engine",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-chrono-kitsune-prism-weaver.wgsl",
       "stem": "gen-chrono-kitsune-prism-weaver",
       "classification": "cataloged"
@@ -15570,6 +15630,11 @@
     {
       "wgsl": "gen-cyber-terminal.wgsl",
       "stem": "gen-cyber-terminal",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-cybernetic-aether-moth-chrysalis.wgsl",
+      "stem": "gen-cybernetic-aether-moth-chrysalis",
       "classification": "cataloged"
     },
     {
@@ -16538,6 +16603,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-quantum-mycelial-neural-web.wgsl",
+      "stem": "gen-quantum-mycelial-neural-web",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-quantum-mycelium.wgsl",
       "stem": "gen-quantum-mycelium",
       "classification": "cataloged"
@@ -16755,6 +16825,11 @@
     {
       "wgsl": "gen-stardust-nebula.wgsl",
       "stem": "gen-stardust-nebula",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-stellar-acoustic-resonance-manifold.wgsl",
+      "stem": "gen-stellar-acoustic-resonance-manifold",
       "classification": "cataloged"
     },
     {

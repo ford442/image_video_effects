@@ -2,8 +2,39 @@
   "id": "digital-lens",
   "name": "Digital Lens",
   "url": "shaders/digital-lens.wgsl",
-  "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, mouse gravity-well focus, attack/release bass envelope, temporal feedback trails, ACES tone mapping, film grain, and advanced RGBA compositing via depth-layered, luminance-key, and effect-intensity alpha.",
+  "description": "Brown-Conrady digital lens with continuous caustic zoom streaks, spectral radial runners, held gravity-well focus, bounded click iris waves, chromatic dispersion, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+  "updated": true,
   "params": [
+    {
+      "id": "distortion",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "vignette",
+      "name": "Vignette",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "focus",
+      "name": "Focus Point",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updatedParams": [
     {
       "id": "distortion",
       "name": "Distortion",
@@ -43,7 +74,9 @@
     "anamorphic",
     "temporal-feedback",
     "alpha-layered",
-    "luminance-key"
+    "luminance-key",
+    "continuous-motion",
+    "bounded-click-ripples"
   ],
   "tags": [
     "filter",

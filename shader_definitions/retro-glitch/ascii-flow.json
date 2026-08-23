@@ -2,7 +2,13 @@
   "id": "ascii-flow",
   "url": "shaders/ascii-flow.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "continuous-motion",
+    "held-pointer",
+    "click-reactive",
+    "psychedelic-color",
+    "procedural-glyphs"
   ],
   "params": [
     {
@@ -43,5 +49,41 @@
     "retro",
     "vintage"
   ],
-  "name": "ASCII Flow"
+  "name": "ASCII Flow",
+  "description": "Parameterized animated ASCII current with eight procedural glyphs, held pointer vortices, click fronts, three-band audio, and shifting phosphor hues.",
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

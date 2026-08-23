@@ -7,11 +7,15 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 - TypeScript resources: [`src/renderer/webgpu/resources.ts`](../src/renderer/webgpu/resources.ts) (`historyTex`, buffers)
 - C++ layout: [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) (`CreateBindGroupLayout`)
 - Device limits: [`src/contracts/webgpu_limits.json`](../src/contracts/webgpu_limits.json) ↔ [`src/renderer/webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts) ↔ [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp)
+- Optional features: [`src/contracts/webgpu_optional_features.json`](../src/contracts/webgpu_optional_features.json) ↔ [`collectOptionalDeviceFeatures`](../src/renderer/webgpu/device.ts) ↔ `device.cpp` `requiredFeatures[3]`
+- WASM exports: [`src/contracts/wasm_exports.json`](../src/contracts/wasm_exports.json) (build.sh + CMake)
 - WGSL authoring: [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md)
 - Uniforms layout: [`src/contracts/uniforms_layout.json`](../src/contracts/uniforms_layout.json) ↔ [`src/renderer/UniformBuffer.ts`](../src/renderer/UniformBuffer.ts) ↔ [`wasm_renderer/renderer.h`](../wasm_renderer/renderer.h)
 - CI sync checks: `npm run verify:device-policy`, `npm run verify:uniforms`
 - Pre-FX analysis (not this bind group): [`docs/GPU_CHORES.md`](GPU_CHORES.md) — Tier 4b gpu-chores on the **same** `GPUDevice`
 - Boot probe / hard-fail (WebGPU required, no WebGL fallback): [`docs/WEBGPU_BOOT_PROBE.md`](WEBGPU_BOOT_PROBE.md)
+
+**One renderer `GPUDevice`:** the boot probe owns the sole `requestAdapter`/`requestDevice` for catalog rendering, gpu-chores, ShaderValidator, and ShaderScanner. Lazy depth (`@xenova/transformers`) prefers WASM/CPU while that device is live — Transformers may still allocate internally when `device:'webgpu'` is selected.
 
 ## Naming
 

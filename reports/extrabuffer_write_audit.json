@@ -1,6 +1,6 @@
 {
-  "generated": "2026-08-16T00:23:14.193255+00:00",
-  "files_scanned": 1359,
+  "generated": "2026-08-23T01:27:15.282557+00:00",
+  "files_scanned": 1363,
   "new_violations": [],
   "known_violations": [
     {
@@ -1090,14 +1090,6 @@
       "op": "=",
       "index": 6,
       "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/waveform-glitch.wgsl",
-      "line": 172,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
     }
   ],
   "dynamic_writes": 33,

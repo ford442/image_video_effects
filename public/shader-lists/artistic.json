@@ -3116,7 +3116,7 @@
     "id": "mosaic-reveal",
     "name": "Mosaic Reveal",
     "url": "shaders/mosaic-reveal.wgsl",
-    "description": "Mosaic reveal with hexagonal/square grids, flood-fill reveal from the mouse, OkLab perceptual blending, audio-reactive blackbody rim glow, temporal trails, ACES tone mapping, and advanced layered alpha compositing.",
+    "description": "Hexagonal or square mosaic reveal with opposing tile conveyors, smooth flood runners, held-pointer expansion, bounded click reveal fronts, OkLab blending, audio-reactive rim glow, and preserved A/C display history.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -3129,9 +3129,43 @@
       "audio-reactive",
       "oklab-mixing",
       "temporal-feedback",
-      "aces-tone-map"
+      "aces-tone-map",
+      "continuous-motion",
+      "bounded-click-ripples",
+      "held-drag"
     ],
+    "updated": true,
     "params": [
+      {
+        "id": "cellSize",
+        "name": "Cell Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "revealSpeed",
+        "name": "Reveal Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edgeGlow",
+        "name": "Edge Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "gridType",
+        "name": "Grid Type",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "cellSize",
         "name": "Cell Size",
@@ -4265,7 +4299,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -4298,6 +4333,41 @@
       },
       {
         "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -4372,7 +4442,10 @@
     "url": "shaders/quantum-smear.wgsl",
     "description": "Quantum particle disintegration with stochastic advection and pointillist effects.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -4411,6 +4484,41 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -4419,7 +4527,10 @@
     "url": "shaders/quantum-wormhole.wgsl",
     "description": "Wormhole-like spacetime distortion effects.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -4452,6 +4563,41 @@
       },
       {
         "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,

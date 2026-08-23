@@ -1,8 +1,72 @@
 {
-  "generated": "2026-08-16T00:23:14.912185+00:00",
-  "defs_scanned": 1029,
-  "defs_with_params": 1029,
-  "new_dead_sliders": [],
+  "generated": "2026-08-23T01:40:48.232695+00:00",
+  "defs_scanned": 1032,
+  "defs_with_params": 1031,
+  "new_dead_sliders": [
+    {
+      "id": "gen-astro-orrery-blackbody",
+      "category": "advanced-hybrid",
+      "param_id": "complexity",
+      "name": "Ring Complexity",
+      "field": "x"
+    },
+    {
+      "id": "gen-astro-orrery-blackbody",
+      "category": "advanced-hybrid",
+      "param_id": "speed",
+      "name": "Orbital Speed",
+      "field": "y"
+    },
+    {
+      "id": "gen-astro-orrery-blackbody",
+      "category": "advanced-hybrid",
+      "param_id": "glow",
+      "name": "Glow Intensity",
+      "field": "z"
+    },
+    {
+      "id": "gen-astro-orrery-blackbody",
+      "category": "advanced-hybrid",
+      "param_id": "audio",
+      "name": "Audio Reactivity",
+      "field": "w"
+    },
+    {
+      "id": "gen-string-theory-structure",
+      "category": "advanced-hybrid",
+      "param_id": "param1",
+      "name": "Param 1",
+      "field": "x"
+    },
+    {
+      "id": "gen-string-theory-structure",
+      "category": "advanced-hybrid",
+      "param_id": "param2",
+      "name": "Param 2",
+      "field": "y"
+    },
+    {
+      "id": "gen-string-theory-structure",
+      "category": "advanced-hybrid",
+      "param_id": "param3",
+      "name": "Param 3",
+      "field": "z"
+    },
+    {
+      "id": "gen-string-theory-structure",
+      "category": "advanced-hybrid",
+      "param_id": "param4",
+      "name": "Param 4",
+      "field": "w"
+    },
+    {
+      "id": "glitch-pixel-sort",
+      "category": "visual-effects",
+      "param_id": "param4",
+      "name": "Detail",
+      "field": "w"
+    }
+  ],
   "known_dead_sliders": [
     {
       "id": "alucinate-hdr",
@@ -334,13 +398,6 @@
       "field": "z"
     },
     {
-      "id": "vortex-warp",
-      "category": "distortion",
-      "param_id": "turbulence",
-      "name": "Turbulence",
-      "field": "w"
-    },
-    {
       "id": "hyb-chromatic-circuit",
       "category": "hybrid",
       "param_id": "grid_scale",
@@ -467,20 +524,6 @@
       "field": "w"
     },
     {
-      "id": "cyber-slit-scan",
-      "category": "interactive-mouse",
-      "param_id": "hue_shift",
-      "name": "Hue Shift",
-      "field": "z"
-    },
-    {
-      "id": "cyber-slit-scan",
-      "category": "interactive-mouse",
-      "param_id": "unused",
-      "name": "Unused",
-      "field": "w"
-    },
-    {
       "id": "dynamic-halftone",
       "category": "interactive-mouse",
       "param_id": "density",
@@ -590,34 +633,6 @@
       "category": "interactive-mouse",
       "param_id": "mode",
       "name": "Mode",
-      "field": "w"
-    },
-    {
-      "id": "quantum-prism",
-      "category": "interactive-mouse",
-      "param_id": "param1",
-      "name": "Intensity",
-      "field": "x"
-    },
-    {
-      "id": "quantum-prism",
-      "category": "interactive-mouse",
-      "param_id": "param2",
-      "name": "Speed",
-      "field": "y"
-    },
-    {
-      "id": "quantum-prism",
-      "category": "interactive-mouse",
-      "param_id": "param3",
-      "name": "Scale",
-      "field": "z"
-    },
-    {
-      "id": "quantum-prism",
-      "category": "interactive-mouse",
-      "param_id": "param4",
-      "name": "Detail",
       "field": "w"
     },
     {
@@ -1209,34 +1224,6 @@
       "field": "w"
     },
     {
-      "id": "ascii-shockwave",
-      "category": "visual-effects",
-      "param_id": "param1",
-      "name": "Intensity",
-      "field": "x"
-    },
-    {
-      "id": "ascii-shockwave",
-      "category": "visual-effects",
-      "param_id": "param2",
-      "name": "Speed",
-      "field": "y"
-    },
-    {
-      "id": "ascii-shockwave",
-      "category": "visual-effects",
-      "param_id": "param3",
-      "name": "Scale",
-      "field": "z"
-    },
-    {
-      "id": "ascii-shockwave",
-      "category": "visual-effects",
-      "param_id": "param4",
-      "name": "Detail",
-      "field": "w"
-    },
-    {
       "id": "chroma-vortex",
       "category": "visual-effects",
       "param_id": "twist",
@@ -1342,6 +1329,12 @@
       "field": "w"
     }
   ],
-  "errors": [],
+  "errors": [
+    {
+      "id": "gen-luminescent-silica-diatom-swarm",
+      "def": "shader_definitions/generative/gen-luminescent-silica-diatom-swarm.json",
+      "error": "json parse: [Errno 2] No such file or directory: '/home/runner/work/image_video_effects/image_video_effects/shader_definitions/generative/gen-luminescent-silica-diatom-swarm.json'"
+    }
+  ],
   "baseline": "reports/dead_sliders_audit_baseline.json"
 }
