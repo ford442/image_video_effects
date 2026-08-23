@@ -3006,6 +3006,21 @@
   {
     "id": "glitch-ripple-drag",
     "url": "shaders/glitch-ripple-drag.wgsl",
+    "name": "Glitch Ripple Drag",
+    "description": "Spring cursor emits expanding quantized ripple rings that permanently drag and chromatically glitch pixels with exact C feedback, capped click ripples, and audio.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "stateful",
+      "upgraded-rgba",
+      "aces-tone-map"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     "description": "Exact-load liquid glitch feedback with plasma-driven drag, a sprung origin, bounded click ripple trains, chromatic tearing, ACES display output, and semantic trail alpha.",
     "features": [
       "mouse-driven",

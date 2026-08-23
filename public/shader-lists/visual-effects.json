@@ -2583,10 +2583,22 @@
     "id": "signal-modulation",
     "name": "Signal Modulation",
     "url": "shaders/signal-modulation.wgsl",
-    "description": "Simulates AM/FM signal distortion with mouse-controlled frequency and amplitude.",
+    "description": "AM/FM carrier wave with sprung origin, held widen, capped click carrier bursts, honest regional FFT spectral bands, ACES composite.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
-      "visual-effect"
+      "audio-reactive",
+      "visual-effect",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba",
+      "spectral-bands"
     ],
     "params": [
       {
@@ -2595,7 +2607,8 @@
         "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "amp",
@@ -2603,7 +2616,8 @@
         "type": "float",
         "default": 0.1,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "speed",
@@ -2611,7 +2625,8 @@
         "type": "float",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "shift",
@@ -2619,12 +2634,16 @@
         "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "signal",
+      "carrier",
+      "fft"
     ],
     "updatedParams": [
       {

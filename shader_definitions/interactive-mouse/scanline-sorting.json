@@ -2,40 +2,19 @@
   "id": "scanline-sorting",
   "name": "Scanline Sorting",
   "url": "shaders/scanline-sorting.wgsl",
-  "description": "Sorts pixels by luminance within a moving scanline band using a tile-wide early-exit and a shared-memory bitonic sort over local 16-pixel segments. Reacts to audio bass for intensified sorting, applies ACES tone mapping, and preserves depth and semantic alpha.",
+  "description": "Bitonic luminance sort within a sprung scan band: held widen, capped click sort bursts, regional FFT palette overlay, ACES tone map, semantic alpha.",
+  "workgroup_size": [16, 16, 1],
   "params": [
-    {
-      "id": "thresh",
-      "name": "Sort Threshold",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "width",
-      "name": "Scan Width",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "speed",
-      "name": "Auto Speed",
-      "default": 0,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "dir",
-      "name": "Dir (H/V)",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "labels": [
-        "Horizontal",
-        "Vertical"
-      ]
-    }
+    { "id": "thresh", "name": "Sort Threshold", "default": 0.3, "min": 0, "max": 1, "mapping": "zoom_params.x" },
+    { "id": "width", "name": "Scan Width", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.y" },
+    { "id": "speed", "name": "Auto Speed", "default": 0, "min": 0, "max": 1, "mapping": "zoom_params.z" },
+    { "id": "dir", "name": "Dir (H/V)", "default": 0, "min": 0, "max": 1, "labels": ["Horizontal", "Vertical"], "mapping": "zoom_params.w" }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Sort Threshold", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Scan Width", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Auto Speed", "default": 0, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Dir (H/V)", "default": 0, "min": 0, "max": 1, "step": 0.01 }
   ],
   "features": [
     "mouse-driven",
@@ -45,13 +24,12 @@
     "chromatic-edge",
     "upgraded-rgba",
     "aces-tone-map",
-    "early-exit",
-    "branchless",
+    "click-reactive",
+    "held-drag",
+    "spring-cursor",
     "shared-memory",
     "bitonic-sort"
   ],
-  "tags": [
-    "filter",
-    "image-processing"
-  ]
+  "tags": ["filter", "image-processing", "sort", "scanline"],
+  "updated": true
 }

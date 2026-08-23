@@ -1,15 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Byte Mosh Explosion
-//  Category: advanced-hybrid
-//  Features: bitwise-glitch, chromatic-explosion, mouse-driven, ripple
-//  Complexity: Very High
-//  Chunks From: byte-mosh.wgsl, mouse-chromatic-explosion.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-13 — Retro & Glitch Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Bitwise pixel corruption meets chromatic prism explosion. XOR, AND,
-//  shift and rotate operations are applied per-channel with spectral
-//  displacement radiating from mouse and ripple shockwaves.
+//  Byte Mosh Explosion — Batch 62
+//  Bitwise corruption + chromatic prism: spring cursor, held boost,
+//  capped ripples, audio-reactive error rate, ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -81,6 +73,10 @@ fn prismDisplace(uv: vec2<f32>, mousePos: vec2<f32>, wavelengthOffset: f32, stre
   return uv + perpendicular * deflection;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -90,24 +86,57 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   let aspect = f32(size.x) / f32(size.y);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let held = u.zoom_config.w > 0.5;
 
   let operationMix = u.zoom_params.x;
   let bitShift = u32(mix(0.0, 8.0, u.zoom_params.y));
-  let errorRate = mix(0.0, 0.5, u.zoom_params.z);
-  let prismStrength = mix(0.02, 0.12, u.zoom_params.w);
+  let errorRate = mix(0.0, 0.5, u.zoom_params.z) * (1.0 + bass * 0.25);
+  let prismStrength = mix(0.02, 0.12, u.zoom_params.w) * select(1.0, 1.35, held);
 
   let blockSize = max(1.0, mix(1.0, 64.0, u.zoom_params.y));
   let blockCoord = vec2<u32>(u32(floor(f32(coord.x) / blockSize)), u32(floor(f32(coord.y) / blockSize)));
   let blockNoise = hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) + vec2<f32>(floor(time * 2.0)));
   let pixelNoise = hash21(uv * 1000.0 + vec2<f32>(time));
+  let bandBin = (blockCoord.x + blockCoord.y) % 8u + 1u;
+  let fftBlock = plasmaBuffer[bandBin].x;
+  let effectiveError = errorRate * (0.85 + fftBlock * 0.3 + operationMix * 0.15);
 
   let mousePos = u.zoom_config.yz;
-  let mouseDown = u.zoom_config.w;
+  var smoothMouse = mousePos;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (gid.x == 0u && gid.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = mousePos;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 9.0;
+      let accel = (mousePos - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
+  }
+  let mouseDown = select(u.zoom_config.w, 1.0, held);
 
   // ═══ CHROMATIC EXPLOSION SAMPLING ═══
-  let rUV = prismDisplace(uv, mousePos, -1.0, prismStrength);
-  let gUV = prismDisplace(uv, mousePos, 0.0, prismStrength);
-  let bUV = prismDisplace(uv, mousePos, 1.0, prismStrength);
+  let rUV = prismDisplace(uv, smoothMouse, -1.0, prismStrength);
+  let gUV = prismDisplace(uv, smoothMouse, 0.0, prismStrength);
+  let bUV = prismDisplace(uv, smoothMouse, 1.0, prismStrength);
 
   // Ripple chromatic shockwaves
   let rippleCount = min(u32(u.config.y), 50u);
@@ -137,12 +166,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, bUV + bOffset * intensity, 0.0).b;
 
   var sourceColor = vec4<f32>(r, g, b, 1.0);
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depth = textureLoad(readDepthTexture, vec2<i32>(coord), 0).r;
 
-  // ═══ BYTE MOSH ═══
   var packedColor = packRGBA(sourceColor.r, sourceColor.g, sourceColor.b, sourceColor.a);
 
-  if (blockNoise < errorRate) {
+  if (blockNoise < effectiveError) {
     let opSelector = fract(blockNoise * 7.0);
     if (opSelector < 0.15) {
       let xorPattern = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 123.0) * 4294967295.0);
@@ -176,14 +204,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  if (pixelNoise < errorRate * 0.3) {
+  if (pixelNoise < effectiveError * 0.3) {
     let flipMask = u32(pixelNoise * 4294967295.0) & (0xFFu << (bitShift * 4u));
     packedColor = packedColor ^ flipMask;
   }
 
   // Mouse glitch zone
-  let mouseDist = length(uv - mousePos);
-  let mouseInfluence = 0.15;
+  let mouseDist = length((uv - smoothMouse) * vec2<f32>(aspect, 1.0));
+  let mouseInfluence = 0.15 * select(1.0, 1.4, held);
   if (mouseDist < mouseInfluence) {
     let strength = 1.0 - mouseDist / mouseInfluence;
     let mouseGlitch = u32(strength * 255.0);
@@ -192,12 +220,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   // Ripple bit rotations
-  for (var i = 0; i < 50; i = i + 1) {
-    let ripple = u.ripples[i];
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
     if (ripple.z > 0.0) {
       let rippleAge = time - ripple.z;
       if (rippleAge > 0.0 && rippleAge < 1.5) {
-        let dist = length(uv - ripple.xy);
+        let dist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
         let ring = abs(dist - rippleAge * 0.3);
         if (ring < 0.02) {
           let rippleStrength = (1.0 - rippleAge / 1.5);
@@ -211,7 +239,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var finalColor = unpackRGBA(packedColor);
   let scanline = sin(uv.y * f32(size.y) * 3.14159) * 0.1 + 0.9;
 
-  if (blockNoise < errorRate) {
+  if (blockNoise < effectiveError) {
     let flicker = hash11(time * 100.0 + f32(coord.x)) * 0.2 + 0.8;
     finalColor = vec4<f32>(finalColor.rgb * flicker * scanline, finalColor.a * (0.7 + flicker * 0.3));
   }
@@ -220,8 +248,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let glow = exp(-mouseDist * mouseDist * 100.0) * prismStrength * 10.0;
   finalColor = vec4<f32>(finalColor.rgb + vec3<f32>(0.5, 0.3, 0.8) * glow, finalColor.a);
 
+  finalColor.rgb = acesToneMap(finalColor.rgb * (0.96 + mids * 0.05));
+  let alpha = clamp(finalColor.a + glow * 0.15 + bass * 0.05, 0.0, 1.0);
+  finalColor = vec4<f32>(finalColor.rgb, alpha);
   finalColor = clamp(finalColor, vec4<f32>(0.0), vec4<f32>(1.0));
 
   textureStore(writeTexture, vec2<i32>(coord), finalColor);
+  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(f32(packedColor & 0xFFu) / 255.0, effectiveError, glow, alpha));
   textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

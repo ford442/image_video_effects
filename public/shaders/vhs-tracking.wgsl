@@ -1,10 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  VHS Tracking
-//  Category: retro-glitch
-//  Features: upgraded-rgba, depth-aware, audio-reactive
-//  Complexity: High
-//  Scientific: Capstan jitter, head switching, azimuth loss, chroma burst phase drift, and dropout streaks emulate VHS transport physics.
-//  Upgraded: 2026-05-23
+//  VHS Tracking — Batch 62
+//  Capstan jitter + azimuth loss: spring cursor, held tracking pull,
+//  capped dropout ripples, exact C row walk, ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -67,6 +64,10 @@ fn hue_shift(color: vec3<f32>, shift: f32) -> vec3<f32> {
   return color * cs + cross(k, color) * sn + k * dot(k, color) * (1.0 - cs);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -82,20 +83,59 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
   let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
   let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+  let held = u.zoom_config.w > 0.5;
   let mouse = u.zoom_config.yz;
-  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
+
+  var smoothMouse = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = mouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 8.5;
+      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
+  }
+
+  var rippleDrop = 0.0;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.2) {
+      rippleDrop = max(rippleDrop, smoothstep(0.1, 0.0, length((uv - rp.xy) * vec2<f32>(aspect, 1.0))) * (1.0 - age * 0.85));
+    }
+  }
+  let mouseDown = select(clamp(u.zoom_config.w, 0.0, 1.0), 1.0, held);
 
   let rowState = textureLoad(dataTextureC, vec2<i32>(0, coord.y), 0);
   let prevWalk = (rowState.r * 2.0 - 1.0) * 0.02;
   let sigma = (0.00015 + u.zoom_params.x * 0.0012) * (1.0 + bass * 2.5);
   let walk = clamp(0.8 * prevWalk + gaussian_noise(vec2<f32>(f32(coord.y), floor(time * 60.0))) * sigma, -0.02, 0.02);
   let capstan = 0.002 * sin(2.0 * PI * 0.1 * time + f32(coord.y) * 0.03);
-  let mouseTracking = mouseDown * (uv.y - mouse.y) * exp(-abs(uv.y - mouse.y) * 18.0) * (0.02 + bass * 0.035);
+  let mouseTracking = mouseDown * (uv.y - smoothMouse.y) * exp(-abs(uv.y - smoothMouse.y) * 18.0) * (0.02 + bass * 0.035) * select(1.0, 1.4, held);
   let totalOffset = capstan + walk + mouseTracking;
 
   let sampleUV = clamp_uv(uv + vec2<f32>(totalOffset, 0.0));
   let source = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
 
   let thetaAz = u.zoom_params.y * 0.1 * PI / 180.0;
   let azimuthLoss = clamp(1.0 - cos(thetaAz), 0.0, 1.0);
@@ -125,7 +165,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let headNoise = (hash12(vec2<f32>(uv.x * resolution.x * 0.25, floor(time * 180.0))) - 0.5) * headBand;
   color = mix(color, vec3<f32>(0.02) + vec3<f32>(headNoise * 0.2), headBand * 0.9);
 
-  let dropoutRate = clamp(u.zoom_params.z * (1.0 + bass * 1.5), 0.0, 1.0);
+  let dropoutRate = clamp(u.zoom_params.z * (1.0 + bass * 1.5) + rippleDrop * 0.35, 0.0, 1.0);
   let rowDrop = step(1.0 - dropoutRate * 0.08, hash12(vec2<f32>(f32(coord.y), floor(time * 50.0))));
   let seg = step(0.55, hash12(vec2<f32>(floor(uv.x * 18.0), f32(coord.y) + floor(time * 70.0))));
   let dropoutMask = rowDrop * seg * smoothstep(0.45, 0.0, abs(fract(uv.x * 18.0) - 0.5));
@@ -147,7 +187,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let scanline = 0.92 + 0.08 * sin(uv.y * resolution.y * PI);
   color = color * scanline;
 
-  let alpha = clamp(source.a * (0.88 + 0.12 * luma) + dropoutMask * 0.08, 0.0, 1.0);
+  color = acesToneMap(color * (0.95 + mids * 0.05));
+  let alpha = clamp(source.a * (0.88 + 0.12 * luma) + dropoutMask * 0.08 + rippleDrop * 0.06, 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), alpha));
   textureStore(dataTextureA, coord, vec4<f32>((walk / 0.02) * 0.5 + 0.5, dropoutMask, phaseShift * 0.5 + 0.5, headBand));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth * 0.9 + headBand * 0.08 + dropoutMask * 0.06, 0.0, 1.0), 0.0, 0.0, 0.0));

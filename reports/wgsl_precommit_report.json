@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-08-23T01:34:03.519081",
-  "naga_bin": "/home/codespace/.cargo/bin/naga",
+  "timestamp": "2026-08-23T05:49:07.688935",
+  "naga_bin": "/home/ubuntu/.cargo/bin/naga",
   "naga_available": false,
   "total": 10,
   "passed": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/bio-touch.wgsl",
+      "file": "public/shaders/byte-mosh-explosion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/foil-impression.wgsl",
+      "file": "public/shaders/byte-mosh.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/hypnotic-spiral.wgsl",
+      "file": "public/shaders/glitch-slice-mirror.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/polka-wave.wgsl",
+      "file": "public/shaders/scanline-drift.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/sphere-projection.wgsl",
+      "file": "public/shaders/scanline-sorting.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spirograph-reveal.wgsl",
+      "file": "public/shaders/scanline-tear.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/triangle-mosaic.wgsl",
+      "file": "public/shaders/scanline-wave.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -117,7 +117,37 @@
       "ok": true
     },
     {
-      "file": "public/shaders/voronoi-chaos.wgsl",
+      "file": "public/shaders/signal-modulation.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/signal-noise.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/vhs-tracking.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,

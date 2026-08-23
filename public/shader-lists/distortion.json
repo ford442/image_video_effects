@@ -1380,12 +1380,20 @@
     "id": "glitch-slice-mirror",
     "name": "Glitch Slice Mirror",
     "url": "shaders/glitch-slice-mirror.wgsl",
-    "description": "Mirrors the image at the mouse position with digital glitch artifacts, chromatic aberration, and scanlines along the seam. Audio-reactive intensity boost.",
+    "description": "Mirrors the image at a sprung cursor seam with fp128 integration, racing fracture packets, capped click slice bands, regional FFT blocks, and ACES composite.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "click-reactive"
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map"
     ],
     "tags": [
       "glitch",
@@ -1402,7 +1410,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "speed",
@@ -1410,7 +1419,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "scale",
@@ -1418,7 +1428,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "detail",
@@ -1426,7 +1437,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w"
       }
     ],
     "updatedParams": [

@@ -2,6 +2,8 @@
   "id": "scanline-wave",
   "name": "Scanline Wave",
   "url": "shaders/scanline-wave.wgsl",
+  "description": "CRT phosphor aurora with sprung cursor, held local distortion, capped click shockwaves, exact C bass-envelope trail, ACES premultiplied alpha. Preserves [premultipliedRGB, drive] A packing.",
+  "workgroup_size": [16, 16, 1],
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -17,83 +19,21 @@
     "phosphor-aurora",
     "lissajous-bands",
     "bounded-click-ripples",
-    "smooth-sparkles"
+    "spring-cursor",
+    "held-drag"
   ],
-  "description": "Psychedelic phosphor auroras and rainbow Lissajous scan bands with held local distortion, bounded CRT click shockwaves, smooth seeded sparkles, audio-reactive persistence, and preserved [premultipliedRGB, drive] A packing.",
   "updated": true,
   "params": [
-    {
-      "id": "waveAmount",
-      "name": "Wave Amount",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "lineCount",
-      "name": "Line Count",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "persistence",
-      "name": "Persistence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "audioMix",
-      "name": "Audio Mix",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
+    { "id": "waveAmount", "name": "Wave Amount", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.x" },
+    { "id": "lineCount", "name": "Line Count", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.y" },
+    { "id": "persistence", "name": "Persistence", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.z" },
+    { "id": "audioMix", "name": "Audio Mix", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.w" }
   ],
   "updatedParams": [
-    {
-      "id": "waveAmount",
-      "name": "Wave Amount",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "lineCount",
-      "name": "Line Count",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "persistence",
-      "name": "Persistence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "audioMix",
-      "name": "Audio Mix",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
+    { "index": 0, "name": "Wave Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Line Count", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Persistence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Audio Mix", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ],
-  "tags": [
-    "mouse-driven",
-    "interactive",
-    "distortion",
-    "scanlines",
-    "CRT",
-    "temporal",
-    "chromatic",
-    "audio-reactive",
-    "audio-envelope",
-    "treble-sparkle",
-    "HDR",
-    "ACES",
-    "dither"
-  ]
+  "tags": ["mouse-driven", "interactive", "distortion", "scanlines", "CRT", "temporal", "chromatic", "audio-reactive", "ACES", "dither"]
 }

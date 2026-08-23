@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Glitch Slice Mirror — Batch 66
+//  Glitch Slice Mirror — Batch 62
 //  fp128 seam integration, spring mass [133..138], racing horizontal
 //  fracture packet, capped click bands, held widens glitch halo,
 //  ACES + semantic alpha.
@@ -68,8 +68,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / u.config.zw;
     let time = u.config.x;
     let aspect = u.config.z / max(u.config.w, 0.001);
-    let rawMouse = u.zoom_config.yz;
     let held = u.zoom_config.w > 0.5;
+    let rawMouse = u.zoom_config.yz;
 
     let hasSpringState = arrayLength(&extraBuffer) > 138u;
     var mouse = rawMouse;
@@ -170,10 +170,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureLoad(dataTextureC, coords, 0);
     finalColor = mix(finalColor, prev, packet * 0.12);
 
+    finalColor.rgb = acesToneMap(finalColor.rgb * (0.96 + mids * 0.04));
     let finalLum = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
     finalColor.a = clamp(0.5 + intensity * 0.3 + finalLum * 0.2 + packet * 0.1, 0.06, 0.98);
 
-    let depth = textureLoad(readDepthTexture, vec2<i32>(clamp(vec2<i32>(target_uv * u.config.zw), vec2<i32>(0), vec2<i32>(u.config.zw) - vec2<i32>(1))), 0).r;
+    let depth = textureLoad(readDepthTexture, coords, 0).r;
 
     textureStore(writeTexture, coords, finalColor);
     textureStore(dataTextureA, coords, finalColor);

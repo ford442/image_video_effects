@@ -155,47 +155,99 @@
     "id": "byte-mosh",
     "name": "Byte-Mosh Glitch",
     "url": "shaders/byte-mosh.wgsl",
-    "description": "Bitwise XOR, AND, shift, and rotate operations creating digital corruption effects.",
+    "description": "LFSR/GF(2) datamosh corruption with spring cursor, held burst, capped ripple packets, wired zoom_params, regional FFT edges, and ACES output.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "operationMix",
         "name": "Operation Mix",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "bitShift",
         "name": "Bit Shift",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "errorRate",
         "name": "Error Rate",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "blockSize",
         "name": "Block Size",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Operation Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bit Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Error Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Block Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
       "interactive",
       "chromatic-aberration",
       "glitch",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "bitwise",
+      "datamosh"
+    ],
+    "updated": true
   },
   {
     "id": "crt-magnet",
@@ -1921,46 +1973,45 @@
     "id": "scanline-drift",
     "name": "Scanline Drift",
     "url": "shaders/scanline-drift.wgsl",
-    "description": "Horizontal segments of the image drift left and right, simulating a bad video signal or tracking error.",
+    "description": "Horizontal strip drift with spring tracking band, held jitter boost, capped click tears, regional FFT flicker, exact C memory, and ACES output.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "name": "Drift Speed",
         "id": "zoomParam1",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "name": "Line Height",
         "id": "zoomParam2",
         "default": 0.1,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "name": "Jitter Amount",
         "id": "zoomParam3",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "name": "Color Shift",
         "id": "zoomParam4",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba"
-    ],
-    "tags": [
-      "glitch",
-      "retro",
-      "vintage"
     ],
     "updatedParams": [
       {
@@ -1996,15 +2047,42 @@
         "step": 0.01
       }
     ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage",
+      "vhs"
+    ],
     "updated": true
   },
   {
     "id": "signal-noise",
     "name": "Signal Noise",
     "url": "shaders/signal-noise.wgsl",
-    "description": "Multi-octave analog noise with VHS head-switching bands, DCT block artifacts, datamoshing smear, and directional chromatic aberration with YUV chroma noise.",
+    "description": "Multi-octave analog noise with VHS head-switch bands, DCT artifacts, sprung cursor, held burst, capped ripples, exact C temporal smear, ACES output.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2013,7 +2091,8 @@
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "artifactStrength",
@@ -2021,7 +2100,8 @@
         "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "smearAmount",
@@ -2029,10 +2109,46 @@
         "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "chromaStrength",
+        "name": "Chroma Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "VHS Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Artifact Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Smear Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Chroma Strength",
         "default": 0.3,
         "min": 0,
@@ -2046,7 +2162,8 @@
       "vhs",
       "noise",
       "analog"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "spectral-glitch-sort",
@@ -2223,47 +2340,98 @@
     "id": "vhs-tracking",
     "name": "VHS Tracking Error",
     "url": "shaders/vhs-tracking.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map"
     ],
-    "description": "Simulates VCR tracking errors with scanline tearing and chromatic aberration.",
+    "description": "VHS capstan jitter and azimuth loss with sprung cursor, held tracking pull, capped dropout ripples, exact C row walk state, ACES output.",
     "params": [
       {
         "name": "Tracking Error",
         "id": "zoomParam1",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "name": "Noise Level",
         "id": "zoomParam2",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "name": "Color Drift",
         "id": "zoomParam3",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "name": "Scanlines",
         "id": "zoomParam4",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tracking Error",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Noise Level",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Drift",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Scanlines",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "vhs",
+      "tracking",
+      "retro"
+    ],
+    "updated": true
   },
   {
     "id": "vinyl-scratch",
