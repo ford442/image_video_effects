@@ -5,10 +5,84 @@
 
 ---
 
-## Recently Completed (490 tracker entries)
+## Recently Completed (500 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
 
+### Batch 58B (10 shaders) — 2026-08-23 — LIQUID
+
+The full `liquid*` cohort across liquid-effects, distortion, interactive-mouse
+and generative. Every shader now carries the batch standard — ACES tone map,
+semantic alpha, `dataTextureA` writeback, `plasmaBuffer[0].xyz` audio with
+per-band `plasmaBuffer[1..8]` bins, held-pointer response, bounded click fronts
+guarded by `min(u32(u.config.y), 50u)`, exact `textureLoad` from `dataTextureC`,
+`@workgroup_size(16, 16, 1)` and a bounds guard — plus two shader-specific
+structures each. `extraBuffer` writes are confined to `[133..136]` (spring-damped
+pointer position and velocity), written by invocation `(0,0)` only. In the four
+sim shaders `dataTextureA` deliberately carries SIM STATE rather than display
+RGBA, since overwriting it with colour would destroy the simulation; display
+goes to `writeTexture`, and `B` holds diagnostics (A wins the B→C, A→C copy).
+
+Six latent bugs were fixed:
+
+- **`liquid-prism` — dead audio.** `let audioOverall = u.config.y;` read the
+  ripple count as an audio level, so every "audio-reactive" term responded only
+  to how many clicks were alive. This is the exact pattern on the
+  do-not-reintroduce list in `docs/BINDING_CONTRACT.md` (the recurring dead-audio
+  bug of batches 15–19). Now real `plasmaBuffer` audio.
+- **`liquid-displacement` + `liquid-viscous` — dead Jacobi pressure solves.**
+  Both looped a pressure relaxation while re-reading the same loop-invariant
+  neighbours, so every iteration recomputed an identical value. In
+  `liquid-displacement` the iteration count is a user slider, making it
+  semantically dead (the dead-slider auditor passes it because the field *is*
+  read). Both now relax the centre and its four neighbours together against a
+  frozen outer ring taken from one shared Manhattan-radius-2 stencil.
+- **`liquid-warp` — alpha pinned at 1.0.** `0.05 * displacementMag *
+  resolution.x` multiplied a UV-space magnitude by a pixel count, saturating
+  alpha at any real resolution. The resolution factor is gone.
+- **`liquid_crystal_birefringence` — depth clobber.** Polarization alpha was
+  written into `writeDepthTexture`, so chained depth-aware shaders read
+  polarization instead of geometry. Scene depth is preserved and modulated by
+  cell thickness.
+- **`liquid-displacement` — mouse smuggled through texel (0,0).** The previous
+  pointer was stashed in the b/a channels of `dataTextureA` at (0,0) and read
+  back by every pixel, corrupting sim state at that texel. Moved to
+  `extraBuffer[133..136]`.
+- **Filtered reads of `dataTextureC` (4 shaders).** `liquid-smear`,
+  `liquid-time-warp`, `liquid-viscous` and `liquid-warp` sampled the rgba32float
+  state through the FILTERING sampler; `float32-filterable` is only requested
+  when the adapter offers it (`src/renderer/webgpu/device.ts:70`), so those reads
+  are invalid where the feature is absent. All replaced with exact `textureLoad`,
+  hand-rolled bilinear where advection needs sub-pixel.
+
+`liquid-viscous`'s `floor(time * 0.7)` vortex seeding (teleporting centres) was
+replaced with continuous Lissajous drift, the class of fix earlier batches
+applied to time-hashed motion. The three heaviest shaders were restructured for
+cost parity rather than having features stacked on top: `liquid-optimized` folded
+five full height-field evaluations (up to 250 ripple iterations per pixel) into
+one analytic-gradient pass; `liquid-viscous` folded five `vorticityAt()` calls
+(20 filtered samples) into one shared stencil; `liquid-warp` replaced four
+finite-difference field calls with the flow field's analytic Jacobian.
+
+Source `params` are untouched for preset compatibility; honest labels for the
+mislabelled `liquid-viscous`, `liquid-warp` and `liquid-zoom` sliders land in
+additive `updatedParams`. Gate, dead-slider, extraBuffer and audio-mapping audits
+pass 10/10; `liquid-prism` has left the `config.y` misuse report. URL and
+uniform-layout checks pass; lists regenerate clean. Real-GPU visual QA remains
+external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 481 | `liquid-displacement` | 58B | 305→319 (+14) | Local Jacobi pressure solve (slider now convergent), spring-damper pointer in `[133..136]`, bounded divergence-impulse splashes, FFT-banded turbulence, ACES; texel-(0,0) mouse hack removed. |
+| 482 | `liquid-viscous` | 58B | 208→311 (+103) | Shared-stencil vorticity at 5 points, working Jacobi projection, per-band dye emitters, continuous Lissajous vortices, exact-load state, ACES, semantic alpha. |
+| 483 | `liquid-warp` | 58B | 178→325 (+147) | Analytic strain-tensor Jacobian (replaces 4 field calls), bounded click vortex rings, FFT-banded octaves, exact-load state, ACES; resolution-factor alpha bug fixed. |
+| 484 | `liquid_crystal_birefringence` | 58B | 269→349 (+80) | Malus-law crossed-polarizer analyzer steered by the pointer, asymmetric Frederiks relaxation via C, ACES; depth clobber fixed. |
+| 485 | `liquid-optimized` | 58B | 150→254 (+104) | Analytic height gradient (1 evaluation, was 5), 8-train FFT capillary spectrum with dispersion-correct phase speeds, Fresnel slant-path absorption; 8×8→16×16, ripple loop guarded. |
+| 486 | `liquid-prism` | 58B | 162→203 (+41) | Cauchy dispersion n(λ)=A+B/λ² (correct bend ordering), bounded caustic fronts, radial FFT banding, A writeback, temporal afterglow, ACES; dead-audio bug fixed. |
+| 487 | `liquid-rainbow` | 58B | 155→214 (+59) | 8-train Gerstner spectrum with deep-water dispersion (was 2 fixed waves), spring-damped pointer whose stroke direction shears the surface. |
+| 488 | `liquid-smear` | 58B | 155→203 (+48) | Pointer-velocity drag from `[133..136]` (was a pull-toward-cursor sink), 5-tap FFT-width pigment bleed along the stroke normal, bounded splats; bounds guard and exact-load history added. |
+| 489 | `liquid-time-warp` | 58B | 188→214 (+26) | Divergence-free curl advection banded across three FFT octaves, bounded click wipe fronts, chromatic split, audio wired for the first time, exact-load history, ACES. |
+| 490 | `liquid-zoom` | 58B | 252→249 (−3) | Four-layer depth-parallax stack with per-layer FFT bins and popping-free depth selection, bounded click zoom pulses, temporal streaks, ACES; bounds guard added, slider labels made honest. |
 ### Batch 58C (10 shaders) — 2026-08-23 — HOLOGRAPHIC & QUANTUM
 
 Ten holographic/quantum shaders across advanced-hybrid, visual-effects, image,

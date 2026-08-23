@@ -3,11 +3,11 @@
 `config = [time, rippleCount, resW, resH]` — see `src/contracts/uniforms_layout.json`.
 Every row below reads `config.y` (or a legacy `config` swizzle) as something else.
 
-**Total: 88 reads across 73 shaders**
+**Total: 87 reads across 72 shaders**
 
 | Category | Count |
 |----------|-------|
-| `audio` | 47 |
+| `audio` | 46 |
 | `unclassified` | 15 |
 | `click_or_frame_count` | 14 |
 | `delta_time` | 12 |
@@ -86,7 +86,6 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/hybrid-chromatic-liquid.wgsl` | 79 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/hybrid-magnetic-field.wgsl` | 98 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/interactive-voronoi-lens.wgsl` | 81 | delta_time | `let dt = u.config.y;` |
-| `public/shaders/liquid-prism.wgsl` | 95 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/mouse-ink-bleed.wgsl` | 94 | delta_time | `let dt = u.config.y;` |
 | `public/shaders/nano-assembler.wgsl` | 73 | unclassified | `let time = u.config.y;` |
 | `public/shaders/neural-synapse-web.wgsl` | 77 | delta_time | `let dt = clamp(u.config.y, 0.001, 0.05);` |
