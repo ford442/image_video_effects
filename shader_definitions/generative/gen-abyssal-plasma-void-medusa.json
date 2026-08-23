@@ -29,7 +29,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "fluidDistortion",
+      "id": "fluid_distortion",
       "name": "Fluid Distortion",
       "default": 0.3,
       "min": 0.0,
@@ -38,7 +38,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "tentacleLength",
+      "id": "tentacle_length",
       "name": "Tentacle Length",
       "default": 0.8,
       "min": 0.2,
@@ -47,7 +47,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "plasmaHue",
+      "id": "plasma_hue",
       "name": "Plasma Hue",
       "default": 0.5,
       "min": 0.0,
@@ -69,7 +69,7 @@
     },
     {
       "index": 1,
-      "id": "fluidDistortion",
+      "id": "fluid_distortion",
       "name": "Fluid Distortion",
       "default": 0.3,
       "min": 0.0,
@@ -79,7 +79,7 @@
     },
     {
       "index": 2,
-      "id": "tentacleLength",
+      "id": "tentacle_length",
       "name": "Tentacle Length",
       "default": 0.8,
       "min": 0.2,
@@ -89,7 +89,7 @@
     },
     {
       "index": 3,
-      "id": "plasmaHue",
+      "id": "plasma_hue",
       "name": "Plasma Hue",
       "default": 0.5,
       "min": 0.0,
