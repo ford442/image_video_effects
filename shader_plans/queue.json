@@ -414,6 +414,39 @@
       "filename": "2026-08-12_luminescent-quantum-silicate-diatom.md",
       "title": "Luminescent Quantum-Silicate Diatom",
       "added": "2026-08-12T15:28:58.638076"
+<<<<<<< HEAD
+=======
+    },
+    {
+      "filename": "2026-08-13_abyssal-plasma-void-medusa.md",
+      "title": "Abyssal Plasma Void-Medusa",
+      "added": "2026-08-13T15:13:28.701419"
+    },
+    {
+      "filename": "2026-08-15_cymatic-chronos-aether-lattice.md",
+      "title": "Cymatic Chronos Aether-Lattice",
+      "added": "2026-08-15T15:17:24.028303"
+    },
+    {
+      "filename": "2026-08-16_cybernetic-aether-moth-chrysalis.md",
+      "title": "Cybernetic Aether-Moth Chrysalis",
+      "added": "2026-08-16T15:24:54.147548"
+    },
+    {
+      "filename": "2026-08-17_chrono-kinetic-fractal-engine.md",
+      "title": "Chrono-Kinetic Fractal Engine",
+      "added": "2026-08-17T15:12:31.089564"
+    },
+    {
+      "filename": "2026-08-20_luminescent-silica-diatom-swarm.md",
+      "title": "Luminescent Silica Diatom Swarm",
+      "added": "2026-08-20T15:11:37.996029"
+    },
+    {
+      "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
+      "title": "Ethereal Quantum-Glass Nautilus",
+      "added": "2026-08-21T15:28:56.185053"
+>>>>>>> 79f3f9a67ad49750fcbc4745e1bca43fc4b432b4
     }
   ],
   "current": null,
@@ -597,14 +630,29 @@
       "completed_at": "2026-08-13T08:11:15.164261+00:00"
     },
     {
+<<<<<<< HEAD
       "filename": "2026-08-13_abyssal-plasma-void-medusa.md",
       "title": "Abyssal Plasma Void-Medusa",
       "added": "2026-08-13T15:13:28.701419",
       "status": "completed",
       "completed_at": "2026-08-14T08:37:15.142219+00:00"
+=======
+      "filename": "2026-08-19_quantum-mycelial-neural-web.md",
+      "title": "Quantum Mycelial Neural Web",
+      "added": "2026-08-19T15:41:23.433626",
+      "status": "completed",
+      "completed_at": "2026-08-21T08:37:33.520590+00:00"
+>>>>>>> 79f3f9a67ad49750fcbc4745e1bca43fc4b432b4
     }
   ],
   "completed": [
+    {
+      "filename": "2026-08-17_chrono-kinetic-fractal-engine.md",
+      "title": "Chrono-Kinetic Fractal Engine",
+      "added": "2026-08-17T15:12:31.089564",
+      "status": "completed",
+      "completed_at": "2026-08-20T08:04:22.441127+00:00"
+    },
     {
       "filename": "2026-07-20_prismatic-cyber-aether-void-kitsune.md",
       "title": "Prismatic Cyber-Aether Void-Kitsune",
@@ -737,6 +785,34 @@
       "added": "2026-08-08T15:28:22.099874",
       "status": "completed",
       "completed_at": "2026-08-09T08:10:42.101387+00:00"
+    },
+    {
+      "filename": "2026-08-14_stellar-acoustic-resonance-manifold.md",
+      "title": "Stellar-Acoustic Resonance-Manifold",
+      "added": "2026-08-14T15:19:26.218601",
+      "status": "completed",
+      "completed_at": "2026-08-15T08:16:48.233383+00:00"
+    },
+    {
+      "filename": "2026-08-16_cybernetic-aether-moth-chrysalis.md",
+      "title": "Cybernetic Aether-Moth Chrysalis",
+      "added": "2026-08-16T15:24:54.147548",
+      "status": "completed",
+      "completed_at": "2026-08-17T08:12:11.417884+00:00"
+    },
+    {
+      "filename": "2026-08-13_abyssal-plasma-void-medusa.md",
+      "title": "Abyssal Plasma Void-Medusa",
+      "added": "2026-08-13T15:13:28.701419",
+      "status": "completed",
+      "completed_at": "2026-08-16T08:04:46.785845+00:00"
+    },
+    {
+      "filename": "2026-08-17_chrono-kinetic-fractal-engine.md",
+      "title": "Chrono-Kinetic Fractal Engine",
+      "added": "2026-08-17T15:12:31.089564",
+      "status": "completed",
+      "completed_at": "2026-08-18T08:03:46.946672+00:00"
     }
   ],
   "rejected": [],

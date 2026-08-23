@@ -24,21 +24,8 @@ jest.mock('../services/storage', () => ({
     subscribeToOperations: jest.fn(() => jest.fn()),
     clearCompletedOperations: jest.fn(),
   }),
-  getStorageService: () => ({
-    checkHealth: jest.fn().mockResolvedValue({ status: 'ok', service: 'contabo-storage-manager' }),
-    listShaders: jest.fn().mockResolvedValue([
-      { id: 'test-shader', name: 'Test Shader', rating: 5, filename: 'test.json', tags: ['test'] }
-    ]),
-    listImages: jest.fn().mockResolvedValue([]),
-    listVideos: jest.fn().mockResolvedValue([]),
-    listAudio: jest.fn().mockResolvedValue([]),
-    subscribeToOperations: jest.fn(() => jest.fn()),
-    clearCompletedOperations: jest.fn(),
-  }),
   createStorageClient: jest.fn(),
-  createStorageService: jest.fn(),
   resetStorageClient: jest.fn(),
-  resetStorageService: jest.fn(),
 }));
 
 describe('Storage Integration', () => {

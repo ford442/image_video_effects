@@ -2,23 +2,27 @@
   "id": "elastic-chromatic-explosion",
   "name": "Elastic Chromatic Explosion",
   "url": "shaders/elastic-chromatic-explosion.wgsl",
-  "description": "Elastic Chromatic Explosion",
+  "description": "Prismatic Snell refraction with Cauchy angular dispersion, viscoelastic shockwave propagation, triple-phase temporal EMA lag, and exact-load chromatic persistence.",
   "tags": [
     "chromatic-lag",
     "prism-explosion",
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "audio-reactive"
   ],
   "features": [
     "chromatic-lag",
     "prism-explosion",
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
+  "updated": true,
   "params": [
     {
       "id": "param1",
-      "name": "Param 1",
+      "name": "Red Channel Lag",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -27,7 +31,7 @@
     },
     {
       "id": "param2",
-      "name": "Param 2",
+      "name": "Blue Channel Lag",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -36,7 +40,7 @@
     },
     {
       "id": "param3",
-      "name": "Param 3",
+      "name": "Prism Power",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -45,7 +49,7 @@
     },
     {
       "id": "param4",
-      "name": "Param 4",
+      "name": "Saturation Boost",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -53,5 +57,42 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    {
+      "id": "param1",
+      "name": "Red Channel Lag",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Blue Channel Lag",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Prism Power",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Saturation Boost",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

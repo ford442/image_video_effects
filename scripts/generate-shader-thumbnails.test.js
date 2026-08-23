@@ -43,6 +43,15 @@ describe('generate-shader-thumbnails', () => {
     assert.equal(args.limit, 10);
   });
 
+  it('minimal engine is documented and constrained to generative captures', () => {
+    const source = require('fs').readFileSync(
+      require('path').join(__dirname, 'generate-shader-thumbnails.js'),
+      'utf8',
+    );
+    assert.match(source, /args\.engine === 'minimal'/);
+    assert.match(source, /args\.category !== 'generative'/);
+  });
+
   it('parseArgs accepts an explicit retry ID list', () => {
     const args = parseArgs(['--force', '--ids=alpha-hdr-bloom-chain, gen-barnsley-fern']);
     assert.equal(args.force, true);

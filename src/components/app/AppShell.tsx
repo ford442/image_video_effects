@@ -266,6 +266,26 @@ export function AppShell(props: AppShellProps) {
                     <div className="subtitle-text">Image Playpen</div>
                 </div>
                 <div className="header-controls">
+                    {activeTab === 'main' && (
+                        <>
+                            <button
+                                className="toggle-sidebar-btn header-action-btn"
+                                onClick={() => handleNewRandomImage()}
+                                title="Load a random image from the manifest"
+                                disabled={inputSource !== 'image'}
+                            >
+                                🎲 Random Image
+                            </button>
+                            <button
+                                className={`toggle-sidebar-btn header-action-btn ${isRouletteActive ? 'spinning' : ''}`}
+                                onClick={() => triggerRoulette()}
+                                title={`Randomize slot ${activeSlot + 1} shader + sliders (R)`}
+                            >
+                                🎰 Randomize Slot {activeSlot + 1}
+                            </button>
+                            <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.2)', margin: '0 4px' }} />
+                        </>
+                    )}
                     <button
                         className={`toggle-sidebar-btn ${activeTab === 'main' ? 'active' : ''}`}
                         onClick={() => setActiveTab('main')}

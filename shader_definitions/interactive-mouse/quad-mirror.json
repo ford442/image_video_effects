@@ -2,8 +2,39 @@
   "id": "quad-mirror",
   "name": "Quad Mirror",
   "url": "shaders/quad-mirror.wgsl",
-  "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, audio-reactive seam shimmer, chromatic aberration, ACES tone mapping, temporal feedback trails, and layered semantic alpha compositing.",
+  "description": "Four-way kaleidoscope with continuously traveling mirrored ribbons and seam runners, held projection twist, bounded click shells, FBM seam warp, chromatic diffraction, exact-load A/C trails, and semantic alpha.",
+  "updated": true,
   "params": [
+    {
+      "id": "hOffset",
+      "name": "H Mirror Offset",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "vOffset",
+      "name": "V Mirror Offset",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "seamWarp",
+      "name": "Seam Warp",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "rotation",
+      "name": "Rotation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updatedParams": [
     {
       "id": "hOffset",
       "name": "H Mirror Offset",
@@ -44,7 +75,10 @@
     "aces-tone-map",
     "temporal-feedback",
     "depth-aware",
-    "alpha-layered"
+    "alpha-layered",
+    "continuous-motion",
+    "bounded-click-ripples",
+    "held-drag"
   ],
   "tags": [
     "filter",

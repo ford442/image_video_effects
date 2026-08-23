@@ -21,7 +21,7 @@ A React + WebGPU app for real-time GPU shader effects — fluids, generative art
 |------|---------|----------|-------|
 | **A — Production** | TypeScript `WebGPURenderer` | ✅ Yes | Full Controls parity; recommended for all work |
 | **B — Experimental** | C++ WASM (`?renderer=wasm`) | Opt-in only | Labeled **Experimental** in UI; must not crash app |
-| Fallback | Canvas2D `JSRenderer` | Auto when no WebGPU | No GPU shaders |
+| Dev escape | Canvas2D `JSRenderer` (`?renderer=js`) | Explicit only | No GPU shaders; not auto-fallback |
 
 WASM is **never** an automatic fallback. See [`WASM_BACKEND_POLICY.md`](WASM_BACKEND_POLICY.md) for promotion gates, CI expectations, and engineering rules.
 
@@ -81,11 +81,15 @@ Opens at `http://localhost:3000`. Use `BROWSER=none npm start` in headless envir
 
 ### Headless / Cloud VM contributors
 
-Cursor Cloud and similar VMs **lack a GPU adapter** — WebGPU init fails and the canvas falls back to Canvas2D (black canvas, debug overlay still updates). Validate shader/renderer work via **Jest** (`npm test`) and **build** (`SKIP_WASM_BUILD=1 npm run build`), not by eyeballing the canvas.
+Cursor Cloud and similar VMs **lack a GPU adapter** — the WebGPU boot probe fails and the canvas shows a **blocking failure overlay** with full attempt logs (`window.webgpuProbe`). There is no automatic Canvas2D fallback. Validate shader/renderer work via **Jest** (`npm test`) and **build** (`SKIP_WASM_BUILD=1 npm run build`), not by eyeballing the canvas.
 
 Outbound requests to `storage.noahcohn.com`, `storage.googleapis.com`, and Unsplash may be **network-blocked** — use local `public/` assets. See [`AGENTS.md`](AGENTS.md) Cloud VM section.
 
 **Thumbnail batch capture** (`npm run thumbs:generate`) requires a real WebGPU GPU — cannot run in this VM. Use `npm run thumbs:status` to check coverage; run generation on a discrete-GPU workstation ([`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md)).
+
+**Thumbnails require a real GPU.** Contributors adding shader definitions should
+capture the corresponding PNG on a discrete-GPU workstation and commit it with
+the catalog change; CI checks pull requests for coverage regressions.
 
 Setup script for agent environments: `bash scripts/jules-setup.sh` (uses committed WASM artifacts, `SKIP_WASM_BUILD=1`).
 
@@ -177,6 +181,20 @@ See [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) for panel/hook detail.
 
 ## Scripts
 
+### Toolchain commands
+
+| Goal | Command |
+|------|---------|
+| Dev | `BROWSER=none npm start` |
+| Prod JS (no emcc) | `SKIP_WASM_BUILD=1 npm run build` |
+| WASM artifacts | `npm run wasm:build` (needs `emcc` + emdawn) |
+| Typecheck | `npm run typecheck` |
+| Device policy sync | `npm run verify:device-policy` |
+| Uniforms layout | `npm run verify:uniforms` |
+| Foundation gates | `npm run verify:toolchain-foundation` |
+
+See [`docs/TOOLCHAIN_DECISION.md`](docs/TOOLCHAIN_DECISION.md) for CRA + CRACO rationale and dependency boundaries.
+
 ### Dev & build
 
 | Command | Purpose |
@@ -214,6 +232,11 @@ SHADER_LIST_BASE_URL=https://test.1ink.us/image_video_effects npm run build
 # Or use the deploy helper (sets base URL before build)
 npm run deploy:full
 ```
+
+SFTP login reads gitignored `.env.deploy` (copy from `.env.deploy.example`) or
+`DEPLOY_USER` / `DEPLOY_PASS`. `FTP_USER` / `FTP_PASS` work as aliases. The
+scripts no longer prompt when that file is present. An authorized `DEPLOY_KEY`
+(or `~/.ssh/id_ed25519`) is used when available.
 
 CI enforces relative URLs via `npm run verify:shader-list-urls` (part of
 `verify:toolchain-foundation`). `build:manifest` rejects absolute URLs unless a base-url env is set.
@@ -256,6 +279,7 @@ canonical bridge fragments live under `wasm_renderer/`; `npm run wasm:build` com
 | `npm run thumbs:status` | Coverage vs catalog (+ eligible % excl. skip list) |
 | `npm run thumbs:generate -- --missing` | Batch capture via production renderer (needs GPU + build) |
 | `npm run thumbs:generate:minimal` | Fast generative-only inline WebGPU path |
+| `npm run thumbs:check-regression` | Fail definition PRs that lower healthy thumbnail coverage |
 | `bash scripts/run-thumbnail-waves.sh` | W1→W3 category waves (after `npm run build`) |
 | `python3 scripts/audit_thumbnail_integrity.py` | Flag near-black/magenta committed PNGs |
 
@@ -268,7 +292,7 @@ See [`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md). CI: **Generate T
 | `npm run bucket:sync` | Sync GCS bucket (simple watcher) |
 | `npm run bucket:watch` | Watch mode |
 | `npm run sync:shaders` | Push shaders to VPS storage |
-| `npm run deploy` / `deploy:app` / `deploy:full` | Deploy scripts |
+| `npm run deploy` / `deploy:app` / `deploy:full` | Deploy scripts (SFTP; reads gitignored `.env.deploy`) |
 | `npm run audit:shaders` | WGSL audit swarm |
 | `npm run swarm:upgrade` | Shader upgrade swarm runner |
 
@@ -278,6 +302,7 @@ See [`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md). CI: **Generate T
 - **Depth Integration**: AI-generated depth maps enable parallax and depth-aware effects
 - **Uniform Interface**: All compute shaders share a standardized `Uniforms` structure
 - **Default renderer**: TypeScript WebGPU (Tier A production path)
+- **gpu-chores (Tier 4b)**: shared histogram / reduce / LUT / downsample on the renderer device (`docs/GPU_CHORES.md`); kill switch `?no_gpu_compute`
 
 ## Experimental C++ WASM Renderer (Tier B)
 

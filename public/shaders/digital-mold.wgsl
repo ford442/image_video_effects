@@ -1,11 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Digital Mold
-//  Category: image
-//  Features: animated, reaction-diffusion, spore-noise, depth-humidity, upgraded-rgba
+//  Category: interactive-mouse
+//  Features: animated, reaction-diffusion, spore-noise, depth-humidity, upgraded-rgba, temporal
 //  Complexity: High
-//  Chunks From: digital-mold, reaction-diffusion, fbm, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-08-16 (Batch 52: Gray-Scott reaction-diffusion, hyphal growth, exact C load)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,102 +23,120 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_params: vec4<f32>,  // x=FeedRate, y=KillRate, z=DiffusionA, w=DiffusionB
   ripples: array<vec4<f32>, 50>,
 };
 
-fn hash21(p: vec2<f32>) -> f32 {
-  let h = dot(p, vec2<f32>(127.1, 311.7));
-  return fract(sin(h) * 43758.5453123);
+fn aces_film(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn valueNoise(p: vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  let a = hash21(i);
-  let b = hash21(i + vec2<f32>(1.0, 0.0));
-  let c = hash21(i + vec2<f32>(0.0, 1.0));
-  let d = hash21(i + vec2<f32>(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
-
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-  var sum = 0.0;
-  var amp = 0.5;
-  var freq = 1.0;
-  for (var i = 0; i < octaves; i = i + 1) {
-    sum = sum + amp * valueNoise(p * freq);
-    freq = freq * 2.0;
-    amp = amp * 0.5;
-  }
-  return sum;
-}
-
-fn bass_env(bass: f32, mids: f32) -> f32 {
-  return 1.0 + bass * 0.3 + mids * 0.1;
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.xx + p3.yz) * p3.zy);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+  let res = u.config.zw;
+  if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let coord = vec2<i32>(global_id.xy);
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
+  let aspect = res.x / max(res.y, 1.0);
+  let aspect_vec = vec2<f32>(aspect, 1.0);
+  let t = u.config.x;
 
-    let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let feed_rate = mix(0.018, 0.082, u.zoom_params.x) * (1.0 + bass * 0.25);
+  let kill_rate = mix(0.045, 0.072, u.zoom_params.y);
+  let diff_a = mix(0.6, 1.4, u.zoom_params.z);
+  let diff_b = mix(0.3, 0.7, u.zoom_params.w);
 
-    let feedRate = mix(0.01, 0.09, u.zoom_params.x) * bass_env(bass, mids);
-    let killRate = mix(0.01, 0.07, u.zoom_params.y);
-    let diffusionA = mix(0.5, 1.5, u.zoom_params.z);
-    let diffusionB = u.zoom_params.w;
+  let mouse_pos = u.zoom_config.yz;
+  let is_down = u.zoom_config.w;
 
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-    var a = prev.r;
-    var b = prev.g;
+  let depth_tex = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let humidity = mix(0.6, 1.4, depth_tex);
 
-    let e = 1.0 / resolution.x;
-    let right = textureSampleLevel(dataTextureC, non_filtering_sampler, clamp(uv + vec2<f32>(e, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let left = textureSampleLevel(dataTextureC, non_filtering_sampler, clamp(uv - vec2<f32>(e, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let top = textureSampleLevel(dataTextureC, non_filtering_sampler, clamp(uv + vec2<f32>(0.0, e), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let bottom = textureSampleLevel(dataTextureC, non_filtering_sampler, clamp(uv - vec2<f32>(0.0, e), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  // Exact load of previous (u, v, filament, age) chemical state from dataTextureC
+  let prev_raw = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
+  var u_chem = select(1.0, prev_raw.r, prev_raw.r > 0.0001 || prev_raw.g > 0.0001);
+  var v_chem = prev_raw.g;
 
-    let lapA = right.r + left.r + top.r + bottom.r - 4.0 * a;
-    let lapB = right.g + left.g + top.g + bottom.g - 4.0 * b;
+  // 4-neighbor Laplace stencil on chemical concentrations
+  let c_r = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0).rg;
+  let c_l = textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0).rg;
+  let c_u = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0).rg;
+  let c_d = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0).rg;
 
-    let reaction = a * b * b;
-    a = a + diffusionA * lapA - reaction + feedRate * (1.0 - a);
-    b = b + diffusionB * lapB + reaction - (killRate + feedRate) * b;
-    a = clamp(a, 0.0, 1.0);
-    b = clamp(b, 0.0, 1.0);
+  let lap_u = (c_r.r + c_l.r + c_u.r + c_d.r - 4.0 * u_chem) * 0.25;
+  let lap_v = (c_r.g + c_l.g + c_u.g + c_d.g - 4.0 * v_chem) * 0.25;
 
-    // Depth humidity: foreground grows faster
-    let humidity = mix(0.7, 1.3, depth);
-    b = b * humidity;
+  // Gray-Scott Reaction-Diffusion kinetics
+  let uv2 = u_chem * v_chem * v_chem;
+  let du = diff_a * lap_u - uv2 + feed_rate * (1.0 - u_chem);
+  let dv = diff_b * lap_v + uv2 - (feed_rate + kill_rate) * v_chem;
 
-    // Mouse spore injection
-    let mouseDist = distance(uv, mouse);
-    let spore = smoothstep(0.05, 0.0, mouseDist) * bass_env(bass, mids);
-    b = b + spore * 0.1;
-    b = clamp(b, 0.0, 1.0);
+  let dt = 0.95 * humidity;
+  u_chem = clamp(u_chem + du * dt, 0.0, 1.0);
+  v_chem = clamp(v_chem + dv * dt, 0.0, 1.0);
 
-    let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Spore inoculation from pointer
+  let d_mouse = (uv - mouse_pos) * aspect_vec;
+  let dist_m = length(d_mouse);
+  let spore_brush = smoothstep(0.06 + 0.08 * is_down, 0.0, dist_m);
+  let noise_spores = hash22(uv * 80.0 + fract(t)).x;
+  if (spore_brush > 0.05 && noise_spores > 0.6) {
+    v_chem = max(v_chem, spore_brush * (0.6 + 0.4 * is_down));
+    u_chem = min(u_chem, 1.0 - spore_brush * 0.5);
+  }
 
-    // Mold palette: deep green to blue-black with spore highlights
-    let moldColor = mix(vec3<f32>(0.05, 0.15, 0.05), vec3<f32>(0.0, 0.4, 0.2), a);
-    let sporeColor = vec3<f32>(0.6, 0.9, 0.3) * b * (1.0 + treble * 0.5);
-    let combined = moldColor + sporeColor;
+  // Click spore bursts (capped at 50)
+  let ripple_count = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < ripple_count; i = i + 1u) {
+    let r = u.ripples[i];
+    let age = t - r.z;
+    if (age >= 0.0 && age < 2.0) {
+      let r_pos = (uv - r.xy) * aspect_vec;
+      let d_r = length(r_pos);
+      let front = abs(d_r - age * 0.35);
+      if (front < 0.03) {
+        v_chem = max(v_chem, (1.0 - front / 0.03) * exp(-age * 2.0) * 0.8);
+      }
+    }
+  }
 
-    let finalRGB = mix(source.rgb, combined, b * 0.7);
-    let alpha = clamp(source.a * 0.5 + b * 0.4 + a * 0.2, 0.0, 1.0);
+  // Hyphal branching filament structure
+  let hyphae = sin(v_chem * 28.0 + t * 0.8) * cos(u_chem * 24.0);
+  let mold_density = smoothstep(0.12, 0.65, v_chem);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(a, b, 0.0, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Read base image sample
+  let image_sample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let src_alpha = image_sample.a;
+
+  // Bioluminescent mold color palette
+  let biolum_tint = 0.5 + 0.5 * cos(vec3<f32>(1.2, 0.2, 2.8) + v_chem * 8.0 + t * 0.6);
+  let moss_color = mix(vec3<f32>(0.05, 0.18, 0.08), vec3<f32>(0.2, 0.65, 0.35), hyphae * 0.5 + 0.5);
+  let mold_final_glow = mix(moss_color, biolum_tint * 1.5, clamp(v_chem * (1.0 + treble), 0.0, 1.0));
+
+  var final_color = mix(image_sample.rgb, mold_final_glow, mold_density * 0.85);
+  final_color = aces_film(final_color);
+
+  let out_rgba = vec4<f32>(final_color, src_alpha);
+  let out_state = vec4<f32>(u_chem, v_chem, hyphae, mold_density);
+  let out_depth = clamp(depth_tex + mold_density * 0.2, 0.0, 1.0);
+
+  textureStore(writeTexture, coord, out_rgba);
+  textureStore(dataTextureA, coord, out_state);
+  textureStore(writeDepthTexture, coord, vec4<f32>(out_depth, 0.0, 0.0, 0.0));
 }

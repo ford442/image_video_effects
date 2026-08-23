@@ -15,6 +15,7 @@ export function buildRendererDiagnostics(
     rendererType,
     metrics,
     timestamp: new Date().toISOString(),
+    webgpuProbe: typeof window !== 'undefined' ? window.webgpuProbe : undefined,
   };
   const active = currentRenderer as {
     getDiagnostics?: () => WASMDiagnostics;
@@ -22,6 +23,8 @@ export function buildRendererDiagnostics(
     getFPS?: () => number;
     getAdapterSummary?: () => string;
     getAdapterAttemptLabel?: () => string | null;
+    getLastGraphReport?: () => import('./GraphRunner').GraphRunReport | null;
+    getGpuChoresBreadcrumbs?: () => import('../gpuChores').GpuChoresBreadcrumbs;
   } | null;
 
   if (metrics.isWASM && active?.getDiagnostics) {
@@ -35,6 +38,8 @@ export function buildRendererDiagnostics(
         fps: active.getFPS?.() ?? 0,
         adapterInfo: active.getAdapterSummary?.() ?? '',
         adapterAttemptLabel: active.getAdapterAttemptLabel?.() ?? null,
+        graph: active.getLastGraphReport?.() ?? null,
+        gpuChores: active.getGpuChoresBreadcrumbs?.(),
       },
       ...(lastFailedWasmRenderer ? { wasm: lastFailedWasmRenderer.getDiagnostics() } : {}),
     };

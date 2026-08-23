@@ -64,13 +64,36 @@ export function useRemoteSync({
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Keep latest handlers in refs so the BroadcastChannel listener (mounted once)
-    // always calls current roulette logic without re-binding the channel.
+    // always calls current logic without re-binding the channel. Stale closures here
+    // were the remote-control "sliders do nothing" class of bug.
     const handleRandomizeSlotRef = useRef(handleRandomizeSlot);
     handleRandomizeSlotRef.current = handleRandomizeSlot;
     const triggerRandomizeAllSlotsRef = useRef(triggerRandomizeAllSlots);
     triggerRandomizeAllSlotsRef.current = triggerRandomizeAllSlots;
     const triggerRouletteRef = useRef(triggerRoulette);
     triggerRouletteRef.current = triggerRoulette;
+    const setModeRef = useRef(setMode);
+    setModeRef.current = setMode;
+    const setActiveSlotRef = useRef(setActiveSlot);
+    setActiveSlotRef.current = setActiveSlot;
+    const updateSlotParamRef = useRef(updateSlotParam);
+    updateSlotParamRef.current = updateSlotParam;
+    const setShaderCategoryRef = useRef(setShaderCategory);
+    setShaderCategoryRef.current = setShaderCategory;
+    const syncInputSourceToRendererRef = useRef(syncInputSourceToRenderer);
+    syncInputSourceToRendererRef.current = syncInputSourceToRenderer;
+    const setAutoChangeEnabledRef = useRef(setAutoChangeEnabled);
+    setAutoChangeEnabledRef.current = setAutoChangeEnabled;
+    const setAutoChangeDelayRef = useRef(setAutoChangeDelay);
+    setAutoChangeDelayRef.current = setAutoChangeDelay;
+    const handleNewRandomImageRef = useRef(handleNewRandomImage);
+    handleNewRandomImageRef.current = handleNewRandomImage;
+    const loadDepthModelRef = useRef(loadDepthModel);
+    loadDepthModelRef.current = loadDepthModel;
+    const setSelectedVideoRef = useRef(setSelectedVideo);
+    setSelectedVideoRef.current = setSelectedVideo;
+    const setIsMutedRef = useRef(setIsMuted);
+    setIsMutedRef.current = setIsMuted;
 
     const buildFullState = useCallback((): FullState => ({
         modes,
@@ -113,29 +136,37 @@ export function useRemoteSync({
                     }, 5000);
                 }
             } else if (msg.type === 'CMD_SET_MODE') {
-                const { index, mode } = msg.payload;
-                setMode(index, mode);
+                const { index, mode } = msg.payload ?? {};
+                if (typeof index === 'number' && mode != null) {
+                    void setModeRef.current(index, mode);
+                }
             } else if (msg.type === 'CMD_SET_ACTIVE_SLOT') {
-                setActiveSlot(msg.payload);
+                if (typeof msg.payload === 'number') {
+                    setActiveSlotRef.current(msg.payload);
+                }
             } else if (msg.type === 'CMD_UPDATE_SLOT_PARAM') {
-                const { index, updates } = msg.payload;
-                updateSlotParam(index, updates);
+                const { index, updates } = msg.payload ?? {};
+                if (typeof index === 'number' && updates && typeof updates === 'object') {
+                    updateSlotParamRef.current(index, updates as Partial<SlotParams>);
+                } else {
+                    console.warn('[RemoteSync] CMD_UPDATE_SLOT_PARAM missing index/updates', msg.payload);
+                }
             } else if (msg.type === 'CMD_SET_SHADER_CATEGORY') {
-                setShaderCategory(msg.payload);
+                setShaderCategoryRef.current(msg.payload);
             } else if (msg.type === 'CMD_SET_INPUT_SOURCE') {
-                syncInputSourceToRenderer(msg.payload);
+                syncInputSourceToRendererRef.current(msg.payload);
             } else if (msg.type === 'CMD_SET_AUTO_CHANGE') {
-                setAutoChangeEnabled(msg.payload);
+                setAutoChangeEnabledRef.current(msg.payload);
             } else if (msg.type === 'CMD_SET_AUTO_CHANGE_DELAY') {
-                setAutoChangeDelay(msg.payload);
+                setAutoChangeDelayRef.current(msg.payload);
             } else if (msg.type === 'CMD_LOAD_RANDOM_IMAGE') {
-                handleNewRandomImage();
+                void handleNewRandomImageRef.current();
             } else if (msg.type === 'CMD_LOAD_MODEL') {
-                loadDepthModel();
+                void loadDepthModelRef.current();
             } else if (msg.type === 'CMD_SELECT_VIDEO') {
-                setSelectedVideo(msg.payload);
+                setSelectedVideoRef.current(msg.payload);
             } else if (msg.type === 'CMD_SET_MUTED') {
-                setIsMuted(msg.payload);
+                setIsMutedRef.current(msg.payload);
             } else if (msg.type === 'CMD_RANDOMIZE_SLOT') {
                 const slot = typeof msg.payload === 'number' ? msg.payload : msg.payload?.slot;
                 if (typeof slot === 'number' && slot >= 0 && slot <= 2) {
@@ -171,6 +202,6 @@ export function useRemoteSync({
         if (channelRef.current) {
             sendMessage('STATE_FULL', buildFullState());
         }
-    }, [modes, activeSlot, shaderCategory, inputSource, 
+    }, [modes, activeSlot, slotParams, shaderCategory, inputSource,
         autoChangeEnabled, autoChangeDelay, isMuted, selectedVideo, buildFullState, sendMessage]);
 }

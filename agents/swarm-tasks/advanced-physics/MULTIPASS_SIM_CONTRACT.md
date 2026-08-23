@@ -118,13 +118,33 @@ dataTextureB:  photon scratch (direction.xyz, wavelength in .w) — single-pass 
 dataTextureC:  read previous accumulation
 ```
 
+### Chromatographic fluid (`chromatographic-fluid`)
+
+```
+dataTextureA / C:  .rgb = dye R/G/B,  .a = temperature
+Shared wind velocity is computed per pass (mouse vane + audio gusts) — not three NS fields.
+```
+
+### Gray–Scott (`gray-scott-tank`)
+
+```
+dataTextureA / C:  .r = U,  .g = V,  .b = age,  .a = seed-mask
+```
+
+### Optical flow dream (`optical-flow-dream`)
+
+```
+dataTextureA / C:  .rgb = dream color,  .a = pack2x16float(flow.xy)
+historyTexture (binding 13) + extraBuffer[4] history head (read-only)
+```
+
 ---
 
 ## Anti-patterns
 
 | ⛔ Don't | ✅ Do |
 |---------|------|
-| Add binding 13+ | Pack into RGBA channels |
+| Add extra bind groups | Pack into RGBA channels; history ring (binding 13) is the only opt-in extension |
 | `textureLoad` on `dataTextureC` in pass 1 after you wrote A in same pass expecting C updated | Read C at pass start; write A; pass 2 reads A |
 | Separate JSON per `-pass2` file | One catalog id; `multipass.passes[]` lists files |
 | `atomicAdd` without device feature check | Hierarchical reduce or luminance stamp (see phase-c agent 5c) |

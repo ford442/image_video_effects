@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Elastic Strip
 //  Category: distortion
-//  Features: mouse-driven, audio-reactive, spring-physics, depth-aware, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, spring-physics, depth-aware,
+//            upgraded-rgba, thin-film, traveling-plucks
 //  Complexity: High
 //  Chunks From: elastic-strip, bass_env, depth-aware-fog
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-08-21
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -27,6 +28,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
+
 fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -48,18 +51,21 @@ fn anisotropic_highlight(viewDir: vec2<f32>, lightDir: vec2<f32>, tangent: vec2<
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let pixel = vec2<i32>(global_id.xy);
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let time = u.config.x;
+    let held = f32(u.zoom_config.w > 0.5);
 
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let mouse = u.zoom_config.yz;
+    let prev = textureLoad(dataTextureC, pixel, 0);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let tension = mix(0.4, 1.6, depth);
 
     let stripCount = mix(8.0, 80.0, u.zoom_params.x) * (1.0 + bass * 0.3);
@@ -69,6 +75,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let isHoriz = step(0.5, direction);
     let stripCoord = mix(uv.x, uv.y, isHoriz);
+    let alongCoord = mix(uv.y, uv.x, isHoriz);
     let mouseStrip = mix(mouse.x, mouse.y, isHoriz);
     let mouseDisplace = mix(mouse.y, mouse.x, isHoriz);
 
@@ -83,8 +90,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pluckFreq = 6.0 + bass * 12.0;
     let springShift1 = damped_oscillator(time + cellPhase * 0.1, pluckFreq * tension, pluckDecay, cellPhase) * bass * 0.06;
     let springShift2 = damped_oscillator(time * 1.3 + cellPhase * 0.2, pluckFreq * 1.7 * tension, pluckDecay * 1.5, cellPhase + 1.0) * bass * 0.03;
-    let dragShift = (mouseDisplace - 0.5) * strength * influence * tension;
-    let totalShift = dragShift + (springShift1 + springShift2) * influence;
+    let dragShift = (mouseDisplace - 0.5) * strength * influence * tension * (1.0 + held * 0.45);
+    var totalShift = dragShift + (springShift1 + springShift2) * influence;
+
+    var clickPluck = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (rp.z > 0.0 && age >= 0.0 && age < 1.3) {
+            let rStrip = mix(rp.x, rp.y, isHoriz);
+            let rAlong = mix(rp.y, rp.x, isHoriz);
+            let band = exp(-abs(stripCenter - rStrip) * stripCount * 0.55);
+            let wave = exp(-abs(alongCoord - rAlong - age * 0.55) * 28.0) * (1.0 - age / 1.3);
+            clickPluck = max(clickPluck, band * wave);
+        }
+    }
+    totalShift += clickPluck * 0.12 * strength;
 
     let sourceUV = vec2<f32>(
         uv.x - select(0.0, totalShift, isHoriz > 0.5),
@@ -102,7 +124,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var rgb = vec3<f32>(r, baseColor.g, b);
 
     let stripEdge = abs(fract(stripCoord * stripCount) - 0.5) * 2.0;
-    let edgeGlow = smoothstep(0.85, 1.0, stripEdge) * influence;
+    let bevel = smoothstep(0.72, 1.0, stripEdge);
+    let subRib = smoothstep(0.08, 0.0, abs(fract(stripCoord * stripCount * 3.0) - 0.5));
+    let packets = smoothstep(0.07, 0.0, abs(fract(alongCoord * 9.0 - time * (2.6 + bass * 2.2) + cellPhase * 0.05) - 0.5));
+    let runners = smoothstep(0.08, 0.0, abs(fract(alongCoord * 5.0 + time * (1.9 + mids)) - 0.5));
+    let edgeGlow = bevel * influence;
 
     let normal = vec2<f32>(select(1.0, 0.0, isHoriz > 0.5), select(0.0, 1.0, isHoriz > 0.5));
     let lightDir = normalize(vec2<f32>(0.3, 0.7));
@@ -111,19 +137,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let specular = pow(ndotl, 32.0) * mids * 0.5;
     let aniso = anisotropic_highlight(viewDir, lightDir, normal, 0.15 + treble * 0.2) * mids * 0.4;
 
-    let subsurface = edgeGlow * vec3<f32>(0.8, 0.3, 0.1) * (1.0 + bass * 0.5);
-    rgb += subsurface * 0.35;
+    let filmPhase = abs(totalShift) * 28.0 + alongCoord * 6.0 + time * 1.7;
+    let film = 0.5 + 0.5 * cos(TAU * (vec3<f32>(filmPhase * 0.08) + vec3<f32>(0.0, 0.33, 0.67)));
+    rgb += film * (0.18 + abs(totalShift) * 1.4 + clickPluck * 0.45 + packets * 0.28);
+    rgb += film * subRib * 0.16 + film * runners * 0.14;
     rgb += vec3<f32>(specular + aniso);
+    rgb += bevel * film * 0.22;
 
     let plasticSheen = pow(1.0 - abs(dot(viewDir, normal)), 3.0) * 0.15 * (1.0 + treble);
     rgb += vec3<f32>(plasticSheen);
 
-    rgb = aces_tonemap(rgb * (1.0 + edgeGlow * 0.3));
+    rgb = aces_tonemap(rgb * (1.0 + edgeGlow * 0.3 + held * 0.08));
+    rgb = mix(rgb, prev.rgb * 0.9, 0.18);
 
     let deformationEnergy = abs(totalShift) * 4.0;
-    let alpha = clamp(baseColor.a * 0.6 + deformationEnergy * depth + edgeGlow * 0.2, 0.0, 1.0);
+    let alpha = clamp(baseColor.a * 0.6 + deformationEnergy * depth + edgeGlow * 0.2 + clickPluck * 0.25, 0.0, 1.0);
+    let outDepth = clamp(depth + bevel * 0.06 + subRib * 0.03, 0.0, 1.0);
+    let outCol = vec4<f32>(rgb, alpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(rgb, alpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(rgb, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, outCol);
+    textureStore(dataTextureA, pixel, outCol);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
 }

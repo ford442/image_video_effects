@@ -73,6 +73,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let dist = length(centered);
   let lensMask = 1.0 - smoothstep(lensSize * 0.85, lensSize, dist);
+  let heldPressure = select(0.0, 1.0 - smoothstep(0.0, lensSize, dist), u.zoom_config.w > 0.5);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthMag = mix(1.0, 1.0 + depth * 2.5, lensMask);
@@ -103,7 +104,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let decayFactor = exp(-time * vec3<f32>(1.2, 0.8, 1.6) * (1.0 - phosphorDecay));
   let excitation = 0.55 + 0.45 * bassExcite * decayFactor;
 
-  let scanLine = 0.55 + 0.45 * sin(snappedG.y * dims.y * 0.55 + time * 6.0);
+  var clickShell = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    clickShell += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.35) * 60.0);
+  }
+  let rasterBeam = exp(-abs(fract(snappedG.y - time * 0.18) - 0.5) * 36.0);
+  let degauss = sin(dist * 90.0 - time * 5.0) * (heldPressure + clickShell) * 0.18;
+  let scanLine = 0.55 + 0.45 * sin(snappedG.y * dims.y * 0.55 + time * 6.0 + degauss * 9.0);
   let scanBeat = 1.0 + audio.z * 0.3 * sin(snappedG.y * 40.0 + time * 12.0);
   let phosphor = sampleColor * mask * excitation * scanLine * scanBeat;
 
@@ -111,9 +121,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bloom = glow * lensMask * brightness * brightness * (0.6 + audio.x + audio.y * 0.5);
   var finalColor = phosphor + vec3<f32>(0.18, 0.92, 0.42) * bloom;
 
-  let afterimage = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  let historyCoord = vec2<i32>(clamp(vec2<i32>(gid.xy), vec2<i32>(0), vec2<i32>(i32(dims.x) - 1, i32(dims.y) - 1)));
+  let afterimage = textureLoad(dataTextureC, historyCoord, 0).rgb;
   let trail = mix(afterimage, finalColor, 0.12);
-  finalColor = mix(finalColor, trail, 0.22 * lensMask);
+  let phosphorHue = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + time * 0.7 + dist * 18.0);
+  finalColor = mix(finalColor, trail, 0.22 * lensMask) + phosphorHue * (rasterBeam * 0.12 + clickShell * 0.25 + heldPressure * 0.08);
 
   finalColor = acesFilm(finalColor * 1.15);
 
@@ -125,5 +137,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(lensMask, scanLine, bloom, finalAlpha));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
 }

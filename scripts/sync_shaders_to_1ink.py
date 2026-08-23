@@ -23,6 +23,10 @@ import sys
 import argparse
 from pathlib import Path
 
+from deploy_credentials import load_credentials, load_env_files, open_sftp
+
+load_env_files()
+
 try:
     import paramiko
 except ImportError:
@@ -30,9 +34,9 @@ except ImportError:
     sys.exit(1)
 
 # --- Configuration ---
-DEFAULT_HOST = os.environ.get("SHADER_SYNC_HOST", "1ink.us")
-DEFAULT_PORT = int(os.environ.get("SHADER_SYNC_PORT", "22"))
-DEFAULT_USER = os.environ.get("SHADER_SYNC_USER", "ford442")
+DEFAULT_HOST = os.environ.get("SHADER_SYNC_HOST") or os.environ.get("DEPLOY_HOST", "1ink.us")
+DEFAULT_PORT = int(os.environ.get("SHADER_SYNC_PORT") or os.environ.get("DEPLOY_PORT", "22"))
+DEFAULT_USER = os.environ.get("SHADER_SYNC_USER") or os.environ.get("DEPLOY_USER") or os.environ.get("FTP_USER", "ford442")
 DEFAULT_REMOTE_PATH = os.environ.get("SHADER_SYNC_REMOTE_PATH", "test.1ink.us/image_video_effects/shaders")
 LOCAL_SHADERS_DIR = Path("public/shaders")
 DEFAULT_IDS_FILE = Path(__file__).resolve().parent / "shader_scan_fix_list.txt"
@@ -131,8 +135,10 @@ def main():
     )
     parser.add_argument(
         "--password",
-        default=os.environ.get("SHADER_SYNC_PASSWORD"),
-        help="SFTP password (or set SHADER_SYNC_PASSWORD env var)",
+        default=os.environ.get("SHADER_SYNC_PASSWORD")
+        or os.environ.get("DEPLOY_PASS")
+        or os.environ.get("FTP_PASS"),
+        help="SFTP password (or set DEPLOY_PASS / SHADER_SYNC_PASSWORD / FTP_PASS)",
     )
     parser.add_argument(
         "--dry-run",
@@ -178,13 +184,7 @@ def main():
     if args.dry_run:
         print("🔍  Dry run — no files will be modified.\n")
 
-    # Prompt for password if not provided
-    password = args.password
-    if not password and not args.dry_run:
-        import getpass
-        password = getpass.getpass(f"Enter password for {args.user}@{args.host}: ")
-
-    transport = None
+    client = None
     sftp = None
     uploaded = 0
     skipped = 0
@@ -192,10 +192,14 @@ def main():
 
     try:
         if not args.dry_run:
-            print(f"Connecting to {args.host}:{args.port}...")
-            transport = paramiko.Transport((args.host, args.port))
-            transport.connect(username=args.user, password=password)
-            sftp = paramiko.SFTPClient.from_transport(transport)
+            creds = load_credentials(prompt=not bool(args.password))
+            if args.password:
+                creds.password = args.password
+            creds.host = args.host
+            creds.port = args.port
+            creds.username = args.user
+            print(f"Connecting to {creds.host}:{creds.port} as {creds.username}...")
+            client, sftp = open_sftp(creds)
             print("Connected!\n")
 
         for i, local_path in enumerate(shader_files, 1):
@@ -259,8 +263,8 @@ def main():
     finally:
         if sftp:
             sftp.close()
-        if transport:
-            transport.close()
+        if client:
+            client.close()
 
 
 if __name__ == "__main__":

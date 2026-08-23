@@ -224,6 +224,20 @@ describe('RendererManager shader forwarding', () => {
     expect(wasm.setSlotShader).toHaveBeenCalledWith(2, 'liquid');
   });
 
+  it('does not auto-fallback to Canvas2D when WebGPU init fails', async () => {
+    const js = makeMockJS();
+    (JSRenderer as jest.Mock).mockImplementation(() => js);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
+      init: jest.fn().mockResolvedValue(false),
+      destroy: jest.fn(),
+    }));
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    const ok = await manager.init(canvas);
+    expect(ok).toBe(false);
+    expect(js.init).not.toHaveBeenCalled();
+  });
+
   it('no-ops shader calls when Canvas2D fallback is active', async () => {
     const js = makeMockJS();
     (JSRenderer as jest.Mock).mockImplementation(() => js);

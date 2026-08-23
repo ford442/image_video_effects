@@ -247,6 +247,95 @@ export function countGraphPasses(graph: MultipassGraphDef): number {
   return totalPassCount(graph);
 }
 
+function lastColorWriterIndex(nodes: GraphNodeDef[]): number {
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    if ((nodes[i].writes ?? []).includes('color')) return i;
+  }
+  return -1;
+}
+
+/**
+ * Shrink a graph to fit `cap` dispatches without dropping the display pass.
+ * 1. Reduce `repeat` on earlier iterative nodes first.
+ * 2. Drop non-color nodes nearest the color writer.
+ * 3. Only then reduce the color node's own repeat.
+ * Graphs with no color writer fall back to a prefix slice of the expanded list.
+ */
+export function shrinkGraphToCap(graph: MultipassGraphDef, cap: number): MultipassGraphDef {
+  const safeCap = Math.max(1, cap);
+  const nodes: GraphNodeDef[] = graph.nodes.map((n) => ({
+    ...n,
+    reads: [...(n.reads ?? [])],
+    writes: [...(n.writes ?? [])],
+    repeat: n.repeat ?? 1,
+  }));
+
+  const passCount = () => nodes.reduce((sum, n) => sum + (n.repeat ?? 1), 0);
+
+  if (lastColorWriterIndex(nodes) < 0) {
+    // No display pass — keep the original node list; caller prefix-slices.
+    return { maxPassesPerFrame: graph.maxPassesPerFrame, nodes: graph.nodes };
+  }
+
+  while (passCount() > safeCap) {
+    let reduced = false;
+    const colorIdx = lastColorWriterIndex(nodes);
+    for (let i = 0; i < nodes.length; i++) {
+      if (i === colorIdx) continue;
+      const r = nodes[i].repeat ?? 1;
+      if (r > 1) {
+        nodes[i].repeat = r - 1;
+        reduced = true;
+        break;
+      }
+    }
+    if (!reduced) break;
+  }
+
+  while (passCount() > safeCap && nodes.length > 1) {
+    const colorIdx = lastColorWriterIndex(nodes);
+    let drop = -1;
+    for (let i = colorIdx - 1; i >= 0; i--) {
+      drop = i;
+      break;
+    }
+    if (drop < 0 && colorIdx < nodes.length - 1) {
+      drop = nodes.length - 1;
+    }
+    if (drop < 0) break;
+    nodes.splice(drop, 1);
+  }
+
+  while (passCount() > safeCap) {
+    const colorIdx = lastColorWriterIndex(nodes);
+    if (colorIdx < 0) break;
+    const r = nodes[colorIdx].repeat ?? 1;
+    if (r <= 1) break;
+    nodes[colorIdx].repeat = r - 1;
+  }
+
+  return { maxPassesPerFrame: graph.maxPassesPerFrame, nodes };
+}
+
+/** Apply graph ceiling + quality pass budget, keeping the color write when possible. */
+export function capGraphDispatches(
+  graph: MultipassGraphDef,
+  maxPassesPerFrame: number,
+): ExpandedDispatch[] {
+  const cap = Math.max(1, Math.min(graph.maxPassesPerFrame || maxPassesPerFrame, maxPassesPerFrame));
+  const full = expandGraph(graph);
+  if (full.length <= cap) return full;
+
+  if (lastColorWriterIndex(graph.nodes) < 0) {
+    return full.slice(0, cap);
+  }
+
+  const shrunk = shrinkGraphToCap(graph, cap);
+  const expanded = expandGraph(shrunk);
+  if (expanded.length <= cap) return expanded;
+  return expanded.slice(Math.max(0, expanded.length - cap));
+}
+
 /** Demo / test fixture matching wave-tank graph shape. */
 export function createWaveTankGraph(): MultipassGraphDef {
   return {

@@ -1,6 +1,10 @@
 node_modules
 *.log
 build/
+
+# Local deploy credentials (never commit passwords)
+.env.deploy
+.env.deploy.local
 venv/
 .venv/
 emsdk

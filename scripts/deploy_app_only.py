@@ -22,21 +22,10 @@ import json
 import hashlib
 from pathlib import Path
 
-# Use paramiko if available; otherwise suggest installation
-try:
-    import paramiko
-except ImportError:
-    print("❌  paramiko is required. Install it with:  pip install paramiko")
-    sys.exit(1)
+from deploy_credentials import load_credentials, open_sftp
 
 # ── Configuration ────────────────────────────────────────────────────────────
-
-HOSTNAME = os.environ.get("DEPLOY_HOST", "1ink.us")
-PORT = int(os.environ.get("DEPLOY_PORT", "22"))
-USERNAME = os.environ.get("DEPLOY_USER", "ford442")
-# Read password from env var; falls back to interactive prompt at runtime.
-# Set DEPLOY_PASS in your shell environment — never hardcode credentials here.
-PASSWORD = os.environ.get("DEPLOY_PASS", "")
+# Host/user/password come from .env.deploy or DEPLOY_* / FTP_* env vars.
 
 LOCAL_DIRECTORY = "build"
 REMOTE_DIRECTORY = "test.1ink.us/image_video_effects"
@@ -157,21 +146,14 @@ def main():
         print("⚠️  Force redeploy — uploading all app files")
         manifest = {}
 
-    password = PASSWORD
-    if not password:
-        import getpass
-        password = getpass.getpass(f"Password for {USERNAME}@{HOSTNAME}: ")
-
-    transport = None
+    creds = load_credentials()
+    client = None
     sftp = None
 
     try:
-        print(f"🔌  Connecting to {HOSTNAME}...")
-        transport = paramiko.Transport((HOSTNAME, PORT))
-        transport.connect(username=USERNAME, password=password)
+        print(f"🔌  Connecting to {creds.host} as {creds.username} ({creds.source})...")
+        client, sftp = open_sftp(creds)
         print("✅  Connected!\n")
-
-        sftp = paramiko.SFTPClient.from_transport(transport)
 
         print(f"🚀  Deploying app bundle (shaders excluded)")
         print(f"    Local:  {LOCAL_DIRECTORY}")
@@ -199,8 +181,8 @@ def main():
     finally:
         if sftp:
             sftp.close()
-        if transport:
-            transport.close()
+        if client:
+            client.close()
         print("\n🔒  Connection closed.")
 
 

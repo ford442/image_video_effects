@@ -168,4 +168,4 @@ Path segments are encoded with `encodeResourcePath()` before insertion into URLs
 | UI entry | `src/components/storage/StoragePanel.tsx` |
 | Compact controls | `src/components/storage/StorageControlsPanel.tsx` |
 
-Legacy imports from `StorageService.ts`, `StorageBrowser.tsx`, and `StorageControls.tsx` re-export the new modules.
+Legacy imports from `StorageService.ts` and `StorageBrowser.tsx` re-export the new modules. Use `src/components/storage/` paths for UI components.

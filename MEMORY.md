@@ -1,6 +1,128 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-10 (Batch 45 new generative shaders)
+**Last updated:** 2026-08-21 (getGPUTimings JS/C++ ABI)
+
+## 2026-08-23 — Shader upgrade Batch 56 — INTERACTIVE COMPLEXITY
+
+- Upgraded tracker #475–482: CMYK Halftone Interactive, Cyber Slit Scan,
+  Interactive Ripple, Phosphor Magnifier, Vertical Slice Wave, Chromatic Focus,
+  Quantum Prism, and Matrix Curtain.
+- Added shader-specific geometry, continuous motion, psychedelic color,
+  three-band audio, held-pointer response, and click loops capped at 50 while
+  preserving all saved `params`, canonical bindings, unused B, and no
+  `extraBuffer` access.
+- Deliberate feedback corrections: Phosphor Magnifier A now stores display RGBA
+  for truthful afterimages; Vertical Slice Wave A stays envelope/spring/velocity
+  state and is no longer read as RGB/alpha history. Ripple is documented as an
+  analytic Huygens field and Matrix occupancy as Conway-inspired.
+- Proof: focused structural gate 8/8 (Naga binary absent), strict cohort buffer
+  and dead-slider audits pass, params exact 8/8, catalogs/URLs/uniforms clean,
+  TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build green.
+  Real-GPU visual QA remains external.
+
+## 2026-08-21 — WASM `getGPUTimings` bridge ABI
+
+- JS SoT is **`src/wasm/bridge/*.js`**. `concat_bridge.sh` copies src → `wasm_renderer/bridge` + `public/wasm/bridge`. Editing `wasm_renderer/bridge` gets overwritten. JS-only: no emcc; Playwright still needs a CRA rebuild.
+- Do **not** change C++ `getGPUTimings` to a JSON string. Match out-params via `_malloc` / `ccall` / `getValue` / `_free`. Never return `{}` — always the `GPUTimings` shape (`timingSource` synthesized in JS).
+
+## 2026-08-21 — Progress audit: foundation residual before next content
+
+- Catalog ~1,343 defs / ~1,366 WGSL / manifest ~1,328; thumbs ~353 PNGs (~27%
+  nominal, ~21% healthy). Renderer modularization, GraphRunner Physics Lab set 1,
+  gpu-chores kit, TS 5.4, format-tier *types*, and WASM init ladder are in tree.
+- Open board was only #1080 (WASM real-GPU promotion/demotion) and #1111
+  (thumbnail regression gate). #1111 body is stale: `thumbs:check-regression`
+  exists and runs on PRs, but still lacks deferrals, skip/integrity eligibility,
+  and set-difference `newlyEligible` (comment posted).
+- **Strategic call: build foundation, not another generative swarm.**
+  - Adapter ladder / opaque canvas / limits JSON / B→C then A→C: **leave alone**.
+  - WASM stays Tier B; no GraphRunner C++ port until #1080.
+  - CRA+CRACO stays; Vite deferred.
+- Filed **#1123–#1129**:
+  1. #1123 WASM compile SoT (CMake export drift; C++ cannot request subgroups —
+     `requiredFeatures[2]`; scanner feature set is a third variant)
+  2. #1124 rgba16float tiers real (`probeFormatCapabilities` hardcodes true;
+     C++ `writeTexture` always fp32 bytesPerRow)
+  3. #1125 bridge SoT is `src/wasm` (concat copies src→wasm_renderer); drop
+     unused `react-app-rewired` / `customize-cra` / `webpack-cli`; TS the JS glue
+  4. #1126 second devices: ShaderValidator/Scanner + depth `requestAdapter`
+  5. #1127 gpu-chores opt-in auto-exposure on catalog source (not just 64×64 preview)
+  6. #1128 catalog hygiene (hyphen/underscore ids, graph parents, 44 leftover 8×8,
+     parseWorkgroupSize fallback 8×8 vs canonical 16×16)
+  7. #1129 later: Physics Lab set 2 (DLA, Kuwahara, Droste, ecology, Poincaré,
+     byte-mosh) + audio mapping for **all slots** / simulation graphs
+     (`useAudioReactiveParams` is slot-0 generative only)
+- Audio-reactive slider mapping **exists** but is opt-in and slot-0/generative-only.
+- Attract mode + Physics Lab chip already exist.
+
+## 2026-08-17 — Repeating black present flicker (timestamp queries)
+
+- **Symptom:** repeating black flashes during otherwise healthy WebGPU rendering.
+- **Cause:** `encodeResolveAndCopy` skipped `resolveQuerySet` while `mapAsync` was pending; subsequent frames rewrote the same query indices without resolve → WebGPU validation killed the command buffer (present never ran, clear stayed black). Multipass also rewrote the same end-query index every intermediate pass.
+- **Fix:** always resolve when stamps were written; per-slot `stagingBusy` for the 2-deep readback ring; intermediate multipass passes omit timestamps (only phase starts + final compute end). WASM `ResolveTimestampQueries` mirrors resolve-always. Tests in `WebGPUTiming.test.ts` updated.
+- Real-GPU visual QA still external (no GPU adapter on Cloud VM).
+
+
+## 2026-08-16 — Shader upgrade Batch 52 — INTERACTIVE VECTOR FIELDS & OPTICAL DYNAMICS
+
+- Upgraded tracker #447–454 across the Interactive Vector Fields & Optical Dynamics cohort:
+  Interactive Fresnel, Velocity Field (Vorticity Confinement), Fluid Lens Dynamics (Interactive Fisheye),
+  Magnetic Field, Digital Mold, Swirling Void, Elastic Chromatic Explosion, and Motion Revealer.
+- Added rich physical kinematics: multi-pole Lorentz vector fields, 2D Navier-Stokes momentum advection
+  with vorticity confinement, Kelvin-Voigt viscoelastic droplet surface tension, continuous Gray-Scott
+  reaction-diffusion kinetics, general relativistic Kerr metric frame dragging, and Lucas-Kanade
+  optical flow structure tensor coherence analysis.
+- Upgraded `swirling-void` from non-canonical 8x8 to canonical 16x16x1 compute workgroups.
+- Replaced all non-standard / hardware-dependent float32 filtering operations with exact `textureLoad` from `dataTextureC`.
+- Structural proof: 8/8 Naga and bindgroup gate, 0 new extraBuffer violations, 0 new dead sliders,
+  catalogs in sync (1,341 unique IDs, 0 duplicates), uniforms layout contract in sync. Real-GPU visual QA remains external.
+
+## 2026-08-15 — Shader upgrade Batch 51 — LIQUID DYNAMICS, GEOMETRY & VISCOUS FLOW
+
+- Upgraded tracker #439–446 across the Liquid Effects cohort: Liquid Fast,
+  Liquid RGB, Liquid Jelly, Liquid Rainbow, Liquid Perspective, Liquid Glitch,
+  Liquid Viscous Nebula grokcf1, and Liquid Viscous (Simple).
+- Added dual continuous motion structures (Hamiltonian divergence-free streamfunctions,
+  complex potential vortex superposition, Kelvin-Voigt viscoelastic elasticity,
+  trochoidal Gerstner waves, Laplace cohesion, and vorticity confinement), 2.5D
+  heightfield normal derivatives, Snell's law refraction, thin-film optical
+  interference, Voronoi cellular quantization, and interactive pointer drag wakes.
+- Replaced all rgba32float feedback reads with exact `textureLoad` from `dataTextureC`.
+- Structural proof: 8/8 Naga and bindgroup gate, 0 new extraBuffer violations,
+  0 new dead sliders, catalogs in sync (1,340 unique IDs, 0 duplicates), uniforms layout
+  contract in sync. Real-GPU visual QA remains external.
+
+## 2026-08-15 — gpu-chores analysis layer (Tier 4b)
+
+- Shared pre-FX kit in `src/gpuChores/`: BT.709 histogram, reduce_f32, lut_u8_map,
+  downsample_2d. Adopts the renderer `GPUDevice` — never `requestDevice()`.
+- Live path: auto-exposure from the histogram **normalizes the 64×64 preview**,
+  not catalog FX. Kill switch `?no_gpu_compute`. Breadcrumbs in Dev Tools.
+- CPU goldens are the Chromashift-shaped parity SoT on the headless VM.
+- Docs: `docs/GPU_CHORES.md` (Tier 4a = domain FX, Tier 4b = chores).
+- Device-init policy and feedback B→C / A→C copy order untouched.
+
+## 2026-08-15 — Multipass Physics Lab flagships (#1081 / epic #1076)
+
+- Three new Tier C graphs: `chromatographic-fluid` (7), `gray-scott-tank` (6),
+  `optical-flow-dream` (4, history ring). TS GraphRunner only; no C++.
+- GraphRunner now returns `GraphRunReport` and shrinks Jacobi repeats before
+  dropping the color write. Dev Tools shows truncated steps + validation errors.
+- Shader Browser has a Physics Lab chip (`hasGraph`). Attract pool includes the
+  three new stacks plus `fabric-of-reality` at 22s dwell.
+- Structural proof: 12/12 naga+bindgroup; focused Jest 45+ green. Real-GPU
+  visual QA and thumbnail regen remain workstation-side.
+
+## 2026-08-15 — Deploy SFTP credentials
+
+- `npm run deploy` / `deploy:app` / shader SFTP sync no longer prompt when
+  gitignored `.env.deploy` or an authorized SSH key is present.
+- Shared loader: `scripts/deploy_credentials.py`. Example: `.env.deploy.example`.
+- This VM's ed25519 key is authorized on `ford442@1ink.us`.
+- The live DreamHost password is still the one that was once committed; rotate
+  it when convenient. Never put it back in tracked files.
+
+## 2026-08-10 — Batch 45 — Psychedelic generative six
 
 ## 2026-08-10 — Batch 45 — Psychedelic generative six
 
@@ -552,7 +674,15 @@
 - INITIAL_MEMORY 64 MiB experiment: **reject** (no wasm size win); ASYNCIFY **+40 KiB wasm** documented in `BUILD_FLAG_EXPERIMENTS.md`
 - `measure_wasm_build_flags.sh` for reproducible flag comparisons
 - PR template checklist includes `wasm:validate`; CMake marked CI-off-limits
-- `docs/TOOLCHAIN_DECISION.md`: **stay CRA + CRACO** (Vite spike deferred)
+- `docs/TOOLCHAIN_DECISION.md`: **stay CRA + CRACO** (Vite spike deferred); **TS 5.4.5 landed** (#1083, Aug 2026)
+
+## Toolchain truth pass (#1076 / #1083, 2026-08-15)
+- **Decision recorded:** TypeScript 5.4.5 on CRA 5 + CRACO 7 — not blocked; only CRA peer-metadata noise (`npm ls typescript` invalid peer).
+- **Docs:** `TOOLCHAIN_DECISION.md` decision log + dependency boundaries; README toolchain command matrix; `npm run typecheck`.
+- **Cleanup:** removed `BaseRenderer.ts`, root Storage UI shims, `getStorageService` aliases; `StorageService.ts` facade kept.
+- **Vite:** deferred per revisit triggers (TS 5 prerequisite satisfied).
+- **Green:** typecheck, verify:device-policy, verify:uniforms, 513 Jest pass, SKIP_WASM_BUILD build, verify:toolchain-foundation (~258 KiB main gzip).
+- **No collateral:** device-init policy and feedback B→C / A→C copy order untouched.
 
 - Multi-agent shader relay experiment: `gen-relay-psychedelia` in generative category
 - CHUNK-based ownership (domain-warp, symmetry, palette, feedback, motion) — see `agents/RELAY_PROTOCOL.md`
@@ -649,3 +779,38 @@
 - Always audit and force-regenerate invalid existing PNGs before `--missing` waves. Priority order: generative, simulation multipass, interactive-mouse, then remaining categories.
 - Do not allowlist renderable failures to improve the denominator. CI remains reporting-only until healthy coverage reaches at least 50%.
 - The current Cloud VM's production WebGPU probe produced a zero-energy frame, so batch generation requires a verified discrete-GPU host. See `reports/thumbnail-coverage-2026-08.md`.
+
+## Thumbnail foundation wave — #1076 (2026-08-15)
+
+- Confirmed the app engine is the full-catalog/multipass path and constrained the
+  minimal engine/package command to generative-only captures.
+- Added `thumbs:check-regression`, a PR check that compares healthy coverage with
+  the base git ref and fails new shader definitions without healthy PNGs.
+- `thumbs:status` now reports curated attract + Physics Lab priority coverage and
+  accepts `--require-priority` for GPU-workstation enforcement.
+- Current VM proof: nominal 349/1,324 (26.4%), healthy 272/1,323 (20.6%),
+  priority 20/21 (95.2%); capture remains blocked until discrete-GPU access.
+
+## Shader upgrade Batches 53–54 (2026-08-21)
+
+- Tracker #455–470 is complete in two sequential, independently gated cohorts:
+  Batch 53 Fast Motion Encore and Batch 54 Psychedelic Upgrade. Preserve their
+  closeouts separately when auditing or reporting.
+- Batch 54's intentional contract repairs are Tile Twist A
+  `[bassEnvelope, trailRGB]` plus corrected Tile Size/Twist mapping, and Polar
+  Warp A `[bassEnvelope, mouseX, mouseY, alpha]` with no RGB-history read. B is
+  unused throughout Batch 54; no extraBuffer access was introduced.
+- Current committed baseline has malformed
+  `shader_definitions/generative/gen-chrono-kinetic-fractal-engine.json`.
+  Generators skip it and Jest catalog hygiene fails on it; do not attribute that
+  pre-existing defect to Batches 53, 54, or 55. Structural/build gates pass, but
+  psychedelic identity and motion/trail acceptance still require a real GPU.
+
+## Shader upgrade Batch 55 (2026-08-21)
+
+- Tracker #471–474: Kaleido-Scope Prism grokcf1, RGB Topology, Elastic Strip,
+  Refraction Tunnel. Geometry detail + fast motion + psychedelic color.
+- Kaleido 8x8→16x16; origin A `[env, springXY, vel]`; topology mask A
+  preserved; B unused; no extraBuffer writes. Tunnel no longer uses
+  `floor(time)` hash caustics.
+- Structural proof 4/4; visual QA remains real-GPU workstation work.

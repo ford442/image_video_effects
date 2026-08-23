@@ -34,7 +34,7 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) {
     return;
@@ -86,7 +86,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let wave_speed = speed_param * 5.0;
   let wave_phase = strip_uv_x * freq_mod + time * wave_speed;
   let audio_amp = amp_mod * (1.0 + env * 0.5) * click_burst;
-  var offset = sin(wave_phase) * audio_amp;
+  let layered = sin(wave_phase) + 0.45 * sin(wave_phase * 1.73 - time * wave_speed * 1.4 + spring_new.x * 5.0);
+  let seamRunner = exp(-abs(fract(strip_uv_x * 3.0 - time * (0.12 + speed_param * 0.5)) - 0.5) * 18.0);
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    clickFront += exp(-age * 1.8) * exp(-abs(length(uv - event.xy) - age * 0.38) * 60.0);
+  }
+  let heldTwist = select(0.0, (uv.x - mouse_target.x) * (uv.y - mouse_target.y) * 0.7, u.zoom_config.w > 0.5);
+  var offset = layered * audio_amp + seamRunner * 0.025 + clickFront * 0.035 + heldTwist;
 
   // Jitter
   let noise_val = hash12(vec2<f32>(strip_id, floor(time * 10.0)));
@@ -104,21 +114,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let g = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
 
-  // Temporal feedback trail
-  let feedback = 0.82;
-  var col = mix(vec3<f32>(r, g, b), prev.rgb, 0.18);
+  let rainbow = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + wave_phase + time + seamRunner * 3.0);
+  var col = vec3<f32>(r, g, b) + rainbow * (seamRunner * 0.12 + clickFront * 0.2 + abs(heldTwist) * 0.3);
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
   // Alpha encodes intensity + trail age + mids/treble sparkle
   let luminance = 0.299 * r + 0.587 * g + 0.114 * b;
   let intensity = clamp(abs(offset) * 10.0 + env * 0.3 + treble * 0.1, 0.0, 1.0);
   let base_alpha = mix(0.65, 0.98, luminance * 0.3 + intensity * 0.7);
-  let trail_age = prev.a * feedback + base_alpha * (1.0 - feedback);
 
   // Depth pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let outColor = vec4<f32>(col, clamp(trail_age, 0.0, 1.0));
+  let outColor = vec4<f32>(col, clamp(base_alpha, 0.0, 1.0));
 
   // Persist per-pixel state for next frame (env, spring, velocity)
   let stateColor = vec4<f32>(env, spring_new, vel_new);

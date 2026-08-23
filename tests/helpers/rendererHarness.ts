@@ -157,14 +157,46 @@ export function attachConsoleCollector(page: Page): {
     }
   });
 
-  page.on('pageerror', (err) => {
-    criticalErrors.push(`[pageerror] ${err.message}`);
+  page.on('pageerror', (error) => {
+    const msg = error.message || String(error);
+    if (!isStrictGpuMode()) {
+      if (msg.includes('No GPU adapter found') || msg.includes('Failed to obtain a WebGPU adapter') || msg.includes('Failed to get WebGPU adapter')) {
+        return;
+      }
+    }
+    criticalErrors.push(`[pageerror] ${error.message}`);
   });
 
   return { criticalErrors, consoleErrors };
 }
 
+export async function waitForWebGpuProbe(page: Page, timeoutMs = 30000): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const w = window as { webgpuProbe?: { ok: boolean }; __pixelocity__?: { renderer?: unknown } };
+      return w.webgpuProbe != null || w.__pixelocity__?.renderer != null;
+    },
+    { timeout: timeoutMs },
+  );
+}
+
+export async function isGpuProbeOk(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const w = window as {
+      webgpuProbe?: { ok: boolean };
+      __pixelocity__?: { renderer?: unknown };
+    };
+    if (w.webgpuProbe != null) return w.webgpuProbe.ok === true;
+    return w.__pixelocity__?.renderer != null;
+  });
+}
+
 export async function waitForTestApi(page: Page, timeoutMs = 30000): Promise<void> {
+  await waitForWebGpuProbe(page, timeoutMs);
+  const probeOk = await isGpuProbeOk(page);
+  if (!probeOk) {
+    return;
+  }
   await page.waitForFunction(() => (window as any).__pixelocity__?.renderer != null, {
     timeout: timeoutMs,
   });
@@ -195,16 +227,15 @@ export async function loadShaderOnSlot(
   page: Page,
   shader: { id: string; url: string; slot?: number },
   inputSource: 'generative' | 'image' | 'none' = 'generative'
-): Promise<void> {
-  await page.evaluate(
+): Promise<boolean> {
+  return page.evaluate(
     async ({ s, source }) => {
       const api = (window as any).__pixelocity__;
       api.setInputSource(source);
       const ok = await api.loadShader(s.id, s.url);
-      if (!ok) {
-        throw new Error(`loadShader failed for ${s.id}`);
-      }
+      if (!ok) return false;
       api.setSlotShader(s.slot ?? 0, s.id);
+      return true;
     },
     { s: shader, source: inputSource }
   );
@@ -271,16 +302,17 @@ export async function exerciseShaderOnWasm(
   page: Page,
   shader: ParityShaderCase,
   renderMs = 2500
-): Promise<{ fps: number; stats: ImageStats; criticalErrors: string[] }> {
+): Promise<{ loaded: boolean; fps: number; stats: ImageStats; criticalErrors: string[] }> {
   const { criticalErrors } = attachConsoleCollector(page);
-  await loadShaderOnSlot(page, shader);
+  const loaded = await loadShaderOnSlot(page, shader);
+  if (!loaded) return { loaded: false, fps: 0, stats: { width: 0, height: 0, nonZeroPixels: 0, rBar: 0, gBar: 0, bBar: 0 }, criticalErrors };
   if (shader.testState) {
     await applyTestState(page, shader.testState);
   }
   await page.waitForTimeout(renderMs);
   const stats = await captureCanvasStats(page);
   const fps = await getRendererFps(page);
-  return { fps, stats, criticalErrors };
+  return { loaded: true, fps, stats, criticalErrors };
 }
 
 export async function renderShaderCase(

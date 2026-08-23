@@ -93,6 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
     let mouseNdc = (mouse - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+    let held = f32(u.zoom_config.w > 0.5);
 
     let p1 = u.zoom_params.x;
     let p2 = u.zoom_params.y;
@@ -109,7 +110,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let chromatic = p3 * 0.06 * (1.0 + mids);
     let rotationSpeed = p4 * 2.5 * (1.0 + treble * 0.6);
 
-    let dvecRaw = uv - mouseNdc;
+    var dvecRaw = uv - mouseNdc;
+    let dragTwist = held * (mouse.y - 0.5) * PI;
+    dvecRaw = rot2(dragTwist * exp(-length(dvecRaw) * 2.0)) * dvecRaw;
     let mz = mobius(dvecRaw * 2.0,
                     vec2<f32>(cos(time * 0.2), sin(time * 0.2)),
                     vec2<f32>(0.0, 0.05 + bass * 0.08),
@@ -120,6 +123,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(dvec);
     let angle = atan2(dvec.y, dvec.x);
 
+    var irisWave = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (rp.z > 0.0 && age >= 0.0 && age < 1.6) {
+            irisWave = max(irisWave,
+                exp(-abs(distance(uv01, rp.xy) - age * 0.46) * 72.0) * (1.0 - age / 1.6));
+        }
+    }
+
     let warpUv = dvec * 3.0 + vec2<f32>(time * 0.2, -time * 0.15);
     let warp = domainWarp(warpUv, 0.25 + mids * 0.2, 3);
     let warpedDist = dist + fbm(warp + time * 0.3, 4) * 0.08 * (1.0 + bass);
@@ -127,13 +141,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let logSpiral = spiralTightness * log(max(warpedDist, 0.0001)) + time * rotationSpeed;
     let archSpiral = spiralTightness * angle + time * rotationSpeed;
     let spiralBlend = smoothstep(0.0, 0.5, bass);
-    let spiralAngle = mix(archSpiral, logSpiral, spiralBlend);
+    let spiralAngle = mix(archSpiral, logSpiral, spiralBlend) + dragTwist * smoothstep(0.65, 0.0, dist);
     let spiralDist = spiralTightness * spiralAngle * 0.1;
     let spiralUV = clamp(mouse + vec2<f32>(cos(spiralAngle) * spiralDist / aspect, sin(spiralAngle) * spiralDist), vec2<f32>(0.0), vec2<f32>(1.0));
 
     let barrel = dist * dist * lensStrength * 0.4;
     let pincushion = -dist * lensStrength * 0.15;
-    let lensWarp = mix(barrel, pincushion, smoothstep(0.0, 1.0, p2));
+    let lensWarp = mix(barrel, pincushion, smoothstep(0.0, 1.0, p2)) + irisWave * 0.08;
     let lensMask = smoothstep(0.5, 0.0, dist);
     let lensFactor = mix(1.0, 1.0 / max(lensStrength * 0.5 + 0.1, 0.1), lensMask);
 
@@ -161,6 +175,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let caustic = fbm(vec2<f32>(warpedDist * 20.0, angle * 5.0 + time * 3.0), 3) * lensMask * bass;
     let causticLight = vec3<f32>(0.9, 0.95, 1.0) * caustic * 0.35;
 
+    // Liquid rainbow interference and Möbius spectral caustics.
+    let filmPhase = warpedDist * 34.0 - time * 3.6 + sin(angle * 7.0 + time * 1.9) * 2.0;
+    let liquidRainbow = 0.5 + 0.5 * cos(TAU * (vec3<f32>(filmPhase * 0.08)
+                                           + vec3<f32>(0.0, 0.33, 0.67)));
+    let mobiusCaustic = pow(max(0.0, sin(length(mz) * 18.0 - angle * 4.0 - time * 4.2)), 6.0)
+                      * lensMask;
+
     let bloomCenter = exp(-dist * dist * 8.0) * lensStrength * 0.25;
     let bloom = vec3<f32>(1.0, 0.92, 0.78) * bloomCenter * (0.5 + treble * 0.5);
 
@@ -183,11 +204,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var alpha = mix(lumaAlpha, depthAlpha, 0.5) * effectIntensity * edgeAlpha;
     alpha = clamp(alpha, 0.06, 1.0);
 
-    let overlay = (rainbow + causticLight + bloom + armColor) * alpha;
+    let overlay = (rainbow + causticLight + bloom + armColor
+                 + liquidRainbow * (mobiusCaustic * 0.3 + irisWave * 0.38)) * alpha;
     let finalColor = acesToneMap(col + overlay);
 
     let outDepth = clamp(depth + lensMask * 0.04 - dof * 0.06, 0.0, 1.0);
-    let edgeIntensity = rainbowEdge + caustic + armGlow;
+    let edgeIntensity = rainbowEdge + caustic + armGlow + mobiusCaustic + irisWave;
 
     textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));

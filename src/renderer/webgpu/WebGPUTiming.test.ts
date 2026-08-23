@@ -121,20 +121,34 @@ describe('stamp validation + decode', () => {
 describe('pickComputeTimestampWrites / pickPresentTimestampWrites', () => {
   const querySet = { __brand: 'GPUQuerySet' } as unknown as GPUQuerySet;
 
-  it('first parallel pass claims frame start + parallel end', () => {
+  it('first parallel pass claims frame start only (end waits for last compute)', () => {
     const tracker = new TimestampPhaseTracker();
-    const writes = pickComputeTimestampWrites(tracker, querySet, 'parallel', false);
+    const writes = pickComputeTimestampWrites(tracker, querySet, 'parallel', false)!;
     expect(writes.beginningOfPassWriteIndex).toBe(kTsFrameStart);
-    expect(writes.endOfPassWriteIndex).toBe(kTsParallelEnd);
+    expect(writes.endOfPassWriteIndex).toBeUndefined();
     expect(tracker.tsFrameStartWritten).toBe(true);
     expect(tracker.tsParallelStartWritten).toBe(true);
   });
 
-  it('first chained after parallel claims chained start', () => {
+  it('intermediate multipass dispatches write no timestamps (no double-query)', () => {
+    const tracker = new TimestampPhaseTracker();
+    pickComputeTimestampWrites(tracker, querySet, 'chained', false);
+    // Second interior pass: no new phase begin, not last → must be undefined
+    expect(pickComputeTimestampWrites(tracker, querySet, 'chained', false)).toBeUndefined();
+  });
+
+  it('first chained after parallel claims chained start; last claims compute end', () => {
     const tracker = new TimestampPhaseTracker();
     pickComputeTimestampWrites(tracker, querySet, 'parallel', false);
-    const writes = pickComputeTimestampWrites(tracker, querySet, 'chained', true);
+    const writes = pickComputeTimestampWrites(tracker, querySet, 'chained', true)!;
     expect(writes.beginningOfPassWriteIndex).toBe(kTsChainedStart);
+    expect(writes.endOfPassWriteIndex).toBe(kTsComputeEnd);
+  });
+
+  it('single-pass frame stamps frame start + compute end together', () => {
+    const tracker = new TimestampPhaseTracker();
+    const writes = pickComputeTimestampWrites(tracker, querySet, 'chained', true)!;
+    expect(writes.beginningOfPassWriteIndex).toBe(kTsFrameStart);
     expect(writes.endOfPassWriteIndex).toBe(kTsComputeEnd);
   });
 
@@ -208,14 +222,40 @@ describe('encodeResolveAndCopy + scheduleTimestampReadback', () => {
     return timing;
   }
 
-  it('skips resolve when readback is pending', () => {
+  it('still resolves when a readback is in flight (frees query indices)', () => {
+    const freeStaging = {
+      mapAsync: jest.fn(),
+      getMappedRange: jest.fn(),
+      unmap: jest.fn(),
+      destroy: jest.fn(),
+    };
     const timing = makeTiming({ readbackPending: true });
+    timing.stagingBusy = [true, false];
+    timing.stagingRing = [
+      freeStaging as unknown as GPUBuffer,
+      freeStaging as unknown as GPUBuffer,
+    ];
+    const encoder = {
+      resolveQuerySet: jest.fn(),
+      copyBufferToBuffer: jest.fn(),
+    } as unknown as GPUCommandEncoder;
+    // ringIndex 0 is busy → should pick slot 1 and still resolve
+    const slot = encodeResolveAndCopy(encoder, timing);
+    expect(encoder.resolveQuerySet).toHaveBeenCalled();
+    expect(slot).toBe(1);
+    expect(encoder.copyBufferToBuffer).toHaveBeenCalled();
+  });
+
+  it('resolves without copy when every staging slot is busy', () => {
+    const timing = makeTiming({ readbackPending: true });
+    timing.stagingBusy = [true, true];
     const encoder = {
       resolveQuerySet: jest.fn(),
       copyBufferToBuffer: jest.fn(),
     } as unknown as GPUCommandEncoder;
     expect(encodeResolveAndCopy(encoder, timing)).toBeNull();
-    expect(encoder.resolveQuerySet).not.toHaveBeenCalled();
+    expect(encoder.resolveQuerySet).toHaveBeenCalled();
+    expect(encoder.copyBufferToBuffer).not.toHaveBeenCalled();
   });
 
   it('encodes resolve + copy and schedules readback success → hasRealGpuTimings', async () => {
@@ -238,6 +278,7 @@ describe('encodeResolveAndCopy + scheduleTimestampReadback', () => {
     };
     const timing = makeTiming();
     timing.stagingRing = [staging as unknown as GPUBuffer, staging as unknown as GPUBuffer];
+    timing.stagingBusy = [false, false];
 
     const encoder = {
       resolveQuerySet: jest.fn(),
@@ -251,6 +292,7 @@ describe('encodeResolveAndCopy + scheduleTimestampReadback', () => {
 
     scheduleTimestampReadback(timing, slot!);
     expect(timing.readbackPending).toBe(true);
+    expect(timing.stagingBusy[0]).toBe(true);
     // Must not await in submit path — promise is fire-and-forget.
     expect(staging.mapAsync).toHaveBeenCalledWith(GPUMapMode.READ);
 
@@ -260,6 +302,7 @@ describe('encodeResolveAndCopy + scheduleTimestampReadback', () => {
 
     expect(timing.hasRealGpuTimings).toBe(true);
     expect(timing.readbackPending).toBe(false);
+    expect(timing.stagingBusy[0]).toBe(false);
     expect(timing.gpuTimings.totalTime).toBeGreaterThan(0);
     expect(staging.unmap).toHaveBeenCalled();
   });
@@ -273,12 +316,14 @@ describe('encodeResolveAndCopy + scheduleTimestampReadback', () => {
     };
     const timing = makeTiming({ hasRealGpuTimings: true });
     timing.stagingRing = [staging as unknown as GPUBuffer];
+    timing.stagingBusy = [false];
 
     scheduleTimestampReadback(timing, 0);
     await Promise.resolve();
     await Promise.resolve();
 
     expect(timing.readbackPending).toBe(false);
+    expect(timing.stagingBusy[0]).toBe(false);
     expect(timing.hasRealGpuTimings).toBe(false);
   });
 });

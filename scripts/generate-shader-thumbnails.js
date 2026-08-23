@@ -548,6 +548,12 @@ async function runAppEngine(args, shaders, manifest) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.engine === 'minimal' && args.category !== 'generative') {
+    throw new Error(
+      `The minimal engine supports only the generative category; got "${args.category}". ` +
+      'Use --engine=app for the full catalog.',
+    );
+  }
   let shaders = loadShaderList(args.category);
   const skipIds = loadThumbnailSkipIds();
   shaders = shaders.filter(s => !skipIds.has(s.id));

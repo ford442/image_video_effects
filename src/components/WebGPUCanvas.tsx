@@ -1,8 +1,16 @@
 import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
-import { RendererManager } from '../renderer/RendererManager';
+import { RendererManager, getRendererTypeFromURL } from '../renderer/RendererManager';
 import { RenderMode, InputSource, SlotParams, ShaderEntry } from '../renderer/types';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
+import {
+    publishWebGpuProbe,
+    publishWasmProbeFailure,
+    runWebGpuBootProbe,
+    toWebGpuProbeBreadcrumb,
+    type WebGpuProbeSerializable,
+} from '../renderer/webgpuBootProbe';
 import { LiveStreamBridge } from './LiveStreamBridge';
+import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
 
 interface WebGPUCanvasProps {
     modes: RenderMode[];
@@ -66,6 +74,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const [canvasReady, setCanvasReady] = useState(false);
     // Track when RendererManager finished init so input-source sync runs once
     const [managerReady, setManagerReady] = useState(false);
+    const [probeFailure, setProbeFailure] = useState<WebGpuProbeSerializable | null>(null);
 
     // Track if there are active interactive/mouse-driven effects
     const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);
@@ -152,9 +161,28 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             agentCount: 50000
         });
         let mounted = true;
+        const urlRenderer = getRendererTypeFromURL();
 
         (async () => {
-            const success = await renderer.init(canvasRef.current!);
+            let initOptions: { webGpuHandoff?: import('../renderer/webgpuBootProbe').WebGpuProbeHandoff } | undefined;
+
+            if (urlRenderer !== 'js' && urlRenderer !== 'wasm') {
+                const probe = await runWebGpuBootProbe(
+                    canvasRef.current!,
+                    INTERNAL_RENDER_RESOLUTION,
+                    INTERNAL_RENDER_RESOLUTION,
+                );
+                publishWebGpuProbe(probe);
+                if (!mounted) return;
+                if (!probe.ok) {
+                    setProbeFailure(toWebGpuProbeBreadcrumb(probe));
+                    renderer.destroy();
+                    return;
+                }
+                initOptions = { webGpuHandoff: probe.handoff };
+            }
+
+            const success = await renderer.init(canvasRef.current!, initOptions);
             // StrictMode guard: if unmounted during async init, discard the result
             if (!mounted) {
                 renderer.destroy();
@@ -182,13 +210,21 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
                 if (onInit) onInit();
             } else {
-                // Init failed - clean up the renderer
+                if (urlRenderer === 'wasm') {
+                    const diags = renderer.getDiagnostics();
+                    publishWasmProbeFailure(
+                        diags.wasm?.lastInitError ?? 'WASM renderer initialization failed',
+                        diags.wasm?.initSummary ?? diags.wasm?.adapterInfo ?? '',
+                    );
+                    setProbeFailure(window.webgpuProbe ?? null);
+                }
                 renderer.destroy();
             }
         })();
         return () => {
             mounted = false;
             setManagerReady(false);
+            setProbeFailure(null);
             cancelAnimationFrame(animationFrameId.current);
             renderer.destroy();
             // Remove the dev-mode console handle when the component unmounts
@@ -620,6 +656,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 style={canvasStyle}
                 className={`webgpu-canvas ${isWebcamActive ? 'webcam-canvas' : ''} ${hasInteractiveEffects ? 'interactive-effects' : ''}`}
             />
+            {probeFailure && <WebGpuProbeFailureOverlay probe={probeFailure} />}
             <video
                 ref={videoRef}
                 crossOrigin="anonymous"

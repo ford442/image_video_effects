@@ -18,13 +18,8 @@ export const ImageAutoSwitchPanel: React.FC<ImageAutoSwitchPanelProps> = ({
     isAiVjMode,
 }) => (
     <>
-        <div className="control-group">
-            <button className="gold-outline-btn" onClick={onNewImage} style={{ width: '100%' }}>
-                🎲 Random Image
-            </button>
-        </div>
-
-        <div className="control-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
+        {/* Random Image lives in the top menubar; this panel keeps auto-switch only. */}
+        <div className="control-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
             <label
                 htmlFor="auto-change-toggle"
                 style={{ marginBottom: 0, color: isAiVjMode ? '#606070' : '#a0a0b0' }}

@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Signal Noise
 //  Category: retro-glitch
-//  Features: temporal
+//  Features: temporal, audio-reactive
 //  Complexity: High
-//  Created: 2026-04-25
+//  Upgraded: 2026-08-21 (Batch 42 - Glitch audio & temporal upgrades)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -48,7 +48,8 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
   var sum = 0.0;
   var amp = 0.5;
   var freq = 1.0;
-  for (var i = 0; i < octaves; i = i + 1) {
+  for (var i = 0; i < 6; i = i + 1) {
+    if (i >= octaves) { break; }
     sum = sum + amp * valueNoise(p * freq);
     freq = freq * 2.0;
     amp = amp * 0.5;
@@ -57,9 +58,6 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
 }
 
 // ── Color Utilities ──────────────────────────────────────────
-fn rgbToLuma(rgb: vec3<f32>) -> f32 {
-  return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-}
 fn rgbToYuv(rgb: vec3<f32>) -> vec3<f32> {
   let y = 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
   let u = -0.14713 * rgb.r - 0.28886 * rgb.g + 0.436 * rgb.b;
@@ -72,71 +70,68 @@ fn yuvToRgb(yuv: vec3<f32>) -> vec3<f32> {
   let b = yuv.x + 2.03211 * yuv.y;
   return vec3<f32>(r, g, b);
 }
-fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
-  let c = hsv.z * hsv.y;
-  let h = hsv.x * 6.0;
-  let x = c * (1.0 - abs(fract(h) * 2.0 - 1.0));
-  var rgb = vec3<f32>(0.0);
-  if (h < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
-  else if (h < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
-  else if (h < 3.0) { rgb = vec3<f32>(0.0, c, x); }
-  else if (h < 4.0) { rgb = vec3<f32>(0.0, x, c); }
-  else if (h < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
-  else              { rgb = vec3<f32>(c, 0.0, x); }
-  return rgb + vec3<f32>(hsv.z - c);
-}
 
 // ── VHS & Artifact Functions ─────────────────────────────────
-fn vhsHeadSwitch(uv: vec2<f32>, time: f32, intensity: f32) -> f32 {
-  let bandPos = 0.92 + 0.02 * sin(time * 2.5);
+fn vhsHeadSwitch(uv: vec2<f32>, time: f32, intensity: f32, bass: f32) -> f32 {
+  let bandPos = 0.92 + 0.02 * sin(time * 2.5) - bass * 0.1;
   let inBand = smoothstep(bandPos - 0.03, bandPos, uv.y) *
                smoothstep(bandPos + 0.08, bandPos + 0.03, uv.y);
   let lineNoise = hash11(floor(uv.x * 80.0) + time * 25.0) * 2.0 - 1.0;
-  return lineNoise * intensity * inBand;
+  return lineNoise * intensity * inBand * (1.0 + bass * 2.0);
 }
-fn dctBlockArtifact(uv: vec2<f32>, blockSize: f32, intensity: f32, time: f32) -> vec3<f32> {
+
+fn dctBlockArtifact(uv: vec2<f32>, blockSize: f32, intensity: f32, time: f32, mids: f32) -> vec3<f32> {
   let blockId = floor(uv / blockSize);
   let localUV = fract(uv / blockSize);
   let checker = fract(blockId.x + blockId.y) * 2.0 - 1.0;
   let ring = sin(localUV.x * 3.14159 * 8.0) * sin(localUV.y * 3.14159 * 8.0);
   let rnd = hash21(blockId + vec2<f32>(time * 0.2, 5.91));
-  let artifact = (ring * 0.7 + checker * 0.3) * rnd * intensity;
+  let artifact = (ring * 0.7 + checker * 0.3) * rnd * intensity * (1.0 + mids);
   return vec3<f32>(artifact);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
-  let uv = vec2<f32>(global_id.xy) / vec2<f32>(u.config.z, u.config.w);
+  let resolution = vec2<f32>(u.config.z, u.config.w);
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
-  let vhsIntensity = u.zoom_params.x;
-  let artifactStrength = u.zoom_params.y;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let vhsIntensity = u.zoom_params.x * (1.0 + bass * 0.5);
+  let artifactStrength = u.zoom_params.y * (1.0 + mids * 0.5);
   let smearAmount = u.zoom_params.z;
-  let chromaStrength = u.zoom_params.w;
+  let chromaStrength = u.zoom_params.w + treble * 0.1;
 
   let noise = fbm(uv * 8.0 + time * 1.5, 4);
-  let vhsNoise = vhsHeadSwitch(uv, time, vhsIntensity);
-  let blockArtifact = dctBlockArtifact(uv, 0.06, artifactStrength, time);
+  let vhsNoise = vhsHeadSwitch(uv, time, vhsIntensity, bass);
+  let blockArtifact = dctBlockArtifact(uv, 0.06, artifactStrength, time, mids);
 
   let noiseDir = fbm(uv * 4.0 + time * 0.7, 3) * 6.28318;
+  
+  // Audio-reactive glitch displacement based on high treble
+  let glitchDisp = step(0.9, hash21(vec2<f32>(uv.y * 10.0, time))) * treble * 0.1;
+  let uvGlitch = uv + vec2<f32>(glitchDisp, 0.0);
+
   let offR = vec2<f32>(cos(noiseDir), sin(noiseDir)) * chromaStrength * 0.02;
   let offG = vec2<f32>(cos(noiseDir + 2.094), sin(noiseDir + 2.094)) * chromaStrength * 0.02;
   let offB = vec2<f32>(cos(noiseDir + 4.189), sin(noiseDir + 4.189)) * chromaStrength * 0.02;
 
-  let cR = textureSampleLevel(readTexture, u_sampler, uv + offR, 0.0);
-  let cG = textureSampleLevel(readTexture, u_sampler, uv + offG, 0.0);
-  let cB = textureSampleLevel(readTexture, u_sampler, uv + offB, 0.0);
+  let cR = textureSampleLevel(readTexture, u_sampler, uvGlitch + offR, 0.0);
+  let cG = textureSampleLevel(readTexture, u_sampler, uvGlitch + offG, 0.0);
+  let cB = textureSampleLevel(readTexture, u_sampler, uvGlitch + offB, 0.0);
 
   var col = vec3<f32>(cR.r, cG.g, cB.b);
 
   let smearVec = vec2<f32>(
-    fbm(uv * 6.0 + vec2<f32>(time, 0.0), 3),
-    fbm(uv * 6.0 + vec2<f32>(0.0, time), 3)
+    fbm(uvGlitch * 6.0 + vec2<f32>(time, 0.0), 3),
+    fbm(uvGlitch * 6.0 + vec2<f32>(0.0, time), 3)
   ) * 2.0 - 1.0;
-  let smearUV = uv + smearVec * smearAmount * 0.03;
-  let smearCol = textureSampleLevel(readTexture, u_sampler,
-    clamp(smearUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let smearUV = clamp(uvGlitch + smearVec * smearAmount * 0.03, vec2<f32>(0.0), vec2<f32>(1.0));
+  let smearCol = textureSampleLevel(readTexture, u_sampler, smearUV, 0.0);
   col = mix(col, smearCol.rgb, smearAmount * 0.5);
 
   var yuv = rgbToYuv(col);
@@ -144,10 +139,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   yuv.z = yuv.z + (vhsNoise - 0.5) * vhsIntensity * 0.3 + blockArtifact.g;
   col = yuvToRgb(yuv);
 
-  let noiseIntensity = clamp(noise + abs(vhsNoise) + length(blockArtifact), 0.0, 1.0);
+  // Audio-reactive CRT scanlines overlay
+  let scanline = sin(uv.y * resolution.y * 3.14159) * 0.05 * mids;
+  col = col - scanline;
+
+  // Temporal blending (phosphor decay)
+  let prevFrame = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  let temporalDecay = mix(0.1, 0.8, smearAmount);
+  col = mix(col, prevFrame, temporalDecay);
+
+  let noiseIntensity = clamp(noise + abs(vhsNoise) + length(blockArtifact) + glitchDisp, 0.0, 1.0);
   let alpha = cG.a * (1.0 - noiseIntensity * 0.4);
 
   textureStore(writeTexture, global_id.xy, vec4<f32>(col, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(col, alpha)); // Save for temporal next frame
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

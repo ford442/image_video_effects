@@ -159,8 +159,39 @@
     "id": "crt-magnet",
     "name": "CRT Magnet",
     "url": "shaders/crt-magnet.wgsl",
-    "description": "Phase-B hybrid CRT monitor degaussing magnetic distortion near the mouse. Fuses crt-magnet distortion with temporal feedback echo, audio-driven cosine palette, domain-warped FBM, and a smooth SDF mask. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
+    "description": "CRT degaussing distortion with continuous magnetic rings and rolling beam sweeps, held-pointer field gain, bounded click shocks, exact-load feedback echo, aperture grille, hex bloom, spectral palette, and preserved A-state packing.",
+    "updated": true,
     "params": [
+      {
+        "id": "magnet_strength",
+        "name": "Magnet Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "bloom_intensity",
+        "name": "Bloom Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortion_radius",
+        "name": "Distortion Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "magnet_strength",
         "name": "Magnet Strength",
@@ -198,7 +229,9 @@
       "aces-tone-map",
       "feedback-echo",
       "audio-palette",
-      "sdf-mask"
+      "sdf-mask",
+      "continuous-motion",
+      "bounded-click-ripples"
     ],
     "tags": [
       "filter",

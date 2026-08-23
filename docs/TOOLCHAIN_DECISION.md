@@ -1,8 +1,8 @@
 # Frontend toolchain decision (July 2026)
 
-**Status: stay on CRA + CRACO** — Vite spike deferred; no migration planned for Foundation Wave 2.
+**Status: stay on CRA + CRACO** — TypeScript 5.4.5 landed (Aug 2026); Vite spike deferred.
 
-Parent: [#965](https://github.com/ford442/image_video_effects/issues/965)
+Parent: [#965](https://github.com/ford442/image_video_effects/issues/965) · Epic: [#1076](https://github.com/ford442/image_video_effects/issues/1076) · Toolchain hygiene: [#1083](https://github.com/ford442/image_video_effects/issues/1083)
 
 ## Current stack
 
@@ -11,8 +11,18 @@ Parent: [#965](https://github.com/ford442/image_video_effects/issues/965)
 | Bundler | Create React App 5 (`react-scripts`) | Webpack 5 under the hood |
 | Override layer | `@craco/craco` 7 | Patches webpack without eject |
 | React | 19.1 | Works with CRA 5 via overrides |
-| TypeScript | 4.9.5 | `tsconfig` targets ES2020 |
-| WebGPU types | `@webgpu/types` 0.1.64 | Dev-time only |
+| TypeScript | **5.4.5** (locked `~5.4.5`) | `tsconfig` targets ES2020; CI runs `npm run typecheck` |
+| WebGPU types | `@webgpu/types` 0.1.64 | Dev-time only; `device.ts` configure options stay typed |
+
+## Decision log
+
+| Date | Decision |
+|------|----------|
+| Jul 2026 | **Stay CRA + CRACO** — lowest risk for foundation work (#965) |
+| Aug 2026 (#1042) | **TypeScript 5.4.5 landed** on CRA 5 + CRACO 7 — not blocked |
+| Aug 2026 (#1083) | Docs + deprecated shim cleanup; Vite spike still deferred |
+
+**TS 5 status:** Landed and CI-proven (`tsc --noEmit`, full Jest, `SKIP_WASM_BUILD=1` production build). Residual noise only: `react-scripts@5` peer metadata still lists TypeScript through 4.x, so `npm ls typescript` may show an invalid peer even though the locked compiler passes. Removing that metadata mismatch is one reason the optional Vite migration remains a separate follow-up — not a blocker for daily dev.
 
 ## Why CRACO exists (`craco.config.js`)
 
@@ -26,14 +36,39 @@ CRA’s default webpack config is insufficient for this repo. CRACO patches:
 
 Without CRACO, `npm start` / `npm run build` fail on transformers import resolution and optional native modules.
 
+## Dependency boundary honesty
+
+| Boundary | Mechanism |
+|----------|-----------|
+| `@xenova/transformers` alias | `package.json` maps `@xenova/transformers` → `npm:@huggingface/transformers@^4.2.0` — keeps import path stable for [`transformersLoader.ts`](src/services/aiModels/transformersLoader.ts) |
+| No accidental Node ONNX | CRACO stubs `sharp$` / `onnxruntime-node$` → `false` in [`craco.config.js`](craco.config.js) |
+| AI lazy boundaries | `@xenova/transformers` and `@mlc-ai/web-llm` must be dynamically imported only through their loader modules — enforced by `npm run verify:dependency-boundaries` |
+| Shader list URLs | Committed `public/shader-lists/*.json` must use relative paths (no leaked test-CDN URLs) — same gate |
+
+Run `npm run verify:toolchain-foundation` before merge (bundle budget + dependency boundaries + shader-list URL policy).
+
+## Toolchain commands
+
+| Goal | Command |
+|------|---------|
+| Dev | `BROWSER=none npm start` |
+| Prod JS (no emcc) | `SKIP_WASM_BUILD=1 npm run build` |
+| WASM artifacts | `npm run wasm:build` (needs `emcc` + emdawn) |
+| Typecheck | `npm run typecheck` |
+| Device policy sync | `npm run verify:device-policy` |
+| Uniforms layout | `npm run verify:uniforms` |
+| Foundation gates | `npm run verify:toolchain-foundation` |
+
 ## Pain points (documented, not blocking)
 
-- **TypeScript 4.9** while runtime targets ES2020 — newer TS features need a major bump tied to `react-scripts` / `@types` refresh.
+- **CRA peer metadata** — `react-scripts` still declares TypeScript ≤4.x; locked TS 5.4.5 works in practice.
 - **CRACO patch surface** — every new ESM-heavy dependency may need another webpack rule.
 - **Slow HMR / opaque webpack** — large shader catalog + ML chunks; hard to tune without ejecting.
 - **`prestart` / `prebuild`** — shader list generation and manifest steps add startup latency (independent of bundler choice).
 
 ## Vite spike scope (not executed)
+
+TS 5 prerequisite is satisfied. Spike still **deferred** — revisit triggers not met (no second CRACO shim yet).
 
 A dev-only Vite + React 19 + `@webgpu/types` spike would validate:
 
@@ -49,8 +84,9 @@ A dev-only Vite + React 19 + `@webgpu/types` spike would validate:
 
 | Option | Verdict |
 |--------|---------|
-| **Stay CRA + CRACO** | ✅ **Chosen** — lowest risk; foundation work (#965) does not depend on bundler migration |
-| Migrate to Vite | Defer until a dedicated tooling sprint; revisit after TS 5.x + test runner plan |
+| **Stay CRA + CRACO** | ✅ **Chosen** — lowest risk; foundation work does not depend on bundler migration |
+| **TypeScript 5.x on CRA** | ✅ **Landed** (#1042 / #1083) — CI green; peer-metadata noise only |
+| Migrate to Vite | Defer until a dedicated tooling sprint or revisit trigger fires |
 | Hybrid (Vite dev / CRA prod) | Rejected — two configs diverge quickly; only worth it if HMR pain blocks daily dev |
 
 ## Revisit triggers
@@ -64,3 +100,4 @@ A dev-only Vite + React 19 + `@webgpu/types` spike would validate:
 - `craco.config.js` — live CRACO overrides
 - `WASM_BUILD_CI_GUIDE.md` — WASM build path (independent of frontend bundler)
 - `docs/APP_STRUCTURE.md` — app layout after #966 strangler
+- `README.md` — contributor command matrix

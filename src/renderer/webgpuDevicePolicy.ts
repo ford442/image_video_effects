@@ -116,13 +116,27 @@ export function assertAdapterMeetsContract(
   };
 }
 
+export type AdapterAttemptLog = {
+  label: string;
+  powerPreference?: GPUPowerPreference;
+  forceFallbackAdapter: boolean;
+  adapterPresent: boolean;
+  error?: string;
+};
+
 /**
  * Request an adapter using the 4-step fallback ladder (device.cpp requestAdapterWithFallback).
  */
 export async function requestAdapterWithFallback(
   gpu: GPU,
   attempts: readonly AdapterAttempt[] = ADAPTER_ATTEMPT_LADDER,
-): Promise<{ adapter: GPUAdapter | null; attemptLabel: string | null }> {
+): Promise<{
+  adapter: GPUAdapter | null;
+  attemptLabel: string | null;
+  attemptLogs: AdapterAttemptLog[];
+}> {
+  const attemptLogs: AdapterAttemptLog[] = [];
+
   for (const attempt of attempts) {
     const options: GPURequestAdapterOptions = {
       forceFallbackAdapter: attempt.forceFallbackAdapter,
@@ -131,19 +145,40 @@ export async function requestAdapterWithFallback(
       options.powerPreference = attempt.powerPreference;
     }
 
+    const pref = attempt.powerPreference ?? 'default';
     console.log(
-      `[WebGPU] Requesting adapter (powerPreference=${attempt.label}, ` +
+      `[WebGPU] Requesting adapter (attempt=${attempt.label}, powerPreference=${pref}, ` +
       `forceFallbackAdapter=${attempt.forceFallbackAdapter})`,
     );
 
-    const adapter = await gpu.requestAdapter(options);
+    let adapter: GPUAdapter | null = null;
+    let error: string | undefined;
+    try {
+      adapter = await gpu.requestAdapter(options);
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+      console.warn(`[WebGPU] requestAdapter failed on ${attempt.label}:`, error);
+    }
+
+    const log: AdapterAttemptLog = {
+      label: attempt.label,
+      powerPreference: attempt.powerPreference,
+      forceFallbackAdapter: attempt.forceFallbackAdapter,
+      adapterPresent: !!adapter,
+      error: adapter ? undefined : error ?? 'requestAdapter returned null',
+    };
+    attemptLogs.push(log);
+
     if (adapter) {
-      console.log(`[WebGPU] Obtained adapter on attempt: ${attempt.label}`);
-      return { adapter, attemptLabel: attempt.label };
+      console.log(
+        `[WebGPU] Obtained adapter on attempt: ${attempt.label} | ` +
+        `${formatAdapterLimitsSummary(adapter)}`,
+      );
+      return { adapter, attemptLabel: attempt.label, attemptLogs };
     }
   }
 
-  return { adapter: null, attemptLabel: null };
+  return { adapter: null, attemptLabel: null, attemptLogs };
 }
 
 /** Human-readable summary of adapter limits for diagnostics. */

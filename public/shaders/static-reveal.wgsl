@@ -1,12 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Static Reveal v2
+//  Static Reveal v3 (VCR Tracking Edition)
 //  Category: image
 //  Features: mouse-driven, audio-reactive, multi-layer-static, temporal,
-//            chromatic-displacement, upgraded-rgba, film-grain
-//  Complexity: Very High
-//  Chunks From: static-reveal, perlin, blue-noise, aces
-//  Created: 2026-05-31
-//  By: 4-Agent Shader Upgrade Swarm
+//            VCR tracking noise, horizontal hold instability, snow patterns,
+//            signal acquisition phase, chrominance noise
+//  Upgraded: 2026-08-21 (Batch 42 - VCR Tracking)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -34,6 +32,12 @@ fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
+}
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx + p3.yz) * p3.zy);
 }
 
 fn noise2(p: vec2<f32>) -> f32 {
@@ -66,11 +70,7 @@ fn blueNoise(p: vec2<f32>) -> f32 {
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let decaySpeed = u.zoom_params.x * 0.05;
   let brushRadius = u.zoom_params.y * 0.3 + 0.05;
-  let noiseIntensity = u.zoom_params.z;
+  let noiseIntensity = clamp(u.zoom_params.z + treble * 0.2, 0.0, 1.0);
   let noiseScale = 30.0 + u.zoom_params.w * 250.0;
 
   let mouse = u.zoom_config.yz;
@@ -98,49 +98,67 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthDecay = mix(0.7, 1.3, depth);
-  let parallax = depth * 0.02;
-
+  
   let reactiveRadius = brushRadius * (1.0 + bass * 0.3 + mids * 0.1);
-  let prevMask = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
-
+  let prevMask = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).a; // Using alpha for mask
   let brush = smoothstep(reactiveRadius, reactiveRadius * 0.5, dist);
   let mask = clamp(max(prevMask - decaySpeed * depthDecay, brush), 0.0, 1.0);
 
   let staticTime = time * 2.0;
-  let layer1 = perlinOctaves(uv * noiseScale + vec2<f32>(parallax, 0.0), staticTime);
-  let layer2 = perlinOctaves(uv * (noiseScale * 0.3) + vec2<f32>(0.0, parallax * 2.0), staticTime * 0.7);
-  let layer3 = perlinOctaves(uv * (noiseScale * 0.08) + vec2<f32>(parallax * 4.0, parallax * 4.0), staticTime * 0.4);
+  
+  // VCR Tracking noise - horizontal bands
+  let trackingOffset = hash12(vec2<f32>(floor(time * 30.0), floor(uv.y * 50.0))) * 0.05;
+  let trackingBand = smoothstep(0.0, 0.1, abs(sin(time * 0.5 + uv.y * 10.0)));
+  
+  // Horizontal hold instability
+  let hHold = sin(uv.y * 30.0 + time * 10.0) * 0.02 * (1.0 - mask) * bass;
+  let dUV = uv + vec2<f32>(hHold + trackingOffset * trackingBand * (1.0 - mask), 0.0);
 
+  // Snow pattern
+  let snowHash = hash22(dUV * 500.0 + time);
+  let snow = dot(snowHash, vec2<f32>(0.5)) * noiseIntensity;
+  
+  // Signal acquisition phase (bright flashes)
+  let acqFlash = smoothstep(0.95, 1.0, sin(time * 2.0)) * (1.0 - mask);
+  
   let staticFlicker = 1.0 + bass * 0.6 + mids * 0.2;
-  let combinedNoise = (layer1 * 0.5 + layer2 * 0.35 + layer3 * 0.15) * noiseIntensity * staticFlicker;
-
-  let dither = blueNoise(vec2<f32>(f32(global_id.x), f32(global_id.y)) + floor(time * 30.0));
-  let ditheredNoise = combinedNoise + (dither - 0.5) * 0.04;
-
-  let chromaShift = treble * 0.025 + mids * 0.01;
-  let rNoise = perlinOctaves((uv + vec2<f32>(chromaShift, 0.0)) * noiseScale, staticTime);
-  let bNoise = perlinOctaves((uv - vec2<f32>(chromaShift, 0.0)) * noiseScale, staticTime);
-
-  let grainR = ditheredNoise * (0.9 + rNoise * 0.2);
-  let grainG = ditheredNoise;
-  let grainB = ditheredNoise * (0.9 + bNoise * 0.2);
-  let grainColor = vec3<f32>(grainR, grainG, grainB);
+  
+  // Chrominance noise
+  let chromaNoiseYUV = vec3<f32>(
+      perlinOctaves(dUV * noiseScale, staticTime),
+      perlinOctaves(dUV * noiseScale * 0.8 + 10.0, staticTime * 1.1),
+      perlinOctaves(dUV * noiseScale * 1.2 - 20.0, staticTime * 0.9)
+  );
+  
+  let grainR = snow + chromaNoiseYUV.y * 0.1;
+  let grainG = snow;
+  let grainB = snow + chromaNoiseYUV.z * 0.1;
+  let grainColor = vec3<f32>(grainR, grainG, grainB) * staticFlicker;
 
   let vig = smoothstep(1.0, 0.3, length(uv - 0.5) * 1.5);
-  let unrevealedVig = (1.0 - mask) * vig * 0.4;
-  let tintedGrain = mix(grainColor, grainColor * vec3<f32>(0.7, 0.75, 0.9), unrevealedVig);
+  let unrevealedVig = (1.0 - mask) * vig;
+  
+  // Tinted snow based on signal loss
+  let tintedGrain = mix(grainColor, grainColor * vec3<f32>(0.5, 0.6, 0.9), unrevealedVig) + acqFlash * 0.2;
 
-  let videoColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let videoColor = textureSampleLevel(readTexture, u_sampler, dUV, 0.0).rgb;
   let revealBias = smoothstep(revealThreshold, revealThreshold + 0.2, mask);
-  var finalColor = mix(tintedGrain, videoColor, revealBias);
+  
+  // Chrominance shift in video color based on tracking
+  let shiftAmount = trackingBand * (1.0 - revealBias) * 0.02;
+  let videoColorShiftR = textureSampleLevel(readTexture, u_sampler, dUV + vec2<f32>(shiftAmount, 0.0), 0.0).r;
+  let videoColorShiftB = textureSampleLevel(readTexture, u_sampler, dUV - vec2<f32>(shiftAmount, 0.0), 0.0).b;
+  let finalVideoColor = vec3<f32>(videoColorShiftR, videoColor.g, videoColorShiftB);
+
+  var finalColor = mix(tintedGrain, finalVideoColor, revealBias);
 
   finalColor = finalColor + vec3<f32>(unrevealedVig * 0.08, unrevealedVig * 0.05, 0.0);
   finalColor = acesToneMap(finalColor * 1.1);
 
   let staticStrength = 1.0 - revealBias;
-  let alpha = clamp(mask * (1.0 - staticStrength * 0.7) + 0.15, 0.0, 1.0);
+  let alpha = clamp(mask * (1.0 - staticStrength * 0.7) + 0.15 + acqFlash * 0.5, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, mask)); // store mask in alpha
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
