@@ -2,6 +2,24 @@
 
 **Last updated:** 2026-08-21 (getGPUTimings JS/C++ ABI)
 
+## 2026-08-23 — Shader upgrade Batch 56 — INTERACTIVE COMPLEXITY
+
+- Upgraded tracker #475–482: CMYK Halftone Interactive, Cyber Slit Scan,
+  Interactive Ripple, Phosphor Magnifier, Vertical Slice Wave, Chromatic Focus,
+  Quantum Prism, and Matrix Curtain.
+- Added shader-specific geometry, continuous motion, psychedelic color,
+  three-band audio, held-pointer response, and click loops capped at 50 while
+  preserving all saved `params`, canonical bindings, unused B, and no
+  `extraBuffer` access.
+- Deliberate feedback corrections: Phosphor Magnifier A now stores display RGBA
+  for truthful afterimages; Vertical Slice Wave A stays envelope/spring/velocity
+  state and is no longer read as RGB/alpha history. Ripple is documented as an
+  analytic Huygens field and Matrix occupancy as Conway-inspired.
+- Proof: focused structural gate 8/8 (Naga binary absent), strict cohort buffer
+  and dead-slider audits pass, params exact 8/8, catalogs/URLs/uniforms clean,
+  TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build green.
+  Real-GPU visual QA remains external.
+
 ## 2026-08-21 — WASM `getGPUTimings` bridge ABI
 
 - JS SoT is **`src/wasm/bridge/*.js`**. `concat_bridge.sh` copies src → `wasm_renderer/bridge` + `public/wasm/bridge`. Editing `wasm_renderer/bridge` gets overwritten. JS-only: no emcc; Playwright still needs a CRA rebuild.
