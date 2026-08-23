@@ -1592,7 +1592,10 @@
       "persistence",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive",
+      "fast-motion",
+      "psychedelic"
     ],
     "tags": [
       "crystal",
@@ -1601,6 +1604,52 @@
       "transmission",
       "voronoi",
       "physical"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "decay",
+        "name": "Freeze Decay",
+        "default": 0.99,
+        "min": 0.9,
+        "max": 0.999,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Persistence of the freeze mask between frames; bass adds up to +0.1, so loud passages hold the ice longer."
+      },
+      {
+        "index": 1,
+        "id": "scale",
+        "name": "Crystal Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Lattice frequency (10–50 cells) modulated +40% by mids; also sets the dendrite front advance rate."
+      },
+      {
+        "index": 2,
+        "id": "refraction",
+        "name": "Material IOR",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Blends the refractive index between ice (0) and glass (1) for the facet dispersion."
+      },
+      {
+        "index": 3,
+        "id": "purity",
+        "name": "Ice Purity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Inclusion density in the ice; treble lowers purity further, muddying the facet bursts."
+      }
     ]
   },
   {

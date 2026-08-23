@@ -1657,35 +1657,47 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "heatGain",
         "name": "Heat Gain",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Injection rate into the heat field, which lives in dataTextureA/C rather than the depth texture; also gains the buoyant updraft packets."
       },
       {
         "index": 1,
+        "id": "decayRate",
         "name": "Decay Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Cooling rate of the heat field between frames."
       },
       {
         "index": 2,
+        "id": "diffusion",
         "name": "Diffusion",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Lateral spread of the heat field per step."
       },
       {
         "index": 3,
+        "id": "refraction",
         "name": "Refraction",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Mirage displacement gain; also scales the shear-layer shimmer streaks."
       }
     ],
     "features": [
@@ -1697,7 +1709,9 @@
       "temporal",
       "bounded-history",
       "click-reactive",
-      "fast-motion"
+      "fast-motion",
+      "psychedelic",
+      "depth-aware"
     ],
     "tags": [
       "distortion",

@@ -1,5 +1,16 @@
 // Rainy Window — persistent wetness/rivulet field with a sprung hand wiper.
 // Raw A ownership: R=wetness, G=downward flow, B=thickness, A=coverage.
+//
+// Batch 67 — fast motion / psychedelic / high energy:
+//   A. Elastic wiper sweep. An autonomous blade crosses the glass on a timed
+//      stroke and overshoots at each end, recovering through
+//      exp(-t * 6) * sin(34 t) — a damped elastic snap-back rather than a
+//      linear return. Closed form in config.x; the sweep rate is clamped.
+//   B. Bead conveyor. Rain cells fall at deterministic per-cell phases (the
+//      hash keys on the CELL, never on time), so beads travel instead of
+//      re-rolling every frame.
+//   Colour: thin-film iridescence on the water layer keyed to film thickness,
+//   with per-band FFT hue offsets and prismatic dispersion along the sweep.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -19,6 +30,19 @@ struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f
 
 fn clampPixel(p: vec2<i32>, dims: vec2<i32>) -> vec2<i32> { return clamp(p, vec2<i32>(0), dims - vec2<i32>(1)); }
 fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123); }
+// IQ cosine palette — vivid ramp keyed to a scalar quantity.
+fn filmSpectrum(t: f32) -> vec3<f32> {
+  return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.2831853 * (
+    vec3<f32>(1.0, 1.0, 1.0) * t + vec3<f32>(0.05, 0.38, 0.70)));
+}
+
+// Push channel spread away from luma so the film stays vivid rather than
+// averaging into the grey of a rainy window.
+fn vivify(c: vec3<f32>, amount: f32) -> vec3<f32> {
+  let luma = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return max(vec3<f32>(0.0), mix(vec3<f32>(luma), c, 1.0 + amount));
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -86,6 +110,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let blade = smoothstep(wiperRadius, wiperRadius * 0.35, wipeDist);
   let wipeStrength = blade * select(0.12, 0.96, u.zoom_config.w > 0.5);
   wetness *= 1.0 - wipeStrength; flow *= 1.0 - wipeStrength;
+
+  // ── Fast motion A: elastic wiper sweep ───────────────────────────────
+  // An autonomous blade sweeps the glass on a timed stroke. At the end of
+  // each stroke it overshoots and recovers through a damped elastic ring,
+  // exp(-t * 6) * sin(34 t), instead of snapping back linearly. Everything
+  // is closed form in time, and the rate is clamped so the blade cannot
+  // outrun the wetness field it is clearing.
+  let sweepRate = clamp(0.22 + u.zoom_params.y * 0.5 + mids * 0.35, 0.0, 1.1);
+  let sweepCycle = time * sweepRate;
+  let sweepT = fract(sweepCycle);
+  let recoil = exp(-sweepT * 6.0) * sin(sweepT * 34.0) * 0.06;
+  // Triangle stroke: left-to-right, then back.
+  let stroke = abs(sweepT * 2.0 - 1.0);
+  let sweepX = clamp(1.0 - stroke + recoil, -0.1, 1.1);
+  let sweepBladeDist = abs(uv.x - sweepX) * aspectVec.x;
+  let sweepBlade = smoothstep(wiperRadius * 0.9, 0.0, sweepBladeDist)
+                 * smoothstep(0.0, 0.08, uv.y) * smoothstep(1.0, 0.92, uv.y);
+  let sweepStrength = sweepBlade * (0.55 + rainIntensity * 0.3);
+  wetness *= 1.0 - sweepStrength; flow *= 1.0 - sweepStrength;
   thickness = clamp(mix(thickness, wetness + flow * 0.22, 0.12) + splash * 0.04, 0.0, 1.0);
   let coverage = clamp(max(c.a * (0.988 - drySpeed * 0.006), wetness), 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(wetness, flow, thickness, coverage));
@@ -98,8 +141,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let light = normalize(vec3<f32>(-0.45, 0.55, 0.75));
   let specular = pow(max(dot(normal, light), 0.0), 44.0) * thickness;
   let absorption = exp(-thickness * vec3<f32>(0.17, 0.07, 0.025));
-  let color = source.rgb * absorption + vec3<f32>(0.56, 0.78, 1.05) * fresnel * (0.15 + mids * 0.12)
-    + vec3<f32>(1.1, 1.02, 0.9) * specular * (0.55 + treble * 0.5) + vec3<f32>(0.2, 0.48, 0.9) * splash * bass * 0.12;
+  // Thin-film iridescence: hue keyed to film THICKNESS (the physical driver of
+  // interference colour), with a per-band FFT offset so the film reacts across
+  // the spectrum, and prismatic dispersion along the sweep direction.
+  let bandIdx = u32(clamp(uv.x, 0.0, 0.999) * 8.0);
+  let band = clamp(plasmaBuffer[bandIdx + 1u].x, 0.0, 1.0);
+  let hue = fract(thickness * 2.4 + flow * 0.6 + time * 0.05 + band * 0.24 + splash * 0.4);
+  let disperse = clamp(sweepStrength * 0.05 + abs(recoil) * 0.5, 0.0, 0.06);
+  let film = vivify(vec3<f32>(
+      filmSpectrum(hue - disperse).r,
+      filmSpectrum(hue).g,
+      filmSpectrum(hue + disperse).b), 0.65);
+
+  let color = source.rgb * absorption
+    + film * fresnel * (0.35 + mids * 0.4)
+    + film * thickness * (0.10 + bass * 0.22)
+    + vec3<f32>(1.1, 1.02, 0.9) * specular * (0.55 + treble * 0.5)
+    + vivify(filmSpectrum(fract(hue + 0.5)), 0.65) * splash * (0.25 + bass * 0.5)
+    + film * sweepBlade * (0.18 + treble * 0.35);
   let alpha = clamp(source.a + (1.0 - source.a) * coverage * (0.18 + thickness * 0.58) + fresnel * 0.06, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
   let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;
