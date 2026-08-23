@@ -440,7 +440,8 @@
       "title": "Astral Cyber-Phoenix Ash-Rebirth",
       "added": "2026-08-18T15:48:13.107128"
     },
-    {      "filename": "2026-08-20_luminescent-silica-diatom-swarm.md",
+    {
+      "filename": "2026-08-20_luminescent-silica-diatom-swarm.md",
       "title": "Luminescent Silica Diatom Swarm",
       "added": "2026-08-20T15:11:37.996029"
     },
@@ -448,11 +449,6 @@
       "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
       "title": "Ethereal Quantum-Glass Nautilus",
       "added": "2026-08-21T15:28:56.185053"
-    },
-    {
-      "filename": "2026-08-22_astral-plasma-accretion-forge.md",
-      "title": "Astral Plasma Accretion Forge",
-      "added": "2026-08-22T15:12:59.044203"
     }
   ],
   "current": null,
@@ -642,11 +638,19 @@
       "status": "completed",
       "completed_at": "2026-08-14T08:37:15.142219+00:00"
     },
-    {      "filename": "2026-08-19_quantum-mycelial-neural-web.md",
+    {
+      "filename": "2026-08-19_quantum-mycelial-neural-web.md",
       "title": "Quantum Mycelial Neural Web",
       "added": "2026-08-19T15:41:23.433626",
       "status": "completed",
       "completed_at": "2026-08-21T08:37:33.520590+00:00"
+    },
+    {
+      "filename": "2026-08-22_astral-plasma-accretion-forge.md",
+      "title": "Astral Plasma Accretion Forge",
+      "added": "2026-08-22T15:12:59.044203",
+      "status": "completed",
+      "completed_at": "2026-08-23T08:00:01.112629+00:00"
     }
   ],
   "completed": [
