@@ -48,6 +48,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     
     var col = vec3<f32>(0.0);
     
