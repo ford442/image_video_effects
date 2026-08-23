@@ -1,11 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Data Stream
-//  Category: interactive-mouse
-//  Features: mouse-driven, glitch, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-23
-//  By: Phase A Upgrade Swarm
+//  Data Stream — Batch 61
+//  Matrix data strips: spring wake, hex glyphs, cyber palette,
+//  capped ripples, held turbulence, ACES + regional FFT bins.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,11 +19,31 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Speed, y=Density, z=Turbulence, w=Glow
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+fn hash12(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn cyberPalette(t: f32) -> vec3<f32> {
+  return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.28318 * (vec3<f32>(1.0) * t + vec3<f32>(0.0, 0.33, 0.67)));
+}
+
+fn glyphMask(cellUV: vec2<f32>, id: f32) -> f32 {
+  let bar = step(0.25, cellUV.x) * step(cellUV.x, 0.75) * step(0.15, cellUV.y);
+  let dot = step(length(cellUV - vec2<f32>(0.5)), 0.2);
+  return max(bar, dot * step(fract(id * 0.41), 0.5));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -51,6 +67,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let time = u.config.x;
     let aspect = resolution.x / max(resolution.y, 0.001);
+    let held = u.zoom_config.w > 0.5;
 
     // Spring-following wake center in persistent-safe slots [133..138].
     let rawMouse = u.zoom_config.yz;
@@ -82,7 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Aspect-correct interaction keeps the wake circular on wide canvases.
     let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
-    let interactRadius = 0.3;
+    let interactRadius = 0.3 * select(1.0, 1.3, held);
     let interact = smoothstep(interactRadius, 0.0, dist) * turbulence;
 
     // Create Strips
@@ -142,9 +159,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bright = step(brightThreshold, noise * (sin(time * 2.0 + stripIdx) * 0.5 + 0.5));
 
     let finalRGB = mix(color.rgb, digitalColor, glow);
+    let gridSize = vec2<f32>(24.0 + density * 40.0, (24.0 + density * 40.0) * aspect);
+    let cellUV = fract(uv * gridSize);
+    let glyph = glyphMask(cellUV, stripIdx + time * 0.1);
     var outputColor = finalRGB + vec3<f32>(0.0, bright * glow + clickGlow * glow * 0.65, clickGlow * glow * 0.12);
-    let outputPeak = max(max(outputColor.r, outputColor.g), outputColor.b);
-    outputColor *= min(1.0, 1.8 / max(outputPeak, 0.001));
+    outputColor = mix(outputColor, outputColor + cyberPalette(stripIdx * 0.05 + time * 0.03) * 0.25, glyph * glow * 0.4);
+    outputColor = acesToneMap(outputColor * (0.95 + bass * 0.08));
 
     // Alpha: digital glow and stream brightness drive compositing weight
     let streamLuma = dot(outputColor, vec3<f32>(0.299, 0.587, 0.114));
@@ -155,7 +175,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, coord, outColor);
 
     // Passthrough depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, outColor);
 }

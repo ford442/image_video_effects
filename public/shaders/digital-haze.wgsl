@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Haze — Batch 59
-//  Beer-Lambert haze, sprung clear window [133..137], capped ripples,
-//  held widens clear radius, FFT cell bins, ACES + semantic alpha.
+//  Digital Haze — Batch 61
+//  Beer-Lambert haze + hex grid overlay, iridescent scatter color,
+//  sprung clear window, capped ripples, held widen, FFT cell bins.
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture:    texture_2d<f32>;
@@ -55,7 +55,26 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hexEdge(uv: vec2<f32>, scale: f32) -> f32 {
+  let p = uv * scale;
+  let q = vec2<f32>(p.x * 1.7320508 + p.y, p.y * 2.0);
+  let pf = fract(q);
+  let d1 = length(pf - vec2<f32>(0.5, 0.5));
+  let d2 = length(pf - vec2<f32>(0.0, 1.0));
+  return 1.0 - smoothstep(0.01, 0.06, min(d1, d2));
+}
+
+fn iridescentHaze(t: f32, mask: f32) -> vec3<f32> {
+  let base = vec3<f32>(0.08, 0.14, 0.1);
+  let irid = vec3<f32>(
+    0.5 + 0.5 * cos(6.28318 * (t + 0.0)),
+    0.5 + 0.5 * cos(6.28318 * (t + 0.33)),
+    0.5 + 0.5 * cos(6.28318 * (t + 0.67))
+  );
+  return base + irid * mask * 0.35;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -150,9 +169,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let colClear = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let colHaze = textureSampleLevel(readTexture, u_sampler, hazeUV, 0.0).rgb;
 
-    // Apply a "digital" tint to the haze
-    let greenTint = vec3<f32>(0.0, 0.1, 0.0) * noiseAmt;
-    let finalHaze = colHaze + greenTint;
+    let hexScale = 14.0 + pixelStrength * 0.08;
+    let hex = hexEdge(uv, hexScale) * mask * (0.12 + mids * 0.08);
+    let hazeTint = iridescentHaze(time * 0.06 + dist * 2.0 + hash(uv) * 0.5, mask);
+    let finalHaze = colHaze + hazeTint + vec3<f32>(hex * 0.35, hex * 0.55, hex * 0.4);
 
     // ═══════════════════════════════════════════════════════════════
     //  Volumetric Fog Calculation
@@ -171,9 +191,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Transmittance (Beer-Lambert): T = exp(-τ)
     let transmittance = exp(-opticalDepth);
 
-    // In-scattered light (digital haze color)
-    let hazeColor = vec3<f32>(0.1, 0.15, 0.1); // Digital green-grey haze
-    let inScattered = hazeColor * mask * (1.0 - transmittance);
+    let hazeColor = iridescentHaze(time * 0.04 + noiseAmt, mask);
+    let inScattered = hazeColor * mask * (1.0 - transmittance) * (1.0 + hex * 0.5);
 
     // Volumetric composition
     // Final = in_scattered + transmitted_clear * T + transmitted_haze * (1-T)
