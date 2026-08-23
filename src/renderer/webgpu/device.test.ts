@@ -62,6 +62,7 @@ function makeDevice(featureNames: GPUFeatureName[] = []): GPUDevice {
     lost: Promise.resolve({ reason: 'destroyed', message: '' }),
     createShaderModule: jest.fn().mockReturnValue({}),
     createComputePipeline: jest.fn().mockReturnValue({}),
+    createTexture: jest.fn(() => ({ destroy: jest.fn() })),
   } as unknown as GPUDevice;
 }
 

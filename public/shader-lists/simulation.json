@@ -2346,6 +2346,7 @@
     "name": "Fluid Feedback Coupled",
     "url": "shaders/sim-fluid-feedback-coupled.wgsl",
     "description": "Mouse-steerable coupled fluid simulation combining Navier-Stokes feedback fields with viscous fluid stirring. Mouse drags fluid creating vortex streets; click ripples inject bursts. Fluid thickness drives color absorption, blur, and glow.",
+    "requiresRgba32Float": true,
     "features": [
       "simulation",
       "mouse-driven",

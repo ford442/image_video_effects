@@ -28,7 +28,8 @@ _Learn about the person you're helping. Update this as you go._
 - **2026-08-21 progress audit:** board was empty except #1080 (WASM GPU evidence)
   and #1111 (thumbnail CI; partial landing already in tree). Next work is
   foundation residual before another content wave: compile/feature SoT (#1123),
-  rgba16float tiers actually allocated (#1124), WASM-bridge SoT + drop dead CRA
+  rgba16float tiers (#1124 in progress: probe + C++ packing landed, GPU evidence
+  still workstation-gated), WASM-bridge SoT + drop dead CRA
   deps (#1125), no second `requestDevice` (#1126), gpu-chores on catalog source
   (#1127), catalog id/filename/8×8 hygiene (#1128). Later: Physics Lab set 2 +
   all-slot audio (#1129). Do not port GraphRunner to C++ or flip WASM default
