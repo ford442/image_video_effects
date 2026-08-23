@@ -245,7 +245,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Semantic alpha: plume density + glow + microbes + vent wall
   let alpha = clamp(totalPlume * 0.8 + ventGlow * 0.6 + microbeGlow * 0.5 + ventWall * 0.9, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
+  
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let aspect = u.config.z / max(u.config.w, 1.0);
+    let screenUV = vec2<f32>(vec2<i32>(global_id.xy)) / vec2<f32>(u.config.z, u.config.w);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let __finalRGB = color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(__finalRGB, alpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(totalPlume * 0.5 + ventGlow * 0.4 + microbeGlow * 0.3, 0.0, 0.0, 0.0));
 }
