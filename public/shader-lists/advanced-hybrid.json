@@ -3275,18 +3275,30 @@
     "id": "data-stream-structure",
     "name": "Data Stream Structure",
     "url": "shaders/data-stream-structure.wgsl",
-    "description": "Data Stream Structure",
+    "description": "Structure-tensor LIC data streams with hex packet geometry, spring cursor vortex, capped click ripples, cyber spectral palette, and three-band audio.",
     "tags": [
       "mouse-driven",
       "structure-tensor",
       "LIC",
-      "glitch"
+      "glitch",
+      "audio-reactive",
+      "click-ripples"
     ],
     "features": [
       "mouse-driven",
       "structure-tensor",
       "LIC",
-      "glitch"
+      "glitch",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "aces-tone-map",
+      "temporal-feedback"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -3296,7 +3308,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x"
+        "mapping": "zoom_params.x",
+        "description": "Flow speed along dominant orientation"
       },
       {
         "id": "param2",
@@ -3305,7 +3318,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y"
+        "mapping": "zoom_params.y",
+        "description": "Stream strip density"
       },
       {
         "id": "param3",
@@ -3314,7 +3328,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z"
+        "mapping": "zoom_params.z",
+        "description": "Mouse vortex turbulence"
       },
       {
         "id": "param4",
@@ -3323,23 +3338,66 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w"
+        "mapping": "zoom_params.w",
+        "description": "Digital glow and spectral mix"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Strip Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glow Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "datamosh-brush-diffusion",
     "name": "Datamosh Brush Diffusion",
     "url": "shaders/datamosh-brush-diffusion.wgsl",
-    "description": "Interactive datamoshing brush with anisotropic diffusion. Paint to freeze or corrupt pixels while Perona-Malik diffusion smooths along edges, creating oil-painted MPEG artifact trails with temporal persistence.",
+    "description": "Perona-Malik anisotropic diffusion merged with datamosh brush: spring cursor heat source, held paint freeze, capped click ripples, exact C neighbor loads, oil-slick palette, and audio.",
     "features": [
       "advanced-hybrid",
       "datamosh",
       "anisotropic-diffusion",
       "mouse-driven",
       "temporal",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "aces-tone-map",
       "randomization-safe"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -3381,6 +3439,40 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Alpha ghost trail intensity"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Edge Sensitivity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Diffusion Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ghost Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "chunks_used": [
@@ -3457,14 +3549,23 @@
     "id": "digital-decay-rgba",
     "name": "Digital Decay RGBA",
     "url": "shaders/digital-decay-rgba.wgsl",
-    "description": "Digital block corruption feeds into a 4-species reaction-diffusion system. Corrupted pixels become chemical seeds that evolve into organic decay patterns, merging glitch aesthetics with emergent biological forms.",
+    "description": "MPEG block corruption seeds a 4-species reaction-diffusion system with spring injection, held corrupt bursts, capped ripples, exact C Laplacian, and spectral RD visualization.",
     "features": [
       "advanced-hybrid",
       "digital-decay",
       "reaction-diffusion",
       "rgba-state-machine",
       "mouse-driven",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "aces-tone-map",
       "randomization-safe"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -3506,6 +3607,40 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Reaction-diffusion feed rate"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Decay Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Block Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Corruption Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "RD Feed Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "chunks_used": [
@@ -3585,18 +3720,28 @@
     "id": "digital-lens-prismatic",
     "name": "Digital Lens Prismatic",
     "url": "shaders/digital-lens-prismatic.wgsl",
-    "description": "Digital Lens Prismatic",
+    "description": "Cauchy 6-band prismatic lens with hex pixel grid, spring cursor, held squeeze, iridescent rim, capped ripples, and audio spectral spread.",
     "tags": [
       "mouse-driven",
       "spectral-rendering",
       "pixelation",
-      "physical-dispersion"
+      "physical-dispersion",
+      "audio-reactive"
     ],
     "features": [
       "mouse-driven",
       "spectral-rendering",
       "pixelation",
-      "physical-dispersion"
+      "physical-dispersion",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "aces-tone-map"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -3606,7 +3751,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x"
+        "mapping": "zoom_params.x",
+        "description": "Pixel block size"
       },
       {
         "id": "param2",
@@ -3615,7 +3761,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y"
+        "mapping": "zoom_params.y",
+        "description": "Lens radius"
       },
       {
         "id": "param3",
@@ -3624,7 +3771,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z"
+        "mapping": "zoom_params.z",
+        "description": "Grid line opacity"
       },
       {
         "id": "param4",
@@ -3633,27 +3781,71 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w"
+        "mapping": "zoom_params.w",
+        "description": "Cauchy dispersion strength"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Lens Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Grid Opacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Dispersion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "digital-moss-rgba",
     "name": "Digital Moss Rgba",
     "url": "shaders/digital-moss-rgba.wgsl",
-    "description": "Catalog entry for Digital Moss Rgba.",
+    "description": "RD-driven digital moss with iridescent palette: held plants spores, click cleans, capped ripple bursts, exact C Laplacian, and audio growth rate.",
     "tags": [
       "mouse-driven",
       "temporal",
       "rgba-state-machine",
-      "organic"
+      "organic",
+      "audio-reactive"
     ],
     "features": [
       "mouse-driven",
       "temporal",
       "rgba-state-machine",
-      "organic"
+      "organic",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "aces-tone-map"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -3663,7 +3855,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x"
+        "mapping": "zoom_params.x",
+        "description": "RD feed rate"
       },
       {
         "id": "param2",
@@ -3672,7 +3865,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y"
+        "mapping": "zoom_params.y",
+        "description": "RD kill rate"
       },
       {
         "id": "param3",
@@ -3681,7 +3875,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z"
+        "mapping": "zoom_params.z",
+        "description": "Cross-inhibition mix"
       },
       {
         "id": "param4",
@@ -3690,27 +3885,72 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w"
+        "mapping": "zoom_params.w",
+        "description": "Moss growth speed"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Feed Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Kill Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Cross Inhibit",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Growth Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "digital-reveal-guided",
     "name": "Digital Reveal Guided",
     "url": "shaders/digital-reveal-guided.wgsl",
-    "description": "Digital Reveal Guided",
+    "description": "Matrix rain reveals image through depth-guided filter: spring brush, held widen, glyph geometry, capped click ripples, exact C trail mask, and audio density.",
     "tags": [
       "mouse-driven",
       "digital-reveal",
       "guided-filter",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive"
     ],
     "features": [
       "mouse-driven",
       "digital-reveal",
       "guided-filter",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "aces-tone-map",
+      "temporal-feedback"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -3720,7 +3960,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x"
+        "mapping": "zoom_params.x",
+        "description": "Rain glyph density"
       },
       {
         "id": "param2",
@@ -3729,7 +3970,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y"
+        "mapping": "zoom_params.y",
+        "description": "Reveal brush size"
       },
       {
         "id": "param3",
@@ -3738,7 +3980,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z"
+        "mapping": "zoom_params.z",
+        "description": "Trail fade rate"
       },
       {
         "id": "param4",
@@ -3747,10 +3990,44 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w"
+        "mapping": "zoom_params.w",
+        "description": "Depth filter influence"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rain Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Reveal Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Fade",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "dimension-slicer-guided",
@@ -6146,7 +6423,7 @@
     "id": "gravitational-lensing",
     "name": "Gravitational Lensing",
     "url": "shaders/gravitational-lensing.wgsl",
-    "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
+    "description": "Schwarzschild geodesic raytracing with a Shakura-Sunyaev accretion disk: temperature follows T(r) ~ r^-3/4 through a Planck blackbody fit, and Keplerian orbital velocity v ~ r^-1/2 drives relativistic Doppler beaming (delta^3) so the approaching limb brightens correctly. Each of the eight FFT bins owns a disk annulus. Fixes a bug where zoom_config.x (time, not audio) was read as an audio level, making the camera orbit accelerate quadratically forever.",
     "features": [
       "mouse-driven",
       "advanced-hybrid",
@@ -6154,7 +6431,17 @@
       "geodesic-raytracing",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "keplerian-disk",
+      "doppler-beaming",
+      "temporal-accretion"
     ],
     "params": [
       {
@@ -6212,7 +6499,53 @@
       "cursor",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "black-hole",
+      "relativity",
+      "lensing",
+      "accretion"
+    ],
+    "updatedParams": [
+      {
+        "id": "black_hole_mass",
+        "name": "Black Hole Mass",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Schwarzschild radius and Einstein ring size; also sets the ISCO."
+      },
+      {
+        "id": "disk_brightness",
+        "name": "Disk Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Accretion disk emission gain."
+      },
+      {
+        "id": "camera_orbit",
+        "name": "Camera Orbit",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Static offset added to the orbit angle."
+      },
+      {
+        "id": "redshift",
+        "name": "Redshift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Gravitational redshift applied to the escaping background."
+      }
     ]
   },
   {
@@ -6516,7 +6849,10 @@
       "phase-coloring",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "mouse-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -6572,6 +6908,41 @@
       "audio",
       "music",
       "reactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fringe Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Coherence Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reconstruction Angle",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {

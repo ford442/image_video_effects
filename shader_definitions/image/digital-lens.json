@@ -2,7 +2,8 @@
   "id": "digital-lens",
   "name": "Digital Lens",
   "url": "shaders/digital-lens.wgsl",
-  "description": "Brown-Conrady digital lens with continuous caustic zoom streaks, spectral radial runners, held gravity-well focus, bounded click iris waves, chromatic dispersion, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+  "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion, caustic streaks, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+  "workgroup_size": [16, 16, 1],
   "updated": true,
   "params": [
     {
@@ -10,59 +11,39 @@
       "name": "Distortion",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "dispersion",
       "name": "Dispersion",
       "default": 0.3,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "vignette",
       "name": "Vignette",
       "default": 0.4,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "focus",
       "name": "Focus Point",
       "default": 0.2,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.w"
     }
   ],
   "updatedParams": [
-    {
-      "id": "distortion",
-      "name": "Distortion",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "dispersion",
-      "name": "Dispersion",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "vignette",
-      "name": "Vignette",
-      "default": 0.4,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "focus",
-      "name": "Focus Point",
-      "default": 0.2,
-      "min": 0,
-      "max": 1
-    }
+    { "index": 0, "name": "Distortion", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Dispersion", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Vignette", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Focus Point", "default": 0.2, "min": 0, "max": 1, "step": 0.01 }
   ],
   "features": [
     "mouse-driven",
@@ -76,7 +57,9 @@
     "alpha-layered",
     "luminance-key",
     "continuous-motion",
-    "bounded-click-ripples"
+    "bounded-click-ripples",
+    "spring-cursor",
+    "held-drag"
   ],
   "tags": [
     "filter",

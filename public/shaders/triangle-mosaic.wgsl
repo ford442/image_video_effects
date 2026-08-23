@@ -62,11 +62,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Audio reactivity: bass drives rotation speed, treble adds zoom jitter
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    let time = u.config.x;
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 60.0);
+    }
     let angle = rotation_param * 6.28
         + (1.0 - smoothstep(0.0, 0.5, distance(uv, mouse))) * twist_param * 3.14
-        + bass * 1.5;
-    let jitter = 1.0 + treble * 0.2 * sin(u.config.x * 10.0);
+        + bass * 1.5 + held * distance(uv, mouse) * 2.0;
+    let jitter = 1.0 + treble * 0.2 * sin(time * 10.0) + clickFront * 0.12;
 
     // Triangle grid logic
     var p = uv;
@@ -111,6 +121,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
     color = mix(orig, color, mix_param);
+    let seamRunner = sin((f_uv.x + f_uv.y) * 12.0 - time * (3.0 + mids * 5.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + seamRunner * 2.0 + time);
+    color += spectral * ((1.0 - smoothstep(0.0, 0.12, boundaryDist)) * 0.12 + clickFront * 0.22);
 
     // Edge darkening toward triangle boundaries
     let edgeDarken = 1.0 - boundaryDist * 0.6;
@@ -127,6 +140,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Semantic alpha: depth-based opacity with boundary transparency
     let alpha = mix(0.45, 1.0, depth) * mix(0.75, 1.0, 1.0 - boundaryDist * 3.0);
 
-    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    let finalPixel = vec4<f32>(color, alpha);
+    textureStore(writeTexture, pixel, finalPixel);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, finalPixel);
 }

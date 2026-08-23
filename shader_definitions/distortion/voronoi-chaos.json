@@ -2,7 +2,7 @@
   "id": "voronoi-chaos",
   "name": "Voronoi Chaos",
   "url": "shaders/voronoi-chaos.wgsl",
-  "description": "Breaks the image into Voronoi cells that shift chaotically based on time and mouse proximity.",
+  "description": "Animated Voronoi mosaic with moving ridge runners, held cell repulsion, click fronts, three-band audio, bounded source sampling, and psychedelic cell color.",
   "params": [
     {
       "name": "Cell Scale",
@@ -38,11 +38,51 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "continuous-motion",
+    "held-pointer",
+    "click-reactive",
+    "psychedelic-color"
   ],
   "tags": [
     "warp",
     "distort",
     "transform"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Cell Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Chaos Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Color Mix",
+      "default": 0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Center Dot Size",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

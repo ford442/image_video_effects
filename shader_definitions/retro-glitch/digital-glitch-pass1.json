@@ -2,18 +2,23 @@
   "id": "digital-glitch-pass1",
   "name": "Digital Glitch (Pass 1)",
   "url": "shaders/digital-glitch-pass1.wgsl",
-  "description": "Glitch field generation: block displacement, scanline tearing, bitwise corruption seeds, and per-pixel corruption masks. Outputs glitch field to dataTextureA.",
+  "description": "Glitch field generation pass: spring corruption hotspot, held intensify, capped ripples, bitwise seeds, block displacement, and regional audio bands. Outputs field to dataTextureA.",
   "tags": [
     "glitch",
     "bitwise",
     "corruption",
     "multi-pass",
-    "digital"
+    "digital",
+    "audio-reactive"
   ],
   "features": [
     "multi-pass-1",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag"
   ],
+  "workgroup_size": [16, 16, 1],
   "multipass": {
     "pass": 1,
     "totalPasses": 2,
@@ -26,7 +31,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "bit_manipulation",
@@ -34,7 +40,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "error_propagation",
@@ -42,7 +49,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "decay_rate",
@@ -50,7 +58,14 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Corruption Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Bit Manipulation", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Error Propagation", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Decay Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ]
 }

@@ -89,6 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
@@ -112,14 +113,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Reference beam angle: bass pumps it, and the mouse tilts it so the whole
   // interference field shears with viewpoint like a real holographic plate.
   let mouseTilt = (mouse - 0.5) * vec2(0.55, 0.3) * PI;
-  let refAngle = (0.25 + bass * 0.25) * PI + mouseTilt.x + mouseTilt.y;
+  let refAngle = (0.25 + bass * 0.25) * PI + mouseTilt.x + mouseTilt.y - held * 0.12;
   let k = waveScale * 25.0;
 
   // Multi-source laser interference with object and reference beams
   var interference = 0.0;
   var speckleCoherence = 0.0;
   var grainAccum = 0.0;
-  let sourceCount = 3;
+  let sourceCount = 3 + i32(plasmaBuffer[(u32(fract(time * 0.1) * 8.0) % 8u) + 1u].x * 2.0);
   for (var i = 0; i < sourceCount; i = i + 1) {
     let fi = f32(i);
     let srcAngle = fi * PI * 0.67 + time * 0.12;
@@ -182,8 +183,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let parallaxAtten = mix(1.0, mix(0.4, 1.0, depthFactor), depthWeight * 0.85 + 0.15);
   color = color * parallaxAtten;
 
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = max(time - ripple.z, 0.0);
+    let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+    clickFront += exp(-age * 1.9) * exp(-abs(rDist - age * 0.38) * 58.0);
+  }
+  color += vec3<f32>(0.4, 0.75, 1.0) * clickFront * (0.2 + treble * 0.15);
+
   // Alpha: interference_contrast * speckle_coherence * depth (semantic alpha)
-  let alpha = clamp(contrast * speckleCoherence * depthFactor * (0.7 + shimmer * 0.3), 0.03, 0.94);
+  let alpha = clamp(contrast * speckleCoherence * depthFactor * (0.7 + shimmer * 0.3) + clickFront * 0.08, 0.03, 0.94);
 
   // Single ACES pass (exposure chosen to match the old double-map feel)
   color = acesToneMap(color * 1.35);

@@ -1,19 +1,19 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Batch 68 stateful simulation/feedback upgrade)
+**Last updated:** 2026-08-23 (Batch 60)
 
-## 2026-08-23 — Batch 68 stateful simulation and feedback
+## 2026-08-23 — Shader upgrade Batch 60 — CYBER/DIGITAL INTERACTIVE TEN
 
-- Ten effects now share the Batch 58D contract: exact C, authoritative A, no B
-  writes, guarded `[133..138]` springs, bounded uniform clicks, real plasma
-  bands, ACES, semantic alpha, source depth, and 16x16x1 workgroups.
-- Fire owns raw smoke+density A; Ink owns pigment+thickness; Phase owns
-  psiR/psiI/slowMemory/activity; Prismatic owns raw accumulation. The other six
-  keep display/projected history. Temporal alone retains binding 13/history ring.
-- Naga 30.0.1 and focused contract gates are 10/10; params are unchanged;
-  catalogs are unique; Jest 81/81 and the production build pass. Real-GPU QA
-  remains external for stability, state packing, interaction, alpha/depth,
-  visual continuity, performance, and preset fidelity.
+- Upgraded user-requested ten-pack: data-stream-structure, datamosh-brush,
+  datamosh-brush-diffusion, digital-decay-rgba, digital-glitch-pass1/2,
+  digital-lens-prismatic, digital-moss-rgba, digital-reveal-guided,
+  glitch-ripple-drag.
+- Cohort standard: spring cursor [133..138], held-drag, capped ripples,
+  plasmaBuffer + bins, textureLoad on C, ACES, semantic alpha, dataTextureA
+  writes, 16x16. datamosh-brush 8x8→16x16. Params exact; updatedParams added.
+- Gate 10/10; Jest 84/84 (559 pass); build green. Real-GPU QA external.
+  Branch: `cursor/cyber-digital-shader-upgrades-e675`.
+**Last updated:** 2026-08-23 (Batch 58D spectral/datamosh upgrade)
 
 ## 2026-08-23 — Batch 58D spectral and datamosh upgrade
 
@@ -41,6 +41,168 @@
   + prior optical/feedback polish; CMYK A coverage preserved.
 - Proof: focused gate **17/17**, cohort dead-slider + extraBuffer PASS,
   catalogs regenerated. Real-GPU visual QA remains external.
+**Last updated:** 2026-08-23 (Batch 59)
+
+## 2026-08-23 — Shader upgrade Batch 59 — CYBER & DIGITAL
+
+- Upgraded tracker #511–520: cyber-ripples, cyber-scan, cyber-trace,
+  cyber-organic, cyber-rain, digital-glitch, digital-haze, digital-reveal,
+  edge-glow-mouse, ferrofluid.
+- Critical fixes: cyber-rain extraBuffer[0..7] removed (spring [133..138]);
+  digital-glitch 16×16; textureLoad on C for scan/trace/reveal/glitch/haze;
+  digital-reveal spring gated to (0,0).
+- Cohort standard: held-pointer, capped ripples, plasmaBuffer + bins, ACES,
+  semantic alpha, dataTextureA writes. Gate 10/10; Jest 84/84; build green.
+  Branch: `upgrade/batch-59-cyber-digital`. Real-GPU QA external.
+
+## 2026-08-23 — Shader upgrade Batch 58C — HOLOGRAPHIC & QUANTUM
+
+- Upgraded ten shaders: holographic-interferometry, holographic-projection,
+  quantum-smear, quantum-wormhole, quantum-foam, holographic-entropy-vortex,
+  holographic_interference, holographic-shatter, holographic-sticker, quantum-cursor.
+- Fixed interferometry fake-audio (`config.y` ripple-count collision); rebuilt
+  projection as holo projector; repaired quantum-smear/wormhole zoom_config
+  hijacks; quantum-foam 8×8→16×16.
+- Cohort standard: held-pointer, capped ripples, plasmaBuffer audio + bins,
+  textureLoad on C, semantic alpha, dataTextureA writes. Gate 10/10; Jest
+  84/84 (550 pass); build green. Real-GPU QA external.
+
+## 2026-08-23 — Shader upgrade Batch 58E — INTERACTIVE COHORT
+
+- Upgraded tracker #491–500: interactive-emboss, film-burn, fisheye, fresnel,
+  glitch-brush, glitch-cubes, halftone-spin, kuwahara, magnetic-ripple, origami.
+- Source `params` exact. Held-drag, capped clicks, oil-slick color, exact C
+  loads. Existing extraBuffer springs kept (0,0 writer). A packing documented
+  per shader. Gate 10/10 naga+bindgroup. Real-GPU QA remains external.
+
+## 2026-08-23 — Unique alternate-branch upgrades unioned onto main
+
+- Fast-forwarded local `main` to `origin/main` (already had #1105, #1132, #1137).
+- Copied unique positive Batch 56 WGSL/JSON from `cursor/effect-shaders-complexity-8594` (#1136, dirty/unmergeable) without reverting #1137 or Batch 57 `fractal-kaleidoscope`.
+- Kept: chromatic-focus, cmyk-halftone, cyber-slit-scan, heat-haze-gpt52, hyb-spectral-fbm-displace, infinite-zoom-lens, liquid-warp-interactive, phosphor-magnifier, quantum-prism, rgb-iso-lines, sphere-projection, warp_drive.
+- Dropped: chrono branch (conflict-marker deletions vs main), claude weekly-plan-only branches (already landed as #1133), cursor `ascii-shockwave` (main #1137 version is the fuller upgrade).
+- Resolved leftover `<<<<<<<` from earlier landings in `gen-abyssal-plasma-void-medusa` and `gen-chrono-kinetic-fractal-engine` (JSON now canonical `params`/`updatedParams`).
+- #1126 device-adoption WIP remains stashed as `wip-1126-and-local-before-branch-union`.
+
+## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
+
+- User changed cohort selection policy: use an objective backlog rule such as
+  smallest codewise or missing params, not adjacency to prior batches.
+- Applied rule: eight smallest cataloged single-pass compute WGSL files with
+  exactly four saved params but no `updatedParams`, excluding declared
+  multipass and pass-ID files. Selected Triangle Mosaic, Polka Wave, Sphere
+  Projection, Foil Impression, Bio Touch, Hypnotic Spiral, Spirograph Reveal,
+  and Voronoi Chaos (tracker #491–498).
+- Preserved params 8/8; added continuous geometry, held/click response, spectral
+  color, three-band audio, truthful metadata, and aligned `updatedParams`.
+  Triangle Mosaic now writes display RGBA to A to match its existing exact C
+  feedback. Repaired Hypnotic normalized pointer/click coordinates and event cap,
+  Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
+- Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
+  audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
+  green. Real-GPU visual QA remains external.
+
+## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
+
+- User changed cohort selection policy: use an objective backlog rule such as
+  smallest codewise or missing params, not adjacency to prior batches.
+- Applied rule: eight smallest cataloged single-pass compute WGSL files with
+  exactly four saved params but no `updatedParams`, excluding declared
+  multipass and pass-ID files. Selected Triangle Mosaic, Polka Wave, Sphere
+  Projection, Foil Impression, Bio Touch, Hypnotic Spiral, Spirograph Reveal,
+  and Voronoi Chaos (tracker #491–498).
+- Preserved params 8/8; added continuous geometry, held/click response, spectral
+  color, three-band audio, truthful metadata, and aligned `updatedParams`.
+  Triangle Mosaic now writes display RGBA to A to match its existing exact C
+  feedback. Repaired Hypnotic normalized pointer/click coordinates and event cap,
+  Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
+- Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
+  audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
+  green. Real-GPU visual QA remains external.
+
+## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
+
+- User changed cohort selection policy: use an objective backlog rule such as
+  smallest codewise or missing params, not adjacency to prior batches.
+- Applied rule: eight smallest cataloged single-pass compute WGSL files with
+  exactly four saved params but no `updatedParams`, excluding declared
+  multipass and pass-ID files. Selected Triangle Mosaic, Polka Wave, Sphere
+  Projection, Foil Impression, Bio Touch, Hypnotic Spiral, Spirograph Reveal,
+  and Voronoi Chaos (tracker #491–498).
+- Preserved params 8/8; added continuous geometry, held/click response, spectral
+  color, three-band audio, truthful metadata, and aligned `updatedParams`.
+  Triangle Mosaic now writes display RGBA to A to match its existing exact C
+  feedback. Repaired Hypnotic normalized pointer/click coordinates and event cap,
+  Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
+- Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
+  audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
+  green. Real-GPU visual QA remains external.
+
+## 2026-08-23 — Gemini shader-upgrade branch is unclosed WIP
+
+- `new-shader-upgrades` is 10 commits ahead of `main`, pushed through
+  `20d71453`; it changes 58 unique committed shaders and leaves Glass Wall plus
+  Holographic Flicker dirty.
+- Treat it as salvageable input, not an accepted batch: no briefs/coordinator
+  review or complete validation were recorded, 39 edits share a generic overlay,
+  seven temporary rewrite scripts were committed, and at least two committed
+  shaders plus one dirty shader use undefined `saturate`.
+- Structural binding/workgroup and strict extraBuffer checks are clean, but Naga
+  and real-GPU proof are absent. Before continuation, audit interaction/ripple
+  semantics, saved-slider liveness, exact C feedback reads, and distinct effect
+  identity across the whole branch.
+
+## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
+
+- User changed cohort selection policy: use an objective backlog rule such as
+  smallest codewise or missing params, not adjacency to prior batches.
+- Applied rule: eight smallest cataloged single-pass compute WGSL files with
+  exactly four saved params but no `updatedParams`, excluding declared
+  multipass and pass-ID files. Selected Triangle Mosaic, Polka Wave, Sphere
+  Projection, Foil Impression, Bio Touch, Hypnotic Spiral, Spirograph Reveal,
+  and Voronoi Chaos (tracker #491–498).
+- Preserved params 8/8; added continuous geometry, held/click response, spectral
+  color, three-band audio, truthful metadata, and aligned `updatedParams`.
+  Triangle Mosaic now writes display RGBA to A to match its existing exact C
+  feedback. Repaired Hypnotic normalized pointer/click coordinates and event cap,
+  Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
+- Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
+  audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
+  green. Real-GPU visual QA remains external.
+
+## 2026-08-23 — Shader upgrade Batch 57 — KINETIC IMAGE TRANSFORMATIONS
+
+- Upgraded tracker #483–490: Pixel Sort Radial, Mirror Drag, Psychedelic Noise
+  Flow, Neon Flashlight, ASCII Flow, Temporal Distortion Field, Pixel Drag
+  Smear, and Fractal Kaleidoscope.
+- Added continuous shader-specific geometry, held-pointer deformation, capped
+  click fronts, psychedelic color, and truthful three-band audio. Wired all
+  previously dead ASCII/Fractal controls plus Pixel Drag mode and Temporal
+  Distortion depth weight.
+- Replaced filtered rgba32float history reads with bounded exact loads in Mirror
+  Drag, Temporal Distortion, and Pixel Drag; preserved display-RGBA A ownership,
+  unused B, canonical bindings, and zero `extraBuffer` access.
+- Proof: focused gate 8/8 (Naga unavailable), params exact 8/8, strict focused
+  buffer/dead-slider audits clean, TypeScript clean, Jest 81/81 (545 pass,
+  1 skip), production build green. Real-GPU visual QA remains external.
+
+## 2026-08-23 — Shader upgrade Batch 56 — INTERACTIVE COMPLEXITY
+
+- Upgraded tracker #475–482: CMYK Halftone Interactive, Cyber Slit Scan,
+  Interactive Ripple, Phosphor Magnifier, Vertical Slice Wave, Chromatic Focus,
+  Quantum Prism, and Matrix Curtain.
+- Added shader-specific geometry, continuous motion, psychedelic color,
+  three-band audio, held-pointer response, and click loops capped at 50 while
+  preserving all saved `params`, canonical bindings, unused B, and no
+  `extraBuffer` access.
+- Deliberate feedback corrections: Phosphor Magnifier A now stores display RGBA
+  for truthful afterimages; Vertical Slice Wave A stays envelope/spring/velocity
+  state and is no longer read as RGB/alpha history. Ripple is documented as an
+  analytic Huygens field and Matrix occupancy as Conway-inspired.
+- Proof: focused structural gate 8/8 (Naga binary absent), strict cohort buffer
+  and dead-slider audits pass, params exact 8/8, catalogs/URLs/uniforms clean,
+  TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build green.
+  Real-GPU visual QA remains external.
 
 ## 2026-08-21 — WASM `getGPUTimings` bridge ABI
 

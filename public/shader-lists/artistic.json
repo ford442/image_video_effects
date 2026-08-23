@@ -123,7 +123,7 @@
     "category": "artistic",
     "type": "compute",
     "url": "shaders/ambient-liquid.wgsl",
-    "description": "Curl-noise-driven ambient liquid distortion with mouse attraction, branchless ripple eddies, HSV color shift, depth-aware semantic alpha, and ACES tone mapping.",
+    "description": "Curl-advected liquid with a REAL Gray-Scott reaction-diffusion system: U and V concentrations carried in dataTextureA, a five-tap Laplacian from exact textureLoad fetches, and feed/kill rates driven per FFT band so different frequencies push the system between spot, stripe and mitosis regimes. The V concentration raises local surface tension and pulls the metaball isosurface inward. Fixes a shader that advertised reaction-diffusion while its grayScott() was four sine waves with no state at all.",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
@@ -131,13 +131,23 @@
       "audio-reactive",
       "reaction-diffusion",
       "sdf-metaballs",
-      "anisotropic-specular"
+      "anisotropic-specular",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "semantic-alpha",
+      "aces",
+      "gray-scott",
+      "surface-tension"
     ],
     "tags": [
       "filter",
       "image-processing",
       "liquid",
-      "noise"
+      "noise",
+      "reaction-diffusion",
+      "metaballs",
+      "organic"
     ],
     "workgroup_size": [
       16,
@@ -188,7 +198,49 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "updated": true
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "viscosity",
+        "name": "Flow Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Curl displacement scale; higher damps the flow (zoom_params.x)."
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Noise frequency of the curl and FBM fields (zoom_params.y)."
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple / Feed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Click ripple strength; also biases the Gray-Scott feed rate (zoom_params.z)."
+      },
+      {
+        "id": "color_shift",
+        "name": "Hue / Kill",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Hue rotation; also biases the Gray-Scott kill rate (zoom_params.w)."
+      }
+    ]
   },
   {
     "id": "anisotropic-kuwahara",
@@ -1988,7 +2040,7 @@
     "id": "glass_refraction_alpha",
     "name": "Glass Refraction RGBA",
     "url": "shaders/glass_refraction_alpha.wgsl",
-    "description": "Ray-marched glass blobs with Snell's law refraction, Fresnel reflectivity, chromatic dispersion. Alpha = transparency based on thickness and angle.",
+    "description": "Raymarched glass with wavelength-correct Cauchy dispersion n(lambda) = A + B/lambda^2, so blue refracts hardest as real glass does, plus per-band caustic focusing derived from the convergence of the refracted direction field. Fixes a fake-audio proxy (a variable named audioPulse was actually the mouse button, and plasmaBuffer was bound but never read) and a dead exitT that left Beer-Lambert absorption running over the distance to the surface instead of the path through the glass.",
     "tags": [
       "interactive",
       "cursor",
@@ -1999,7 +2051,8 @@
       "raymarch",
       "transparent",
       "alpha",
-      "physical-transmittance"
+      "physical-transmittance",
+      "caustics"
     ],
     "features": [
       "mouse-driven",
@@ -2009,7 +2062,20 @@
       "fresnel",
       "chromatic",
       "glass",
-      "advanced-alpha"
+      "advanced-alpha",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "snell-refraction",
+      "cauchy-dispersion",
+      "beer-lambert",
+      "caustics",
+      "temporal-glow"
     ],
     "params": [
       {
@@ -2045,7 +2111,45 @@
         "step": 0.1
       }
     ],
-    "target_rating": 4.8
+    "target_rating": 4.8,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Transparency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "description": "Base transmission of the glass body (maps to zoom_params.x)."
+      },
+      {
+        "id": "param2",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "description": "Cauchy B coefficient — the width of the wavelength spread (zoom_params.y)."
+      },
+      {
+        "id": "param3",
+        "name": "Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "description": "Beer-Lambert absorption scale over the interior path (zoom_params.z)."
+      },
+      {
+        "id": "param4",
+        "name": "Roughness",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "description": "Surface roughness; softens the specular (zoom_params.w)."
+      }
+    ]
   },
   {
     "id": "green-tracer",
@@ -2162,7 +2266,19 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "sobel-contours",
+      "halftone",
+      "interference-plate",
+      "chromatic-aberration",
+      "temporal-plate"
     ],
     "params": [
       {
@@ -2196,36 +2312,36 @@
     ],
     "updatedParams": [
       {
-        "index": 0,
-        "name": "Edge Threshold",
+        "id": "threshold",
+        "name": "Halftone Dot Size",
         "default": 0.1,
         "min": 0.01,
         "max": 0.5,
-        "step": 0.01
+        "description": "Halftone cell pitch in pixels (maps to zoom_params.x)."
       },
       {
-        "index": 1,
-        "name": "Glow Strength",
+        "id": "glow_strength",
+        "name": "Edge Threshold",
         "default": 2,
         "min": 0,
         "max": 5,
-        "step": 0.1
+        "description": "Sobel magnitude required to register a contour (maps to zoom_params.y)."
       },
       {
-        "index": 2,
-        "name": "Hologram Shift",
+        "id": "shift_amount",
+        "name": "Posterize Levels",
         "default": 0.05,
         "min": 0,
         "max": 0.2,
-        "step": 0.01
+        "description": "Number of quantisation levels for the base colour (maps to zoom_params.z)."
       },
       {
-        "index": 3,
-        "name": "Darken Background",
+        "id": "dim_bg",
+        "name": "Ink Density",
         "default": 0.8,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Contour and halftone ink coverage (maps to zoom_params.w)."
       }
     ],
     "tags": [
@@ -2233,8 +2349,14 @@
       "artistic",
       "audio",
       "music",
-      "reactive"
-    ]
+      "reactive",
+      "hologram",
+      "contour",
+      "halftone",
+      "interference",
+      "line-art"
+    ],
+    "description": "Sobel contour extraction cross-modulated with a reference-beam interference plate, so the output is a recorded fringe pattern rather than a flat edge trace. Fringe spacing comes from the eight FFT bins and the reference-beam angle follows the pointer. Contours are extracted at three parallax offsets driven by scene depth, stacking them as plates at different heights. Fixes dead audio (plasmaBuffer was bound but never read despite the audio-reactive tag), a depth clobber, and a dead halftone radius; the transpiler-generated source was rewritten as readable WGSL."
   },
   {
     "id": "ink-diffusion",
@@ -4299,7 +4421,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -4332,6 +4455,41 @@
       },
       {
         "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -4406,7 +4564,10 @@
     "url": "shaders/quantum-smear.wgsl",
     "description": "Quantum particle disintegration with stochastic advection and pointillist effects.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -4445,6 +4606,41 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -4453,7 +4649,10 @@
     "url": "shaders/quantum-wormhole.wgsl",
     "description": "Wormhole-like spacetime distortion effects.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -4486,6 +4685,41 @@
       },
       {
         "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -5523,7 +5757,7 @@
     "name": "Spirograph Reveal",
     "url": "shaders/spirograph-reveal.wgsl",
     "category": "artistic",
-    "description": "True epicycloid/hypocycloid spirograph with multiple rotating gears and gear-ratio modulated patterns. Features metallic ink aesthetic with specular highlights, gradient fills along curve length, and HDR bloom at cusps. Bass drives rotation speed, mouse modulates gear ratio, and depth creates 3D depth layers.",
+    "description": "Layered epicycloid and hypocycloid gears with moving cusps, held gear deformation, click reveal fronts, three-band audio, depth layers, and spectral metallic ink.",
     "tags": [
       "spirograph",
       "geometric",
@@ -5538,7 +5772,11 @@
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color"
     ],
     "params": [
       {
@@ -5577,7 +5815,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Outer Teeth",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Inner Teeth",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Line Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "static-reveal",

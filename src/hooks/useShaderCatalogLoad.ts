@@ -42,9 +42,8 @@ export function useShaderCatalogLoad({
                     requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
                     requiresHistoryRing: shader.requiresHistoryRing === true,
                     requiresRgba32Float: inferRequiresRgba32Float({
+                        id: shader.id,
                         requiresRgba32Float: shader.requiresRgba32Float === true,
-                        category: determineCategory(shader),
-                        tags: shader.tags || [],
                     }),
                     params: (shader.params || []).map((p: { id?: string; name?: string; label?: string; default?: number; min?: number; max?: number; step?: number; labels?: string[]; mapping?: string; audio?: string | { fft: number } }, idx: number) => ({
                         id: p.id || p.name || `param${idx + 1}`,

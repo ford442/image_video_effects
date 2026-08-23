@@ -2,19 +2,25 @@
   "id": "digital-moss-rgba",
   "name": "Digital Moss Rgba",
   "url": "shaders/digital-moss-rgba.wgsl",
-  "description": "Catalog entry for Digital Moss Rgba.",
+  "description": "RD-driven digital moss with iridescent palette: held plants spores, click cleans, capped ripple bursts, exact C Laplacian, and audio growth rate.",
   "tags": [
     "mouse-driven",
     "temporal",
     "rgba-state-machine",
-    "organic"
+    "organic",
+    "audio-reactive"
   ],
   "features": [
     "mouse-driven",
     "temporal",
     "rgba-state-machine",
-    "organic"
+    "organic",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "aces-tone-map"
   ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "param1",
@@ -23,7 +29,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.x"
+      "mapping": "zoom_params.x",
+      "description": "RD feed rate"
     },
     {
       "id": "param2",
@@ -32,7 +39,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.y"
+      "mapping": "zoom_params.y",
+      "description": "RD kill rate"
     },
     {
       "id": "param3",
@@ -41,7 +49,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.z"
+      "mapping": "zoom_params.z",
+      "description": "Cross-inhibition mix"
     },
     {
       "id": "param4",
@@ -50,8 +59,14 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.w"
+      "mapping": "zoom_params.w",
+      "description": "Moss growth speed"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    { "index": 0, "name": "Feed Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Kill Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Cross Inhibit", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Growth Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ]
 }

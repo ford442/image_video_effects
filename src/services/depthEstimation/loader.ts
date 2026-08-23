@@ -23,14 +23,24 @@ let cached: CachedDepth | null = null;
 let inflight: Promise<CachedDepth> | null = null;
 let abortController: AbortController | null = null;
 
-async function webGpuAvailable(): Promise<boolean> {
-  try {
-    if (typeof navigator === 'undefined' || !navigator.gpu) return false;
-    const adapter = await navigator.gpu.requestAdapter();
-    return adapter !== null;
-  } catch {
-    return false;
-  }
+/**
+ * WebGPU depth is only considered when the boot probe succeeded.
+ * Never call requestAdapter() here — the renderer owns the sole adapter/device.
+ *
+ * Note: @xenova/transformers with device:'webgpu' may still allocate its own
+ * GPUDevice internally. Prefer WASM/CPU while the canvas renderer is live.
+ */
+function webGpuAvailable(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    !!navigator.gpu &&
+    window.webgpuProbe?.ok === true
+  );
+}
+
+/** @internal Exported for unit tests — never calls requestAdapter. */
+export function isDepthWebGpuAvailable(): boolean {
+  return webGpuAvailable();
 }
 
 function wrapPipeline(estimator: unknown): DepthEstimatorPipeline {
@@ -79,6 +89,8 @@ export async function loadDepthPipeline(options?: {
   onProgress?: (progress: DepthLoadProgress) => void;
   onStateChange?: (state: DepthLoadState) => void;
   preferWebGpu?: boolean;
+  /** When true, skip WebGPU backend to avoid a third GPUDevice while the canvas renderer is live. */
+  rendererDeviceActive?: boolean;
 }): Promise<CachedDepth> {
   if (cached) {
     return cached;
@@ -96,7 +108,10 @@ export async function loadDepthPipeline(options?: {
     setState({ phase: 'loading', message: 'Loading depth model library...' });
 
     try {
-      const preferWebGpu = options?.preferWebGpu !== false && (await webGpuAvailable());
+      const preferWebGpu =
+        options?.preferWebGpu !== false &&
+        webGpuAvailable() &&
+        !options?.rendererDeviceActive;
 
       if (preferWebGpu) {
         setState({ phase: 'loading', message: 'Loading depth model (WebGPU)...', backend: 'webgpu' });

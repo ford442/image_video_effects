@@ -60,10 +60,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let amp = u.zoom_params.y * bass_env(bass, mids);
   let freq = mix(5.0, 50.0, u.zoom_params.z);
   let speed = mix(0.5, 5.0, u.zoom_params.w);
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
   let mouse_aspect = vec2<f32>(mouse.x * aspect, mouse.y);
   let distMouse = distance(uv * vec2<f32>(aspect, 1.0), mouse_aspect);
-  let ripple = sin(distMouse * freq - time * speed) * amp;
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let event = u.ripples[ri];
+    let age = max(time - event.z, 0.0);
+    clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.4) * 62.0);
+  }
+  let ripple = sin(distMouse * freq - time * speed) * amp * (1.0 + held) + clickFront;
   let invertRipple = smoothstep(0.0, 0.3, ripple * 0.5 + 0.5);
 
   let texColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -107,7 +115,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let paperWhite = vec3<f32>(0.96, 0.96, 0.94);
-  let halftoneRGB = paperWhite - dotAccum;
+  let rosette = sin((uv.x + uv.y) * density * 0.4 - time * speed) * sin((uv.x - uv.y) * density * 0.35 + time * speed * 0.7);
+  let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + rosette * 3.0 + time);
+  let halftoneRGB = paperWhite - dotAccum + spectral * (abs(rosette) * 0.07 + clickFront * 0.18);
   let halftoneAlpha = clamp(maskAccum + brightness * 0.3 + mids * 0.1, 0.0, 1.0);
   let finalColor = vec4<f32>(clamp(halftoneRGB, vec3<f32>(0.0), vec3<f32>(1.0)), halftoneAlpha);
 
