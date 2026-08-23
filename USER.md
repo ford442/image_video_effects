@@ -7,26 +7,12 @@ _Learn about the person you're helping. Update this as you go._
 - **Pronouns:** _(optional)_
 - **Timezone:**
 - **Notes:** Deploy to test.1ink.us should not prompt for FTP/SFTP user/pass — use gitignored `.env.deploy` or the authorized SSH key. Prefers phased, reviewable foundation work before more multipass content; preserve WebGPU device-init policy, frame semantics, and lazy AI boundaries during toolchain migrations. Treat CRA→Vite as an optional spike, not a big-bang rewrite. gpu-chores (Tier 4b histogram/reduce/LUT/downsample) must adopt the renderer’s GPUDevice — no second requestDevice, no dual-hot GL+WebGPU; Chrome/Edge mismatch degrades with a reason string. For shader upgrade batches, preserve saved-preset parameter contracts and raw feedback-state ownership, keep new persistent state out of engine FFT slots, separate Cloud-VM structural proof from real-GPU visual handoff, and keep rolling directly into the next clean cohort when they ask for “another batch.” For new generative content, prefers colorful psychedelic-inspired variety with four live sliders and direct mouse-position, click, and held-drag response. Likes follow-up polish that deepens those new shaders while also upgrading already-complex generative work, with each effect retaining a distinct identity. Prefers balanced generative hardening and accepts a deliberate feedback-ownership correction when it is necessary to make an advertised simulation real and the new contract is documented explicitly.
+- **Handoff preference:** When another model stops mid-upgrade, first reconstruct
+  its exact committed/dirty state and quality risks before editing or declaring
+  the batch complete.
 - **Batch 58D:** Ten spectral/datamosh upgrades completed with A authoritative,
   exact C, B unused, guarded `[133..138]` springs, saved params unchanged, and
   raw state retained for Vortex/Data Moshing/Datamosh. Real-GPU QA is external.
-- **Batch 68:** Ten stateful simulation/feedback upgrades completed under the
-  same contract. Raw A belongs to Fire, Ink, Phase, and Prismatic; Temporal
-  alone keeps binding 13/history ring. Structural/Jest/build gates are green;
-  real-GPU stability and composition QA remain external.
-- **Batch 69:** Ten cosmic/ferrofluid/liquid detail upgrades completed. Nine
-  shaders own HDR display history; Liquid Metal owns raw
-  height/velocity/foam/wetness A state. Saved params are exact, structural,
-  Jest, catalog, and build gates are green; real-GPU visual QA is external.
-- **Codex (b) liquid batch (2026-08-23):** Upgraded liquid-jelly,
-  liquid-oil, liquid-displacement, liquid-fast, liquid-glitch, liquid-mirror,
-  ink-marbling, glass-wipes, kimi_liquid_glass, and liquid-metal under the
-  canonical exact-C / A-only / ACES / semantic-alpha / three-band-audio /
-  bounded-`extraBuffer[133..138]` contract while preserving presets and all
-  pointer, held, and click-ripple interaction. Seven own raw physical A state;
-  Jelly/Fast/Glitch own display history. Liquid Metal now has Rosensweig spikes
-  and anisotropic reflection. Naga, contract, catalog, Jest, and build gates are
-  green; real-GPU visual QA remains external.
 
 ## Context
 
@@ -50,7 +36,8 @@ _Learn about the person you're helping. Update this as you go._
 - **2026-08-21 progress audit:** board was empty except #1080 (WASM GPU evidence)
   and #1111 (thumbnail CI; partial landing already in tree). Next work is
   foundation residual before another content wave: compile/feature SoT (#1123),
-  rgba16float tiers actually allocated (#1124), WASM-bridge SoT + drop dead CRA
+  rgba16float tiers (#1124 in progress: probe + C++ packing landed, GPU evidence
+  still workstation-gated), WASM-bridge SoT + drop dead CRA
   deps (#1125), no second `requestDevice` (#1126), gpu-chores on catalog source
   (#1127), catalog id/filename/8×8 hygiene (#1128). Later: Physics Lab set 2 +
   all-slot audio (#1129). Do not port GraphRunner to C++ or flip WASM default
@@ -136,11 +123,18 @@ Format specification:
 - Shader upgrade Batch 57 is implemented through tracker #490 as an eight-effect
   kinetic image-transformation cohort. Its Mirror Drag, Temporal Distortion,
   and Pixel Drag feedback histories use exact C loads; saved params remain fixed.
+- For subsequent shader batches, prefers a reproducible selection rule such as
+  smallest code size or missing parameter metadata instead of choosing shaders
+  merely adjacent to prior batch sequence. Batch 58 used smallest WGSL bytes
+  among single-pass four-param definitions missing `updatedParams`.
 - CRA→Vite remains deferred. Dead CRA-rewire deps to drop in #1125.
 - Keep thumbnail coverage CI reporting-only until the healthy baseline reaches 50%.
 - Shader upgrade work now includes separately closed Batches 53, 54, and 55
   through tracker #474; preserve sequential batch boundaries, exact saved-param
   compatibility, truthful feedback packing, and independent verification before
   the next cohort begins. Batch 55 is the four-shader geometry / fast-motion /
-  psychedelic-color cohort.
+  psychedelic-color cohort. Unique leftover Batch 56 shaders from
+  `cursor/effect-shaders-complexity-8594` were unioned onto main in 99d09e5c
+  without reverting #1137 or Batch 57 fractal-kaleidoscope. Batch 58E closed
+  tracker #491–500 across ten interactive shaders.
 </IMPORTANT_REMINDER>

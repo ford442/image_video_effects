@@ -2,46 +2,100 @@
   "id": "liquid-zoom",
   "name": "Liquid Zoom",
   "url": "shaders/liquid-zoom.wgsl",
-  "description": "",
+  "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "depth-parallax-layers",
+    "volumetric-fog",
+    "chromatic-aberration",
+    "temporal-streaks"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "zoom",
+    "parallax",
+    "tunnel",
+    "depth"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "near_layer_speed",
+      "name": "Near Layer Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
+    },
+    {
+      "id": "far_layer_speed",
+      "name": "Far Layer Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "parallax_strength",
+      "name": "Parallax Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "fog_density",
+      "name": "Fog Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "updatedParams": [
+    {
+      "id": "param1",
+      "name": "Near Layer Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Zoom cadence for near (low-depth) pixels \u2014 maps to zoom_params.x."
     },
     {
       "id": "param2",
-      "name": "Speed",
+      "name": "Far Layer Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "description": "Zoom cadence for far (high-depth) pixels \u2014 maps to zoom_params.y."
     },
     {
       "id": "param3",
-      "name": "Scale",
+      "name": "Parallax Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "description": "Exponent shaping the depth-to-speed curve \u2014 maps to zoom_params.z."
     },
     {
       "id": "param4",
-      "name": "Detail",
+      "name": "Fog Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "description": "Distance fog applied to far layers \u2014 maps to zoom_params.w."
     }
   ]
 }

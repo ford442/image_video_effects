@@ -20,7 +20,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "tunnel_speed",
       "name": "Tunnel Speed",
       "default": 0.5,
       "min": 0,
@@ -30,7 +30,7 @@
       "audio": "bass"
     },
     {
-      "id": "param2",
+      "id": "spiral_twist",
       "name": "Spiral Twist",
       "default": 0.3,
       "min": 0,
@@ -40,7 +40,7 @@
       "audio": "mid"
     },
     {
-      "id": "param3",
+      "id": "ghost_echo_count",
       "name": "Ghost Echo Count",
       "default": 0.5,
       "min": 0,
@@ -50,7 +50,7 @@
       "audio": "treble"
     },
     {
-      "id": "param4",
+      "id": "flash_intensity",
       "name": "Flash Intensity",
       "default": 0.4,
       "min": 0,

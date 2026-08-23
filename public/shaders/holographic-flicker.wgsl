@@ -36,103 +36,148 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(h) * 43758.5453123);
 }
 
-fn bass_env(bass: f32, mids: f32) -> f32 {
-  return 1.0 + bass * 0.5 + mids * 0.2;
+// Math/SDF tools for continuous geometry
+fn rot2D(a: f32) -> mat2x2<f32> {
+    let s = sin(a);
+    let c = cos(a);
+    return mat2x2<f32>(c, -s, s, c);
 }
 
-// ── Thin-film interference fringe pattern ────────────────────────
-fn interferenceFringes(uv: vec2<f32>, time: f32, freq: f32, strength: f32) -> f32 {
-    let phase = uv.y * freq + uv.x * freq * 0.5 - time * 6.0;
-    return pow(0.5 + 0.5 * cos(phase), 6.0) * strength;
+fn sdfHexagon(p: vec2<f32>, r: f32) -> f32 {
+    let k = vec3<f32>(-0.866025404, 0.5, 0.577350269);
+    var p2 = abs(p);
+    p2 = p2 - 2.0 * min(dot(k.xy, p2), 0.0) * k.xy;
+    p2 = p2 - vec2<f32>(clamp(p2.x, -k.z * r, k.z * r), r);
+    return length(p2) * sign(p2.y);
 }
 
-// ── Scanline jitter: per-row horizontal displacement ─────────────
-fn scanlineJitter(uv: vec2<f32>, resolution: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
-    let line = floor(uv.y * resolution.y);
-    let jitter = (hash21(vec2<f32>(line, time * 60.0)) - 0.5) * intensity * 0.04;
-    return uv + vec2<f32>(jitter, 0.0);
-}
-
-// ── Temporal RGB channel offset ──────────────────────────────────
-fn temporalRGBOffset(uv: vec2<f32>, time: f32, amount: f32) -> vec3<f32> {
-    let r = textureSampleLevel(readTexture, u_sampler,
-                               uv + vec2<f32>(sin(time * 4.0) * amount, 0.0), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler,
-                               uv + vec2<f32>(cos(time * 3.0) * amount * 0.6, 0.0), 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler,
-                               uv - vec2<f32>(sin(time * 5.0) * amount, 0.0), 0.0).b;
-    return vec3<f32>(r, g, b);
+// ACES tone mapping
+fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((color * (a * color + b)) / (color * (c * color + d) + e));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
+    
+    // Audio from plasmaBuffer (truthful three-band audio + bins)
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    let bins = plasmaBuffer[1]; 
+    
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
+    let mouseClick = u.config.y;
+    
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let aspect = resolution.x / resolution.y;
+    let centeredUV = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+    
+    let flickerSpeed = u.zoom_params.x;
+    let glitchAmt = u.zoom_params.y;
+    let hologramIntensity = u.zoom_params.z;
+    let ghostAmt = u.zoom_params.w;
+    
+    // Single-writer persistent state logic for "held-pointer response" (Bounded spring)
+    if (global_id.x == 0u && global_id.y == 0u) {
+        var pointer_state = extraBuffer[133];
+        var pointer_vel = extraBuffer[134];
+        let target = mix(0.0, 1.0, step(0.5, mouseClick));
+        
+        let force = (target - pointer_state) * 0.1 - pointer_vel * 0.15;
+        pointer_vel = clamp(pointer_vel + force, -0.5, 0.5);
+        pointer_state = clamp(pointer_state + pointer_vel, 0.0, 1.0);
+        
+        extraBuffer[133] = pointer_state;
+        extraBuffer[134] = pointer_vel;
+    }
+    
+    let pointer_smooth = extraBuffer[133];
 
-    let nParams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-    let flickerSpeed = nParams.x * bass_env(bass, mids);
-    let glitchAmt = nParams.y;
-    let hologramIntensity = nParams.z;
-    let ghostAmt = nParams.w;
-
+    // Bounded click ripples (capped fronts)
+    var rippleEffect = 0.0;
+    for (var i: i32 = 0; i < 5; i++) {
+        let r = u.ripples[i];
+        let rPos = r.xy;
+        let rTime = r.z;
+        if (rTime > 0.0 && rTime < 2.0) { 
+            let dist = length((uv - rPos) * vec2<f32>(aspect, 1.0));
+            let rAmp = smoothstep(2.0, 0.0, rTime);
+            let wave = sin((dist - rTime * 0.5) * 40.0) * exp(-dist * 5.0) * rAmp;
+            rippleEffect += wave * 0.5;
+        }
+    }
+    
+    // Continuous geometry background layer (intricate detail & fast motion)
+    var geo = 0.0;
+    var gUv = centeredUV * rot2D(time * 0.5 + pointer_smooth * 1.5) * (1.0 - rippleEffect * 0.1);
+    for(var i=0.0; i<3.0; i+=1.0) {
+        gUv = gUv * (1.5 + bass * 0.1);
+        let d = sdfHexagon(gUv, 0.3 + 0.15 * sin(time * 2.0 + i + bins.x * 0.5));
+        geo += smoothstep(0.02, 0.0, abs(d)) * (1.0 - i * 0.2);
+    }
+    
+    // Scanline jitter and temporal offset
+    let glitchLine = floor(uv.y * resolution.y + time * 100.0);
+    let jitter = (hash21(vec2<f32>(glitchLine, time)) - 0.5) * glitchAmt * (mids + 0.1) * 0.1;
+    let jitteredUV = uv + vec2<f32>(jitter, 0.0);
+    
+    let offset = (glitchAmt + ghostAmt) * 0.02 * (1.0 + treble * 0.5);
+    
+    let rRead = textureSampleLevel(readTexture, u_sampler, jitteredUV + vec2<f32>(offset, 0.0), 0.0).r;
+    let gRead = textureSampleLevel(readTexture, u_sampler, jitteredUV, 0.0).g;
+    let bRead = textureSampleLevel(readTexture, u_sampler, jitteredUV - vec2<f32>(offset, 0.0), 0.0).b;
+    let aRead = textureSampleLevel(readTexture, u_sampler, jitteredUV, 0.0).a;
+    let rgb = vec3<f32>(rRead, gRead, bRead);
+    
+    // Exact textureLoad for temporal chromatic ghosting from dataTextureC
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    let base_idx = vec2<i32>(global_id.xy);
+    let res_idx = vec2<i32>(resolution) - 1;
+    let shift = i32(ghostAmt * 10.0 + rippleEffect * 5.0);
+    let r_idx = clamp(base_idx + vec2<i32>(shift, 0), vec2<i32>(0), res_idx);
+    let b_idx = clamp(base_idx - vec2<i32>(shift, 0), vec2<i32>(0), res_idx);
+    
+    let rGhost = textureLoad(dataTextureC, r_idx, 0).r;
+    let bGhost = textureLoad(dataTextureC, b_idx, 0).b;
+    let ghostColor = vec3<f32>(rGhost, prev.g, bGhost) * ghostAmt * 0.9;
+    
+    // Prismatic / Hologram logic (psychedelic themes)
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthHue = mix(0.0, 1.0, depth);
-
-    let dToMouse = uv - mousePos;
-    let mouseDist = length(dToMouse);
-    let mouseInfluence = smoothstep(0.4, 0.0, mouseDist);
-
-    // Scanline jitter + temporal RGB channel offset
-    let jitteredUV = scanlineJitter(uv, resolution, time, glitchAmt);
-    let offsetAmount = (glitchAmt + ghostAmt) * 0.01 * (1.0 + treble * 0.5);
-    let rgbOffset = temporalRGBOffset(jitteredUV, time, offsetAmount);
-    let sourceColor = textureSampleLevel(readTexture, u_sampler, jitteredUV, 0.0);
-    let rgb = mix(sourceColor.rgb, rgbOffset, 0.5);
-
-    // Temporal ghosting: previous frame offset by velocity
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-    let ghost = prev * 0.7 * ghostAmt;
-
-    // Audio-reactive flicker: bass drives blackout probability, treble drives micro-glitch
-    let flicker = hash21(vec2<f32>(floor(time * flickerSpeed * 10.0), uv.y * resolution.y));
-    let blackout = step(1.0 - bass * 0.2, flicker) * 0.5;
-    let microGlitch = (hash21(vec2<f32>(time * 500.0, uv.y * 2000.0)) - 0.5) * glitchAmt * treble * 0.02;
-
-    let luma = dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-
-    // Depth rainbow: hue shifts with depth + bass
-    let hue = fract(depthHue + time * 0.05 + bass * 0.1 + mouseInfluence * 0.1);
     let k = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
+    let hue = fract(depthHue + time * 0.2 + bass * 0.2 + pointer_smooth * 0.1);
     let p = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
     let rainbow = clamp(p - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
-
-    // Chromatic ghosting: R and B from different temporal offsets
-    let rGhost = textureSampleLevel(dataTextureC, non_filtering_sampler,
-                                    uv + vec2<f32>(ghostAmt * 0.01 + microGlitch, 0.0), 0.0).r;
-    let bGhost = textureSampleLevel(dataTextureC, non_filtering_sampler,
-                                    uv - vec2<f32>(ghostAmt * 0.01 + microGlitch, 0.0), 0.0).b;
-    let gGhost = ghost.g;
-
-    // Interference fringes layered over the hologram
-    let fringes = interferenceFringes(uv, time, 120.0 + mids * 120.0, hologramIntensity);
-
-    let hologram = vec3<f32>(rGhost, gGhost, bGhost) * (0.5 + luma * 0.5) +
-                   rainbow * hologramIntensity * 0.3 +
-                   fringes;
-    let finalRGB = mix(rgb + hologram, vec3<f32>(0.0), blackout);
-
-    // Preserve input alpha, boosted by hologram brightness
-    let alpha = clamp(sourceColor.a * 0.9 + luma * 0.1 + hologramIntensity * 0.05, 0.0, 1.0);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalRGB, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    
+    // Audio-reactive flicker
+    let flicker = hash21(vec2<f32>(floor(time * flickerSpeed * 30.0), uv.y));
+    let blackout = step(1.0 - bass * 0.3, flicker) * 0.4 * (1.0 + glitchAmt);
+    
+    let luma = dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let geoColor = rainbow * geo * hologramIntensity * 1.5;
+    
+    var finalRGB = rgb + ghostColor + geoColor + (rainbow * rippleEffect * 0.8);
+    finalRGB = mix(finalRGB, vec3<f32>(0.0), blackout);
+    
+    // ACES Tonemapping
+    finalRGB = aces_tonemap(finalRGB);
+    
+    // Semantic alpha (meaningful based on content brightness, effects, and source)
+    let alpha = saturate(aRead * 0.85 + luma * 0.2 + geo * 0.6 + rippleEffect * 0.3 + ghostAmt * 0.15);
+    
+    let outColor = vec4<f32>(finalRGB, alpha);
+    
+    // Output constraints: write to A and writeTexture, but not B
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
+    
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

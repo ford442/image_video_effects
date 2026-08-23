@@ -20,7 +20,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "expansion_rate",
       "name": "Expansion Rate",
       "default": 0.5,
       "min": 0,
@@ -29,7 +29,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "filament_turbulence",
       "name": "Filament Turbulence",
       "default": 0.4,
       "min": 0,
@@ -38,7 +38,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "shock_density",
       "name": "Shock Density",
       "default": 0.6,
       "min": 0,
@@ -47,7 +47,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "decay_sparkles",
       "name": "Decay Sparkles",
       "default": 0.5,
       "min": 0,

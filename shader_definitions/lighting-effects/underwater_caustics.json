@@ -19,7 +19,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "wave_scale",
       "name": "Wave Scale",
       "default": 0.4,
       "min": 0,
@@ -27,7 +27,7 @@
       "step": 0.1
     },
     {
-      "id": "param2",
+      "id": "caustic_intensity",
       "name": "Caustic Intensity",
       "default": 0.7,
       "min": 0,
@@ -35,7 +35,7 @@
       "step": 0.1
     },
     {
-      "id": "param3",
+      "id": "depth",
       "name": "Depth",
       "default": 0.3,
       "min": 0,
@@ -43,7 +43,7 @@
       "step": 0.1
     },
     {
-      "id": "param4",
+      "id": "clarity",
       "name": "Clarity",
       "default": 0.7,
       "min": 0,

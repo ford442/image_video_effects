@@ -36,5 +36,81 @@
         "step": 0.1
       }
     }
-  }
+  },
+  "params": [
+    {
+      "id": "complexity",
+      "name": "Complexity",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "warpStrength",
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "kineticSpeed",
+      "name": "Kinetic Speed",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "id": "complexity",
+      "name": "Complexity",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "id": "warpStrength",
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "id": "iridescence",
+      "name": "Iridescence",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "index": 3,
+      "id": "kineticSpeed",
+      "name": "Kinetic Speed",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1
+    }
+  ]
 }

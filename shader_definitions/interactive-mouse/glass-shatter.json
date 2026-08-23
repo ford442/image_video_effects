@@ -3,7 +3,7 @@
   "name": "Glass Shatter",
   "category": "interactive-mouse",
   "url": "shaders/glass-shatter.wgsl",
-  "description": "Held-pointer glass-shard distortion with continuous shard and edge runners, chromatic transmission, three-band audio response, and bounded click fronts.",
+  "description": "Voronoi facets with stress birefringence: residual stress concentrates at the facet boundaries and under load, and the resulting retardation produces per-wavelength polariscope fringes along the cracks. Crack energy accumulates in dataTextureC so repeated clicks progressively craze the glass rather than each producing an isolated ring. Fixes a mask-as-colour hazard where dataTextureA held a mask tuple that nothing read, and adds ACES in place of a hard clamp.",
   "params": [
     {
       "id": "scale",
@@ -40,18 +40,61 @@
     "audio-reactive",
     "upgraded-rgba",
     "click-reactive",
-    "fast-motion"
+    "fast-motion",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "depth-aware",
+    "semantic-alpha",
+    "aces",
+    "voronoi-facets",
+    "stress-birefringence",
+    "fresnel",
+    "crack-propagation",
+    "temporal-crack-memory"
   ],
   "updatedParams": [
-    { "index": 0, "name": "Shard Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Displacement", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Edge", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Aberration", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "id": "scale",
+      "name": "Shard Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Voronoi cell frequency \u2014 how many shards across the frame."
+    },
+    {
+      "id": "displacement",
+      "name": "Displacement",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "How far shards are pushed away from the pointer."
+    },
+    {
+      "id": "edge",
+      "name": "Edge Sharpness",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "description": "Bevel highlight strength and glass density."
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Chromatic split across each shard tilt."
+    }
   ],
   "tags": [
     "glass",
     "shards",
     "prismatic",
-    "distortion"
+    "distortion",
+    "shatter",
+    "voronoi",
+    "birefringence",
+    "fracture"
   ]
 }

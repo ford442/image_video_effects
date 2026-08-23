@@ -2,7 +2,7 @@
   "id": "magnetic-field",
   "name": "Magnetic Field",
   "url": "shaders/magnetic-field.wgsl",
-  "description": "Multi-pole magnetic vector field with Lorentz particle conveyor dynamics, ferromagnetic dipole alignment caustic ridges, 4-mode field topology, and exact-load flux memory.",
+  "description": "Multipole magnetic field where each pole draws its moment from one of the eight FFT bins, so the field geometry itself reshapes with the music. Luminous tracer bands advect along the field lines at a cyclotron rate set by local |B|, streaming fast in strong regions and stalling in weak ones. Fixes a mask-as-colour feedback bug: dataTextureA stored the raw B-field vector while the temporal blend read it back as RGB, injecting signed field components into the displayed colour.",
   "features": [
     "animated",
     "physics",
@@ -11,7 +11,18 @@
     "curl-noise",
     "field-lines",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "depth-aware",
+    "semantic-alpha",
+    "aces",
+    "dipole-field",
+    "cyclotron-drift",
+    "field-line-caustics",
+    "chromatic-aberration",
+    "temporal-persistence"
   ],
   "updated": true,
   "params": [
@@ -50,28 +61,32 @@
       "name": "Field Strength",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "description": "Lorentz displacement gain applied to the image."
     },
     {
       "id": "radius",
-      "name": "Radius",
+      "name": "Field Radius",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "description": "Extent of the field envelope around the pointer."
     },
     {
       "id": "density",
-      "name": "Field Density",
+      "name": "Line Density",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "description": "Spacing of the field-line caustic ridges and tracer bands."
     },
     {
       "id": "mode",
-      "name": "Mode",
+      "name": "Field Mode",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "description": "Monopole / dipole / multipole / solenoid vortex geometry."
     }
   ],
   "tags": [
@@ -83,6 +98,10 @@
     "magnetic",
     "curl",
     "particles",
-    "temporal"
+    "temporal",
+    "field-lines",
+    "physics",
+    "lorentz",
+    "aurora"
   ]
 }

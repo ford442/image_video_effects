@@ -5,8 +5,14 @@
     "mouse-driven",
     "audio-reactive",
     "click-reactive",
-    "upgraded-rgba"
+    "held-drag",
+    "upgraded-rgba",
+    "spring-cursor",
+    "aces-tone-map",
+    "hex-overlay",
+    "iridescent-haze"
   ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "pixel_strength",
@@ -51,42 +57,18 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "fog",
+    "haze",
+    "hex"
   ],
   "name": "Digital Haze",
+  "description": "Beer-Lambert digital haze with hex grid overlay, iridescent scatter, sprung clear window, capped click pulses, and per-cell FFT static.",
   "updatedParams": [
-    {
-      "index": 0,
-      "name": "Pixel Strength",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Clear Radius",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Noise Amount",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Haze Density",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
+    { "index": 0, "name": "Pixel Strength", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 1, "name": "Clear Radius", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 2, "name": "Noise Amount", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 3, "name": "Haze Density", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
   ],
   "updated": true
 }

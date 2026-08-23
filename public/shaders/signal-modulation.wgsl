@@ -1,14 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Signal Modulation
-//  Category: visual-effects
-//  Features: mouse-driven, audio-reactive, chromatic-aberration, spectral-bands, upgraded-rgba,
-//            real-fft-bands, spring-glide, click-carrier-bursts
-//  Complexity: High
-//  Chunks From: signal-modulation, bass_env, hue_preserve_clamp
-//  Upgraded: 2026-05-31
-//  Updated: 2026-07-31
-//  By: Kimi b19 Visualist (honest FFT spectral bands, spring-damped wave origin,
-//      click carrier bursts; VERBATIM core preserved)
+//  Signal Modulation — Batch 62
+//  Carrier wave + spectral bands: spring origin [133..138], held boost,
+//  capped click carrier bursts, regional FFT bins, ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -44,6 +37,10 @@ fn huePreserveClamp(col: vec3<f32>, maxRGB: f32) -> vec3<f32> {
   return col;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -51,12 +48,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv = vec2<f32>(global_id.xy) / resolution;
     let mousePos = u.zoom_config.yz;
+    let held = u.zoom_config.w > 0.5;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
     let depthAtten = mix(1.0, 0.6, depth);
 
     // ── Slider params (saved-preset contract: same roles, same order) ──
@@ -68,29 +66,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let amp = mix(0.0, 0.5, u.zoom_params.y) * (1.0 + mids * 0.3);
     let speed = mix(0.0, 10.0, u.zoom_params.z) * (1.0 + treble * 0.25);
     let colorSplit = u.zoom_params.w * 0.02 * (1.0 + bass * 0.1);
-    let lineWidth = 0.006 + amp * 0.03;
+    let lineWidth = (0.006 + amp * 0.03) * select(1.0, 1.25, held);
 
-    // ── Spring-damper wave origin (extraBuffer[133..136] = pos.xy, vel.xy) ──
-    // Critically damped spring: the proximity-warped carrier trails the cursor
-    // instead of snapping. The raw mouse stays the spring target. Persistent
-    // shader state is restricted to extraBuffer[133..255] (engine FFT bins
-    // occupy [5..132], [0..4] are engine-reserved). All invocations integrate
-    // identical values from the previous frame, so the write-back is benign.
-    let dt = 0.016;
-    var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (springPos.x == 0.0 && springPos.y == 0.0 && springVel.x == 0.0 && springVel.y == 0.0) {
-        springPos = mousePos;
+    var springPos = mousePos;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[138] > 0.5) {
+      springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     }
-    let stiffness = 36.0;
-    let damping = 2.0 * sqrt(stiffness);
-    let springAccel = (mousePos - springPos) * stiffness - springVel * damping;
-    springVel = springVel + springAccel * dt;
-    springPos = springPos + springVel * dt;
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+      if (extraBuffer[138] <= 0.5) {
+        springPos = mousePos;
+        springVel = vec2<f32>(0.0);
+      } else {
+        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+        let omega = 9.0;
+        let accel = (mousePos - springPos) * (omega * omega) - springVel * (2.0 * omega);
+        springVel += accel * dt;
+        springPos += springVel * dt;
+      }
+      extraBuffer[133] = springPos.x;
+      extraBuffer[134] = springPos.y;
+      extraBuffer[135] = springVel.x;
+      extraBuffer[136] = springVel.y;
+      extraBuffer[137] = time;
+      extraBuffer[138] = 1.0;
+    }
 
     // Carrier wave construction: the proximity warp now measures distance to
     // the spring-glided origin, so the waveform eases after the cursor.
@@ -151,8 +152,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = finalColor + vec3<f32>(noiseFloor);
 
     finalColor = huePreserveClamp(finalColor, 1.8) * depthAtten;
+    finalColor = acesToneMap(finalColor * (0.96 + bass * 0.05));
     let alpha = clamp(baseColor.a * 0.45 + signal * 0.35 + bass * 0.05 + bandMask * 0.2, 0.08, 1.0);
-    let depthOut = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, baseUV, 0.0).r + signal * 0.04, 0.0, 1.0);
+    let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
+    let depthOut = clamp(depth + signal * 0.04, 0.0, 1.0);
     let finalPixel = vec4<f32>(finalColor, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);

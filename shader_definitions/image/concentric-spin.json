@@ -11,29 +11,29 @@
   "description": "Concentric rings that rotate in alternating directions. Mouse controls the center. Audio-reactive rotation with ring gap opacity.",
   "params": [
     {
-      "id": "param1",
-      "name": "Ring Density",
+      "id": "density",
+      "name": "Density",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param2",
-      "name": "Rotation Speed",
+      "id": "speed",
+      "name": "Speed",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param3",
-      "name": "Smoothness",
+      "id": "smooth_w",
+      "name": "Smooth W",
       "default": 0.1,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param4",
-      "name": "Ring Gap Opacity",
+      "id": "gap_fade",
+      "name": "Gap Fade",
       "default": 0,
       "min": 0,
       "max": 1

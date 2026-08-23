@@ -1,14 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Haze
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Upgraded: 2026-08-02
-//
-//  Volumetric "wiped glass" fog: Beer-Lambert extinction over a
-//  pixelated, noise-jittered haze layer, cleared around the cursor
-//  by a critically-damped sprung window, punched by click ripples,
-//  and flickered per-cell by FFT bins.
+//  Digital Haze — Batch 61
+//  Beer-Lambert haze + hex grid overlay, iridescent scatter color,
+//  sprung clear window, capped ripples, held widen, FFT cell bins.
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture:    texture_2d<f32>;
@@ -61,6 +54,29 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hexEdge(uv: vec2<f32>, scale: f32) -> f32 {
+  let p = uv * scale;
+  let q = vec2<f32>(p.x * 1.7320508 + p.y, p.y * 2.0);
+  let pf = fract(q);
+  let d1 = length(pf - vec2<f32>(0.5, 0.5));
+  let d2 = length(pf - vec2<f32>(0.0, 1.0));
+  return 1.0 - smoothstep(0.01, 0.06, min(d1, d2));
+}
+
+fn iridescentHaze(t: f32, mask: f32) -> vec3<f32> {
+  let base = vec3<f32>(0.08, 0.14, 0.1);
+  let irid = vec3<f32>(
+    0.5 + 0.5 * cos(6.28318 * (t + 0.0)),
+    0.5 + 0.5 * cos(6.28318 * (t + 0.33)),
+    0.5 + 0.5 * cos(6.28318 * (t + 0.67))
+  );
+  return base + irid * mask * 0.35;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
@@ -72,6 +88,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
+    let held = u.zoom_config.w > 0.5;
 
     // ═══════════════════════════════════════════════════════════════
     //  Sprung Clear Window
@@ -106,15 +123,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Params; bass pulses the haze density, mids vary the noise texture
     let pixelStrength = u.zoom_params.x * 100.0 + 10.0;
-    let clearRadius = u.zoom_params.y * 0.4 + 0.05;
+    let clearRadius = (u.zoom_params.y * 0.4 + 0.05) * select(1.0, 1.3, held);
     let noiseAmt = u.zoom_params.z * (1.0 + mids * 0.4);
 
-    // ═══════════════════════════════════════════════════════════════
-    //  Calculate Grid-based "Volumetric Cells"
-    // ═══════════════════════════════════════════════════════════════
-
-    // Mask: 0.0 near mouse (clear), 1.0 far away (haze)
     var mask = smoothstep(clearRadius, clearRadius + 0.2, dist);
+
+    let prevHaze = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0).r;
+    mask = mix(mask, min(mask, prevHaze), 0.08);
 
     // ── Click clear pulses ──────────────────────────────────────────
     // Each live ripple punches a temporary clear hole at its click
@@ -154,9 +169,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let colClear = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let colHaze = textureSampleLevel(readTexture, u_sampler, hazeUV, 0.0).rgb;
 
-    // Apply a "digital" tint to the haze
-    let greenTint = vec3<f32>(0.0, 0.1, 0.0) * noiseAmt;
-    let finalHaze = colHaze + greenTint;
+    let hexScale = 14.0 + pixelStrength * 0.08;
+    let hex = hexEdge(uv, hexScale) * mask * (0.12 + mids * 0.08);
+    let hazeTint = iridescentHaze(time * 0.06 + dist * 2.0 + hash(uv) * 0.5, mask);
+    let finalHaze = colHaze + hazeTint + vec3<f32>(hex * 0.35, hex * 0.55, hex * 0.4);
 
     // ═══════════════════════════════════════════════════════════════
     //  Volumetric Fog Calculation
@@ -175,24 +191,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Transmittance (Beer-Lambert): T = exp(-τ)
     let transmittance = exp(-opticalDepth);
 
-    // Volumetric alpha: α = 1 - T
-    let alpha = 1.0 - transmittance;
-
-    // In-scattered light (digital haze color)
-    let hazeColor = vec3<f32>(0.1, 0.15, 0.1); // Digital green-grey haze
-    let inScattered = hazeColor * mask * (1.0 - transmittance);
+    let hazeColor = iridescentHaze(time * 0.04 + noiseAmt, mask);
+    let inScattered = hazeColor * mask * (1.0 - transmittance) * (1.0 + hex * 0.5);
 
     // Volumetric composition
     // Final = in_scattered + transmitted_clear * T + transmitted_haze * (1-T)
     let transmittedClear = colClear * transmittance;
     let transmittedHaze = finalHaze * (1.0 - transmittance) * 0.3;
 
-    let finalColor = inScattered + transmittedClear + transmittedHaze;
-
-    // Output with volumetric alpha; A = Beer-Lambert optical opacity
-    let finalOut = vec4<f32>(finalColor, alpha);
-    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeTexture, gid.xy, finalOut);
+    let finalColor = acesToneMap(inScattered + transmittedClear + transmittedHaze);
+    let alpha = clamp(1.0 - transmittance + mask * 0.15, 0.0, 1.0);
+    let depthVal = textureLoad(readDepthTexture, vec2<i32>(gid.xy), 0).r;
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), finalOut);
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(mask, alpha, 0.0, 1.0));
 }

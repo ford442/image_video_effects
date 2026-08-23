@@ -16,6 +16,7 @@ add_executable(pixelocity_wasm
 )
 
 target_compile_features(pixelocity_wasm PUBLIC cxx_std_20)
+target_compile_options(pixelocity_wasm PRIVATE -O2)
 
 # ── emdawnwebgpu ──────────────────────────────────────────────────────────────
 #
@@ -23,6 +24,8 @@ target_compile_features(pixelocity_wasm PUBLIC cxx_std_20)
 # wasm:build invoke build.sh only — do NOT use this CMake target in CI.
 #
 # cmake is kept here as a fallback/IDE convenience only.
+# EXPORTED_FUNCTIONS / EXPORTED_RUNTIME_METHODS come from
+# src/contracts/wasm_exports.json — do not paste a second list here.
 #
 # --use-port=emdawnwebgpu must NOT be passed as a compile option.  In cmake's
 # Emscripten toolchain each TU compile command goes through emcc and the port
@@ -51,25 +54,40 @@ target_include_directories(pixelocity_wasm PRIVATE
     "${EM_CACHE_DIR}/ports/emdawnwebgpu/include"
 )
 
-# Port and all -s flags at link time only
-set(EXPORTED_FUNCTIONS
-    "_main,_initWasmRenderer,_shutdownWasmRenderer,_loadShader,_setActiveShader"
-    ",_setSlotShader,_setSlotParams,_setSlotMode"
-    ",_updateUniforms,_updateMousePos,_setMouseDown,_updateAudioData,_updateDepthMap"
-    ",_setInputSource,_addRipple,_clearRipples,_setTime,_setZoomParams"
-    ",_getFPS,_getAdapterSummary,_getLastInitErrorStage,_getLastInitErrorMessage,_isRendererInitialized,_loadImageData,_uploadVideoFrame"
-    ",_resizeCanvas"
-    ",_beginFrameCapture,_getFrameCaptureState,_readCapturedFrame,_endFrameCapture"
-    ",_getCanvasWidth,_getCanvasHeight"
-    ",_malloc,_free"
-)
-string(CONCAT EXPORTED_STR ${EXPORTED_FUNCTIONS})
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../src/contracts/wasm_exports.json" WASM_EXPORTS_JSON)
 
+string(JSON FUNC_COUNT LENGTH "${WASM_EXPORTS_JSON}" exportedFunctions)
+math(EXPR FUNC_LAST "${FUNC_COUNT} - 1")
+set(EXPORTED_STR "")
+foreach(i RANGE ${FUNC_LAST})
+    string(JSON FN GET "${WASM_EXPORTS_JSON}" exportedFunctions ${i})
+    if(EXPORTED_STR STREQUAL "")
+        set(EXPORTED_STR "${FN}")
+    else()
+        set(EXPORTED_STR "${EXPORTED_STR},${FN}")
+    endif()
+endforeach()
+
+string(JSON RT_COUNT LENGTH "${WASM_EXPORTS_JSON}" exportedRuntimeMethods)
+math(EXPR RT_LAST "${RT_COUNT} - 1")
+set(RUNTIME_STR "")
+foreach(i RANGE ${RT_LAST})
+    string(JSON RN GET "${WASM_EXPORTS_JSON}" exportedRuntimeMethods ${i})
+    if(RUNTIME_STR STREQUAL "")
+        set(RUNTIME_STR "${RN}")
+    else()
+        set(RUNTIME_STR "${RUNTIME_STR},${RN}")
+    endif()
+endforeach()
+
+# Port and all -s flags at link time only
 target_link_options(pixelocity_wasm PRIVATE
+    -O2
     --use-port=emdawnwebgpu
     "-sEXPORTED_FUNCTIONS=${EXPORTED_STR}"
-    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8,HEAPF32"
+    "-sEXPORTED_RUNTIME_METHODS=${RUNTIME_STR}"
     "-sALLOW_MEMORY_GROWTH=1"
+    "-sGROWABLE_ARRAYBUFFERS=0"
     "-sNO_EXIT_RUNTIME=1"
     "-sMODULARIZE=1"
     "-sEXPORT_NAME=PixelocityWASM"

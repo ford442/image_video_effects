@@ -57,13 +57,22 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
 
     var color = vec3<f32>(0.0);
     var sampleCount = 0.0;
-    for (var lambda = 380.0; lambda <= 700.0; lambda = lambda + 20.0) {
+    for (var lambda = 380.0; lambda <= 700.0; lambda += 20.0) {
         let phase = opd / lambda;
         let interference = cos(phase * 6.28318530718) * 0.5 + 0.5;
         color += wavelengthToRGB(lambda) * interference;
-        sampleCount = sampleCount + 1.0;
+        sampleCount += 1.0;
     }
     return color / max(sampleCount, 1.0);
+}
+
+fn aces_tone_map(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -72,87 +81,139 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    
+    let dt = u.config.y;
     let time = u.config.x;
+    
+    // extraBuffer State Update (bounded spring)
+    if (global_id.x == 0u && global_id.y == 0u) {
+        let mouse_down = f32(u.zoom_config.x > 0.0);
+        let curr_val = extraBuffer[133];
+        let curr_vel = extraBuffer[134];
+        let target = mouse_down;
+        let spring_force = (target - curr_val) * 15.0;
+        let damping = curr_vel * 5.0;
+        var new_vel = curr_vel + (spring_force - damping) * dt;
+        var new_val = curr_val + new_vel * dt;
+        
+        new_val = clamp(new_val, 0.0, 1.0);
+        if (new_val == 0.0 || new_val == 1.0) { new_vel = 0.0; }
+        
+        extraBuffer[133] = new_val;
+        extraBuffer[134] = new_vel;
+        
+        var bass = 0.0;
+        var mid = 0.0;
+        var treble = 0.0;
+        for (var i = 0u; i < 4u; i++) {
+            bass += plasmaBuffer[i].x;
+        }
+        for (var i = 4u; i < 10u; i++) {
+            mid += plasmaBuffer[i].x;
+        }
+        for (var i = 10u; i < 16u; i++) {
+            treble += plasmaBuffer[i].x;
+        }
+        extraBuffer[135] = bass * 0.25;
+        extraBuffer[136] = mid * 0.16666;
+        extraBuffer[137] = treble * 0.16666;
+        extraBuffer[138] = extraBuffer[138] + dt;
+    }
+    workgroupBarrier();
+
+    let pointer_intensity = extraBuffer[133];
+    let audio_bass = extraBuffer[135];
+    let audio_mid = extraBuffer[136];
+    let audio_treble = extraBuffer[137];
+    let global_time = extraBuffer[138];
+    
+    let uv = vec2<f32>(global_id.xy) / resolution;
     var mouse = u.zoom_config.yz;
     if (mouse.x < 0.0) { mouse = vec2<f32>(0.5, 0.5); }
 
-    // Parameters
-    let bead_size = mix(10.0, 100.0, u.zoom_params.x);
+    let bead_size = mix(10.0, 100.0, u.zoom_params.x) * (1.0 + audio_bass * 0.1);
     let refraction_str = u.zoom_params.y;
-    let iridescence_intensity = mix(0.0, 1.5, u.zoom_params.z);
-    let film_thickness_base = mix(200.0, 800.0, u.zoom_params.w);
+    let iridescence_intensity = mix(0.0, 1.5, u.zoom_params.z) * (1.0 + audio_mid * 0.5);
+    let film_thickness_base = mix(200.0, 800.0, u.zoom_params.w) * (1.0 + audio_treble * 0.2);
 
     let aspect = resolution.x / resolution.y;
     let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(dist_vec);
 
-    // Repel force
-    let repel_radius = 0.3;
-    let interact = smoothstep(repel_radius, 0.0, dist);
-    let tension = 0.5;
-    let disp = normalize(dist_vec) * interact * tension * 0.2;
+    var ripple_disp = vec2<f32>(0.0);
+    for (var i = 0u; i < 50u; i++) {
+        let r = u.ripples[i];
+        if (r.w > 0.0) {
+            let d_vec = (uv - r.xy) * vec2<f32>(aspect, 1.0);
+            let d = length(d_vec);
+            let phase = r.z - d * 15.0;
+            if (phase > 0.0 && phase < 3.14159) {
+                let wave = sin(phase) * (1.0 - r.w);
+                ripple_disp += normalize(d_vec) * wave * 0.05 * r.w;
+            }
+        }
+    }
+    
+    let repel_radius = 0.3 * (1.0 + pointer_intensity * 0.5);
+    let interact = smoothstep(repel_radius, 0.0, dist) * pointer_intensity;
+    let disp = normalize(dist_vec) * interact * 0.3 + ripple_disp;
     let active_uv = uv - vec2<f32>(disp.x / aspect, disp.y);
-
-    // Grid logic on active_uv
+    
     let px_active = active_uv * resolution;
     let cell_uv = fract(px_active / bead_size) - 0.5;
-    let r = length(cell_uv);
-
+    let r_cell = length(cell_uv);
+    
     var final_uv = active_uv;
-    var transmission = 1.0;
     var color = vec3<f32>(0.0);
     var alpha = 0.0;
-
-    if (r < 0.5) {
-        // Inside bead: sphere normal and thickness
-        let z = sqrt(max(0.0, 0.25 - r * r));
+    
+    if (r_cell < 0.5) {
+        let z = sqrt(max(0.0, 0.25 - r_cell * r_cell));
         let normal = normalize(vec3<f32>(cell_uv, z));
         let glass_thickness = 2.0 * z;
-
-        // Refraction offset
+        
         final_uv = active_uv - normal.xy * refraction_str * 0.5;
-
+        
         let viewDir = vec3<f32>(0.0, 0.0, 1.0);
         let cos_theta = abs(dot(viewDir, normal));
         let R0 = 0.04;
         let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
-
+        
         let glass_color = vec3<f32>(0.95, 0.98, 1.0);
-        let absorption = exp(-(1.0 - glass_color) * glass_thickness * 1.5);
-        transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
-
-        // Sample base image
-        let baseColor = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0).rgb;
+        let absorption = exp(-(vec3<f32>(1.0) - glass_color) * glass_thickness * 1.5);
+        let transmission = (1.0 - fresnel) * dot(absorption, vec3<f32>(0.333));
+        
+        let load_coord = clamp(vec2<i32>(final_uv * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+        let bg_tex = textureLoad(dataTextureC, load_coord, 0).rgb;
+        let baseColor = mix(textureSampleLevel(readTexture, u_sampler, final_uv, 0.0).rgb, bg_tex, 0.5);
         color = baseColor * glass_color;
-
-        // ═══ Thin-film iridescence on bead surface ═══
-        let cosThetaFilm = sqrt(max(1.0 - r * r * 0.5, 0.01));
-        let noiseVal = hash12(uv * 12.0 + time * 0.1) * 0.5
-                     + hash12(uv * 25.0 - time * 0.15) * 0.25;
+        
+        let cosThetaFilm = sqrt(max(1.0 - r_cell * r_cell * 0.5, 0.01));
+        let noiseVal = hash12(active_uv * 12.0 + global_time * 0.1) * 0.5
+                     + hash12(active_uv * 25.0 - global_time * 0.15) * 0.25;
         let filmThickness = film_thickness_base * (0.7 + noiseVal * 0.6);
         let filmIOR = 1.5;
         let iridescent = thinFilmColor(filmThickness, cosThetaFilm, filmIOR) * iridescence_intensity;
-
-        // Blend iridescence with fresnel weight
+        
         let iridBlend = fresnel * iridescence_intensity;
         color = mix(color, iridescent, iridBlend * 0.7);
-
-        // Specular highlight
+        
         let light_dir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
         let spec = pow(max(dot(normal, light_dir), 0.0), 20.0);
-        color = color + spec * 0.5;
-
+        color += spec * 0.5;
+        
         alpha = transmission;
     } else {
-        // Gap - transparent
         color = textureSampleLevel(readTexture, u_sampler, active_uv, 0.0).rgb;
         alpha = 0.0;
     }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-
-    // Depth pass-through
+    
+    let final_color = aces_tone_map(color);
+    let out_color = vec4<f32>(final_color, alpha);
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), out_color);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), out_color);
+    
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(d, 0.0, 0.0, 0.0));
 }

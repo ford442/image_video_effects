@@ -77,8 +77,8 @@
   "updated": true,
   "params": [
     {
-      "id": "param1",
-      "name": "Parameter 1",
+      "id": "wingspan",
+      "name": "Wingspan",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -87,8 +87,8 @@
       "audio": "bass"
     },
     {
-      "id": "param2",
-      "name": "Parameter 2",
+      "id": "plasma_intensity",
+      "name": "Plasma Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -97,7 +97,7 @@
       "audio": "mid"
     },
     {
-      "id": "param3",
+      "id": "parameter_3",
       "name": "Parameter 3",
       "default": 0.5,
       "min": 0,
@@ -107,7 +107,7 @@
       "audio": "treble"
     },
     {
-      "id": "param4",
+      "id": "parameter_4",
       "name": "Parameter 4",
       "default": 0.5,
       "min": 0,

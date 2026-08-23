@@ -90,9 +90,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Bio-Luminescence Logic
     // Only active near mouse
     let influence = smoothstep(glowRadius + 0.1, glowRadius, dist);
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.7) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.34) * 62.0);
+    }
 
     // Animate voronoi
-    let offset = vec2<f32>(sin(time * 0.5), cos(time * 0.4)) * 0.1;
+    let heldCurl = vec2<f32>(-distVec.y, distVec.x) / max(dist, 0.001) * influence * mouseDown;
+    let offset = vec2<f32>(sin(time * 0.5), cos(time * 0.4)) * 0.1 + heldCurl * 0.08;
     let v = voronoi((uv + offset) * max(cellDensity, 0.001));
 
     // Invert voronoi for cell walls/nuclei
@@ -102,7 +110,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pulse = 0.5 + 0.5 * sin(time * pulseSpeed - dist * 10.0);
 
     // Combine
-    let finalGlow = glow * influence * pulse * (1.0 + mouseDown * 2.0); // Boost on click
+    let membrane = sin(v * cellDensity * 0.8 - time * (2.0 + mids * 5.0));
+    let finalGlow = glow * influence * pulse * (1.0 + mouseDown * 2.0) + clickFront * 0.5;
 
     // Sample Image
     let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -114,7 +123,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Composite
     // Add glow to original color
-    let outColor = color + tint * finalGlow;
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + membrane * 2.0 + colorShift * 6.283 + treble * 2.0);
+    let outColor = color + mix(tint, spectral, 0.35 + treble * 0.35) * finalGlow + spectral * abs(membrane) * influence * 0.08;
 
     // Alpha: bioluminescent glow intensity as compositing weight
     let alpha = clamp(finalGlow * 0.7 + influence * 0.2 + 0.1, 0.0, 1.0);

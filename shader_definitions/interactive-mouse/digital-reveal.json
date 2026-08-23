@@ -3,35 +3,40 @@
   "name": "Digital Rain Reveal",
   "category": "interactive-mouse",
   "url": "shaders/digital-reveal.wgsl",
-  "description": "Hides the image behind chromatic digital rain; move the mouse to reveal content. Audio shifts rain colors (bass green, treble white). Depth makes near objects reveal faster.",
+  "description": "Matrix rain with glyph shapes hides the image; sprung brush reveals content. Held enlarges brush, clicks add capped ripples, regional FFT colors, depth-weighted reveal, ACES composite.",
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "density",
       "name": "Rain Density",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "size",
       "name": "Reveal Size",
       "default": 0.3,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "fade",
       "name": "Trail Fade",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "speed",
       "name": "Rain Speed",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.w"
     }
   ],
   "features": [
@@ -40,7 +45,12 @@
     "depth-aware",
     "upgraded-rgba",
     "temporal-digital-rain",
-    "chromatic-drops"
+    "chromatic-drops",
+    "click-reactive",
+    "held-drag",
+    "spring-cursor",
+    "glyph-shapes",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",
@@ -53,38 +63,10 @@
     "temporal"
   ],
   "updatedParams": [
-    {
-      "index": 0,
-      "name": "Rain Density",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Reveal Size",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Trail Fade",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Rain Speed",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
+    { "index": 0, "name": "Rain Density", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 1, "name": "Reveal Size", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 2, "name": "Trail Fade", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 3, "name": "Rain Speed", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
   ],
   "updated": true
 }

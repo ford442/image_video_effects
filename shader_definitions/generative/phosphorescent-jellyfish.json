@@ -20,7 +20,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "swarm_count",
       "name": "Swarm Count",
       "default": 0.3,
       "min": 0,
@@ -29,7 +29,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "bell_size",
       "name": "Bell Size",
       "default": 0.5,
       "min": 0,
@@ -38,7 +38,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "trail_persistence",
       "name": "Trail Persistence",
       "default": 0.9,
       "min": 0,
@@ -47,7 +47,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "glow_intensity",
       "name": "Glow Intensity",
       "default": 0.7,
       "min": 0,

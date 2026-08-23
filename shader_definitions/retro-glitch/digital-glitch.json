@@ -48,8 +48,12 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal-feedback",
+    "click-ripples",
+    "aces-tone-map"
   ],
+  "workgroup_size": [16, 16, 1],
   "tags": [
     "filter",
     "image-processing"

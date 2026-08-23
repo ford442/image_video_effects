@@ -19,7 +19,7 @@
   "complexity": "high",
   "params": [
     {
-      "id": "param1",
+      "id": "mode",
       "name": "Mode",
       "default": 0,
       "min": 0,
@@ -34,7 +34,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "scale_size",
       "name": "Scale / Size",
       "default": 0.5,
       "min": 0,
@@ -43,7 +43,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "density_detail",
       "name": "Density / Detail",
       "default": 0.5,
       "min": 0,
@@ -52,7 +52,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "temperature_blend",
       "name": "Temperature / Blend",
       "default": 0.5,
       "min": 0,

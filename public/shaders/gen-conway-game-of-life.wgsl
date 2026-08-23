@@ -74,14 +74,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
   let resolution = vec2<f32>(u.config.zw);
   let uv = vec2<f32>(pixel) / resolution;
-  let time = u.config.x;
-  let mouse = u.zoom_config.yz;
+  let time = u.config.x * 2.2;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) { springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(u.config.x - lastTime, 0.0, 0.05), initialized);
+  let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = springPos - rawMouse; let temp = (springVel + omega * sdelta) * dt;
+  springVel = (springVel - omega * temp) * springDecay; springPos = rawMouse + (sdelta + temp) * springDecay;
+  if (hasSpring && global_id.x == 0u && global_id.y == 0u) { extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = u.config.x; extraBuffer[138] = 1.0; }
+  let mouse = springPos;
   let mouseDown = u.zoom_config.w > 0.5;
+  let held = select(1.0, 1.6, mouseDown);
   let p1 = u.zoom_params.x;
   let p2 = u.zoom_params.y;
   let p3 = u.zoom_params.z;
   let p4 = u.zoom_params.w;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   // dataTextureC.r = CA state from last frame; dataTextureC.g = generation counter
   let prev = textureLoad(dataTextureC, pixel, 0);
@@ -93,7 +105,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prevState = cellState(dataTextureC, cell, cellSize);
   let neighbors = countNeighbors(dataTextureC, cell, cellSize);
 
-  let ruleMorph = fract(time * p2 * 0.05);
+  let ruleMorph = fract(time * p2 * 0.12);
   let golWeight = 1.0 - smoothstep(0.3, 0.7, ruleMorph);
   let dnWeight = smoothstep(0.3, 0.7, ruleMorph) * (1.0 - smoothstep(0.8, 1.0, ruleMorph));
   let hlWeight = smoothstep(0.8, 1.0, ruleMorph);
@@ -110,8 +122,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let state = clamp(born + survive, 0.0, 1.0);
 
   let mDist = length(uv - mouse);
-  let mouseSeed = step(mDist, 0.015 * depthScale) * f32(mouseDown);
-  let audioSeed = step(hashf(time * 7.0 + uv.x * 100.0), bass * 0.08 * p1);
+  let mouseSeed = step(mDist, 0.022 * depthScale * held) * f32(mouseDown || length(springVel) > 0.08);
+  let audioSeed = step(hashf(time * 11.0 + uv.x * 100.0), bass * 0.08 * p1 + treble * 0.04);
   let seedState = clamp(mouseSeed + audioSeed, 0.0, 1.0);
   let newState = max(state, seedState);
 
@@ -125,9 +137,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let birthB = birthEvent * (1.0 - caStr * 0.5);
 
   var color = vec3<f32>(0.0);
-  color += vec3<f32>(0.0, 0.85, 0.95) * birthR;
-  color += vec3<f32>(0.9, 0.2, 0.7) * survival;
-  color += vec3<f32>(0.95, 0.65, 0.1) * deathEvent * 0.3;
+  color += vec3<f32>(0.15, 0.95, 1.0) * birthR;
+  color += vec3<f32>(1.0, 0.12, 0.82) * survival;
+  color += vec3<f32>(1.0, 0.85, 0.12) * deathEvent * 0.4;
+  color += vec3<f32>(0.6, 0.2, 1.0) * mids * activity * 0.35;
 
   let fadeDecay = 0.88 + p4 * 0.08;
   let fadeColor = prev.rgb * fadeDecay;

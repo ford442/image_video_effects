@@ -87,6 +87,7 @@ export function useDepthEstimation({
           setStatus(msg);
         },
         onStateChange: setLoadState,
+        rendererDeviceActive: !!rendererRef.current?.getDevice(),
       });
 
       setDepthEstimator(() => pipeline);
@@ -112,7 +113,7 @@ export function useDepthEstimation({
     } finally {
       setIsLoadingModel(false);
     }
-  }, [depthEstimator, isLoadingModel, currentImageUrl, runDepthAnalysis, setStatus]);
+  }, [depthEstimator, isLoadingModel, currentImageUrl, runDepthAnalysis, rendererRef, setStatus]);
 
   const cancelLoadModel = useCallback(() => {
     cancelDepthPipelineLoad();

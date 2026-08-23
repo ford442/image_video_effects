@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-23T05:04:48.902477+00:00",
+  "generated": "2026-08-23T02:20:35.169261+00:00",
   "files_scanned": 1364,
   "new_violations": [],
   "known_violations": [
@@ -134,70 +134,6 @@
     {
       "file": "public/shaders/echo-trace.wgsl",
       "line": 152,
-      "expr": "8",
-      "op": "=",
-      "index": 8,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 209,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 210,
-      "expr": "1",
-      "op": "=",
-      "index": 1,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 211,
-      "expr": "2",
-      "op": "=",
-      "index": 2,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 212,
-      "expr": "3",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 226,
-      "expr": "4",
-      "op": "=",
-      "index": 4,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 227,
-      "expr": "5",
-      "op": "=",
-      "index": 5,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 228,
-      "expr": "6",
-      "op": "=",
-      "index": 6,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 230,
       "expr": "8",
       "op": "=",
       "index": 8,

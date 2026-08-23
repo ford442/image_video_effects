@@ -25,7 +25,7 @@
   "requiresHistoryRing": true,
   "params": [
     {
-      "id": "param1",
+      "id": "temporal_spread",
       "name": "Temporal Spread",
       "default": 1.0,
       "min": 0,
@@ -33,7 +33,7 @@
       "step": 0.01
     },
     {
-      "id": "param2",
+      "id": "warp_strength",
       "name": "Warp Strength",
       "default": 0.3,
       "min": 0,
@@ -41,7 +41,7 @@
       "step": 0.01
     },
     {
-      "id": "param3",
+      "id": "luma_gamma",
       "name": "Luma Gamma",
       "default": 0.5,
       "min": 0,
@@ -49,7 +49,7 @@
       "step": 0.01
     },
     {
-      "id": "param4",
+      "id": "original_blend",
       "name": "Original Blend",
       "default": 0.1,
       "min": 0,
@@ -58,9 +58,37 @@
     }
   ],
   "updatedParams": [
-    { "index": 0, "name": "Temporal Spread", "default": 1.0, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Warp Strength", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Luma Gamma", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Original Blend", "default": 0.1, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "index": 0,
+      "name": "Temporal Spread",
+      "default": 1.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Warp Strength",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Luma Gamma",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Original Blend",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ]
 }

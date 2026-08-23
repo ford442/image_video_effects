@@ -267,7 +267,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let depthVal = veinMask * 0.6 + glow * 0.3 + sparkle * 0.2 + crackMask * 0.15;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
+  
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let aspect = u.config.z / max(u.config.w, 1.0);
+    let screenUV = vec2<f32>(vec2<i32>(global_id.xy)) / vec2<f32>(u.config.z, u.config.w);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let __finalRGB = color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(__finalRGB, alpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

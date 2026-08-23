@@ -5,9 +5,20 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "angular-chromatic-dispersion",
+    "temporal-smear",
+    "spring-damper-pointer",
+    "rankine-vortex"
   ],
-  "description": "Swirls the image around the mouse cursor.",
+  "description": "Rankine vortex warp: solid-body rotation inside the core radius and free-vortex circulation (omega ~ 1/r^2) outside it, giving a tightly spun core with a slower, longer-reaching outer flow instead of a rigidly rotating disc. The vortex eye is spring-damped through extraBuffer[133..136] and its own velocity shears the flow, so whipping the cursor drags the vortex behind the pointer. Retains the FFT-banded azimuthal turbulence and flow-aligned angular dispersion from Batch 56.",
   "params": [
     {
       "id": "strength",
@@ -46,6 +57,46 @@
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "vortex",
+    "turbulence",
+    "chromatic",
+    "distortion"
+  ],
+  "updatedParams": [
+    {
+      "id": "strength",
+      "name": "Vortex Strength",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "description": "Circulation gain of the Rankine profile; bass adds up to +45%."
+    },
+    {
+      "id": "radius",
+      "name": "Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Vortex extent; also sets the solid-body core radius."
+    },
+    {
+      "id": "twist",
+      "name": "Spiral Twist",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "description": "Radius-dependent spiral layered on the circulation."
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Gain on the FFT-banded azimuthal lobes."
+    }
   ]
 }

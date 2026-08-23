@@ -13,32 +13,32 @@
   "description": "Physical glass refraction with single-sample spectral tint, depth-aware mortar edges, and alpha translucency from refraction strength and glass thickness.",
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "refraction_strength",
+      "name": "Refraction Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "grid_scale",
+      "name": "Grid Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "interaction_radius",
+      "name": "Interaction Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
+      "id": "glass_density",
+      "name": "Glass Density",
       "default": 0.5,
       "min": 0,
       "max": 1,

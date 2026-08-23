@@ -73,6 +73,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let aspect = resolution.x / resolution.y;
     let px = 1.0 / resolution;
 
@@ -162,7 +165,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // RGBA alpha encodes stretch intensity
     let stretch = clamp(length(disp) * 12.0, 0.0, 1.0);
 
-    let finalColor = vec4<f32>(color.rgb * lighting, color.a + stretch * 0.3);
+    
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(u.config.z/u.config.w, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(uv - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0)) * stretch;
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let finalColor = vec4<f32>(color.rgb * lighting + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25), color.a + stretch * 0.3);
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Write depth pass-through

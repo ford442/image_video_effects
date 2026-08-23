@@ -135,6 +135,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
    var uv = vec2<f32>(gid.xy) / dims;
    let time = u.config.x;
+   let bass = plasmaBuffer[0].x;
+   let mids = plasmaBuffer[0].y;
+   let treble = plasmaBuffer[0].z;
    
    // Sample source color and depth
    let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -183,7 +186,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                           (sin(time * 0.5 + foldPhase) * 0.5 + 0.5);
        
        // Depth-aware fold strength
-       let localFoldStrength = foldInfluence * depthFoldBoost * globalIntensity;
+       let localFoldStrength = foldInfluence * depthFoldBoost * globalIntensity * (1.0 + bass * 0.2);
        totalFoldStrength = totalFoldStrength + localFoldStrength;
        
        // Apply fold based on type
@@ -232,10 +235,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    let foldBoost = 1.0 + totalFoldStrength * 0.5;
    outColor = pow(max(outColor, vec3<f32>(0.001)), vec3<f32>(1.0 / foldBoost));
    
+   var clickFront = 0.0;
+   let rippleCount = min(u32(u.config.y), 50u);
+   let aspect = dims.x / dims.y;
+   for (var i = 0u; i < rippleCount; i = i + 1u) {
+       let event = u.ripples[i];
+       let age = max(time - event.z, 0.0);
+       clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+   }
+   
+   let clockRings = sin(length(uv - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0)) * totalFoldStrength;
+   let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+   outColor = outColor + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+   
    // ──────────────────────────────────────────────────────────────────────────
    //  Feedback blend for persistence
    // ──────────────────────────────────────────────────────────────────────────
-   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+   let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0).rgb;
    let feedbackMix = 0.85;
    let finalColor = mix(outColor, prev, feedbackMix);
    
