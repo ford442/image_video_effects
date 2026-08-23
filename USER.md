@@ -54,6 +54,9 @@ _Learn about the person you're helping. Update this as you go._
   intentionally moved to documented raw persistent state; nine missing JSONs
   gained four named params. Structural/Jest/build gates are green; real-GPU QA
   remains external.
+- **Current ethereal generative cohort:** Ten real IDs from Cyber Chrono Nebula
+  Phoenix through Feedback Echo Chamber are next under the same canonical
+  shader contract, with four named live JSON params required for each.
 - **Codex (b) liquid batch (2026-08-23):** Upgraded liquid-jelly,
   liquid-oil, liquid-displacement, liquid-fast, liquid-glitch, liquid-mirror,
   ink-marbling, glass-wipes, kimi_liquid_glass, and liquid-metal under the

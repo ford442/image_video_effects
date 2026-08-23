@@ -90,6 +90,20 @@ fn psychedelicPalette(t: f32) -> vec3<f32> {
     return mix(vec3<f32>(val), smoothRgb * val, sat);
 }
 
+// Manual reconstruction uses only exact texel loads from the feedback ring.
+fn loadHistoryExact(uv: vec2<f32>) -> vec4<f32> {
+    let dims = vec2<i32>(textureDimensions(dataTextureC));
+    let hi = dims - vec2<i32>(1);
+    let p = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(dims) - vec2<f32>(0.5);
+    let base = vec2<i32>(floor(p));
+    let f = fract(p);
+    let c00 = textureLoad(dataTextureC, clamp(base, vec2<i32>(0), hi), 0);
+    let c10 = textureLoad(dataTextureC, clamp(base + vec2<i32>(1, 0), vec2<i32>(0), hi), 0);
+    let c01 = textureLoad(dataTextureC, clamp(base + vec2<i32>(0, 1), vec2<i32>(0), hi), 0);
+    let c11 = textureLoad(dataTextureC, clamp(base + vec2<i32>(1), vec2<i32>(0), hi), 0);
+    return mix(mix(c00, c10, f.x), mix(c01, c11, f.x), f.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -105,12 +119,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bassRaw = audio.x;
     let mids = audio.y;
     let treble = audio.z;
-    let prevEnv = extraBuffer[0];
+    let hasEnvelope = arrayLength(&extraBuffer) >= 134u;
+    var prevEnv = bassRaw;
+    if (hasEnvelope) { prevEnv = extraBuffer[133]; }
     let bass = bass_env(prevEnv, bassRaw, 0.8, 0.15);
 
-    let accumulationRate = u.zoom_params.x;
-    let echoScale = u.zoom_params.y * 0.06;
-    let intensity = u.zoom_params.z;
+    let echoCount = i32(round(mix(2.0, 8.0, clamp(u.zoom_params.x, 0.0, 1.0))));
+    let decayRate = mix(0.55, 0.94, clamp(u.zoom_params.y, 0.0, 1.0));
+    let echoSpacing = mix(0.002, 0.06, clamp(u.zoom_params.z, 0.0, 1.0));
     let colorShift = u.zoom_params.w;
 
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
@@ -122,7 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse gravity well + fBM domain-warped drift
     let gWell = gravityWell(uv01, mouse, 0.015 + mouseDown * 0.055);
-    var warpedUV = uv01 + gWell * (0.02 + echoScale * 2.0);
+    var warpedUV = uv01 + gWell * (0.02 + echoSpacing * 2.0);
 
     // Distance-aware LOD: fewer octaves in the periphery
     let focusDist = length(uv01 - vec2<f32>(0.5));
@@ -138,18 +154,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Echo displacement from feedback
     let wobble = vec2<f32>(
-        sin(time * 0.5 * (1.0 + mids * 0.3) + warpedUV.y * 6.0) * echoScale * (1.0 + bass * 0.3),
-        cos(time * 0.35 * (1.0 + mids * 0.3) + warpedUV.x * 6.0) * echoScale * (1.0 + bass * 0.2)
+        sin(time * 0.5 * (1.0 + mids * 0.3) + warpedUV.y * 6.0) * echoSpacing * (1.0 + bass * 0.3),
+        cos(time * 0.35 * (1.0 + mids * 0.3) + warpedUV.x * 6.0) * echoSpacing * (1.0 + bass * 0.2)
     );
-    let echoUV = fract(warpedUV + wobble);
-    let echo = textureSampleLevel(dataTextureC, u_sampler, echoUV, 0.0);
+    var echoAccum = vec4<f32>(0.0);
+    var totalWeight = 0.0;
+    var echoWeight = 1.0;
+    for (var echoIndex = 1; echoIndex <= 8; echoIndex++) {
+        if (echoIndex > echoCount) { break; }
+        echoWeight *= decayRate;
+        let fi = f32(echoIndex);
+        let echoUV = fract(warpedUV + wobble * fi + vec2<f32>(driftB - 0.5, driftA - 0.5) * echoSpacing * fi);
+        echoAccum += loadHistoryExact(echoUV) * echoWeight;
+        totalWeight += echoWeight;
+    }
+    let echo = echoAccum / max(totalWeight, 0.0001);
 
     // Psychedelic generative color (reuses cached drift noise)
     let paletteT = time * 0.08 + driftA * 0.7 + driftB * 0.3 + bass * 0.5 + colorShift;
-    let genColor = psychedelicPalette(paletteT) * intensity;
+    let genColor = psychedelicPalette(paletteT) * (0.8 + mids * 0.35);
 
     // Depth-aware blend: effect breathes in background, foreground stays crisp
-    let fog = 1.0 - exp(-depth * (2.0 + accumulationRate * 3.0));
+    let fog = 1.0 - exp(-depth * (2.0 + decayRate * 3.0));
     let blended = mix(echo.rgb, genColor, 0.25 + spawnMask * 0.4 + bass * 0.15);
     var color = mix(blended, video.rgb, 0.15 + fog * 0.35);
 
@@ -157,14 +183,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let clickDist = length(uv01 - mouse);
     let shockwave = mouseDown * exp(-clickDist * clickDist * 350.0) * sin(clickDist * 55.0 - time * 10.0);
     color += vec3<f32>(1.0, 0.75, 0.35) * shockwave * (1.0 + bass * 2.0);
+    let rippleCount = min(i32(u.config.y), 50);
+    for (var ri = 0; ri < rippleCount; ri++) {
+        let event = u.ripples[ri];
+        let age = time - event.z;
+        if (age > 0.0 && age < 2.5) {
+            let radius = age * (0.25 + echoSpacing * 2.0);
+            let ring = exp(-abs(distance(uv01, event.xy) - radius) * 100.0) * exp(-age * 1.7) * event.w;
+            color += psychedelicPalette(colorShift + age * 0.2) * ring * (0.5 + bass);
+        }
+    }
 
     // Treble sparkle
     color += hash21(uv01 * 200.0 + time * 3.0) * treble * 1.5;
 
     // Temporal accumulation with stable branchless feedback
     let prev = textureLoad(dataTextureC, pixel, 0);
-    let trailFade = 0.92 - accumulationRate * 0.08;
-    let accMix = 0.08 + accumulationRate * 0.05;
+    let trailFade = decayRate;
+    let accMix = 0.08 + (1.0 - decayRate) * 0.2;
     let accColor = mix(prev.rgb, color, accMix) * trailFade;
 
     // Chromatic aberration + tone map
@@ -184,7 +220,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, pixel, output);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[0] = bass;
+    if (global_id.x == 0u && global_id.y == 0u && hasEnvelope) {
+        extraBuffer[133] = bass;
     }
 }

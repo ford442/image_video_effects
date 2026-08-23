@@ -408,13 +408,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = col + vec3<f32>(0.1, 0.0, 0.08) * mids * 0.1;
 
   // Temporal persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   col = mix(col, prev.rgb * 0.94, 0.03);
 
   // Tone map
   col = acesToneMap(col * 1.3);
 
-  let finalAlpha = 1.0;
+  let finalAlpha = sat(max(alpha, prev.a * 0.92));
   let finalDepth = sat(0.95 - alpha * 0.4 + nectarGlow * 0.02);
 
   textureStore(writeTexture, coord, vec4<f32>(col, finalAlpha));

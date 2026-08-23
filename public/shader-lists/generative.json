@@ -13137,7 +13137,7 @@
       },
       {
         "index": 2,
-        "name": "Parameter 3",
+        "name": "Chrono Fracture",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -13145,10 +13145,10 @@
       },
       {
         "index": 3,
-        "name": "Parameter 4",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
+        "name": "Orbit Spin",
+        "default": 0.1,
+        "min": 0.05,
+        "max": 0.5,
         "step": 0.01
       }
     ],
@@ -13157,8 +13157,8 @@
       {
         "id": "wingspan",
         "name": "Wingspan",
-        "default": 0.5,
-        "min": 0,
+        "default": 0.2,
+        "min": 0.1,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
@@ -13175,8 +13175,8 @@
         "audio": "mid"
       },
       {
-        "id": "parameter_3",
-        "name": "Parameter 3",
+        "id": "chrono_fracture",
+        "name": "Chrono Fracture",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -13185,8 +13185,8 @@
         "audio": "treble"
       },
       {
-        "id": "parameter_4",
-        "name": "Parameter 4",
+        "id": "orbit_spin",
+        "name": "Orbit Spin",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -13194,7 +13194,16 @@
         "mapping": "zoom_params.w",
         "audio": "overall"
       }
-    ]
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "depth-output",
+      "aces-tonemap",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = phoenix trap distance, signed body distance, nebula density, semantic coverage; exact raw-state history"
   },
   {
     "name": "Ethereal Cyber-Chrono Void-Whale",
@@ -13211,6 +13220,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "plasma_density",
+        "name": "Plasma Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "temporal_glitch",
+        "name": "Temporal Glitch",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "refraction_index",
+        "name": "Refraction Index",
+        "default": 1.5,
+        "min": 1,
+        "max": 3,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "core_bloom",
+        "name": "Core Bloom",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13251,7 +13298,16 @@
     "updated": true,
     "id": "gen-ethereal-cyber-chrono-void-whale",
     "url": "shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "depth-output",
+      "aces-tonemap",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA; exact temporal whale history"
   },
   {
     "id": "gen-ethereal-cyber-plasma-void-dragon",
@@ -13280,6 +13336,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "dragon_undulation_speed",
+        "name": "Dragon Undulation Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "body_segment_density",
+        "name": "Body Segment Density",
+        "default": 20,
+        "min": 10,
+        "max": 40,
+        "step": 1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "nebula_density",
+        "name": "Nebula Density",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13314,7 +13408,16 @@
         "max": 2,
         "step": 0.05
       }
-    ]
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "depth-output",
+      "aces-tonemap",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA; exact plasma-dragon persistence history"
   },
   {
     "name": "Ethereal Glass-Flora Terrarium",
@@ -13334,6 +13437,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "flora_density",
+        "name": "Flora Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "nectar_glow",
+        "name": "Nectar Glow",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "refraction_index",
+        "name": "Refraction Index",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "time_warp",
+        "name": "Time Warp",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13374,7 +13515,15 @@
     "updated": true,
     "id": "gen-ethereal-glass-flora-terrarium",
     "url": "shaders/gen-ethereal-glass-flora-terrarium.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "depth-output",
+      "aces-tonemap",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA; exact glass-flora persistence history"
   },
   {
     "name": "Ethereal Quantum-Hologram Bonsai",
@@ -13392,6 +13541,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "branch_complexity",
+        "name": "Branch Complexity",
+        "default": 4,
+        "min": 1,
+        "max": 7,
+        "step": 1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "hologram_instability",
+        "name": "Hologram Instability",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "ambient_glow",
+        "name": "Ambient Glow",
+        "default": 2,
+        "min": 0.5,
+        "max": 10,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "audio_reactivity",
+        "name": "Audio Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13427,12 +13614,20 @@
         "step": 0.1
       }
     ],
-    "supportsDepth": false,
+    "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-quantum-hologram-bonsai",
     "url": "shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "depth-output",
+      "aces-tonemap",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA; exact hologram history; extraBuffer[133] = smoothed bass envelope"
   },
   {
     "name": "Ethereal Quantum-Holographic Fractal-Coral",
@@ -13451,6 +13646,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "fractal_density",
+        "name": "Fractal Density",
+        "default": 3,
+        "min": 1,
+        "max": 8,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "holographic_frequency",
+        "name": "Holographic Frequency",
+        "default": 5,
+        "min": 1,
+        "max": 20,
+        "step": 0.5,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "bioluminescence_intensity",
+        "name": "Bio-Luminescence Intensity",
+        "default": 1.2,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "audio_pulse_propagation",
+        "name": "Audio Pulse Propagation",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13491,7 +13724,16 @@
     "updated": true,
     "id": "gen-ethereal-quantum-holographic-fractal-coral",
     "url": "shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "depth-output",
+      "aces-tonemap",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA; exact fractal-coral persistence history"
   },
   {
     "name": "Ethereal Quantum Medusa",
@@ -13499,11 +13741,49 @@
     "tags": [
       "generative"
     ],
-    "description": "",
+    "description": "A raymarched quantum medusa with chromatic tentacles, held-mouse gravity, finite click waves, temporal bioluminescence, and three-band plasma response.",
     "workgroup_size": [
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "swimming_speed",
+        "name": "Swimming Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "tentacle_curl",
+        "name": "Tentacle Curl",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "quantum_glow",
+        "name": "Quantum Glow",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "repulsion_strength",
+        "name": "Repulsion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13544,7 +13824,16 @@
     "updated": true,
     "id": "gen-ethereal-quantum-medusa",
     "url": "shaders/gen-ethereal-quantum-medusa.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "depth-output",
+      "aces-tonemap",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA; exact medusa bioluminescence history"
   },
   {
     "name": "Ethereal Silk Veil",
@@ -13567,6 +13856,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "wave_intensity",
+        "name": "Wave Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "layer_density",
+        "name": "Layer Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "sheen_amount",
+        "name": "Sheen Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13607,7 +13934,17 @@
     "updated": true,
     "id": "gen-ethereal-silk-veil",
     "url": "shaders/gen-ethereal-silk-veil.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "depth-aware",
+      "depth-output",
+      "aces-tonemap",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = ACES silk effect-layer RGBA; exact veil persistence history; output composites the source layer"
   },
   {
     "name": "Evolutionary Cellular Gardens",
@@ -13627,6 +13964,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "cell_scale",
+        "name": "Cell Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "evolution_speed",
+        "name": "Evolution Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "invasive_force",
+        "name": "Invasive Force",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "bioluminescence",
+        "name": "Bioluminescence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13675,8 +14050,10 @@
       "depth-aware",
       "depth-output",
       "semantic-alpha",
-      "procedural"
-    ]
+      "procedural",
+      "aces-tonemap"
+    ],
+    "feedbackPacking": "A/C = untonemapped colony trail RGB plus colony age; exact cellular history; extraBuffer[133..138] = smoothed attractor and click state"
   },
   {
     "name": "Feedback Echo Chamber",
@@ -13700,6 +14077,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "echo_count",
+        "name": "Echo Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "echo_spacing",
+        "name": "Echo Spacing",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -13740,7 +14155,17 @@
     "updated": true,
     "id": "gen-feedback-echo-chamber",
     "url": "shaders/gen-feedback-echo-chamber.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "depth-aware",
+      "depth-output",
+      "aces-tonemap",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA; exact manually reconstructed echo history; extraBuffer[133] = smoothed bass envelope"
   },
   {
     "name": "4th of July — Audio Symphony",

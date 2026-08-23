@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-23T18:55:34.139269",
+  "timestamp": "2026-08-23T19:00:33.955666",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/crystal-illuminator-iridescence.wgsl",
+      "file": "public/shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/digital-lens-prismatic.wgsl",
+      "file": "public/shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gravitational-lensing-nlm.wgsl",
+      "file": "public/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gravitational-lensing.wgsl",
+      "file": "public/shaders/gen-ethereal-glass-flora-terrarium.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/prism-displacement.wgsl",
+      "file": "public/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/prismatic-mosaic.wgsl",
+      "file": "public/shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/refraction-tunnel.wgsl",
+      "file": "public/shaders/gen-ethereal-quantum-medusa.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spec-bicubic-crystal.wgsl",
+      "file": "public/shaders/gen-ethereal-silk-veil.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spiral-lens.wgsl",
+      "file": "public/shaders/gen-evolutionary-cellular-gardens.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/voronoi-faceted-glass.wgsl",
+      "file": "public/shaders/gen-feedback-echo-chamber.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

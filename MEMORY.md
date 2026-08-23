@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Optical / Prism / Crystal / Lens / Caustic set upgrade complete)
+**Last updated:** 2026-08-23 (Optical batch + Ethereal generative Batch 72 complete)
 
 ## 2026-08-23 — Optical / Prism / Crystal / Lens / Caustic Upgrade Batch (10 shaders)
 
@@ -1227,3 +1227,12 @@
   its raw density/velocity/energy state from B to authoritative A.
 - Structural proof is green through Jest/build; visual and performance QA still
   requires real WebGPU hardware.
+
+## Ethereal generative cohort (Batch 72, 2026-08-23)
+
+- The phoenix, void whale/dragon, glass flora, hologram bonsai, fractal coral,
+  medusa, silk veil, cellular gardens, and echo chamber now satisfy bindings
+  0–12, exact C, A-only feedback, ACES display, semantic alpha, plasma XYZ,
+  bounded `[133..138]` state, and four live named JSON params.
+- Focused shader/state/slider gates pass 10/10; catalogs, TypeScript, Jest, and
+  production build pass. Real-GPU visual and performance QA remains external.
