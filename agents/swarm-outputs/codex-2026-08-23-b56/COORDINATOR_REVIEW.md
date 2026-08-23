@@ -20,8 +20,7 @@ Batch 56 is structurally complete across tracker #475–482.
 
 ## Baseline blockers and handoff
 
-Full Jest is expected 80/81 suites with the unrelated committed malformed
-`shader_definitions/generative/gen-chrono-kinetic-fractal-engine.json`.
-Real-GPU QA remains required for geometry identity, continuous motion,
+Full Jest reached 81/81 suites (545 passed, 1 skipped).
+`SKIP_WASM_BUILD=1 npm run build` compiled successfully. Real-GPU QA remains required for geometry identity, continuous motion,
 psychedelic color, interaction, alpha/depth composition, trail stability,
 and preset fidelity.

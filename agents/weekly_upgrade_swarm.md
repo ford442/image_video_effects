@@ -22,7 +22,8 @@ to 16x16x1. Source `params` stay exact; indexed `updatedParams` are
 aligned. Kaleido sliders that were previously unread now drive segments,
 speed, zoom, and detail. CMYK A remains coverage `[C,M,Y,K]`; iso-lines A
 packs `[lineR, lineG, lineB, alpha]`; the rest write display RGBA. B is
-unused and no extraBuffer access was added. Notes:
+unused and no extraBuffer access was added. Structural gates 8/8; Jest
+81/81 (545 pass / 1 skip); production build green. Notes:
 `swarm-outputs/codex-2026-08-23-b56/`. Real-GPU visual QA remains external.
 
 | # | Shader | Batch | Lines (HEAD→final) | Changes Made |
