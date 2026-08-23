@@ -6102,7 +6102,7 @@
     "id": "gravitational-lensing",
     "name": "Gravitational Lensing",
     "url": "shaders/gravitational-lensing.wgsl",
-    "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
+    "description": "Schwarzschild geodesic raytracing with a Shakura-Sunyaev accretion disk: temperature follows T(r) ~ r^-3/4 through a Planck blackbody fit, and Keplerian orbital velocity v ~ r^-1/2 drives relativistic Doppler beaming (delta^3) so the approaching limb brightens correctly. Each of the eight FFT bins owns a disk annulus. Fixes a bug where zoom_config.x (time, not audio) was read as an audio level, making the camera orbit accelerate quadratically forever.",
     "features": [
       "mouse-driven",
       "advanced-hybrid",
@@ -6110,7 +6110,17 @@
       "geodesic-raytracing",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "keplerian-disk",
+      "doppler-beaming",
+      "temporal-accretion"
     ],
     "params": [
       {
@@ -6168,7 +6178,53 @@
       "cursor",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "black-hole",
+      "relativity",
+      "lensing",
+      "accretion"
+    ],
+    "updatedParams": [
+      {
+        "id": "black_hole_mass",
+        "name": "Black Hole Mass",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Schwarzschild radius and Einstein ring size; also sets the ISCO."
+      },
+      {
+        "id": "disk_brightness",
+        "name": "Disk Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Accretion disk emission gain."
+      },
+      {
+        "id": "camera_orbit",
+        "name": "Camera Orbit",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Static offset added to the orbit angle."
+      },
+      {
+        "id": "redshift",
+        "name": "Redshift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Gravitational redshift applied to the escaping background."
+      }
     ]
   },
   {

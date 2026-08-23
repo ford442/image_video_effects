@@ -4,7 +4,25 @@
 //  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
 //            angular-chromatic-dispersion, temporal-smear, depth-aware,
 //            upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 56 — Turbulent Vortex)
+//  Upgraded: 2026-08-23 (Batch 60)
+//
+//  This shader already met the pool standard (ACES, exact-load feedback,
+//  guarded ripple loop, plasmaBuffer audio, dataTextureA writeback, semantic
+//  alpha), so this pass adds structure rather than compliance:
+//
+//    1. Rankine vortex core — a rigid `weight * strength` rotation makes the
+//       whole disc turn as one body, which is not how a vortex behaves. The
+//       swirl now follows the Rankine model: solid-body rotation inside the
+//       core radius (angular velocity constant) and free-vortex circulation
+//       outside it (tangential velocity ~ 1/r, angular velocity ~ 1/r²). That
+//       is what produces the tight spun core with a slower, longer-reaching
+//       outer flow that real vortices show.
+//
+//    2. Spring-damped vortex eye with inertia — the core followed the raw
+//       cursor exactly, so it teleported on every pointer jump. The eye is now
+//       spring-damped through extraBuffer[133..136] and its own velocity shears
+//       the flow, so whipping the cursor drags the vortex behind the pointer
+//       and it settles when you stop.
 // ═══════════════════════════════════════════════════════════════════════════════
 //  A rigid rotation field is only the carrier here. On top of it sit two
 //  structures that make the swirl behave like a real fluid vortex:
@@ -119,7 +137,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let twist = u.zoom_params.z * 10.0 * (1.0 + mids * 0.3);
     let turbGain = u.zoom_params.w;
 
-    let center = u.zoom_config.yz;
+    // ── Structure 2: spring-damped vortex eye ────────────────────────────────
+    // extraBuffer[133..134] = smoothed eye position, [135..136] = its velocity.
+    // Only invocation (0,0) writes, per the house pattern.
+    let rawCenter = u.zoom_config.yz;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        var sm = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        if (sm.x == 0.0 && sm.y == 0.0) { sm = rawCenter; }
+        let dt = 0.016;
+        let k = 1.0 - exp(-7.0 * dt);
+        let next = sm + (rawCenter - sm) * k;
+        var sv = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        sv = mix(sv, (next - sm) / dt, 0.25);
+        extraBuffer[133] = next.x;
+        extraBuffer[134] = next.y;
+        extraBuffer[135] = sv.x;
+        extraBuffer[136] = sv.y;
+    }
+    let center = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    let eyeVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+
     let diff = uv - center;
     let diffAspect = diff * vec2<f32>(aspect, 1.0);
     let dist = length(diffAspect);
@@ -154,15 +191,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let percent = select(0.0, (radius - dist) / radius, dist < radius);
     let weight = percent * percent;
 
-    let rigid = weight * strength;
-    let spiral = twist * weight * dist;
+    // ── Structure 1: Rankine vortex profile ──────────────────────────────────
+    // Inside the core, angular velocity is constant (solid-body). Outside it,
+    // circulation is conserved so omega falls as 1/r^2. The old `weight *
+    // strength` spun the entire disc as one rigid body.
+    let coreRadius = radius * (0.28 + 0.22 * saturate(u.zoom_params.y));
+    let rSafe = max(dist, 1e-4);
+    let omegaSolid = 1.0;
+    let omegaFree = (coreRadius * coreRadius) / (rSafe * rSafe);
+    let rankine = select(omegaFree, omegaSolid, dist < coreRadius);
+    // Confine the free-vortex tail to the slider's radius so the control still
+    // bounds the effect, and keep the falloff smooth across the core boundary.
+    let rankineProfile = rankine * smoothstep(radius * 1.35, 0.0, dist);
+
+    let rigid = rankineProfile * strength * 0.75;
+    let spiral = twist * rankineProfile * dist;
+
+    // Eye inertia: a moving vortex shears the flow behind it. eyeVel is
+    // (delta uv)/dt with dt = 1/60, so a fast flick is O(30) — it MUST be
+    // clamped before it reaches an angle, or a single fast cursor move would
+    // inject several radians of rotation in one frame.
+    let eyeSpeed = clamp(length(eyeVel), 0.0, 4.0);
+    let eyeDir = select(vec2<f32>(0.0), eyeVel / max(length(eyeVel), 1e-5), eyeSpeed > 1e-4);
+    let eyeShear = dot(eyeDir, vec2<f32>(-diffAspect.y, diffAspect.x))
+                 * eyeSpeed * rankineProfile * 0.09;
 
     // Structure 1: azimuthal turbulence, banded by the FFT.
     let turb = azimuthalTurbulence(theta, percent, time) * turbGain * 2.2 * weight;
 
-    let totalAngle = rigid + spiral + turb + shockAngle;
+    let totalAngle = rigid + spiral + turb + shockAngle + eyeShear;
     let distortionMag = (calculateRotationalDistortion(percent, strength, twist, dist)
-                        + abs(turb) * 0.6) * inside + abs(shockAngle) * 0.4;
+                        + abs(turb) * 0.6) * inside
+                      + abs(shockAngle) * 0.4
+                      + abs(eyeShear) * 0.5;
 
     let rotatedDiff = rotate2(diffAspect, totalAngle);
     let finalUV = center + vec2<f32>(rotatedDiff.x / aspect, rotatedDiff.y);

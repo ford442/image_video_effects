@@ -5,9 +5,88 @@
 
 ---
 
-## Recently Completed (500 tracker entries)
+## Recently Completed (510 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 60 (10 shaders) — 2026-08-23 — DEAD FEATURES & FEEDBACK CONTRACTS
+
+Ten shaders across interactive-mouse, distortion, advanced-hybrid, artistic and
+image. Every shader now carries the pool standard — ACES, semantic alpha,
+`dataTextureA` writeback, `plasmaBuffer[0].xyz` audio with per-band `[1..8]`
+bins, held-pointer response, bounded click fronts guarded by
+`min(u32(u.config.y), 50u)`, exact `textureLoad` from `dataTextureC`,
+`@workgroup_size(16, 16, 1)` and a bounds guard — plus two shader-specific
+structures each. `extraBuffer` writes stay in `[133..137]`, written by
+invocation `(0,0)` only.
+
+The theme of this batch is **features that were catalogued but not wired**, and
+**feedback slots whose contents did not match how they were read**.
+
+Dead features found and fixed:
+
+- **`gravitational-lensing` — time read as audio.** `let audioOverall =
+  u.zoom_config.x;` — that field is TIME, not an audio level. So
+  `audioReactivity = 1.0 + time * 0.3` grew without bound and the camera angle
+  `time * 0.1 * audioReactivity` accelerated QUADRATICALLY forever, while no
+  audio reached anything. The `zoom_config` hijack class from Batch 58C.
+- **`holographic-contour` — dead audio.** Declared `audio-reactive` and
+  `audio-driven`, bound `plasmaBuffer` at binding 12, and never read one sample
+  from it. Its source was also naga round-trip output (`_e20` temporaries,
+  `loop { continuing { } }`) and has been rewritten as readable WGSL.
+- **`neon-pulse` — declared `mouse-driven`, never read the mouse.**
+  `zoom_config` appeared exactly once in the file: in the struct declaration.
+- **`kaleidoscope` — never read the mouse either**, and never wrote
+  `dataTextureA`, so that slot was dead.
+- **`particle-swarm` — degenerate scattering.** The Henyey-Greenstein phase
+  function was fed `dot(velocity_dir, vec2<f32>(0.0, 0.0))`, which is
+  identically zero, so the "anisotropic scattering" contributed one fixed
+  constant. It also had no bounds guard at all.
+- **`holographic-contour` — dead halftone radius.** `sqrt(luma) * 0.5` was
+  computed for the dot size and never used.
+- **`gravitational-lensing` — dead Einstein radius.** Computed, then the ring
+  was drawn at a hardcoded 0.3. It now sets the ring's screen radius.
+
+Feedback-contract fixes (the mask-as-colour class):
+
+- **`magnetic-field`** stored the field state `[b_field.x, b_field.y,
+  line_sharp, b_mag]` in `dataTextureA` while its "smooth temporal history" line
+  read `prev_state.rgb` back as colour — blending signed, unbounded field
+  components into every displayed frame. The field is recomputed analytically
+  each frame and nothing reads the state back into the simulation, so A now
+  carries display RGBA and the diagnostics move to B.
+- **`glass-shatter`** held a mask tuple in A that nothing read, leaving C
+  poisoned for any shader (or future edit) that read it as colour. Display moved
+  to A, masks to B.
+- **`neon-pulse`** needed the opposite call: its new thermal diffusion genuinely
+  requires temperature in A, so A is documented as sim state (Batch 58B
+  convention) rather than a half-colour/half-Kelvin hybrid.
+
+Depth clobbers fixed in `heat-haze-mirage` (wrote the heat column),
+`holographic-contour` (wrote ink alpha) and `neon-pulse` (wrote emission luma).
+
+One initial diagnosis was withdrawn during review: `ink-bleed`'s state reads go
+through an identifier named `filteringSampler`, but binding 5 is the engine's
+NON-filtering sampler, so the reads were safe. The misleading name (1333 other
+shaders call it `non_filtering_sampler`) is corrected and the reads moved to
+exact `textureLoad` anyway.
+
+Gate, dead-slider, extraBuffer and audio-mapping audits pass 10/10; URL and
+uniform-layout checks pass; lists regenerate clean. Real-GPU visual QA remains
+external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 501 | `gravitational-lensing` | 60 | 216→318 (+102) | Shakura-Sunyaev disk (T ∝ r^-3/4) through a Planck fit, Keplerian δ³ Doppler beaming, per-band annuli, click shocks, ACES, A writeback; time-as-audio and dead Einstein radius fixed. |
+| 502 | `holographic-contour` | 60 | 213→238 (+25) | Reference-beam interference plate with FFT fringe spacing, depth-parallax contour shells; readable rewrite, real audio, depth clobber and dead halftone radius fixed. |
+| 503 | `neon-pulse` | 60 | 136→236 (+100) | Per-cell FFT band ownership, thermal diffusion with T⁴ radiative cooling; mouse wired for the first time, 8×8→16×16, depth clobber and unbounded HDR fixed. |
+| 504 | `kaleidoscope` | 60 | 177→266 (+89) | Steerable spring-damped mirror pivot, per-segment FFT petal amplitude; mouse wired for the first time, A writeback and persistence added. |
+| 505 | `particle-swarm` | 60 | 149→279 (+130) | Boid cohesion/separation from the state texture, per-particle FFT turbulence; bounds guard added and the degenerate scattering dot product fixed. |
+| 506 | `ink-bleed` | 60 | 161→273 (+112) | Anisotropic wicking along a procedural paper-fibre field, spring-damped nib with speed-thinned deposit; misleading sampler name corrected, exact-load state. |
+| 507 | `glass-shatter` | 60 | 145→223 (+78) | Stress birefringence fringes along the cracks, crack-propagation memory through C; A/B packing corrected, ACES replaces a hard clamp. |
+| 508 | `magnetic-field` | 60 | 167→221 (+54) | Per-band multipole moments, cyclotron drift bands advecting along field lines; mask-as-colour feedback bug fixed. |
+| 509 | `heat-haze-mirage` | 60 | 177→240 (+63) | Refractive-index-gradient ray bending (deflection ∝ path²), inversion-layer image doubling; depth clobber fixed, ACES replaces a hard clamp. |
+| 510 | `vortex-warp` | 60 | 215→271 (+56) | Rankine vortex profile (solid-body core, 1/r² free vortex outside), spring-damped eye whose velocity shears the flow. |
 
 ### Batch 58B (10 shaders) — 2026-08-23 — LIQUID
 

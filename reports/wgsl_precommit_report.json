@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-23T02:31:48.078848",
+  "timestamp": "2026-08-23T02:54:01.408222",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/liquid-displacement.wgsl",
+      "file": "public/shaders/glass-shatter.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-optimized.wgsl",
+      "file": "public/shaders/gravitational-lensing.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-prism.wgsl",
+      "file": "public/shaders/heat-haze-mirage.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-rainbow.wgsl",
+      "file": "public/shaders/holographic-contour.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-smear.wgsl",
+      "file": "public/shaders/ink-bleed.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-time-warp.wgsl",
+      "file": "public/shaders/kaleidoscope.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-viscous.wgsl",
+      "file": "public/shaders/magnetic-field.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-warp.wgsl",
+      "file": "public/shaders/neon-pulse.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-zoom.wgsl",
+      "file": "public/shaders/particle-swarm.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid_crystal_birefringence.wgsl",
+      "file": "public/shaders/vortex-warp.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
