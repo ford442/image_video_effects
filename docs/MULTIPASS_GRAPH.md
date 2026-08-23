@@ -142,9 +142,12 @@ Wired into `prestart` / `prebuild` alongside `generate_shader_lists.js`.
 | `photonic-caustics-graph` | emit → trace×2 → accumulate (caustic transport) |
 | `chromatographic-fluid` | force → advect → diffuse×2 → interact → phase → render (shared wind, RGB viscosity) |
 | `gray-scott-tank` | gs-step×4 → inject → render (true Jacobi Gray–Scott) |
-| `optical-flow-dream` | flow → advect×2 → grade (history ring, binding 13) |
 | `wave-tank` | step×3 → inject → render (minimal graph reference / tests) |
 | `quantum-foam-pass1` | 3-node graph (field → particles → composite) |
+
+`optical-flow-dream` moved to the canonical single-pass 13-binding path in
+August 2026. It now estimates temporal flow from exact `dataTextureC` history
+and no longer consumes the graph runner or binding 13.
 
 ## WASM follow-up
 

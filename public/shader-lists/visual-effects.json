@@ -214,7 +214,7 @@
     "id": "alpha-multi-layer-glass",
     "name": "Alpha Multi-Layer Glass",
     "url": "shaders/alpha-multi-layer-glass.wgsl",
-    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, and per-layer tinting. Alpha stores accumulated transmittance.",
+    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, GGX roughness, and per-layer tinting. Alpha stores accumulated transmittance.",
     "tags": [
       "glass",
       "refraction",
@@ -222,11 +222,17 @@
       "interactive",
       "mouse-driven",
       "rgba-state-machine",
-      "fresnel"
+      "fresnel",
+      "audio-reactive",
+      "roughness"
     ],
     "features": [
       "mouse-driven",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -260,6 +266,41 @@
         "id": "roughness",
         "name": "Surface Roughness",
         "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Index of Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glass Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Surface Roughness",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -1447,10 +1488,9 @@
       "upgraded-rgba",
       "temporal-flicker",
       "chromatic-ghosting",
-      "click-reactive",
-      "fast-motion",
-      "psychedelic",
-      "mouse-driven"
+      "mouse-driven",
+      "temporal",
+      "click-reactive"
     ],
     "tags": [
       "hologram",
@@ -1462,50 +1502,39 @@
       "chromatic",
       "temporal"
     ],
+    "updated": true,
     "updatedParams": [
       {
         "index": 0,
-        "id": "flickerSpeed",
         "name": "Flicker Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Rate of the analytic duty-cycle blackout and the scan-line conveyor. No longer a hash of time."
+        "step": 0.01
       },
       {
         "index": 1,
-        "id": "glitchAmt",
         "name": "Glitch Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Amplitude of the travelling scan-line displacement and the continuous micro-glitch shear."
+        "step": 0.01
       },
       {
         "index": 2,
-        "id": "hologramIntensity",
         "name": "Hologram Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Gain on the iridescent interference geometry."
+        "step": 0.01
       },
       {
         "index": 3,
-        "id": "ghostAmt",
         "name": "Ghost Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Chromatic ghost separation and the radius of the parallax ghost whip."
+        "step": 0.01
       }
     ]
   },
@@ -1513,13 +1542,16 @@
     "id": "holographic-projection-gpt52",
     "name": "Holo Projection Prism gpt52",
     "url": "shaders/holographic-projection-gpt52.wgsl",
-    "description": "Prismatic hologram with stabilized focus, scan interference, and spectral tinting.",
+    "description": "Prismatic volume hologram with Bragg diffraction physics, stabilized focus, scan interference, and spectral tinting.",
     "features": [
       "mouse-driven",
       "glitch",
       "animated",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -1556,7 +1588,45 @@
       "particles",
       "glow",
       "audio",
-      "music"
+      "music",
+      "hologram",
+      "bragg",
+      "diffraction"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 1.2,
+        "min": 0,
+        "max": 5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Holo Tint",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Focus Strength",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {

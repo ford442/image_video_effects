@@ -26,8 +26,8 @@
       "id": "states",
       "name": "States",
       "default": 0.45,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.x"
     },
@@ -35,8 +35,8 @@
       "id": "spontaneity",
       "name": "Spontaneity",
       "default": 0.3,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.y"
     },
@@ -44,8 +44,8 @@
       "id": "bloom",
       "name": "Bloom",
       "default": 0.6,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.z"
     },
@@ -53,8 +53,8 @@
       "id": "cooldown",
       "name": "Cooldown",
       "default": 0.4,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.w"
     }

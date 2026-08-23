@@ -56,5 +56,43 @@
   "updated": true,
   "id": "gen-crystal-lattice-growth",
   "url": "shaders/gen-crystal-lattice-growth.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "symmetry",
+      "name": "Symmetry",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "growth_rate",
+      "name": "Growth Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "hue",
+      "name": "Hue",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "thickness",
+      "name": "Thickness",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

@@ -10,6 +10,15 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
+- **Optical / Glass / Holographic / Crystal Batch (2026-08-23):** Upgraded
+  holographic-projection, holographic-projection-gpt52, holographic-flicker,
+  holographic-sticker, alpha-multi-layer-glass, anamorphic-caustic-flare,
+  glass-shatter-morph, glass-bead-curtain-iridescence, gemstone-fractures-crystal,
+  and bismuth-crystal-growth under the full 13-binding / ACES / semantic alpha /
+  A-authoritative / exact C loads / three-band plasmaBuffer / guarded
+  extraBuffer[133..138] contract with byte-exact saved params. Naga 10/10,
+  workgroups 16x16, all 4 sliders live, Jest 84/84 (559 pass), and production
+  build green; real-GPU visual QA remains external.
 - **Batch 58D:** Ten spectral/datamosh upgrades completed with A authoritative,
   exact C, B unused, guarded `[133..138]` springs, saved params unchanged, and
   raw state retained for Vortex/Data Moshing/Datamosh. Real-GPU QA is external.
@@ -59,29 +68,24 @@ _Learn about the person you're helping. Update this as you go._
   duplicate-declaration repair are verified by actual Naga plus strict contract,
   catalog, type, Jest, and production-build gates. Real-GPU visual QA remains the
   explicit handoff.
-- **Current shader batch (2026-08-23):** Upgrade the remaining fluid / paint /
-  reaction / slime cohort: alpha-fluid-simulation-paint, chromatographic-fluid,
-  sim-heat-haze-field, sim-slime-mold-growth, sim-slime-mold-growth-em,
-  slime-mold-on-video, gray-scott-tank, spec-runge-kutta-advection,
-  painterly-oil-bilateral, and cyber-ripples-coupled. Apply the canonical
-  exact-C / A-only / ACES / semantic-alpha / three-band-audio /
-  `extraBuffer[133..138]` / full pointer interaction contract and Naga proof.
-- **Main reconcile (2026-08-23):** Merged diverged tips so `main` carries
-  Batch 70 fluid/slime, generative named-params #1167, and Batch 67
-  fast-motion/psychedelic (#1170). Focused Naga/bindgroup 25/25 on the unioned
-  cohorts; real-GPU QA remains external.
-
+- **Reaction/flow/sand cohort (2026-08-23):** Ten selected simulation effects
+  completed under the exact-C/A-only/ACES/semantic-alpha/audio/interaction
+  contract with exact presets. Optical Flow Dream is now canonical single-pass
+  without binding 13; Pixel Sand raw state now belongs to A. Naga/Jest/build
+  are green; real-GPU QA remains external.
 - **Completed Batch 70 (2026-08-23):** The requested fluid/paint/reaction/slime
   cohort is upgraded across 17 WGSL members. Chromatographic and Gray-Scott are
   A-only graphs; saved params are exact; Naga 17/17, focused contracts, graph
   tests, 84-suite Jest, and the WASM-skipped production build are green.
   Real-GPU visual and long-running simulation QA remains external.
-- **Current generative batch (2026-08-23):** Upgrade ten named generative
-  effects from Cybernetic Mycelium through Dragon Curve under the canonical
-  exact-C, A-only, ACES, semantic-alpha, three-band-audio, bounded-state,
-  interaction, and Naga contract. Every definition must expose four named
-  `params`; nine currently have only `updatedParams`, while Cyclic Automaton
-  already has both.
+- **Completed generative Batch 71 (2026-08-23):** Ten effects from Cybernetic
+  Mycelium through Dragon Curve now meet the exact-C, A-only, ACES,
+  semantic-alpha, three-band-audio, bounded-state, interaction, and Naga
+  contract. Every definition exposes four live named params.
+- **Main reconcile (2026-08-23):** Merged local optical/branch-union `main` with
+  origin Batch 70, generative named-params #1167/#1169, and Batch 67 (#1170).
+  Kept local optical `holographic-flicker`; took Batch 67 `glass-wipes`,
+  `liquid-jelly`, and `ferrofluid-spikes`. Real-GPU QA remains external.
 ## Context
 
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.
@@ -205,4 +209,8 @@ Format specification:
   `cursor/effect-shaders-complexity-8594` were unioned onto main in 99d09e5c
   without reverting #1137 or Batch 57 fractal-kaleidoscope. Batch 58E closed
   tracker #491–500 across ten interactive shaders.
+- For the 2026-08-23 generative-only cohort, the user explicitly requires the
+  literal ten supplied IDs, full 13-binding/ACES/semantic-alpha/exact-C/A-only
+  contract, three-band plasma audio, bounded [133..138] state, preserved
+  interaction, Naga-clean WGSL, and four named params in every JSON definition.
 </IMPORTANT_REMINDER>

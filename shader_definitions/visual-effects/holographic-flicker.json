@@ -40,10 +40,9 @@
     "upgraded-rgba",
     "temporal-flicker",
     "chromatic-ghosting",
-    "click-reactive",
-    "fast-motion",
-    "psychedelic",
-    "mouse-driven"
+    "mouse-driven",
+    "temporal",
+    "click-reactive"
   ],
   "tags": [
     "hologram",
@@ -55,50 +54,39 @@
     "chromatic",
     "temporal"
   ],
+  "updated": true,
   "updatedParams": [
     {
       "index": 0,
-      "id": "flickerSpeed",
       "name": "Flicker Speed",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Rate of the analytic duty-cycle blackout and the scan-line conveyor. No longer a hash of time."
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
       "index": 1,
-      "id": "glitchAmt",
       "name": "Glitch Amount",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Amplitude of the travelling scan-line displacement and the continuous micro-glitch shear."
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
       "index": 2,
-      "id": "hologramIntensity",
       "name": "Hologram Intensity",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Gain on the iridescent interference geometry."
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
       "index": 3,
-      "id": "ghostAmt",
       "name": "Ghost Amount",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Chromatic ghost separation and the radius of the parallax ghost whip."
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ]
 }

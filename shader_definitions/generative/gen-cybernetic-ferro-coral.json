@@ -67,5 +67,43 @@
     "turing-banding",
     "multi-scale-detail",
     "ripple-reactive"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 2,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "spike_intensity",
+      "name": "Spike Intensity",
+      "default": 1,
+      "min": 0,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "core_glow",
+      "name": "Core Glow",
+      "default": 1.5,
+      "min": 0.5,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence",
+      "default": 1,
+      "min": 0,
+      "max": 2,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

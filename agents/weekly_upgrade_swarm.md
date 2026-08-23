@@ -9,6 +9,18 @@
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
 
+### Reaction / Flow / Sand / Optical-Fluid cohort (10 shaders) — 2026-08-23
+
+Upgraded `alpha-reaction-diffusion-rgba`,
+`chromatic-reaction-diffusion-rgba`, `rd-on-video-pass1`, `luma-flow-field`,
+`optical-flow-dream`, `sim-sand-dunes`, `sim-sand-dunes-rgba`, `pixel-sand`,
+`cymatic-sand`, and `photonic-caustics` under the canonical exact-C/A-only
+contract. Optical Flow Dream intentionally moved from its binding-13 graph to
+a single canonical pass; Pixel Sand intentionally moved raw state from B to A.
+Naga/contract gates pass 10/10, params are exact, Jest/build are green, and
+real-GPU QA remains external. Notes:
+`swarm-outputs/codex-2026-08-23-rd-flow-sand/`.
+
 ### Batch 67 (10 shaders) — 2026-08-23 — FAST MOTION / PSYCHEDELIC / HIGH ENERGY
 
 Ten shaders on tracker #521–530, upgraded under an extra creative brief on top

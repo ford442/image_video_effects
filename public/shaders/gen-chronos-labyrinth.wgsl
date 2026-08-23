@@ -566,6 +566,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cursorDist = length((uv01 - mouse) * aspect);
     color += chronoPalette(fract(time * 0.5 + cursorDist), bass) * exp(-cursorDist * 7.0) * (0.12 + g_held * 0.45);
 
+    // A rotating chronometer sigil reveals the labyrinth's global time topology.
+    let clockRadius = length(uv);
+    let clockAngle = atan2(uv.y, uv.x);
+    let tick = pow(0.5 + 0.5 * cos(clockAngle * (12.0 + floor(u.zoom_params.x * 6.0)) - time * (1.0 + u.zoom_params.y * 2.0)), 22.0);
+    let clockRing = (1.0 - smoothstep(0.0, 0.018, abs(clockRadius - 0.32 - 0.025 * sin(time * 0.7)))) * tick;
+    color += chronoPalette(fract(clockAngle / 6.28318 + time * 0.08), treble) * clockRing * (0.14 + riftEcho * 0.4 + shock * 0.45);
+
     // Vignette
     let vignette = 1.0 - 0.4 * length(uv);
     color *= vignette;

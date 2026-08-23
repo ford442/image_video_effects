@@ -289,43 +289,6 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       }
     ]
   },
-  "optical-flow-dream": {
-    "maxPassesPerFrame": 8,
-    "nodes": [
-      {
-        "id": "flow",
-        "entry": "optical-flow-estimate",
-        "reads": [
-          "dataC"
-        ],
-        "writes": [
-          "dataA"
-        ]
-      },
-      {
-        "id": "advect",
-        "entry": "optical-flow-advect",
-        "reads": [
-          "dataC"
-        ],
-        "writes": [
-          "dataA"
-        ],
-        "repeat": 2
-      },
-      {
-        "id": "grade",
-        "entry": "optical-flow-grade",
-        "reads": [
-          "dataC"
-        ],
-        "writes": [
-          "color",
-          "dataA"
-        ]
-      }
-    ]
-  },
   "photonic-caustics-graph": {
     "maxPassesPerFrame": 8,
     "nodes": [
