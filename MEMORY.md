@@ -2,6 +2,20 @@
 
 **Last updated:** 2026-08-21 (getGPUTimings JS/C++ ABI)
 
+## 2026-08-23 — Gemini shader-upgrade branch is unclosed WIP
+
+- `new-shader-upgrades` is 10 commits ahead of `main`, pushed through
+  `20d71453`; it changes 58 unique committed shaders and leaves Glass Wall plus
+  Holographic Flicker dirty.
+- Treat it as salvageable input, not an accepted batch: no briefs/coordinator
+  review or complete validation were recorded, 39 edits share a generic overlay,
+  seven temporary rewrite scripts were committed, and at least two committed
+  shaders plus one dirty shader use undefined `saturate`.
+- Structural binding/workgroup and strict extraBuffer checks are clean, but Naga
+  and real-GPU proof are absent. Before continuation, audit interaction/ripple
+  semantics, saved-slider liveness, exact C feedback reads, and distinct effect
+  identity across the whole branch.
+
 ## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
 
 - User changed cohort selection policy: use an objective backlog rule such as
