@@ -44,6 +44,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   let aspect = resolution.x / resolution.y;
@@ -57,6 +59,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let innerTeeth = 1.0 + floor(u.zoom_params.y * 8.0);
   let speed = u.zoom_params.z * 2.0 * (1.0 + bass * 0.3);
   let thickness = 0.02 + u.zoom_params.w * 0.08;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 64.0);
+  }
 
   // Depth creates 3D spirograph depth layers
   let depthLayers = 1.0 + depth * 2.0;
@@ -68,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var gear: u32 = 0u; gear < 3u; gear = gear + 1u) {
     let g = f32(gear);
     let gearRatio = (outerTeeth + g) / (innerTeeth + g * 0.5);
-    let gearSpeed = speed * (1.0 + g * 0.3) * (1.0 + bass * 0.4);
+    let gearSpeed = speed * (1.0 + g * 0.3) * (1.0 + bass * 0.4 + mids * 0.2);
     let t = time * gearSpeed + g * 2.094;
 
     // Epicycloid when ratio > 0, hypocycloid variation
@@ -77,7 +87,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rho = r * 10.0 * depthLayers;
 
     // True spirograph: R * ( (1-k)*cos(t) + l*k*cos((1-k)/k*t) )
-    let l = 0.5 + mouse.x * 0.5;
+    let l = 0.5 + mouse.x * 0.5 + held * (mouse.y - 0.5) * 0.25;
     let spiro = sin(theta) + l * sin((1.0 - k) * theta / max(k, 0.1));
     let cusp = cos(rho - spiro * 3.0);
 
@@ -100,7 +110,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Metallic ink aesthetic
   let inkColor = vec3<f32>(0.85, 0.82, 0.78) * (0.4 + 0.6 * gray);
-  let specColor = vec3<f32>(1.0, 0.95, 0.85) * totalBloom * 2.0;
+  let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + a * outerTeeth + time * (0.5 + treble));
+  let specColor = mix(vec3<f32>(1.0, 0.95, 0.85), spectral, 0.45 + treble * 0.35) * totalBloom * 2.0;
   let gradientFill = mix(
     vec3<f32>(0.2, 0.05, 0.4),
     vec3<f32>(0.05, 0.3, 0.5),
@@ -119,7 +130,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   outColor = mix(outColor, color.rgb, finalMask * 0.5);
 
   // HDR bloom at cusps added on top
-  outColor = outColor + specColor * 0.5;
+  outColor = outColor + specColor * 0.5 + spectral * clickFront * 0.28;
 
   // Alpha: curve density × depth_occlusion
   let depthOcclusion = 1.0 - depth * 0.5;

@@ -2,14 +2,16 @@
   "id": "sphere-projection",
   "name": "Sphere Projection",
   "url": "shaders/sphere-projection.wgsl",
-  "description": "Equirectangular sphere with meridians/parallels, held zoom, bounded click shells, audio spin, and liquid-rainbow lighting. Display RGBA in A.",
+  "description": "Analytic image-mapped sphere with moving latitude bands and lighting, held zoom pressure, bounded click fronts, three-band audio, and spectral highlights.",
   "features": [
     "mouse-driven",
     "3d",
     "audio-reactive",
-    "upgraded-rgba",
-    "held-drag",
-    "bounded-click-ripples"
+    "continuous-motion",
+    "held-pointer",
+    "click-reactive",
+    "psychedelic-color",
+    "depth-aware"
   ],
   "params": [
     {
@@ -59,44 +61,37 @@
   ],
   "updatedParams": [
     {
-      "id": "zoom",
+      "index": 0,
       "name": "Sphere Zoom",
       "default": 0.6,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Zoom level of the sphere projection"
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "rotation",
+      "index": 1,
       "name": "Spin Speed",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Auto-rotation speed of the sphere"
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "light",
+      "index": 2,
       "name": "Lighting",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Amount of directional lighting"
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "ambient",
+      "index": 3,
       "name": "Ambient Light",
       "default": 0.3,
-      "min": 0,
+      "min": 0.0,
       "max": 0.6,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Ambient light level on the sphere"
+      "step": 0.01
     }
-  ]
+  ],
+  "updated": true
 }

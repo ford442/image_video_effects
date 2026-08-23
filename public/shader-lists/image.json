@@ -4456,7 +4456,7 @@
   {
     "id": "polka-wave",
     "name": "Polka Wave",
-    "description": "Halftone effect where dot size responds to image brightness and interactive ripples.",
+    "description": "Four-plate CMYK polka halftone with moving rosettes, held wave pressure, bounded click fronts, three-band audio, and spectral overprint.",
     "url": "shaders/polka-wave.wgsl",
     "params": [
       {
@@ -4495,12 +4495,51 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wave Amp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wave Freq",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "posterize-neon-edges",
@@ -5594,7 +5633,7 @@
   {
     "id": "triangle-mosaic",
     "name": "Triangle Mosaic",
-    "description": "Breaks the image into an equilateral triangle grid. Mouse controls scale and twist.",
+    "description": "Equilateral triangle mosaic with truthful display-history feedback, animated seam runners, held twist, click fronts, depth scaling, and spectral color.",
     "url": "shaders/triangle-mosaic.wgsl",
     "params": [
       {
@@ -5631,12 +5670,53 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "display-history"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Twist",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mix",
+        "default": 1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "velvet-scatter-bloom",

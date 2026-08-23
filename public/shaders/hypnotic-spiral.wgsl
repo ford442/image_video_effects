@@ -44,15 +44,17 @@ fn bass_env(bass: f32, mids: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let minRes = min(resolution.x, resolution.y);
     let uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / minRes;
     let time = u.config.x;
-    let mousePos = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) - resolution * 0.5) / minRes;
+    let mousePos = (u.zoom_config.yz - 0.5) * resolution / minRes;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, (uv + 0.5) * minRes / resolution + 0.5, 0.0).r;
+    let sampleUV = vec2<f32>(global_id.xy) / resolution;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
     let depthTwist = mix(0.5, 1.5, depth);
 
     let clickReverse = select(1.0, -1.0, u.zoom_config.w > 0.5);
@@ -62,10 +64,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let arms = max(1.0, u.zoom_params.x + floor(mids * 4.0));
     let rotSpeed = (u.zoom_params.y + bass * 0.5) * clickReverse * bass_env(bass, mids);
     var twist = 1.0 / (length(uv - mousePos) * u.zoom_params.w + 0.1) * depthTwist;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let r = u.ripples[i];
-        let rPos = (r.xy - resolution * 0.5) / minRes;
+        let rPos = (r.xy - 0.5) * resolution / minRes;
         let dist = length(uv - rPos);
         let age = time - r.z;
         twist += sin(dist * 20.0 - age * 8.0) * exp(-age * 2.0) * 0.5 / (dist + 0.1);
