@@ -1,12 +1,40 @@
-// ================================================================
-//  Glass Shatter
-//  Category: distortion
-//  Features: mouse-driven, chromatic-aberration, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Chunks From: glass-shatter
-//  Created: 2026-05-30
-//  By: Copilot
-// ================================================================
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Glass Shatter — Fractured Facets with Stress Birefringence
+//  Category: interactive-mouse
+//  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
+//            per-band-fft, voronoi-facets, stress-birefringence, fresnel,
+//            crack-propagation, chromatic-aberration, temporal-crack-memory,
+//            depth-aware, upgraded-rgba, semantic-alpha, aces
+//  Upgraded: 2026-08-23 (Batch 60)
+// ═══════════════════════════════════════════════════════════════════════════════
+//  FIXED IN THIS PASS — dataTextureA held a mask tuple
+//  `[repelMask, fresnel, edgeHighlight, transmission]` that nothing ever read
+//  back, so the slot was dead state; and because dataTextureC is a copy of A,
+//  any shader (or any later edit to this one) that read C expecting colour
+//  would have got masks in the RGB channels. That is the mask-as-colour
+//  feedback trap this pool has hit before. Display RGBA now goes to A and the
+//  masks move to B, so C is meaningful and the crack memory below is honest.
+//
+//  Also added: ACES (the shader clamped raw HDR to 1.0, hard-clipping every
+//  specular highlight) and exact-load temporal read-back.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Stress birefringence — real shattered glass is under residual stress,
+//       and stress makes glass birefringent: the retardation between the two
+//       polarisation axes is proportional to the local stress, which produces
+//       the coloured fringes you see through a polariscope. Facet stress is
+//       derived from the distance to the facet boundary and the pointer/click
+//       forcing, then converted to a per-wavelength retardation, so fringes
+//       bloom around the crack lines under load rather than the flat tint the
+//       previous version applied.
+//
+//    2. Crack propagation memory — crack energy accumulates in dataTextureC and
+//       decays, and new fronts preferentially follow where energy already sits,
+//       so repeated clicks in one area progressively craze the glass instead of
+//       each click producing an identical isolated ring. Per-band FFT bins drive
+//       the shard runners so different frequencies light different facets.
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -64,6 +92,29 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> VoronoiResult {
   return res;
 }
 
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
+}
+
+// Stress-induced birefringence: retardation grows with stress, and each
+// wavelength picks up a different phase, giving the polariscope fringes real
+// stressed glass shows. Returns a per-channel transmission multiplier.
+fn stressFringe(stress: f32) -> vec3<f32> {
+  // Retardation in "waves" — a few waves across the loaded range.
+  let retardation = stress * 9.0;
+  let phaseR = retardation * 6.2831853 / 1.00;
+  let phaseG = retardation * 6.2831853 / 0.82;
+  let phaseB = retardation * 6.2831853 / 0.69;
+  return vec3<f32>(0.5 + 0.5 * cos(phaseR),
+                   0.5 + 0.5 * cos(phaseG),
+                   0.5 + 0.5 * cos(phaseB));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -71,6 +122,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
+  let coord = vec2<i32>(global_id.xy);
   let uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let mouse = u.zoom_config.yz;
@@ -91,17 +143,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let repelDir = select(vec2<f32>(0.0), mouseVec / max(mouseDist, 0.0001), mouseDist > 0.0001);
   let repelMask = (1.0 - smoothstep(0.0, 0.6, mouseDist)) * mix(0.18, 1.0, held);
 
+  // ── Structure 2: crack propagation memory ────────────────────────────────
+  // Previous frame's crack energy (exact load — dataTextureC is rgba32float).
+  // Fronts run hotter where the glass is already crazed.
+  let prev = textureLoad(dataTextureC, coord, 0);
+  let prevEnergy = clamp(dot(prev.rgb, vec3<f32>(0.333)), 0.0, 1.0);
+
+  // Per-facet FFT band: each shard is lit by one bin.
+  let facetBand = plasmaBuffer[(u32(hash22(v.id).x * 8.0) % 8u) + 1u].x;
+
   var clickFront = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var rippleIndex: u32 = 0u; rippleIndex < rippleCount; rippleIndex = rippleIndex + 1u) {
     let ripple = u.ripples[rippleIndex];
     let rippleAge = max(time - ripple.z, 0.0);
     let front = abs(distance(uv, ripple.xy) - rippleAge * (0.24 + audio.x * 0.12));
-    clickFront += exp(-front * 125.0) * exp(-rippleAge * 1.7);
+    clickFront += exp(-front * 125.0) * exp(-rippleAge * 1.7) * (1.0 + prevEnergy * 0.8);
   }
 
   let shardPhase = dot(hash22(v.id), vec2<f32>(5.3, 8.7)) * 6.2831853;
-  let shardRunner = pow(max(0.0, sin(shardPhase + length(v.center - vec2<f32>(0.5)) * 34.0 - time * (12.0 + audio.y * 7.0))), 12.0);
+  let shardRunner = pow(max(0.0, sin(shardPhase + length(v.center - vec2<f32>(0.5)) * 34.0 - time * (12.0 + audio.y * 7.0 + facetBand * 9.0))), 12.0) * (0.4 + facetBand * 1.8);
   let edgeRunner = pow(max(0.0, sin(v.dist * 72.0 + shardPhase - time * (17.0 + audio.z * 8.0))), 18.0);
   let offset = repelDir * (repelMask * (displacement + audioPulse * 0.06) + clickFront * 0.055);
   let randBase = hash22(v.id) - 0.5;
@@ -127,19 +188,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let r = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + sampleDir * aberration, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, clamp(finalUV - sampleDir * aberration, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-  var finalColor = vec3<f32>(r, g, b) * absorption;
+  // ── Structure 1: stress birefringence ────────────────────────────────────
+  // Stress concentrates at the facet boundaries and under load (pointer, click
+  // fronts, bass), so fringes bloom along the cracks.
+  let boundaryStress = 1.0 - clamp(v.dist * 2.2, 0.0, 1.0);
+  let stress = clamp(boundaryStress * (0.35 + edge * 0.9)
+                     + repelMask * 0.45 + clickFront * 0.8 + audio.x * 0.25,
+                     0.0, 1.0);
+  let fringe = stressFringe(stress);
+  var finalColor = vec3<f32>(r, g, b) * absorption * mix(vec3<f32>(1.0), fringe, stress * 0.85);
 
   let lightDir = normalize(vec3<f32>(-0.4, 0.5, 0.8));
   let specular = pow(max(dot(lightDir, normal), 0.0), 20.0) * (0.20 + 0.40 * edge + 0.30 * audio.z);
   finalColor = finalColor + glassTint * edgeHighlight * 0.25 + vec3<f32>(specular);
   finalColor += vec3<f32>(0.58, 0.82, 1.0) * shardRunner * (0.04 + audio.y * 0.18) +
                 vec3<f32>(1.0, 0.72, 0.35) * clickFront * 0.16;
-  finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+
+  // Crack memory decays; fresh fronts and stressed boundaries top it up.
+  finalColor = max(finalColor, prev.rgb * (0.78 + edge * 0.10));
+  finalColor = acesFilm(finalColor);
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthOut = clamp(mix(baseDepth, 0.35 + 0.55 * (1.0 - transmission), 0.20 + 0.35 * edge), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, transmission));
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(repelMask, fresnel, edgeHighlight, transmission));
+  let alpha = clamp(transmission + clickFront * 0.2 + stress * 0.12, 0.0, 1.0);
+  let outColor = vec4<f32>(finalColor, alpha);
+
+  textureStore(writeTexture, coord, outColor);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  // A carries DISPLAY RGBA so dataTextureC is meaningful next frame; the mask
+  // tuple that used to live here (and that nothing read) moves to B.
+  textureStore(dataTextureA, coord, outColor);
+  textureStore(dataTextureB, coord, vec4<f32>(repelMask, fresnel, edgeHighlight, stress));
 }

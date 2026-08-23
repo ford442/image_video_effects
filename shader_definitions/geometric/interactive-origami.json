@@ -2,12 +2,17 @@
   "id": "interactive-origami",
   "name": "Interactive Origami",
   "url": "shaders/interactive-origami.wgsl",
-  "description": "Simulates folded paper with triangle-wave crease planes radiating from the mouse. Normal-map facet shading, depth-aware fold amplitude (far objects fold more), audio-reactive bass amplitude, and ripple-triggered expanding crease rings.",
+  "description": "Folded-paper crease planes with held pinch, traveling crease runners, foil iridescence, bounded click rings, and exact C history. Display RGBA in A.",
   "features": [
     "mouse-driven",
     "depth-aware",
     "audio-reactive",
-    "temporal"
+    "temporal",
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "continuous-motion",
+    "psychedelic-color"
   ],
   "params": [
     {
@@ -53,5 +58,44 @@
     "depth",
     "audio",
     "reactive"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "id": "fold_scale",
+      "name": "Fold Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "id": "fold_depth",
+      "name": "Fold Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "id": "light_intensity",
+      "name": "Light Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "id": "depth_influence",
+      "name": "Depth Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

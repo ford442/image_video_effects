@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
+import {
+  publishWebGpuProbe,
+  runWebGpuBootProbe,
+  toWebGpuProbeBreadcrumb,
+  type WebGpuProbeSerializable,
+} from '../renderer/webgpuBootProbe';
+import { getAdoptedRendererDevice, registerAdoptedRendererDevice } from '../utils/adoptedGpuDevice';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
+import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
 
 interface ShaderDef {
   id: string;
@@ -23,12 +32,60 @@ const SHADER_LIST_FILES = [
   'visual-effects.json', 'lighting-effects.json', 'retro-glitch.json', 'post-processing.json'
 ];
 
+async function ensureAdoptedDevice(
+  canvas: HTMLCanvasElement | null,
+): Promise<{ device: GPUDevice } | { failure: WebGpuProbeSerializable }> {
+  const existing = getAdoptedRendererDevice();
+  if (existing) {
+    return { device: existing };
+  }
+
+  if (window.webgpuProbe?.ok === true) {
+    return {
+      failure: {
+        ...window.webgpuProbe,
+        ok: false,
+        lastError: 'Boot probe succeeded but no adopted GPUDevice is registered',
+        failedStage: 'requestDevice',
+      },
+    };
+  }
+
+  if (!canvas) {
+    return {
+      failure: {
+        ok: false,
+        finishedAt: new Date().toISOString(),
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+        userAgentBrands: [],
+        attempts: [],
+        lastError: 'Hidden canvas unavailable for WebGPU boot probe',
+        failedStage: 'getContext',
+      },
+    };
+  }
+
+  canvas.width = INTERNAL_RENDER_RESOLUTION;
+  canvas.height = INTERNAL_RENDER_RESOLUTION;
+  const probe = await runWebGpuBootProbe(canvas, INTERNAL_RENDER_RESOLUTION, INTERNAL_RENDER_RESOLUTION);
+  publishWebGpuProbe(probe);
+
+  if (!probe.ok || !probe.handoff?.device) {
+    return { failure: toWebGpuProbeBreadcrumb(probe) };
+  }
+
+  registerAdoptedRendererDevice(probe.handoff.device, probe.handoff.supportsSubgroups);
+  return { device: probe.handoff.device };
+}
+
 export const ShaderValidator: React.FC = () => {
+  const probeCanvasRef = useRef<HTMLCanvasElement>(null);
   const [results, setResults] = useState<ValidationResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [currentTest, setCurrentTest] = useState('');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [showOnlyFailures, setShowOnlyFailures] = useState(true);
+  const [probeFailure, setProbeFailure] = useState<WebGpuProbeSerializable | null>(null);
 
   const collectAllShaders = async (): Promise<ShaderDef[]> => {
     const allShaders: ShaderDef[] = [];
@@ -45,8 +102,6 @@ export const ShaderValidator: React.FC = () => {
           if (!entry.url || seen.has(entry.id)) continue;
           seen.add(entry.id);
 
-          // Resolve shader URL against the configured base URL.
-          // Absolute URLs are left intact; relative ones are resolved.
           const url = resolveShaderUrl(entry.url);
 
           allShaders.push({
@@ -62,7 +117,7 @@ export const ShaderValidator: React.FC = () => {
     return allShaders;
   };
 
-  const validateShader = async (def: ShaderDef): Promise<ValidationResult> => {
+  const validateShader = async (def: ShaderDef, device: GPUDevice): Promise<ValidationResult> => {
     const start = performance.now();
 
     try {
@@ -92,17 +147,12 @@ export const ShaderValidator: React.FC = () => {
         return { ...def, status: 'fail', error: 'Empty file', durationMs: Math.round(performance.now() - start) };
       }
 
-      const adapter = await navigator.gpu?.requestAdapter();
-      if (!adapter) throw new Error('No WebGPU adapter');
-
-      const device = await adapter.requestDevice();
       const shaderModule = device.createShaderModule({ code: wgslCode });
       const info = await shaderModule.getCompilationInfo();
 
       const errors = info.messages.filter(m => m.type === 'error');
 
       if (errors.length > 0) {
-        device.destroy();
         return {
           ...def,
           status: 'fail',
@@ -110,8 +160,6 @@ export const ShaderValidator: React.FC = () => {
           durationMs: Math.round(performance.now() - start),
         };
       }
-
-      device.destroy();
 
       return {
         ...def,
@@ -129,6 +177,13 @@ export const ShaderValidator: React.FC = () => {
   };
 
   const runValidation = async () => {
+    setProbeFailure(null);
+    const adopted = await ensureAdoptedDevice(probeCanvasRef.current);
+    if ('failure' in adopted) {
+      setProbeFailure(adopted.failure);
+      return;
+    }
+
     setIsRunning(true);
     setResults([]);
     setProgress({ current: 0, total: 0 });
@@ -143,7 +198,7 @@ export const ShaderValidator: React.FC = () => {
       setCurrentTest(`${shader.name} (${shader.id})`);
       setProgress({ current: i + 1, total: shaders.length });
 
-      const result = await validateShader(shader);
+      const result = await validateShader(shader, adopted.device);
       newResults.push(result);
       setResults([...newResults]);
 
@@ -182,9 +237,16 @@ export const ShaderValidator: React.FC = () => {
 
   return (
     <div style={{ padding: 20, fontFamily: 'monospace', background: '#111', color: '#0f0' }}>
+      <canvas ref={probeCanvasRef} width={1} height={1} style={{ display: 'none' }} aria-hidden />
       <h1>Shader Validator</h1>
 
-      <button onClick={runValidation} disabled={isRunning} style={{ padding: '10px 20px', fontSize: 16 }}>
+      {probeFailure && <WebGpuProbeFailureOverlay probe={probeFailure} />}
+
+      <button
+        onClick={runValidation}
+        disabled={isRunning}
+        style={{ padding: '10px 20px', fontSize: 16 }}
+      >
         {isRunning ? 'Validating...' : 'Run Full Validation'}
       </button>
 

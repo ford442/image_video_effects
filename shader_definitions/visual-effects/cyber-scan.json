@@ -13,7 +13,9 @@
     "holographic-scanlines",
     "data-visualization",
     "hex-grid",
-    "interference-patterns"
+    "interference-patterns",
+    "click-ripples",
+    "aces-tone-map"
   ],
   "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
   "params": [

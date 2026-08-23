@@ -175,6 +175,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = vec2<f32>(gid.xy) / dims;
   let t = u.config.x;
   let mouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  let aspect = dims.x / max(dims.y, 1.0);
 
   // Audio reactivity
   let bass = plasmaBuffer[0].x;
@@ -261,10 +263,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let causticLight = caustics(vortexUV * 3.0, t) * (0.1 + treble * 0.2) * entropy;
   rgb = rgb + vec3<f32>(0.6, 0.8, 1.0) * causticLight;
 
-  // Mouse push effect
-  let dist = length(uv - mouse);
+  // Mouse push + held vortex tightening
+  let dist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
   let push = smoothstep(0.05, 0.35, dist) * 0.22;
+  let heldTighten = (1.0 - smoothstep(0.0, 0.4, dist)) * held * 0.35;
   rgb = mix(rgb, rgb * 0.7 + vec3<f32>(0.3, 0.8, 1.0) * 0.3, push);
+  rgb = rgb * (1.0 + heldTighten);
+
+  var clickRing = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = max(t - ripple.z, 0.0);
+    let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+    clickRing += exp(-age * 1.7) * exp(-abs(rDist - age * 0.4) * 55.0);
+  }
+  let bandCaustic = plasmaBuffer[(u32(fract(r * 8.0 + t) * 8.0) % 8u) + 1u].x;
+  rgb += vec3<f32>(0.5, 0.85, 1.0) * clickRing * (0.25 + bandCaustic * 0.2);
 
   // Depth interaction
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -298,7 +313,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Bloom-based alpha
   let mousePull = 1.0 - smoothstep(0.0, 0.35, dist);
   let bloomAlpha = pow(max(0.0, luma - 0.6), 2.0) * 3.0;
-  let alpha = clamp(entropy * 0.7 + bass * 0.2 + mousePull * 0.15 + bloomAlpha * 0.15, 0.0, 1.0);
+  let alpha = clamp(entropy * 0.7 + bass * 0.2 + mousePull * 0.15 + bloomAlpha * 0.15 + clickRing * 0.1, 0.0, 1.0);
 
   // Premultiplied alpha writeback
   let finalColor = vec4<f32>(rgb * alpha, alpha);
