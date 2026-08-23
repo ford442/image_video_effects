@@ -5097,7 +5097,7 @@
     "id": "spectral-bleed-confinement",
     "name": "Spectral Bleed & Confinement",
     "url": "shaders/spectral-bleed-confinement.wgsl",
-    "description": "Specific color bands leak outward from image edges while being electromagnetically confined by competing channels, creating glowing halos that feel physically constrained. Audio reactivity pulses bleed radius and adds beat-synchronized flashes.",
+    "description": "Sprung spectral bleed focus and bounded click fronts pull three-band edge halos through electromagnetic confinement, with exact temporal afterglow in authoritative A history and ACES output.",
     "tags": [
       "spectral",
       "bleed",
@@ -5114,7 +5114,10 @@
     "features": [
       "mouse-driven",
       "advanced-alpha",
-      "audio-reactive"
+      "audio-reactive",
+      "click-reactive",
+      "temporal",
+      "aces-tone-map"
     ],
     "author": "AI",
     "params": [
@@ -5153,6 +5156,40 @@
         "default": 0.3,
         "step": 0.01,
         "description": "Minimum edge magnitude required to trigger spectral bleed."
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bleed Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Confinement",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Curl Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Edge Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -5315,11 +5352,14 @@
     "id": "spectrogram-displace",
     "name": "Spectrogram Displace",
     "url": "shaders/spectrogram-displace.wgsl",
-    "description": "Audio-driven per-pixel displacements from an FFT texture.",
+    "description": "Live three-band and read-only FFT-bin displacement with sprung pointer focus, bounded click accents, and a scrolling exact-C spectrogram persisted through authoritative A display history.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "temporal",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -5352,6 +5392,40 @@
       },
       {
         "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,

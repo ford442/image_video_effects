@@ -7,6 +7,9 @@ _Learn about the person you're helping. Update this as you go._
 - **Pronouns:** _(optional)_
 - **Timezone:**
 - **Notes:** Deploy to test.1ink.us should not prompt for FTP/SFTP user/pass — use gitignored `.env.deploy` or the authorized SSH key. Prefers phased, reviewable foundation work before more multipass content; preserve WebGPU device-init policy, frame semantics, and lazy AI boundaries during toolchain migrations. Treat CRA→Vite as an optional spike, not a big-bang rewrite. gpu-chores (Tier 4b histogram/reduce/LUT/downsample) must adopt the renderer’s GPUDevice — no second requestDevice, no dual-hot GL+WebGPU; Chrome/Edge mismatch degrades with a reason string. For shader upgrade batches, preserve saved-preset parameter contracts and raw feedback-state ownership, keep new persistent state out of engine FFT slots, separate Cloud-VM structural proof from real-GPU visual handoff, and keep rolling directly into the next clean cohort when they ask for “another batch.” For new generative content, prefers colorful psychedelic-inspired variety with four live sliders and direct mouse-position, click, and held-drag response. Likes follow-up polish that deepens those new shaders while also upgrading already-complex generative work, with each effect retaining a distinct identity. Prefers balanced generative hardening and accepts a deliberate feedback-ownership correction when it is necessary to make an advertised simulation real and the new contract is documented explicitly.
+- **Batch 58D:** Ten spectral/datamosh upgrades completed with A authoritative,
+  exact C, B unused, guarded `[133..138]` springs, saved params unchanged, and
+  raw state retained for Vortex/Data Moshing/Datamosh. Real-GPU QA is external.
 
 ## Context
 

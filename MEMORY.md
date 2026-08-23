@@ -1,6 +1,19 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Batch 56 triple-lineage merge on cursor)
+**Last updated:** 2026-08-23 (Batch 58D spectral/datamosh upgrade)
+
+## 2026-08-23 — Batch 58D spectral and datamosh upgrade
+
+- Ten effects now use exact C history/state, authoritative A, no B writes,
+  guarded `[133..138]` springs, real plasma bands/FFT, bounded click windows,
+  canonical ACES, semantic alpha, source depth, and 16x16x1 workgroups.
+- Raw A ownership is explicit for Spectral Vortex (phase/curl/energy), Data
+  Moshing (offset/confidence/age), and Datamosh (motion/age/strength). The other
+  seven own display RGBA; Spectral Waves remains premultiplied.
+- Official Naga 30.0.0 gate 10/10; params exact; indexed controls aligned;
+  catalogs unique and relative; Jest 81/81 and production build green.
+- Cloud VM visual QA remains external, especially raw-state initialization,
+  feedback stability, pointer/click feel, alpha/depth, performance, and presets.
 
 ## 2026-08-23 — Batch 56 triple-lineage merge (cursor branch)
 

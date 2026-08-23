@@ -13725,7 +13725,7 @@
     "id": "spectral-smear",
     "name": "Spectral Smear",
     "url": "shaders/spectral-smear.wgsl",
-    "description": "Paints flowing spectral trails that follow the mouse, with organic noise-warped smearing and a rainbow fringe around the brush.",
+    "description": "Paints sprung, noise-warped spectral trails with bounded click blooms, exact integer history advection, authoritative A display persistence, and ACES output.",
     "params": [
       {
         "id": "decay",
@@ -13756,12 +13756,48 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Trail Decay",
+        "default": 0.9,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Brush Radius",
+        "default": 0.1,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "history",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -13772,7 +13808,7 @@
     "id": "spectral-waves",
     "name": "Luma Ripple",
     "url": "shaders/spectral-waves.wgsl",
-    "description": "Luminance-reactive waves ripple out from the mouse cursor, displacing the image with chromatic aberration. Audio bass boosts wave amplitude.",
+    "description": "Premultiplied luminance waves from a guarded sprung origin, with bounded click trains, three-band and read-only FFT caustics, exact-C persistence, and authoritative A display history.",
     "params": [
       {
         "id": "frequency",
@@ -13811,7 +13847,11 @@
       "mouse-driven",
       "audio-reactive",
       "image",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "temporal",
+      "premultiplied-alpha",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
