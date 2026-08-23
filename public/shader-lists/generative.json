@@ -14933,6 +14933,44 @@
     "features": []
   },
   {
+    "id": "gen-luminescent-silica-diatom-swarm",
+    "name": "Luminescent Silica Diatom Swarm",
+    "category": "generative",
+    "url": "/shaders/gen-luminescent-silica-diatom-swarm.wgsl",
+    "uniforms": {
+      "zoom_params": {
+        "x": {
+          "name": "Swarm Density",
+          "default": 1,
+          "min": 0.1,
+          "max": 5,
+          "step": 0.1
+        },
+        "y": {
+          "name": "Bioluminescence",
+          "default": 1.5,
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        },
+        "z": {
+          "name": "Glass Refraction",
+          "default": 1.33,
+          "min": 1,
+          "max": 2.5,
+          "step": 0.01
+        },
+        "w": {
+          "name": "Audio Reactivity",
+          "default": 1,
+          "min": 0,
+          "max": 3,
+          "step": 0.1
+        }
+      }
+    }
+  },
+  {
     "name": "Luminous Cauldron",
     "category": "generative",
     "tags": [

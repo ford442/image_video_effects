@@ -2,6 +2,22 @@
 
 **Last updated:** 2026-08-21 (getGPUTimings JS/C++ ABI)
 
+## 2026-08-23 — Shader upgrade Batch 57 — KINETIC IMAGE TRANSFORMATIONS
+
+- Upgraded tracker #483–490: Pixel Sort Radial, Mirror Drag, Psychedelic Noise
+  Flow, Neon Flashlight, ASCII Flow, Temporal Distortion Field, Pixel Drag
+  Smear, and Fractal Kaleidoscope.
+- Added continuous shader-specific geometry, held-pointer deformation, capped
+  click fronts, psychedelic color, and truthful three-band audio. Wired all
+  previously dead ASCII/Fractal controls plus Pixel Drag mode and Temporal
+  Distortion depth weight.
+- Replaced filtered rgba32float history reads with bounded exact loads in Mirror
+  Drag, Temporal Distortion, and Pixel Drag; preserved display-RGBA A ownership,
+  unused B, canonical bindings, and zero `extraBuffer` access.
+- Proof: focused gate 8/8 (Naga unavailable), params exact 8/8, strict focused
+  buffer/dead-slider audits clean, TypeScript clean, Jest 81/81 (545 pass,
+  1 skip), production build green. Real-GPU visual QA remains external.
+
 ## 2026-08-23 — Shader upgrade Batch 56 — INTERACTIVE COMPLEXITY
 
 - Upgraded tracker #475–482: CMYK Halftone Interactive, Cyber Slit Scan,
