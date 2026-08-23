@@ -9,6 +9,28 @@
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
 
+### Batch 58E (10 shaders) — 2026-08-23 — INTERACTIVE COHORT
+
+Ten interactive shaders (tracker #491–500). Source `params` stay exact.
+Canonical 13 bindings / 16x16x1. B unused. No new extraBuffer writes. Existing
+springs on emboss / film-burn / glitch-brush remain in extraBuffer[133+] and
+now write only from pixel (0,0). Click loops capped at 50. Exact C loads.
+Gate 10/10 naga+bindgroup; dead-slider and extraBuffer audits PASS. Real-GPU
+visual QA remains external. Notes: `swarm-outputs/codex-2026-08-23-b58e/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 491 | `interactive-emboss` | 58E | 176→138 | Bevel ridges, highlight packets, oil-slick crests, held punch, C persist. |
+| 492 | `interactive-film-burn` | 58E | 186→178 | Ember conveyors, oil-slick heat, held flare; diagnostic A kept. |
+| 493 | `interactive-fisheye` | 58E | 175→159 | Held meniscus pinch, thin-film rim, caustic runners. |
+| 494 | `interactive-fresnel` | 58E | 152→144 | Held ring squeeze, oil-slick grout, radial packets. |
+| 495 | `interactive-glitch-brush` | 58E | 161→142 | Scan-head conveyor, oil-slick tears, 0,0 spring writer, C persist. |
+| 496 | `interactive-glitch-cubes` | 58E | 144→132 | Beveled grout, conveyor packets, oil-slick edges. |
+| 497 | `interactive-halftone-spin` | 58E | 144→137 | Held shear, ink conveyors, click splats, CMYK A. |
+| 498 | `interactive-kuwahara` | 58E | 142→138 | Wet runners, oil-slick pigment, C wetness trail. |
+| 499 | `interactive-magnetic-ripple` | 58E | 302→254 | Held field punch, oil-slick domain walls, live ripple cap. |
+| 500 | `interactive-origami` | 58E | 134→125 | Held pinch, crease runners, foil iridescence, exact C. |
+
 ### Batch 56 (6 shaders) — 2026-08-23 — EFFECT SHADER COMPLEXITY
 
 Six image/video effect shaders across distortion, image, visual-effects and

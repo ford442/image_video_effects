@@ -119,5 +119,8 @@ Format specification:
   through tracker #474; preserve sequential batch boundaries, exact saved-param
   compatibility, truthful feedback packing, and independent verification before
   the next cohort begins. Batch 55 is the four-shader geometry / fast-motion /
-  psychedelic-color cohort.
+  psychedelic-color cohort. Unique leftover Batch 56 shaders from
+  `cursor/effect-shaders-complexity-8594` were unioned onto main in 99d09e5c
+  without reverting #1137 or Batch 57 fractal-kaleidoscope. Batch 58E closed
+  tracker #491–500 across ten interactive shaders.
 </IMPORTANT_REMINDER>

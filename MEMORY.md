@@ -1,6 +1,14 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (branch union onto main)
+**Last updated:** 2026-08-23 (Batch 58E)
+
+## 2026-08-23 — Shader upgrade Batch 58E — INTERACTIVE COHORT
+
+- Upgraded tracker #491–500: interactive-emboss, film-burn, fisheye, fresnel,
+  glitch-brush, glitch-cubes, halftone-spin, kuwahara, magnetic-ripple, origami.
+- Source `params` exact. Held-drag, capped clicks, oil-slick color, exact C
+  loads. Existing extraBuffer springs kept (0,0 writer). A packing documented
+  per shader. Gate 10/10 naga+bindgroup. Real-GPU QA remains external.
 
 ## 2026-08-23 — Unique alternate-branch upgrades unioned onto main
 

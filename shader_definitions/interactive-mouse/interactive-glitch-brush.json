@@ -2,7 +2,7 @@
   "id": "interactive-glitch-brush",
   "name": "Glitch Brush",
   "url": "shaders/interactive-glitch-brush.wgsl",
-  "description": "Paint digital glitches onto the screen with audio-reactive intensity.",
+  "description": "Sprung glitch brush with click grenades, traveling scan-head conveyor, oil-slick phosphor tears, held-drag density, and exact C paint persistence. Display RGBA in A.",
   "params": [
     {
       "id": "brush_size",
@@ -41,7 +41,12 @@
     "mouse-driven",
     "glitch",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "continuous-motion",
+    "psychedelic-color",
+    "click-reactive"
   ],
   "tags": [
     "glitch",
@@ -53,34 +58,38 @@
   "updatedParams": [
     {
       "index": 0,
+      "id": "brush_size",
       "name": "Brush Size",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 1,
+      "id": "intensity",
       "name": "Glitch Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 2,
+      "id": "block_scale",
       "name": "Block Scale",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 3,
+      "id": "color_split",
       "name": "Color Split",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],

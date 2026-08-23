@@ -4694,7 +4694,7 @@
     "id": "interactive-emboss",
     "name": "Interactive Emboss",
     "url": "shaders/interactive-emboss.wgsl",
-    "description": "Emboss effect where the light source follows the mouse cursor.",
+    "description": "Mouse-aimed relief emboss with sprung light, bevel ridges, traveling highlight packets, oil-slick phosphor on crests, held-drag punch, and bounded click dents. Display RGBA in A.",
     "params": [
       {
         "id": "strength",
@@ -4736,7 +4736,11 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color"
     ],
     "tags": [
       "filter",
@@ -4745,6 +4749,7 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "strength",
         "name": "Strength",
         "default": 0.5,
         "min": 0,
@@ -4753,6 +4758,7 @@
       },
       {
         "index": 1,
+        "id": "mix",
         "name": "Intensity",
         "default": 1,
         "min": 0,
@@ -4761,6 +4767,7 @@
       },
       {
         "index": 2,
+        "id": "colorMode",
         "name": "Color Mode",
         "default": 0,
         "min": 0,
@@ -4769,6 +4776,7 @@
       },
       {
         "index": 3,
+        "id": "emboss_depth",
         "name": "Emboss Depth",
         "default": 0.5,
         "min": 0,
@@ -4783,7 +4791,7 @@
     "name": "Film Burn",
     "category": "interactive-mouse",
     "url": "shaders/interactive-film-burn.wgsl",
-    "description": "Simulates burning film reel with organic edges and grain, centered on the cursor.",
+    "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. A remains [hole, fire, smoke, alpha].",
     "params": [
       {
         "id": "radius",
@@ -4821,7 +4829,11 @@
       "audio-reactive",
       "click-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color"
     ],
     "supportsDepth": true,
     "tags": [
@@ -4833,6 +4845,7 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "radius",
         "name": "Burn Radius",
         "default": 0.3,
         "min": 0,
@@ -4841,6 +4854,7 @@
       },
       {
         "index": 1,
+        "id": "speed",
         "name": "Burn Speed",
         "default": 0.5,
         "min": 0,
@@ -4849,6 +4863,7 @@
       },
       {
         "index": 2,
+        "id": "grain",
         "name": "Grain Strength",
         "default": 0.3,
         "min": 0,
@@ -4857,6 +4872,7 @@
       },
       {
         "index": 3,
+        "id": "glow",
         "name": "Edge Glow",
         "default": 0.4,
         "min": 0,
@@ -4870,7 +4886,7 @@
     "id": "interactive-fisheye",
     "name": "Fluid Lens Dynamics",
     "url": "shaders/interactive-fisheye.wgsl",
-    "description": "Velocity-sensitive viscoelastic Kelvin-Voigt droplet lens with spring-mass tether, capillary ripple waves, 2.5D parabolic meniscus normal refraction, and exact-load state memory.",
+    "description": "Kelvin-Voigt droplet lens with capillary waves, held meniscus pinch, oil-slick thin-film rim, traveling caustic runners, and exact-load state memory. A remains [h, v, nx, ny].",
     "features": [
       "mouse-driven",
       "geometry",
@@ -4880,7 +4896,10 @@
       "velocity-sensitive",
       "splash-response",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "psychedelic-color"
     ],
     "updated": true,
     "params": [
@@ -4915,32 +4934,40 @@
     ],
     "updatedParams": [
       {
+        "index": 0,
         "id": "surface_tension",
         "name": "Surface Tension",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 1,
         "id": "viscosity",
         "name": "Viscosity",
         "default": 0.35,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 2,
         "id": "mass",
         "name": "Lens Mass",
         "default": 0.45,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 3,
         "id": "splash_threshold",
         "name": "Splash Threshold",
         "default": 0.35,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -5002,7 +5029,7 @@
     "id": "interactive-glitch-brush",
     "name": "Glitch Brush",
     "url": "shaders/interactive-glitch-brush.wgsl",
-    "description": "Paint digital glitches onto the screen with audio-reactive intensity.",
+    "description": "Sprung glitch brush with click grenades, traveling scan-head conveyor, oil-slick phosphor tears, held-drag density, and exact C paint persistence. Display RGBA in A.",
     "params": [
       {
         "id": "brush_size",
@@ -5041,7 +5068,12 @@
       "mouse-driven",
       "glitch",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color",
+      "click-reactive"
     ],
     "tags": [
       "glitch",
@@ -5053,6 +5085,7 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "brush_size",
         "name": "Brush Size",
         "default": 0.5,
         "min": 0,
@@ -5061,6 +5094,7 @@
       },
       {
         "index": 1,
+        "id": "intensity",
         "name": "Glitch Intensity",
         "default": 0.5,
         "min": 0,
@@ -5069,6 +5103,7 @@
       },
       {
         "index": 2,
+        "id": "block_scale",
         "name": "Block Scale",
         "default": 0.5,
         "min": 0,
@@ -5077,6 +5112,7 @@
       },
       {
         "index": 3,
+        "id": "color_split",
         "name": "Color Split",
         "default": 0.5,
         "min": 0,
@@ -5090,7 +5126,7 @@
     "id": "interactive-glitch-cubes",
     "name": "Interactive Glitch Cubes",
     "url": "shaders/interactive-glitch-cubes.wgsl",
-    "description": "Image-mapped cubes with exact prior-state settling, held-pointer extrusion, rapid grid conveyors, stable sparkle pulses, three-band audio response, and bounded click fronts.",
+    "description": "Image-mapped cubes with exact prior-state settling, beveled grout, conveyor packets, held extrusion, oil-slick edge runners, and bounded click fronts. A packs [rgb, settledHeight].",
     "params": [
       {
         "id": "size",
@@ -5134,11 +5170,14 @@
       "upgraded-rgba",
       "bounded-history",
       "click-reactive",
-      "fast-motion"
+      "fast-motion",
+      "held-drag",
+      "psychedelic-color"
     ],
     "updatedParams": [
       {
         "index": 0,
+        "id": "size",
         "name": "Cube Size",
         "default": 0.5,
         "min": 0,
@@ -5147,6 +5186,7 @@
       },
       {
         "index": 1,
+        "id": "extrusion",
         "name": "Extrusion Height",
         "default": 0.5,
         "min": 0,
@@ -5155,6 +5195,7 @@
       },
       {
         "index": 2,
+        "id": "gap",
         "name": "Grid Gap",
         "default": 0.2,
         "min": 0,
@@ -5163,6 +5204,7 @@
       },
       {
         "index": 3,
+        "id": "shadow",
         "name": "Shadow Strength",
         "default": 0.5,
         "min": 0,
@@ -5178,7 +5220,8 @@
       "audio-reactive",
       "temporal",
       "chromatic"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "interactive-glitch",
@@ -5267,7 +5310,7 @@
     "id": "interactive-halftone-spin",
     "name": "Interactive Halftone Spin",
     "url": "shaders/interactive-halftone-spin.wgsl",
-    "description": "CMYK halftone pattern where the grid rotation is driven by mouse proximity.",
+    "description": "CMYK halftone screens with held shear, ink conveyors, click splats, oil-slick registration glow, and three-band audio. A remains [C, M, Y, K] coverage.",
     "params": [
       {
         "id": "scale",
@@ -5300,21 +5343,68 @@
     ],
     "features": [
       "mouse-driven",
-      "halftone"
+      "halftone",
+      "audio-reactive",
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color",
+      "click-reactive"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "scale",
+        "name": "Dot Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "id": "rotation",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "id": "separation",
+        "name": "CMYK Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "interactive-kuwahara",
     "name": "Oil Painting (Kuwahara)",
     "url": "shaders/interactive-kuwahara.wgsl",
-    "description": "Interactive Kuwahara oil painting with live focus hardness, fast wet-paint runners, audio shimmer, and click-launched clarity fronts.",
+    "description": "Interactive Kuwahara oil painting with held wet-focus, traveling wet runners, oil-slick pigment, click clarity fronts, and exact C wetness trail. Display RGBA in A.",
     "updatedParams": [
       {
         "index": 0,
+        "id": "radius",
         "name": "Brush Size",
         "default": 0.5,
         "min": 0,
@@ -5323,6 +5413,7 @@
       },
       {
         "index": 1,
+        "id": "satBoost",
         "name": "Saturation",
         "default": 0.3,
         "min": 0,
@@ -5331,6 +5422,7 @@
       },
       {
         "index": 2,
+        "id": "mouseFalloff",
         "name": "Focus Radius",
         "default": 0.3,
         "min": 0,
@@ -5339,6 +5431,7 @@
       },
       {
         "index": 3,
+        "id": "hardness",
         "name": "Hardness",
         "default": 0.5,
         "min": 0,
@@ -5382,18 +5475,22 @@
       "audio-reactive",
       "upgraded-rgba",
       "click-reactive",
-      "fast-motion"
+      "fast-motion",
+      "held-drag",
+      "bounded-click-ripples",
+      "psychedelic-color"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "interactive-magnetic-ripple",
     "name": "Magnetic Ripple",
     "url": "shaders/interactive-magnetic-ripple.wgsl",
-    "description": "Phase B audio-reactive magnetic ripple. Bass-pulsed ripple frequency and field strength, mids-morphing hue-cycled glow, treble sparkle on field lines, plus curl-noise field lines, click-burst shockwaves, 50 ripple-point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and semantic glow-alpha.",
+    "description": "Worley magnetic field lines with curl, spring envelopes, held field punch, oil-slick domain-wall runners, and bounded click shockwaves. A remains [env, mouseXY, intensity].",
     "params": [
       {
         "id": "ripple_freq",
@@ -5433,7 +5530,10 @@
       "motion-trails",
       "chromatic-aberration",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "psychedelic-color"
     ],
     "tags": [
       "filter",
@@ -5449,6 +5549,7 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "ripple_freq",
         "name": "Ripple Frequency",
         "default": 0.5,
         "min": 0,
@@ -5457,6 +5558,7 @@
       },
       {
         "index": 1,
+        "id": "ripple_decay",
         "name": "Field-Line Mix",
         "default": 0.3,
         "min": 0,
@@ -5465,6 +5567,7 @@
       },
       {
         "index": 2,
+        "id": "field_strength",
         "name": "Spring Damping",
         "default": 0.5,
         "min": 0,
@@ -5473,6 +5576,7 @@
       },
       {
         "index": 3,
+        "id": "chromatic_split",
         "name": "Treble Sparkle",
         "default": 0.3,
         "min": 0,
