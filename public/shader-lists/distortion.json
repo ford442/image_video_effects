@@ -3620,7 +3620,7 @@
     "id": "voronoi-chaos",
     "name": "Voronoi Chaos",
     "url": "shaders/voronoi-chaos.wgsl",
-    "description": "Breaks the image into Voronoi cells that shift chaotically based on time and mouse proximity.",
+    "description": "Agitated cellular refraction: F1/F2 seam tracking turns each Voronoi cell into a bevelled glass facet whose border normal refracts and chromatically splits the image, and every cell is assigned one of the eight FFT bins so the mosaic breaks up frequency by frequency. Held pointer strengthens repulsion; clicks send bounded shatter fronts. Seam energy persists through dataTextureC.",
     "params": [
       {
         "name": "Cell Scale",
@@ -3656,12 +3656,65 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "edge-refraction",
+      "chromatic-dispersion",
+      "temporal-seam-glow"
     ],
     "tags": [
       "warp",
       "distort",
-      "transform"
+      "transform",
+      "voronoi",
+      "cellular",
+      "refraction",
+      "glass"
+    ],
+    "updatedParams": [
+      {
+        "name": "Cell Scale",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "cell_scale",
+        "description": "Voronoi grid frequency (4–24 cells across)."
+      },
+      {
+        "name": "Chaos Amount",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "chaos_amount",
+        "description": "Pointer repulsion and jitter gain; bass, hold and click fronts add on top."
+      },
+      {
+        "name": "Color Mix",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "id": "color_mix",
+        "description": "Blend between the refracted image sample and the per-cell ID tint."
+      },
+      {
+        "name": "Center Dot Size",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2,
+        "id": "center_dot_size",
+        "description": "Radius of the dark marker at each cell centre."
+      }
     ]
   },
   {
@@ -3824,9 +3877,18 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "angular-chromatic-dispersion",
+      "temporal-smear"
     ],
-    "description": "Swirls the image around the mouse cursor.",
+    "description": "Turbulent vortex warp: the swirl angle is perturbed by eight counter-rotating FFT-banded lobes, R/G/B are fetched at different rotation angles so the prism fringe follows the flow lines, and the previous frame is advected along the tangential direction for motion smear. Held pointer tightens the core; clicks emit bounded counter-rotating shock rings.",
     "params": [
       {
         "id": "strength",
@@ -3865,7 +3927,47 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "vortex",
+      "turbulence",
+      "chromatic",
+      "distortion"
+    ],
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Vortex Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "description": "Rigid rotation gain at the core; bass adds up to +45%."
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Vortex extent in aspect-corrected UV; holding the pointer tightens it."
+      },
+      {
+        "id": "twist",
+        "name": "Spiral Twist",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Radius-dependent spiral term layered on the rigid rotation."
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Gain on the FFT-banded azimuthal lobes (was declared but unread before Batch 56)."
+      }
     ]
   },
   {
