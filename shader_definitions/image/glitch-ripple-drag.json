@@ -1,10 +1,18 @@
 {
   "id": "glitch-ripple-drag",
   "url": "shaders/glitch-ripple-drag.wgsl",
-  "description": "Mouse emits expanding ripples that permanently drag and glitch the video pixels.",
+  "name": "Glitch Ripple Drag",
+  "description": "Spring cursor emits expanding quantized ripple rings that permanently drag and chromatically glitch pixels with exact C feedback, capped click ripples, and audio.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "stateful",
+    "upgraded-rgba",
+    "aces-tone-map"
   ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "drag",
@@ -12,7 +20,8 @@
       "type": "float",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "freq",
@@ -20,7 +29,8 @@
       "type": "float",
       "default": 0.3,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "persist",
@@ -28,7 +38,8 @@
       "type": "float",
       "default": 0.8,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "glitch",
@@ -36,12 +47,20 @@
       "type": "float",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.w"
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Drag Strength", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 1, "name": "Ripple Freq", "default": 0.3, "min": 0, "max": 1 },
+    { "index": 2, "name": "Persistence", "default": 0.8, "min": 0, "max": 1 },
+    { "index": 3, "name": "Glitch Factor", "default": 0, "min": 0, "max": 1 }
   ],
   "tags": [
     "filter",
-    "image-processing"
-  ],
-  "name": "Glitch Ripple Drag"
+    "image-processing",
+    "glitch",
+    "temporal"
+  ]
 }

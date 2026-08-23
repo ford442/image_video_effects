@@ -2,19 +2,26 @@
   "id": "digital-reveal-guided",
   "name": "Digital Reveal Guided",
   "url": "shaders/digital-reveal-guided.wgsl",
-  "description": "Digital Reveal Guided",
+  "description": "Matrix rain reveals image through depth-guided filter: spring brush, held widen, glyph geometry, capped click ripples, exact C trail mask, and audio density.",
   "tags": [
     "mouse-driven",
     "digital-reveal",
     "guided-filter",
-    "depth-aware"
+    "depth-aware",
+    "audio-reactive"
   ],
   "features": [
     "mouse-driven",
     "digital-reveal",
     "guided-filter",
-    "depth-aware"
+    "depth-aware",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "aces-tone-map",
+    "temporal-feedback"
   ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "param1",
@@ -23,7 +30,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.x"
+      "mapping": "zoom_params.x",
+      "description": "Rain glyph density"
     },
     {
       "id": "param2",
@@ -32,7 +40,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.y"
+      "mapping": "zoom_params.y",
+      "description": "Reveal brush size"
     },
     {
       "id": "param3",
@@ -41,7 +50,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.z"
+      "mapping": "zoom_params.z",
+      "description": "Trail fade rate"
     },
     {
       "id": "param4",
@@ -50,8 +60,14 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.w"
+      "mapping": "zoom_params.w",
+      "description": "Depth filter influence"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    { "index": 0, "name": "Rain Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Reveal Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Trail Fade", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Depth Influence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ]
 }

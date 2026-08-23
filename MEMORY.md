@@ -1,5 +1,18 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
+**Last updated:** 2026-08-23 (Batch 60)
+
+## 2026-08-23 — Shader upgrade Batch 60 — CYBER/DIGITAL INTERACTIVE TEN
+
+- Upgraded user-requested ten-pack: data-stream-structure, datamosh-brush,
+  datamosh-brush-diffusion, digital-decay-rgba, digital-glitch-pass1/2,
+  digital-lens-prismatic, digital-moss-rgba, digital-reveal-guided,
+  glitch-ripple-drag.
+- Cohort standard: spring cursor [133..138], held-drag, capped ripples,
+  plasmaBuffer + bins, textureLoad on C, ACES, semantic alpha, dataTextureA
+  writes, 16x16. datamosh-brush 8x8→16x16. Params exact; updatedParams added.
+- Gate 10/10; Jest 84/84 (559 pass); build green. Real-GPU QA external.
+  Branch: `cursor/cyber-digital-shader-upgrades-e675`.
 **Last updated:** 2026-08-23 (Batch 58D spectral/datamosh upgrade)
 
 ## 2026-08-23 — Batch 58D spectral and datamosh upgrade
