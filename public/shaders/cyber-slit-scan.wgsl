@@ -1,129 +1,112 @@
 // ────────────────────────────────────────────────────────────────────────────────
-//  Cyber Slit Scan
-//  Classic slit-scan effect where the scan line position is controlled by the mouse.
-//  Includes cyber-punk style color quantization and digital artifacts.
+//  Cyber Slit Scan — Batch 56
+//  Slit-scan conveyor, phosphor aurora bands, oil-slick hue, held slit drag, click fronts
 // ────────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Write to history
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // Read from history
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config:      vec4<f32>,
+  config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
-  ripples:     array<vec4<f32>, 50>,
+  ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
+
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
-    var K = vec4<f32>(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-    var p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
-    let q = mix(vec4<f32>(p.xyw, c.r), vec4<f32>(c.r, p.yzx), step(p.x, c.r));
-    let d = q.x - min(q.w, q.y);
-    let e = 1.0e-10;
-    return vec3<f32>(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+  let K = vec4<f32>(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  let p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
+  let q = mix(vec4<f32>(p.xyw, c.r), vec4<f32>(c.r, p.yzx), step(p.x, c.r));
+  let d = q.x - min(q.w, q.y);
+  let e = 1.0e-10;
+  return vec3<f32>(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
-    var K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    var p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+  let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  let p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dims = u.config.zw;
-    let width = u32(dims.x);
-    let height = u32(dims.y);
+  let pixel = vec2<i32>(gid.xy);
+  let dims = u.config.zw;
+  let width = u32(dims.x);
+  let height = u32(dims.y);
+  if (gid.x >= width || gid.y >= height) { return; }
 
-    if (gid.x >= width || gid.y >= height) { return; }
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
-    var mouse = u.zoom_config.yz; // Normalized 0-1
-    let time = u.config.x;
+  let speed = 1u + u32(u.zoom_params.x * 5.0);
+  let bitCrush = u.zoom_params.y;
+  let hueShift = u.zoom_params.z;
+  let artifactAmt = u.zoom_params.w;
 
-    // Slit Source X position determined by mouse X
-    // Default to center if mouse not active
-    var slitX = u32(mouse.x * dims.x);
-    if (mouse.x < 0.0) { slitX = width / 2; }
-    slitX = clamp(slitX, 0u, width - 1u);
+  var slitX = u32(mouse.x * dims.x);
+  if (mouse.x < 0.0) { slitX = width / 2u; }
+  slitX = clamp(slitX, 0u, width - 1u);
 
-    // Direction of scan: Right to Left
-    // We shift the history texture to the left by 1 pixel
-    // And write the new slit at the right edge
+  var outputColor: vec4<f32>;
+  if (gid.x >= width - speed) {
+    let uvSource = vec2<f32>(f32(slitX) / dims.x, f32(gid.y) / dims.y);
+    var color = textureSampleLevel(readTexture, u_sampler, uvSource, 0.0);
 
-    var outputColor: vec4<f32>;
+    let bits = mix(255.0, 2.0, bitCrush);
+    color = floor(color * bits) / bits;
 
-    // We act as if the screen is scrolling left.
-    // If we are at the rightmost edge (width - 1), we sample the live video at slitX.
-    // Otherwise, we sample the feedback texture at x + 1.
+    let scanBand = smoothstep(0.04, 0.0, abs(fract(f32(gid.y) * 0.018 - time * (2.4 + bass * 1.5)) - 0.5));
+    let auroraPhase = f32(gid.y) * 0.012 + time * (3.2 + mids);
+    let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(auroraPhase * 0.07) + vec3<f32>(0.0, 0.33, 0.67)));
+    color.rgb = color.rgb + oilSlick * scanBand * (0.25 + artifactAmt * 0.35) * (1.0 + treble * 0.3);
 
-    // Wait, the compute shader runs for every pixel (gid.xy).
-    // We need to decide what to put at gid.xy.
-    // If we want the image to scroll left:
-    // Pixel at (x, y) should take the value from (x + 1, y) of the PREVIOUS frame.
-    // Pixel at (width-1, y) takes value from Video(slitX, y).
-
-    // Scroll Speed Control (skip pixels to go faster?)
-    let speed = 1u + u32(u.zoom_params.x * 5.0); // 1 to 6 pixels per frame
-
-    if (gid.x >= width - speed) {
-        // This is the "fresh" zone at the right edge.
-        // Sample from the video at the slit position.
-
-        let uvSource = vec2<f32>(f32(slitX) / dims.x, f32(gid.y) / dims.y);
-        var color = textureSampleLevel(readTexture, u_sampler, uvSource, 0.0);
-
-        // --- CYBER EFFECTS ---
-        // 1. Color Quantization / Bit Crush
-        let bits = mix(255.0, 2.0, u.zoom_params.y); // Param 2 controls crunch
-        color = floor(color * bits) / bits;
-
-        // 2. Glitch / Scanline Displacement
-        // Occasionally offset the Y coordinate based on time or audio
-        if (fract(time * 10.0 + f32(gid.y) * 0.01) > 0.98) {
-             color *= 1.5; // Bright line
-        }
-
-        // 3. Neon Shift
-        // Boost saturation/value for cyberpunk look
-        var hsv = rgb2hsv(color.rgb);
-        hsv.y = min(hsv.y * 1.2, 1.0); // Saturation boost
-        hsv.z = min(hsv.z * 1.1, 1.0); // Brightness boost
-
-        // Shift hue based on mouse Y
-        hsv.x = fract(hsv.x + mouse.y * 0.5);
-
-        outputColor = vec4<f32>(hsv2rgb(hsv), color.a);
-
+    var hsv = rgb2hsv(color.rgb);
+    hsv.y = min(hsv.y * 1.2, 1.0);
+    hsv.z = min(hsv.z * 1.1, 1.0);
+    hsv.x = fract(hsv.x + mouse.y * 0.35 + hueShift * 0.5 + held * 0.08);
+    outputColor = vec4<f32>(hsv2rgb(hsv), color.a);
+  } else {
+    let histPixel = pixel + vec2<i32>(i32(speed), 0);
+    if (histPixel.x < i32(width)) {
+      outputColor = textureLoad(dataTextureC, histPixel, 0);
     } else {
-        // Shift history
-        // Read from (x + speed, y)
-        // Ensure we don't read out of bounds (though textureSample handles clamping usually)
-        // Since we are using textureLoad or integer coordinates, we need to be careful.
-        // Using textureSample with UV is easier.
-
-        let uvHistory = vec2<f32>(f32(gid.x + speed) / dims.x, f32(gid.y) / dims.y);
-
-        // Sample from previous frame (dataTextureC)
-        outputColor = textureSampleLevel(dataTextureC, u_sampler, uvHistory, 0.0);
-
-        // Slight decay or color shift over time as it scrolls?
-        // Let's keep it clean for a true slit-scan, maybe just a tiny bit of fade if desired.
-        // outputColor *= 0.999;
+      outputColor = vec4<f32>(0.0);
     }
+    let conveyor = smoothstep(0.06, 0.0, abs(fract(f32(gid.x) * 0.04 + time * (1.8 + bass)) - 0.5));
+    outputColor.rgb = outputColor.rgb * (1.0 - conveyor * artifactAmt * 0.12);
+  }
 
-    textureStore(dataTextureA, gid.xy, outputColor);
-    textureStore(writeTexture, gid.xy, outputColor);
-    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture)), 0.0).r;
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.4) {
+      let d = length(vec2<f32>(f32(gid.x), f32(gid.y)) / dims - rp.xy);
+      clickFront = max(clickFront, exp(-d * 120.0) * (1.0 - age / 1.4));
+    }
+  }
+  outputColor.rgb += vec3<f32>(0.2, 0.85, 1.0) * clickFront * (0.5 + bass);
+
+  textureStore(dataTextureA, pixel, outputColor);
+  textureStore(writeTexture, pixel, outputColor);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
