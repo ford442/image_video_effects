@@ -1410,7 +1410,7 @@
     "id": "heat-haze-gpt52",
     "name": "Heat Haze Mirage gpt52",
     "url": "shaders/heat-haze-gpt52.wgsl",
-    "description": "Rising heat mirage with thermal filaments, axial packets, held thermal source, bounded click rings, chromatic dispersion, and oil-slick shimmer. Display RGBA in A; 16x16x1.",
+    "description": "Layered heat shimmer with chromatic dispersion, rising mirage flow, and bass-reactive intensity.",
     "params": [
       {
         "id": "intensity",
@@ -1450,10 +1450,7 @@
       "atmospheric",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba",
-      "held-drag",
-      "bounded-click-ripples",
-      "thermal-filaments"
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1461,40 +1458,6 @@
       "distortion",
       "heat",
       "atmospheric"
-    ],
-    "updatedParams": [
-      {
-        "id": "intensity",
-        "name": "Haze Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "rise",
-        "name": "Rise Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "frequency",
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "chroma",
-        "name": "Chromatic Split",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1589,14 +1552,12 @@
     "name": "Infinite Zoom Lens",
     "category": "distortion",
     "url": "shaders/infinite-zoom-lens.wgsl",
-    "description": "Droste zoom lens with axial packets, interference runners, analytic rainbow caustics, held aim, click rings. Diagnostic A packing preserved.",
+    "description": "Droste effect with recursive self-similar zoom via logarithmic spiral Möbius transformation. Escher-like infinite recursion with chromatic aberration on spiral arms, HDR bloom on focal points, film grain, and temporal feedback.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "temporal",
-      "held-drag",
-      "bounded-click-ripples"
+      "temporal"
     ],
     "tags": [
       "zoom",
@@ -1609,36 +1570,6 @@
       "recursive"
     ],
     "params": [
-      {
-        "id": "zoom_strength",
-        "name": "Zoom Strength",
-        "default": 0.45,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "lens_radius",
-        "name": "Lens Radius",
-        "default": 0.35,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "feedback_persistence",
-        "name": "Feedback Persistence",
-        "default": 0.65,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "twist",
-        "name": "Twist",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
       {
         "id": "zoom_strength",
         "name": "Zoom Strength",
@@ -1973,20 +1904,9 @@
     "url": "shaders/liquid-prism.wgsl",
     "features": [
       "mouse-driven",
-      "audio-reactive",
-      "held-drag",
-      "bounded-click-ripples",
-      "per-band-fft",
-      "depth-aware",
-      "upgraded-rgba",
-      "semantic-alpha",
-      "aces",
-      "cauchy-dispersion",
-      "fresnel",
-      "caustic-fronts",
-      "temporal-afterglow"
+      "audio-reactive"
     ],
-    "description": "Ripple glass with wavelength-correct Cauchy dispersion: n(lambda) = A + B/lambda^2 sets each channel's sample offset, so blue bends hardest as real glass does. Fixes the dead-audio bug where u.config.y (the ripple count) was read as an audio level. Clicks emit bounded caustic wavefronts.",
+    "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens. Audio reactivity pulses ripple strength and prism highlights with the beat.",
     "params": [
       {
         "id": "strength",
@@ -2026,52 +1946,9 @@
       "distort",
       "transform",
       "audio",
-      "music",
-      "prism",
-      "dispersion",
-      "glass",
-      "refraction",
-      "chromatic"
+      "music"
     ],
-    "name": "Liquid Prism",
-    "updatedParams": [
-      {
-        "id": "strength",
-        "name": "Prism Strength",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Displacement amplitude of the refraction ripple."
-      },
-      {
-        "id": "frequency",
-        "name": "Wave Frequency",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "description": "Ripple wavenumber; mids and the local FFT band modulate it."
-      },
-      {
-        "id": "speed",
-        "name": "Flow Speed",
-        "type": "float",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "description": "Phase speed of the pointer ripple."
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration / Transparency",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Dual-purpose: scales the Cauchy index spread AND sets base glass transparency."
-      }
-    ]
+    "name": "Liquid Prism"
   },
   {
     "id": "liquid-swirl",
@@ -2128,14 +2005,9 @@
     "id": "liquid-warp-interactive",
     "name": "Liquid Warp",
     "url": "shaders/liquid-warp-interactive.wgsl",
-    "description": "Liquid curl warp with conveyor flow, liquid-rainbow ripples, held pull, bounded click fronts. Display RGBA in A.",
+    "description": "Fluid-like distortion driven by mouse flow and noise.",
     "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "held-drag",
-      "bounded-click-ripples",
-      "upgraded-rgba",
-      "temporal"
+      "mouse-driven"
     ],
     "params": [
       {
@@ -2171,36 +2043,6 @@
       "warp",
       "distort",
       "transform"
-    ],
-    "updatedParams": [
-      {
-        "id": "distort",
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Flow Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "scale",
-        "name": "Noise Scale",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "visc",
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
     ]
   },
   {
@@ -3778,7 +3620,7 @@
     "id": "voronoi-chaos",
     "name": "Voronoi Chaos",
     "url": "shaders/voronoi-chaos.wgsl",
-    "description": "Agitated cellular refraction: F1/F2 seam tracking turns each Voronoi cell into a bevelled glass facet whose border normal refracts and chromatically splits the image, and every cell is assigned one of the eight FFT bins so the mosaic breaks up frequency by frequency. Held pointer strengthens repulsion; clicks send bounded shatter fronts. Seam energy persists through dataTextureC.",
+    "description": "Animated Voronoi mosaic with moving ridge runners, held cell repulsion, click fronts, three-band audio, bounded source sampling, and psychedelic cell color.",
     "params": [
       {
         "name": "Cell Scale",
@@ -3815,65 +3657,52 @@
     ],
     "features": [
       "mouse-driven",
-      "held-drag",
-      "bounded-click-ripples",
       "audio-reactive",
-      "per-band-fft",
-      "depth-aware",
-      "upgraded-rgba",
-      "semantic-alpha",
-      "aces",
-      "edge-refraction",
-      "chromatic-dispersion",
-      "temporal-seam-glow"
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color"
     ],
     "tags": [
       "warp",
       "distort",
-      "transform",
-      "voronoi",
-      "cellular",
-      "refraction",
-      "glass"
+      "transform"
     ],
     "updatedParams": [
       {
+        "index": 0,
         "name": "Cell Scale",
-        "type": "float",
+        "default": 0.5,
         "min": 0,
         "max": 1,
-        "default": 0.5,
-        "id": "cell_scale",
-        "description": "Voronoi grid frequency (4–24 cells across)."
+        "step": 0.01
       },
       {
+        "index": 1,
         "name": "Chaos Amount",
-        "type": "float",
-        "min": 0,
-        "max": 1,
         "default": 0.5,
-        "id": "chaos_amount",
-        "description": "Pointer repulsion and jitter gain; bass, hold and click fronts add on top."
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 2,
         "name": "Color Mix",
-        "type": "float",
+        "default": 0,
         "min": 0,
         "max": 1,
-        "default": 0,
-        "id": "color_mix",
-        "description": "Blend between the refracted image sample and the per-cell ID tint."
+        "step": 0.01
       },
       {
+        "index": 3,
         "name": "Center Dot Size",
-        "type": "float",
+        "default": 0.2,
         "min": 0,
         "max": 1,
-        "default": 0.2,
-        "id": "center_dot_size",
-        "description": "Radius of the dark marker at each cell centre."
+        "step": 0.01
       }
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "voronoi-faceted-glass",
@@ -4035,18 +3864,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven",
-      "held-drag",
-      "bounded-click-ripples",
-      "per-band-fft",
-      "depth-aware",
-      "upgraded-rgba",
-      "semantic-alpha",
-      "aces",
-      "angular-chromatic-dispersion",
-      "temporal-smear"
+      "audio-driven"
     ],
-    "description": "Turbulent vortex warp: the swirl angle is perturbed by eight counter-rotating FFT-banded lobes, R/G/B are fetched at different rotation angles so the prism fringe follows the flow lines, and the previous frame is advected along the tangential direction for motion smear. Held pointer tightens the core; clicks emit bounded counter-rotating shock rings.",
+    "description": "Swirls the image around the mouse cursor.",
     "params": [
       {
         "id": "strength",
@@ -4085,47 +3905,7 @@
       "image-processing",
       "audio",
       "music",
-      "reactive",
-      "vortex",
-      "turbulence",
-      "chromatic",
-      "distortion"
-    ],
-    "updatedParams": [
-      {
-        "id": "strength",
-        "name": "Vortex Strength",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "description": "Rigid rotation gain at the core; bass adds up to +45%."
-      },
-      {
-        "id": "radius",
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Vortex extent in aspect-corrected UV; holding the pointer tightens it."
-      },
-      {
-        "id": "twist",
-        "name": "Spiral Twist",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "description": "Radius-dependent spiral term layered on the rigid rotation."
-      },
-      {
-        "id": "turbulence",
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Gain on the FFT-banded azimuthal lobes (was declared but unread before Batch 56)."
-      }
+      "reactive"
     ]
   },
   {

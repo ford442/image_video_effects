@@ -2,7 +2,7 @@
   "id": "voronoi-chaos",
   "name": "Voronoi Chaos",
   "url": "shaders/voronoi-chaos.wgsl",
-  "description": "Agitated cellular refraction: F1/F2 seam tracking turns each Voronoi cell into a bevelled glass facet whose border normal refracts and chromatically splits the image, and every cell is assigned one of the eight FFT bins so the mosaic breaks up frequency by frequency. Held pointer strengthens repulsion; clicks send bounded shatter fronts. Seam energy persists through dataTextureC.",
+  "description": "Animated Voronoi mosaic with moving ridge runners, held cell repulsion, click fronts, three-band audio, bounded source sampling, and psychedelic cell color.",
   "params": [
     {
       "name": "Cell Scale",
@@ -39,63 +39,50 @@
   ],
   "features": [
     "mouse-driven",
-    "held-drag",
-    "bounded-click-ripples",
     "audio-reactive",
-    "per-band-fft",
-    "depth-aware",
-    "upgraded-rgba",
-    "semantic-alpha",
-    "aces",
-    "edge-refraction",
-    "chromatic-dispersion",
-    "temporal-seam-glow"
+    "continuous-motion",
+    "held-pointer",
+    "click-reactive",
+    "psychedelic-color"
   ],
   "tags": [
     "warp",
     "distort",
-    "transform",
-    "voronoi",
-    "cellular",
-    "refraction",
-    "glass"
+    "transform"
   ],
   "updatedParams": [
     {
+      "index": 0,
       "name": "Cell Scale",
-      "type": "float",
-      "min": 0,
-      "max": 1,
       "default": 0.5,
-      "id": "cell_scale",
-      "description": "Voronoi grid frequency (4\u201324 cells across)."
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
+      "index": 1,
       "name": "Chaos Amount",
-      "type": "float",
-      "min": 0,
-      "max": 1,
       "default": 0.5,
-      "id": "chaos_amount",
-      "description": "Pointer repulsion and jitter gain; bass, hold and click fronts add on top."
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
+      "index": 2,
       "name": "Color Mix",
-      "type": "float",
-      "min": 0,
-      "max": 1,
       "default": 0,
-      "id": "color_mix",
-      "description": "Blend between the refracted image sample and the per-cell ID tint."
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
+      "index": 3,
       "name": "Center Dot Size",
-      "type": "float",
-      "min": 0,
-      "max": 1,
       "default": 0.2,
-      "id": "center_dot_size",
-      "description": "Radius of the dark marker at each cell centre."
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
-  ]
+  ],
+  "updated": true
 }
