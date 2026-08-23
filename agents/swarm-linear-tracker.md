@@ -79,6 +79,19 @@
 | 528 | `glitch-pixel-sort` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
 | 529 | `glitch-slice-mirror` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
 | 530 | `scanline-cyberpunk` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 531 | `cyber-rain-em` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 532 | `cyber-rain-interactive` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 533 | `cyber-ripples-coupled` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 534 | `cyber-scan-gabor` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 535 | `cyber-slit-scan` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 536 | `data-moshing-diffusion` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 537 | `data-scanner-gabor` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 538 | `data-slicer-interactive` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 539 | `data-stream-corruption-hdr` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 540 | `data-stream-spectral` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+
+Batch 67 (10 shaders) — CYBER RAIN & DATA STREAM FX — tracker #531–540. fp128
+base+mantissa math, dual fast-motion structures per shader, full binding contract.
 
 Batch 66 (10 shaders) — CYBER GLITCH & DATA FX — tracker #521–530. fp128
 base+mantissa math, dual fast-motion structures per shader, full binding contract.
