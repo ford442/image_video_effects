@@ -1,14 +1,10 @@
-// ================================================================
-//  Interactive Film Burn
-//  Category: interactive-mouse
-//  Features: mouse-driven, noise, texture, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Chunks From: interactive-film-burn
-//  Created: 2026-05-30
-//  By: Copilot
-//  Upgraded: 2026-08-02 (sprung burn center, click cigarette burns,
-//            per-sector ember FFT) — Batch 29
-// ================================================================
+// ═══════════════════════════════════════════════════════════════════
+//  Interactive Film Burn — Batch 58E
+//  Sprung ember hole, cigarette-click brands, traveling ember conveyors
+//  along the burn rim, oil-slick heat color, held-drag flare.
+//  A remains [hole, fire, smoke, alpha] diagnostic packing.
+//  extraBuffer[133..138] is the existing burn-center spring (0,0 writer).
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,9 +21,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BurnRadius, y=BurnSpeed, z=GrainStrength, w=EdgeGlow
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -61,28 +57,31 @@ fn fbm(p: vec2<f32>) -> f32 {
   return value;
 }
 
+fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
+  let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
+  return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
+  let pixel = vec2<i32>(global_id.xy);
+  let uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(1.0));
+  let aspect = resolution.x / max(resolution.y, 1.0);
   let time = u.config.x;
   let mouseRaw = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
   let audio = plasmaBuffer[0].xyz;
+  let prev = textureLoad(dataTextureC, pixel, 0);
 
-  let burnRadius = u.zoom_params.x * 0.80;
+  let burnRadius = u.zoom_params.x * 0.80 * (1.0 + held * 0.18);
   let burnSpeed = u.zoom_params.y * 2.0;
   let grainStrength = u.zoom_params.z;
   let glowWidth = u.zoom_params.w * 0.20 + 0.01;
 
-  // ---- Sprung burn center ----------------------------------------
-  // Critically-damped spring in extraBuffer[133..136] (pos.xy, vel.xy);
-  // [137] holds the previous frame time and [138] an init flag. The raw cursor is the spring
-  // target so the burn hole drags behind it like a real ember.
   var burnPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
   var burnVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
   let prevTime = extraBuffer[137];
@@ -92,7 +91,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     burnPos = mouseRaw;
     burnVel = vec2<f32>(0.0, 0.0);
   }
-  let omega = 7.0;
+  let omega = mix(7.0, 11.0, held);
   let springAcc = (mouseRaw - burnPos) * (omega * omega) - burnVel * (2.0 * omega);
   burnVel = burnVel + springAcc * dt;
   burnPos = burnPos + burnVel * dt;
@@ -124,17 +123,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var smokeMask = 1.0 - smoothstep(glowWidth * 0.5, glowWidth * 3.0, d);
   var clickFireMask = 0.0;
 
-  // ---- Click cigarette burns --------------------------------------
-  // Each live ripple sears a small secondary brand at its click point:
-  // the hole grows to ~0.08, its flame dies within ~1s, and the char
-  // settles over ~2s. Composed via max() with the main burn masks.
   let rippleCount = min(u32(u.config.y), 50u);
   for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
     let ripple = u.ripples[ri];
     let clickAge = time - ripple.z;
-    if (clickAge < 0.0 || clickAge > 3.0) {
-      continue;
-    }
+    if (clickAge < 0.0 || clickAge > 3.0) { continue; }
     let clickVec = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
     let clickDist = length(clickVec);
     let grow = smoothstep(0.0, 0.6, clickAge);
@@ -142,45 +135,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let brandD = clickDist - brandRadius - noiseVal * 0.03;
     let flameLife = 1.0 - smoothstep(0.35, 1.0, clickAge);
     let charSettle = 1.0 - smoothstep(1.5, 2.5, clickAge);
-    let brandHole = (1.0 - smoothstep(-0.015, 0.015, brandD)) * grow;
+    holeMask = max(holeMask, (1.0 - smoothstep(-0.015, 0.015, brandD)) * grow);
     let brandFire = smoothstep(-glowWidth, 0.0, brandD) * (1.0 - smoothstep(0.0, glowWidth, brandD)) * flameLife;
-    let brandSmoke = (1.0 - smoothstep(glowWidth * 0.5, glowWidth * 3.0, brandD)) * charSettle;
-    holeMask = max(holeMask, brandHole);
     fireMask = max(fireMask, brandFire);
-    smokeMask = max(smokeMask, brandSmoke);
+    smokeMask = max(smokeMask, (1.0 - smoothstep(glowWidth * 0.5, glowWidth * 3.0, brandD)) * charSettle);
     clickFireMask = max(clickFireMask, brandFire);
   }
 
-  // ---- Per-sector ember FFT ---------------------------------------
-  // Split the burn edge into 8 angular sectors; each sector's ember
-  // glow rides its own FFT bin so the fire line crackles unevenly.
   let edgeAngle = atan2(distVec.y, distVec.x);
-  let sectorF = floor((edgeAngle + 3.14159265) * 1.27323954); // 8 / (2*pi)
-  let sector = u32(clamp(sectorF, 0.0, 7.0));
+  let sector = u32(clamp(floor((edgeAngle + 3.14159265) * 1.27323954), 0.0, 7.0));
   let sectorAmp = plasmaBuffer[(sector % 8u) + 1u].x * 0.4;
+  let conveyor = pow(max(0.0, sin(edgeAngle * 10.0 - time * (8.0 + burnSpeed * 4.0) + noiseVal * 4.0)), 8.0);
+  let packets = pow(max(0.0, sin(distortedDist * 42.0 - time * (5.0 + audio.y * 4.0))), 14.0) * fireMask;
 
   let emberNoise = noise(uv * 50.0 + vec2<f32>(time * 10.0, -time * 7.0));
   let emberGlow = smoothstep(-0.08, 0.0, d) * (0.4 + 0.6 * emberNoise) * (0.8 + sectorAmp);
   let fireT = clamp(d / glowWidth, 0.0, 1.0);
   var fireColor = mix(vec3<f32>(1.0, 0.98, 0.80), vec3<f32>(1.0, 0.30, 0.0), fireT);
   fireColor = mix(fireColor, vec3<f32>(0.08, 0.0, 0.0), fireT * fireT);
-  let clickFireColor = vec3<f32>(1.0, 0.42, 0.04) * (0.75 + emberNoise * 0.5);
-  fireColor = mix(fireColor, clickFireColor, clickFireMask);
+  let slick = hsv2rgb(vec3<f32>(fract(0.04 + fireT * 0.12 + audio.y * 0.15 + time * 0.08), 0.85, 1.0));
+  fireColor = mix(fireColor, fireColor * slick * 1.35, 0.35 + held * 0.2);
+  fireColor = mix(fireColor, vec3<f32>(1.0, 0.42, 0.04) * (0.75 + emberNoise * 0.5), clickFireMask);
   fireColor = fireColor + vec3<f32>(1.0, 0.45, 0.10) * emberGlow * (0.4 + 0.6 * audio.x);
+  fireColor += slick * (conveyor * 0.45 + packets * 0.55) * fireMask;
   let charColor = vec3<f32>(0.0) + vec3<f32>(1.0, 0.18, 0.02) * emberGlow * 0.45;
 
   var finalColor = intactColor * mix(0.55, 1.0, smokeMask);
   finalColor = mix(finalColor, fireColor, fireMask);
   finalColor = mix(finalColor, charColor, holeMask);
+  finalColor = mix(finalColor, prev.rgb, 0.12 * (1.0 - holeMask));
 
   var finalAlpha = (1.0 - holeMask) * (0.82 + 0.12 * smokeMask);
   finalAlpha = max(finalAlpha, fireMask * (0.35 + 0.45 * u.zoom_params.w));
   finalAlpha = clamp(finalAlpha, 0.0, 0.98);
 
-  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let baseDepth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthOut = clamp(mix(baseDepth, baseDepth * 0.25, holeMask) + fireMask * 0.08, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(holeMask, fireMask, smokeMask, finalAlpha));
+  textureStore(writeTexture, pixel, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(holeMask, fireMask, smokeMask, finalAlpha));
 }

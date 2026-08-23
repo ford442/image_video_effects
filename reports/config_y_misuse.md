@@ -3,11 +3,11 @@
 `config = [time, rippleCount, resW, resH]` — see `src/contracts/uniforms_layout.json`.
 Every row below reads `config.y` (or a legacy `config` swizzle) as something else.
 
-**Total: 88 reads across 73 shaders**
+**Total: 85 reads across 71 shaders**
 
 | Category | Count |
 |----------|-------|
-| `audio` | 47 |
+| `audio` | 44 |
 | `unclassified` | 15 |
 | `click_or_frame_count` | 14 |
 | `delta_time` | 12 |
@@ -26,7 +26,7 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/cyber-rain.wgsl` | 87 | delta_time | `let dt = u.config.y;` |
 | `public/shaders/datamosh.wgsl` | 131 | click_or_frame_count | `let frame_count = u.config.y;` |
 | `public/shaders/dla-crystals.wgsl` | 93 | click_or_frame_count | `let frame = u.config.y;` |
-| `public/shaders/elastic-chromatic.wgsl` | 187 | delta_time | `let dt = clamp(u.config.y, 0.001, 0.05);` |
+| `public/shaders/elastic-chromatic.wgsl` | 167 | delta_time | `let dt = clamp(u.config.y, 0.001, 0.05);` |
 | `public/shaders/gen-abyssal-chrono-coral.wgsl` | 164 | click_or_frame_count | `let clickCount = u.config.y;` |
 | `public/shaders/gen-abyssal-leviathan-iridescence.wgsl` | 145 | unclassified | `g_audio = u.config.y * 0.1;` |
 | `public/shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl` | 191 | audio | `let audio = u.config.y;` |
@@ -81,12 +81,9 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/gen-singularity-forge-blackbody.wgsl` | 129 | unclassified | `let spaghettification = u.config.y;` |
 | `public/shaders/gen-singularity-forge-blackbody.wgsl` | 132 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/gen_reaction_diffusion.wgsl` | 144 | click_or_frame_count | `let clickCount = u.config.y;` |
-| `public/shaders/holographic-interferometry.wgsl` | 108 | audio | `let audioOverall = u.config.y;` |
-| `public/shaders/holographic-interferometry.wgsl` | 109 | audio | `let audioBass = u.config.y * 1.2;` |
 | `public/shaders/hybrid-chromatic-liquid.wgsl` | 79 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/hybrid-magnetic-field.wgsl` | 98 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/interactive-voronoi-lens.wgsl` | 81 | delta_time | `let dt = u.config.y;` |
-| `public/shaders/liquid-prism.wgsl` | 95 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/mouse-ink-bleed.wgsl` | 94 | delta_time | `let dt = u.config.y;` |
 | `public/shaders/nano-assembler.wgsl` | 73 | unclassified | `let time = u.config.y;` |
 | `public/shaders/neural-synapse-web.wgsl` | 77 | delta_time | `let dt = clamp(u.config.y, 0.001, 0.05);` |

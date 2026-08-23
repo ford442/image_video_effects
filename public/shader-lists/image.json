@@ -3820,12 +3820,22 @@
   {
     "id": "neon-pulse-stream",
     "url": "shaders/neon-pulse-stream.wgsl",
-    "description": "Video luminance directs a fluid flow of neon trails injected by the mouse.",
+    "description": "Bundled neon tube bank: five curl-perturbed sinusoidal tubes are shaded with a gaussian core, Fresnel rim and outer bloom, and each owns one FFT bin driving its thickness, hue drift and the gaussian light packets running along it. The pointer is a magnetic attractor that bends the bundle, clicks inject bounded pulse fronts that flare the tubes they cross, and dataTextureC supplies exact-load afterglow.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "tube-bundle",
+      "chromatic-aberration",
+      "fresnel",
+      "afterglow-persistence"
     ],
     "params": [
       {
@@ -3866,16 +3876,58 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "neon",
+      "tube",
+      "packets",
+      "glow"
     ],
-    "name": "Neon Pulse Stream"
+    "name": "Neon Pulse Stream",
+    "updatedParams": [
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Drift rate of the tube centrelines and their packets."
+      },
+      {
+        "id": "decay",
+        "name": "Tube Density",
+        "type": "float",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "description": "Packet spacing along each tube (maps to zoom_params.y)."
+      },
+      {
+        "id": "intensity",
+        "name": "Glow Threshold",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Luminance key threshold for the neon alpha (zoom_params.z)."
+      },
+      {
+        "id": "chaos",
+        "name": "Key Softness",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Softness of the luminance key edge (zoom_params.w)."
+      }
+    ]
   },
   {
     "id": "oil-slick-iridescence",
     "name": "Oil Slick Iridescence",
     "url": "shaders/oil-slick-iridescence.wgsl",
     "category": "image",
-    "description": "Thin-film optical interference simulation, like oil on water. A procedural flowing height map modulates film thickness, producing shifting rainbow iridescence. Bass warps the film; mouse creates ripples.",
+    "description": "Nanometre-scale thin-film interference: film thickness is expressed in real nanometres (120–900 nm), the incidence angle comes from the height field's own gradient, the in-film angle follows Snell's law, and the two reflected beams combine with Fresnel weighting plus the pi phase step at the external interface. Curl-noise flow banded by the FFT transports the film; pointer and bounded click ring waves deform its surface.",
     "tags": [
       "iridescence",
       "oil",
@@ -3883,13 +3935,23 @@
       "rainbow",
       "interference",
       "audio-reactive",
-      "cinematic"
+      "cinematic",
+      "snell",
+      "fresnel"
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "semantic-alpha"
+      "semantic-alpha",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "aces",
+      "snell-refraction",
+      "fresnel",
+      "temporal-flow"
     ],
     "params": [
       {
@@ -3923,6 +3985,44 @@
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "thickness",
+        "name": "Film Thickness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Base film thickness, 120–900 nm; bass swells it by up to 55%."
+      },
+      {
+        "id": "iridescent_strength",
+        "name": "Iridescent Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Amplitude of the interference colour."
+      },
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Rate the height field creeps under the curl transport."
+      },
+      {
+        "id": "blend",
+        "name": "Blend",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Mix of the slick over the source plate."
       }
     ]
   },

@@ -31,6 +31,32 @@
 | 472 | `rgb-topology` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 473 | `elastic-strip` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 474 | `refraction-tunnel` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 475 | `cmyk-halftone-interactive` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 476 | `cyber-slit-scan` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 477 | `heat-haze-gpt52` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 478 | `quantum-prism` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 479 | `sphere-projection` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 480 | `rgb-iso-lines` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 481 | `chromatic-focus-interactive` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 482 | `phosphor-magnifier` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 491 | `interactive-emboss` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 492 | `interactive-film-burn` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 493 | `interactive-fisheye` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 494 | `interactive-fresnel` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 495 | `interactive-glitch-brush` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 496 | `interactive-glitch-cubes` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 497 | `interactive-halftone-spin` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 498 | `interactive-kuwahara` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 499 | `interactive-magnetic-ripple` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 500 | `interactive-origami` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+
+Batch 58E (10 shaders) is a distinct interactive cohort after Batch 57
+(#483–490). Structural gates 10/10 naga+bindgroup. Real-GPU visual QA remains
+external.
+
+Batch 56 tracker #475–482 was claimed by concurrent lineages. Main keeps
+`#1137` plus Batch 57 `fractal-kaleidoscope`. Cursor unique upgrades above
+were unioned onto main 2026-08-23.
 
 Batch 55 (4 shaders) is a distinct geometry / fast-motion / psychedelic cohort
 after Batches 53–54. Structural gates 4/4. Real-GPU visual QA remains external.

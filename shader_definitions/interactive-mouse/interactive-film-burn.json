@@ -3,7 +3,7 @@
   "name": "Film Burn",
   "category": "interactive-mouse",
   "url": "shaders/interactive-film-burn.wgsl",
-  "description": "Simulates burning film reel with organic edges and grain, centered on the cursor.",
+  "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. A remains [hole, fire, smoke, alpha].",
   "params": [
     {
       "id": "radius",
@@ -41,7 +41,11 @@
     "audio-reactive",
     "click-reactive",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "continuous-motion",
+    "psychedelic-color"
   ],
   "supportsDepth": true,
   "tags": [
@@ -53,34 +57,38 @@
   "updatedParams": [
     {
       "index": 0,
+      "id": "radius",
       "name": "Burn Radius",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 1,
+      "id": "speed",
       "name": "Burn Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 2,
+      "id": "grain",
       "name": "Grain Strength",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 3,
+      "id": "glow",
       "name": "Edge Glow",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],
