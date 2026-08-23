@@ -15,8 +15,8 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "lens_strength",
+      "name": "Lens Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -24,8 +24,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "num_masses",
+      "name": "Num Masses",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -33,8 +33,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "disk_intensity",
+      "name": "Disk Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -42,8 +42,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "cauchy_b",
+      "name": "Cauchy B",
       "default": 0.5,
       "min": 0,
       "max": 1,
