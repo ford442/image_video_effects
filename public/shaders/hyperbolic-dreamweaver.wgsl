@@ -119,6 +119,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // ═══ AUDIO REACTIVITY (fixed: plasmaBuffer, not zoom_config.x which is ZoomTime) ═══
     let bass           = plasmaBuffer[0].x;
     let mid            = plasmaBuffer[0].y;
@@ -179,7 +182,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Branchless edge handling
     let finalResult = mix(vec4<f32>(sample.rgb, sample.a), vec4<f32>(finalColor, alpha), edgeThreshold);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalResult);
+    
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let aspect = u.config.z / max(u.config.w, 1.0);
+    let screenUV = vec2<f32>(vec2<i32>(global_id.xy)) / vec2<f32>(u.config.z, u.config.w);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let __finalRGB = finalResult.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, finalResult.a));
     
     // Depth pass-through with hyperbolic modulation (clamped to [0,1] — prevents depth buffer overrun)
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -149,11 +149,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = fragCoord / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Parameters
     // ─────────────────────────────────────────────────────────────────────────
-    let bass = plasmaBuffer[0].x;
     let sculptDepth = (u.zoom_params.x * 0.08 + 0.005) * (1.0 + bass * 0.4);
     let freqSep = u.zoom_params.y * 8.0 + 1.0;
     let curvatureScale = u.zoom_params.z * 5.0 + 0.5;
@@ -251,7 +253,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let warpDist = length(warpedUV - uv);
     let effectIntensity = clamp(warpDist * 6.0 + persistence * 0.2, 0.0, 1.0);
     let finalAlpha = mix(srcColorFull.a, 1.0, effectIntensity * 0.7);
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(finalColor, finalAlpha));
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(finalColor, finalAlpha));
+    
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(u.config.z/u.config.w, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(uv - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let __finalRGB = finalColor + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(__finalRGB, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(__finalRGB, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

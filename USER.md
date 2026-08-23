@@ -7,6 +7,9 @@ _Learn about the person you're helping. Update this as you go._
 - **Pronouns:** _(optional)_
 - **Timezone:**
 - **Notes:** Deploy to test.1ink.us should not prompt for FTP/SFTP user/pass — use gitignored `.env.deploy` or the authorized SSH key. Prefers phased, reviewable foundation work before more multipass content; preserve WebGPU device-init policy, frame semantics, and lazy AI boundaries during toolchain migrations. Treat CRA→Vite as an optional spike, not a big-bang rewrite. gpu-chores (Tier 4b histogram/reduce/LUT/downsample) must adopt the renderer’s GPUDevice — no second requestDevice, no dual-hot GL+WebGPU; Chrome/Edge mismatch degrades with a reason string. For shader upgrade batches, preserve saved-preset parameter contracts and raw feedback-state ownership, keep new persistent state out of engine FFT slots, separate Cloud-VM structural proof from real-GPU visual handoff, and keep rolling directly into the next clean cohort when they ask for “another batch.” For new generative content, prefers colorful psychedelic-inspired variety with four live sliders and direct mouse-position, click, and held-drag response. Likes follow-up polish that deepens those new shaders while also upgrading already-complex generative work, with each effect retaining a distinct identity. Prefers balanced generative hardening and accepts a deliberate feedback-ownership correction when it is necessary to make an advertised simulation real and the new contract is documented explicitly.
+- **Batch 58D:** Ten spectral/datamosh upgrades completed with A authoritative,
+  exact C, B unused, guarded `[133..138]` springs, saved params unchanged, and
+  raw state retained for Vortex/Data Moshing/Datamosh. Real-GPU QA is external.
 
 ## Context
 
@@ -24,7 +27,9 @@ _Learn about the person you're helping. Update this as you go._
   shaders through tracker #394. Shader upgrade Batch 52 closed through tracker
   #454 (interactive vector fields). Batches 53–55 closed through tracker #474
   (Batch 55 = four-shader geometry / fast-motion / psychedelic-color).
-  Generative volume is no longer the bottleneck.
+  Batch 56 triple lineages merged on cursor branch (tracker #475–482 claimed
+  thrice; unique shaders retained; chromatic/cmyk/quantum overlaps hand-merged). Generative volume is no longer
+  the bottleneck.
 - **2026-08-21 progress audit:** board was empty except #1080 (WASM GPU evidence)
   and #1111 (thumbnail CI; partial landing already in tree). Next work is
   foundation residual before another content wave: compile/feature SoT (#1123),
@@ -108,8 +113,9 @@ Format specification:
 - Thumbnail healthy coverage is still the discoverability bottleneck (~21%);
   #1111 CI gate is partially landed (script exists; deferral design is not).
   Capture stays discrete-GPU workstation work. Do not count black PNGs.
-- Shader upgrade Batch 56 is implemented through tracker #482 as an eight-effect
-  interactive-complexity cohort. Preserve its documented Phosphor Magnifier
+- Shader upgrade Batch 56 triple lineages are merged through tracker #482 on
+  the cursor branch; preserve CMYK A coverage, iso-line mask A, and Phosphor
+  Magnifier display-history repack. Preserve Phosphor Magnifier
   display-history repack and Vertical Slice Wave state/display separation.
 - Shader upgrade Batch 57 is implemented through tracker #490 as an eight-effect
   kinetic image-transformation cohort. Its Mirror Drag, Temporal Distortion,

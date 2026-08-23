@@ -95,6 +95,17 @@ external.
 Batch 56 tracker #475–482 was claimed by concurrent lineages. Main keeps
 `#1137` plus Batch 57 `fractal-kaleidoscope`. Cursor unique upgrades above
 were unioned onto main 2026-08-23.
+| 475 | `ascii-shockwave` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 476 | `cmyk-halftone-interactive` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 477 | `heat-haze-gpt52` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 478 | `quantum-prism` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 479 | `sphere-projection` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 480 | `fractal-kaleidoscope` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 481 | `rgb-iso-lines` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 482 | `chromatic-focus-interactive` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+
+Batch 56 (8 shaders) continues the geometry / fast-motion / psychedelic
+cohort after Batch 55. Structural gates 8/8. Real-GPU visual QA remains external.
 
 Batch 55 (4 shaders) is a distinct geometry / fast-motion / psychedelic cohort
 after Batches 53–54. Structural gates 4/4. Real-GPU visual QA remains external.

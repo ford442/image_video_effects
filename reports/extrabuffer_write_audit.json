@@ -1,8 +1,72 @@
 {
-  "generated": "2026-08-23T03:14:43.183126+00:00",
+  "generated": "2026-08-23T02:20:35.169261+00:00",
   "files_scanned": 1364,
   "new_violations": [],
   "known_violations": [
+    {
+      "file": "public/shaders/cyber-rain.wgsl",
+      "line": 123,
+      "expr": "PREV_PRESS",
+      "op": "=",
+      "index": 0,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/cyber-rain.wgsl",
+      "line": 124,
+      "expr": "CLICK_TIME",
+      "op": "=",
+      "index": 1,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/cyber-rain.wgsl",
+      "line": 125,
+      "expr": "CLICK_X",
+      "op": "=",
+      "index": 2,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/cyber-rain.wgsl",
+      "line": 126,
+      "expr": "CLICK_Y",
+      "op": "=",
+      "index": 3,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/cyber-rain.wgsl",
+      "line": 127,
+      "expr": "SMOOTH_X",
+      "op": "=",
+      "index": 4,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/cyber-rain.wgsl",
+      "line": 128,
+      "expr": "SMOOTH_Y",
+      "op": "=",
+      "index": 5,
+      "class": "fft-zone"
+    },
+    {
+      "file": "public/shaders/cyber-rain.wgsl",
+      "line": 129,
+      "expr": "VEL_X",
+      "op": "=",
+      "index": 6,
+      "class": "fft-zone"
+    },
+    {
+      "file": "public/shaders/cyber-rain.wgsl",
+      "line": 130,
+      "expr": "VEL_Y",
+      "op": "=",
+      "index": 7,
+      "class": "fft-zone"
+    },
     {
       "file": "public/shaders/echo-trace.wgsl",
       "line": 144,

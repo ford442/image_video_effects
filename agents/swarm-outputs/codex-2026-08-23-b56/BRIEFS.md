@@ -1,27 +1,34 @@
-# Batch 56 briefs — 2026-08-23 (tracker #475–482) — INTERACTIVE COMPLEXITY
+# Batch 56 briefs — 2026-08-23 (tracker #475–482) — MERGED LINEAGES
 
-Batch 56 upgrades eight single-pass interactive effects with distinct geometry,
-continuous motion, psychedelic color, held-pointer response, and click events
-capped by the live ripple count and 50.
+Three concurrent Batch 56 upgrades claimed the same tracker range. This file
+summarizes the union after merging on the cursor branch.
+
+## Cursor cohort (geometry + fast motion + psychedelic color)
 
 | # | Shader | Upgrade focus |
 |---|--------|---------------|
-| 475 | `cmyk-halftone-interactive` | Rosette/moiré print geometry, registration drift/shear, ink blooms |
-| 476 | `cyber-slit-scan` | Traveling scan heads, diagonal tears, held slit bends, click injections |
-| 477 | `interactive-ripple` | Analytic Huygens interference, crest packets, pressure, thin-film color |
-| 478 | `phosphor-magnifier` | Raster beam, degauss/click shells, pressure, display afterimages |
-| 479 | `vertical-slice-wave` | Layered strips, seam runners, held twist, click fronts, rainbow interference |
-| 480 | `chromatic-focus-interactive` | Bounded blur, zone plates/caustics, focus squeeze, iris shells |
-| 481 | `quantum-prism` | Honeycomb bevels, spectral bands, cell deformation, facet depth |
-| 482 | `matrix-curtain` | Glyph strokes, parallax rain, curtain vortices, alternate phosphors |
+| 475 | `ascii-shockwave` | Glyph cells, shock packets, oil-slick phosphor, iris clicks |
+| 476 | `cmyk-halftone-interactive` | Rosette rings, ink conveyors, rainbow registration, click splats |
+| 477 | `heat-haze-gpt52` | 16x16, thermal filaments, rise packets, held source, click rings |
+| 478 | `quantum-prism` | Live sliders, hex grout/runners, oil-slick prism, click fronts |
+| 479 | `sphere-projection` | Meridians/parallels, held zoom, rainbow lighting, click shells |
+| 480 | `fractal-kaleidoscope` | Canonical bindings, live sliders, seams/conveyors, held pivot |
+| 481 | `rgb-iso-lines` | 16x16, iso-runners, rainbow hypsometry; line-mask A |
+| 482 | `chromatic-focus-interactive` | Aperture blades, radial packets, held pinch, click rings |
+
+## Also retained from prior main merge
+
+cyber-slit-scan, hyb-spectral-fbm-displace, infinite-zoom-lens,
+phosphor-magnifier, warp_drive, liquid-warp-interactive, interactive-ripple,
+vertical-slice-wave, matrix-curtain (plus hand-merged overlaps above).
 
 ## Shared contract
 
-- Preserve each source `params` object and ordering; add aligned
-  `updatedParams` without changing preset IDs, defaults, or ranges.
-- Preserve all 13 canonical bindings, input depth ownership, B→C/A→C engine
-  ordering, and `plasmaBuffer[0].xyz` audio.
+- Preserve source `params` and add aligned indexed `updatedParams`.
+- Preserve canonical 13 bindings, 16x16x1 workgroups, depth ownership, and
+  `plasmaBuffer[0].xyz` audio.
 - Keep B unused and introduce no `extraBuffer` access.
-- Use 16x16x1 workgroups and cap event loops with `min(u.config.y, 50)`.
-- Preserve A ownership except the documented Phosphor Magnifier correction.
+- Preserve established A packing: CMYK coverage for halftone; line masks for
+  iso-lines; phosphor display-RGBA afterimage; display RGBA elsewhere unless
+  diagnostic A was explicitly preserved (infinite-zoom-lens, warp_drive).
 - Structural validation is local; visual acceptance requires a real GPU.

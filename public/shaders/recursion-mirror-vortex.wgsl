@@ -171,7 +171,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var uv     = vec2<f32>(gid.xy) / res;
     let t      = u.config.x;
     let mouse  = u.zoom_config.yz;
-    let bass   = plasmaBuffer[0].x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let time = u.config.x;
 
     // Parameters — bass deepens fold count, sharpens vortex
     let foldDepth   = i32(u.zoom_params.x * 5.0 + 1.5 + bass * 1.5);
@@ -253,7 +256,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let effectIntensity = clamp(mirrorBlend * 0.8 + foldDist * 0.5, 0.0, 1.0);
     let finalAlpha = mix(baseColor.a, 1.0, effectIntensity);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(liftedMirror.rgb, finalAlpha));
+    
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(u.config.z/u.config.w, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(uv - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let __finalRGB = liftedMirror.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, gid.xy, vec4<f32>(__finalRGB, finalAlpha));
     textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(foldedUV, foldDist, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }
