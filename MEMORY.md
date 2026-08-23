@@ -2,6 +2,14 @@
 
 **Last updated:** 2026-08-23 (remaining liquid core + ferro/fluid cohort + Batch 60)
 
+## 2026-08-23 — Merged shader upgrade branches into main
+
+- Landed `cursor/effect-shaders-complexity-8594`, `new-shader-upgrades`, and
+  `claude/shader-upgrades-motion-colors-m55m70` onto `main`.
+- Overlaps kept the stronger cursor/main liquid + Batch 69 upgrades; unique
+  shaders from the other branches retained. Catalogs regenerated to 1,334.
+- Jest 84/84, focused Naga green, WASM-skipped build green. Real-GPU QA external.
+
 ## 2026-08-23 — Remaining liquid core + ferro/fluid simulation cohort
 
 - Requested set: liquid-v1, liquid, liquid-rainbow,
