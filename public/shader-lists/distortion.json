@@ -1410,7 +1410,7 @@
     "id": "heat-haze-gpt52",
     "name": "Heat Haze Mirage gpt52",
     "url": "shaders/heat-haze-gpt52.wgsl",
-    "description": "Layered heat shimmer with chromatic dispersion, rising mirage flow, and bass-reactive intensity.",
+    "description": "Rising heat mirage with thermal filaments, axial packets, held thermal source, bounded click rings, chromatic dispersion, and oil-slick shimmer. Display RGBA in A; 16x16x1.",
     "params": [
       {
         "id": "intensity",
@@ -1450,7 +1450,10 @@
       "atmospheric",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "thermal-filaments"
     ],
     "tags": [
       "filter",
@@ -1458,6 +1461,40 @@
       "distortion",
       "heat",
       "atmospheric"
+    ],
+    "updatedParams": [
+      {
+        "id": "intensity",
+        "name": "Haze Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "rise",
+        "name": "Rise Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "frequency",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Split",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1552,12 +1589,14 @@
     "name": "Infinite Zoom Lens",
     "category": "distortion",
     "url": "shaders/infinite-zoom-lens.wgsl",
-    "description": "Droste effect with recursive self-similar zoom via logarithmic spiral Möbius transformation. Escher-like infinite recursion with chromatic aberration on spiral arms, HDR bloom on focal points, film grain, and temporal feedback.",
+    "description": "Droste zoom lens with axial packets, interference runners, analytic rainbow caustics, held aim, click rings. Diagnostic A packing preserved.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "temporal"
+      "temporal",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "tags": [
       "zoom",
@@ -1570,6 +1609,36 @@
       "recursive"
     ],
     "params": [
+      {
+        "id": "zoom_strength",
+        "name": "Zoom Strength",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "lens_radius",
+        "name": "Lens Radius",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "feedback_persistence",
+        "name": "Feedback Persistence",
+        "default": 0.65,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "twist",
+        "name": "Twist",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "zoom_strength",
         "name": "Zoom Strength",
@@ -1960,9 +2029,20 @@
     "url": "shaders/liquid-prism.wgsl",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "cauchy-dispersion",
+      "fresnel",
+      "caustic-fronts",
+      "temporal-afterglow"
     ],
-    "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens. Audio reactivity pulses ripple strength and prism highlights with the beat.",
+    "description": "Ripple glass with wavelength-correct Cauchy dispersion: n(lambda) = A + B/lambda^2 sets each channel's sample offset, so blue bends hardest as real glass does. Fixes the dead-audio bug where u.config.y (the ripple count) was read as an audio level. Clicks emit bounded caustic wavefronts.",
     "params": [
       {
         "id": "strength",
@@ -2002,9 +2082,52 @@
       "distort",
       "transform",
       "audio",
-      "music"
+      "music",
+      "prism",
+      "dispersion",
+      "glass",
+      "refraction",
+      "chromatic"
     ],
-    "name": "Liquid Prism"
+    "name": "Liquid Prism",
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Prism Strength",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Displacement amplitude of the refraction ripple."
+      },
+      {
+        "id": "frequency",
+        "name": "Wave Frequency",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Ripple wavenumber; mids and the local FFT band modulate it."
+      },
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Phase speed of the pointer ripple."
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration / Transparency",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Dual-purpose: scales the Cauchy index spread AND sets base glass transparency."
+      }
+    ]
   },
   {
     "id": "liquid-swirl",
@@ -2061,9 +2184,14 @@
     "id": "liquid-warp-interactive",
     "name": "Liquid Warp",
     "url": "shaders/liquid-warp-interactive.wgsl",
-    "description": "Fluid-like distortion driven by mouse flow and noise.",
+    "description": "Liquid curl warp with conveyor flow, liquid-rainbow ripples, held pull, bounded click fronts. Display RGBA in A.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "held-drag",
+      "bounded-click-ripples",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -2099,6 +2227,36 @@
       "warp",
       "distort",
       "transform"
+    ],
+    "updatedParams": [
+      {
+        "id": "distort",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scale",
+        "name": "Noise Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "visc",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -3953,9 +4111,6 @@
       "rankine-vortex"
     ],
     "description": "Rankine vortex warp: solid-body rotation inside the core radius and free-vortex circulation (omega ~ 1/r^2) outside it, giving a tightly spun core with a slower, longer-reaching outer flow instead of a rigidly rotating disc. The vortex eye is spring-damped through extraBuffer[133..136] and its own velocity shears the flow, so whipping the cursor drags the vortex behind the pointer. Retains the FFT-banded azimuthal turbulence and flow-aligned angular dispersion from Batch 56.",
-      "audio-driven"
-    ],
-    "description": "Swirls the image around the mouse cursor.",
     "params": [
       {
         "id": "strength",

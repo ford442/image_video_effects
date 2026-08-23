@@ -2,11 +2,18 @@
   "id": "digital-decay",
   "name": "Digital Decay",
   "url": "shaders/digital-decay.wgsl",
-  "description": "Simulates data corruption: block displacement, sub-pixel jitter, chromatic aberration, bit-flip channel noise, scanline static, and ghost-frame persistence — all scaling with audio bass and depth.",
+  "description": "Data corruption with spring hotspot, held burst, capped ripples, exact C ghost frames, block displacement, chromatic jitter, and ACES semantic alpha.",
+  "workgroup_size": [16, 16, 1],
   "features": [
     "audio-reactive",
     "depth-aware",
-    "temporal"
+    "temporal",
+    "mouse-driven",
+    "click-reactive",
+    "held-drag",
+    "spring-cursor",
+    "upgraded-rgba",
+    "aces-tone-map"
   ],
   "params": [
     {
@@ -15,7 +22,8 @@
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "block_size",
@@ -23,7 +31,8 @@
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "ghost_decay",
@@ -31,7 +40,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "depth_influence",
@@ -39,8 +49,15 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Corruption Rate", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Block Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Ghost Decay", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Depth Influence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ],
   "tags": [
     "glitch",
@@ -52,5 +69,6 @@
     "chromatic",
     "temporal",
     "audio"
-  ]
+  ],
+  "updated": true
 }
