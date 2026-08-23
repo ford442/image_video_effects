@@ -131,17 +131,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
-    // === AUDIO (plasma bands + guarded engine FFT bins 1-8) ===
+    // === AUDIO (canonical plasma bands only) ===
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    var fftShimmer = 0.0;
-    if (arrayLength(&extraBuffer) > 13u) {
-        for (var k = 1u; k <= 8u; k = k + 1u) {
-            fftShimmer += extraBuffer[5u + k];
-        }
-        fftShimmer = clamp(fftShimmer * 0.125, 0.0, 1.5);
-    }
 
     // === CAMERA (best of both: main's clean spherical + feature's organic drift) ===
     let mouse = u.zoom_config.yz;
@@ -164,7 +157,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fwd = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
     let up = cross(fwd, right);
-    let rd = normalize(fwd + right * uv.x + up * uv.y);
+    var rd = normalize(fwd + right * uv.x + up * uv.y);
+
+    // Hover aims the orbit; held input twists rays around the pointer.
+    let mouseP = (mouse - 0.5) * vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+    let pointerDelta = uv - mouseP;
+    let pointerDist = length(pointerDelta);
+    if (u.zoom_config.w > 0.5) {
+        let swirl = vec2<f32>(-pointerDelta.y, pointerDelta.x) / max(pointerDist, 1e-4);
+        let heldWarp = exp(-pointerDist * pointerDist * 4.5) * 0.28;
+        rd = normalize(rd + right * swirl.x * heldWarp + up * swirl.y * heldWarp);
+    }
+
+    // Clicks emit finite wall fronts with angular vein pulses.
+    let rippleCount = min(u32(u.config.y), 50u);
+    var wallPulse = 0.0;
+    var veinPulse = 0.0;
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 3.5) { continue; }
+        let center = (ripple.xy - 0.5) * vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+        let delta = uv - center;
+        let radius = age * mix(0.12, 0.48, u.zoom_params.y);
+        let front = exp(-pow((length(delta) - radius) * 28.0, 2.0)) * exp(-age * 0.72);
+        wallPulse += front;
+        veinPulse += front * (0.5 + 0.5 * cos(atan2(delta.y, delta.x) * mix(6.0, 18.0, u.zoom_params.x)));
+    }
 
     // Raymarch (+ volumetric proximity glow)
     let res = raymarch(ro, rd);
@@ -228,19 +247,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
 
         let patternFactor = smoothstep(0.35, 0.55, abs(pattern));
-        // HDR veins (>1.0 at high glow), FFT bins add spectral shimmer
-        neon = glowCol * patternFactor * glowIntensity * pulse * (1.0 + fftShimmer * 0.8);
+        // HDR raw emissive veins; mids modulate topology brightness.
+        neon = glowCol * patternFactor * glowIntensity * pulse * (1.0 + mids * 0.45);
+        neon += mix(vec3<f32>(0.15, 0.9, 1.4), vec3<f32>(1.4, 0.2, 0.85), veinPulse) * veinPulse * (0.8 + glowIntensity * 0.35);
 
         // Cyber Fresnel rim, treble-reactive, cool electric tint
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
         let rim = vec3<f32>(0.35, 0.60, 1.30) * fresnel * (2.2 + treble * 1.5);
 
         color = surfCol + rim;
-        alpha = 1.0; // walls are opaque by design
+        alpha = clamp(0.68 + patternFactor * 0.22 + wallPulse * 0.2 + fresnel * 0.08, 0.0, 0.98);
     } else {
         // Deep void background, tinted by nearby neon haze
         color = vec3<f32>(0.0, 0.0, 0.045) + volGlow * vec3<f32>(0.04, 0.10, 0.20);
     }
+
+    neon += vec3<f32>(0.35 + treble * 0.25, 0.65, 1.35) * wallPulse * mix(0.5, 2.0, u.zoom_params.z);
+    alpha = clamp(max(alpha, wallPulse * 0.65 + veinPulse * 0.25), 0.02, 0.98);
 
     // === EMISSIVE PERSISTENCE (dataTextureA = neon history) ===
     // Previous frame's veins decay 10%/frame and are re-excited by the

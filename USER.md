@@ -113,6 +113,13 @@ _Learn about the person you're helping. Update this as you go._
   origin Batch 70, generative named-params #1167/#1169, and Batch 67 (#1170).
   Kept local optical `holographic-flicker`; took Batch 67 `glass-wipes`,
   `liquid-jelly`, and `ferrofluid-spikes`. Real-GPU QA remains external.
+- **Holographic / Hyper generative cohort (2026-08-23):** Fracture, Lens-Flare
+  Matrix, Membrane, Plasma Geode, Rainbow Surface, Hopf Fiber Bundle, Bismuth
+  Clockwork, Bismuth Matrix, Tesseract Labyrinth, and Hyper Labyrinth now meet
+  the exact-C/A-only/audio/interaction contract with preserved feedback
+  ownership and forty named controls. Membrane, Flare Matrix, and Hyper
+  Labyrinth retain raw state; structural/Jest/build gates are green and real-GPU
+  visual QA remains external.
 ## Context
 
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.

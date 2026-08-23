@@ -1,6 +1,21 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Optical batch + Ethereal generative Batch 72 complete)
+**Last updated:** 2026-08-23 (Holographic / Hyper generative cohort complete)
+
+## 2026-08-23 — Holographic / Hyper generative cohort
+
+- Upgraded Holographic Fracture, Lens-Flare Matrix, Membrane, Plasma Geode,
+  Rainbow Surface, Hopf Fiber Bundle, Bismuth Clockwork, Bismuth Matrix,
+  Tesseract Labyrinth, and Hyper Labyrinth under the canonical exact-C,
+  A-only, three-band audio, pointer/held/click, semantic-alpha, and depth
+  contract with all saved parameter values preserved.
+- Lens-Flare Matrix, Membrane, and Hyper Labyrinth intentionally retain raw A
+  state; the other seven store exact ACES display RGBA. Fracture's spring is
+  guarded at `[133..137]`, Matrix's bass envelope moved from slot 0 to `[133]`,
+  and Hyper Labyrinth no longer reads engine FFT slots.
+- Forty named controls are live. Focused Naga/contract audits, catalog/uniform/
+  TypeScript checks, Jest 84/84, and the production build pass. Real-GPU
+  interaction, composition, stability, and performance QA remains external.
 
 ## 2026-08-23 — Optical / Prism / Crystal / Lens / Caustic Upgrade Batch (10 shaders)
 

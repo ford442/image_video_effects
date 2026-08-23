@@ -134,7 +134,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
   let magRadius = 2.5;
   if (mDist < magRadius) {
     let pull = (1.0 - mDist / magRadius) * 1.5;
-    p = p + normalize(md) * pull * 0.3;
+    p = p + md / max(mDist, 1e-4) * pull * 0.3;
   }
 
   // Grid cell
@@ -220,11 +220,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Parameters (clamp zoom_params to normalized range)
-  let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-  let complexity = mix(1.0, 5.0, zparams.x);
-  let clockSpeed = mix(0.2, 2.0, zparams.y);
-  let iridescence = mix(0.2, 2.0, zparams.z);
-  let gridDensity = mix(1.0, 3.0, zparams.w);
+  let complexityControl = clamp(u.zoom_params.x, 0.0, 1.0);
+  let clockSpeedControl = clamp(u.zoom_params.y, 0.0, 1.0);
+  let iridescenceControl = clamp(u.zoom_params.z, 0.0, 1.0);
+  let gridDensityControl = clamp(u.zoom_params.w, 0.0, 1.0);
+  let complexity = mix(1.0, 5.0, complexityControl);
+  let clockSpeed = mix(0.2, 2.0, clockSpeedControl);
+  let iridescence = mix(0.2, 2.0, iridescenceControl);
+  let gridDensity = mix(1.0, 3.0, gridDensityControl);
 
   // Mouse position in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -248,6 +251,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
+  let mouseDown = u.zoom_config.w > 0.5;
+
+  // Held input applies signed torque; clicks launch finite toothed gear shocks.
+  let heldTorque = select(0.0, (mouseUV.x - 0.5) * 2.2 + (0.5 - mouseUV.y) * 0.7, mouseDown);
+  let rippleCount = min(u32(u.config.y), 50u);
+  var gearShock = 0.0;
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 3.2) { continue; }
+    let center = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
+    let delta = p - center;
+    let d = length(delta);
+    let radius = age * (0.28 + clockSpeed * 0.14);
+    let teeth = 0.55 + 0.45 * cos(atan2(delta.y, delta.x) * mix(8.0, 22.0, complexityControl));
+    gearShock += exp(-pow((d - radius) * 22.0, 2.0)) * exp(-age * 0.9) * teeth;
+  }
+  let effectiveClockSpeed = clamp(clockSpeed + heldTorque * 0.45 + gearShock * 0.75, 0.05, 4.0);
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
 
   // Raymarch
@@ -261,7 +282,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   for (var i: i32 = 0; i < 100; i = i + 1) {
     let pos = ro + rd * t;
-    let res = map(pos, time, audio, complexity, clockSpeed, gridDensity, mousePos);
+    let res = map(pos, time, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
 
     if (res.d < 0.005) {
       hit = true;
@@ -277,7 +298,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   if (hit) {
-    let n = calcNormal(hitPos, time, audio, complexity, clockSpeed, gridDensity, mousePos);
+    let n = calcNormal(hitPos, time, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
     let viewDir = -rd;
     let nDotV = sat(dot(n, viewDir));
 
@@ -309,6 +330,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
       // Audio-reactive shimmer
       col = col + ired * bass * 0.2;
+      col += vec3<f32>(1.0, 0.35 + mids * 0.25, 0.08 + treble * 0.3) * gearShock * 1.4;
     }
 
     // Ambient occlusion
@@ -325,16 +347,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     depth = 25.0;
   }
 
-  // Temporal persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  col = mix(col, prev.rgb * 0.94, 0.04);
-
-  // Tone map
-  col = acesToneMap(col * 1.2);
+  // A/C owns exact ACES display history; do not re-tone-map prior frames.
+  let currentDisplay = acesToneMap(col * 1.2);
+  let prev = textureLoad(dataTextureC, coord, 0);
+  col = mix(prev.rgb * 0.95, currentDisplay, 0.24 + bass * 0.035);
 
   let finalDepth = sat(0.95 - depth * 0.04);
+  let hitCoverage = select(0.0, 0.72 + finalDepth * 0.22, hit);
+  let glowCoverage = clamp(dot(currentDisplay, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.45 + gearShock * 0.3, 0.0, 0.9);
+  let alpha = max(max(hitCoverage, glowCoverage), prev.a * 0.92);
 
-  textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, 1.0));
+  textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
 }

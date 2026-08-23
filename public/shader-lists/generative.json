@@ -16683,6 +16683,10 @@
       "glow",
       "audio-reactive",
       "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tonemap",
       "depth-aware"
     ],
     "tags": [
@@ -16741,6 +16745,7 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
+    "feedbackPacking": "A/C = exact ACES display RGBA; alpha is fracture, edge, and shock-front coverage; guarded spring state uses extraBuffer[133..137]",
     "updated": true,
     "updatedParams": [
       {
@@ -16791,6 +16796,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -16830,7 +16873,17 @@
     "updated": true,
     "id": "gen-holographic-lens-flare-matrix",
     "url": "shaders/gen-holographic-lens-flare-matrix.wgsl",
-    "features": []
+    "features": [
+      "flare-matrix",
+      "raw-persistent-state",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw flare density, anamorphic streak, nearest flare distance, semantic alpha; raw state is never tone-mapped"
   },
   {
     "name": "Holographic Membrane",
@@ -16848,6 +16901,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "film_thickness",
+        "name": "Film Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "wave_frequency",
+        "name": "Wave Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "undulation_amp",
+        "name": "Undulation Amp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -16888,7 +16979,17 @@
     "updated": true,
     "id": "gen-holographic-membrane",
     "url": "shaders/gen-holographic-membrane.wgsl",
-    "features": []
+    "features": [
+      "thin-film-interference",
+      "raw-persistent-state",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw membrane height, normal X, normal Y, semantic alpha; ACES is display-only"
   },
   {
     "name": "Holographic Plasma-Geode",
@@ -16905,6 +17006,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "crystal_density",
+        "name": "Crystal Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "holographic_hue",
+        "name": "Holographic Hue",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "core_rotation_speed",
+        "name": "Core Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -16945,7 +17084,18 @@
     "updated": true,
     "id": "gen-holographic-plasma-geode",
     "url": "shaders/gen-holographic-plasma-geode.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "plasma-core",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = exact ACES display RGBA with shell/core shock persistence"
   },
   {
     "name": "Holographic Rainbow Surface",
@@ -16966,6 +17116,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -17006,7 +17194,17 @@
     "updated": true,
     "id": "gen-holographic-rainbow-surface",
     "url": "shaders/gen-holographic-rainbow-surface.wgsl",
-    "features": []
+    "features": [
+      "thin-film-interference",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = exact ACES display RGBA; alpha is holographic surface coverage"
   },
   {
     "name": "Hopf Fibration Fiber Bundle",
@@ -17028,6 +17226,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "rotation_4d",
+        "name": "4D Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "fiber_thickness",
+        "name": "Fiber Thickness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "crossing_bloom",
+        "name": "Crossing Bloom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "particle_drift",
+        "name": "Particle Drift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -17068,7 +17304,17 @@
     "updated": true,
     "id": "gen-hopf-fibration-fiber-bundle",
     "url": "shaders/gen-hopf-fibration-fiber-bundle.wgsl",
-    "features": []
+    "features": [
+      "hopf-fibration",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = exact ACES display RGBA; alpha is fiber and crossing-bloom coverage"
   },
   {
     "name": "Hyper-Bismuth Clockwork",
@@ -17088,6 +17334,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "clock_speed",
+        "name": "Clock Speed",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "grid_density",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -17128,7 +17412,18 @@
     "updated": true,
     "id": "gen-hyper-bismuth-clockwork",
     "url": "shaders/gen-hyper-bismuth-clockwork.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "clockwork-mechanical",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = exact ACES display RGBA; alpha combines ray hit and gear-shock glow coverage"
   },
   {
     "name": "Hyper-Dimensional Bismuth-Matrix",
@@ -17148,6 +17443,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "crystal_complexity",
+        "name": "Crystal Complexity",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "iridescence_shift",
+        "name": "Iridescence Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "growth_rate",
+        "name": "Growth Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "disruption_radius",
+        "name": "Disruption Radius",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -17188,7 +17521,18 @@
     "updated": true,
     "id": "gen-hyper-dimensional-bismuth-matrix",
     "url": "shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "bismuth-crystal",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = exact ACES display RGBA; guarded bass envelope uses extraBuffer[133]"
   },
   {
     "name": "Hyper-Dimensional Tesseract-Labyrinth",
@@ -17205,6 +17549,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "tesseract_complexity",
+        "name": "Tesseract Complexity",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "edge_glow",
+        "name": "Edge Glow",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "warp_field",
+        "name": "Warp Field",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "fly_speed",
+        "name": "Fly Speed",
+        "default": 2,
+        "min": 0,
+        "max": 10,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -17245,7 +17627,18 @@
     "updated": true,
     "id": "gen-hyper-dimensional-tesseract-labyrinth",
     "url": "shaders/gen-hyper-dimensional-tesseract-labyrinth.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "four-dimensional",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = exact ACES display RGBA with finite fold-shock persistence"
   },
   {
     "name": "Hyper Labyrinth",
@@ -17267,6 +17660,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "labyrinth_scale",
+        "name": "Labyrinth Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "morph_speed",
+        "name": "Morph Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "neon_glow",
+        "name": "Neon Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "wall_thickness",
+        "name": "Wall Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -17314,9 +17745,13 @@
       "volumetric-glow",
       "fresnel-rim",
       "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
       "temporal-feedback",
+      "semantic-alpha",
       "depth-output"
-    ]
+    ],
+    "feedbackPacking": "A/C = raw HDR neon emissive RGB plus semantic wall/vein alpha; ACES is display-only"
   },
   {
     "name": "Hyper Rainbow Vortex",

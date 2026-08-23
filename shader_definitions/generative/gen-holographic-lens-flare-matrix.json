@@ -12,6 +12,44 @@
     16,
     1
   ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mouse_influence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -51,5 +89,15 @@
   "updated": true,
   "id": "gen-holographic-lens-flare-matrix",
   "url": "shaders/gen-holographic-lens-flare-matrix.wgsl",
-  "features": []
+  "features": [
+    "flare-matrix",
+    "raw-persistent-state",
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "semantic-alpha",
+    "aces-tonemap",
+    "depth-aware"
+  ],
+  "feedbackPacking": "A/C = raw flare density, anamorphic streak, nearest flare distance, semantic alpha; raw state is never tone-mapped"
 }
