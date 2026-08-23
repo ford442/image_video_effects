@@ -5,9 +5,143 @@
 
 ---
 
-## Recently Completed (482 tracker entries)
+## Recently Completed (492 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 64 (10 shaders) — 2026-08-23 — LIQUID / OPTICAL / CRYSTAL / CYBER
+
+Ten shaders on tracker #511–520. Every shader carries the pool standard — ACES,
+semantic alpha, `dataTextureA` writeback, `plasmaBuffer[0].xyz` audio with
+per-band `[1..8]` bins, held-pointer response, bounded click fronts guarded by
+`min(u32(u.config.y), 50u)`, exact `textureLoad` from `dataTextureC`,
+`@workgroup_size(16, 16, 1)` and a bounds guard — plus two shader-specific
+structures each. (The request named `glass-refraction.wgsl`, which does not
+exist; `glass_refraction_alpha` was the confirmed target.)
+
+**Headline: `extraBuffer` audio-slot corruption.** Two shaders in this cohort
+were writing their interactive state into `extraBuffer[0..8]` — which per
+`docs/BINDING_CONTRACT.md` are bass, mid, treble, reserved, `historyHead` and
+FFT bins 5–8. They were overwriting the audio **every other shader in the chain
+reads**, and reading back values the engine rewrites each frame, so their own
+state was garbage too:
+
+- `optical-feedback` held nine values there. The state did not even need nine
+  slots: `clickTime`/`clickPos` duplicate what `u.ripples[i]` already provides
+  and `prevPress` only detected an edge the ripple queue already detects.
+  Dropping those and the two velocity slots leaves smoothed pointer + hue phase
+  at `[133..135]`.
+- `magnetic-interference` held the previous pointer at `[0..1]` (bass and mid),
+  and additionally smuggled its audio envelope through texel (0,0) of
+  `dataTextureA`, corrupting the feedback buffer's corner.
+
+Both are migrated into the scratch range and their **11 grandfathered entries
+are retired from `reports/extrabuffer_write_audit_baseline.json`** (46 → 44
+entries; 128 → 117 known violations repo-wide).
+
+Other bugs fixed:
+
+- **`optical-feedback` used `u.config.y` as delta time** — the ripple count,
+  explicitly on the do-not-reintroduce list. It fed a spring integrator, so with
+  no clicks `dt == 0` and the pointer spring and hue phase were **frozen**; with
+  clicks it jumped to 1–50 and a k=55 spring integrated at dt=50 **diverges**.
+- **`glass_refraction_alpha` had a fake-audio proxy**: `plasmaBuffer` was bound
+  and never read, while a variable named `audioPulse` was assigned
+  `u.zoom_config.w` — the mouse button — and used to modulate the refractive
+  index. It also declared `exitT` and never wrote it, so Beer-Lambert absorption
+  ran over the distance *to* the surface, not *through* the glass.
+- **`ambient-liquid` advertised `reaction-diffusion` with no state at all**: its
+  `grayScott()` was four sine waves, `dataTextureA` was never written and
+  `dataTextureC` never read. A real Gray-Scott step is now wired.
+- **`magnetic-interference` had an unguarded ripple loop** (`u32(u.config.y)`).
+- **Mask-as-colour hazards** in `cyber-lens`, `bubble-lens` and
+  `crystal-facets`: `dataTextureA` held mask tuples nothing consumed, leaving C
+  poisoned for anything reading it as colour. Display moved to A, masks to B.
+- **Per-frame hash strobing** replaced with coherent drifting fields in
+  `frosted-glass-lens` and `digital-mold`.
+
+Gate, dead-slider, extraBuffer and audio-mapping audits pass 10/10; lists, URL
+and uniform checks pass. Notes: `swarm-outputs/claude-2026-08-23-b64/`.
+Real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 511 | `optical-feedback` | 64 | 228→287 (+59) | Time-correct spring, multi-front ripple shockwaves, per-band spectral hue rings; dt-as-rippleCount and 9 audio-slot writes fixed. |
+| 512 | `glass_refraction_alpha` | 64 | 275→385 (+110) | Cauchy dispersion, per-band caustic focusing, real interior absorption path; fake-audio proxy and dead `exitT` fixed. |
+| 513 | `crystal-facets` | 64 | 229→328 (+99) | Facet-normal Fresnel with total internal reflection, uniaxial birefringence; A/C wired, click fracture fronts, ACES. |
+| 514 | `ambient-liquid` | 64 | 195→282 (+87) | Real Gray-Scott state with per-band feed/kill, surface-tension coupling to the metaballs; unwired RD claim fixed. |
+| 515 | `frosted-glass-lens` | 64 | 132→233 (+101) | Beckmann microfacet lobe, depth-dependent frost thickness, click clear-fronts; strobing grain fixed. |
+| 516 | `cyber-lens` | 64 | 169→249 (+80) | Rolling-shutter scan skew, per-band telemetry rings, lock pings; A/B packing corrected. |
+| 517 | `bubble-lens` | 64 | 208→277 (+69) | Marangoni convection, per-band membrane resonance modes; ACES, C trails, A/B packing corrected. |
+| 518 | `liquid-metal` | 64 | 198→294 (+96) | Rosensweig hexagonal spike instability, anisotropic Ward BRDF; exact C loads, ACES. |
+| 519 | `magnetic-interference` | 64 | 210→288 (+78) | Per-band domain-wall spectrum, hysteresis memory with coercivity gate; audio-slot writes, texel-(0,0) envelope and unguarded loop fixed. |
+| 520 | `digital-mold` | 64 | 142→194 (+52) | Nutrient-gradient chemotaxis, per-band sporulation regimes; strobing spore hash and pass-through alpha fixed. |
+
+### Batch 60 (10 shaders) — 2026-08-23 — DEAD FEATURES & FEEDBACK CONTRACTS
+
+Ten shaders across interactive-mouse, distortion, advanced-hybrid, artistic and
+image. Every shader now carries the pool standard — ACES, semantic alpha,
+`dataTextureA` writeback, `plasmaBuffer[0].xyz` audio with per-band `[1..8]`
+bins, held-pointer response, bounded click fronts guarded by
+`min(u32(u.config.y), 50u)`, exact `textureLoad` from `dataTextureC`,
+`@workgroup_size(16, 16, 1)` and a bounds guard — plus two shader-specific
+structures each. `extraBuffer` writes stay in `[133..137]`, written by
+invocation `(0,0)` only.
+
+The theme of this batch is **features that were catalogued but not wired**, and
+**feedback slots whose contents did not match how they were read**.
+
+Dead features found and fixed:
+
+- **`gravitational-lensing` — time read as audio.** `let audioOverall =
+  u.zoom_config.x;` — that field is TIME, not an audio level. So
+  `audioReactivity = 1.0 + time * 0.3` grew without bound and the camera angle
+  `time * 0.1 * audioReactivity` accelerated QUADRATICALLY forever, while no
+  audio reached anything. The `zoom_config` hijack class from Batch 58C.
+- **`holographic-contour` — dead audio.** Declared `audio-reactive` and
+  `audio-driven`, bound `plasmaBuffer` at binding 12, and never read one sample
+  from it. Its source was also naga round-trip output (`_e20` temporaries,
+  `loop { continuing { } }`) and has been rewritten as readable WGSL.
+- **`neon-pulse` — declared `mouse-driven`, never read the mouse.**
+  `zoom_config` appeared exactly once in the file: in the struct declaration.
+- **`kaleidoscope` — never read the mouse either**, and never wrote
+  `dataTextureA`, so that slot was dead.
+- **`particle-swarm` — degenerate scattering.** The Henyey-Greenstein phase
+  function was fed `dot(velocity_dir, vec2<f32>(0.0, 0.0))`, which is
+  identically zero, so the "anisotropic scattering" contributed one fixed
+  constant. It also had no bounds guard at all.
+- **`holographic-contour` — dead halftone radius.** `sqrt(luma) * 0.5` was
+  computed for the dot size and never used.
+- **`gravitational-lensing` — dead Einstein radius.** Computed, then the ring
+  was drawn at a hardcoded 0.3. It now sets the ring's screen radius.
+
+Feedback-contract fixes (the mask-as-colour class):
+
+- **`magnetic-field`** stored the field state `[b_field.x, b_field.y,
+  line_sharp, b_mag]` in `dataTextureA` while its "smooth temporal history" line
+  read `prev_state.rgb` back as colour — blending signed, unbounded field
+  components into every displayed frame. The field is recomputed analytically
+  each frame and nothing reads the state back into the simulation, so A now
+  carries display RGBA and the diagnostics move to B.
+- **`glass-shatter`** held a mask tuple in A that nothing read, leaving C
+  poisoned for any shader (or future edit) that read it as colour. Display moved
+  to A, masks to B.
+- **`neon-pulse`** needed the opposite call: its new thermal diffusion genuinely
+  requires temperature in A, so A is documented as sim state (Batch 58B
+  convention) rather than a half-colour/half-Kelvin hybrid.
+
+Depth clobbers fixed in `heat-haze-mirage` (wrote the heat column),
+`holographic-contour` (wrote ink alpha) and `neon-pulse` (wrote emission luma).
+
+One initial diagnosis was withdrawn during review: `ink-bleed`'s state reads go
+through an identifier named `filteringSampler`, but binding 5 is the engine's
+NON-filtering sampler, so the reads were safe. The misleading name (1333 other
+shaders call it `non_filtering_sampler`) is corrected and the reads moved to
+exact `textureLoad` anyway.
+
+Gate, dead-slider, extraBuffer and audio-mapping audits pass 10/10; URL and
+uniform-layout checks pass; lists regenerate clean. Real-GPU visual QA remains
+external.
 
 ### Batch 56 (8 shaders) — 2026-08-23 — GEOMETRY, FAST MOTION, PSYCHEDELIC COLOR
 

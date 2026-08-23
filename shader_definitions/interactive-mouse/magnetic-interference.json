@@ -2,7 +2,7 @@
   "id": "magnetic-interference",
   "name": "Magnetic Interference",
   "url": "shaders/magnetic-interference.wgsl",
-  "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, canonical bass envelope, beat-pulsed magnetic field, mids-driven swirl and chromatic rotation, treble sparkle overlay, audio-amplified ripples, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
+  "description": "Magnetic interference field with a per-band domain-wall spectrum \u2014 eight wall families, each pinned at its own defect lattice and driven by its own FFT bin \u2014 and hysteresis memory: the magnetisation lags its drive and only switches past a coercive threshold, giving real magnetic lag and remanence. Fixes an unguarded ripple loop, state written into extraBuffer[0..1] (the engine's bass and mid slots), and an audio envelope smuggled through texel (0,0) of the feedback buffer.",
   "params": [
     {
       "id": "strength",
@@ -45,11 +45,56 @@
     "chromatic-aberration",
     "aces-tone-map",
     "temporal-feedback",
-    "velocity-trails"
+    "velocity-trails",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "semantic-alpha",
+    "aces",
+    "domain-walls",
+    "hysteresis"
   ],
   "tags": [
     "filter",
     "image-processing",
-    "audio-reactive"
+    "audio-reactive",
+    "magnetic",
+    "interference",
+    "domain-walls",
+    "glitch"
+  ],
+  "updatedParams": [
+    {
+      "id": "strength",
+      "name": "Field Strength",
+      "default": 1,
+      "min": 0,
+      "max": 2,
+      "description": "Magnetic displacement gain."
+    },
+    {
+      "id": "radius",
+      "name": "Field Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Extent of the field influence around the pointer."
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Spectral channel split across the field."
+    },
+    {
+      "id": "scanlines",
+      "name": "Scanlines",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Interference scanline intensity."
+    }
   ]
 }

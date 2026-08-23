@@ -3,17 +3,42 @@
   "name": "Optical Feedback Loop",
   "url": "shaders/optical-feedback.wgsl",
   "category": "interactive-mouse",
-  "description": "Infinite video feedback loop centered on the mouse cursor with audio-pumped zoom, domain-warped drift, hue shifting, depth-aware fade, and temporal accumulation.",
-  "tags": ["feedback", "loop", "infinite", "mouse-driven", "audio-reactive", "domain-warp", "depth-aware", "hue-shift"],
+  "description": "Infinite optical feedback tunnel with a time-correct spring-damped pointer, multi-front ripple shockwaves and per-band spectral hue rotation that separates the tunnel into rings. Fixes two serious bugs: u.config.y (the ripple count) was used as delta time, freezing the spring and hue when no clicks were alive and exploding the integrator when they were; and nine state values were written into extraBuffer[0..8], the engine's bass/mid/treble/historyHead and FFT bins, corrupting the audio every other shader reads. State now lives in extraBuffer[133..135].",
+  "tags": [
+    "feedback",
+    "loop",
+    "infinite",
+    "mouse-driven",
+    "audio-reactive",
+    "domain-warp",
+    "depth-aware",
+    "hue-shift",
+    "tunnel",
+    "psychedelic",
+    "recursive"
+  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
     "semantic-alpha",
     "upgraded-rgba",
     "temporal-persistence",
-    "depth-aware"
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "aces",
+    "feedback",
+    "domain-warp",
+    "spectral-hue",
+    "gravity-well",
+    "spring-damper"
   ],
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "params": [
     {
       "id": "accumulation",
@@ -50,6 +75,48 @@
       "max": 1.0,
       "step": 0.01,
       "param": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "id": "accumulation",
+      "name": "Accumulation Rate",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.x",
+      "description": "How strongly each frame accumulates into the feedback buffer."
+    },
+    {
+      "id": "zoom",
+      "name": "Feedback Zoom",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.y",
+      "description": "Per-frame scale step of the tunnel."
+    },
+    {
+      "id": "rotation",
+      "name": "Rotation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.z",
+      "description": "Per-frame rotation of the feedback transform."
+    },
+    {
+      "id": "shift",
+      "name": "Hue Shift",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.w",
+      "description": "Global hue rotation, layered over the per-band spectral rings."
     }
   ]
 }

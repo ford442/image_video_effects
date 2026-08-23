@@ -3,14 +3,23 @@
   "name": "Cyber Lens",
   "category": "distortion",
   "url": "shaders/cyber-lens.wgsl",
-  "description": "AR-style cybernetic lens with cyan holographic HUD, targeting reticle, scan lines, hex threat zones, glitch artifacts, chromatic aberration, and depth-parallax layers. Bass drives HUD flicker; mouse moves the reticle; depth controls layer parallax.",
+  "description": "Targeting HUD with rolling-shutter scan skew \u2014 each row is exposed at its own instant, so the readout shears with motion the way the CMOS sensor it imitates actually does \u2014 and per-band telemetry rings: eight concentric arcs around the reticle, one per FFT bin, each sweeping at its own rate with arc length reporting its level. Adds click target-lock pings, phosphor persistence and a corrected A/B packing (display in A, masks in B).",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
     "chromatic-aberration",
     "hud-overlay",
-    "glitch"
+    "glitch",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "depth-aware",
+    "semantic-alpha",
+    "aces",
+    "rolling-shutter",
+    "telemetry-rings",
+    "phosphor-persistence"
   ],
   "tags": [
     "cyber",
@@ -20,7 +29,9 @@
     "audio-reactive",
     "hud",
     "glitch",
-    "holographic"
+    "holographic",
+    "targeting",
+    "scifi"
   ],
   "params": [
     {
@@ -50,6 +61,40 @@
       "default": 0.3,
       "min": 0,
       "max": 1
+    }
+  ],
+  "updatedParams": [
+    {
+      "id": "hud_scale",
+      "name": "HUD Scale",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "description": "Size of the HUD grid and frame elements."
+    },
+    {
+      "id": "target_size",
+      "name": "Target Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Reticle radius; also sets the telemetry ring spacing."
+    },
+    {
+      "id": "glitch_intensity",
+      "name": "Glitch Intensity",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "description": "Rolling-shutter shear amplitude and tearing."
+    },
+    {
+      "id": "chromatic_aberration",
+      "name": "Chromatic Aberration",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Channel split around the lens."
     }
   ]
 }
