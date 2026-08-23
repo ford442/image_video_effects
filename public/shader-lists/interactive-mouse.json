@@ -7072,7 +7072,7 @@
     "id": "magnetic-luma-sort",
     "name": "Magnetic Luma Sort",
     "url": "shaders/magnetic-luma-sort.wgsl",
-    "description": "Pixels are magnetically pulled by the cursor based on brightness, creating trails.",
+    "description": "Luma-gated magnetic sorting with a guarded spring, canonical plasma bands and read-only FFT voices, exact-load trail advection, bounded click vortices, ACES, and semantic trail alpha.",
     "params": [
       {
         "id": "pullStrength",
@@ -7105,7 +7105,13 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal",
+      "exact-history",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",
@@ -10967,7 +10973,7 @@
     "id": "prismatic-feedback-loop",
     "name": "Prismatic Feedback Loop (Pass 2)",
     "url": "shaders/prismatic-feedback-loop.wgsl",
-    "description": "Consumes displacement from Pass 1 to create chromatic aberration, temporal feedback, and glowing halos.",
+    "description": "Raw prismatic accumulation with exact feedback loads, sprung held-pointer deformation, bounded click bursts, live plasma dispersion, ACES output glow, semantic alpha, and source-depth pass-through.",
     "params": [
       {
         "id": "feedbackAmount",
@@ -11005,7 +11011,13 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "exact-history",
+      "raw-state-feedback",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",

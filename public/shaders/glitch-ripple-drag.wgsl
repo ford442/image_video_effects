@@ -1,15 +1,5 @@
-// ═══════════════════════════════════════════════════════════════
-//  Glitch Ripple Drag - Liquid Glitch with Alpha Persistence
-//  Category: retro-glitch
-//
-//  Ripples emanate from mouse, dragging pixels with persistent trails:
-//  - Expanding ring waves from mouse position
-//  - Quantized glitchy direction for pixel displacement
-//  - High persistence feedback for liquid accumulation
-//  - Color separation artifacts in glitch zones
-//  - Alpha persistence for trail fade
-// ═══════════════════════════════════════════════════════════════
-
+// Glitch Ripple Drag — Batch 68 exact display-history upgrade.
+// A owns semantic display RGBA; B is intentionally unwritten.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,111 +13,70 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-// Glitch Ripple Drag
-// Ripples emanate from the mouse, permanently dragging pixels with them.
-// Creates a liquid glitch effect that accumulates over time.
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+  return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
+}
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    let time = u.config.x;
-    var mousePos = u.zoom_config.yz;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw; let pixel = vec2<i32>(gid.xy);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+  let uv = (vec2<f32>(pixel) + 0.5) / res; let time = u.config.x;
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let dims = vec2<i32>(textureDimensions(dataTextureC));
+  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
+  let dragStrength = u.zoom_params.x * 0.05 * (1.0 + bass * 0.8);
+  let waveFreq = 10.0 + u.zoom_params.y * 40.0 + mids * 8.0;
+  let persistence = 0.9 + u.zoom_params.z * 0.099;
+  let glitchAmt = u.zoom_params.w * (1.0 + treble * 0.6);
 
-    // Parameters
-    let dragStrength = u.zoom_params.x * 0.05; // How much pixels move per frame
-    let waveFreq = 10.0 + u.zoom_params.y * 40.0;
-    let persistence = 0.9 + (u.zoom_params.z * 0.099); // 0.9 - 0.999
-    let glitchAmt = u.zoom_params.w;
-    let alphaFade = 1.0 - (u.zoom_params.z * 0.05); // Alpha fade based on persistence
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var origin = rawMouse; var velocity = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) { origin = vec2<f32>(extraBuffer[133], extraBuffer[134]); velocity = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+  if (!initialized) { origin = rawMouse; velocity = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 11.0; let springDecay = exp(-omega * dt); let delta = origin - rawMouse; let temp = (velocity + omega * delta) * dt;
+  velocity = (velocity - omega * temp) * springDecay; origin = rawMouse + (delta + temp) * springDecay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) { extraBuffer[133] = origin.x; extraBuffer[134] = origin.y; extraBuffer[135] = velocity.x; extraBuffer[136] = velocity.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
 
-    // 1. Calculate Ripple Displacement
-    let dVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-    let dist = length(dVec);
+  let deltaMouse = (uv - origin) * aspectVec; let mouseDist = length(deltaMouse);
+  var direction = select(vec2<f32>(0.0), deltaMouse / mouseDist, mouseDist > 0.001);
+  let angle = atan2(direction.y, direction.x);
+  let quant = 3.14159265 / (4.0 + glitchAmt * 8.0);
+  direction = mix(direction, vec2<f32>(cos(floor(angle / quant) * quant), sin(floor(angle / quant) * quant)), clamp(glitchAmt, 0.0, 1.0));
+  let heldWave = smoothstep(0.62, 0.9, sin(mouseDist * waveFreq - time * (5.0 + mids * 2.0))) * smoothstep(0.9, 0.0, mouseDist) * (0.3 + 0.7 * u.zoom_config.w);
+  var displacement = direction / aspectVec * dragStrength * heldWave + velocity * heldWave * 0.16;
+  var clickEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age < 0.0 || age > 2.2) { continue; }
+    let deltaClick = (uv - ripple.xy) * aspectVec; let dist = length(deltaClick);
+    let front = exp(-pow((dist - age * 0.34) * 32.0, 2.0)) * (1.0 - age / 2.2);
+    let dir = select(vec2<f32>(0.0), deltaClick / dist, dist > 0.001);
+    displacement += dir / aspectVec * front * dragStrength * 1.8;
+    clickEnergy += front;
+  }
 
-    // Wave function: expanding rings from mouse
-    // We want the wave to move OUTWARDS.
-    // sin(dist * freq - time * speed)
-    let wave = sin(dist * waveFreq - time * 5.0);
-
-    // The force is only applied at the wave crests
-    // And falls off with distance to avoid moving the whole screen too much
-    let waveMask = smoothstep(0.5, 0.8, wave) * smoothstep(1.0, 0.0, dist * 2.0);
-
-    // Direction of drag is away from mouse
-    var dir = normalize(dVec);
-    if (length(dVec) < 0.001) { dir = vec2<f32>(0.0); }
-
-    // Add glitchy quantization to direction
-    if (glitchAmt > 0.0) {
-        let angle = atan2(dir.y, dir.x);
-        let quant = 3.14159 / (4.0 + glitchAmt * 8.0);
-        let qAngle = floor(angle / quant) * quant;
-        dir = vec2<f32>(cos(qAngle), sin(qAngle));
-    }
-
-    let displacement = dir * dragStrength * waveMask;
-
-    // 2. Sample History
-    // We sample history at the position "upstream" of the drag
-    // Current pixel (uv) gets color from (uv - displacement)
-
-    let sampleUV = uv - displacement;
-
-    // Read previous frame (feedback)
-    var historySample = textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0);
-    var history = historySample;
-
-    // Read current video frame
-    let inputSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    // 3. Blend Logic
-    // If history is empty (alpha=0), init with input.
-    if (history.a < 0.1) {
-        history = inputSample;
-    }
-
-    // We mix the input video back in slowly to prevent total degradation,
-    // but keep it high persistence to allow the drag to work.
-    // If we want "responsive video", we need the video to update.
-    // But the drag effect requires feedback.
-
-    // Result = Mix(Video, History, Persistence)
-    var finalColor = mix(inputSample.rgb, history.rgb, persistence);
-    // Alpha persistence: trails fade over time
-    var finalAlpha = mix(inputSample.a, history.a * alphaFade, persistence);
-
-    // Add extra glitch artifact: Color separation
-    if (glitchAmt > 0.5 && waveMask > 0.1) {
-        let r = textureSampleLevel(dataTextureC, u_sampler, sampleUV + vec2<f32>(0.005, 0.0), 0.0).r;
-        let b = textureSampleLevel(dataTextureC, u_sampler, sampleUV - vec2<f32>(0.005, 0.0), 0.0).b;
-        finalColor = vec3<f32>(r, finalColor.g, b);
-        // Glitch reduces alpha slightly for ghost effect
-        finalAlpha = finalAlpha * 0.98;
-    }
-
-    // Ensure minimum alpha
-    finalAlpha = clamp(finalAlpha, 0.1, 1.0);
-
-    var output = vec4<f32>(finalColor, finalAlpha);
-
-    // Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), output);
-    textureStore(dataTextureA, global_id.xy, output);
-    
-    // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let historyUV = clamp(uv - displacement, vec2<f32>(0.0), vec2<f32>(1.0));
+  let history = textureLoad(dataTextureC, historyCoord(historyUV, dims), 0);
+  let redHistory = textureLoad(dataTextureC, historyCoord(clamp(historyUV + vec2<f32>(glitchAmt * 0.006, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), dims), 0).r;
+  let blueHistory = textureLoad(dataTextureC, historyCoord(clamp(historyUV - vec2<f32>(glitchAmt * 0.006, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), dims), 0).b;
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let prior = select(source, history, history.a > 0.001);
+  var trailRgb = mix(source.rgb, prior.rgb, persistence);
+  trailRgb = mix(trailRgb, vec3<f32>(redHistory, trailRgb.g, blueHistory), clamp(glitchAmt * (heldWave + clickEnergy), 0.0, 1.0));
+  let trailEnergy = clamp(length(trailRgb - source.rgb) + heldWave + clickEnergy * 0.6, 0.0, 1.0);
+  let alpha = clamp(source.a + (1.0 - source.a) * trailEnergy, 0.0, 1.0);
+  let display = vec4<f32>(acesToneMap(max(trailRgb, vec3<f32>(0.0))), alpha);
+  textureStore(dataTextureA, pixel, display); textureStore(writeTexture, pixel, display);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

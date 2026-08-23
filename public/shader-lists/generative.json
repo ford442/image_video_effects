@@ -2019,7 +2019,7 @@
     "id": "fire_smoke_volumetric",
     "name": "Fire Smoke Volumetric",
     "url": "shaders/fire_smoke_volumetric.wgsl",
-    "description": "Volumetric fire and smoke simulation with chromatic temperature gradients (R hot to B cool), temporal smoke persistence via dataTextureC, audio-driven turbulence enhancement, physical transmittance, and depth-layered alpha.",
+    "description": "Raw smoke and density state advected through exact history loads, with sprung heat injection, bounded ignition fronts, chromatic fire, live plasma turbulence, ACES display, and source-depth ownership.",
     "tags": [
       "fire",
       "smoke",
@@ -2038,7 +2038,13 @@
       "smoke",
       "audio-reactive",
       "temporal",
-      "depth-aware"
+      "depth-aware",
+      "exact-history",
+      "raw-state-feedback",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -29352,7 +29358,7 @@
     "name": "Neural Synapse Web",
     "url": "shaders/neural-synapse-web.wgsl",
     "category": "generative",
-    "description": "Pulsing neural network nodes connected by synaptic signal lines, with audio-triggered pulses traveling connections.",
+    "description": "Pulsing neural nodes and synaptic signals with guarded six-float spring state, uniform bounded click waves, live plasma audio, exact display history, ACES, semantic alpha, and source depth.",
     "tags": [
       "generative",
       "neural",
@@ -29368,7 +29374,12 @@
       "upgraded-rgba",
       "temporal",
       "chromatic",
-      "depth-aware"
+      "depth-aware",
+      "exact-history",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -29449,7 +29460,7 @@
     "name": "Phase Memory Weave",
     "url": "shaders/phase-memory-weave.wgsl",
     "category": "generative",
-    "description": "Continuous Ginzburg-Landau order parameter with Allen-Cahn interface energy and exponential-decay memory kernel. Opalescent thin-film interference on phase boundaries with fluid caustics and crystalline subsurface scattering. Bass nucleates crystal seeds, mids control grain boundary mobility, treble adds capillary waves. Mouse deposits heat or cold based on click parity.",
+    "description": "Authoritative Ginzburg-Landau state packed as psiR, psiI, slow memory, and activity, with exact center/neighbor loads, sprung thermal focus, bounded click phase fronts, opalescent ACES display, semantic alpha, and source depth.",
     "features": [
       "ginzburg-landau",
       "allen-cahn",
@@ -29457,7 +29468,13 @@
       "opalescent-interfaces",
       "audio-driven",
       "mouse-thermal",
-      "temporal"
+      "temporal",
+      "exact-history",
+      "raw-state-feedback",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "viscous",

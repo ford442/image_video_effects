@@ -1,6 +1,19 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Batch 58D spectral/datamosh upgrade)
+**Last updated:** 2026-08-23 (Batch 68 stateful simulation/feedback upgrade)
+
+## 2026-08-23 — Batch 68 stateful simulation and feedback
+
+- Ten effects now share the Batch 58D contract: exact C, authoritative A, no B
+  writes, guarded `[133..138]` springs, bounded uniform clicks, real plasma
+  bands, ACES, semantic alpha, source depth, and 16x16x1 workgroups.
+- Fire owns raw smoke+density A; Ink owns pigment+thickness; Phase owns
+  psiR/psiI/slowMemory/activity; Prismatic owns raw accumulation. The other six
+  keep display/projected history. Temporal alone retains binding 13/history ring.
+- Naga 30.0.1 and focused contract gates are 10/10; params are unchanged;
+  catalogs are unique; Jest 81/81 and the production build pass. Real-GPU QA
+  remains external for stability, state packing, interaction, alpha/depth,
+  visual continuity, performance, and preset fidelity.
 
 ## 2026-08-23 — Batch 58D spectral and datamosh upgrade
 

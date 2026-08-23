@@ -10,6 +10,10 @@ _Learn about the person you're helping. Update this as you go._
 - **Batch 58D:** Ten spectral/datamosh upgrades completed with A authoritative,
   exact C, B unused, guarded `[133..138]` springs, saved params unchanged, and
   raw state retained for Vortex/Data Moshing/Datamosh. Real-GPU QA is external.
+- **Batch 68:** Ten stateful simulation/feedback upgrades completed under the
+  same contract. Raw A belongs to Fire, Ink, Phase, and Prismatic; Temporal
+  alone keeps binding 13/history ring. Structural/Jest/build gates are green;
+  real-GPU stability and composition QA remain external.
 
 ## Context
 
