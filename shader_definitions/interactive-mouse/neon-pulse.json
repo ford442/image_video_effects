@@ -2,7 +2,7 @@
   "id": "neon-pulse",
   "name": "Neon Pulse Distortion",
   "url": "shaders/neon-pulse.wgsl",
-  "description": "Distorts the image with a pulsating neon wave emanating from the cursor.",
+  "description": "Blackbody plasma cell array where each cell owns one of the eight FFT bins driving its base temperature and flicker rate. Cell temperature is carried through dataTextureC and relaxed with a Stefan-Boltzmann-style T^4 cooling term, so filaments heat fast under the cursor and cool slowly. Fixes a shader catalogued as mouse-driven that never read the mouse (zoom_config appeared only in the struct declaration), an 8x8 workgroup, a depth clobber, and unbounded additive HDR written with an out-of-range alpha.",
   "params": [
     {
       "id": "strength",
@@ -39,13 +39,60 @@
     "audio-reactive",
     "audio-driven",
     "upgraded-rgba",
-    "depth-aware"
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "semantic-alpha",
+    "aces",
+    "blackbody",
+    "plasma-arcs",
+    "thermal-diffusion"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "neon",
+    "plasma",
+    "blackbody",
+    "thermal",
+    "grid"
+  ],
+  "updatedParams": [
+    {
+      "id": "strength",
+      "name": "Grid Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Number of plasma cells across the frame (maps to zoom_params.x)."
+    },
+    {
+      "id": "speed",
+      "name": "Base Temperature",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Cell base temperature in Kelvin, 800-12000 K (maps to zoom_params.y)."
+    },
+    {
+      "id": "glow",
+      "name": "Audio Heat Gain",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "How much spectrum energy adds to cell temperature (maps to zoom_params.z)."
+    },
+    {
+      "id": "radius",
+      "name": "Glow Width",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Gaussian hotspot sigma; hotter cells glow wider (maps to zoom_params.w)."
+    }
   ]
 }

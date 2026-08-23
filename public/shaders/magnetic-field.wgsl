@@ -6,6 +6,40 @@
 //  Upgraded: 2026-08-16 (Batch 52: Multi-pole magnetic field, Lorentz particle conveyor, exact C load)
 // ═══════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-08-23 (Batch 60)
+//
+//  BUG FIXED IN THIS PASS — mask-as-colour feedback. dataTextureA stored the
+//  FIELD STATE tuple `[b_field.x, b_field.y, line_sharp, b_mag]`, and because
+//  dataTextureC is a copy of A, the "smooth temporal history" line
+//
+//      final_color = mix(final_color, prev_state.rgb, 0.1);
+//
+//  was blending the magnetic field VECTOR into the displayed colour: red got
+//  b_field.x, green got b_field.y, blue got the field-line mask. Field
+//  components are signed and unbounded, so this injected sign-flipping garbage
+//  into every frame rather than smoothing anything. This is the same class of
+//  defect the pool logged for spore-galaxy and neural-resonance.
+//
+//  The field is recomputed analytically from the dipoles every frame (nothing
+//  reads the state back into the simulation), so A now carries DISPLAY RGBA —
+//  making the temporal blend actually a temporal blend — and the field
+//  diagnostics move to B.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Per-band FFT pole spectrum — the multipole mode's poles each take one of
+//       the eight spectrum bins, setting that pole's moment strength, so the
+//       field geometry itself reshapes with the music instead of the whole
+//       field scaling by one global gain.
+//
+//    2. Cyclotron drift bands — charged-particle motion in a magnetic field
+//       follows helical cyclotron orbits whose radius goes as 1/|B|. Luminous
+//       tracer bands now advect ALONG the field lines at a rate set by the local
+//       field magnitude, so filings visibly stream faster where the field is
+//       strong and stall in the weak regions.
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -99,7 +133,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let angle = t * 0.6 + k * 1.5707963;
       let pos_k = mouse_corr + vec2<f32>(cos(angle), sin(angle)) * pole_dist * 1.2;
       let sign_k = select(-1.0, 1.0, k % 2.0 < 0.5);
-      let m_k = vec2<f32>(-sin(angle), cos(angle)) * sign_k;
+      // Structure 1: pole k draws its moment strength from FFT bin k.
+      let pole_band = plasmaBuffer[(u32(k) % 8u) + 1u].x;
+      let m_k = vec2<f32>(-sin(angle), cos(angle)) * sign_k * (0.55 + pole_band * 1.6);
       b_field += dipole_b(p_corr, pos_k, m_k);
     }
   } else {
@@ -153,15 +189,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aurora_phase = potential * 3.0 + t * 1.5;
   let aurora_tint = 0.5 + 0.5 * cos(vec3<f32>(0.0, 1.6, 3.2) + aurora_phase);
   var final_color = mix(base_color, aurora_tint * 1.4, line_sharp * 0.65);
-  final_color = mix(final_color, prev_state.rgb, 0.1); // smooth temporal history
+
+  // ── Structure 2: cyclotron drift bands ───────────────────────────────────
+  // Cyclotron radius goes as 1/|B|, so tracers stream fast where the field is
+  // strong and stall where it is weak. The band phase advects along b_dir.
+  let cyclotron_rate = clamp(b_mag * 6.0, 0.05, 12.0);
+  let along = dot(p_corr, b_dir);
+  let drift = sin(along * (14.0 + density * 6.0) - t * cyclotron_rate * (1.0 + mids * 0.6));
+  let tracer = pow(max(drift, 0.0), 6.0) * field_envelope * (0.35 + treble * 0.9);
+  final_color += aurora_tint * tracer * 0.55;
+  final_color += vec3<f32>(0.85, 0.92, 1.0) * abs(click_flux) * 0.4;
+
+  // Temporal history — now a real colour history (see header: this used to
+  // blend the raw B-field vector into RGB).
+  final_color = mix(final_color, prev_state.rgb, 0.1);
 
   final_color = aces_film(final_color);
 
-  let out_rgba = vec4<f32>(final_color, src_alpha);
-  let out_state = vec4<f32>(b_field.x, b_field.y, line_sharp, b_mag);
+  // Semantic alpha: field lines and tracers are the content.
+  let substance = clamp(line_sharp * 0.8 + tracer * 0.7 + abs(click_flux) * 0.5, 0.0, 1.0);
+  let out_alpha = clamp(mix(src_alpha, 1.0, substance), 0.0, 1.0);
+  let out_rgba = vec4<f32>(final_color, out_alpha);
   let out_depth = clamp(depth_tex + line_sharp * 0.25, 0.0, 1.0);
 
   textureStore(writeTexture, coord, out_rgba);
-  textureStore(dataTextureA, coord, out_state);
+  // A carries DISPLAY RGBA so the history blend above is meaningful; the field
+  // state tuple that used to live here moves to B.
+  textureStore(dataTextureA, coord, out_rgba);
+  textureStore(dataTextureB, coord, vec4<f32>(b_field.x, b_field.y, line_sharp, b_mag));
   textureStore(writeDepthTexture, coord, vec4<f32>(out_depth, 0.0, 0.0, 0.0));
 }

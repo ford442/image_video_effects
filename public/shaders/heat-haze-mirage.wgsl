@@ -4,7 +4,32 @@
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-30
-//  Upgraded: 2026-08-02 (Batch 29)
+//  Upgraded: 2026-08-23 (Batch 60)
+//
+//  FIXED IN THIS PASS — depth clobber. `writeDepthTexture` was fed
+//  `clamp(heatFactor * 0.5, 0, 1)`, discarding scene geometry entirely: every
+//  depth-aware shader chained after this one read the heat column instead of
+//  the depth map, and the engine's depth swap fed that back in. Scene depth is
+//  preserved and only perturbed by the mirage relief.
+//
+//  Also added: ACES (the output was hard-clamped to 1.3, clipping the shimmer
+//  highlights) and a semantic alpha derived from haze density rather than the
+//  source alpha passed straight through.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Refractive-index gradient ray bending — a mirage is not a noise offset;
+//       it is light bending through a vertical temperature gradient, where the
+//       air's refractive index falls as it heats. The displacement is now
+//       integrated from the local dn/dy gradient (hot air near the ground bends
+//       rays upward, producing the inverted-image inferior mirage), so the
+//       distortion grows with the square of the path through the hot layer
+//       instead of scaling linearly with a noise sample.
+//
+//    2. Inversion-layer image doubling — where the gradient is strong enough to
+//       reach total internal reflection, a second, vertically flipped sample is
+//       mixed in. That is the actual mechanism behind the shimmering "water"
+//       and the doubled horizon in real road mirages.
 // ═══════════════════════════════════════════════════════════════════
 //  Vertical heat shimmer driven by a rising hot-air column. A
 //  time-varying noise field is advected upward, displacing the UV
@@ -57,6 +82,15 @@ fn fbm2(p: vec2<f32>) -> vec2<f32> {
     let n1 = vnoise(p);
     let n2 = vnoise(p + vec2<f32>(5.2, 1.3));
     return vec2<f32>(n1, n2);
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -143,8 +177,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let risingUV  = vec2<f32>(uv.x * wavyScale, uv.y * wavyScale - time * riseSpeed);
     let disp      = fbm2(risingUV) * heatIntensity * heatFactor * (1.0 + bandBoost);
 
+    // ── Structure 1: refractive-index gradient ray bending ────────────
+    // n falls as air heats, so dn/dy is negative in the hot layer near the
+    // ground. Ray curvature is proportional to that gradient, and the lateral
+    // deflection accumulates as the SQUARE of the path length through it.
+    let heatAbove = smoothstep(1.0, 0.0, uv.y + 0.04) * 0.5 + 0.5 + mouseHeat;
+    let dn_dy     = (heatAbove - heatBase - mouseHeat) * 25.0;   // index gradient
+    let pathLen   = smoothstep(0.9, 0.0, uv.y);                  // path in hot layer
+    let bend      = -dn_dy * pathLen * pathLen * heatIntensity * 0.35;
+
     // Vertical bias: haze mostly shifts horizontally (shimmer), slight vertical
-    let heatDisp  = vec2<f32>(disp.x, disp.y * 0.3);
+    let heatDisp  = vec2<f32>(disp.x, disp.y * 0.3 + bend);
 
     // Chromatic shift: red slightly ahead, blue slightly behind (mirage)
     let rUV = clamp(uv + heatDisp + vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
@@ -156,9 +199,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
     let a = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).a;
 
+    // ── Structure 2: inversion-layer image doubling ───────────────────
+    // Past the critical gradient the hot layer reflects: a vertically mirrored
+    // sample folds in, which is what produces the false "water" and the
+    // doubled horizon of a real inferior mirage.
+    let criticalGrad = 0.55;
+    let tirMix = smoothstep(criticalGrad, criticalGrad + 0.5, abs(bend) * 40.0)
+               * smoothstep(0.55, 0.0, uv.y);
+    let mirrorUV = clamp(vec2<f32>(gUV.x, 2.0 * uv.y - gUV.y + bend * 2.0),
+                         vec2<f32>(0.0), vec2<f32>(1.0));
+    let mirrored = textureSampleLevel(readTexture, u_sampler, mirrorUV, 0.0).rgb;
+
     // Atmospheric haze: slight brightness boost + warm tint at heat zones
     let warmTint   = vec3<f32>(1.04, 1.01, 0.97) * (1.0 + heatFactor * 0.1);
-    var col        = vec3<f32>(r, g, b) * warmTint;
+    var col        = mix(vec3<f32>(r, g, b), mirrored, tirMix * 0.75) * warmTint;
 
     // Heat shimmer glow (subtle)
     let glowMask   = heatFactor * heatIntensity * 50.0;
@@ -168,9 +222,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let prev     = textureLoad(dataTextureC, coord, 0);
     let hazeAcc  = mix(vec4<f32>(col, a), prev, 0.85);
 
-    let outColor = vec4<f32>(clamp(col, vec3<f32>(0.0), vec3<f32>(1.3)), a);
+    col = acesFilm(col);
+
+    // Semantic alpha: haze density and the mirage fold are the content.
+    let hazeDensity = clamp((heatFactor - 0.5) * 0.8 + tirMix * 0.6, 0.0, 1.0);
+    let outAlpha = clamp(mix(a, 1.0, hazeDensity * 0.7), 0.0, 1.0);
+    let outColor = vec4<f32>(col, outAlpha);
     textureStore(writeTexture, coord, outColor);
-    let reliefDepth = clamp(heatFactor * 0.5, 0.0, 1.0);
+
+    // Depth: scene geometry preserved (was overwritten with the heat column),
+    // pushed slightly by the mirage relief.
+    let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, gUV, 0.0).r;
+    let reliefDepth = clamp(sceneDepth - heatFactor * 0.04 - tirMix * 0.06, 0.0, 1.0);
     textureStore(writeDepthTexture, coord, vec4<f32>(reliefDepth, 0.0, 0.0, 1.0));
     textureStore(dataTextureA, coord, hazeAcc);
     textureStore(dataTextureB, coord, vec4<f32>(heatDisp, heatFactor, bass));
