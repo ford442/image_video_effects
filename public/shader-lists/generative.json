@@ -28484,7 +28484,7 @@
     "id": "liquid_crystal_birefringence",
     "name": "Liquid Crystal",
     "url": "shaders/liquid_crystal_birefringence.wgsl",
-    "description": "Liquid crystal optical effects with birefringent double refraction, twisted nematic polarization rotation, and Schlieren texture",
+    "description": "Twisted-nematic cell between crossed polarizers. The analyzer now obeys Malus's law and rotates toward a held pointer, producing the dark extinction brushes real liquid-crystal microscopy shows — previously no analyzer existed at all, so the effect's most recognisable feature could not appear. Transmitted light relaxes through dataTextureC with an asymmetric Frederiks time constant. Scene depth is preserved (it was previously overwritten with polarization alpha).",
     "tags": [
       "interactive",
       "cursor",
@@ -28492,7 +28492,8 @@
       "birefringence",
       "polarization",
       "optics",
-      "lcd"
+      "lcd",
+      "interference"
     ],
     "features": [
       "mouse-driven",
@@ -28500,7 +28501,18 @@
       "birefringence",
       "polarization",
       "liquid-crystal",
-      "schlieren"
+      "schlieren",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "malus-analyzer",
+      "frederiks-relaxation"
     ],
     "params": [
       {
@@ -28543,36 +28555,44 @@
     "target_rating": 4.7,
     "updatedParams": [
       {
-        "index": 0,
-        "name": "Thickness",
+        "id": "param1",
+        "name": "Cell Thickness",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.x",
+        "description": "Optical path through the nematic layer — maps to zoom_params.x."
       },
       {
-        "index": 1,
-        "name": "Twist",
+        "id": "param2",
+        "name": "Twist Angle",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.y",
+        "description": "Total director twist across the cell, 0-2pi — maps to zoom_params.y."
       },
       {
-        "index": 2,
+        "id": "param3",
         "name": "Birefringence",
         "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.z",
+        "description": "Index difference (delta n), 0.1-0.3 — maps to zoom_params.z."
       },
       {
-        "index": 3,
+        "id": "param4",
         "name": "Voltage",
         "default": 0.2,
         "min": 0,
         "max": 1,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.w",
+        "description": "Frederiks drive; also sets the switching rise time — maps to zoom_params.w."
       }
     ],
     "updated": true,

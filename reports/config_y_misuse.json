@@ -1,10 +1,10 @@
 {
-  "total": 88,
+  "total": 85,
   "byCategory": {
     "delta_time": 12,
     "click_or_frame_count": 14,
     "unclassified": 15,
-    "audio": 47
+    "audio": 44
   },
   "findings": [
     {
@@ -398,18 +398,6 @@
       "code": "let clickCount = u.config.y;"
     },
     {
-      "file": "public/shaders/holographic-interferometry.wgsl",
-      "line": 108,
-      "category": "audio",
-      "code": "let audioOverall = u.config.y;"
-    },
-    {
-      "file": "public/shaders/holographic-interferometry.wgsl",
-      "line": 109,
-      "category": "audio",
-      "code": "let audioBass = u.config.y * 1.2;"
-    },
-    {
       "file": "public/shaders/hybrid-chromatic-liquid.wgsl",
       "line": 79,
       "category": "audio",
@@ -426,12 +414,6 @@
       "line": 81,
       "category": "delta_time",
       "code": "let dt = u.config.y;"
-    },
-    {
-      "file": "public/shaders/liquid-prism.wgsl",
-      "line": 95,
-      "category": "audio",
-      "code": "let audioOverall = u.config.y;"
     },
     {
       "file": "public/shaders/mouse-ink-bleed.wgsl",
