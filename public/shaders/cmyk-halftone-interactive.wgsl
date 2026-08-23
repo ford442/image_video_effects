@@ -74,13 +74,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let mouse = u.zoom_config.yz;
   let audio = plasmaBuffer[0].xyz;
+  let time = u.config.x;
+  let mouseDown = u.zoom_config.w > 0.5;
 
   let density = 40.0 + u.zoom_params.x * 170.0;
   let baseAngle = u.zoom_params.y * 3.14159;
   let spread = u.zoom_params.z * 0.05;
   let inkDarkness = 0.5 + u.zoom_params.w * 0.5;
 
-  let interactAngle = (mouse.x - 0.5) * 3.14159;
+  let drift = vec2<f32>(sin(time * 0.73), cos(time * 0.91)) * (0.002 + 0.006 * audio.xy);
+  let heldDelta = (uv - mouse) * select(0.0, 1.0, mouseDown);
+  let interactAngle = (mouse.x - 0.5) * 3.14159 + heldDelta.y * 1.4;
   let interactSpread = mouse.y * 0.10;
   let finalSpread = spread + interactSpread;
 
@@ -92,10 +96,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let angY = radians(0.0) + baseAngle + interactAngle;
   let angK = radians(45.0) + baseAngle + interactAngle;
 
-  let offC = vec2<f32>(-1.0, 0.0) * finalSpread * (1.0 + audio.x * 0.4);
-  let offM = vec2<f32>(1.0, 0.0) * finalSpread * (1.0 + audio.y * 0.4);
-  let offY = vec2<f32>(0.0, -1.0) * finalSpread * (1.0 + audio.z * 0.4);
-  let offK = vec2<f32>(0.0, 1.0) * finalSpread * (1.0 + (audio.x + audio.y) * 0.2);
+  var bloom = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    let radius = length((uv - event.xy) * vec2<f32>(aspect, 1.0));
+    bloom += exp(-age * 1.7) * exp(-abs(radius - age * 0.32) * 70.0);
+  }
+  let shear = vec2<f32>(heldDelta.y, heldDelta.x) * 0.025;
+  let offC = vec2<f32>(-1.0, 0.0) * finalSpread * (1.0 + audio.x * 0.4) + drift + shear;
+  let offM = vec2<f32>(1.0, 0.0) * finalSpread * (1.0 + audio.y * 0.4) - drift - shear;
+  let offY = vec2<f32>(0.0, -1.0) * finalSpread * (1.0 + audio.z * 0.4) + drift.yx;
+  let offK = vec2<f32>(0.0, 1.0) * finalSpread * (1.0 + (audio.x + audio.y) * 0.2) - drift.yx;
 
   let finalC = halftone_dot(uv, aspect, density, angC, offC, cmyk.x, 1.0 + audio.x * 0.35);
   let finalM = halftone_dot(uv, aspect, density, angM, offM, cmyk.y, 1.0 + audio.y * 0.35);
@@ -115,7 +128,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let paperTint = mix(vec3<f32>(1.0), vec3<f32>(0.98, 0.95, 0.90), inkDarkness * 0.25);
   let registrationGlow =
     vec3<f32>(finalC, finalM, finalY) * vec3<f32>(0.05 + 0.08 * audio.x, 0.04 + 0.08 * audio.y, 0.03 + 0.08 * audio.z);
-  let finalColor = paperTint * mixC * mixM * mixY * mixK + registrationGlow;
+  let rosette = 0.5 + 0.5 * sin(length((uv - 0.5) * vec2<f32>(aspect, 1.0)) * density * 5.0 - time * 1.4);
+  let spectralBloom = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + bloom * 5.0 + time);
+  let finalColor = paperTint * mixC * mixM * mixY * mixK + registrationGlow + spectralBloom * bloom * 0.28 + rosette * finalC * finalM * 0.06;
 
   let coverage = clamp((finalC + finalM + finalY + finalK) * 0.25, 0.0, 1.0);
   let finalAlpha = clamp(0.58 + coverage * 0.38 + cmyk.w * 0.10, 0.50, 0.98);
