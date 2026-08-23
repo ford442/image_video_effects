@@ -55,5 +55,43 @@
   "updated": true,
   "id": "gen-auroral-ferrofluid-monolith",
   "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "spike_length",
+      "name": "Spike Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "aurora_intensity",
+      "name": "Aurora Intensity",
+      "default": 0.8,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "magnetic_twist",
+      "name": "Magnetic Twist",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "fluid_metallic_response",
+      "name": "Fluid Metallic Response",
+      "default": 0.9,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

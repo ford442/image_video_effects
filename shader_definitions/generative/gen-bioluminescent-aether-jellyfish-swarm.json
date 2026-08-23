@@ -49,5 +49,43 @@
   "updated": true,
   "id": "gen-bioluminescent-aether-jellyfish-swarm",
   "url": "shaders/gen-bioluminescent-aether-jellyfish-swarm.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "swarm_density",
+      "name": "Swarm Density",
+      "default": 10,
+      "min": 1,
+      "max": 30,
+      "step": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "propulsion_speed",
+      "name": "Propulsion Speed",
+      "default": 1,
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "bioluminescence_intensity",
+      "name": "Bioluminescence Intensity",
+      "default": 2,
+      "min": 0.5,
+      "max": 10,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "tentacle_length",
+      "name": "Tentacle Length",
+      "default": 5,
+      "min": 1,
+      "max": 15,
+      "step": 0.5,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

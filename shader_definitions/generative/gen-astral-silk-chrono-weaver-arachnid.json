@@ -53,5 +53,43 @@
   "updated": true,
   "id": "gen-astral-silk-chrono-weaver-arachnid",
   "url": "shaders/gen-astral-silk-chrono-weaver-arachnid.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "web_glow",
+      "name": "Web Glow",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "arachnid_activity",
+      "name": "Arachnid Activity",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "silk_refraction",
+      "name": "Silk Refraction",
+      "default": 0.5,
+      "min": 1.0,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "shockwave_intensity",
+      "name": "Shockwave Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }
