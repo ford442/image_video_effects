@@ -1,26 +1,30 @@
-# Batch 56 coordinator review — 2026-08-23
+# Batch 56 coordinator review — 2026-08-23 (cursor + main triple merge)
 
-## Outcome
+Status: **STRUCTURALLY MERGED** on `cursor/effect-shaders-complexity-8594`.
+Tracker #475–482 was claimed by three concurrent Batch 56 lineages; unique
+shaders from all three are retained; overlaps hand-merged.
 
-Batch 56 is structurally complete across tracker #475–482.
+## Lineages
 
-## Contract review
+- **Cursor / geometry+motion:** ascii-shockwave, cmyk-halftone-interactive,
+  heat-haze-gpt52, quantum-prism, sphere-projection, fractal-kaleidoscope,
+  rgb-iso-lines, chromatic-focus-interactive.
+- **Main prior merge:** cyber-slit-scan, hyb-spectral-fbm-displace,
+  infinite-zoom-lens, phosphor-magnifier, warp_drive, liquid-warp-interactive,
+  interactive-ripple, vertical-slice-wave, matrix-curtain, plus shared overlaps.
 
-- Explicit WGSL/Naga/bind-group gate: 8/8 pass, canonical bindings and
-  16x16x1 workgroups (heat-haze and rgb-iso-lines from 8x8).
-- Strict `extraBuffer` audit: zero violations; B remains unused.
-- Dead-slider audit: 8/8 definitions, zero new dead sliders (fractal
-  kaleidoscope and quantum prism now read all four params).
-- Schema-aware audit: source `params` exact 8/8, aligned `updatedParams`, live
-  controls, pointer/down response, bounded ripple loops, real three-band audio,
-  depth writes, exact C loads, and no `floor(time)` hash animation.
-- Feedback contracts are truthful: CMYK A is coverage; iso-lines A is
-  `[lineR, lineG, lineB, alpha]`; remaining shaders write display RGBA to A.
-- Duplicate, relative-URL, and uniform-layout checks pass.
+## Cursor↔main overlap contracts
 
-## Baseline blockers and handoff
+- **Chromatic Focus:** six-blade iris + multi-tap blur + caustics + oil-slick
+  runners/packets; display history in A; B unused.
+- **CMYK Halftone:** rotating screens, rosette rings, registration drift/shear,
+  conveyors, click blooms; **A remains CMYK coverage** (with light persistence).
+- **Quantum Prism:** hex bevel + grout, spectral bands, oil-slick runners,
+  cell packets; display history in A; facet-aware depth.
 
-Full Jest reached 81/81 suites (545 passed, 1 skipped).
-`SKIP_WASM_BUILD=1 npm run build` compiled successfully. Real-GPU QA remains required for geometry identity, continuous motion,
-psychedelic color, interaction, alpha/depth composition, trail stability,
-and preset fidelity.
+## Shared invariants
+
+- Source `params` byte-equivalent on overlaps; indexed `updatedParams` present.
+- Canonical 13 bindings, 16x16x1 workgroups, capped click loops, B unused, no
+  `extraBuffer` writes.
+- Structural validation local; real-GPU visual QA remains required.

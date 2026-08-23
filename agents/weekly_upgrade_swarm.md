@@ -37,6 +37,42 @@ unused and no extraBuffer access was added. Structural gates 8/8; Jest
 | 481 | `rgb-iso-lines` | 56 | 131→106 | 16x16, iso-runners, rainbow hypsometry, held parallax; line-mask A. |
 | 482 | `chromatic-focus-interactive` | 56 | 130→105 | Aperture blades, radial packets, held pinch, click rings; display A. |
 
+### Batch 56 merge note — cursor + prior main lineages
+
+Tracker #475–482 was claimed by three concurrent Batch 56 pushes. On
+`cursor/effect-shaders-complexity-8594`, unique shaders from all lineages are
+retained. Overlaps hand-merged: chromatic-focus-interactive, cmyk-halftone-
+interactive, quantum-prism (cursor geometry + prior optical/feedback polish).
+
+### Batch 56 (8 shaders) — 2026-08-23 — FAST MOTION + PSYCHEDELIC COLOR
+
+The next ~129L clean single-pass cohort upgrades Cyber Slit Scan, Spectral FBM
+Displace, Infinite Zoom Lens, Phosphor Magnifier, Quantum Prism, Warp Drive,
+Chromatic Focus Interactive, and Liquid Warp Interactive. Each receives two
+shader-specific continuous-motion structures (conveyors, runners, axial packets,
+interference bands), held-pointer response, capped click ripples, and psychedelic
+oil-slick / liquid-rainbow / phosphor-aurora palettes without frame-hash strobing.
+Filtered `dataTextureC` history reads become bounded `textureLoad` where temporal
+state is used. Infinite Zoom Lens, Phosphor Magnifier, and Warp Drive retain
+diagnostic A packing; the other five pack display RGBA in A. B remains unused
+throughout and no `extraBuffer` access was introduced. Source `params` stay
+exact; indexed `updatedParams` are aligned. The explicit gate, dead-slider audit,
+and uniform-layout checks pass 8/8; duplicates are 1,345/1,345; Jest is 81/81
+suites (545 pass / 1 skip). Notes: `swarm-outputs/codex-2026-08-23-b56/`. Real-GPU
+visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 475 | `cyber-slit-scan` | 56 | 129→112 (-17) | Aurora scan bands, oil-slick hue, exact C scroll, held slit, click fronts; display A. |
+| 476 | `hyb-spectral-fbm-displace` | 56 | 129→142 (+13) | Conveyor/runner interference, held warp pull, click rings, display A + exact C blend. |
+| 477 | `infinite-zoom-lens` | 56 | 129→140 (+11) | Axial packets, interference runners, analytic rainbow, IGN dither, exact C load; diagnostic A preserved. |
+| 478 | `phosphor-magnifier` | 56 | 129→135 (+6) | Aurora scan runners, phosphor trail from scan channel, click blooms; diagnostic A preserved. |
+| 479 | `quantum-prism` | 56 | 130→122 (-8) | Live sliders wired, facet runners, oil-slick caustics, click shocks; display A. |
+| 480 | `warp_drive` | 56 | 129→141 (+12) | Doppler aurora packets, analytic star phases, held warp, click fronts; diagnostic A preserved. |
+| 481 | `chromatic-focus-interactive` | 56 | 130→102 (-28) | Focus runners, oil-slick aberration, click iris rings, exact C blend; display A. |
+| 482 | `liquid-warp-interactive` | 56 | 130→153 (+23) | Curl conveyors, liquid-rainbow ripples, hash→value noise, exact C advection; display A. |
+
+
 ### Batch 55 (4 shaders) — 2026-08-21 — GEOMETRY, FAST MOTION, PSYCHEDELIC COLOR
 
 This four-shader cohort upgrades Kaleido-Scope Prism grokcf1, RGB Topology,

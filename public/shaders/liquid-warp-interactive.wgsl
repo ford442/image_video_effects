@@ -1,10 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Liquid Warp Interactive
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, curl-noise, depth-viscosity, temporal, upgraded-rgba
-//  Complexity: High
-//  Chunks From: liquid-warp-interactive, curl2D, fbm, bass_env
-//  Upgraded: 2026-05-31
+//  Liquid Warp Interactive — Batch 56
+//  Curl conveyors, liquid-rainbow ripples, held flow, bounded click fronts
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -27,9 +23,12 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
+
 fn hash21(p: vec2<f32>) -> f32 {
-  let h = dot(p, vec2<f32>(127.1, 311.7));
-  return fract(sin(h) * 43758.5453123);
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
 fn valueNoise(p: vec2<f32>) -> f32 {
@@ -72,59 +71,83 @@ fn bass_env(bass: f32, mids: f32) -> f32 {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let pixel = vec2<i32>(global_id.xy);
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    let aspect = resolution.x / resolution.y;
-    let mousePos = u.zoom_config.yz;
-    let clickState = u.zoom_config.w;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / resolution.y;
+  let mousePos = u.zoom_config.yz;
+  let clickState = u.zoom_config.w;
+  let held = f32(clickState > 0.5);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let prev = textureLoad(dataTextureC, pixel, 0);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let viscosity = mix(0.3, 1.0, depth);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  let viscosity = mix(0.3, 1.0, depth);
 
-    let distortAmt = u.zoom_params.x * 0.25 * bass_env(bass, mids);
-    let flowSpeed = mix(0.5, 4.0, u.zoom_params.y) * (1.0 + mids * 0.35);
-    let noiseScale = mix(4.0, 40.0, u.zoom_params.z) * (1.0 + treble * 0.2);
-    let viscosityParam = u.zoom_params.w;
+  let distortAmt = u.zoom_params.x * 0.25 * bass_env(bass, mids) * (1.0 + held * 0.2);
+  let flowSpeed = mix(0.5, 4.0, u.zoom_params.y) * (1.0 + mids * 0.35);
+  let noiseScale = mix(4.0, 40.0, u.zoom_params.z) * (1.0 + treble * 0.2);
+  let viscosityParam = u.zoom_params.w;
 
-    let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
-    let mousePosCorrected = vec2<f32>(mousePos.x * aspect, mousePos.y);
-    let mVec = mousePosCorrected - uvCorrected;
-    let mDist = length(mVec);
-    let ripple = sin((mDist - time * flowSpeed) * (12.0 + noiseScale)) * 0.5 + 0.5;
-    let pull = smoothstep(0.6, 0.0, mDist) * distortAmt * (0.7 + ripple * 0.3) * mix(0.25, 1.0, clickState);
-    let flow = mVec / max(mDist, 0.001) * pull;
+  let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
+  let mousePosCorrected = vec2<f32>(mousePos.x * aspect, mousePos.y);
+  let mVec = mousePosCorrected - uvCorrected;
+  let mDist = length(mVec);
+  let ripple = sin((mDist - time * flowSpeed) * (12.0 + noiseScale)) * 0.5 + 0.5;
+  let pull = smoothstep(0.6, 0.0, mDist) * distortAmt * (0.7 + ripple * 0.3) * mix(0.25, 1.0, clickState);
+  let flow = mVec / max(mDist, 0.001) * pull;
 
-    let curl = curl2D(uv * 2.0, time * 0.12) * 0.025 * bass_env(bass, mids) * viscosity;
-    let turbulence = vec2<f32>(
-        sin(uv.y * noiseScale + time * flowSpeed * (1.5 + mids)),
-        cos(uv.x * noiseScale + time * flowSpeed * (1.2 + treble))
-    ) * (0.006 + (1.0 - viscosityParam) * 0.014) * viscosity;
+  let conveyor = vec2<f32>(
+    sin(uv.y * noiseScale * 0.5 + time * flowSpeed * 1.3),
+    cos(uv.x * noiseScale * 0.4 - time * flowSpeed * 1.1)
+  ) * 0.008 * viscosity;
+  let curl = curl2D(uv * 2.0, time * 0.12) * 0.025 * bass_env(bass, mids) * viscosity;
+  let turbulence = vec2<f32>(
+    sin(uv.y * noiseScale + time * flowSpeed * (1.5 + mids)),
+    cos(uv.x * noiseScale + time * flowSpeed * (1.2 + treble))
+  ) * (0.006 + (1.0 - viscosityParam) * 0.014) * viscosity;
 
-    let distUV = clamp(uv + vec2<f32>(flow.x / aspect, flow.y) + turbulence + curl, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
-    let chromaticAberration = (0.004 + (1.0 - viscosityParam) * 0.014) * (1.0 + treble * 0.4) * (1.0 + clickState);
-    let rUV = clamp(distUV + vec2<f32>(chromaticAberration, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
-    let gUV = distUV;
-    let bUV = clamp(distUV - vec2<f32>(chromaticAberration, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+  let distUV = clamp(uv + vec2<f32>(flow.x / aspect, flow.y) + turbulence + curl + vec2<f32>(conveyor.x / aspect, conveyor.y),
+    vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+  let chromaticAberration = (0.004 + (1.0 - viscosityParam) * 0.014) * (1.0 + treble * 0.4) * (1.0 + clickState);
+  let rUV = clamp(distUV + vec2<f32>(chromaticAberration, 0.0), vec2<f32>(0.001), vec2<f32>(0.999));
+  let gUV = distUV;
+  let bUV = clamp(distUV - vec2<f32>(chromaticAberration, 0.0), vec2<f32>(0.001), vec2<f32>(0.999));
 
-    let gColor = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
-    let warped = vec3<f32>(
-        textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
-        gColor.g,
-        textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
-    );
-    let tint = vec3<f32>(0.03, 0.18 + mids * 0.08, 0.12 + bass * 0.06) * ripple * pull * 3.0;
-    let finalColor = warped + tint;
-    let alpha = clamp(gColor.a * 0.45 + pull * 1.6 + ripple * 0.12 + bass * 0.05, 0.08, 1.0);
-    let depthOut = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, gUV, 0.0).r + pull * 0.18, 0.0, 1.0);
-    let finalPixel = vec4<f32>(finalColor, alpha);
+  let gColor = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
+  var warped = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
+    gColor.g,
+    textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
+  );
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalPixel);
+  let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(mDist * 8.0 - time * 0.5) + vec3<f32>(0.0, 0.33, 0.67)));
+  let tint = oilSlick * ripple * pull * 0.35 + vec3<f32>(0.03, 0.18 + mids * 0.08, 0.12 + bass * 0.06) * ripple * pull;
+  var finalColor = warped + tint;
+
+  var clickRing = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
+      let d = length(uv - rp.xy);
+      clickRing = max(clickRing, exp(-abs(d - age * 0.35) * 50.0) * (1.0 - age / 1.5));
+    }
+  }
+  finalColor += oilSlick * clickRing * 0.25;
+  finalColor = mix(finalColor, prev.rgb * 0.9, 0.1 * pull);
+
+  let alpha = clamp(gColor.a * 0.45 + pull * 1.6 + ripple * 0.12 + bass * 0.05, 0.08, 1.0);
+  let depthOut = clamp(textureLoad(readDepthTexture, pixel, 0).r + pull * 0.18, 0.0, 1.0);
+  let finalPixel = vec4<f32>(finalColor, alpha);
+
+  textureStore(writeTexture, pixel, finalPixel);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, finalPixel);
 }

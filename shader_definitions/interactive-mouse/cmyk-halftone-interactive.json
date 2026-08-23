@@ -8,9 +8,14 @@
     "audio-reactive",
     "upgraded-rgba",
     "depth-aware",
+    "continuous-motion",
+    "click-reactive",
+    "held-pointer",
     "held-drag",
     "bounded-click-ripples",
-    "cmyk-rosette"
+    "psychedelic-color",
+    "cmyk-rosette",
+    "rosette-moire"
   ],
   "params": [
     {
@@ -48,35 +53,40 @@
     "print",
     "audio-reactive"
   ],
+  "description": "Rosette/moire CMYK halftone with rotating screens, registration drift and held plate shear, ink conveyors/packets, click blooms, rainbow registration glow, and three-band audio. A remains CMYK coverage masks.",
   "updatedParams": [
     {
-      "id": "density",
+      "index": 0,
       "name": "Dot Density",
       "default": 0.5,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "angle_offset",
+      "index": 1,
       "name": "Angle Offset",
       "default": 0,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "separation",
+      "index": 2,
       "name": "Channel Spread",
       "default": 0.1,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "darkness",
+      "index": 3,
       "name": "Ink Darkness",
       "default": 0.8,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
-  "description": "CMYK print rosettes with rotating screens, traveling ink packets, held registration shear, bounded click splats, and rainbow registration glow. A stays CMYK coverage."
+  "updated": true
 }

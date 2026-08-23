@@ -4,10 +4,16 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "continuous-motion",
+    "click-reactive",
+    "held-pointer",
+    "held-drag",
+    "bounded-click-ripples",
+    "psychedelic-color",
+    "depth-aware",
     "upgraded-rgba",
     "hex-prism",
-    "held-drag",
-    "bounded-click-ripples"
+    "hex-grout"
   ],
   "tags": [
     "filter",
@@ -48,39 +54,40 @@
       "step": 0.01
     }
   ],
+  "description": "Interactive honeycomb prism with beveled facets and grout, moving spectral bands, oil-slick facet runners, held cell deformation, click fronts, three-band audio, facet depth, and display history in A.",
   "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Intensity",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Speed",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Scale",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Detail",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     }
   ],
-  "description": "Hex-prism cells with grout, runners, held rotation/zoom, bounded click fronts, and oil-slick prism palettes. Display RGBA packed in A."
+  "updated": true
 }

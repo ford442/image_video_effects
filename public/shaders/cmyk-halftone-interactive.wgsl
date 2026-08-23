@@ -1,10 +1,8 @@
 // ================================================================
-//  CMYK Halftone Interactive
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware,
-//            rosette-geometry, held-drag, bounded-click-ripples
-//  Complexity: High
-//  Upgraded: 2026-08-23
+//  CMYK Halftone Interactive — Batch 56 cursor+main merge
+//  Rosette rings, rotating screens, registration drift/shear,
+//  ink conveyors/packets, click blooms, rainbow registration glow.
+//  A remains CMYK coverage masks.
 // ================================================================
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -49,7 +47,15 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
   return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
 }
 
-fn halftone_dot(uv: vec2<f32>, aspect: f32, density: f32, angle: f32, offset: vec2<f32>, amount: f32, radiusScale: f32) -> f32 {
+fn halftone_dot(
+  uv: vec2<f32>,
+  aspect: f32,
+  density: f32,
+  angle: f32,
+  offset: vec2<f32>,
+  amount: f32,
+  radiusScale: f32
+) -> f32 {
   let localUV = rotate((uv + offset) * vec2<f32>(aspect, 1.0), angle) * density;
   let grid = fract(localUV) - 0.5;
   let dist = length(grid);
@@ -62,22 +68,28 @@ fn halftone_dot(uv: vec2<f32>, aspect: f32, density: f32, angle: f32, offset: ve
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
-  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
-
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+    return;
+  }
+
   let uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / max(resolution.y, 1.0);
   let mouse = u.zoom_config.yz;
   let time = u.config.x;
-  let held = f32(u.zoom_config.w > 0.5);
-  let audio = plasmaBuffer[0].xyz;
+  let mouseDown = u.zoom_config.w > 0.5;
+  let held = f32(mouseDown);
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
   let prev = textureLoad(dataTextureC, pixel, 0);
 
   let density = 40.0 + u.zoom_params.x * 170.0;
   let baseAngle = u.zoom_params.y * 3.14159 + time * (0.08 + audio.y * 0.12);
   let spread = u.zoom_params.z * 0.05;
   let inkDarkness = 0.5 + u.zoom_params.w * 0.5;
-  let interactAngle = (mouse.x - 0.5) * 3.14159 * (1.0 + held * 0.45);
+
+  let drift = vec2<f32>(sin(time * 0.73), cos(time * 0.91)) * (0.002 + 0.006 * audio.xy);
+  let heldDelta = (uv - mouse) * select(0.0, 1.0, mouseDown);
+  let interactAngle = (mouse.x - 0.5) * 3.14159 * (1.0 + held * 0.45) + heldDelta.y * 1.4;
   let finalSpread = spread + mouse.y * 0.10;
 
   let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -88,10 +100,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let angY = radians(0.0) + baseAngle + interactAngle;
   let angK = radians(45.0) + baseAngle + interactAngle;
 
-  let offC = vec2<f32>(-1.0, 0.0) * finalSpread * (1.0 + audio.x * 0.4);
-  let offM = vec2<f32>(1.0, 0.0) * finalSpread * (1.0 + audio.y * 0.4);
-  let offY = vec2<f32>(0.0, -1.0) * finalSpread * (1.0 + audio.z * 0.4);
-  let offK = vec2<f32>(0.0, 1.0) * finalSpread * (1.0 + (audio.x + audio.y) * 0.2);
+  var bloom = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    let radius = length((uv - event.xy) * vec2<f32>(aspect, 1.0));
+    bloom += exp(-age * 1.7) * exp(-abs(radius - age * 0.32) * 70.0);
+  }
+
+  let shear = vec2<f32>(heldDelta.y, heldDelta.x) * 0.025;
+  let offC = vec2<f32>(-1.0, 0.0) * finalSpread * (1.0 + audio.x * 0.4) + drift + shear;
+  let offM = vec2<f32>(1.0, 0.0) * finalSpread * (1.0 + audio.y * 0.4) - drift - shear;
+  let offY = vec2<f32>(0.0, -1.0) * finalSpread * (1.0 + audio.z * 0.4) + drift.yx;
+  let offK = vec2<f32>(0.0, 1.0) * finalSpread * (1.0 + (audio.x + audio.y) * 0.2) - drift.yx;
 
   let finalC = halftone_dot(uv, aspect, density, angC, offC, cmyk.x, 1.0 + audio.x * 0.35);
   let finalM = halftone_dot(uv, aspect, density, angM, offM, cmyk.y, 1.0 + audio.y * 0.35);
@@ -105,31 +127,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let conveyor = smoothstep(0.1, 0.0, abs(fract(uv.x * density * 0.04 - time * (1.6 + audio.x * 2.0)) - 0.5));
   let packets = smoothstep(0.09, 0.0, abs(fract(length((uv - mouse) * vec2<f32>(aspect, 1.0)) * 9.0 - time * 2.6) - 0.5));
-  var click = 0.0;
-  let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let rp = u.ripples[i];
-    let age = time - rp.z;
-    if (rp.z > 0.0 && age >= 0.0 && age < 1.3) {
-      click = max(click, exp(-abs(distance(uv, rp.xy) - age * 0.46) * 62.0) * (1.0 - age / 1.3));
-    }
-  }
-
   let coverage = clamp((finalC + finalM + finalY + finalK) * 0.25, 0.0, 1.0);
   let hue = fract(coverage + time * 0.08 + audio.y * 0.2);
   let slick = hsv2rgb(vec3<f32>(hue, 0.55, 1.0));
   let paperTint = mix(vec3<f32>(1.0), vec3<f32>(0.98, 0.95, 0.90), inkDarkness * 0.25);
+  let registrationGlow =
+    vec3<f32>(finalC, finalM, finalY) * vec3<f32>(0.05 + 0.08 * audio.x, 0.04 + 0.08 * audio.y, 0.03 + 0.08 * audio.z);
+  let rosette = 0.5 + 0.5 * sin(length((uv - 0.5) * vec2<f32>(aspect, 1.0)) * density * 5.0 - time * 1.4);
+  let spectralBloom = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + bloom * 5.0 + time);
+
   var finalColor = paperTint * mixC * mixM * mixY * mixK;
   finalColor = mix(finalColor, finalColor * slick * 1.2, 0.22 + audio.z * 0.18);
-  finalColor += slick * (conveyor * 0.16 + packets * 0.22 + click * 0.5) * (0.4 + held * 0.2);
+  finalColor += slick * (conveyor * 0.14 + packets * 0.18 + bloom * 0.22) * (0.4 + held * 0.2);
+  finalColor += registrationGlow + spectralBloom * bloom * 0.22 + rosette * finalC * finalM * 0.05;
 
-  let finalAlpha = clamp(0.58 + coverage * 0.38 + cmyk.w * 0.10 + click * 0.08, 0.50, 0.98);
+  let finalAlpha = clamp(0.58 + coverage * 0.38 + cmyk.w * 0.10 + bloom * 0.06, 0.50, 0.98);
   let baseDepth = textureLoad(readDepthTexture, pixel, 0).r;
-  let depthOut = clamp(mix(baseDepth, 0.25 + coverage * 0.70, 0.25) + click * 0.05, 0.0, 1.0);
+  let depthOut = clamp(mix(baseDepth, 0.25 + coverage * 0.70, 0.25) + bloom * 0.04, 0.0, 1.0);
   let cmykOut = vec4<f32>(finalC, finalM, finalY, finalK);
   let persist = mix(cmykOut, prev, 0.18);
 
   textureStore(writeTexture, pixel, vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  // A remains CMYK coverage (with light temporal persistence).
   textureStore(dataTextureA, pixel, persist);
 }

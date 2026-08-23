@@ -1,12 +1,9 @@
-# Batch 56 briefs — 2026-08-23 (tracker #475–482) — GEOMETRY + FAST MOTION + PSYCHEDELIC COLOR
+# Batch 56 briefs — 2026-08-23 (tracker #475–482) — MERGED LINEAGES
 
-Batch 56 upgrades eight clean single-pass effects from the ~128–131 line band
-with extra geometry, two continuous-motion structures each, held-pointer
-deformation, click fronts capped by live ripple count and 50, and psychedelic
-color. High-complexity v2 shaders in the same size band (infinite-zoom-lens,
-phosphor-magnifier, interactive-ripple, pixel-repel, stipple-render,
-liquid-warp-interactive) were skipped. Print/wind/slit leftovers
-(`luminance-wind`, `cyber-slit-scan`) remain skipped.
+Three concurrent Batch 56 upgrades claimed the same tracker range. This file
+summarizes the union after merging on the cursor branch.
+
+## Cursor cohort (geometry + fast motion + psychedelic color)
 
 | # | Shader | Upgrade focus |
 |---|--------|---------------|
@@ -19,13 +16,19 @@ liquid-warp-interactive) were skipped. Print/wind/slit leftovers
 | 481 | `rgb-iso-lines` | 16x16, iso-runners, rainbow hypsometry; line-mask A |
 | 482 | `chromatic-focus-interactive` | Aperture blades, radial packets, held pinch, click rings |
 
+## Also retained from prior main merge
+
+cyber-slit-scan, hyb-spectral-fbm-displace, infinite-zoom-lens,
+phosphor-magnifier, warp_drive, liquid-warp-interactive, interactive-ripple,
+vertical-slice-wave, matrix-curtain (plus hand-merged overlaps above).
+
 ## Shared contract
 
-- Preserve source `params` byte-for-byte and add aligned `updatedParams`.
+- Preserve source `params` and add aligned indexed `updatedParams`.
 - Preserve canonical 13 bindings, 16x16x1 workgroups, depth ownership, and
   `plasmaBuffer[0].xyz` audio.
 - Keep B unused and introduce no `extraBuffer` access.
-- Preserve established A packing: CMYK coverage for halftone; line masks
-  for iso-lines; display RGBA elsewhere.
-- No renderer, graph, toolchain, dependency, or public TypeScript API changes.
+- Preserve established A packing: CMYK coverage for halftone; line masks for
+  iso-lines; phosphor display-RGBA afterimage; display RGBA elsewhere unless
+  diagnostic A was explicitly preserved (infinite-zoom-lens, warp_drive).
 - Structural validation is local; visual acceptance requires a real GPU.

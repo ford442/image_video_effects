@@ -1,6 +1,20 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-21 (getGPUTimings JS/C++ ABI)
+**Last updated:** 2026-08-23 (Batch 56 triple-lineage merge on cursor)
+
+## 2026-08-23 — Batch 56 triple-lineage merge (cursor branch)
+
+- Three concurrent Batch 56 pushes claimed tracker #475–482. Merged on
+  `cursor/effect-shaders-complexity-8594`: kept every unique upgrade;
+  hand-merged cursor↔main overlaps (chromatic-focus-interactive,
+  cmyk-halftone-interactive, quantum-prism) on top of the earlier main
+  dual-lineage merge.
+- **Cursor unique:** ascii-shockwave, heat-haze-gpt52, sphere-projection,
+  fractal-kaleidoscope, rgb-iso-lines.
+- **Overlap policy:** cursor geometry (iris blades, rosette rings, hex grout)
+  + prior optical/feedback polish; CMYK A coverage preserved.
+- Proof: focused gate **17/17**, cohort dead-slider + extraBuffer PASS,
+  catalogs regenerated. Real-GPU visual QA remains external.
 
 ## 2026-08-21 — WASM `getGPUTimings` bridge ABI
 
