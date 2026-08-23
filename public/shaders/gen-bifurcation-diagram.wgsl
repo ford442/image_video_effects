@@ -128,7 +128,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
-    let t = u.config.x;
+    let t = u.config.x * 2.5;
     
     // Parameters - safe randomization
     let rPosition = mix(2.8, 4.0, u.zoom_params.x);
@@ -144,7 +144,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Mouse exploration locally bends the r/x window around the visible cursor
     // without replacing the saved R Position or Zoom controls.
-    let mouseUv = u.zoom_config.yz;
+    let mouseRaw = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var mouseUv = mouseRaw; var springVel = vec2<f32>(0.0); var lastTime = t; var initialized = false;
+    if (hasSpring) { mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+    if (!initialized) { mouseUv = mouseRaw; springVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(t - lastTime, 0.0, 0.05), initialized);
+    let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = mouseUv - mouseRaw; let temp = (springVel + omega * sdelta) * dt;
+    springVel = (springVel - omega * temp) * springDecay; mouseUv = mouseRaw + (sdelta + temp) * springDecay;
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) { extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = t; extraBuffer[138] = 1.0; }
     let mouseDelta = (uv - mouseUv) * vec2<f32>(resolution.x / resolution.y, 1.0);
     let mouseLens = exp(-dot(mouseDelta, mouseDelta) * 18.0) * (0.18 + u.zoom_config.w * 0.52);
     let baseR = mix(rMin, rMax, uv.x);
@@ -220,10 +228,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // A fast chaos scanner races through the parameter axis, illuminating
     // derivative-rich branches without changing the logistic-map geometry.
-    let scanPhase = fract(uv.x * 1.8 - t * (0.45 + bass * 1.2));
+    let scanPhase = fract(uv.x * 1.8 - t * (1.1 + bass * 1.8));
     let scanFront = exp(-abs(scanPhase - 0.5) * 34.0) *
                     smoothstep(-0.35, 0.55, lyap) * (0.25 + mids * 0.5);
-    col += mix(vec3<f32>(0.2, 0.65, 1.3), vec3<f32>(1.2, 0.25, 0.65), treble) * scanFront;
+    col += mix(vec3<f32>(1.1, 0.15, 0.95), vec3<f32>(0.15, 1.2, 0.55), treble) * scanFront;
 
     // Click wavefronts sweep across the diagram as stylized analysis overlays.
     var clickWave = 0.0;
@@ -236,7 +244,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             clickWave = max(clickWave, exp(-abs(length(delta) - age * 0.72) * 64.0) * exp(-age * 1.8));
         }
     }
-    col += vec3<f32>(0.75, 0.4, 1.25) * clickWave * (0.55 + treble * 0.7);
+    col += vec3<f32>(0.95, 0.25, 1.35) * clickWave * (0.55 + treble * 0.7);
     
     // Grid lines for reference
     let gridX = fract(uv.x * 10.0);

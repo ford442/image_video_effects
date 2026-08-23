@@ -140,7 +140,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    let time = u.config.x;
+    let time = u.config.x * 2.4;
     let resolution = vec2<f32>(u.config.zw);
     let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     
@@ -148,13 +148,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let param2 = u.zoom_params.y;
     let param3 = u.zoom_params.z;
     let param4 = u.zoom_params.w;
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var mouse = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+    if (hasSpring) { mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+    if (!initialized) { mouse = rawMouse; springVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+    let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = mouse - rawMouse; let temp = (springVel + omega * sdelta) * dt;
+    springVel = (springVel - omega * temp) * springDecay; mouse = rawMouse + (sdelta + temp) * springDecay;
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) { extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
+    let held = select(1.0, 1.5, u.zoom_config.w > 0.5);
+    let mousePull = (uv - mouse) * 0.18 * held;
     
     let iterations = i32(mix(3.0, 12.0, clamp(param1 + bass * 0.3, 0.0, 1.0)));
     
     // Chromatic attractor separation: R/B use different attractor offsets
-    let p_r = ifsPoint(uv + vec2<f32>(param4 * 0.01 * bass, 0.0), iterations, time, bass);
-    let p_b = ifsPoint(uv - vec2<f32>(param4 * 0.01 * treble, 0.0), iterations, time, bass);
-    let p_g = ifsPoint(uv, iterations, time, bass);
+    let p_r = ifsPoint(uv + vec2<f32>(param4 * 0.01 * bass, 0.0) - mousePull, iterations, time, bass);
+    let p_b = ifsPoint(uv - vec2<f32>(param4 * 0.01 * treble, 0.0) - mousePull, iterations, time, bass);
+    let p_g = ifsPoint(uv - mousePull, iterations, time, bass);
     
     let d_r = length(p_r);
     let d_g = length(p_g);
@@ -167,7 +178,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ringDistance = abs(fract(d_g * mix(3.0, 10.0, param3)) - 0.5);
     let rings = 1.0 - smoothstep(0.02, 0.12, ringDistance);
     
-    let hue = fract(angle + time * 0.03 + mids * 0.15);
+    let hue = fract(angle + time * 0.09 + mids * 0.22);
     let sat = mix(0.4, 1.0, param4 + treble * 0.3);
     let val_r = glow_r * (0.5 + rings * 0.5) * (1.0 + bass * 0.3);
     let val_g = glow_g * (0.5 + rings * 0.5) * (1.0 + bass * 0.3);
@@ -179,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Raymarched orbit sculpture layered over the 2D chaos-game field.
     let aspect = resolution.x / resolution.y;
     let screen = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-    let cam = rotY(time * 0.09 + mids * 0.25);
+    let cam = rotY(time * 0.22 + mids * 0.25 + mouse.x * held);
     let ro = cam * vec3<f32>(0.0, 0.0, 2.8);
     let rd = cam * normalize(vec3<f32>(screen, -1.6));
     var rayT = 0.0;

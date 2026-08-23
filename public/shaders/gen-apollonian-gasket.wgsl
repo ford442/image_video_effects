@@ -36,9 +36,8 @@ fn circle_inv(p: vec2<f32>, c: vec2<f32>, r: f32) -> vec2<f32> {
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = x * (x * 0.15 + 0.05) + 0.004;
-  let b = x * (x * 0.15 + 0.50) + 0.06;
-  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -48,10 +47,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let coord = vec2<i32>(gid.xy);
   let uv = (vec2<f32>(gid.xy) + 0.5) / vec2<f32>(dims);
-  let time = u.config.x;
+  let time = u.config.x * 2.6;
   let bass = plasmaBuffer[0].x;
-  let mouse = u.zoom_config.yz;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) { springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = springPos - rawMouse; let temp = (springVel + omega * sdelta) * dt;
+  springVel = (springVel - omega * temp) * springDecay; springPos = rawMouse + (sdelta + temp) * springDecay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) { extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
+  let mouse = springPos;
   let mouseDown = u.zoom_config.w > 0.5;
+  let held = select(1.0, 1.5, mouseDown);
 
   let recursion = i32(mix(3.0, 10.0, clamp(u.zoom_params.x + bass * 0.3, 0.0, 1.0)));
   let invIntensity = u.zoom_params.y;
@@ -73,6 +84,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var q = p;
   var invCount = 0.0;
+  let spin = mat2x2<f32>(cos(time * 0.35 + mids), sin(time * 0.35), -sin(time * 0.35), cos(time * 0.35 + mids));
+  q = spin * q;
 
   for (var i = 0; i < recursion; i = i + 1) {
     var inverted = false;
@@ -89,13 +102,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (!inverted) { break; }
   }
 
-  if (mouseDown) {
-    let mp = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 3.0 / circleSize;
-    let mr = 0.2 + invIntensity * 0.3;
-    if (distance(q, mp) < mr) {
-      q = circle_inv(q, mp, mr);
-      invCount = invCount + 1.0;
-    }
+  let mp = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 3.0 / circleSize;
+  let mr = (0.18 + invIntensity * 0.35) * held;
+  if (distance(q, mp) < mr * 1.4) {
+    q = circle_inv(q, mp, mr);
+    invCount = invCount + 1.0;
   }
 
   var minDist = 1e9;
@@ -105,15 +116,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let density = exp(-minDist * 15.0);
-  let hue = fract(invCount * 0.1 + length(q) * 0.3 + time * 0.02);
-  let sat = 0.3 + density * 0.7;
-  let val = 0.15 + density * 0.85;
+  let hue = fract(invCount * 0.14 + length(q) * 0.3 + time * 0.12 + treble * 0.2);
+  let sat = 0.55 + density * 0.45 + mids * 0.15;
+  let val = 0.18 + density * 0.85;
 
   var color = vec3<f32>(
-    val * (0.6 + sat * cos(hue * 6.283) * 0.4),
-    val * (0.6 + sat * cos((hue - 0.33) * 6.283) * 0.4),
-    val * (0.6 + sat * cos((hue - 0.66) * 6.283) * 0.4)
+    val * (0.5 + sat * cos(hue * 6.283) * 0.5),
+    val * (0.5 + sat * cos((hue - 0.33) * 6.283) * 0.5),
+    val * (0.5 + sat * cos((hue - 0.66) * 6.283) * 0.5)
   );
+  let ring = abs(fract(minDist * 18.0 + time * 2.0) - 0.5);
+  color += vec3<f32>(1.0, 0.2, 0.85) * (1.0 - smoothstep(0.0, 0.08, ring)) * 0.35;
 
   let ca = smoothstep(0.0, 0.4, density) * rainbow;
   color = vec3<f32>(
@@ -126,9 +139,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depth = clamp(1.0 - minDist * 2.0, 0.0, 1.0);
 
   // Temporal feedback
-  let histUV = uv + vec2<f32>(sin(time * 0.18) * 0.001, cos(time * 0.12) * 0.001);
-  let prev = textureSampleLevel(dataTextureC, u_sampler, histUV, 0.0).rgb;
-  color = mix(color, prev * 0.94, 0.05);
+  let hist = textureLoad(dataTextureC, coord, 0).rgb;
+  color = mix(color, hist * 0.94, 0.05);
 
   // Chromatic aberration
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
