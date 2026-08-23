@@ -1,6 +1,29 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Codex (g) wave / smoke / ink / volumetric batch complete)
+**Last updated:** 2026-08-23 (simulation / field / growth / decay batch complete)
+
+## 2026-08-23 — Remaining simulation / field / growth / decay batch requested
+
+- Upgrade ten named simulations: two decay systems, terrain erosion, crystal
+  phase growth, fire temperature, EM field, multi-state ecosystem, RGBA
+  cellular automata, Lenia-on-video, and digital moss. Preserve original saved
+  parameters and enforce the canonical 13-binding ABI, exact bounded C loads,
+  A-only feedback, all three audio bands, held pointer and click ripples,
+  semantic alpha, ACES, bounded optional state, and actual Naga validation.
+
+## 2026-08-23 — Remaining simulation / field / growth / decay batch complete
+
+- Upgraded all ten requested simulation shaders while retaining their distinct
+  domain models: dual corrosion, hydraulic erosion, crystal phase growth,
+  combustion, EM propagation, two ecosystems, Lenia, and digital moss.
+- Replaced all filtered or unbounded C feedback with exact bounded loads, wired
+  every saved slider and all three audio bands, added held input plus traveling
+  click fronts, ACES, semantic alpha, and truthful four-channel A/C packing.
+  No B or extraBuffer writes were introduced.
+- Saved params compare exact 10/10. Naga/bindgroup passes 10/10; strict buffer
+  and dead-slider audits, catalog URLs, uniform layout, TypeScript, all 81 Jest
+  suites (545 pass, 1 skip), and the production build pass. The unified catalog
+  remains 1,333 shaders. Real-GPU visual/stability tuning remains external.
 
 ## 2026-08-23 — Codex (g) wave / smoke / ink / volumetric batch complete
 

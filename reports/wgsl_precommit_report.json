@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-23T14:56:28.597848",
+  "timestamp": "2026-08-23T15:19:04.205169",
   "naga_bin": "/tmp/codex-e-cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/aerogel-smoke-hdr.wgsl",
+      "file": "public/shaders/alpha-crystal-growth-phase.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/atmos-fog-volumetric.wgsl",
+      "file": "public/shaders/alpha-em-field-simulation.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/fire-smoke-volumetric-fog.wgsl",
+      "file": "public/shaders/alpha-erosion-terrain.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/heat-haze-volumetric.wgsl",
+      "file": "public/shaders/alpha-fire-temperature.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/interactive-magnetic-ripple-em.wgsl",
+      "file": "public/shaders/alpha-multi-state-ecosystem.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/sim-ink-diffusion-rgba.wgsl",
+      "file": "public/shaders/cellular-automata-rgba.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/sim-smoke-trails-thermal.wgsl",
+      "file": "public/shaders/digital-moss.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/steamy-glass-volumetric.wgsl",
+      "file": "public/shaders/lenia-on-video.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/steamy-glass.wgsl",
+      "file": "public/shaders/sim-decay-system-rgba.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/wave-equation.wgsl",
+      "file": "public/shaders/sim-decay-system.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

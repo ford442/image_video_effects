@@ -36,6 +36,12 @@ _Learn about the person you're helping. Update this as you go._
   semantic-alpha contract pass actual Naga 10/10; saved params, catalogs,
   TypeScript, Jest, and production build are also verified. Real-GPU visual QA
   remains external.
+- **Latest shader batch (2026-08-23):** The ten remaining simulation, field,
+  growth, and decay effects are complete. Dual decay, erosion, crystal, fire,
+  EM, ecosystem, RGBA CA, Lenia, and moss models now have exact bounded A/C
+  state, live saved controls, full audio/interaction, semantic alpha, ACES, and
+  actual Naga 10/10 proof. Catalog, TypeScript, Jest, and build gates pass;
+  real-GPU visual QA remains external.
 
 ## Context
 

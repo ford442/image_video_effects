@@ -34,6 +34,16 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
 // ═══ CHUNK: hash12 (from chunk-library.md / gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -46,13 +56,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-    let uv = vec2<f32>(gid.xy) / res;
+    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let dims = vec2<i32>(res);
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Read previous state
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = stateAt(coord, dims);
     var phase = prevState.r;
     var temp = prevState.g;
     var orientation = prevState.b;
@@ -78,15 +90,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     impurity = clamp(impurity, 0.0, 1.0);
 
     // === PARAMETERS ===
-    let supercooling = mix(0.1, 0.8, u.zoom_params.x);
-    let anisotropy = mix(0.0, 0.5, u.zoom_params.y);
-    let growthRate = mix(0.001, 0.01, u.zoom_params.z);
+    let supercooling = mix(0.1, 0.8, u.zoom_params.x) * (1.0 + audio.x * 0.28);
+    let anisotropy = mix(0.0, 0.5, u.zoom_params.y) * (1.0 + audio.y * 0.35);
+    let growthRate = mix(0.001, 0.01, u.zoom_params.z) * (1.0 + audio.z * 0.5);
+    let impurityLevel = mix(0.02, 0.7, u.zoom_params.w);
 
     // === PHASE-FIELD UPDATE ===
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+    let right = stateAt(coord + vec2<i32>(1, 0), dims);
+    let down = stateAt(coord + vec2<i32>(0, -1), dims);
+    let up = stateAt(coord + vec2<i32>(0, 1), dims);
 
     let lapPhase = left.r + right.r + down.r + up.r - 4.0 * phase;
 
@@ -124,7 +137,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Impurities get pushed ahead of growing crystal
     let lapImpurity = left.a + right.a + down.a + up.a - 4.0 * impurity;
     let phaseChange = phase - prevState.r;
-    impurity += lapImpurity * 0.02 - phaseChange * 0.1;
+    impurity += lapImpurity * (0.012 + impurityLevel * 0.025) - phaseChange * (0.04 + impurityLevel * 0.12);
+    impurity += (impurityLevel * 0.22 - impurity) * 0.0008;
     impurity = clamp(impurity, 0.0, 1.0);
 
     // === MOUSE SEED CRYSTALS ===
@@ -144,9 +158,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ripple = u.ripples[i];
         let rDist = length(uv - ripple.xy);
         let age = time - ripple.z;
-        if (age < 0.3 && rDist < 0.03) {
-            let nucleation = smoothstep(0.03, 0.0, rDist) * max(0.0, 1.0 - age * 3.0);
+        if (age >= 0.0 && age < 2.0) {
+            let nucleation = exp(-abs(rDist - age * 0.16) * 60.0 - age * 1.5);
             phase = mix(phase, 1.0, nucleation * 0.5);
+            orientation += nucleation * (f32(i) * 2.39996 + audio.y);
         }
     }
     phase = clamp(phase, 0.0, 1.0);
@@ -181,9 +196,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Impurity tint
     displayColor = mix(displayColor, vec3<f32>(0.8, 0.6, 0.4), impurity * 0.3);
 
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    displayColor += audio * vec3<f32>(0.12, 0.07, 0.18) * interfaceMask;
 
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, phase));
+    textureStore(writeTexture, coord, vec4<f32>(aces(displayColor), clamp(phase * 0.82 + interfaceMask * 0.18, 0.0, 1.0)));
 
     // Depth pass-through
     let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -40,6 +40,16 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
@@ -51,12 +61,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-    let uv = vec2<f32>(gid.xy) / res;
+    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let dims = vec2<i32>(res);
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Read current ecosystem state
-    let state = textureLoad(dataTextureC, coord, 0);
+    let state = stateAt(coord, dims);
     var plants = state.r;
     var herbivores = state.g;
     var predators = state.b;
@@ -72,17 +84,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     // === PARAMETERS ===
-    let growthRate = mix(0.01, 0.05, u.zoom_params.x);
-    let herbivoreEfficiency = mix(0.1, 0.4, u.zoom_params.y);
-    let predatorEfficiency = mix(0.05, 0.2, u.zoom_params.z);
+    let growthRate = mix(0.01, 0.05, u.zoom_params.x) * (1.0 + audio.y * 0.35);
+    let herbivoreEfficiency = mix(0.1, 0.4, u.zoom_params.y) * (1.0 + audio.x * 0.25);
+    let predatorEfficiency = mix(0.05, 0.2, u.zoom_params.z) * (1.0 + audio.z * 0.35);
     let decayRate = mix(0.005, 0.02, u.zoom_params.w);
 
     // === NEIGHBOR AVERAGES (for spread) ===
     let ps = 1.0 / res;
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+    let right = stateAt(coord + vec2<i32>(1, 0), dims);
+    let down = stateAt(coord + vec2<i32>(0, -1), dims);
+    let up = stateAt(coord + vec2<i32>(0, 1), dims);
 
     let avgPlants = (left.r + right.r + down.r + up.r) * 0.25;
     let avgHerbivores = (left.g + right.g + down.g + up.g) * 0.25;
@@ -128,8 +140,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ripple = u.ripples[i];
         let rDist = length(uv - ripple.xy);
         let age = time - ripple.z;
-        if (age < 2.0 && rDist < 0.08) {
-            let strength = smoothstep(0.08, 0.0, rDist) * max(0.0, 1.0 - age * 0.5);
+        if (age >= 0.0 && age < 2.4) {
+            let strength = exp(-abs(rDist - age * 0.14) * 50.0 - age * 1.15);
             // Ripples disturb ecosystem: temporary nutrient boost
             nutrients += strength * 0.3;
             // Scare herbivores away
@@ -153,7 +165,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let nutrientColor = vec3<f32>(0.4, 0.25, 0.1) * nutrients;
 
     var displayColor = plantColor + herbivoreColor + predatorColor + nutrientColor;
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    displayColor += audio * vec3<f32>(0.06, 0.1, 0.08) *
+        (plants + herbivores + predators);
 
     // Add subtle texture variation
     let noise = hash12(uv * 200.0 + time * 0.01);
@@ -166,6 +179,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let alpha = mix(0.7, 1.0, totalBio * 0.5 + nutrients * 0.3);
 
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(aces(displayColor), clamp(alpha, 0.0, 1.0)));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth * (1.0 - totalBio * 0.1), 0.0, 0.0, 0.0));
 }
