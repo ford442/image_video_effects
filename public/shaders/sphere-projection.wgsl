@@ -45,10 +45,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let zoom_param = u.zoom_params.x;      // Zoom
     let rotation_param = u.zoom_params.y;  // Rotation speed
     let light_param = u.zoom_params.z;     // Lighting amount
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let time = u.config.x;
+    let mouse = u.zoom_config.yz;
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length(uv - event.xy) - age * 0.38) * 60.0);
+    }
 
     // Camera Setup
     // Camera is at (0, 0, -dist) look at (0, 0, 0)
-    let dist = 3.0 / max(0.01, zoom_param);
+    let dist = 3.0 / max(0.01, zoom_param + held * 0.15);
     let ro = vec3<f32>(0.0, 0.0, -dist);
     let rd = normalize(vec3<f32>(ndc, 1.0)); // FOV related to Z component
 
@@ -73,15 +84,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let n = normalize(p); // Normal is just p for unit sphere at origin
 
         // Mouse position from zoom_config.yz
-        var mouse = u.zoom_config.yz;
-
         // Interaction: Mouse X rotates Yaw (Longitude), Mouse Y rotates Pitch (Latitude)
         let mouse_rot_x = (mouse.x - 0.5) * 2.0 * PI; // -PI to PI
         let mouse_rot_y = (mouse.y - 0.5) * PI;       // -PI/2 to PI/2
 
         // Auto rotation
-        let time = u.config.x;
-        let auto_rot = time * rotation_param;
+        let auto_rot = time * rotation_param * (1.0 + audio.y);
 
         // Rotate Y (Yaw) - controlled by Mouse X + Auto
         let yaw = -mouse_rot_x - auto_rot;
@@ -115,11 +123,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Lighting
         let lightDir = normalize(vec3<f32>(-0.5, 0.5, -1.0));
-        let diff = max(0.0, dot(n, lightDir));
+        let movingLight = normalize(vec3<f32>(sin(time * 0.7 + audio.z), cos(time * 0.5), -1.0));
+        let diff = max(0.0, dot(n, mix(lightDir, movingLight, 0.45)));
         let ambient = mix(0.0, 0.6, u.zoom_params.w);
         let lighting = mix(1.0, ambient + diff, light_param);
 
-        final_color = color.rgb * lighting;
+        let latitude = sin(acos(clamp(n_rot.y, -1.0, 1.0)) * 24.0 - time * 3.0);
+        let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + latitude * 2.0 + time);
+        final_color = color.rgb * lighting + spectral * (abs(latitude) * 0.08 * light_param + clickFront * 0.24 + audio.x * 0.08);
         
         // Calculate depth based on intersection distance
         depth_out = t / 10.0; // Normalize somewhat

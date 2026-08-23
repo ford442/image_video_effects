@@ -113,6 +113,10 @@ Format specification:
 - Shader upgrade Batch 57 is implemented through tracker #490 as an eight-effect
   kinetic image-transformation cohort. Its Mirror Drag, Temporal Distortion,
   and Pixel Drag feedback histories use exact C loads; saved params remain fixed.
+- For subsequent shader batches, prefers a reproducible selection rule such as
+  smallest code size or missing parameter metadata instead of choosing shaders
+  merely adjacent to prior batch sequence. Batch 58 used smallest WGSL bytes
+  among single-pass four-param definitions missing `updatedParams`.
 - CRA→Vite remains deferred. Dead CRA-rewire deps to drop in #1125.
 - Keep thumbnail coverage CI reporting-only until the healthy baseline reaches 50%.
 - Shader upgrade work now includes separately closed Batches 53, 54, and 55

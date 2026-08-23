@@ -2,10 +2,16 @@
   "id": "sphere-projection",
   "name": "Sphere Projection",
   "url": "shaders/sphere-projection.wgsl",
-  "description": "Projects the image onto a 3D sphere that can be rotated with the mouse.",
+  "description": "Analytic image-mapped sphere with moving latitude bands and lighting, held zoom pressure, bounded click fronts, three-band audio, and spectral highlights.",
   "features": [
     "mouse-driven",
-    "3d"
+    "3d",
+    "audio-reactive",
+    "continuous-motion",
+    "held-pointer",
+    "click-reactive",
+    "psychedelic-color",
+    "depth-aware"
   ],
   "params": [
     {
@@ -52,5 +58,40 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Sphere Zoom",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Spin Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Lighting",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Ambient Light",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 0.6,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

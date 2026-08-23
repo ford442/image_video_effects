@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-23T01:00:21.048888",
+  "timestamp": "2026-08-23T01:34:03.519081",
   "naga_bin": "/home/codespace/.cargo/bin/naga",
   "naga_available": false,
   "total": 8,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/ascii-flow.wgsl",
+      "file": "public/shaders/bio-touch.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/fractal-kaleidoscope.wgsl",
+      "file": "public/shaders/foil-impression.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/mirror-drag.wgsl",
+      "file": "public/shaders/hypnotic-spiral.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neon-flashlight.wgsl",
+      "file": "public/shaders/polka-wave.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pixel-drag-smear.wgsl",
+      "file": "public/shaders/sphere-projection.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pixel-sort-radial.wgsl",
+      "file": "public/shaders/spirograph-reveal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/psychedelic-noise-flow.wgsl",
+      "file": "public/shaders/triangle-mosaic.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/temporal-distortion-field.wgsl",
+      "file": "public/shaders/voronoi-chaos.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
