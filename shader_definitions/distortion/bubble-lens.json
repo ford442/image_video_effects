@@ -3,18 +3,32 @@
   "name": "Bubble Lens",
   "category": "distortion",
   "url": "shaders/bubble-lens.wgsl",
-  "description": "A thin-film soap bubble lens magnifies the source image and blooms into beat-reactive interference colors around the cursor.",
+  "description": "Soap bubble lens with Marangoni convection \u2014 surface-tension gradients drive tangential flow along the film, which is why real bubble bands swirl rather than merely sagging \u2014 and per-band membrane resonance: eight drum modes of the film, one per FFT bin, perturbing the thickness so the bubble rings at the frequencies present in the audio. Retains the spring-damped pointer, satellite bubbles and film shockwaves; adds ACES, dataTextureC iridescent trails and a corrected A/B packing.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "depth-aware",
+    "semantic-alpha",
+    "aces",
+    "spring-damper-pointer",
+    "thin-film",
+    "marangoni",
+    "membrane-modes",
+    "fresnel",
+    "satellite-bubbles"
   ],
   "tags": [
     "bubble",
     "soap",
     "interference",
     "lens",
-    "audio-reactive"
+    "audio-reactive",
+    "soap-film",
+    "iridescence"
   ],
   "params": [
     {
@@ -48,36 +62,36 @@
   ],
   "updatedParams": [
     {
-      "index": 0,
+      "id": "bubble_size",
       "name": "Bubble Size",
       "default": 0.45,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "description": "Radius of the main bubble."
     },
     {
-      "index": 1,
+      "id": "magnification",
       "name": "Magnification",
       "default": 0.55,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "description": "Lens power of the bubble surface."
     },
     {
-      "index": 2,
+      "id": "film_thickness",
       "name": "Film Thickness",
       "default": 0.45,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "description": "Soap film thickness; sets the interference order."
     },
     {
-      "index": 3,
+      "id": "ior",
       "name": "IOR",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "description": "Refractive index of the film, driving Fresnel and rim."
     }
   ],
   "updated": true

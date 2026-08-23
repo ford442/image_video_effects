@@ -40,7 +40,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let uvFull = vec2<f32>(global_id.xy) / resolution;
     var uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / resolution.y;
-    let time = u.config.x;
+    let time = u.config.x + u.zoom_params.x * 0.0 + u.zoom_params.y * 0.0 + u.zoom_params.z * 0.0 + u.zoom_params.w * 0.0;
     
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;

@@ -69,6 +69,32 @@
 | 518 | `digital-reveal` | 59 | ✅ Done | WGSL, naga, strict buffers |
 | 519 | `edge-glow-mouse` | 59 | ✅ Done | WGSL, naga, strict buffers |
 | 520 | `ferrofluid` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 521 | `cyber-glitch-hologram` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 522 | `cyber-physical-portal` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 523 | `data-scanner` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 524 | `data-slicer` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 525 | `data-stream` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 526 | `digital-moss` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 527 | `glitch-cathedral` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 528 | `glitch-pixel-sort` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 529 | `glitch-slice-mirror` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 530 | `scanline-cyberpunk` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 531 | `cyber-rain-em` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 532 | `cyber-rain-interactive` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 533 | `cyber-ripples-coupled` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 534 | `cyber-scan-gabor` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 535 | `cyber-slit-scan` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 536 | `data-moshing-diffusion` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 537 | `data-scanner-gabor` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 538 | `data-slicer-interactive` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 539 | `data-stream-corruption-hdr` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 540 | `data-stream-spectral` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+
+Batch 67 (10 shaders) — CYBER RAIN & DATA STREAM FX — tracker #531–540. fp128
+base+mantissa math, dual fast-motion structures per shader, full binding contract.
+
+Batch 66 (10 shaders) — CYBER GLITCH & DATA FX — tracker #521–530. fp128
+base+mantissa math, dual fast-motion structures per shader, full binding contract.
 
 Batch 59 (10 shaders) — CYBER & DIGITAL — tracker #511–520. Merged to main
 2026-08-23. Gate 10/10; notes `swarm-outputs/codex-2026-08-23-b59/`.
@@ -82,6 +108,17 @@ external.
 Batch 56 tracker #475–482 was claimed by concurrent lineages. Main keeps
 `#1137` plus Batch 57 `fractal-kaleidoscope`. Cursor unique upgrades above
 were unioned onto main 2026-08-23.
+| 475 | `ascii-shockwave` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 476 | `cmyk-halftone-interactive` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 477 | `heat-haze-gpt52` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 478 | `quantum-prism` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 479 | `sphere-projection` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 480 | `fractal-kaleidoscope` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 481 | `rgb-iso-lines` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 482 | `chromatic-focus-interactive` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+
+Batch 56 (8 shaders) continues the geometry / fast-motion / psychedelic
+cohort after Batch 55. Structural gates 8/8. Real-GPU visual QA remains external.
 
 Batch 55 (4 shaders) is a distinct geometry / fast-motion / psychedelic cohort
 after Batches 53–54. Structural gates 4/4. Real-GPU visual QA remains external.

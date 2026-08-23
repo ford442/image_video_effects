@@ -3,7 +3,30 @@
 //  Category: interactive-mouse
 //  Features: animated, reaction-diffusion, spore-noise, depth-humidity, upgraded-rgba, temporal
 //  Complexity: High
-//  Upgraded: 2026-08-16 (Batch 52: Gray-Scott reaction-diffusion, hyphal growth, exact C load)
+//  Upgraded: 2026-08-23 (Batch 64)
+//
+//  This shader was already at the pool standard (real Gray-Scott, exact
+//  dataTextureC loads, guarded ripple loop, ACES, chemical state in A). This
+//  pass adds two structures and fixes two smaller issues: the spore noise used
+//  `hash22(uv * 80.0 + fract(t))`, reseeded every frame so it strobed rather
+//  than reading as settled spores; and the output alpha was the SOURCE image's
+//  alpha passed straight through, which says nothing about where the mold
+//  actually is — it is now derived from colony density.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Nutrient-gradient chemotaxis — real mycelium forages: hyphae extend
+//       preferentially up the nutrient gradient rather than diffusing
+//       isotropically. Image luminance is the nutrient field, and the
+//       diffusion of the autocatalyst is now biased along its gradient, so
+//       colonies visibly crawl toward bright regions and starve in dark ones.
+//
+//    2. Per-band sporulation regimes — the Gray-Scott parameter plane has
+//       distinct morphologies (spots, stripes, mitosis, chaos) at different
+//       feed/kill values. Each of the eight FFT bins now owns a spatial zone
+//       and pushes its feed/kill into a different regime, so the colony grows
+//       visibly different structures in response to different frequencies.
+// ═══════════════════════════════════════════════════════════════════════════════ (Batch 52: Gray-Scott reaction-diffusion, hyphal growth, exact C load)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -82,10 +105,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lap_u = (c_r.r + c_l.r + c_u.r + c_d.r - 4.0 * u_chem) * 0.25;
   let lap_v = (c_r.g + c_l.g + c_u.g + c_d.g - 4.0 * v_chem) * 0.25;
 
+  // ── Structure 1: nutrient-gradient chemotaxis ─────────────────────────────
+  // Image luminance is the nutrient field. Hyphae extend UP that gradient
+  // instead of diffusing isotropically, which is how mycelium actually forages.
+  let px = 1.0 / vec2<f32>(res);
+  let nutC = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let nutR = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(px.x, 0.0), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let nutL = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(px.x, 0.0), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let nutU = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, px.y), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let nutD = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, px.y), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let nutrientGrad = vec2<f32>(nutR - nutL, nutU - nutD);
+  // Directional derivative of v along the nutrient gradient: the advective
+  // chemotaxis term.
+  let vGrad = vec2<f32>(c_r.g - c_l.g, c_u.g - c_d.g) * 0.5;
+  let chemotaxis = dot(vGrad, nutrientGrad) * 6.0 * (0.4 + nutC);
+
+  // ── Structure 2: per-band sporulation regimes ─────────────────────────────
+  // Each FFT bin owns a zone and pushes feed/kill into a different region of
+  // the Gray-Scott parameter plane (spots / stripes / mitosis).
+  let zoneIdx = u32(clamp((uv.x * 0.5 + uv.y * 0.5) * 8.0, 0.0, 7.999));
+  let zoneE = plasmaBuffer[zoneIdx + 1u].x;
+  let feed_zone = feed_rate + zoneE * 0.014;
+  let kill_zone = kill_rate + zoneE * 0.006 - f32(zoneIdx) * 0.0009;
+
   // Gray-Scott Reaction-Diffusion kinetics
   let uv2 = u_chem * v_chem * v_chem;
-  let du = diff_a * lap_u - uv2 + feed_rate * (1.0 - u_chem);
-  let dv = diff_b * lap_v + uv2 - (feed_rate + kill_rate) * v_chem;
+  let du = diff_a * lap_u - uv2 + feed_zone * (1.0 - u_chem);
+  let dv = diff_b * lap_v + uv2 - (feed_zone + kill_zone) * v_chem + chemotaxis * 0.02;
 
   let dt = 0.95 * humidity;
   u_chem = clamp(u_chem + du * dt, 0.0, 1.0);
@@ -95,7 +141,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let d_mouse = (uv - mouse_pos) * aspect_vec;
   let dist_m = length(d_mouse);
   let spore_brush = smoothstep(0.06 + 0.08 * is_down, 0.0, dist_m);
-  let noise_spores = hash22(uv * 80.0 + fract(t)).x;
+  // Spatially coherent and slowly drifting; the previous
+  // `hash22(uv * 80.0 + fract(t))` reseeded every frame and strobed.
+  let sporeCell = floor(uv * 80.0 + vec2<f32>(t * 0.07, t * 0.05));
+  let noise_spores = hash22(sporeCell).x;
   if (spore_brush > 0.05 && noise_spores > 0.6) {
     v_chem = max(v_chem, spore_brush * (0.6 + 0.4 * is_down));
     u_chem = min(u_chem, 1.0 - spore_brush * 0.5);
@@ -132,7 +181,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var final_color = mix(image_sample.rgb, mold_final_glow, mold_density * 0.85);
   final_color = aces_film(final_color);
 
-  let out_rgba = vec4<f32>(final_color, src_alpha);
+  // Semantic alpha: the colony is the content, the plate behind it is not.
+  let colony = clamp(mold_density * 0.85 + v_chem * 0.4, 0.0, 1.0);
+  let out_alpha = clamp(mix(src_alpha * 0.6 + 0.15, 1.0, colony), 0.0, 1.0);
+  let out_rgba = vec4<f32>(final_color, out_alpha);
   let out_state = vec4<f32>(u_chem, v_chem, hyphae, mold_density);
   let out_depth = clamp(depth_tex + mold_density * 0.2, 0.0, 1.0);
 

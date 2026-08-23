@@ -2,7 +2,7 @@
   "id": "crystal-facets",
   "name": "Crystal Facets",
   "url": "shaders/crystal-facets.wgsl",
-  "description": "Physical crystal refraction with light transmission. Simulates radial-cut crystal with proper Fresnel reflection, internal scattering from fractures, and chromatic dispersion based on refractive index.",
+  "description": "Faceted crystal with per-facet normals, total internal reflection past the critical angle (which is what makes real gem facets flash rather than merely darken), and uniaxial birefringence splitting ordinary and extraordinary rays along a per-facet optic axis with FFT-banded retardation. Adds the dataTextureA writeback and dataTextureC read-back the shader was missing, plus bounded click fracture fronts and ACES.",
   "params": [
     {
       "name": "Facet Count",
@@ -41,7 +41,20 @@
     "mouse-driven",
     "alpha-transmission",
     "physical-refraction",
-    "advanced-alpha"
+    "advanced-alpha",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "total-internal-reflection",
+    "birefringence",
+    "fresnel",
+    "beer-lambert",
+    "temporal-glint"
   ],
   "tags": [
     "crystal",
@@ -51,6 +64,43 @@
     "dispersion",
     "physical",
     "alpha",
-    "physical-transmittance"
+    "physical-transmittance",
+    "facets",
+    "gem",
+    "birefringence"
+  ],
+  "updatedParams": [
+    {
+      "name": "Facet Count",
+      "id": "zoomParam1",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Number of crystal facets across the frame."
+    },
+    {
+      "name": "Refractive Index",
+      "id": "zoomParam2",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "IOR, 1.33-2.42; also sets the critical angle for total internal reflection."
+    },
+    {
+      "name": "Fracture Density",
+      "id": "zoomParam3",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "description": "Internal fracture density; drives absorption and birefringence."
+    },
+    {
+      "name": "Crystal Thickness",
+      "id": "zoomParam4",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Optical path length through the crystal."
+    }
   ]
 }

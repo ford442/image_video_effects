@@ -6,9 +6,12 @@
     "mouse-driven",
     "chromatic-aberration",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive",
+    "temporal",
+    "aces-tone-map"
   ],
-  "description": "Displaces pixels based on their brightness, creating a glitchy sorting effect controlled by the mouse.",
+  "description": "Brightness-gated spectral sorting with a guarded sprung epicenter, bounded click tears, read-only FFT block voices, and exact-C trails persisted through authoritative A display history.",
   "params": [
     {
       "id": "strength",

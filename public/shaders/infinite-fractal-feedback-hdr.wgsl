@@ -3,14 +3,6 @@
 //  Category: advanced-hybrid
 //  Features: fractal-feedback, HDR-bloom, accumulative-alpha, temporal
 //  Complexity: Very High
-//  Chunks From: infinite-fractal-feedback, alpha-hdr-bloom-chain
-//  Created: 2026-04-18
-//  By: Agent CB-26
-// ═══════════════════════════════════════════════════════════════════
-//  Perpetual fractal zoom with HDR bloom accumulation. Combines
-//  infinite polar feedback looping with radial HDR bloom kernels
-//  and ACES tone mapping. Temporal feedback creates ever-deepening
-//  luminous fractal tunnels.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -34,7 +26,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: toneMapACES (from alpha-hdr-bloom-chain) ═══
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -44,19 +35,12 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// ═══ CHUNK: accumulativeAlpha (from infinite-fractal-feedback) ═══
-fn accumulativeAlpha(
-    newColor: vec3<f32>,
-    newAlpha: f32,
-    prevColor: vec3<f32>,
-    prevAlpha: f32,
-    accumulationRate: f32
-) -> vec4<f32> {
-    let accumulatedAlpha = prevAlpha * (1.0 - accumulationRate * 0.08) + newAlpha * accumulationRate;
-    let totalAlpha = min(accumulatedAlpha, 1.0);
-    let blendFactor = select(newAlpha * accumulationRate / totalAlpha, 0.0, totalAlpha < 0.001);
-    let color = mix(prevColor, newColor, blendFactor);
-    return vec4<f32>(color, totalAlpha);
+fn hue2rgb(hue: f32) -> vec3<f32> {
+    let h = fract(hue) * 6.0;
+    let r = abs(h - 3.0) - 1.0;
+    let g = 2.0 - abs(h - 2.0);
+    let b = 2.0 - abs(h - 4.0);
+    return clamp(vec3<f32>(r, g, b), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -64,120 +48,130 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+    let dt = 0.016;
     let time = u.config.x;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+
+    // Persistent state strictly in extraBuffer[133..138] (single-writer)
+    if (gid.x == 0u && gid.y == 0u) {
+        var pX = extraBuffer[133];
+        var pY = extraBuffer[134];
+        var vX = extraBuffer[135];
+        var vY = extraBuffer[136];
+        var tX = extraBuffer[137];
+        var tY = extraBuffer[138];
+
+        let mouseDown = u.zoom_config.w;
+        let mousePos = u.zoom_config.yz;
+
+        if (mouseDown > 0.0) {
+            tX = mousePos.x;
+            tY = mousePos.y;
+        } else {
+            tX = 0.5 + sin(time * 0.5) * 0.3 * cos(time * 0.31);
+            tY = 0.5 + cos(time * 0.43) * 0.3 * sin(time * 0.29);
+        }
+
+        let spring = 180.0;
+        let damp = 12.0;
+        vX += (tX - pX) * spring * dt - vX * damp * dt;
+        vY += (tY - pY) * spring * dt - vY * damp * dt;
+
+        pX = clamp(pX + vX * dt, 0.0, 1.0);
+        pY = clamp(pY + vY * dt, 0.0, 1.0);
+
+        extraBuffer[133] = pX;
+        extraBuffer[134] = pY;
+        extraBuffer[135] = vX;
+        extraBuffer[136] = vY;
+        extraBuffer[137] = tX;
+        extraBuffer[138] = tY;
+    }
+
+    // Use bounded spring coords
+    let focalPoint = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    
+    // Truthful three-band audio
+    let bass = plasmaBuffer[0].x;
+    let mid = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    
+    var binSum = 0.0;
+    for (var i = 1u; i < 9u; i = i + 1u) {
+        binSum += plasmaBuffer[i].x;
+    }
+    let audioEnv = (bass + mid + treble) * 0.33 + binSum * 0.1;
 
     // Parameters
-    let zoomRate = u.zoom_params.x * 0.5 + 0.1;
-    let spiralTightness = u.zoom_params.y * 4.0;
+    let zoomRate = u.zoom_params.x;
+    let spiralTightness = u.zoom_params.y;
     let colorShift = u.zoom_params.z;
     let feedbackStrength = u.zoom_params.w;
-    let accumulationRate = zoomRate;
 
-    // Mouse
-    let mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
+    // Continuous geometry & fractal coordinate transform
+    let centered = uv - focalPoint;
+    var polar = vec2<f32>(length(centered), atan2(centered.y, centered.x));
+    
+    let twist = sin(polar.x * 10.0 - time + audioEnv) * 0.05 * spiralTightness;
+    polar.y += twist + time * 0.2 * zoomRate;
+    polar.x = fract(polar.x * (1.0 - zoomRate * 0.5) - time * 0.1 * bass);
+    
+    let kSymmetry = 6.0;
+    polar.y = (polar.y * kSymmetry) % (3.14159 * 2.0) / kSymmetry;
 
-    // Audio reactivity
-    let audioOverall = u.zoom_config.x;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
+    let sampleUV = focalPoint + vec2<f32>(cos(polar.y), sin(polar.y)) * polar.x;
+    
+    // Exact textureLoad from dataTextureC
+    let prev = textureLoad(dataTextureC, coord, 0);
 
-    // Polar coordinates from center (mouse focal point)
-    let centered = uv - 0.5;
-    let focalOffset = centered - (mousePos - vec2<f32>(0.5)) * 0.5;
-    var polar = vec2<f32>(length(focalOffset), atan2(focalOffset.y, focalOffset.x));
-
-    // Perpetual zoom and rotation
-    polar.x = fract(polar.x + time * zoomRate * audioReactivity * 0.05);
-    polar.y = polar.y + time * audioReactivity * 0.2 + polar.x * spiralTightness;
-
-    // Convert back to cartesian
-    let newUV = vec2<f32>(polar.x * cos(polar.y), polar.x * sin(polar.y));
-    let sampleUV = newUV * 0.5 + 0.5;
-
-    // Multi-layered spiral sampling
-    var finalColor = vec3<f32>(0.0);
-    for (var i: u32 = 0u; i < 3u; i = i + 1u) {
-        let fi = f32(i);
-        let layerUV = sampleUV + vec2<f32>(sin(time + fi), cos(time + fi)) * 0.1;
-        let color = textureSampleLevel(readTexture, u_sampler, fract(layerUV), 0.0).rgb;
-        let hueShift = colorShift + fi * 0.33;
-        finalColor += color * (1.0 + sin(time * 2.0 * audioReactivity + hueShift)) * 0.5;
-    }
-
-    // Kaleidoscopic symmetry
-    let angle = atan2(newUV.y, newUV.x);
-    let segments = 6.0 + floor(sin(time * 0.5 * audioReactivity) * 3.0);
-    let kaleidoAngle = floor(angle * segments / (2.0 * 3.14159)) * (2.0 * 3.14159) / segments;
-    let symUV = vec2<f32>(cos(kaleidoAngle), sin(kaleidoAngle)) * length(newUV);
-    let symColor = textureSampleLevel(readTexture, u_sampler, symUV * 0.5 + 0.5, 0.0).rgb;
-    finalColor = mix(finalColor, symColor, 0.6);
-
-    // === HDR BLOOM KERNEL ===
-    let bloomRadius = mix(0.01, 0.06, u.zoom_params.x);
-    let bloomIntensity = u.zoom_params.y * 2.0;
-    let bloomSamples = 16;
-
-    var bloom = vec3<f32>(0.0);
-    var totalWeight = 0.0;
-
-    for (var i = 0; i < bloomSamples; i = i + 1) {
-        let angle_b = f32(i) * 6.283185307 / f32(bloomSamples);
-        let radius = bloomRadius * (1.0 + f32(i % 4) * 0.5);
-        let offset = vec2<f32>(cos(angle_b), sin(angle_b)) * radius;
-        let sampleUV_b = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-        let neighbor = textureSampleLevel(readTexture, u_sampler, sampleUV_b, 0.0).rgb;
-        let neighborMax = max(neighbor.r, max(neighbor.g, neighbor.b));
-        let neighborExposure = max(0.0, neighborMax - 1.0);
-        let weight = exp(-f32(i % 4) * 0.5);
-        bloom += neighbor * neighborExposure * weight;
-        totalWeight += neighborExposure * weight;
-    }
-
-    if (totalWeight > 0.001) {
-        bloom /= totalWeight;
-    }
-    bloom *= bloomIntensity;
-
-    var hdrColor = finalColor + bloom;
-
-    // Mouse bloom boost
-    let mouseDist = length(uv - mousePos);
-    let mouseGlow = smoothstep(0.2, 0.0, mouseDist) * mouseDown * 2.0;
-    hdrColor += vec3<f32>(mouseGlow * 0.5, mouseGlow * 0.3, mouseGlow * 0.1);
-
-    // Ripple flash
+    // Capped click fronts
     let rippleCount = min(u32(u.config.y), 50u);
+    var rippleIntensity = 0.0;
     for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let rDist = length(uv - ripple.xy);
-        let age = time - ripple.z;
-        if (age < 0.5 && rDist < 0.1) {
-            let flash = smoothstep(0.1, 0.0, rDist) * max(0.0, 1.0 - age * 2.0);
-            hdrColor += vec3<f32>(flash * 2.0, flash * 1.5, flash);
+        let rip = u.ripples[i];
+        let rDist = length(uv - rip.xy);
+        let age = time - rip.z;
+        if (age > 0.0 && age < 3.0) {
+            let front = smoothstep(0.03, 0.0, abs(rDist - age * 0.4));
+            rippleIntensity += front * max(0.0, 1.0 - age * 0.33);
         }
     }
+    rippleIntensity = min(rippleIntensity, 1.5);
+    
+    // Optical dispersion & sampling
+    let aberration = 0.005 * (1.0 + treble * 2.0);
+    let rSample = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(aberration, 0.0), 0.0).r;
+    let gSample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
+    let bSample = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(aberration, 0.0), 0.0).b;
+    
+    var color = vec3<f32>(rSample, gSample, bSample);
+    
+    // Geometry injection
+    let geo = smoothstep(0.1, 0.0, abs(polar.x - 0.5)) * smoothstep(0.5, 0.4, length(centered));
+    let baseColor = hue2rgb(polar.y + time * 0.1 + colorShift + mid);
+    color += baseColor * geo * (0.5 + bass * 0.5);
+    color += rippleIntensity * vec3<f32>(1.0, 0.8, 1.2);
+    
+    // Temporal feedback blend
+    color = mix(color, prev.rgb, feedbackStrength * 0.95);
+    
+    // HDR Bloom approximation & ACES
+    let lum = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let bloom = color * smoothstep(0.8, 1.5, lum) * 0.5;
+    let hdrColor = color + bloom;
+    
+    let finalColor = toneMapACES(hdrColor);
+    
+    // Semantic alpha
+    let finalAlpha = clamp(lum * 1.5 + rippleIntensity, 0.0, 1.0);
+    
+    let outValue = vec4<f32>(finalColor, finalAlpha);
 
-    // Tone map for display
-    let toneMapExp = mix(0.5, 2.0, colorShift);
-    let ldrColor = toneMapACES(hdrColor * toneMapExp);
-
-    // === ACCUMULATIVE ALPHA FEEDBACK ===
-    let prev = textureSampleLevel(dataTextureC, u_sampler, fract(sampleUV), 0.0);
-    let luma = dot(ldrColor, vec3<f32>(0.299, 0.587, 0.114));
-    let newAlpha = luma;
-
-    let accumulated = accumulativeAlpha(ldrColor, newAlpha, prev.rgb, prev.a, accumulationRate);
-    let finalResult = mix(accumulated, vec4<f32>(ldrColor, newAlpha), feedbackStrength);
-
-    // Store HDR state
-    textureStore(dataTextureA, coord, vec4<f32>(hdrColor, newAlpha));
-
-    // Write display
-    textureStore(writeTexture, coord, finalResult);
-
-    // Depth feedback
-    let depth = 1.0 - clamp(length(newUV), 0.0, 1.0);
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Write ONLY to dataTextureA and writeTexture
+    textureStore(dataTextureA, coord, outValue);
+    textureStore(writeTexture, coord, outValue);
+    
+    // Optional Depth write
+    textureStore(writeDepthTexture, coord, vec4<f32>(polar.x, 0.0, 0.0, 0.0));
 }
