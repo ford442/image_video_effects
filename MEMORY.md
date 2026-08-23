@@ -1049,3 +1049,22 @@
   catalog entries, TypeScript and URL/uniform checks, 81 Jest suites / 545 pass /
   one skip, and production build green. Real-GPU visual/performance proof remains
   external.
+
+## Completed fireworks generative cohort (2026-08-23)
+
+- Ten confirmed IDs cover audio symphony, chrysanthemum, comet trail, crackle
+  palm, crossette, dahlia, fan, horse-tail, kamuro gold, and nocturne.
+- Apply full bindings, ACES/semantic alpha, A-only exact C feedback, plasma
+  audio, `[133..138]`-only state, Naga, and four-named-parameter rules while
+  keeping every shell pattern visually distinct.
+- Completed 10/10 in place with characteristic shell geometry intact. All use
+  A-only semantic RGBA history, exact C loads, ACES display, generated depth,
+  and live bass/mids/treble mappings. Audio Symphony alone uses auxiliary state,
+  single-writer at slot 133.
+- Six normalized-pointer conversions were repaired, and Nocturne's command
+  shell is now properly held-pointer gated. All existing `updatedParams` labels
+  and defaults stayed exact while new four-entry `params` arrays were added.
+- Proof: Naga/dead-slider/custom contract 10/10, 448 generative / 1,340 total
+  catalog entries, URL/uniform/typecheck clean, 81 Jest suites / 545 pass / one
+  skip, and production build green. Real-GPU visual/performance QA remains
+  external.

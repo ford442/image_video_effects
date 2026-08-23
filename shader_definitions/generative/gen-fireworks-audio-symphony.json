@@ -20,6 +20,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "launch-density", "name": "Launch Density", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "bass-drive", "name": "Bass Drive", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "mids-layering", "name": "Mids Layering", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "treble-sparkle", "name": "Treble Sparkle", "default": 0.75, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -59,5 +65,13 @@
   "updated": true,
   "id": "gen-fireworks-audio-symphony",
   "url": "shaders/gen-fireworks-audio-symphony.wgsl",
-  "features": []
+  "features": [
+    "three-band-audio-reactive",
+    "mouse-command-shell",
+    "temporal-feedback",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map"
+  ],
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133] = smoothed bass envelope"
 }

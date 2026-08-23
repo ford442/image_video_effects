@@ -164,4 +164,6 @@ Format specification:
   semantic-alpha, exact-C-load, three-band-audio, bounded-state contract.
 - Applied the same contract to the completed ornate/fractal-growth generative
   cohort, keeping batch artifacts and validation boundaries independently clear.
+- For the next confirmed-ID fireworks cohort, preserve the characteristic shell
+  geometry of each named firework while applying the same strict shader contract.
 </IMPORTANT_REMINDER>

@@ -10656,6 +10656,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "launch-density",
+        "name": "Launch Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "bass-drive",
+        "name": "Bass Drive",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "mids-layering",
+        "name": "Mids Layering",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "treble-sparkle",
+        "name": "Treble Sparkle",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -10695,7 +10733,15 @@
     "updated": true,
     "id": "gen-fireworks-audio-symphony",
     "url": "shaders/gen-fireworks-audio-symphony.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-command-shell",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133] = smoothed bass envelope"
   },
   {
     "name": "4th of July — Chrysanthemum Burst",
@@ -10719,6 +10765,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "burst-size",
+        "name": "Burst Size",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "ring-layers",
+        "name": "Ring Layers",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "spark-density",
+        "name": "Spark Density",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color-spread",
+        "name": "Color Spread",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -10763,8 +10847,12 @@
       "audio-reactive",
       "mouse-driven",
       "temporal",
-      "fast-motion"
-    ]
+      "fast-motion",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Comet Trail",
@@ -10785,6 +10873,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "comet-speed",
+        "name": "Comet Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "trail-length",
+        "name": "Trail Length",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "head-brightness",
+        "name": "Head Brightness",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color-shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -10825,7 +10951,15 @@
     "updated": true,
     "id": "gen-fireworks-comet-trail",
     "url": "shaders/gen-fireworks-comet-trail.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-comet",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Crackle Palm",
@@ -10847,6 +10981,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "shell-energy",
+        "name": "Shell Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "stage-delay",
+        "name": "Stage Delay",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "crackle",
+        "name": "Crackle",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "palm-spread",
+        "name": "Palm Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -10887,7 +11059,16 @@
     "updated": true,
     "id": "gen-fireworks-crackle-palm",
     "url": "shaders/gen-fireworks-crackle-palm.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-command-shell",
+      "multi-stage-burst",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Crossette Split",
@@ -10907,6 +11088,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "shell-power",
+        "name": "Shell Power",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "split-delay",
+        "name": "Split Delay",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "arm-spread",
+        "name": "Arm Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue-shift",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -10947,7 +11166,16 @@
     "updated": true,
     "id": "gen-fireworks-crossette",
     "url": "shaders/gen-fireworks-crossette.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-crossette",
+      "four-arm-split",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Dahlia Burst",
@@ -10969,6 +11197,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "petal-count",
+        "name": "Petal Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "disk-size",
+        "name": "Disk Size",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "petal-rows",
+        "name": "Petal Rows",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue-cycle",
+        "name": "Hue Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -11013,8 +11279,13 @@
       "fireworks",
       "audio-reactive",
       "mouse-driven",
-      "temporal-feedback"
-    ]
+      "temporal-feedback",
+      "flat-disk-petals",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Fan Shell",
@@ -11035,6 +11306,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "fan-angle",
+        "name": "Fan Angle",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "shell-power",
+        "name": "Shell Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "spark-density",
+        "name": "Spark Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue-cycle",
+        "name": "Hue Cycle",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -11085,7 +11394,8 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Horse Tail Brocade",
@@ -11106,6 +11416,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "tail-length",
+        "name": "Tail Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "stream-width",
+        "name": "Stream Width",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "gold-intensity",
+        "name": "Gold Intensity",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "fall-speed",
+        "name": "Fall Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -11156,7 +11504,8 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Kamuro Gold",
@@ -11177,6 +11526,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "glitter-density",
+        "name": "Glitter Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "fall-speed",
+        "name": "Fall Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "gold-mix",
+        "name": "Gold Mix",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hang-time",
+        "name": "Hang Time",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -11227,7 +11614,8 @@
       "temporal-feedback",
       "aces-tone-map",
       "semantic-alpha"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Fireworks Nocturne",
@@ -11251,6 +11639,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "energy",
+        "name": "Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "tempo",
+        "name": "Tempo",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color-drift",
+        "name": "Color Drift",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -11291,7 +11717,15 @@
     "updated": true,
     "id": "gen-fireworks-nocturne",
     "url": "shaders/gen-fireworks-nocturne.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-command-shell",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Ring Shell",
