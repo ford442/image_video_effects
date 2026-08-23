@@ -1,8 +1,81 @@
 {
-  "generated": "2026-08-23T02:54:01.506840+00:00",
-  "files_scanned": 10,
+  "generated": "2026-08-23T03:50:57.458541+00:00",
+  "files_scanned": 1,
   "new_violations": [],
-  "known_violations": [],
+  "known_violations": [
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 153,
+      "expr": "PREV_PRESS",
+      "op": "=",
+      "index": 0,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 154,
+      "expr": "CLICK_TIME",
+      "op": "=",
+      "index": 1,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 155,
+      "expr": "CLICK_X",
+      "op": "=",
+      "index": 2,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 156,
+      "expr": "CLICK_Y",
+      "op": "=",
+      "index": 3,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 157,
+      "expr": "SMOOTH_X",
+      "op": "=",
+      "index": 4,
+      "class": "reserved"
+    },
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 158,
+      "expr": "SMOOTH_Y",
+      "op": "=",
+      "index": 5,
+      "class": "fft-zone"
+    },
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 159,
+      "expr": "VEL_X",
+      "op": "=",
+      "index": 6,
+      "class": "fft-zone"
+    },
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 160,
+      "expr": "VEL_Y",
+      "op": "=",
+      "index": 7,
+      "class": "fft-zone"
+    },
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 161,
+      "expr": "HUE_PHASE",
+      "op": "=",
+      "index": 8,
+      "class": "fft-zone"
+    }
+  ],
   "dynamic_writes": 0,
   "out_of_range_writes": 0,
   "baseline": "reports/extrabuffer_write_audit_baseline.json"
