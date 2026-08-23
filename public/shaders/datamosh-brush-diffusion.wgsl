@@ -1,16 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Datamosh Brush Diffusion
-//  Category: advanced-hybrid
-//  Features: datamosh, anisotropic-diffusion, mouse-driven, temporal
-//  Complexity: Very High
-//  Chunks From: datamosh-brush.wgsl, conv-anisotropic-diffusion.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-13 — Retro & Glitch Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Interactive datamoshing brush merged with Perona-Malik anisotropic
-//  diffusion. Paint to freeze pixels while diffusion smooths along
-//  edges, creating oil-painted MPEG artifact trails with temporal
-//  persistence.
+//  Datamosh Brush Diffusion — Batch 60
+//  Perona-Malik anisotropic diffusion + datamosh brush: spring cursor,
+//  held heat source, capped ripples, exact C loads, ACES + audio.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -40,70 +31,121 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  let n = sin(vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3))));
+  return fract(n * 43758.5453);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn diffusionCoefficient(gradientMag: f32, kappa: f32) -> f32 {
-    return exp(-(gradientMag * gradientMag) / (kappa * kappa + 0.0001));
+  return exp(-(gradientMag * gradientMag) / (kappa * kappa + 0.0001));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
+  let coord = vec2<i32>(global_id.xy);
   let aspect = resolution.x / resolution.y;
   let uv = vec2<f32>(global_id.xy) / resolution;
   let pixelSize = 1.0 / resolution;
   let time = u.config.x;
+  let held = u.zoom_config.w > 0.5;
+  let mouse = u.zoom_config.yz;
 
-  let brushSize = mix(0.02, 0.2, u.zoom_params.x);
-  let kappa = mix(0.01, 0.2, u.zoom_params.y);
-  let dt = mix(0.05, 0.25, u.zoom_params.z);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let brushSize = mix(0.02, 0.22, u.zoom_params.x) * (1.0 + bass * 0.3);
+  let kappa = mix(0.01, 0.22, u.zoom_params.y) * (1.0 - mids * 0.15);
+  let dt = mix(0.05, 0.28, u.zoom_params.z) * (1.0 + treble * 0.2);
   let alphaGhost = mix(0.3, 1.0, u.zoom_params.w);
 
-  var mouse = u.zoom_config.yz;
-  let mouseDown = u.zoom_config.w;
-
-  // Read previous frame
-  var prevSample = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
-  var prevColor = prevSample.rgb;
-  var prevAlpha = prevSample.a;
-
-  if (prevAlpha < 0.01) {
-      let currSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-      prevColor = currSample.rgb;
-      prevAlpha = currSample.a;
+  var smoothMouse = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = mouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let springDt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 9.5;
+      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * springDt;
+      springPos += springVel * springDt;
+    }
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
   }
 
-  var inputSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  var inputColor = inputSample.rgb;
+  let prevSample = textureLoad(dataTextureC, coord, 0);
+  var prevColor = prevSample.rgb;
+  var prevAlpha = prevSample.a;
+  if (prevAlpha < 0.01) {
+    let currSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    prevColor = currSample.rgb;
+    prevAlpha = currSample.a;
+  }
 
-  // Datamosh decay
-  var blendedColor = mix(prevColor, inputColor, 0.05);
+  let inputSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  var blendedColor = mix(prevColor, inputSample.rgb, 0.05);
   var blendedAlpha = mix(prevAlpha, inputSample.a, 0.05);
   blendedAlpha = blendedAlpha * 0.98;
 
-  // Brush interaction
-  let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
+  let uvAspect = vec2<f32>(uv.x * aspect, uv.y);
+  let mouseAspect = vec2<f32>(smoothMouse.x * aspect, smoothMouse.y);
+  let dist = distance(uvAspect, mouseAspect);
 
-  if (mouseDown > 0.5 && dist < brushSize) {
-      let blockID = floor(uv * 20.0);
-      let noiseVal = hash12(blockID + vec2<f32>(time));
-      if (noiseVal > 0.3) {
-          let offsetUV = uv + vec2<f32>(noiseVal * 0.05);
-          let glitchSample = textureSampleLevel(readTexture, u_sampler, offsetUV, 0.0);
-          blendedColor = glitchSample.rgb;
-          blendedAlpha = glitchSample.a * 0.8 + 0.1;
-      } else {
-         blendedColor = prevColor;
-         blendedAlpha = prevAlpha * alphaGhost;
-      }
-      blendedAlpha = max(blendedAlpha, 0.1);
+  var rippleHeat = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.1) {
+      let rAspect = vec2<f32>(rp.x * aspect, rp.y);
+      rippleHeat += smoothstep(0.12, 0.0, distance(uvAspect, rAspect)) * (1.0 - age);
+    }
   }
 
-  // ═══ ANISOTROPIC DIFFUSION ═══
+  if ((held && dist < brushSize) || rippleHeat > 0.05) {
+    let blockID = floor(uv * 24.0);
+    let noiseVal = hash12(blockID + vec2<f32>(time));
+    if (noiseVal > 0.28 || rippleHeat > 0.25) {
+      let offsetUV = clamp(uv + hash22(blockID) * 0.06, vec2<f32>(0.0), vec2<f32>(1.0));
+      let glitchSample = textureSampleLevel(readTexture, u_sampler, offsetUV, 0.0);
+      blendedColor = glitchSample.rgb;
+      blendedAlpha = glitchSample.a * 0.8 + 0.1;
+    } else {
+      blendedColor = prevColor;
+      blendedAlpha = prevAlpha * alphaGhost;
+    }
+    blendedAlpha = max(blendedAlpha, 0.1);
+  }
+
   let center = blendedColor;
-  let n = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, 1.0) * pixelSize, 0.0).rgb;
-  let s = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -1.0) * pixelSize, 0.0).rgb;
-  let e = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(1.0, 0.0) * pixelSize, 0.0).rgb;
-  let w = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-1.0, 0.0) * pixelSize, 0.0).rgb;
+  let dims = vec2<i32>(i32(resolution.x), i32(resolution.y));
+  let nCoord = clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), dims - vec2<i32>(1));
+  let sCoord = clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), dims - vec2<i32>(1));
+  let eCoord = clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), dims - vec2<i32>(1));
+  let wCoord = clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), dims - vec2<i32>(1));
+  let n = textureLoad(dataTextureC, nCoord, 0).rgb;
+  let s = textureLoad(dataTextureC, sCoord, 0).rgb;
+  let e = textureLoad(dataTextureC, eCoord, 0).rgb;
+  let w = textureLoad(dataTextureC, wCoord, 0).rgb;
 
   let gradN = length(n - center);
   let gradS = length(s - center);
@@ -115,10 +157,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cE = diffusionCoefficient(gradE, kappa);
   let cW = diffusionCoefficient(gradW, kappa);
 
-  // Mouse heat source for diffusion
-  let mouseDist = length(uv - mouse);
-  let mouseFactor = exp(-mouseDist * mouseDist * 10.0) * select(0.0, 1.0, mouseDown > 0.5);
-  let mouseBoost = 1.0 + mouseFactor * 5.0;
+  let mouseDist = length(uv - smoothMouse);
+  let mouseFactor = exp(-mouseDist * mouseDist * 10.0) * select(0.0, 1.0, held);
+  let mouseBoost = 1.0 + mouseFactor * 6.0 + rippleHeat * 2.0;
 
   let fluxN = cN * (n - center);
   let fluxS = cS * (s - center);
@@ -126,16 +167,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fluxW = cW * (w - center);
 
   let diffused = center + dt * mouseBoost * (fluxN + fluxS + fluxE + fluxW);
-
-  // Blend datamosh with diffusion
   let avgCoeff = (cN + cS + cE + cW) * 0.25;
-  let finalColor = mix(blendedColor, diffused, 0.5 + avgCoeff * 0.5);
+  var finalColor = mix(blendedColor, diffused, 0.45 + avgCoeff * 0.55);
 
+  let oilTint = vec3<f32>(1.05, 0.95, 1.15) * (0.9 + mids * 0.15);
+  finalColor = acesToneMap(finalColor * oilTint * (0.95 + bass * 0.08));
   blendedAlpha = clamp(blendedAlpha, 0.0, 1.0);
 
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, blendedAlpha));
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, blendedAlpha));
+  textureStore(dataTextureA, coord, vec4<f32>(finalColor, blendedAlpha));
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, blendedAlpha));
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -80,6 +80,16 @@ export type WebGpuProbeSerializable = {
   adapterSummary?: string;
   adapterAttemptLabel?: string | null;
   backend?: 'webgpu' | 'wasm';
+  formatCapabilities?: Pick<
+    DeviceFormatCapabilities,
+    | 'adapterGpuType'
+    | 'isMobile'
+    | 'supportsRgba32FloatStorage'
+    | 'supportsRgba16FloatStorage'
+    | 'supportsFloat16Array'
+    | 'hasFloat32Filterable'
+    | 'hasFloat32Blendable'
+  >;
 };
 
 export type WebGpuProbeResult = WebGpuProbeSerializable & {
@@ -323,11 +333,20 @@ export async function runWebGpuBootProbe(
     const adapterGpuType = parseAdapterGpuType(
       (adapter.info as GPUAdapterInfo & { adapterType?: string })?.adapterType,
     );
-    const formatCapabilities = probeFormatCapabilities(adapter, isMobileDevice());
+    const formatCapabilities = probeFormatCapabilities(adapter, {
+      isMobile: isMobileDevice(),
+      device,
+    });
 
     let adapterSummary =
       `Adapter attempt=${attempt.label} | limits: ${formatAdapterLimitsSummary(adapter)} (sufficient)`;
     adapterSummary = appendAdapterSummaryFields(adapterSummary, device, canvasFormat);
+    adapterSummary +=
+      ` | storage: rgba16float=${formatCapabilities.supportsRgba16FloatStorage ? 'yes' : 'no'}`
+      + ` rgba32float=${formatCapabilities.supportsRgba32FloatStorage ? 'yes' : 'no'}`
+      + ` float16Array=${formatCapabilities.supportsFloat16Array ? 'yes' : 'no'}`
+      + ` f32filter=${formatCapabilities.hasFloat32Filterable ? 'yes' : 'no'}`
+      + ` f32blend=${formatCapabilities.hasFloat32Blendable ? 'yes' : 'no'}`;
 
     device.addEventListener('uncapturederror', (ev) => {
       console.error('[WebGPU] Uncaptured error:', (ev as GPUUncapturedErrorEvent).error);
@@ -342,6 +361,7 @@ export async function runWebGpuBootProbe(
       adapterSummary,
       adapterAttemptLabel: attempt.label,
       backend: 'webgpu',
+      formatCapabilities,
     });
     serializable.ok = true;
 

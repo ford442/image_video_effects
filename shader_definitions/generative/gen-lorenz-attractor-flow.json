@@ -31,7 +31,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "integration_speed",
       "name": "Integration Speed",
       "default": 0.5,
       "min": 0,
@@ -40,7 +40,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "color_shift",
       "name": "Color Shift",
       "default": 0.5,
       "min": 0,
@@ -49,7 +49,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "glow_intensity",
       "name": "Glow Intensity",
       "default": 0.5,
       "min": 0,
@@ -58,7 +58,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "mouse_influence",
       "name": "Mouse Influence",
       "default": 0.5,
       "min": 0,

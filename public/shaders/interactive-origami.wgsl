@@ -1,16 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Origami — Phase A Upgrade
-//  Category: geometric
-//  Features: mouse-driven, depth-aware, audio-reactive, temporal
-//  Complexity: Medium
-//  Created: 2026-05-23
-//  By: Claude (Sonnet 4.6)
+//  Interactive Origami — Batch 58E
+//  Triangle-wave crease planes, held pinch, traveling crease runners,
+//  foil iridescence, bounded click rings, exact C history.
+//  Display RGBA in A.
 // ═══════════════════════════════════════════════════════════════════
-//
-//  Param1: fold_scale       — density/frequency of fold lines
-//  Param2: fold_depth       — UV displacement magnitude at crease peaks
-//  Param3: light_intensity  — facet shading contrast
-//  Param4: depth_influence  — far objects (depth→0) fold more strongly
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -27,108 +20,106 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=FoldScale, y=FoldDepth, z=LightIntensity, w=DepthInfluence
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Triangle wave — creates sharper creases than sine
 fn triWave(x: f32) -> f32 {
-    return abs(fract(x * 0.5 + 0.25) * 4.0 - 2.0) - 1.0;
+  return abs(fract(x * 0.5 + 0.25) * 4.0 - 2.0) - 1.0;
 }
 
-// Sum of 3 oriented fold planes radiating from mouse
 fn foldHeight(p: vec2<f32>, mouse2: vec2<f32>, scale: f32, bass: f32) -> f32 {
-    let d1 = dot(p - mouse2, normalize(vec2<f32>( 0.707,  0.707)));
-    let d2 = dot(p - mouse2, normalize(vec2<f32>(-0.707,  0.707)));
-    let d3 = dot(p - mouse2, normalize(vec2<f32>( 1.0,    0.0  )));
-    let amp = 1.0 + bass * 0.4;
-    return (triWave(d1 * scale) + triWave(d2 * scale * 0.73) + triWave(d3 * scale * 1.27)) * amp / 3.0;
+  let d1 = dot(p - mouse2, normalize(vec2<f32>(0.707, 0.707)));
+  let d2 = dot(p - mouse2, normalize(vec2<f32>(-0.707, 0.707)));
+  let d3 = dot(p - mouse2, normalize(vec2<f32>(1.0, 0.0)));
+  let amp = 1.0 + bass * 0.4;
+  return (triWave(d1 * scale) + triWave(d2 * scale * 0.73) + triWave(d3 * scale * 1.27)) * amp / 3.0;
+}
+
+fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
+  let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
+  return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
-    let uv    = vec2<f32>(gid.xy) / resolution;
-    let time  = u.config.x;
-    let aspect = resolution.x / resolution.y;
-    let aVec   = vec2<f32>(aspect, 1.0);
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+  let pixel = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / max(resolution, vec2<f32>(1.0));
+  let time = u.config.x;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let aVec = vec2<f32>(aspect, 1.0);
+  let held = f32(u.zoom_config.w > 0.5);
 
-    // Params
-    let foldScale  = mix(2.0, 18.0, u.zoom_params.x);
-    let foldDepth  = u.zoom_params.y * 0.06;
-    let lightInt   = u.zoom_params.z;
-    let depthInfl  = u.zoom_params.w;
+  let foldScale = mix(2.0, 18.0, u.zoom_params.x) * (1.0 + held * 0.28);
+  let foldDepth = u.zoom_params.y * 0.06;
+  let lightInt = u.zoom_params.z;
+  let depthInfl = u.zoom_params.w;
 
-    // Audio
-    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
-    let bass   = select(0.0, plasmaBuffer[0].x, hasAudio);
-    let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // Depth — far objects (depth→0) fold more
-    let depth       = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthFactor = mix(1.0, 1.0 + depthInfl, 1.0 - depth);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  let depthFactor = mix(1.0, 1.0 + depthInfl, 1.0 - depth);
+  let prev = textureLoad(dataTextureC, pixel, 0);
 
-    // Mouse influence — folds radiate from cursor, fall off at distance
-    let mouse       = u.zoom_config.yz;
-    let mDistVec    = (uv - mouse) * aVec;
-    let mDist       = length(mDistVec);
-    let influence   = smoothstep(0.85, 0.0, mDist);
+  let mouse = u.zoom_config.yz;
+  let mDistVec = (uv - mouse) * aVec;
+  let mDist = length(mDistVec);
+  let influence = smoothstep(0.85, 0.0, mDist) * mix(1.0, 1.35, held);
 
-    // Ripple-triggered crease rings
-    let rippleCount = min(u32(u.config.y), 50u);
-    var rippleFold  = 0.0;
-    for (var i = 0u; i < rippleCount; i++) {
-        let rp   = u.ripples[i].xy;
-        let rt   = u.ripples[i].z;
-        let rAge = time - rt;
-        if (rAge < 0.0 || rAge > 3.5) { continue; }
-        let rDist  = length((uv - rp) * aVec);
-        let rFront = rAge * 0.4;
-        rippleFold += exp(-abs(rDist - rFront) * 25.0) * exp(-rAge * 1.2);
-    }
+  let rippleCount = min(u32(u.config.y), 50u);
+  var rippleFold = 0.0;
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i].xy;
+    let rAge = time - u.ripples[i].z;
+    if (rAge < 0.0 || rAge > 3.5) { continue; }
+    let rDist = length((uv - rp) * aVec);
+    let rFront = rAge * 0.4;
+    rippleFold += exp(-abs(rDist - rFront) * 25.0) * exp(-rAge * 1.2);
+  }
 
-    // Finite-difference gradient of the fold surface
-    let pUV  = uv * aVec;
-    let mUV  = mouse * aVec;
-    let dlt  = 0.005;
-    let h0   = foldHeight(pUV,                          mUV, foldScale, bass);
-    let hDx  = foldHeight(pUV + vec2<f32>(dlt, 0.0),   mUV, foldScale, bass);
-    let hDy  = foldHeight(pUV + vec2<f32>(0.0, dlt),   mUV, foldScale, bass);
-    let grad = vec2<f32>((hDx - h0) / dlt, (hDy - h0) / dlt);
+  let pUV = uv * aVec;
+  let mUV = mouse * aVec;
+  let dlt = 0.005;
+  let h0 = foldHeight(pUV, mUV, foldScale, bass);
+  let hDx = foldHeight(pUV + vec2<f32>(dlt, 0.0), mUV, foldScale, bass);
+  let hDy = foldHeight(pUV + vec2<f32>(0.0, dlt), mUV, foldScale, bass);
+  let grad = vec2<f32>((hDx - h0) / dlt, (hDy - h0) / dlt);
+  let creaseDir = select(vec2<f32>(1.0, 0.0), normalize(vec2<f32>(-grad.y, grad.x)), length(grad) > 0.0002);
+  let runners = pow(max(0.0, sin(dot(pUV, creaseDir) * 22.0 - time * (6.0 + mids * 4.0))), 11.0) * influence;
 
-    // UV displacement
-    let rippleDisp = rippleFold * 0.015;
-    let dispDir    = normalize(mDistVec + vec2<f32>(0.0001));
-    let disp       = (grad * foldDepth + dispDir * rippleDisp) * influence * depthFactor;
-    let sampleUV   = clamp(uv - disp / aVec, vec2<f32>(0.0), vec2<f32>(1.0));
+  let rippleDisp = rippleFold * 0.015;
+  let dispDir = normalize(mDistVec + vec2<f32>(0.0001));
+  let disp = (grad * foldDepth + dispDir * rippleDisp) * influence * depthFactor;
+  let sampleUV = clamp(uv - disp / aVec, vec2<f32>(0.0), vec2<f32>(1.0));
+  var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
 
-    var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  let normalXY = normalize(grad + vec2<f32>(0.0001)) * 0.4;
+  let normalZ = sqrt(max(0.0, 1.0 - dot(normalXY, normalXY)));
+  let normal3 = vec3<f32>(normalXY, normalZ);
+  let lightDir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
+  let diffuse = max(dot(normal3, lightDir), 0.0);
+  let ridgePeak = pow(abs(h0), 3.0) * (1.0 + treble * 0.5);
+  let lighting = (diffuse * 0.6 + ridgePeak * 0.4) * lightInt * influence;
+  color = clamp(color + lighting, vec3<f32>(0.0), vec3<f32>(1.0));
+  let shadow = smoothstep(-0.3, -0.8, h0) * 0.3 * lightInt * influence;
+  color *= (1.0 - shadow);
 
-    // Normal-map facet shading from gradient
-    let normalXY = normalize(grad + vec2<f32>(0.0001)) * 0.4;
-    let normalZ  = sqrt(max(0.0, 1.0 - dot(normalXY, normalXY)));
-    let normal3  = vec3<f32>(normalXY, normalZ);
-    let lightDir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
-    let diffuse  = max(dot(normal3, lightDir), 0.0);
-    // Specular ridges amplified by treble
-    let ridgePeak = pow(abs(h0), 3.0) * (1.0 + treble * 0.5);
-    let lighting  = (diffuse * 0.6 + ridgePeak * 0.4) * lightInt * influence;
-    color = clamp(color + lighting, vec3<f32>(0.0), vec3<f32>(1.0));
+  let slick = hsv2rgb(vec3<f32>(fract(0.15 + abs(h0) * 0.35 + mids * 0.18 + time * 0.06), 0.55, 1.0));
+  color = mix(color, color * slick * 1.25, (0.16 + treble * 0.14) * clamp(ridgePeak + runners, 0.0, 1.0));
+  color += slick * (runners * 0.18 + rippleFold * 0.28);
+  color = mix(color, prev.rgb * 0.92, 0.08);
+  color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    // Shadow inside fold valleys
-    let shadow = smoothstep(-0.3, -0.8, h0) * 0.3 * lightInt * influence;
-    color *= (1.0 - shadow);
-
-    // Temporal persistence
-    let prev  = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
-    color = mix(color, prev * 0.92, 0.08);
-
-    let alpha = clamp(dot(color, vec3<f32>(0.33)) * 0.6 + 0.4 + depth * 0.1, 0.0, 1.0);
-
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(color, alpha));
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
+  let alpha = clamp(dot(color, vec3<f32>(0.33)) * 0.6 + 0.4 + depth * 0.1, 0.0, 1.0);
+  let outCol = vec4<f32>(color, alpha);
+  textureStore(dataTextureA, pixel, outCol);
+  textureStore(writeTexture, pixel, outCol);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(depth + abs(h0) * 0.08 * influence, 0.0, 1.0), 0.0, 0.0, 1.0));
 }

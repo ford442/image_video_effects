@@ -12,7 +12,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "viscosity",
       "name": "Viscosity",
       "default": 0.5,
       "min": 0,
@@ -22,7 +22,7 @@
       "description": "Flow damping and trail persistence"
     },
     {
-      "id": "param2",
+      "id": "flow_turbulence",
       "name": "Flow Turbulence",
       "default": 0.5,
       "min": 0,
@@ -32,7 +32,7 @@
       "description": "Domain-warped flow complexity"
     },
     {
-      "id": "param3",
+      "id": "nebula_glow",
       "name": "Nebula Glow",
       "default": 0.5,
       "min": 0,
@@ -42,7 +42,7 @@
       "description": "Emissive nebula density and brightness"
     },
     {
-      "id": "param4",
+      "id": "spectral_shift",
       "name": "Spectral Shift",
       "default": 0.5,
       "min": 0,

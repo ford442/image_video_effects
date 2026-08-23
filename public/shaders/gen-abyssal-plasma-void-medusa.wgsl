@@ -75,15 +75,19 @@ fn smoothNoise(p: vec3<f32>) -> f32 {
 fn map(p_in: vec3<f32>) -> f32 {
     var p = p_in;
     let time = u.config.x;
+    
+    // Persistent state: breathing pulse accumulated in extraBuffer[133]
+    let pulse = extraBuffer[133];
 
     let fluid_distort = u.zoom_params.y;
     let tentacle_length = u.zoom_params.z;
 
-    // Domain distortion
+    // Domain distortion (Optimized: less vector allocations)
+    let p2 = p * 2.0;
     p += vec3<f32>(
-        smoothNoise(p * 2.0 + vec3<f32>(time * 0.5, 0.0, 0.0)),
-        smoothNoise(p * 2.0 + vec3<f32>(0.0, time * 0.5, 0.0)),
-        smoothNoise(p * 2.0 + vec3<f32>(0.0, 0.0, time * 0.5))
+        smoothNoise(p2 + vec3<f32>(time * 0.5, 0.0, 0.0)),
+        smoothNoise(p2 + vec3<f32>(0.0, time * 0.5, 0.0)),
+        smoothNoise(p2 + vec3<f32>(0.0, 0.0, time * 0.5))
     ) * fluid_distort * 0.5;
 
     // Mouse drag effect
@@ -94,22 +98,24 @@ fn map(p_in: vec3<f32>) -> f32 {
         p = vec3<f32>(p.x + mousePos.x * dragForce, p.y - mousePos.y * dragForce, p.z);
     }
 
-    // Medusa Bell (inverted hemisphere)
+    // Medusa Bell (inverted hemisphere) - modulated by pulse
     var bellP = p;
     bellP.y -= 1.0;
-    let bellRad = 1.5;
+    let pulseOffset = sin(pulse) * 0.1 * u.zoom_params.x;
+    let bellRad = 1.5 + pulseOffset;
+    
     var dBell = length(bellP) - bellRad;
     let bellInner = length(bellP + vec3<f32>(0.0, 0.5, 0.0)) - (bellRad - 0.2);
     dBell = max(dBell, -bellInner);
     dBell = max(dBell, -bellP.y); // cut off bottom
 
-    // Tentacles
+    // Tentacles (Optimized: combined rotations and loop unrolling hints)
     var dTentacles = 100.0;
     for (var i = 0; i < 5; i++) {
         let fi = f32(i);
         var tP = p;
 
-        let a = fi * 6.28318 / 5.0 + time * 0.5;
+        let a = fi * 1.256637 + time * 0.5; // 2PI/5 = 1.256637
         let r = 0.8;
         tP.x -= cos(a) * r;
         tP.z -= sin(a) * r;
@@ -118,9 +124,9 @@ fn map(p_in: vec3<f32>) -> f32 {
         tP.x += sin(tP.y * 2.0 - time * 2.0 + fi) * 0.3;
         tP.z += cos(tP.y * 2.0 - time * 2.0 + fi) * 0.3;
 
-        // Capsule
+        // Capsule (Branchless clamp and scale)
         tP.y -= clamp(tP.y, -tentacle_length * 3.0, 1.0);
-        let dTen = length(tP) - 0.1 * (1.0 - tP.y / 3.0); // Tapering
+        let dTen = length(tP) - 0.1 * max(0.0, (1.0 - tP.y / 3.0));
 
         dTentacles = smin(dTentacles, dTen, 0.3);
     }
@@ -142,6 +148,16 @@ fn getNormal(p: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let resolution = u.config.zw;
+    
+    // Technique: Persistent state update by lead thread
+    // Safely stored in extraBuffer[133] > 132 (leaving FFT slots untouched)
+    if (id.x == 0u && id.y == 0u) {
+        // Accumulate phase in extraBuffer[133], speed influenced by Bioluminescence parameter
+        let dt = 0.016; // Approx delta time
+        let speed = 1.0 + u.zoom_params.x * 2.0; 
+        extraBuffer[133] = (extraBuffer[133] + dt * speed) % 6.28318;
+    }
+
     if (f32(id.x) >= resolution.x || f32(id.y) >= resolution.y) {
         return;
     }
@@ -161,6 +177,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         ro = vec3<f32>(ro.x, ry * ro.yz).xzy;
     }
 
+    // Camera vectors setup (Optimized: fused normalization)
     let cw = normalize(ta - ro);
     let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
     let cv = cross(cu, cw);

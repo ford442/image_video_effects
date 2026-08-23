@@ -2,7 +2,7 @@
   "id": "bio-touch",
   "name": "Bio-Luminescent Touch",
   "url": "shaders/bio-touch.wgsl",
-  "description": "Reveals organic, glowing cellular structures beneath the image where you touch. Audio-reactive cell density and pulse speed respond to bass.",
+  "description": "Bioluminescent cellular membranes with traveling nuclei, held curl vortices, click growth fronts, three-band audio, and spectral organism color.",
   "params": [
     {
       "id": "radius",
@@ -36,7 +36,11 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "continuous-motion",
+    "held-pointer",
+    "click-reactive",
+    "psychedelic-color"
   ],
   "tags": [
     "filter",
@@ -45,5 +49,40 @@
     "voronoi",
     "organic",
     "glow"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Glow Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Cell Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Pulse Speed",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

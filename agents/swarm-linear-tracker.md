@@ -31,6 +31,83 @@
 | 472 | `rgb-topology` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 473 | `elastic-strip` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 474 | `refraction-tunnel` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 475 | `cmyk-halftone-interactive` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 476 | `cyber-slit-scan` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 477 | `heat-haze-gpt52` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 478 | `quantum-prism` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 479 | `sphere-projection` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 480 | `rgb-iso-lines` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 481 | `chromatic-focus-interactive` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 482 | `phosphor-magnifier` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 491 | `interactive-emboss` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 492 | `interactive-film-burn` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 493 | `interactive-fisheye` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 494 | `interactive-fresnel` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 495 | `interactive-glitch-brush` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 496 | `interactive-glitch-cubes` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 497 | `interactive-halftone-spin` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 498 | `interactive-kuwahara` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 499 | `interactive-magnetic-ripple` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 500 | `interactive-origami` | 58E | ✅ Done | WGSL, naga, strict buffers, schema-aware contract |
+| 501 | `gravitational-lensing` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 502 | `holographic-contour` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 503 | `neon-pulse` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 504 | `kaleidoscope` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 505 | `particle-swarm` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 506 | `ink-bleed` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 507 | `glass-shatter` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 508 | `magnetic-field` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 509 | `heat-haze-mirage` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 510 | `vortex-warp` | 60 | ✅ Done | WGSL, naga, strict buffers |
+| 511 | `cyber-ripples` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 512 | `cyber-scan` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 513 | `cyber-trace` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 514 | `cyber-organic` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 515 | `cyber-rain` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 516 | `digital-glitch` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 517 | `digital-haze` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 518 | `digital-reveal` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 519 | `edge-glow-mouse` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 520 | `ferrofluid` | 59 | ✅ Done | WGSL, naga, strict buffers |
+| 521 | `cyber-glitch-hologram` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 522 | `cyber-physical-portal` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 523 | `data-scanner` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 524 | `data-slicer` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 525 | `data-stream` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 526 | `digital-moss` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 527 | `glitch-cathedral` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 528 | `glitch-pixel-sort` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 529 | `glitch-slice-mirror` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 530 | `scanline-cyberpunk` | 66 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 531 | `cyber-rain-em` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 532 | `cyber-rain-interactive` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 533 | `cyber-ripples-coupled` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 534 | `cyber-scan-gabor` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 535 | `cyber-slit-scan` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 536 | `data-moshing-diffusion` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 537 | `data-scanner-gabor` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 538 | `data-slicer-interactive` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 539 | `data-stream-corruption-hdr` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+| 540 | `data-stream-spectral` | 67 | ✅ Done | WGSL, strict buffers, fp128, fast-motion |
+
+Batch 67 (10 shaders) — CYBER RAIN & DATA STREAM FX — tracker #531–540. fp128
+base+mantissa math, dual fast-motion structures per shader, full binding contract.
+
+Batch 66 (10 shaders) — CYBER GLITCH & DATA FX — tracker #521–530. fp128
+base+mantissa math, dual fast-motion structures per shader, full binding contract.
+
+Batch 59 (10 shaders) — CYBER & DIGITAL — tracker #511–520. Merged to main
+2026-08-23. Gate 10/10; notes `swarm-outputs/codex-2026-08-23-b59/`.
+
+Batch 60 (10 shaders) — DEAD FEATURES & FEEDBACK CONTRACTS — tracker #501–510.
+
+Batch 58E (10 shaders) is a distinct interactive cohort after Batch 57
+(#483–490). Structural gates 10/10 naga+bindgroup. Real-GPU visual QA remains
+external.
+
+Batch 56 tracker #475–482 was claimed by concurrent lineages. Main keeps
+`#1137` plus Batch 57 `fractal-kaleidoscope`. Cursor unique upgrades above
+were unioned onto main 2026-08-23.
 | 475 | `ascii-shockwave` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 476 | `cmyk-halftone-interactive` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 477 | `heat-haze-gpt52` | 56 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |

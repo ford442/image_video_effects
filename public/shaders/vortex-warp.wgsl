@@ -1,11 +1,48 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Vortex Warp with Alpha Physics
-//  Scientific: Rotational deformation with physical light transmission
-//  
-//  ALPHA PHYSICS:
-//  - Rotational displacement creates angular distortion gradients
-//  - Twist parameter affects light path length through medium
-//  - Spiral twist accumulates opacity changes
+//  Vortex Warp — Turbulent Rotational Deformation with Angular Dispersion
+//  Category: distortion
+//  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
+//            angular-chromatic-dispersion, temporal-smear, depth-aware,
+//            upgraded-rgba, semantic-alpha, aces
+//  Upgraded: 2026-08-23 (Batch 60)
+//
+//  This shader already met the pool standard (ACES, exact-load feedback,
+//  guarded ripple loop, plasmaBuffer audio, dataTextureA writeback, semantic
+//  alpha), so this pass adds structure rather than compliance:
+//
+//    1. Rankine vortex core — a rigid `weight * strength` rotation makes the
+//       whole disc turn as one body, which is not how a vortex behaves. The
+//       swirl now follows the Rankine model: solid-body rotation inside the
+//       core radius (angular velocity constant) and free-vortex circulation
+//       outside it (tangential velocity ~ 1/r, angular velocity ~ 1/r²). That
+//       is what produces the tight spun core with a slower, longer-reaching
+//       outer flow that real vortices show.
+//
+//    2. Spring-damped vortex eye with inertia — the core followed the raw
+//       cursor exactly, so it teleported on every pointer jump. The eye is now
+//       spring-damped through extraBuffer[133..136] and its own velocity shears
+//       the flow, so whipping the cursor drags the vortex behind the pointer
+//       and it settles when you stop.
+// ═══════════════════════════════════════════════════════════════════════════════
+//  A rigid rotation field is only the carrier here. On top of it sit two
+//  structures that make the swirl behave like a real fluid vortex:
+//
+//    1. Azimuthal turbulence — the swirl angle is perturbed by a summed set of
+//       rotating lobes whose amplitudes come from the 8 FFT bands
+//       (plasmaBuffer[1..8].x), so the vortex "flutters" per frequency band
+//       instead of rotating as one rigid disc. 'Turbulence' (p4) was declared
+//       in the shader JSON but never read before this upgrade — it is the gain.
+//
+//    2. Angular chromatic dispersion — R/G/B are fetched at slightly different
+//       rotation angles rather than different radii. That is the correct
+//       geometry for a rotational shear: the wavelength split fans out ALONG
+//       the flow lines, giving the prism smear a spiral shape.
+//
+//  Interaction: the pointer is the vortex core; holding the button tightens and
+//  accelerates it, and each click launches a bounded shock ring that adds a
+//  counter-rotating pulse as it expands outward (capped at 50 ripples, ~2.4 s).
+//  Previous-frame colour is read back exactly from dataTextureC and advected
+//  along the local flow direction, which turns fast swirls into motion smear.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,119 +60,217 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Strength, y=Radius, z=SpiralTwist, w=Turbulence
   ripples: array<vec4<f32>, 50>,
 };
 
-// Calculate rotational distortion magnitude
-fn calculateRotationalDistortion(
-    percent: f32,
-    strength: f32,
-    twist: f32,
-    dist: f32
-) -> f32 {
-    // Base rotation distortion
+const TAU: f32 = 6.28318530717958647692;
+
+// ── ACES filmic tone map (Narkowicz fit) ─────────────────────────────────────
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
+}
+
+// Rotate a UV offset (already aspect-corrected) by `angle`.
+fn rotate2(v: vec2<f32>, angle: f32) -> vec2<f32> {
+    let s = sin(angle);
+    let c = cos(angle);
+    return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+// ── Azimuthal turbulence ─────────────────────────────────────────────────────
+// Eight counter-rotating lobes, one per FFT band. Lobe k has k+2 arms and
+// drifts at its own rate, so the sum never repeats over a musical phrase.
+fn azimuthalTurbulence(theta: f32, radialT: f32, time: f32) -> f32 {
+    var sum = 0.0;
+    for (var k = 0u; k < 8u; k = k + 1u) {
+        let band = plasmaBuffer[k + 1u].x;
+        let arms = f32(k) + 2.0;
+        let drift = time * (0.35 + f32(k) * 0.11) * select(1.0, -1.0, (k & 1u) == 1u);
+        sum += sin(theta * arms + drift + radialT * 3.0) * band / arms;
+    }
+    return sum;
+}
+
+// Base rotation distortion magnitude — drives the alpha physics below.
+fn calculateRotationalDistortion(percent: f32, strength: f32, twist: f32, dist: f32) -> f32 {
     let rotationDistortion = abs(strength) * percent * percent;
-    
-    // Spiral adds cumulative distortion
     let spiralDistortion = abs(twist) * percent * dist;
-    
     return rotationDistortion + spiralDistortion * 0.1;
 }
 
-// Physical alpha calculation for rotational warping
-fn calculateRotationalAlpha(
-    baseAlpha: f32,
-    distortionMag: f32,
-    percent: f32
-) -> f32 {
-    // Rotational motion creates centrifugal effects on opacity
-    // Center = higher pressure = more opaque
-    // Edge = lower pressure = more transparent
+// Physical alpha for rotational warping: centrifugal pressure gradient minus
+// scattering loss through the sheared medium.
+fn calculateRotationalAlpha(baseAlpha: f32, distortionMag: f32, percent: f32) -> f32 {
     let pressureAlpha = mix(0.9, 0.6, percent);
-    
-    // Distortion causes light scattering
     let scatteringLoss = distortionMag * 0.3;
-    
     return clamp(baseAlpha * pressureAlpha - scatteringLoss, 0.4, 1.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let dims = vec2<i32>(textureDimensions(writeTexture));
+    if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) { return; }
 
-    // Params
-    let strength = (u.zoom_params.x - 0.5) * 10.0; // Range -5.0 to 5.0
-    let radius = u.zoom_params.y * 0.5 + 0.05;     // Range 0.05 to 0.55
-    let twist = u.zoom_params.z * 10.0;            // Range 0.0 to 10.0
-
-    var mouse = u.zoom_config.yz;
+    let coord = vec2<i32>(global_id.xy);
+    let resolution = vec2<f32>(dims);
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
     let aspect = resolution.x / resolution.y;
 
-    // Center of effect is mouse position
-    var center = mouse;
+    // ── Audio ────────────────────────────────────────────────────────────────
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Vector from center to pixel, corrected for aspect
+    // ── Params (held pointer tightens the core and spins it faster) ──────────
+    let held = step(0.5, u.zoom_config.w);
+    let strength = (u.zoom_params.x - 0.5) * 10.0 * (1.0 + bass * 0.45 + held * 0.35);
+    let radius = (u.zoom_params.y * 0.5 + 0.05) * (1.0 - held * 0.22);
+    let twist = u.zoom_params.z * 10.0 * (1.0 + mids * 0.3);
+    let turbGain = u.zoom_params.w;
+
+    // ── Structure 2: spring-damped vortex eye ────────────────────────────────
+    // extraBuffer[133..134] = smoothed eye position, [135..136] = its velocity.
+    // Only invocation (0,0) writes, per the house pattern.
+    let rawCenter = u.zoom_config.yz;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        var sm = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        if (sm.x == 0.0 && sm.y == 0.0) { sm = rawCenter; }
+        let dt = 0.016;
+        let k = 1.0 - exp(-7.0 * dt);
+        let next = sm + (rawCenter - sm) * k;
+        var sv = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        sv = mix(sv, (next - sm) / dt, 0.25);
+        extraBuffer[133] = next.x;
+        extraBuffer[134] = next.y;
+        extraBuffer[135] = sv.x;
+        extraBuffer[136] = sv.y;
+    }
+    let center = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    let eyeVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+
     let diff = uv - center;
     let diffAspect = diff * vec2<f32>(aspect, 1.0);
     let dist = length(diffAspect);
+    let theta = atan2(diffAspect.y, diffAspect.x);
 
-    var finalUV = uv;
-    var distortionMag = 0.0;
-    var percent = 0.0;
-
-    if (dist < radius) {
-        // Calculate factor based on distance (1.0 at center, 0.0 at edge)
-        percent = (radius - dist) / radius;
-
-        // Non-linear falloff for smoother look
-        let weight = percent * percent;
-
-        // Calculate rotation angle
-        let theta = weight * strength;
-
-        // Apply twist: radius dependent rotation
-        let spiralAngle = twist * weight * dist;
-
-        let totalAngle = theta + spiralAngle;
-
-        // Calculate distortion magnitude for alpha physics
-        distortionMag = calculateRotationalDistortion(percent, strength, twist, dist);
-
-        let s = sin(totalAngle);
-        let c = cos(totalAngle);
-
-        // Rotate the offset vector
-        let squareDiff = vec2<f32>(diff.x * aspect, diff.y);
-        let rotatedSquareDiff = vec2<f32>(
-            squareDiff.x * c - squareDiff.y * s,
-            squareDiff.x * s + squareDiff.y * c
-        );
-
-        // Convert back to UV space
-        let rotatedDiff = vec2<f32>(rotatedSquareDiff.x / aspect, rotatedSquareDiff.y);
-
-        finalUV = center + rotatedDiff;
+    // ── Bounded click shock rings ────────────────────────────────────────────
+    // Each click emits an outward front; where the front passes it injects a
+    // short counter-rotating kick, so clicks read as pressure waves rather than
+    // as a second permanent vortex.
+    var shockAngle = 0.0;
+    var shockGlow = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 2.4) {
+            let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+            let front = rDist - age * 0.55;
+            let band = exp(-front * front * 260.0) * exp(-age * 1.4);
+            shockAngle -= band * 1.6;
+            shockGlow += band;
+        }
     }
+    shockGlow = min(shockGlow, 1.5);
 
-    // Sample texture at distorted coordinates
-    let warpedSample = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
-    
-    // Calculate physical alpha
-    let finalAlpha = calculateRotationalAlpha(warpedSample.a, distortionMag, percent);
+    // ── Swirl field ──────────────────────────────────────────────────────────
+    // Inside the vortex radius the swirl is rigid rotation + spiral + turbulence.
+    // Outside it, only the click shock rings twist the frame. The rotation is
+    // applied through one path either way, so the three colour channels below
+    // always agree on the base angle.
+    let inside = step(dist, radius);
+    let percent = select(0.0, (radius - dist) / radius, dist < radius);
+    let weight = percent * percent;
 
-    // Output with RGBA
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(warpedSample.rgb, finalAlpha));
+    // ── Structure 1: Rankine vortex profile ──────────────────────────────────
+    // Inside the core, angular velocity is constant (solid-body). Outside it,
+    // circulation is conserved so omega falls as 1/r^2. The old `weight *
+    // strength` spun the entire disc as one rigid body.
+    let coreRadius = radius * (0.28 + 0.22 * saturate(u.zoom_params.y));
+    let rSafe = max(dist, 1e-4);
+    let omegaSolid = 1.0;
+    let omegaFree = (coreRadius * coreRadius) / (rSafe * rSafe);
+    let rankine = select(omegaFree, omegaSolid, dist < coreRadius);
+    // Confine the free-vortex tail to the slider's radius so the control still
+    // bounds the effect, and keep the falloff smooth across the core boundary.
+    let rankineProfile = rankine * smoothstep(radius * 1.35, 0.0, dist);
 
-    // Pass through depth with rotational distortion effect
+    let rigid = rankineProfile * strength * 0.75;
+    let spiral = twist * rankineProfile * dist;
+
+    // Eye inertia: a moving vortex shears the flow behind it. eyeVel is
+    // (delta uv)/dt with dt = 1/60, so a fast flick is O(30) — it MUST be
+    // clamped before it reaches an angle, or a single fast cursor move would
+    // inject several radians of rotation in one frame.
+    let eyeSpeed = clamp(length(eyeVel), 0.0, 4.0);
+    let eyeDir = select(vec2<f32>(0.0), eyeVel / max(length(eyeVel), 1e-5), eyeSpeed > 1e-4);
+    let eyeShear = dot(eyeDir, vec2<f32>(-diffAspect.y, diffAspect.x))
+                 * eyeSpeed * rankineProfile * 0.09;
+
+    // Structure 1: azimuthal turbulence, banded by the FFT.
+    let turb = azimuthalTurbulence(theta, percent, time) * turbGain * 2.2 * weight;
+
+    let totalAngle = rigid + spiral + turb + shockAngle + eyeShear;
+    let distortionMag = (calculateRotationalDistortion(percent, strength, twist, dist)
+                        + abs(turb) * 0.6) * inside
+                      + abs(shockAngle) * 0.4
+                      + abs(eyeShear) * 0.5;
+
+    let rotatedDiff = rotate2(diffAspect, totalAngle);
+    let finalUV = center + vec2<f32>(rotatedDiff.x / aspect, rotatedDiff.y);
+
+    // Tangential flow direction at this pixel — used for the temporal smear.
+    let flowDir = normalize(vec2<f32>(-diffAspect.y, diffAspect.x) + vec2<f32>(1e-6))
+                * clamp(abs(totalAngle) * max(percent, shockGlow * 0.5) * 0.02, 0.0, 0.02);
+
+    // ── Structure 2: angular chromatic dispersion ────────────────────────────
+    // The wavelength split is a rotation delta, not a radial one, so the fringe
+    // follows the flow lines of the vortex.
+    let dispersion = (0.012 + treble * 0.03)
+                   * max(percent, shockGlow * 0.4)
+                   * clamp(abs(totalAngle), 0.0, 3.0);
+    let dR = rotate2(diffAspect, totalAngle + dispersion);
+    let dB = rotate2(diffAspect, totalAngle - dispersion);
+    let uvR = center + vec2<f32>(dR.x / aspect, dR.y);
+    let uvB = center + vec2<f32>(dB.x / aspect, dB.y);
+
+    let sR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0);
+    let sG = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
+    let sB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
+    var color = vec3<f32>(sR.r, sG.g, sB.b);
+
+    // ── Temporal smear: previous frame advected along the flow ───────────────
+    let prevCoord = clamp(coord - vec2<i32>(flowDir * resolution),
+                          vec2<i32>(0), dims - vec2<i32>(1));
+    let prev = textureLoad(dataTextureC, prevCoord, 0);
+    let smear = clamp(max(percent, shockGlow * 0.5) * (0.28 + abs(totalAngle) * 0.06), 0.0, 0.62);
+    color = mix(color, max(color, prev.rgb * 0.97), smear);
+
+    // Shock fronts glow with a warm rim so the click reads even on dark frames.
+    color += vec3<f32>(1.0, 0.72, 0.45) * shockGlow * (0.35 + bass * 0.5);
+
+    color = acesFilm(color);
+
+    // ── Alpha physics ────────────────────────────────────────────────────────
+    let finalAlpha = clamp(
+        calculateRotationalAlpha(sG.a, distortionMag, percent) + shockGlow * 0.15,
+        0.0, 1.0);
+    let outColor = vec4<f32>(color, finalAlpha);
+
+    textureStore(writeTexture, coord, outColor);
+    textureStore(dataTextureA, coord, outColor);
+
+    // Depth: rotational shear creates depth uncertainty proportional to distortion.
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    // Rotational effects create depth uncertainty proportional to distortion
     let depthMod = 1.0 + distortionMag * 0.05;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth * depthMod, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth * depthMod, 0.0, 0.0, 0.0));
 }

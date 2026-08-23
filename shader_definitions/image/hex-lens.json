@@ -6,28 +6,28 @@
   "description": "Honeycomb microlenses with hexagonal bokeh blur, wavelength-dependent chromatic dispersion, hexagonal aperture diffraction starbursts, FBM domain warping, and 6-fold/12-fold star patterns. Audio-reactive lens rotation and prismatic shimmer.",
   "params": [
     {
-      "id": "param1",
+      "id": "tile_size",
       "name": "Tile Size",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param2",
+      "id": "lens_zoom",
       "name": "Lens Zoom",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param3",
+      "id": "rotation",
       "name": "Rotation",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param4",
+      "id": "mouse_influence",
       "name": "Mouse Influence",
       "default": 0.5,
       "min": 0,
@@ -55,5 +55,8 @@
     "fbm"
   ],
   "updated": true,
-  "updatedParams": ["param2", "param4"]
+  "updatedParams": [
+    "param2",
+    "param4"
+  ]
 }

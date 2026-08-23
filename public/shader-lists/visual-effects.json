@@ -500,7 +500,11 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "ascii",
+      "shockwave",
+      "terminal",
+      "glyph"
     ],
     "params": [
       {
@@ -1032,7 +1036,9 @@
       "holographic-scanlines",
       "data-visualization",
       "hex-grid",
-      "interference-patterns"
+      "interference-patterns",
+      "click-ripples",
+      "aces-tone-map"
     ],
     "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
     "params": [
@@ -1515,7 +1521,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -1554,6 +1562,41 @@
       "audio",
       "music",
       "reactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Holo Tint",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Focus Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1703,14 +1746,18 @@
     "id": "interactive-fresnel",
     "name": "Interactive Fresnel",
     "url": "shaders/interactive-fresnel.wgsl",
-    "description": "Gravitational and optical Fresnel lensing with 2.5D heightfield normals, concentric annular curvature, Cauchy chromatic dispersion, and exact-load temporal shimmer.",
+    "description": "2.5D Fresnel lens curvature with Cauchy dispersion, held ring squeeze, oil-slick grout, radial packets, and bounded click shells. Display RGBA in A.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "chromatic-aberration",
       "depth-mass",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color"
     ],
     "updated": true,
     "params": [
@@ -1745,32 +1792,40 @@
     ],
     "updatedParams": [
       {
+        "index": 0,
         "id": "effectStrength",
         "name": "Lensing Power",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 1,
         "id": "ringCount",
         "name": "Ring Count",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 2,
         "id": "ringThickness",
         "name": "Ring Thickness",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 3,
         "id": "dispersion",
         "name": "Dispersion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -2528,10 +2583,22 @@
     "id": "signal-modulation",
     "name": "Signal Modulation",
     "url": "shaders/signal-modulation.wgsl",
-    "description": "Simulates AM/FM signal distortion with mouse-controlled frequency and amplitude.",
+    "description": "AM/FM carrier wave with sprung origin, held widen, capped click carrier bursts, honest regional FFT spectral bands, ACES composite.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
-      "visual-effect"
+      "audio-reactive",
+      "visual-effect",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba",
+      "spectral-bands"
     ],
     "params": [
       {
@@ -2540,7 +2607,8 @@
         "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "amp",
@@ -2548,7 +2616,8 @@
         "type": "float",
         "default": 0.1,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "speed",
@@ -2556,7 +2625,8 @@
         "type": "float",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "shift",
@@ -2564,12 +2634,16 @@
         "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "signal",
+      "carrier",
+      "fft"
     ],
     "updatedParams": [
       {

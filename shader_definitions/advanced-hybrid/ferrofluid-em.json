@@ -30,8 +30,8 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "spike_scale",
+      "name": "Spike Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -39,8 +39,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "attraction_strength",
+      "name": "Attraction Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -48,8 +48,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "em_influence",
+      "name": "EM Influence",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -57,8 +57,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "color_shift",
+      "name": "Color Shift",
       "default": 0.5,
       "min": 0,
       "max": 1,

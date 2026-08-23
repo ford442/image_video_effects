@@ -18,7 +18,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "field_strength",
       "name": "Field Strength",
       "default": 0.5,
       "min": 0,
@@ -28,7 +28,7 @@
       "audio": "bass"
     },
     {
-      "id": "param2",
+      "id": "spike_sharpness",
       "name": "Spike Sharpness",
       "default": 0.5,
       "min": 0,
@@ -38,7 +38,7 @@
       "audio": "mid"
     },
     {
-      "id": "param3",
+      "id": "viscosity",
       "name": "Viscosity",
       "default": 0.3,
       "min": 0,
@@ -48,7 +48,7 @@
       "audio": "treble"
     },
     {
-      "id": "param4",
+      "id": "num_dipoles",
       "name": "Num Dipoles",
       "default": 0.5,
       "min": 0,

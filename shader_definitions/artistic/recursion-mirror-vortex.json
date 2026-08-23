@@ -2,7 +2,7 @@
   "id": "recursion-mirror-vortex",
   "name": "Recursion Mirror Vortex",
   "url": "shaders/recursion-mirror-vortex.wgsl",
-  "description": "Nested Möbius-fold mirrors that fold the image into itself at precise singularity points, creating infinite-hallway illusions that remain spatially coherent.",
+  "description": "Nested M\u00f6bius-fold mirrors that fold the image into itself at precise singularity points, creating infinite-hallway illusions that remain spatially coherent.",
   "tags": [
     "mirror",
     "vortex",
@@ -18,17 +18,17 @@
   "author": "AI",
   "params": [
     {
-      "id": "param1",
-      "name": "Fold Depth",
+      "id": "number_of_m_bius_fold_iterations_1_6",
+      "name": "Number of M\u00f6bius fold iterations (1\u20136).",
       "min": 0,
       "max": 1,
       "default": 0.4,
       "step": 0.01,
-      "description": "Number of Möbius fold iterations (1–6)."
+      "description": "Number of M\u00f6bius fold iterations (1\u20136)."
     },
     {
-      "id": "param2",
-      "name": "Fold Radius",
+      "id": "radius_of_each_fold_s_influence_sphere",
+      "name": "Radius of each fold's influence sphere.",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -36,8 +36,8 @@
       "description": "Radius of each fold's influence sphere."
     },
     {
-      "id": "param3",
-      "name": "Vortex Speed",
+      "id": "speed_and_direction_of_the_vortex_rotation",
+      "name": "Speed and direction of the vortex rotation.",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -45,8 +45,8 @@
       "description": "Speed and direction of the vortex rotation."
     },
     {
-      "id": "param4",
-      "name": "Mirror Blend",
+      "id": "blend_strength_between_original_and_folded_image",
+      "name": "Blend strength between original and folded image.",
       "min": 0,
       "max": 1,
       "default": 0.6,
