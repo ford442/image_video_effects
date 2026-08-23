@@ -2,7 +2,7 @@
   "id": "pixel-sort-radial",
   "name": "Radial Pixel Stretch",
   "url": "shaders/pixel-sort-radial.wgsl",
-  "description": "Radially stretches pixels from the mouse position based on luminance.",
+  "description": "Kinetic radial pixel sorting with luminance gates, traveling radial runners, held stretch pressure, click fronts, chromatic separation, and spectral color.",
   "params": [
     {
       "id": "stretch",
@@ -36,10 +36,50 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "continuous-motion",
+    "held-pointer",
+    "click-reactive",
+    "psychedelic-color",
+    "display-history"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Stretch Amt",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Luma Thresh",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Direction",
+      "default": 0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

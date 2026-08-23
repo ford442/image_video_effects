@@ -3569,7 +3569,7 @@
     "id": "temporal-distortion-field",
     "name": "Temporal Distortion Field",
     "url": "shaders/temporal-distortion-field.wgsl",
-    "description": "Creates a localized time-dilation field with chromatic time-lag splitting (R past / G present / B future), temporal freeze memory refinement, depth-aware field radius modulation, and fbm warp.",
+    "description": "Stylized temporal distortion with exact display-history feedback, depth-weighted freeze radius, moving clock rings, held freeze, click fronts, and chromatic lag.",
     "params": [
       {
         "id": "freezeAmount",
@@ -3610,7 +3610,12 @@
       "upgraded-rgba",
       "temporal",
       "chromatic",
-      "depth-aware"
+      "depth-aware",
+      "continuous-motion",
+      "held-pointer",
+      "click-reactive",
+      "psychedelic-color",
+      "exact-feedback-loads"
     ],
     "tags": [
       "warp",
@@ -3621,7 +3626,42 @@
       "audio-reactive",
       "depth-aware",
       "freeze"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Freeze Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ghost Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Depth Weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "tensor-flow-sculpt",

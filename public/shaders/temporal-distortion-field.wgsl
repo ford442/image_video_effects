@@ -74,7 +74,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Depth-aware field radius: closer objects are frozen closer to mouse
     let dM = length(uv - mouse);
-    let fieldRadius = freezeAmount * (1.0 - depth * 0.3);
+    let fieldRadius = freezeAmount * (1.0 - depth * depthWeight * 0.6);
     let inField = smoothstep(fieldRadius * 1.2, fieldRadius * 0.8, dM);
 
     var warpUV = uv;
@@ -105,8 +105,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, freezeColor, inField * freeze);
 
     // Temporal freeze memory: ghost trails persist longer
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-    let memory = mix(color, prev * 0.9, (1.0 - freeze) * 0.06 + freeze * 0.12 + bass * 0.02);
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length(uv - event.xy) - age * 0.36) * 62.0);
+    }
+    let clockRings = sin(dM * 90.0 - time * (4.0 + treble * 6.0)) * inField;
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time);
+    let memory = mix(color, prev * 0.9, (1.0 - freeze) * 0.06 + freeze * 0.12 + bass * 0.02) + spectral * (abs(clockRings) * 0.08 + clickFront * 0.25);
 
     let alpha = mix(0.7, 1.0, inField * freeze * 0.5 + length(w) * 0.5);
 

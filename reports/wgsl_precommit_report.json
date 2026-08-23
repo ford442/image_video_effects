@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/cmyk-halftone-interactive.wgsl",
+      "file": "public/shaders/fractal-kaleidoscope.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/cyber-slit-scan.wgsl",
+      "file": "public/shaders/mirror-drag.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -177,7 +177,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/phosphor-magnifier.wgsl",
+      "file": "public/shaders/pixel-sort-radial.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -192,7 +192,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/quantum-prism.wgsl",
+      "file": "public/shaders/psychedelic-noise-flow.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,

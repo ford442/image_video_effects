@@ -67,7 +67,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let current = textureSampleLevel(readTexture, u_sampler, trailUV, 0.0);
 
     // Temporal trail echo
-    let history = textureSampleLevel(dataTextureC, non_filtering_sampler, mirroredUV, 0.0);
+    let historyCoord = vec2<i32>(clamp(vec2<f32>(mirroredUV * resolution), vec2<f32>(0.0), resolution - 1.0));
+    let history = textureLoad(dataTextureC, historyCoord, 0);
     let decay = trailDecay * 0.9 + 0.05;
     let trail = mix(history * decay, current, isMouseDown * 0.1 + 0.05);
 
@@ -84,9 +85,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shardAngle = floor(atan2(mouseDiff.y, mouseDiff.x) * (4.0 + treble * 10.0)) / (4.0 + treble * 10.0);
     let shardDist = length(mouseDiff);
     let shardEdge = fract(shardDist * (10.0 + shatterAmount * 50.0 + bass * 20.0));
-    let shatterGlow = smoothstep(0.9, 1.0, shardEdge) * treble * shatterAmount;
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(u.config.x - event.z, 0.0);
+        clickFront += exp(-age * 1.7) * exp(-abs(length(uv - event.xy) - age * 0.4) * 60.0);
+    }
+    let facetRunner = sin(shardAngle * 18.0 + shardDist * 45.0 - u.config.x * (4.0 + mids * 5.0));
+    let shatterGlow = smoothstep(0.9, 1.0, shardEdge) * (treble + clickFront) * shatterAmount;
 
-    let finalRGB = chromaColor.rgb + vec3<f32>(shatterGlow, shatterGlow * 0.5, shatterGlow * 0.3);
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + facetRunner * 2.0 + u.config.x);
+    let finalRGB = chromaColor.rgb + spectral * (shatterGlow + abs(facetRunner) * shatterAmount * 0.06 * isMouseDown);
     let alpha = clamp(chromaColor.a + shatterGlow + bass * 0.05, 0.0, 1.0);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
