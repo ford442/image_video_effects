@@ -1009,3 +1009,21 @@
   preserved; B unused; no extraBuffer writes. Tunnel no longer uses
   `floor(time)` hash caustics.
 - Structural proof 4/4; visual QA remains real-GPU workstation work.
+
+## Crystalline / cybernetic generative cohort (2026-08-23)
+
+- Ten requested IDs run from `gen-crystal-lattice-growth` through
+  `gen-cybernetic-liquid-chrome-engine`; ferro-coral and liquid-chrome-engine
+  have prior upgrades whose visual/state behavior must be preserved during the
+  contract audit.
+- Acceptance adds an explicit four-named-parameter JSON requirement to the
+  standard full-13-binding, ACES, semantic-alpha, A-only writeback, exact-C-load,
+  regional three-band audio, bounded `[133..138]` state, interaction, and Naga
+  gates.
+- Completed 10/10: exact integer C history, raw HDR A-only packing, ACES display,
+  semantic alpha/depth, and three-band audio throughout; no target needs
+  extraBuffer state. Nine prior `updatedParams` arrays stayed exact, while the
+  void-spider's incorrect control order was deliberately aligned to WGSL.
+- Proof: Naga 10/10, no focused dead sliders or contract violations, 1,333-shader
+  catalog, TypeScript and URL/uniform checks, 81 Jest suites / 545 passes / one
+  skip, and production build green. Real-GPU visual proof remains external.

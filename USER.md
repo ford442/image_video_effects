@@ -159,4 +159,7 @@ Format specification:
   compatibility, truthful feedback packing, and independent verification before
   the next cohort begins. Batch 55 is the four-shader geometry / fast-motion /
   psychedelic-color cohort.
+- For the completed crystalline/cybernetic generative cohort, require four named
+  JSON controls per shader in addition to the standard 13-binding, ACES,
+  semantic-alpha, exact-C-load, three-band-audio, bounded-state contract.
 </IMPORTANT_REMINDER>
