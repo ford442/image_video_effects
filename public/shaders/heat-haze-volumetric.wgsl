@@ -4,14 +4,6 @@
 //  Features: heat-diffusion, volumetric-fog, refraction, depth-aware,
 //            mouse-driven, temporal
 //  Complexity: Very High
-//  Chunks From: heat-haze, alpha-depth-fog-volumetric
-//  Created: 2026-04-18
-//  By: Agent CB-26
-// ═══════════════════════════════════════════════════════════════════
-//  Thermal heat fields interact with volumetric fog. Hot regions
-//  evaporate fog and create refractive distortion; cold regions
-//  accumulate dense mist. Depth-aware Beer-Lambert with thermal
-//  modulation creates living atmospheric pockets.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -35,34 +27,48 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from alpha-depth-fog-volumetric) ═══
-fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+fn ACESFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn valueNoise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-    let a = hash12(i + vec2<f32>(0.0, 0.0));
-    let b = hash12(i + vec2<f32>(1.0, 0.0));
-    let c = hash12(i + vec2<f32>(0.0, 1.0));
-    let d = hash12(i + vec2<f32>(1.0, 1.0));
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+// Volumetric density field
+fn density(p: vec3<f32>, time: f32, audio: vec3<f32>, held: f32) -> f32 {
+    var q = p;
+    // Optical twist based on held spring and time
+    let angle = q.y * 0.5 - time * 0.5;
+    let ca = cos(angle);
+    let sa = sin(angle);
+    let oldX = q.x;
+    q.x = oldX * ca - q.z * sa;
+    q.z = oldX * sa + q.z * ca;
+
+    // Three-band audio integration
+    let bass = audio.x;
+    let mid = audio.y;
+    
+    // Core thermal column
+    let dColumn = length(q.xz) - (0.4 + bass * 0.3 + held * 0.5);
+    
+    // Gyroid-like continuous geometry
+    let g = dot(sin(q * 3.0 - time * 1.2), cos(q.yzx * 3.0 + time * 0.8));
+    
+    let mask = smoothstep(1.5, 0.0, dColumn);
+    
+    return max(0.0, (mask + g * (0.3 + mid * 0.2)) * 1.5);
 }
 
-fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
-    var value = 0.0;
-    var amplitude = 0.5;
-    var frequency = 1.0;
-    for (var i: i32 = 0; i < octaves; i = i + 1) {
-        value += amplitude * valueNoise(p * frequency);
-        amplitude *= 0.5;
-        frequency *= 2.0;
-    }
-    return value;
+fn densityGrad(p: vec3<f32>, time: f32, audio: vec3<f32>, held: f32) -> vec3<f32> {
+    let e = vec2<f32>(0.02, 0.0);
+    return vec3<f32>(
+        density(p + e.xyy, time, audio, held) - density(p - e.xyy, time, audio, held),
+        density(p + e.yxy, time, audio, held) - density(p - e.yxy, time, audio, held),
+        density(p + e.yyx, time, audio, held) - density(p - e.yyx, time, audio, held)
+    );
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -70,96 +76,125 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-    let uv = vec2<f32>(gid.xy) / res;
-    let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-    let texel = 1.0 / res;
     let time = u.config.x;
-
-    // Parameters
-    let heatGain = u.zoom_params.x;
-    let decayRate = u.zoom_params.y;
-    let fogDensity = mix(0.2, 3.0, u.zoom_params.z);
-    let refraction = u.zoom_params.w;
-    let turbulence = 0.5;
-
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
-    let aspect = res.x / res.y;
 
-    // === READ PREVIOUS HEAT ===
-    let c = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let l = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).r;
-    let r_heat = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
-    let t_heat = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).r;
-    let b_heat = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
-
-    let avg = (l + r_heat + t_heat + b_heat) * 0.25;
-    var diffusedHeat = mix(c, avg, 0.3);
-
-    // Mouse heat injection
-    let dist = distance(uv * vec2<f32>(aspect, 1.0), mousePos * vec2<f32>(aspect, 1.0));
-    var mouseHeat = 0.0;
-    if (mouseDown > 0.5 && dist < 0.05) {
-        mouseHeat = heatGain * (1.0 - dist / 0.05);
+    // Single-writer bounded spring state
+    if (gid.x == 0u && gid.y == 0u) {
+        let dt = 0.016;
+        let target = select(0.0, 1.0, mouseDown > 0.5);
+        let pos = extraBuffer[133];
+        let vel = extraBuffer[134];
+        
+        let force = (target - pos) * 150.0 - vel * 12.0; 
+        let nVel = vel + force * dt;
+        let nPos = clamp(pos + nVel * dt, -0.2, 1.2); 
+        
+        extraBuffer[133] = nPos;
+        extraBuffer[134] = nVel;
     }
+    
+    let held = extraBuffer[133];
 
-    let newHeat = (diffusedHeat + mouseHeat) * decayRate;
-    let finalHeat = clamp(newHeat, 0.0, 1.0);
+    // Preserve existing params exactly
+    let heatGain = u.zoom_params.x;     
+    let decayRate = u.zoom_params.y;    
+    let fogDensity = mix(0.2, 3.0, u.zoom_params.z); 
+    let refraction = u.zoom_params.w;   
 
-    // Write heat to depth for next frame
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(finalHeat, 0.0, 0.0, 0.0));
+    let bass = plasmaBuffer[0].x;
+    let mid = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = vec3<f32>(bass, mid, treble);
 
-    // === REFRACTION FROM HEAT GRADIENT ===
-    let heatGradX = r_heat - l;
-    let heatGradY = b_heat - t_heat;
-    let warp = vec2<f32>(heatGradX, heatGradY) * refraction;
-    let finalUV = uv - warp;
-
-    // === VOLUMETRIC FOG MODULATED BY HEAT ===
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let distFactor = (1.0 - depth);
-    let heightFactor = 1.0 - uv.y * 0.5;
-
-    let noiseUV = uv * 3.0 + vec2<f32>(time * 0.02, time * 0.015);
-    let fogNoise = fbm2(noiseUV, 4) * turbulence + (1.0 - turbulence);
-
-    // Heat reduces fog (evaporation)
-    let heatFogMod = 1.0 - finalHeat * 0.9;
-    let opticalDepth = fogDensity * distFactor * heightFactor * fogNoise * heatFogMod * 3.0;
-    let transmittance = exp(-opticalDepth);
-
-    // Fog colors: warm near, cool far, hot = clear
-    let nearFog = vec3<f32>(0.85, 0.75, 0.55);
-    let farFog = vec3<f32>(0.25, 0.35, 0.6);
-    let hotFog = vec3<f32>(0.9, 0.4, 0.2);
-    let fogColor = mix(mix(nearFog, farFog, distFactor), hotFog, finalHeat * 0.3);
-
-    // Mouse clears fog
-    let mouseDist = length(uv - mousePos);
-    let mouseClear = smoothstep(0.2, 0.0, mouseDist) * mouseDown;
-    let modifiedTransmittance = mix(transmittance, 1.0, mouseClear);
-
-    // Ripple fog swirl
+    let uv = vec2<f32>(gid.xy) / res;
+    let aspect = res.x / res.y;
+    
+    // Capped click ripples
+    var rippleNormal = vec2<f32>(0.0);
     let rippleCount = min(u32(u.config.y), 50u);
-    var rippleDisturbance = 0.0;
     for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let rDist = length(uv - ripple.xy);
-        let age = time - ripple.z;
-        if (age < 2.0 && rDist < 0.2) {
-            rippleDisturbance += smoothstep(0.2, 0.0, rDist) * max(0.0, 1.0 - age * 0.5) * 0.3;
+        let r = u.ripples[i];
+        let d = distance(uv * vec2<f32>(aspect, 1.0), r.xy * vec2<f32>(aspect, 1.0));
+        let age = time - r.z;
+        if (age > 0.0 && age < 2.5) {
+            let phase = d * 45.0 - age * 18.0;
+            let env = smoothstep(0.0, 0.1, age) * smoothstep(2.5, 1.5, age) * smoothstep(0.5, 0.0, d);
+            let dir = normalize(uv - r.xy);
+            rippleNormal += dir * cos(phase) * env;
         }
     }
-    let finalTransmittance = mix(modifiedTransmittance, modifiedTransmittance * 0.5, rippleDisturbance);
 
-    // === SCENE COMPOSITE ===
-    let sceneColor = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
-    let foggedColor = sceneColor * finalTransmittance + fogColor * (1.0 - finalTransmittance);
+    let uv_c = (vec2<f32>(gid.xy) - 0.5 * res) / res.y;
+    
+    let ro = vec3<f32>(0.0, 0.0, -2.5 - held * 0.5);
+    var rd = normalize(vec3<f32>(uv_c + rippleNormal * 0.15 * heatGain, 1.0));
 
-    // Thermal tint overlay
-    let thermalTint = vec3<f32>(1.0, 0.3, 0.1) * finalHeat * 0.5;
-    let outColor = foggedColor + thermalTint;
+    // Volumetric raymarching of the thermal field
+    var transmittance = 1.0;
+    var scatteredLight = vec3<f32>(0.0);
+    let stepSize = 0.12;
+    var tDist = 0.0;
+    
+    for (var i = 0; i < 35; i = i + 1) {
+        let p = ro + rd * tDist;
+        let dens = density(p, time, audio, held) * fogDensity;
+        
+        if (dens > 0.01) {
+            let grad = densityGrad(p, time, audio, held);
+            
+            // Optical continuous refraction inside the heat volume
+            rd = normalize(rd - grad * refraction * 0.08);
+            
+            let dt = stepSize;
+            let t = exp(-dens * dt * (2.0 + decayRate * 2.0));
+            
+            let heatTemp = smoothstep(0.0, 1.2, dens) * heatGain;
+            let emitBase = mix(vec3<f32>(0.05, 0.1, 0.4), vec3<f32>(1.0, 0.25, 0.05), heatTemp);
+            
+            // Prismatic hues
+            let emitPrism = vec3<f32>(
+                sin(dens * 5.0 + time) * 0.5 + 0.5,
+                cos(dens * 6.0 + time * 1.1) * 0.5 + 0.5,
+                sin(dens * 7.0 - time * 0.9) * 0.5 + 0.5
+            );
+            
+            let emitCol = mix(emitBase, emitPrism, held * 0.5) * (1.0 + treble * 0.5);
+            
+            scatteredLight += transmittance * (1.0 - t) * emitCol * 2.0;
+            transmittance *= t;
+            
+            if (transmittance < 0.01) { break; }
+        }
+        tDist += stepSize;
+    }
 
-    textureStore(dataTextureA, coord, vec4<f32>(outColor, finalTransmittance));
-    textureStore(writeTexture, coord, vec4<f32>(outColor, finalTransmittance));
+    // Exact textureLoad (no filtering) from background
+    let res_i = vec2<i32>(res);
+    let offset = vec2<i32>(rd.xy * 250.0 * refraction);
+    let bgCoord = clamp(vec2<i32>(gid.xy) + offset, vec2<i32>(0), res_i - vec2<i32>(1, 1));
+    
+    // Chromatic aberration based on refraction
+    let chrOff = i32(8.0 * refraction);
+    let coordR = clamp(bgCoord + vec2<i32>(chrOff, 0), vec2<i32>(0), res_i - vec2<i32>(1, 1));
+    let coordB = clamp(bgCoord - vec2<i32>(chrOff, 0), vec2<i32>(0), res_i - vec2<i32>(1, 1));
+    
+    let bgR = textureLoad(dataTextureC, coordR, 0).r;
+    let bgG = textureLoad(dataTextureC, bgCoord, 0).g;
+    let bgB = textureLoad(dataTextureC, coordB, 0).b;
+    let bgColor = vec3<f32>(bgR, bgG, bgB);
+
+    var finalColor = bgColor * transmittance + scatteredLight;
+    
+    // ACES tone map
+    finalColor = ACESFilm(finalColor);
+    
+    // Semantic alpha: 1.0 means fully dense/opaque volume, 0.0 means clear background
+    let semanticAlpha = 1.0 - transmittance;
+
+    let outColor = vec4<f32>(finalColor, semanticAlpha);
+    
+    textureStore(dataTextureA, vec2<i32>(gid.xy), outColor);
+    textureStore(writeTexture, vec2<i32>(gid.xy), outColor);
 }
