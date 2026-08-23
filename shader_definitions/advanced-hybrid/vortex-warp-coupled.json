@@ -17,8 +17,8 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "strength",
+      "name": "Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,8 +26,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "radius",
+      "name": "Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -35,8 +35,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "twist",
+      "name": "Twist",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -44,8 +44,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "viscosity",
+      "name": "Viscosity",
       "default": 0.5,
       "min": 0,
       "max": 1,
