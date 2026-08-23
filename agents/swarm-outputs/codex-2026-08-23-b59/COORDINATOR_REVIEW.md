@@ -1,6 +1,6 @@
 # Batch 59 coordinator review — 2026-08-23
 
-Status: **STRUCTURALLY CLOSED** on tracker #501–510.
+Status: **STRUCTURALLY CLOSED** on tracker #511–520.
 
 ## Critical fixes
 

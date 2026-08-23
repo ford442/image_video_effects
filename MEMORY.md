@@ -4,7 +4,7 @@
 
 ## 2026-08-23 — Shader upgrade Batch 59 — CYBER & DIGITAL
 
-- Upgraded tracker #501–510: cyber-ripples, cyber-scan, cyber-trace,
+- Upgraded tracker #511–520: cyber-ripples, cyber-scan, cyber-trace,
   cyber-organic, cyber-rain, digital-glitch, digital-haze, digital-reveal,
   edge-glow-mouse, ferrofluid.
 - Critical fixes: cyber-rain extraBuffer[0..7] removed (spring [133..138]);
