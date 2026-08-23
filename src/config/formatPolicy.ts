@@ -135,9 +135,9 @@ function probeStorageTexture(
   format: GPUTextureFormat,
 ): boolean {
   if (!device || typeof device.createTexture !== 'function') return false;
-  const usage = (typeof GPUTextureUsage !== 'undefined'
+  const usage: GPUTextureUsageFlags = typeof GPUTextureUsage !== 'undefined'
     ? GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING
-    : 0x0e) as GPUTextureUsage;
+    : 0x0e;
   try {
     const tex = device.createTexture({
       label: `format-probe-${format}`,
