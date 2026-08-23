@@ -17,32 +17,32 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "accumulation_rate",
+      "name": "Accumulation Rate",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "echo_decay",
+      "name": "Echo Decay",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "depth_weight",
+      "name": "Depth Weight",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
+      "id": "temporal_offset",
+      "name": "Temporal Offset",
       "default": 0.5,
       "min": 0,
       "max": 1,
