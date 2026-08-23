@@ -2848,7 +2848,7 @@
     "id": "digital-mold",
     "name": "Digital Mold",
     "url": "shaders/digital-mold.wgsl",
-    "description": "Continuous Gray-Scott reaction-diffusion kinetics with biological hyphal branching, spore dispersal inoculation, bioluminescent nutrient glow, and exact-load chemical state memory.",
+    "description": "Gray-Scott mycelium with nutrient-gradient chemotaxis — hyphae extend up the image-luminance gradient the way real mycelium forages, rather than diffusing isotropically — and per-band sporulation regimes, where each FFT bin pushes its own zone into a different region of the Gray-Scott parameter plane so the colony grows visibly different structures per frequency. Also replaces a per-frame spore hash that strobed with a coherent drifting field, and derives alpha from colony density instead of passing the source alpha through.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2856,7 +2856,15 @@
       "spore-noise",
       "depth-humidity",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "gray-scott",
+      "chemotaxis"
     ],
     "updated": true,
     "params": [
@@ -2895,28 +2903,32 @@
         "name": "Feed Rate",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Gray-Scott feed rate; per-band zones offset it."
       },
       {
         "id": "killRate",
         "name": "Kill Rate",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Gray-Scott kill rate; per-band zones offset it."
       },
       {
         "id": "diffusionA",
         "name": "Diffusion A",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Diffusion coefficient of the substrate."
       },
       {
         "id": "diffusionB",
         "name": "Diffusion B",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Diffusion coefficient of the autocatalyst."
       }
     ],
     "tags": [
@@ -2928,7 +2940,9 @@
       "mold",
       "reaction-diffusion",
       "organic",
-      "temporal"
+      "temporal",
+      "growth",
+      "bioluminescent"
     ]
   },
   {
@@ -7410,7 +7424,7 @@
     "id": "magnetic-interference",
     "name": "Magnetic Interference",
     "url": "shaders/magnetic-interference.wgsl",
-    "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, canonical bass envelope, beat-pulsed magnetic field, mids-driven swirl and chromatic rotation, treble sparkle overlay, audio-amplified ripples, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
+    "description": "Magnetic interference field with a per-band domain-wall spectrum — eight wall families, each pinned at its own defect lattice and driven by its own FFT bin — and hysteresis memory: the magnetisation lags its drive and only switches past a coercive threshold, giving real magnetic lag and remanence. Fixes an unguarded ripple loop, state written into extraBuffer[0..1] (the engine's bass and mid slots), and an audio envelope smuggled through texel (0,0) of the feedback buffer.",
     "params": [
       {
         "id": "strength",
@@ -7453,12 +7467,57 @@
       "chromatic-aberration",
       "aces-tone-map",
       "temporal-feedback",
-      "velocity-trails"
+      "velocity-trails",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "semantic-alpha",
+      "aces",
+      "domain-walls",
+      "hysteresis"
     ],
     "tags": [
       "filter",
       "image-processing",
-      "audio-reactive"
+      "audio-reactive",
+      "magnetic",
+      "interference",
+      "domain-walls",
+      "glitch"
+    ],
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Field Strength",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "description": "Magnetic displacement gain."
+      },
+      {
+        "id": "radius",
+        "name": "Field Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Extent of the field influence around the pointer."
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Spectral channel split across the field."
+      },
+      {
+        "id": "scanlines",
+        "name": "Scanlines",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Interference scanline intensity."
+      }
     ]
   },
   {
@@ -10015,7 +10074,7 @@
     "name": "Optical Feedback Loop",
     "url": "shaders/optical-feedback.wgsl",
     "category": "interactive-mouse",
-    "description": "Infinite video feedback loop centered on the mouse cursor with audio-pumped zoom, domain-warped drift, hue shifting, depth-aware fade, and temporal accumulation.",
+    "description": "Infinite optical feedback tunnel with a time-correct spring-damped pointer, multi-front ripple shockwaves and per-band spectral hue rotation that separates the tunnel into rings. Fixes two serious bugs: u.config.y (the ripple count) was used as delta time, freezing the spring and hue when no clicks were alive and exploding the integrator when they were; and nine state values were written into extraBuffer[0..8], the engine's bass/mid/treble/historyHead and FFT bins, corrupting the audio every other shader reads. State now lives in extraBuffer[133..135].",
     "tags": [
       "feedback",
       "loop",
@@ -10024,7 +10083,10 @@
       "audio-reactive",
       "domain-warp",
       "depth-aware",
-      "hue-shift"
+      "hue-shift",
+      "tunnel",
+      "psychedelic",
+      "recursive"
     ],
     "features": [
       "mouse-driven",
@@ -10032,7 +10094,16 @@
       "semantic-alpha",
       "upgraded-rgba",
       "temporal-persistence",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "aces",
+      "feedback",
+      "domain-warp",
+      "spectral-hue",
+      "gravity-well",
+      "spring-damper"
     ],
     "workgroup_size": [
       16,
@@ -10075,6 +10146,48 @@
         "max": 1,
         "step": 0.01,
         "param": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "accumulation",
+        "name": "Accumulation Rate",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.x",
+        "description": "How strongly each frame accumulates into the feedback buffer."
+      },
+      {
+        "id": "zoom",
+        "name": "Feedback Zoom",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.y",
+        "description": "Per-frame scale step of the tunnel."
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.z",
+        "description": "Per-frame rotation of the feedback transform."
+      },
+      {
+        "id": "shift",
+        "name": "Hue Shift",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.w",
+        "description": "Global hue rotation, layered over the per-band spectral rings."
       }
     ]
   },

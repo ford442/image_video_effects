@@ -2714,7 +2714,7 @@
     "id": "frosted-glass-lens",
     "name": "Frosted Glass Lens",
     "url": "shaders/frosted-glass-lens.wgsl",
-    "description": "A frosted glass effect that reveals the clear image under the mouse cursor.",
+    "description": "Frosted lens with a Beckmann microfacet scattering lobe — five taps drawn from a Beckmann slope distribution, giving the heavy-tailed blur of ground glass rather than a single offset — and depth-dependent frost thickness so far, cold geometry frosts over while near geometry stays clear. Adds ACES, bounded click frost-clear fronts and dataTextureC persistence, and replaces a per-frame hash grain that strobed as static with a spatially coherent drifting field.",
     "params": [
       {
         "id": "frost_amt",
@@ -2746,11 +2746,62 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "beckmann-microfacet",
+      "fresnel",
+      "beer-lambert",
+      "chromatic-aberration",
+      "temporal-frost"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "frost",
+      "glass",
+      "lens",
+      "scattering"
+    ],
+    "updatedParams": [
+      {
+        "id": "frost_amt",
+        "name": "Frost Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Microfacet roughness and deposition amount."
+      },
+      {
+        "id": "radius",
+        "name": "Lens Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Clear aperture radius around the pointer."
+      },
+      {
+        "id": "softness",
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Falloff width at the lens rim."
+      },
+      {
+        "id": "aberration",
+        "name": "Edge Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Chromatic split at the lens edge."
+      }
     ]
   },
   {

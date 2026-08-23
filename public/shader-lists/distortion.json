@@ -89,18 +89,32 @@
     "name": "Bubble Lens",
     "category": "distortion",
     "url": "shaders/bubble-lens.wgsl",
-    "description": "A thin-film soap bubble lens magnifies the source image and blooms into beat-reactive interference colors around the cursor.",
+    "description": "Soap bubble lens with Marangoni convection — surface-tension gradients drive tangential flow along the film, which is why real bubble bands swirl rather than merely sagging — and per-band membrane resonance: eight drum modes of the film, one per FFT bin, perturbing the thickness so the bubble rings at the frequencies present in the audio. Retains the spring-damped pointer, satellite bubbles and film shockwaves; adds ACES, dataTextureC iridescent trails and a corrected A/B packing.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "thin-film",
+      "marangoni",
+      "membrane-modes",
+      "fresnel",
+      "satellite-bubbles"
     ],
     "tags": [
       "bubble",
       "soap",
       "interference",
       "lens",
-      "audio-reactive"
+      "audio-reactive",
+      "soap-film",
+      "iridescence"
     ],
     "params": [
       {
@@ -134,36 +148,36 @@
     ],
     "updatedParams": [
       {
-        "index": 0,
+        "id": "bubble_size",
         "name": "Bubble Size",
         "default": 0.45,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Radius of the main bubble."
       },
       {
-        "index": 1,
+        "id": "magnification",
         "name": "Magnification",
         "default": 0.55,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Lens power of the bubble surface."
       },
       {
-        "index": 2,
+        "id": "film_thickness",
         "name": "Film Thickness",
         "default": 0.45,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Soap film thickness; sets the interference order."
       },
       {
-        "index": 3,
+        "id": "ior",
         "name": "IOR",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Refractive index of the film, driving Fresnel and rim."
       }
     ],
     "updated": true
@@ -291,7 +305,7 @@
     "id": "crystal-facets",
     "name": "Crystal Facets",
     "url": "shaders/crystal-facets.wgsl",
-    "description": "Physical crystal refraction with light transmission. Simulates radial-cut crystal with proper Fresnel reflection, internal scattering from fractures, and chromatic dispersion based on refractive index.",
+    "description": "Faceted crystal with per-facet normals, total internal reflection past the critical angle (which is what makes real gem facets flash rather than merely darken), and uniaxial birefringence splitting ordinary and extraordinary rays along a per-facet optic axis with FFT-banded retardation. Adds the dataTextureA writeback and dataTextureC read-back the shader was missing, plus bounded click fracture fronts and ACES.",
     "params": [
       {
         "name": "Facet Count",
@@ -330,7 +344,20 @@
       "mouse-driven",
       "alpha-transmission",
       "physical-refraction",
-      "advanced-alpha"
+      "advanced-alpha",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "total-internal-reflection",
+      "birefringence",
+      "fresnel",
+      "beer-lambert",
+      "temporal-glint"
     ],
     "tags": [
       "crystal",
@@ -340,7 +367,44 @@
       "dispersion",
       "physical",
       "alpha",
-      "physical-transmittance"
+      "physical-transmittance",
+      "facets",
+      "gem",
+      "birefringence"
+    ],
+    "updatedParams": [
+      {
+        "name": "Facet Count",
+        "id": "zoomParam1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Number of crystal facets across the frame."
+      },
+      {
+        "name": "Refractive Index",
+        "id": "zoomParam2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "IOR, 1.33-2.42; also sets the critical angle for total internal reflection."
+      },
+      {
+        "name": "Fracture Density",
+        "id": "zoomParam3",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Internal fracture density; drives absorption and birefringence."
+      },
+      {
+        "name": "Crystal Thickness",
+        "id": "zoomParam4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Optical path length through the crystal."
+      }
     ]
   },
   {
@@ -348,14 +412,23 @@
     "name": "Cyber Lens",
     "category": "distortion",
     "url": "shaders/cyber-lens.wgsl",
-    "description": "AR-style cybernetic lens with cyan holographic HUD, targeting reticle, scan lines, hex threat zones, glitch artifacts, chromatic aberration, and depth-parallax layers. Bass drives HUD flicker; mouse moves the reticle; depth controls layer parallax.",
+    "description": "Targeting HUD with rolling-shutter scan skew — each row is exposed at its own instant, so the readout shears with motion the way the CMOS sensor it imitates actually does — and per-band telemetry rings: eight concentric arcs around the reticle, one per FFT bin, each sweeping at its own rate with arc length reporting its level. Adds click target-lock pings, phosphor persistence and a corrected A/B packing (display in A, masks in B).",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
       "chromatic-aberration",
       "hud-overlay",
-      "glitch"
+      "glitch",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "rolling-shutter",
+      "telemetry-rings",
+      "phosphor-persistence"
     ],
     "tags": [
       "cyber",
@@ -365,7 +438,9 @@
       "audio-reactive",
       "hud",
       "glitch",
-      "holographic"
+      "holographic",
+      "targeting",
+      "scifi"
     ],
     "params": [
       {
@@ -395,6 +470,40 @@
         "default": 0.3,
         "min": 0,
         "max": 1
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "hud_scale",
+        "name": "HUD Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "description": "Size of the HUD grid and frame elements."
+      },
+      {
+        "id": "target_size",
+        "name": "Target Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Reticle radius; also sets the telemetry ring spacing."
+      },
+      {
+        "id": "glitch_intensity",
+        "name": "Glitch Intensity",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "description": "Rolling-shutter shear amplitude and tearing."
+      },
+      {
+        "id": "chromatic_aberration",
+        "name": "Chromatic Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Channel split around the lens."
       }
     ]
   },
