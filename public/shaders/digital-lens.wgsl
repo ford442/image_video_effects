@@ -1,12 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Lens v3.1 — Advanced Alpha
+//  Digital Lens v3.2 — Batch 61
 //  Category: image
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
-//            barrel-distortion, chromatic-dispersion, anamorphic,
-//            temporal-feedback, gravity-well, alpha-layered, luminance-key
-//  Complexity: High
-//  Created: 2026-05-10
-//  Upgraded: 2026-07-08
+//  Features: sprung gravity-well focus, held boost, capped ripples,
+//            barrel-distortion, chromatic-dispersion, temporal-feedback
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,6 +28,14 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+
+// Sprung gravity-well target in extraBuffer[133..138] (0,0 writer).
+const SPRING_POS_X: u32 = 133u;
+const SPRING_POS_Y: u32 = 134u;
+const SPRING_VEL_X: u32 = 135u;
+const SPRING_VEL_Y: u32 = 136u;
+const SPRING_TIME: u32 = 137u;
+const SPRING_INITIALIZED: u32 = 138u;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -128,8 +132,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── Mouse interaction ────────────────────────────────────────────
   // Mouse position drives a gravity well that warps the lens center.
   // Mouse down triples well strength and adds a click burst.
-  let mouse = u.zoom_config.yz;
+  let rawMouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w > 0.5;
+
+  var smoothMouse = rawMouse;
+  let hasSpring = arrayLength(&extraBuffer) > SPRING_INITIALIZED;
+  if (hasSpring && extraBuffer[SPRING_INITIALIZED] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[SPRING_POS_X], extraBuffer[SPRING_POS_Y]);
+  }
+  if (pixel.x == 0 && pixel.y == 0 && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[SPRING_VEL_X], extraBuffer[SPRING_VEL_Y]);
+    if (extraBuffer[SPRING_INITIALIZED] <= 0.5) {
+      springPos = rawMouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[SPRING_TIME], 0.001, 0.05);
+      let omega = 10.0;
+      let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[SPRING_POS_X] = springPos.x;
+    extraBuffer[SPRING_POS_Y] = springPos.y;
+    extraBuffer[SPRING_VEL_X] = springVel.x;
+    extraBuffer[SPRING_VEL_Y] = springVel.y;
+    extraBuffer[SPRING_TIME] = time;
+    extraBuffer[SPRING_INITIALIZED] = 1.0;
+    smoothMouse = springPos;
+  }
+  let mouse = smoothMouse;
   var clickWave = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
@@ -140,7 +172,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         exp(-abs(distance(uv01, rp.xy) - age * 0.46) * 72.0) * (1.0 - age / 1.5));
     }
   }
-  let gravityStrength = p4 * 0.08 * (1.0 + f32(mouseDown) * 2.0);
+  let gravityStrength = p4 * 0.08 * select(1.0, 3.0, mouseDown);
   let gravity = gravityWell(uv01, mouse, gravityStrength);
   let focusPoint = mouse + gravity * 0.15;
 

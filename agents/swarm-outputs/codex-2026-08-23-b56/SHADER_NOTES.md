@@ -15,3 +15,26 @@
   honeycomb facets now contribute depth.
 - `matrix-curtain`: recognizable glyph strokes, exact C state load, layered
   phosphor color, held vortex, and click/degauss fronts.
+
+## Merge note (dual lineage)
+
+Concurrent local Batch 56 (fast-motion psychedelic) overlapped four shaders.
+Hand-merged overlaps:
+
+- `phosphor-magnifier`: keep display-RGBA afterimage A + aurora runners / held lens.
+- `cyber-slit-scan`: traveling heads / tears / held bend + oil-slick aurora / conveyor.
+- `chromatic-focus-interactive`: multi-tap blur / caustics / squeeze + oil-slick runners / A history.
+- `quantum-prism`: hex bevel / spectral bands / facet depth + oil-slick runners / A history.
+
+Local-only upgrades retained: `hyb-spectral-fbm-displace`, `infinite-zoom-lens`,
+`liquid-warp-interactive`, `warp_drive`.
+
+## Cursor lineage merge (2026-08-23)
+
+Cursor Batch 56 added: ascii-shockwave, heat-haze-gpt52, sphere-projection,
+fractal-kaleidoscope, rgb-iso-lines (plus overlaps).
+
+Hand-merged overlaps with prior main:
+- `chromatic-focus-interactive`: six-blade iris + multi-tap blur/caustics.
+- `cmyk-halftone-interactive`: rotating screens/conveyors + registration shear/blooms; A=CMYK.
+- `quantum-prism`: hex grout/packets + bevel/spectral/facet depth.

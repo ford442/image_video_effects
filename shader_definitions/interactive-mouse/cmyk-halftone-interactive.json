@@ -7,10 +7,14 @@
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
+    "depth-aware",
     "continuous-motion",
     "click-reactive",
     "held-pointer",
+    "held-drag",
+    "bounded-click-ripples",
     "psychedelic-color",
+    "cmyk-rosette",
     "rosette-moire"
   ],
   "params": [
@@ -49,7 +53,7 @@
     "print",
     "audio-reactive"
   ],
-  "description": "Rosette and moire CMYK halftone with animated registration drift, held-pointer plate shear, click ink blooms, and three-band audio overprint.",
+  "description": "Rosette/moire CMYK halftone with rotating screens, registration drift and held plate shear, ink conveyors/packets, click blooms, rainbow registration glow, and three-band audio. A remains CMYK coverage masks.",
   "updatedParams": [
     {
       "index": 0,

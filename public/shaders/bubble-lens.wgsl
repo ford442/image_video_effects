@@ -5,6 +5,30 @@
 //  satellite bubbles, film shockwaves, per-octave FFT shimmer.
 // ================================================================
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-08-23 (Batch 64)
+//
+//  This shader was already strong — spring-damped pointer in the correct
+//  extraBuffer[133..138] range, guarded ripple loop, thin-film interference,
+//  gravity drainage, satellite bubbles. This pass closes the remaining contract
+//  gaps (no ACES, `dataTextureC` never read, and `dataTextureA` held a mask
+//  tuple nothing consumed) and adds two structures the film physics was missing.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Marangoni convection — surfactant concentration gradients drive
+//       tangential flow along a soap film, which is why the interference bands
+//       in a real bubble visibly swirl and race rather than just sagging under
+//       gravity. Drainage here was a static vertical gradient plus noise; a
+//       Marangoni velocity field now advects the film thickness tangentially,
+//       with surface-tension gradients strongest where the film is thinnest.
+//
+//    2. Per-band membrane resonance modes — a soap film is a vibrating
+//       membrane with discrete drum modes. Eight radial/azimuthal modes, one
+//       per FFT bin, now perturb the film thickness, so the bubble rings like
+//       a membrane at the frequencies actually present in the audio.
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -78,6 +102,28 @@ fn evalBubble(
     * 0.6 * (1.0 + broadShimmer) + noise(warpedUV * 15.0 - vec2<f32>(time * 0.1, 0.0)) * 0.4 * (1.0 + fineShimmer);
   var drainedThickness = filmThickness * (0.14 + drainage * 1.6) * (0.75 + turbulence * 0.6);
   drainedThickness = drainedThickness * (1.0 + filmShock);
+
+  // ── Structure 1: Marangoni convection ────────────────────────────────────
+  // Surface tension rises as the film thins, so thin regions pull liquid
+  // tangentially toward themselves. That gradient-driven flow is what makes
+  // real soap-film bands swirl instead of merely sagging.
+  let tangent = vec2<f32>(-direction.y, direction.x);
+  let tensionGrad = (1.0 - clamp(drainedThickness * 1.4, 0.0, 1.0));
+  let marangoni = dot(tangent, vec2<f32>(cos(time * 0.6), sin(time * 0.47)))
+                * tensionGrad * (0.35 + audio.y * 0.9);
+  drainedThickness = drainedThickness * (1.0 + marangoni * 0.28);
+
+  // ── Structure 2: per-band membrane resonance modes ───────────────────────
+  // Eight drum modes of the film, each driven by its own spectrum bin.
+  var membrane = 0.0;
+  for (var m = 0u; m < 8u; m = m + 1u) {
+    let fm = f32(m);
+    let energy = plasmaBuffer[m + 1u].x;
+    let radialMode = cos(factor * (3.0 + fm * 2.4) * 3.14159265);
+    let azimuthMode = cos(atan2(delta.y, delta.x) * (fm + 1.0) + time * (1.4 + fm * 0.5));
+    membrane += radialMode * azimuthMode * energy / (1.0 + fm * 0.5);
+  }
+  drainedThickness = max(drainedThickness * (1.0 + membrane * 0.16), 0.0);
   let phase = drainedThickness * 9.0 * (1.0 - factor * 0.45) + audio.z * 2.0;
 
   var interference = vec3<f32>(
@@ -202,7 +248,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, main.warpedUV, 0.0).r;
   let outDepth = clamp(mix(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r, baseDepth, main.inside), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
-  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(main.inside, main.drainedThickness * 0.2, main.spec, finalAlpha));
+  let coord = vec2<i32>(gid.xy);
+
+  // Iridescent trail: the film's colour lingers briefly (exact load — C is
+  // rgba32float and must not go through a filtering sampler).
+  let prevFrame = textureLoad(dataTextureC, coord, 0);
+  finalColor = max(finalColor, prevFrame.rgb * (0.72 + main.inside * 0.14));
+
+  finalColor = acesFilm(finalColor);
+
+  let outColor = vec4<f32>(finalColor, finalAlpha);
+  textureStore(writeTexture, coord, outColor);
+  textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  // A carries DISPLAY RGBA so the trail read above is meaningful; the mask
+  // tuple that used to live here (and that nothing read) moves to B.
+  textureStore(dataTextureA, coord, outColor);
+  textureStore(dataTextureB, coord,
+               vec4<f32>(main.inside, main.drainedThickness * 0.2, main.spec, finalAlpha));
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
 }

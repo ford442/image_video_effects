@@ -8,9 +8,12 @@
     "continuous-motion",
     "click-reactive",
     "held-pointer",
-    "temporal"
+    "held-drag",
+    "bounded-click-ripples",
+    "temporal",
+    "upgraded-rgba"
   ],
-  "description": "Traveling multi-head slit scan with diagonal tear ribbons, held-pointer bending, click injections, bit crushing, hue travel, and three-band audio.",
+  "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Display RGBA packed in A.",
   "params": [
     {
       "name": "Scan Speed",

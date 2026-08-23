@@ -1,12 +1,22 @@
 {
   "id": "neon-pulse-stream",
   "url": "shaders/neon-pulse-stream.wgsl",
-  "description": "Video luminance directs a fluid flow of neon trails injected by the mouse.",
+  "description": "Bundled neon tube bank: five curl-perturbed sinusoidal tubes are shaded with a gaussian core, Fresnel rim and outer bloom, and each owns one FFT bin driving its thickness, hue drift and the gaussian light packets running along it. The pointer is a magnetic attractor that bends the bundle, clicks inject bounded pulse fronts that flare the tubes they cross, and dataTextureC supplies exact-load afterglow.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "audio-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "depth-aware",
+    "semantic-alpha",
+    "aces",
+    "tube-bundle",
+    "chromatic-aberration",
+    "fresnel",
+    "afterglow-persistence"
   ],
   "params": [
     {
@@ -47,7 +57,49 @@
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "neon",
+    "tube",
+    "packets",
+    "glow"
   ],
-  "name": "Neon Pulse Stream"
+  "name": "Neon Pulse Stream",
+  "updatedParams": [
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Drift rate of the tube centrelines and their packets."
+    },
+    {
+      "id": "decay",
+      "name": "Tube Density",
+      "type": "float",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "description": "Packet spacing along each tube (maps to zoom_params.y)."
+    },
+    {
+      "id": "intensity",
+      "name": "Glow Threshold",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Luminance key threshold for the neon alpha (zoom_params.z)."
+    },
+    {
+      "id": "chaos",
+      "name": "Key Softness",
+      "type": "float",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "description": "Softness of the luminance key edge (zoom_params.w)."
+    }
+  ]
 }

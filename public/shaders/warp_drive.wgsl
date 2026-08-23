@@ -1,11 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Warp Drive v2
-//  Category: visual-effects
-//  Features: audio-reactive, upgraded-rgba, radial-blur, mouse-driven
-//  Complexity: High
-//  Chunks From: warp_drive
-//  Created: 2026-05-31
-//  By: 4-Agent Shader Upgrade Swarm
+//  Warp Drive — Batch 56
+//  Streak packets, Doppler aurora, held warp aim, analytic stars, click fronts
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,6 +23,8 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+const TAU: f32 = 6.28318530718;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = vec3<f32>(2.51);
@@ -52,19 +49,19 @@ fn vignette(uv: vec2<f32>, strength: f32) -> f32 {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let pixel = vec2<i32>(gid.xy);
   let dims = u.config.zw;
-  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
-    return;
-  }
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
   let uv = vec2<f32>(gid.xy) / dims;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
-  let warpFactor = mix(1.0, 10.0, u.zoom_params.x + bass * 0.4);
+  let warpFactor = mix(1.0, 10.0, u.zoom_params.x + bass * 0.4) * (1.0 + held * 0.12);
   let prismSplit = mix(0.0, 0.04, u.zoom_params.y);
   let coreGlow = mix(0.05, 1.0, u.zoom_params.z);
   let blurQuality = i32(mix(6.0, 18.0, u.zoom_params.w));
@@ -91,8 +88,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
-    let starN = hash22(vec2<f32>(f32(i) * 7.3 + time * 0.1, angle * starDensity));
-    let star = smoothstep(0.97, 0.995, starN.x) * starN.y * (0.5 + bass * 0.5);
+    let starPhase = sin(f32(i) * 7.3 + time * 0.1) * 0.5 + 0.5;
+    let starN = hash22(vec2<f32>(f32(i) * 7.3, angle * starDensity));
+    let star = smoothstep(0.97, 0.995, starN.x) * starN.y * starPhase * (0.5 + bass * 0.5);
     let streak = star * pow(max(0.0, 1.0 - t), 2.0) * coreGlow;
 
     let doppler = select(vec3<f32>(1.0 + warpFactor * 0.08, 1.0 - warpFactor * 0.02, 0.85 - warpFactor * 0.05),
@@ -104,16 +102,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   var finalColor = accum / max(weightSum, 1e-4);
+  let packet = smoothstep(0.06, 0.0, abs(fract(dist * 5.0 - time * (3.0 + mids)) - 0.5));
+  let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(angle * 2.0 + time * 0.4) + vec3<f32>(0.0, 0.33, 0.67)));
+
   let velocity = warpFactor * (1.0 - dist * 1.4);
   let ca = smoothstep(2.0, 8.0, velocity);
   let caShift = dirSafe * ca * 0.012;
   let caR = textureSampleLevel(readTexture, u_sampler, clamp(uv + caShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let caB = textureSampleLevel(readTexture, u_sampler, clamp(uv - caShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   finalColor = vec3<f32>(mix(finalColor.r, caR, ca), finalColor.g, mix(finalColor.b, caB, ca));
+  finalColor += oilSlick * packet * 0.15;
+
+  var clickRing = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
+      let d = length(uv - rp.xy);
+      clickRing = max(clickRing, exp(-abs(d - age * 0.45) * 48.0) * (1.0 - age / 1.5));
+    }
+  }
 
   let starburst = pow(max(0.0, 1.0 - dist * 2.0), 3.0) * (coreGlow * 0.4 + mids * 0.3);
-  let tint = mix(vec3<f32>(0.15, 0.55, 1.0), vec3<f32>(1.0, 0.35, 0.7), 0.5 + 0.5 * sin(time * 0.5));
-  finalColor = finalColor + tint * starburst;
+  finalColor = finalColor + oilSlick * (starburst + clickRing * 0.4);
   finalColor = acesToneMap(finalColor * 1.2);
   finalColor = finalColor * vignette(uv, 0.25);
 
@@ -123,7 +135,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let finalAlpha = clamp(warpIntensity * dopplerMag * depth + srcAlpha * 0.2 + starburst * 0.3, 0.06, 0.98);
   let outDepth = clamp(mix(depth, 0.12 + starburst * 0.75, 0.22), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
-  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(dist, warpFactor * 0.1, dopplerMag, finalAlpha));
+  textureStore(writeTexture, pixel, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(dist, warpFactor * 0.1, dopplerMag, finalAlpha));
 }
