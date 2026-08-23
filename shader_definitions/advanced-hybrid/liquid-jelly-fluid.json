@@ -17,8 +17,8 @@
   ],
   "params": [
     {
-      "id": "viscosity_param",
-      "name": "Viscosity Param",
+      "id": "viscosity",
+      "name": "Viscosity",
       "default": 0.5,
       "min": 0,
       "max": 1,

@@ -17,8 +17,8 @@
   ],
   "params": [
     {
-      "id": "decay_echo",
-      "name": "Decay Echo",
+      "id": "echo_decay",
+      "name": "Echo Decay",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,8 +26,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "echo_x",
-      "name": "Echo X",
+      "id": "lag_offset_x",
+      "name": "Lag Offset X",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -35,8 +35,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "echo_y",
-      "name": "Echo Y",
+      "id": "lag_offset_y",
+      "name": "Lag Offset Y",
       "default": 0.5,
       "min": 0,
       "max": 1,

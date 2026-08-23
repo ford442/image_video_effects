@@ -42,8 +42,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "color_freq",
-      "name": "Color Freq",
+      "id": "color_frequency",
+      "name": "Color Frequency",
       "default": 0.5,
       "min": 0,
       "max": 1,

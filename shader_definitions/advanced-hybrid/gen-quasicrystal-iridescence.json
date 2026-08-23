@@ -44,8 +44,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "proj_angle",
-      "name": "Proj Angle",
+      "id": "projection_angle",
+      "name": "Projection Angle",
       "default": 0.5,
       "min": 0,
       "max": 1,

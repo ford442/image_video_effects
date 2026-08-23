@@ -24,8 +24,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "num_masses",
-      "name": "Num Masses",
+      "id": "mass_count",
+      "name": "Mass Count",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -42,8 +42,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "cauchy_b",
-      "name": "Cauchy B",
+      "id": "cauchy_dispersion",
+      "name": "Cauchy Dispersion",
       "default": 0.5,
       "min": 0,
       "max": 1,

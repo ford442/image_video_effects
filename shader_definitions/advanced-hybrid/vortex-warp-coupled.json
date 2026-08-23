@@ -17,8 +17,8 @@
   ],
   "params": [
     {
-      "id": "strength",
-      "name": "Strength",
+      "id": "warp_strength",
+      "name": "Warp Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,8 +26,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "radius",
-      "name": "Radius",
+      "id": "warp_radius",
+      "name": "Warp Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,

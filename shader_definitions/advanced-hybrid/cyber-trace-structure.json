@@ -35,8 +35,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "hue_shift_param",
-      "name": "Hue Shift Param",
+      "id": "hue_shift",
+      "name": "Hue Shift",
       "default": 0.5,
       "min": 0,
       "max": 1,

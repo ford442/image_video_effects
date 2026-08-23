@@ -15,8 +15,8 @@
   ],
   "params": [
     {
-      "id": "strength",
-      "name": "Strength",
+      "id": "effect_strength",
+      "name": "Effect Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -24,8 +24,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "radius",
-      "name": "Radius",
+      "id": "effect_radius",
+      "name": "Effect Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -33,8 +33,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "luma_inf",
-      "name": "Luma Inf",
+      "id": "luma_influence",
+      "name": "Luma Influence",
       "default": 0.5,
       "min": 0,
       "max": 1,

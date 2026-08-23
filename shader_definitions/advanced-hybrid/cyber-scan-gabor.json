@@ -44,8 +44,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "freq",
-      "name": "Freq",
+      "id": "frequency",
+      "name": "Frequency",
       "default": 0.5,
       "min": 0,
       "max": 1,
