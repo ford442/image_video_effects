@@ -123,7 +123,7 @@
     "category": "artistic",
     "type": "compute",
     "url": "shaders/ambient-liquid.wgsl",
-    "description": "Curl-noise-driven ambient liquid distortion with mouse attraction, branchless ripple eddies, HSV color shift, depth-aware semantic alpha, and ACES tone mapping.",
+    "description": "Curl-advected liquid with a REAL Gray-Scott reaction-diffusion system: U and V concentrations carried in dataTextureA, a five-tap Laplacian from exact textureLoad fetches, and feed/kill rates driven per FFT band so different frequencies push the system between spot, stripe and mitosis regimes. The V concentration raises local surface tension and pulls the metaball isosurface inward. Fixes a shader that advertised reaction-diffusion while its grayScott() was four sine waves with no state at all.",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
@@ -131,13 +131,23 @@
       "audio-reactive",
       "reaction-diffusion",
       "sdf-metaballs",
-      "anisotropic-specular"
+      "anisotropic-specular",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "semantic-alpha",
+      "aces",
+      "gray-scott",
+      "surface-tension"
     ],
     "tags": [
       "filter",
       "image-processing",
       "liquid",
-      "noise"
+      "noise",
+      "reaction-diffusion",
+      "metaballs",
+      "organic"
     ],
     "workgroup_size": [
       16,
@@ -188,7 +198,49 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "updated": true
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "viscosity",
+        "name": "Flow Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Curl displacement scale; higher damps the flow (zoom_params.x)."
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Noise frequency of the curl and FBM fields (zoom_params.y)."
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple / Feed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Click ripple strength; also biases the Gray-Scott feed rate (zoom_params.z)."
+      },
+      {
+        "id": "color_shift",
+        "name": "Hue / Kill",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Hue rotation; also biases the Gray-Scott kill rate (zoom_params.w)."
+      }
+    ]
   },
   {
     "id": "anisotropic-kuwahara",
@@ -1988,7 +2040,7 @@
     "id": "glass_refraction_alpha",
     "name": "Glass Refraction RGBA",
     "url": "shaders/glass_refraction_alpha.wgsl",
-    "description": "Ray-marched glass blobs with Snell's law refraction, Fresnel reflectivity, chromatic dispersion. Alpha = transparency based on thickness and angle.",
+    "description": "Raymarched glass with wavelength-correct Cauchy dispersion n(lambda) = A + B/lambda^2, so blue refracts hardest as real glass does, plus per-band caustic focusing derived from the convergence of the refracted direction field. Fixes a fake-audio proxy (a variable named audioPulse was actually the mouse button, and plasmaBuffer was bound but never read) and a dead exitT that left Beer-Lambert absorption running over the distance to the surface instead of the path through the glass.",
     "tags": [
       "interactive",
       "cursor",
@@ -1999,7 +2051,8 @@
       "raymarch",
       "transparent",
       "alpha",
-      "physical-transmittance"
+      "physical-transmittance",
+      "caustics"
     ],
     "features": [
       "mouse-driven",
@@ -2009,7 +2062,20 @@
       "fresnel",
       "chromatic",
       "glass",
-      "advanced-alpha"
+      "advanced-alpha",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "snell-refraction",
+      "cauchy-dispersion",
+      "beer-lambert",
+      "caustics",
+      "temporal-glow"
     ],
     "params": [
       {
@@ -2045,7 +2111,45 @@
         "step": 0.1
       }
     ],
-    "target_rating": 4.8
+    "target_rating": 4.8,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Transparency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "description": "Base transmission of the glass body (maps to zoom_params.x)."
+      },
+      {
+        "id": "param2",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "description": "Cauchy B coefficient — the width of the wavelength spread (zoom_params.y)."
+      },
+      {
+        "id": "param3",
+        "name": "Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "description": "Beer-Lambert absorption scale over the interior path (zoom_params.z)."
+      },
+      {
+        "id": "param4",
+        "name": "Roughness",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "description": "Surface roughness; softens the specular (zoom_params.w)."
+      }
+    ]
   },
   {
     "id": "green-tracer",
@@ -5227,7 +5331,7 @@
     "id": "spectral-bleed-confinement",
     "name": "Spectral Bleed & Confinement",
     "url": "shaders/spectral-bleed-confinement.wgsl",
-    "description": "Specific color bands leak outward from image edges while being electromagnetically confined by competing channels, creating glowing halos that feel physically constrained. Audio reactivity pulses bleed radius and adds beat-synchronized flashes.",
+    "description": "Sprung spectral bleed focus and bounded click fronts pull three-band edge halos through electromagnetic confinement, with exact temporal afterglow in authoritative A history and ACES output.",
     "tags": [
       "spectral",
       "bleed",
@@ -5244,7 +5348,10 @@
     "features": [
       "mouse-driven",
       "advanced-alpha",
-      "audio-reactive"
+      "audio-reactive",
+      "click-reactive",
+      "temporal",
+      "aces-tone-map"
     ],
     "author": "AI",
     "params": [
@@ -5283,6 +5390,40 @@
         "default": 0.3,
         "step": 0.01,
         "description": "Minimum edge magnitude required to trigger spectral bleed."
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bleed Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Confinement",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Curl Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Edge Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -5445,11 +5586,14 @@
     "id": "spectrogram-displace",
     "name": "Spectrogram Displace",
     "url": "shaders/spectrogram-displace.wgsl",
-    "description": "Audio-driven per-pixel displacements from an FFT texture.",
+    "description": "Live three-band and read-only FFT-bin displacement with sprung pointer focus, bounded click accents, and a scrolling exact-C spectrogram persisted through authoritative A display history.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "temporal",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -5482,6 +5626,40 @@
       },
       {
         "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,

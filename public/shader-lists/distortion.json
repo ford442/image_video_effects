@@ -89,18 +89,32 @@
     "name": "Bubble Lens",
     "category": "distortion",
     "url": "shaders/bubble-lens.wgsl",
-    "description": "A thin-film soap bubble lens magnifies the source image and blooms into beat-reactive interference colors around the cursor.",
+    "description": "Soap bubble lens with Marangoni convection — surface-tension gradients drive tangential flow along the film, which is why real bubble bands swirl rather than merely sagging — and per-band membrane resonance: eight drum modes of the film, one per FFT bin, perturbing the thickness so the bubble rings at the frequencies present in the audio. Retains the spring-damped pointer, satellite bubbles and film shockwaves; adds ACES, dataTextureC iridescent trails and a corrected A/B packing.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "thin-film",
+      "marangoni",
+      "membrane-modes",
+      "fresnel",
+      "satellite-bubbles"
     ],
     "tags": [
       "bubble",
       "soap",
       "interference",
       "lens",
-      "audio-reactive"
+      "audio-reactive",
+      "soap-film",
+      "iridescence"
     ],
     "params": [
       {
@@ -134,36 +148,36 @@
     ],
     "updatedParams": [
       {
-        "index": 0,
+        "id": "bubble_size",
         "name": "Bubble Size",
         "default": 0.45,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Radius of the main bubble."
       },
       {
-        "index": 1,
+        "id": "magnification",
         "name": "Magnification",
         "default": 0.55,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Lens power of the bubble surface."
       },
       {
-        "index": 2,
+        "id": "film_thickness",
         "name": "Film Thickness",
         "default": 0.45,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Soap film thickness; sets the interference order."
       },
       {
-        "index": 3,
+        "id": "ior",
         "name": "IOR",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "description": "Refractive index of the film, driving Fresnel and rim."
       }
     ],
     "updated": true
@@ -291,7 +305,7 @@
     "id": "crystal-facets",
     "name": "Crystal Facets",
     "url": "shaders/crystal-facets.wgsl",
-    "description": "Physical crystal refraction with light transmission. Simulates radial-cut crystal with proper Fresnel reflection, internal scattering from fractures, and chromatic dispersion based on refractive index.",
+    "description": "Faceted crystal with per-facet normals, total internal reflection past the critical angle (which is what makes real gem facets flash rather than merely darken), and uniaxial birefringence splitting ordinary and extraordinary rays along a per-facet optic axis with FFT-banded retardation. Adds the dataTextureA writeback and dataTextureC read-back the shader was missing, plus bounded click fracture fronts and ACES.",
     "params": [
       {
         "name": "Facet Count",
@@ -330,7 +344,20 @@
       "mouse-driven",
       "alpha-transmission",
       "physical-refraction",
-      "advanced-alpha"
+      "advanced-alpha",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "total-internal-reflection",
+      "birefringence",
+      "fresnel",
+      "beer-lambert",
+      "temporal-glint"
     ],
     "tags": [
       "crystal",
@@ -340,7 +367,44 @@
       "dispersion",
       "physical",
       "alpha",
-      "physical-transmittance"
+      "physical-transmittance",
+      "facets",
+      "gem",
+      "birefringence"
+    ],
+    "updatedParams": [
+      {
+        "name": "Facet Count",
+        "id": "zoomParam1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Number of crystal facets across the frame."
+      },
+      {
+        "name": "Refractive Index",
+        "id": "zoomParam2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "IOR, 1.33-2.42; also sets the critical angle for total internal reflection."
+      },
+      {
+        "name": "Fracture Density",
+        "id": "zoomParam3",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Internal fracture density; drives absorption and birefringence."
+      },
+      {
+        "name": "Crystal Thickness",
+        "id": "zoomParam4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Optical path length through the crystal."
+      }
     ]
   },
   {
@@ -348,14 +412,23 @@
     "name": "Cyber Lens",
     "category": "distortion",
     "url": "shaders/cyber-lens.wgsl",
-    "description": "AR-style cybernetic lens with cyan holographic HUD, targeting reticle, scan lines, hex threat zones, glitch artifacts, chromatic aberration, and depth-parallax layers. Bass drives HUD flicker; mouse moves the reticle; depth controls layer parallax.",
+    "description": "Targeting HUD with rolling-shutter scan skew — each row is exposed at its own instant, so the readout shears with motion the way the CMOS sensor it imitates actually does — and per-band telemetry rings: eight concentric arcs around the reticle, one per FFT bin, each sweeping at its own rate with arc length reporting its level. Adds click target-lock pings, phosphor persistence and a corrected A/B packing (display in A, masks in B).",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
       "chromatic-aberration",
       "hud-overlay",
-      "glitch"
+      "glitch",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "rolling-shutter",
+      "telemetry-rings",
+      "phosphor-persistence"
     ],
     "tags": [
       "cyber",
@@ -365,7 +438,9 @@
       "audio-reactive",
       "hud",
       "glitch",
-      "holographic"
+      "holographic",
+      "targeting",
+      "scifi"
     ],
     "params": [
       {
@@ -395,6 +470,40 @@
         "default": 0.3,
         "min": 0,
         "max": 1
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "hud_scale",
+        "name": "HUD Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "description": "Size of the HUD grid and frame elements."
+      },
+      {
+        "id": "target_size",
+        "name": "Target Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Reticle radius; also sets the telemetry ring spacing."
+      },
+      {
+        "id": "glitch_intensity",
+        "name": "Glitch Intensity",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "description": "Rolling-shutter shear amplitude and tearing."
+      },
+      {
+        "id": "chromatic_aberration",
+        "name": "Chromatic Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Channel split around the lens."
       }
     ]
   },
@@ -952,7 +1061,7 @@
     "id": "fractal-kaleidoscope",
     "name": "Fractal Kaleidoscope",
     "url": "shaders/fractal-kaleidoscope.wgsl",
-    "description": "Fully parameterized fractal kaleidoscope with animated facet zoom, held local twist, bounded click ripples, three-band audio, depth modulation, and spectral seams.",
+    "description": "Fractal kaleidoscope with live sliders, facet seams, radial conveyors, held pivot, bounded iris clicks, and oil-slick color. Display RGBA in A.",
     "tags": [
       "filter",
       "image-processing"
@@ -991,18 +1100,9 @@
         "step": 0.01
       }
     ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "continuous-motion",
-      "held-pointer",
-      "click-reactive",
-      "psychedelic-color",
-      "depth-aware"
-    ],
     "updatedParams": [
       {
-        "index": 0,
+        "id": "param1",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -1010,7 +1110,7 @@
         "step": 0.01
       },
       {
-        "index": 1,
+        "id": "param2",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -1018,7 +1118,7 @@
         "step": 0.01
       },
       {
-        "index": 2,
+        "id": "param3",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -1026,7 +1126,7 @@
         "step": 0.01
       },
       {
-        "index": 3,
+        "id": "param4",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -1034,7 +1134,14 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples"
+    ]
   },
   {
     "id": "gemstone-fractures",
@@ -1410,7 +1517,7 @@
     "id": "heat-haze-gpt52",
     "name": "Heat Haze Mirage gpt52",
     "url": "shaders/heat-haze-gpt52.wgsl",
-    "description": "Layered heat shimmer with chromatic dispersion, rising mirage flow, and bass-reactive intensity.",
+    "description": "Rising heat mirage with thermal filaments, axial packets, held thermal source, bounded click rings, chromatic dispersion, and oil-slick shimmer. Display RGBA in A; 16x16x1.",
     "params": [
       {
         "id": "intensity",
@@ -1450,7 +1557,10 @@
       "atmospheric",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "thermal-filaments"
     ],
     "tags": [
       "filter",
@@ -1458,6 +1568,40 @@
       "distortion",
       "heat",
       "atmospheric"
+    ],
+    "updatedParams": [
+      {
+        "id": "intensity",
+        "name": "Haze Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "rise",
+        "name": "Rise Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "frequency",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Split",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1552,12 +1696,14 @@
     "name": "Infinite Zoom Lens",
     "category": "distortion",
     "url": "shaders/infinite-zoom-lens.wgsl",
-    "description": "Droste effect with recursive self-similar zoom via logarithmic spiral Möbius transformation. Escher-like infinite recursion with chromatic aberration on spiral arms, HDR bloom on focal points, film grain, and temporal feedback.",
+    "description": "Droste zoom lens with axial packets, interference runners, analytic rainbow caustics, held aim, click rings. Diagnostic A packing preserved.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "temporal"
+      "temporal",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "tags": [
       "zoom",
@@ -1570,6 +1716,36 @@
       "recursive"
     ],
     "params": [
+      {
+        "id": "zoom_strength",
+        "name": "Zoom Strength",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "lens_radius",
+        "name": "Lens Radius",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "feedback_persistence",
+        "name": "Feedback Persistence",
+        "default": 0.65,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "twist",
+        "name": "Twist",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "zoom_strength",
         "name": "Zoom Strength",
@@ -1960,9 +2136,20 @@
     "url": "shaders/liquid-prism.wgsl",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "cauchy-dispersion",
+      "fresnel",
+      "caustic-fronts",
+      "temporal-afterglow"
     ],
-    "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens. Audio reactivity pulses ripple strength and prism highlights with the beat.",
+    "description": "Ripple glass with wavelength-correct Cauchy dispersion: n(lambda) = A + B/lambda^2 sets each channel's sample offset, so blue bends hardest as real glass does. Fixes the dead-audio bug where u.config.y (the ripple count) was read as an audio level. Clicks emit bounded caustic wavefronts.",
     "params": [
       {
         "id": "strength",
@@ -2002,9 +2189,52 @@
       "distort",
       "transform",
       "audio",
-      "music"
+      "music",
+      "prism",
+      "dispersion",
+      "glass",
+      "refraction",
+      "chromatic"
     ],
-    "name": "Liquid Prism"
+    "name": "Liquid Prism",
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Prism Strength",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Displacement amplitude of the refraction ripple."
+      },
+      {
+        "id": "frequency",
+        "name": "Wave Frequency",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Ripple wavenumber; mids and the local FFT band modulate it."
+      },
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Phase speed of the pointer ripple."
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration / Transparency",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Dual-purpose: scales the Cauchy index spread AND sets base glass transparency."
+      }
+    ]
   },
   {
     "id": "liquid-swirl",
@@ -2061,9 +2291,14 @@
     "id": "liquid-warp-interactive",
     "name": "Liquid Warp",
     "url": "shaders/liquid-warp-interactive.wgsl",
-    "description": "Fluid-like distortion driven by mouse flow and noise.",
+    "description": "Liquid curl warp with conveyor flow, liquid-rainbow ripples, held pull, bounded click fronts. Display RGBA in A.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "held-drag",
+      "bounded-click-ripples",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -2099,6 +2334,36 @@
       "warp",
       "distort",
       "transform"
+    ],
+    "updatedParams": [
+      {
+        "id": "distort",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scale",
+        "name": "Noise Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "visc",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -3384,7 +3649,7 @@
     "id": "spectral-vortex",
     "name": "Spectral Vortex",
     "url": "shaders/spectral-vortex.wgsl",
-    "description": "Spectral color vortex with twisted distortions and alpha-channel translucency blending. Alpha encodes curl magnitude / maxCurl for energy-based translucency, with depth-aware compositing and audio-reactive twist.",
+    "description": "Spectral curl distortion whose authoritative A feedback packs phase, curl, and energy; sprung pointer and bounded click vortices drive three-band motion while source depth passes through unchanged.",
     "tags": [
       "filter",
       "image-processing"
@@ -3393,7 +3658,10 @@
       "mouse-driven",
       "depth-aware",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "temporal-state",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -3435,6 +3703,40 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Amplification of curl velocity field"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Twist Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Distortion Step",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Shift",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Curl Amplification",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -3953,9 +4255,6 @@
       "rankine-vortex"
     ],
     "description": "Rankine vortex warp: solid-body rotation inside the core radius and free-vortex circulation (omega ~ 1/r^2) outside it, giving a tightly spun core with a slower, longer-reaching outer flow instead of a rigidly rotating disc. The vortex eye is spring-damped through extraBuffer[133..136] and its own velocity shears the flow, so whipping the cursor drags the vortex behind the pointer. Retains the FFT-banded azimuthal turbulence and flow-aligned angular dispersion from Batch 56.",
-      "audio-driven"
-    ],
-    "description": "Swirls the image around the mouse cursor.",
     "params": [
       {
         "id": "strength",

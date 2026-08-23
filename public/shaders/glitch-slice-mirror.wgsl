@@ -1,10 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Glitch Slice Mirror
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Glitch Slice Mirror — Batch 66
+//  fp128 seam integration, spring mass [133..138], racing horizontal
+//  fracture packet, capped click bands, held widens glitch halo,
+//  ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,14 +20,45 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Detail
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
+struct Fp128 {
+  base: f32,
+  mant: f32,
+}
+
+fn fp128(x: f32) -> Fp128 {
+  return Fp128(x, 0.0);
+}
+
+fn fp128_sum(a: Fp128, b: Fp128) -> Fp128 {
+  let s = a.base + b.base;
+  let e = (a.base - s) + b.base + a.mant + b.mant;
+  let t = s + e;
+  let f = e - (t - s);
+  return Fp128(t, f);
+}
+
+fn fp128_val(x: Fp128) -> f32 {
+  return x.base + x.mant;
+}
+
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn fracture_packet(uv: vec2<f32>, time: f32, speed: f32) -> f32 {
+  let head = fract(time * (1.8 + speed * 5.0));
+  let d = abs(uv.x - head);
+  return pow(max(0.0, 1.0 - d * 16.0), 5.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -40,8 +69,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let aspect = u.config.z / max(u.config.w, 0.001);
     let rawMouse = u.zoom_config.yz;
+    let held = u.zoom_config.w > 0.5;
 
-    // Give the mirror seam mass. State occupies only [133..138].
     let hasSpringState = arrayLength(&extraBuffer) > 138u;
     var mouse = rawMouse;
     if (hasSpringState && extraBuffer[138] > 0.5) {
@@ -68,19 +97,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       extraBuffer[138] = 1.0;
     }
 
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
     let paramIntensity = u.zoom_params.x;
     let paramSpeed = u.zoom_params.y;
     let paramScale = u.zoom_params.z;
     let paramDetail = u.zoom_params.w;
 
-    let audioBoost = (1.0 + bass * 0.5 + mids * 0.25) * (1.0 + u.zoom_config.w * 0.20);
+    let audioBoost = (1.0 + bass * 0.5 + mids * 0.25) * (1.0 + select(0.0, 0.2, held));
 
-    // Clicks fracture the seam into localized horizontal slices at their
-    // normalized ripple positions.
     var clickShift = 0.0;
     var clickDamage = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -97,65 +124,56 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       clickDamage = max(clickDamage, damage);
     }
 
-    let seamX = clamp(mouse.x + clickShift, 0.0, 1.0);
+    let seamPhase = fp128_sum(fp128(mouse.x), fp128(clickShift));
+    let seamX = clamp(fp128_val(seamPhase), 0.0, 1.0);
+    let packet = fracture_packet(uv, time, paramSpeed);
 
-    // Mirror Logic — branchless
     let mirrorActive = uv.x > seamX;
     var target_uv = uv;
     target_uv.x = select(target_uv.x, seamX - (uv.x - seamX), mirrorActive);
 
-    // Glitch Logic near seam
-    let glitch_width = 0.1 * max(paramIntensity * 2.0, 0.001);
+    let glitch_width = 0.1 * max(paramIntensity * 2.0, 0.001) * select(1.0, 1.3, held);
     let dist_to_seam = abs(uv.x - seamX);
-    let inGlitch = dist_to_seam < glitch_width || clickDamage > 0.02;
+    let inGlitch = dist_to_seam < glitch_width || clickDamage > 0.02 || packet > 0.05;
 
     let seamIntensity = clamp(1.0 - dist_to_seam / max(glitch_width, 0.001), 0.0, 1.0) * audioBoost;
     let intensity = max(seamIntensity, clickDamage * audioBoost) * f32(inGlitch);
 
-    // Blocky noise
     let block_size = vec2<f32>(
         0.02 + paramScale * 0.06,
         0.01 + paramScale * 0.02
     );
-    let seed = floor(uv / max(block_size, vec2<f32>(0.001))) + time * (0.1 + paramSpeed * 2.0);
+    let seed = floor(uv / max(block_size, vec2<f32>(0.001))) + time * (0.15 + paramSpeed * 2.5);
     let blockBin = (u32(abs(floor(seed.x)) + abs(floor(seed.y))) % 8u) + 1u;
     let fftBlock = plasmaBuffer[blockBin].x;
     let noise = fract(hash(fract(seed)) + fftBlock * 0.17 + treble * clickDamage * 0.25);
 
     let bigNoise = noise > 0.8;
     target_uv.x = select(target_uv.x, target_uv.x + (noise - 0.5) * 0.1 * intensity, bigNoise);
-
-    // Clamp after displacement
     target_uv = clamp(target_uv, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Chromatic Aberration
-    let split = (0.005 + paramDetail * 0.03) * (intensity + clickDamage * 0.8) * noise;
+    let split = (0.005 + paramDetail * 0.03) * (intensity + clickDamage * 0.8 + packet * 0.5) * noise;
     let r = textureSampleLevel(readTexture, u_sampler, clamp(target_uv + vec2<f32>(split, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, target_uv, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(target_uv - vec2<f32>(split, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
-    // Luminance-based alpha
     let lum = dot(vec3<f32>(r, g, b), vec3<f32>(0.299, 0.587, 0.114));
-    let glitchAlpha = clamp(lum, 0.3, 1.0);
+    var glitchColor = vec4<f32>(acesToneMap(vec3<f32>(r, g, b)), clamp(lum, 0.3, 1.0));
 
-    var glitchColor = vec4<f32>(r, g, b, glitchAlpha);
-
-    // Scanline darkening — branchless
     let scanline = sin(uv.y * (50.0 + paramDetail * 300.0));
     let inScanline = scanline > 0.9;
     glitchColor = select(glitchColor, vec4<f32>(glitchColor.rgb * 0.5, glitchColor.a), inScanline);
 
-    // Sample base texture
     let baseColor = textureSampleLevel(readTexture, u_sampler, target_uv, 0.0);
-
-    // Mix between base and glitch based on whether we're in glitch region
     var finalColor = mix(baseColor, glitchColor, f32(inGlitch));
 
-    // Alpha strategy: blend based on glitch intensity and luminance
-    let finalLum = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    finalColor.a = clamp(0.5 + intensity * 0.3 + finalLum * 0.2, 0.0, 1.0);
+    let prev = textureLoad(dataTextureC, coords, 0);
+    finalColor = mix(finalColor, prev, packet * 0.12);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, target_uv, 0.0).r;
+    let finalLum = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    finalColor.a = clamp(0.5 + intensity * 0.3 + finalLum * 0.2 + packet * 0.1, 0.06, 0.98);
+
+    let depth = textureLoad(readDepthTexture, vec2<i32>(clamp(vec2<i32>(target_uv * u.config.zw), vec2<i32>(0), vec2<i32>(u.config.zw) - vec2<i32>(1))), 0).r;
 
     textureStore(writeTexture, coords, finalColor);
     textureStore(dataTextureA, coords, finalColor);

@@ -15,6 +15,37 @@
 //
 //  dataTextureC.r = height field (persists across frames)
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-08-23 (Batch 64)
+//
+//  A carries the HEIGHT FIELD (r = surface height), read back as dataTextureC
+//  next frame; display goes to writeTexture. Overwriting A with colour would
+//  destroy the fluid.
+//
+//  Contract gaps closed: the output was written without a tone map, and the
+//  height field was fetched with `textureSampleLevel` rather than exact
+//  `textureLoad`. The sampler in use is the non-filtering one so the reads were
+//  valid, but nearest-sampling a float32 texture through the sampler path is
+//  the house anti-pattern — exact loads make the intent explicit and let the
+//  flow term do proper bilinear interpolation by hand.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Rosensweig (ferrofluid spike) instability — above a critical field
+//       strength a magnetic fluid's flat surface becomes unstable and breaks
+//       into a hexagonal lattice of standing peaks. The surface height now runs
+//       that instability: wherever the local field exceeds the critical value
+//       set by surface tension and gravity, a hexagonal mode grows and
+//       saturates, which is the actual mechanism behind the spikes this shader
+//       is imitating.
+//
+//    2. Anisotropic metal BRDF — liquid metal was shaded with an isotropic
+//       Blinn-Phong lobe. Flowing metal has a directional micro-structure
+//       aligned with the flow, so the highlight is now stretched perpendicular
+//       to the flow direction using an anisotropic Ward-style lobe, with the
+//       anisotropy driven per FFT band.
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -106,7 +137,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ── Temporal height field ─────────────────────────────────────
     // Read previous height from dataTextureC, evolve toward FBM target
-    let prevH = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+    let dimsI = vec2<i32>(textureDimensions(writeTexture));
+    let coordI = vec2<i32>(global_id.xy);
+    let prevH = textureLoad(dataTextureC, coordI, 0).r;
     var targetH = fbmHeight(uv * 3.0, time);
 
     // Flow: height field drains toward high-depth (foreground) regions
@@ -117,8 +150,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, px.y), 0.0).r;
     let depthGrad = vec2<f32>(dR - dL, dU - dD);
     let flowUV = uv + depthGrad * flowSpeed * 0.02;
-    let flowH = textureSampleLevel(dataTextureC, non_filtering_sampler,
-                                   clamp(flowUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let flowH = heightBilinear(clamp(flowUV, vec2<f32>(0.0), vec2<f32>(1.0))
+                               * vec2<f32>(dimsI), dimsI);
 
     // Mouse pour: add height under cursor
     if (mouse.x >= 0.0) {
@@ -144,10 +177,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Audio pulses the surface
     targetH = targetH * (1.0 + bass * 0.3);
 
+    // ── Structure 1: Rosensweig (ferrofluid spike) instability ──────────────
+    // Above a critical field the flat surface is unstable and breaks into a
+    // hexagonal lattice of standing peaks. Field strength here is the local
+    // pointer proximity plus bass drive; the critical value comes from the
+    // surface-tension/gravity balance the `viscosity` slider stands in for.
+    let mDistField = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+    let fieldStrength = exp(-mDistField * 4.5) * (0.5 + bass * 1.6) + bass * 0.35;
+    let critical = 0.30 + viscosity * 0.45;
+    let supercritical = max(fieldStrength - critical, 0.0);
+    if (supercritical > 0.0) {
+        // Hexagonal mode: three plane waves at 60 degrees.
+        let kSpike = 46.0 + treble * 26.0;
+        let q = uv * vec2<f32>(aspect, 1.0) * kSpike;
+        let h1 = cos(q.x);
+        let h2 = cos(q.x * -0.5 + q.y * 0.8660254);
+        let h3 = cos(q.x * -0.5 - q.y * 0.8660254);
+        let hexMode = (h1 + h2 + h3) / 3.0;
+        // Amplitude saturates as sqrt of the supercritical excess.
+        let amp = sqrt(clamp(supercritical, 0.0, 1.0)) * 0.55;
+        targetH = max(targetH, targetH + max(hexMode, 0.0) * amp);
+    }
+
     // Viscosity: slow blend from prev to target (high viscosity = slow)
     let blendRate = (1.0 - viscosity) * 0.15 + 0.01;
     let newH = mix(mix(prevH, flowH, flowSpeed * 0.1), targetH, blendRate);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newH, depth, 0.0, 1.0));
 
     // ── Surface normal from height gradient ───────────────────────
     let effTime = time * (1.0 - viscosity * 0.7);
@@ -181,18 +235,60 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     let metalColor = mix(vec3<f32>(0.8, 0.85, 0.9), irid, reflectivity * 0.7);
 
-    // Specular highlight
+    // ── Structure 2: anisotropic metal BRDF ─────────────────────────────────
+    // Flowing metal has micro-structure aligned with the flow, so the highlight
+    // stretches perpendicular to it. Ward-style anisotropic lobe with the
+    // aspect ratio driven per FFT band.
     let halfV = normalize(viewDir + vec3<f32>(0.3, 0.5, 0.8));
-    let spec = pow(max(dot(normal, halfV), 0.0), mix(16.0, 128.0, reflectivity));
+    let bandIdx = u32(clamp(uv.x * 8.0, 0.0, 7.999));
+    let bandE = plasmaBuffer[bandIdx + 1u].x;
+    let flowDir3 = normalize(vec3<f32>(depthGrad * 40.0 + vec2<f32>(1e-4), 1.0));
+    let tangentX = normalize(cross(normal, flowDir3) + vec3<f32>(1e-5, 0.0, 0.0));
+    let tangentY = cross(normal, tangentX);
+    let hDotN = max(dot(normal, halfV), 1e-4);
+    let hx = dot(halfV, tangentX);
+    let hy = dot(halfV, tangentY);
+    // Roughness along vs across the flow.
+    let alphaX = mix(0.42, 0.05, reflectivity);
+    let alphaY = alphaX * (1.0 + bandE * 2.6 + mids * 0.8);
+    let expo = -2.0 * ((hx * hx) / (alphaX * alphaX) + (hy * hy) / (alphaY * alphaY))
+               / (1.0 + hDotN);
+    let spec = exp(expo) / (4.0 * 3.14159265 * alphaX * alphaY);
 
     // Blend refracted image with metallic reflection via Fresnel
     var finalRGB = mix(refractedColor, metalColor, F);
     finalRGB += vec3<f32>(spec * reflectivity * (0.8 + bass * 0.4));
 
-    // Semantic alpha: wetness / reflectivity drives opacity
-    let alpha = F * (0.6 + newH * 0.4);
+    finalRGB = acesFilm(finalRGB);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy),
-                 vec4<f32>(depth * 0.7 + newH * 0.3, 0.0, 0.0, 0.0));
+    // Semantic alpha: wetness / reflectivity drives opacity
+    let alpha = clamp(F * (0.6 + newH * 0.4), 0.0, 1.0);
+
+    textureStore(writeTexture, coordI, vec4<f32>(finalRGB, alpha));
+    // A carries the HEIGHT FIELD, not display colour — the fluid reads it back
+    // as dataTextureC next frame.
+    textureStore(dataTextureA, coordI, vec4<f32>(newH, supercritical, F, alpha));
+    textureStore(dataTextureB, coordI, vec4<f32>(finalRGB, spec));
+    textureStore(writeDepthTexture, coordI,
+                 vec4<f32>(clamp(depth * 0.7 + newH * 0.3, 0.0, 1.0), 0.0, 0.0, 0.0));
+}
+
+fn heightBilinear(p: vec2<f32>, dims: vec2<i32>) -> f32 {
+    let maxC = dims - vec2<i32>(1);
+    let f = fract(p);
+    let i0 = vec2<i32>(floor(p));
+    let s00 = textureLoad(dataTextureC, clamp(i0,                     vec2<i32>(0), maxC), 0).r;
+    let s10 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(1, 0), vec2<i32>(0), maxC), 0).r;
+    let s01 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(0, 1), vec2<i32>(0), maxC), 0).r;
+    let s11 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(1, 1), vec2<i32>(0), maxC), 0).r;
+    return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
 }
