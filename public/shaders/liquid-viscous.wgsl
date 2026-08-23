@@ -67,8 +67,20 @@ fn curlNoise(p: vec2<f32>) -> vec2<f32> {
   return safeNormalize(vec2<f32>(dy, -dx));
 }
 
+fn loadState(pixel: vec2<i32>) -> vec4<f32> {
+  let size = vec2<i32>(textureDimensions(dataTextureC));
+  return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
+
+// Exact-load bilinear reconstruction keeps rgba32float simulation state filter-independent.
 fn sampleState(uv: vec2<f32>) -> vec4<f32> {
-  return textureSampleLevel(dataTextureC, u_sampler, clampUV(uv), 0.0);
+  let size = vec2<i32>(textureDimensions(dataTextureC));
+  let p = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(size) - 0.5;
+  let base = vec2<i32>(floor(p));
+  let f = fract(p);
+  let a = mix(loadState(base), loadState(base + vec2<i32>(1, 0)), f.x);
+  let b = mix(loadState(base + vec2<i32>(0, 1)), loadState(base + vec2<i32>(1, 1)), f.x);
+  return mix(a, b, f.y);
 }
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
@@ -120,6 +132,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let advectedState = sampleState(departure);
   var velocity = advectedState.rg;
   var dye = advectedState.b * exp(-viscosity * 0.025);
+
+  // One bounded viscosity diffusion step before projection.
+  let neighborVelocity = (leftState.rg + rightState.rg + upState.rg + downState.rg) * 0.25;
+  velocity = mix(velocity, neighborVelocity, clamp(viscosity * 0.34, 0.0, 0.34));
 
   let omega = vorticityAt(uv, texel);
   let omegaL = abs(vorticityAt(uv - vec2<f32>(texel.x, 0.0), texel));
@@ -178,10 +194,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pR = rightState.a;
   let pU = upState.a;
   let pD = downState.a;
-  var pressure = centerState.a;
-  for (var iter: i32 = 0; iter < 4; iter = iter + 1) {
-    pressure = (pL + pR + pU + pD - divergence) * 0.25;
-  }
+  // One-frame Jacobi pressure update; subsequent frames continue convergence through A→C.
+  let pressure = clamp((pL + pR + pU + pD - divergence * 0.001) * 0.25, -2.0, 2.0);
   let gradPressure = vec2<f32>((pR - pL) / (2.0 * texel.x), (pD - pU) / (2.0 * texel.y));
   velocity -= gradPressure * 0.0004;
 
@@ -197,12 +211,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let iridescent = hsv2rgb(vec3<f32>(hue, saturation, value));
   let rollupGlow = vec3<f32>(0.20, 0.10, 0.32) * vorticityVisual + vec3<f32>(0.10, 0.18, 0.28) * dye;
   let blend = clamp(0.32 + 0.45 * dye + 0.28 * vorticityVisual, 0.0, 1.0);
-  let finalColor = clamp(mix(advectedColor.rgb, iridescent + rollupGlow, blend), vec3<f32>(0.0), vec3<f32>(1.0));
-  let alpha = clamp(0.78 + 0.18 * dye, 0.0, 1.0);
+  let hdrColor = mix(advectedColor.rgb, iridescent + rollupGlow, blend);
+  let finalColor = clamp((hdrColor * (2.51 * hdrColor + 0.03)) / (hdrColor * (2.43 * hdrColor + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+  let alpha = clamp(advectedColor.a * 0.72 + dye * 0.22 + vorticityVisual * 0.18 + length(velocity) * 2.0, 0.0, 1.0);
   let depthProxy = clamp(max(sourceDepth * 0.65, vorticityVisual * 0.9 + dye * 0.2), 0.0, 1.0);
 
   textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(velocity, dye, pressure));
-  textureStore(dataTextureB, global_id.xy, vec4<f32>(vorticityVisual, clamp(abs(divergence) * 0.01, 0.0, 1.0), clamp(length(velocity) * 90.0, 0.0, 1.0), 1.0));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthProxy, 0.0, 0.0, 1.0));
 }

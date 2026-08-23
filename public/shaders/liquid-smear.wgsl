@@ -1,15 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Liquid Smear Shader with Alpha Physics
-//  Category: liquid-effects
-//  Features: temporal feedback, smear effect, viscosity simulation
-//
-//  ALPHA PHYSICS:
-//  - Smear accumulation affects opacity
-//  - Viscosity affects transparency
-//  - Mouse velocity affects liquid film thickness
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// Liquid Smear — anisotropic viscous paint advection with display-RGBA feedback.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -17,139 +6,41 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=SmearStrength, y=BrushSize, z=Decay, w=MixStrength
-  ripples: array<vec4<f32>, 50>,
-};
-
-// Schlick's approximation for Fresnel
-fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-// Calculate smear alpha based on accumulation
-fn calculateSmearAlpha(
-    smearStrength: f32,
-    decayRate: f32,
-    distanceToMouse: f32,
-    brushSize: f32
-) -> f32 {
-  // Fresnel (subtle for smear effect)
-  let F0 = 0.02;
-  let normal = normalize(vec3<f32>(smearStrength * 0.5, smearStrength * 0.5, 1.0));
-  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-  let fresnel = schlickFresnel(max(0.0, dot(viewDir, normal)), F0);
-  
-  // Smear thickness based on strength and proximity to mouse
-  let proximityFactor = 1.0 - smoothstep(0.0, brushSize, distanceToMouse);
-  let thickness = smearStrength * 2.0 * proximityFactor + 0.2;
-  
-  // Decay affects opacity (more decay = more transparent over time)
-  let decayAlpha = mix(0.7, 0.95, decayRate);
-  
-  // Absorption
-  let absorption = exp(-thickness * 1.0);
-  let baseAlpha = mix(0.4, decayAlpha, absorption);
-  
-  let alpha = baseAlpha * (1.0 - fresnel * 0.2);
-  
-  return clamp(alpha, 0.0, 1.0);
-}
-
-// Calculate smear color with accumulation
-fn calculateSmearColor(
-    currentColor: vec3<f32>,
-    smearedColor: vec3<f32>,
-    smearStrength: f32,
-    mixStrength: f32
-) -> vec3<f32> {
-  // Blend between current and smeared based on mix strength
-  let mixed = mix(currentColor, smearedColor, mixStrength);
-  
-  // Smear adds slight warmth
-  let smearTint = vec3<f32>(0.02, 0.01, 0.0) * smearStrength;
-  
-  return mixed + smearTint;
-}
-
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+fn safeDir(v: vec2<f32>) -> vec2<f32> { let m2=dot(v,v); return select(vec2<f32>(0.0),v*inverseSqrt(m2),m2>1e-8); }
+fn historyAt(uv: vec2<f32>, size: vec2<i32>) -> vec4<f32> { let p=clamp(vec2<i32>(floor(uv*vec2<f32>(size))),vec2<i32>(0),size-vec2<i32>(1)); return textureLoad(dataTextureC,p,0); }
+fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),vec3<f32>(0.0),vec3<f32>(1.0)); }
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
-
-    // Parameters
-    let smearStrength = 0.1 + (u.zoom_params.x * 0.9);
-    let brushSize = 0.05 + (u.zoom_params.y * 0.2);
-    let decayRate = 0.9 + (u.zoom_params.z * 0.095); // 0.9 - 0.995
-    let mixStrength = 0.1 + (u.zoom_params.w * 0.9);
-
-    let aspect = resolution.x / resolution.y;
-    var mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w > 0.5; // Only smear when mouse is down? Or always? Let's say always for "liquid" feel but maybe stronger when down.
-
-    // For this shader, we want the "history" to be the smeared image.
-    // If it's the first frame (or we want to reset), we should maybe mix in the original image strongly.
-
-    // Sample previous smeared frame
-    var history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-
-    // Sample current fresh input
-    let currentInput = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    // Calculate displacement based on mouse velocity would be ideal, but we don't have explicit velocity passed easily unless we calculate it ourselves from previous pos (which we don't store easily).
-    // Instead, we can just push pixels away from the mouse, or pull them towards it.
-    // Let's do a "pull" effect towards the mouse position if close.
-
-    let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
-
-    var offset = vec2<f32>(0.0);
-    if (dist < brushSize && dist > 0.001) {
-        // Simple directional smear: pull towards mouse center?
-        // Or actually, it's better if we just sample "from" the direction of the mouse.
-        // If we are at P, and mouse is at M, looking at M means we pull M's color to P.
-        var dir = normalize(mousePos - uv);
-        offset = dir * smearStrength * (1.0 - smoothstep(0.0, brushSize, dist)) * 0.05;
-    }
-
-    // Sample history at offset location to create the "smear"
-    var smeared = textureSampleLevel(dataTextureC, u_sampler, uv - offset, 0.0);
-
-    // If the history is empty/black (start), fill with current input
-    if (history.a == 0.0) {
-        smeared = currentInput;
-    }
-
-    // Continually mix in the fresh input so the image doesn't degenerate completely
-    // decayRate controls how much of the old smear we keep.
-    let blend = mix(currentInput, smeared, decayRate);
-
-    // Write back to history
-    textureStore(dataTextureA, global_id.xy, blend);
-
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // ALPHA CALCULATION
-    // ═══════════════════════════════════════════════════════════════════════════════
-    
-    // Calculate smear color
-    let smearColor = calculateSmearColor(currentInput.rgb, blend.rgb, smearStrength, mixStrength);
-    
-    // Calculate alpha
-    let alpha = calculateSmearAlpha(smearStrength, decayRate, dist, brushSize);
-
-    // Output with alpha
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(smearColor, alpha));
-
-    // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution=u.config.zw; if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+  let coord=vec2<i32>(gid.xy); let size=vec2<i32>(resolution); let uv=(vec2<f32>(gid.xy)+0.5)/resolution; let texel=1.0/resolution;
+  let aspect=resolution.x/max(resolution.y,1.0); let aspectVec=vec2<f32>(aspect,1.0); let time=u.config.x;
+  let audio=clamp(plasmaBuffer[0].xyz,vec3<f32>(0.0),vec3<f32>(1.0));
+  let strength=mix(0.006,0.075,u.zoom_params.x); let brush=mix(0.035,0.32,u.zoom_params.y)*(1.0+audio.x*0.45);
+  let persistence=mix(0.72,0.992,u.zoom_params.z); let wetMix=mix(0.08,0.92,u.zoom_params.w);
+  let pointerDelta=(uv-u.zoom_config.yz)*aspectVec; let pointerDist=max(length(pointerDelta),0.0001); let pointerDir=pointerDelta/pointerDist;
+  let hover=1.0-smoothstep(brush*0.55,brush*1.6,pointerDist); let held=clamp(u.zoom_config.w,0.0,1.0); let pointerWeight=hover*(0.18+held*1.82);
+  var flowAspect=pointerDir*pointerWeight*strength*(0.6+audio.x*1.2);
+  flowAspect+=vec2<f32>(-pointerDir.y,pointerDir.x)*pointerWeight*strength*(0.25+audio.y*1.45)*sin(time*2.1+pointerDist*23.0);
+  flowAspect+=vec2<f32>(sin(uv.y*17.0+time*0.9),cos(uv.x*13.0-time*0.7))*strength*0.09;
+  var eddyEnergy=pointerWeight; let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for(var i=0u;i<rippleCount;i=i+1u){let event=u.ripples[i];let age=time-event.z;if (age < 0.0 || age > 3.4) { continue; }
+    let delta=(uv-event.xy)*aspectVec;let radius=max(length(delta),0.0001);let radial=delta/radius;
+    let front=exp(-abs(radius-age*(0.16+audio.x*0.08))*62.0)*exp(-age*0.9);let swirl=vec2<f32>(-radial.y,radial.x)*sin(radius*31.0-age*7.0);
+    flowAspect+=(radial*0.35+swirl)*front*strength*(0.8+audio.y);eddyEnergy+=front;}
+  let flow=vec2<f32>(flowAspect.x/aspect,flowAspect.y);let tangent=safeDir(flow+vec2<f32>(texel.x,0.0));let normal=vec2<f32>(-tangent.y,tangent.x);let departure=uv-flow;
+  var advected=historyAt(departure,size)*0.34;advected+=historyAt(departure+tangent*texel*2.0,size)*0.20;advected+=historyAt(departure-tangent*texel*2.0,size)*0.20;
+  advected+=historyAt(departure+normal*texel,size)*0.13;advected+=historyAt(departure-normal*texel,size)*0.13;
+  let source=textureSampleLevel(readTexture,u_sampler,clamp(uv-flow*0.35,vec2<f32>(0.0),vec2<f32>(1.0)),0.0);let initialized=select(source,advected,advected.a>0.0001);
+  var hdr=mix(source.rgb,initialized.rgb,persistence*wetMix);let ridge=clamp(length(advected.rgb-source.rgb)*1.7+length(flowAspect)*14.0,0.0,2.0);
+  hdr+=vec3<f32>(1.0,0.38+audio.y*0.3,0.08+audio.z*0.5)*ridge*(0.08+audio.z*0.24);hdr+=vec3<f32>(0.05,0.16,0.22)*eddyEnergy*audio.x*0.12;
+  let rgb=aces(hdr);let sourceCoverage=max(source.a,initialized.a*persistence);let alpha=clamp(sourceCoverage+ridge*0.16+length(flowAspect)*1.8+eddyEnergy*0.025,0.0,1.0);
+  let outputColor=vec4<f32>(rgb,alpha);textureStore(writeTexture,coord,outputColor);textureStore(dataTextureA,coord,outputColor);
+  let depth=textureSampleLevel(readDepthTexture,non_filtering_sampler,uv,0.0).r;textureStore(writeDepthTexture,coord,vec4<f32>(clamp(depth-ridge*0.025,0.0,1.0),0.0,0.0,0.0));
 }

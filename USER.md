@@ -14,6 +14,12 @@ _Learn about the person you're helping. Update this as you go._
   premium liquid cohort with a mixed performance budget. Jelly Fluid, Magnetic
   Ferro EM, and Oil Iridescence may use heavier bounded state/optics work; the
   other seven should remain efficient single-pass effects.
+- **Latest shader batch (2026-08-23):** The Codex (c) Liquid Shader Complexity
+  Batch is implemented across ten named single-pass effects. Exact saved params,
+  canonical A/C ownership, distinct liquid techniques, and the Tensor Vortex
+  duplicate-declaration repair are verified by actual Naga plus strict contract,
+  catalog, type, Jest, and production-build gates. Real-GPU visual QA remains the
+  explicit handoff.
 
 ## Context
 

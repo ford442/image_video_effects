@@ -63,7 +63,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rawDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthFlow = mix(1.0, 0.35, clamp(rawDepth, 0.0, 1.0));
 
-  // Dual continuous motion: Primary vorticity flow field + Secondary convective circulation
+  // Efficient laminar streamline field plus a secondary convective shear.
   let ambientFlow = flowField(uv * mix(3.5, 9.5, turbulence), time * (0.18 + audio.y * 0.35));
   let convectiveShear = vec2<f32>(
     sin(uv.y * 12.0 - time * (0.9 + audio.x * 1.5)),
@@ -88,7 +88,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i = 0u; i < rippleCount; i = i + 1u) {
     let rip = u.ripples[i];
     let age = time - rip.z;
-    if (age > 0.0 && age < 4.2) {
+    if (age < 0.0 || age > 4.2) { continue; }
+    {
       let rDelta = (uv - rip.xy) * vec2<f32>(aspect, 1.0);
       let rDist = max(length(rDelta), 0.0001);
       let rDir = rDelta / rDist;
@@ -111,7 +112,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let center = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let cohesion = ((right + left + up + down) * 0.25 - center).rg;
 
-  displacement = displacement * mix(1.25, 0.45, viscosity) + cohesion * (0.005 + viscosity * 0.01);
+  // Shear-thinning: fast local flow temporarily reduces effective viscosity.
+  let shearRate = clamp(length(ambientFlow - convectiveShear * 45.0), 0.0, 2.5);
+  let effectiveViscosity = viscosity / (1.0 + shearRate * (0.8 + audio.y));
+  displacement = displacement * mix(1.25, 0.45, effectiveViscosity) + cohesion * (0.005 + effectiveViscosity * 0.01);
 
   // Chromatic dispersion & spectral sheen
   let chroma = (0.16 + spectralShift * 1.5 + audio.z * 0.4) * displacement;
@@ -131,7 +135,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let normal = normalize(vec3<f32>(-displacement.x * 32.0, -displacement.y * 32.0, 1.0));
   let fresnel = fresnelSchlick(max(normal.z, 0.0), 0.038);
 
-  let sheen = clamp(vortexEnergy * 0.14 + length(displacement) * 20.0, 0.0, 1.0);
+  let sheen = clamp(vortexEnergy * 0.14 + length(displacement) * 20.0 + shearRate * audio.z * 0.12, 0.0, 1.0);
   let sheenColor = vec3<f32>(0.05, 0.12, 0.18) * sheen * (0.45 + audio.y * 0.8) + fresnel * vec3<f32>(0.12, 0.2, 0.28);
   var rgb = vec3<f32>(sampleR.r, sampleG.g, sampleB.b) + sheenColor;
 

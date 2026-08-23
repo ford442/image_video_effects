@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-23T06:11:44.629300",
+  "timestamp": "2026-08-23T06:21:48.833647",
   "naga_bin": "/home/codespace/.cargo/bin/naga",
   "naga_available": false,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/liquid-jelly-fluid.wgsl",
+      "file": "public/shaders/liquid-perspective.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-jelly.wgsl",
+      "file": "public/shaders/liquid-rainbow-prismatic.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-lens.wgsl",
+      "file": "public/shaders/liquid-rgb.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-magnetic-ferro-em.wgsl",
+      "file": "public/shaders/liquid-smear.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-metal-prismatic.wgsl",
+      "file": "public/shaders/liquid-tensor-vortex.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-mirror.wgsl",
+      "file": "public/shaders/liquid-viscous-simple.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-oil-iridescence.wgsl",
+      "file": "public/shaders/liquid-viscous.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-oil.wgsl",
+      "file": "public/shaders/liquid-zoom.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-prism.wgsl",
+      "file": "public/shaders/luma-melt-interactive.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid-rainbow.wgsl",
+      "file": "public/shaders/viscous-drag.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,

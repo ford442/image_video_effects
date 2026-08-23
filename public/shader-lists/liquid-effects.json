@@ -930,7 +930,7 @@
     "id": "liquid-perspective",
     "name": "Liquid Perspective",
     "url": "shaders/liquid-perspective.wgsl",
-    "description": "Depth-aware liquid perspective warp with silhouette-safe parallax, canonical mouse interaction, audio-reactive ripples, and bioluminescent edges.",
+    "description": "A perspective-compressed three-wave Gerstner sheet with a depth-aware parallax Jacobian, silhouette-safe refraction, secondary shear flow, and bioluminescent click crests.",
     "params": [
       {
         "id": "speed",
@@ -985,7 +985,9 @@
       "image-processing",
       "liquid",
       "parallax",
-      "bioluminescent"
+      "bioluminescent",
+      "gerstner",
+      "refraction"
     ],
     "updatedParams": [
       {
@@ -1021,22 +1023,32 @@
         "step": 0.01
       }
     ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded parallax history loads",
     "updated": true
   },
   {
     "id": "liquid-rainbow-prismatic",
     "name": "Liquid Rainbow Prismatic",
     "url": "shaders/liquid-rainbow-prismatic.wgsl",
-    "description": "Liquid Rainbow Prismatic",
+    "description": "Cauchy-separated RGB refraction through animated thin-film thickness, a six-tap caustic kernel, held lens deformation, and prismatic click fronts.",
     "tags": [
       "liquid-rainbow",
       "prismatic-dispersion",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven",
+      "thin-film",
+      "caustics"
     ],
     "features": [
       "liquid-rainbow",
       "prismatic-dispersion",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "click-reactive",
+      "bounded-history"
     ],
     "params": [
       {
@@ -1076,6 +1088,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded refractive history loads",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -1182,13 +1230,15 @@
     "id": "liquid-rgb",
     "name": "Liquid RGB",
     "url": "shaders/liquid-rgb.wgsl",
-    "description": "Viscous RGB refraction with wavelength-dependent absorption, audio-reactive caustic fringes, and depth-sensitive channel separation.",
+    "description": "Independently advected wavelength channels curl through vortex-flow dispersion, Beer–Lambert absorption, chromatic caustic seams, and held or click-driven shear.",
     "tags": [
       "filter",
       "image-processing",
       "liquid",
       "chromatic",
-      "caustics"
+      "caustics",
+      "beer-lambert",
+      "vortex-flow"
     ],
     "params": [
       {
@@ -1273,13 +1323,14 @@
         "step": 0.01
       }
     ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded wavelength-flow history loads",
     "updated": true
   },
   {
     "id": "liquid-smear",
     "name": "Liquid Smear",
     "url": "shaders/liquid-smear.wgsl",
-    "description": "Smudge pixels like wet paint with your mouse.",
+    "description": "Anisotropic multi-tap wet-paint advection with viscous streamline diffusion, broad bass wakes, midrange-bent drag flow, treble-lit ridges, and click eddies.",
     "params": [
       {
         "id": "strength",
@@ -1312,18 +1363,61 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "audio-reactive",
+      "temporal-persistence",
+      "click-reactive",
+      "bounded-history",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "liquid",
+      "paint",
+      "advection"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Smear Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Persistence",
+        "default": 0.9,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mix Strength",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded advected loads",
+    "updated": true
   },
   {
     "id": "liquid-tensor-vortex",
     "name": "Liquid Tensor Vortex",
     "url": "shaders/liquid-tensor-vortex.wgsl",
-    "description": "A 3D tensor field that melts and reforms like liquid metal under mouse vorticity, with bass-driven surface tension and transmission alpha that lets the background breathe through the folds.",
+    "description": "Source-luma structure-tensor eigenflow advects liquid metal through curl vortices, coherent folds, held-pointer torque, and click-launched metallic fronts.",
     "tags": [
       "liquid",
       "metal",
@@ -1331,13 +1425,18 @@
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "vorticity"
+      "vorticity",
+      "structure-tensor"
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "tensor-field"
+      "tensor-field",
+      "temporal",
+      "click-reactive",
+      "bounded-history",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1372,7 +1471,43 @@
         "max": 1,
         "step": 0.05
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flow Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 1,
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Specular",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Transmission",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded tensor-flow loads",
+    "updated": true
   },
   {
     "id": "liquid-v1",
@@ -1519,7 +1654,7 @@
     "id": "liquid-viscous-simple",
     "name": "Liquid Viscous (Simple)",
     "url": "shaders/liquid-viscous-simple.wgsl",
-    "description": "Viscous laminar flow with cohesive smoothing, audio-reactive click vortices, depth-aware motion, and subtle spectral film.",
+    "description": "An efficient laminar streamline field with a lightweight cohesion stencil, shear-thinning response, spectral surface sheen, and held or click-driven vortices.",
     "tags": [
       "filter",
       "image-processing",
@@ -1610,16 +1745,20 @@
         "step": 0.01
       }
     ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded laminar history loads",
     "updated": true
   },
   {
     "id": "liquid-viscous",
     "name": "Liquid Viscous",
     "url": "shaders/liquid-viscous.wgsl",
-    "description": "",
+    "description": "A bounded exact-load semi-Lagrangian liquid state with viscosity diffusion, one-frame Jacobi pressure projection, vorticity confinement, and audio-driven dye roll-up.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "navier-stokes",
+      "vorticity"
     ],
     "params": [
       {
@@ -1664,20 +1803,73 @@
       }
     ],
     "features": [
-      "mouse-driven"
-    ]
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "click-reactive",
+      "bounded-history",
+      "stateful",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = velocity.xy, dye, pressure; raw bounded state via exact loads",
+    "updated": true
   },
   {
     "id": "liquid-zoom",
     "name": "Liquid Zoom",
     "url": "shaders/liquid-zoom.wgsl",
-    "description": "",
+    "description": "Three depth-layered liquid zoom streams pass through a moving refractive surface with zoom-coupled vortices, held lens deformation, click fronts, and bounded temporal trails.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "click-reactive",
+      "bounded-history",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "zoom",
+      "parallax",
+      "refraction"
     ],
     "params": [
       {
@@ -1712,7 +1904,43 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded liquid-zoom history loads",
+    "updated": true
   },
   {
     "id": "liquid",
@@ -1850,7 +2078,8 @@
         "step": 0.01
       }
     ],
-    "description": "Downward luma-driven melt with exact advected history, held-pointer heat, rapid melt and drip packets, three-band audio response, and bounded click fronts.",
+    "description": "Luma-thresholded cohesive rivulets branch under heat-dependent viscosity, held-pointer melting, exact advected history, and aspect-correct click fronts.",
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded melt-history loads",
     "tags": [
       "fluid",
       "liquid",
@@ -1990,7 +2219,7 @@
     "id": "viscous-drag",
     "name": "Viscous Drag",
     "url": "shaders/viscous-drag.wgsl",
-    "description": "A stylized thick-liquid warp with directionally advected RG offset state, traveling vortex packets, mouse-pressure smears, and click-launched pressure fronts. Depth is passed through unchanged.",
+    "description": "Diffused drag state drives traveling jets, pressure and thickness buildup, elastic recovery, held-pointer smears, click fronts, and illuminated viscous ridges.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2063,6 +2292,7 @@
         "default": 0.5
       }
     ],
+    "feedbackPacking": "A/C = offset.xy, thickness, drag energy; raw bounded state via exact loads",
     "tags": [
       "fluid",
       "liquid",

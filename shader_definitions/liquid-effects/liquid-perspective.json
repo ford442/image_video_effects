@@ -2,7 +2,7 @@
   "id": "liquid-perspective",
   "name": "Liquid Perspective",
   "url": "shaders/liquid-perspective.wgsl",
-  "description": "Depth-aware liquid perspective warp with silhouette-safe parallax, canonical mouse interaction, audio-reactive ripples, and bioluminescent edges.",
+  "description": "A perspective-compressed three-wave Gerstner sheet with a depth-aware parallax Jacobian, silhouette-safe refraction, secondary shear flow, and bioluminescent click crests.",
   "params": [
     {
       "id": "speed",
@@ -57,7 +57,9 @@
     "image-processing",
     "liquid",
     "parallax",
-    "bioluminescent"
+    "bioluminescent",
+    "gerstner",
+    "refraction"
   ],
   "updatedParams": [
     {
@@ -93,5 +95,6 @@
       "step": 0.01
     }
   ],
+  "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded parallax history loads",
   "updated": true
 }
