@@ -421,7 +421,7 @@
     "category": "hybrid",
     "type": "compute",
     "url": "shaders/hyb-spectral-fbm-displace.wgsl",
-    "description": "FBM domain warping displaces the input image, and the warp gradient drives a chromatic RGB smear tinted by a spectral wavelength palette.",
+    "description": "FBM spectral displacement with conveyor bands, oil-slick interference, held warp, click fronts. Display RGBA in A.",
     "features": [
       "hybrid",
       "fbm-noise",
@@ -431,7 +431,12 @@
       "image-distortion",
       "alpha-passthrough",
       "depth-aware",
-      "randomization-safe"
+      "randomization-safe",
+      "mouse-driven",
+      "audio-reactive",
+      "held-drag",
+      "bounded-click-ripples",
+      "upgraded-rgba"
     ],
     "tags": [
       "hybrid",
@@ -497,7 +502,49 @@
       "wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
     ],
     "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
-    "updated": true
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "fbm_scale",
+        "name": "FBM Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Scale of the FBM noise domain used for displacement"
+      },
+      {
+        "id": "warp_amount",
+        "name": "Warp Amount",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of the nested FBM domain warp"
+      },
+      {
+        "id": "spectral_spread",
+        "name": "Spectral Spread",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of RGB channel separation along the displacement gradient"
+      },
+      {
+        "id": "effect_mix",
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend strength of the spectral displacement over the input"
+      }
+    ]
   },
   {
     "id": "hyb-temporal-fbm-ghost",

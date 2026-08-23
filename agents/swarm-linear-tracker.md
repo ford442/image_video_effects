@@ -31,6 +31,18 @@
 | 472 | `rgb-topology` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 473 | `elastic-strip` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
 | 474 | `refraction-tunnel` | 55 | ✅ Done | WGSL, strict buffers, schema-aware contract, build |
+| 475 | `cmyk-halftone-interactive` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 476 | `cyber-slit-scan` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 477 | `heat-haze-gpt52` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 478 | `quantum-prism` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 479 | `sphere-projection` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 480 | `rgb-iso-lines` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 481 | `chromatic-focus-interactive` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+| 482 | `phosphor-magnifier` | 56 | ✅ Done | unique cursor lineage unioned onto main |
+
+Batch 56 tracker #475–482 was claimed by concurrent lineages. Main keeps
+`#1137` plus Batch 57 `fractal-kaleidoscope`. Cursor unique upgrades above
+were unioned onto main 2026-08-23.
 
 Batch 55 (4 shaders) is a distinct geometry / fast-motion / psychedelic cohort
 after Batches 53–54. Structural gates 4/4. Real-GPU visual QA remains external.

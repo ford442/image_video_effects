@@ -1211,10 +1211,14 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
+      "depth-aware",
       "continuous-motion",
       "click-reactive",
       "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
       "psychedelic-color",
+      "cmyk-rosette",
       "rosette-moire"
     ],
     "params": [
@@ -1253,7 +1257,7 @@
       "print",
       "audio-reactive"
     ],
-    "description": "Rosette and moire CMYK halftone with animated registration drift, held-pointer plate shear, click ink blooms, and three-band audio overprint.",
+    "description": "Rosette/moire CMYK halftone with rotating screens, registration drift and held plate shear, ink conveyors/packets, click blooms, rainbow registration glow, and three-band audio. A remains CMYK coverage masks.",
     "updatedParams": [
       {
         "index": 0,
@@ -2280,9 +2284,12 @@
       "continuous-motion",
       "click-reactive",
       "held-pointer",
-      "temporal"
+      "held-drag",
+      "bounded-click-ripples",
+      "temporal",
+      "upgraded-rgba"
     ],
-    "description": "Traveling multi-head slit scan with diagonal tear ribbons, held-pointer bending, click injections, bit crushing, hue travel, and three-band audio.",
+    "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Display RGBA packed in A.",
     "params": [
       {
         "name": "Scan Speed",
@@ -10023,7 +10030,7 @@
     "category": "interactive-mouse",
     "url": "shaders/phosphor-magnifier.wgsl",
     "icon": "search",
-    "description": "CRT magnifier with display-RGBA afterimage feedback, raster-beam motion, degauss rings, held lens pressure, click shells, chromatic aberration, and psychedelic phosphor palettes.",
+    "description": "CRT phosphor magnifier with display-RGBA afterimage feedback, aurora scan runners, raster-beam motion, degauss rings, held lens pressure, click shells, chromatic aberration, and psychedelic phosphor hue. Intentional A feedback correction from diagnostic masks to display RGBA.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -10032,6 +10039,8 @@
       "continuous-motion",
       "click-reactive",
       "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
       "psychedelic-color",
       "display-history"
     ],
@@ -11440,8 +11449,13 @@
       "continuous-motion",
       "click-reactive",
       "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
       "psychedelic-color",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba",
+      "hex-prism",
+      "hex-grout"
     ],
     "tags": [
       "filter",
@@ -11482,7 +11496,7 @@
         "step": 0.01
       }
     ],
-    "description": "Interactive honeycomb prism with beveled facets, moving spectral bands, held cell deformation, click fronts, three-band audio, and meaningful facet depth.",
+    "description": "Interactive honeycomb prism with beveled facets and grout, moving spectral bands, oil-slick facet runners, held cell deformation, click fronts, three-band audio, facet depth, and display history in A.",
     "updatedParams": [
       {
         "index": 0,
@@ -12438,7 +12452,7 @@
     "id": "rgb-iso-lines",
     "name": "RGB Iso Lines",
     "url": "shaders/rgb-iso-lines.wgsl",
-    "description": "Visualizes the R, G, and B channels as separated contour maps. Mouse controls the parallax separation.",
+    "description": "RGB contour maps with iso-runners, ridge ticks, held parallax, bounded click fronts, and rainbow hypsometry. A packs [lineR, lineG, lineB, alpha].",
     "params": [
       {
         "id": "thickness",
@@ -12485,11 +12499,55 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "id": "thickness",
+        "name": "Line Thickness",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Thickness of contour lines"
+      },
+      {
+        "id": "frequency",
+        "name": "Contour Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Density of contour lines"
+      },
+      {
+        "id": "parallax",
+        "name": "Parallax Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of RGB channel parallax separation"
+      },
+      {
+        "id": "bg_opacity",
+        "name": "Background Opacity",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Opacity of the original image behind contours"
+      }
     ]
   },
   {
@@ -13802,10 +13860,14 @@
     "id": "sphere-projection",
     "name": "Sphere Projection",
     "url": "shaders/sphere-projection.wgsl",
-    "description": "Projects the image onto a 3D sphere that can be rotated with the mouse.",
+    "description": "Equirectangular sphere with meridians/parallels, held zoom, bounded click shells, audio spin, and liquid-rainbow lighting. Display RGBA in A.",
     "features": [
       "mouse-driven",
-      "3d"
+      "3d",
+      "audio-reactive",
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "params": [
       {
@@ -13852,6 +13914,48 @@
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "id": "zoom",
+        "name": "Sphere Zoom",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Zoom level of the sphere projection"
+      },
+      {
+        "id": "rotation",
+        "name": "Spin Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Auto-rotation speed of the sphere"
+      },
+      {
+        "id": "light",
+        "name": "Lighting",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of directional lighting"
+      },
+      {
+        "id": "ambient",
+        "name": "Ambient Light",
+        "default": 0.3,
+        "min": 0,
+        "max": 0.6,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Ambient light level on the sphere"
+      }
     ]
   },
   {
