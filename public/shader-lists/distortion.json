@@ -17,7 +17,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -25,7 +25,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -33,7 +33,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -41,7 +41,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -191,29 +191,29 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "swirl_strength",
         "name": "Swirl Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "radius",
         "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "aberration",
         "name": "Aberration",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
-        "name": "Auto Rotation",
+        "id": "animate",
+        "name": "Animate",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -794,32 +794,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "cloud_scale",
+        "name": "Cloud Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "flow_speed",
+        "name": "Flow Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "color_speed",
+        "name": "Color Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "persistence",
+        "name": "Persistence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2007,7 +2007,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -2015,24 +2015,24 @@
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "julia_scale",
+        "name": "Julia Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "depth_weight",
+        "name": "Depth Weight",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "max_iter",
+        "name": "Max Iter",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2751,32 +2751,32 @@
     "description": "RGB channels are rotationally shifted relative to the mouse position.",
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "layer_speed_low",
+        "name": "Layer Speed Low",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "layer_speed_high",
+        "name": "Layer Speed High",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "edge_glow",
+        "name": "Edge Glow",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "fog_density",
+        "name": "Fog Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2944,8 +2944,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "cell_density",
+        "name": "Cell Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2953,8 +2953,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "blast_radius",
+        "name": "Blast Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2962,8 +2962,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "edge_glow_amount",
+        "name": "Edge Glow Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2971,8 +2971,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "chromatic_amount",
+        "name": "Chromatic Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3452,7 +3452,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "wave_amplitude",
         "name": "Wave Amplitude",
         "default": 0.5,
         "min": 0,
@@ -3460,7 +3460,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "wave_speed",
         "name": "Wave Speed",
         "default": 0.5,
         "min": 0,
@@ -3468,7 +3468,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "wave_scale",
         "name": "Wave Scale",
         "default": 0.5,
         "min": 0,
@@ -3476,7 +3476,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "chroma_detail",
         "name": "Chroma Detail",
         "default": 0.5,
         "min": 0,
@@ -3811,28 +3811,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "spiral_tightness",
         "name": "Spiral Tightness",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "lens_strength",
         "name": "Lens Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "chromatic",
         "name": "Chromatic",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "rotation_speed",
         "name": "Rotation Speed",
         "default": 0.2,
         "min": 0,
@@ -3970,8 +3970,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "sculpt_depth",
+        "name": "Sculpt Depth",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3979,8 +3979,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "freq_separation",
+        "name": "Freq Separation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3988,8 +3988,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "curvature_scale",
+        "name": "Curvature Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3997,8 +3997,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "anim_speed",
+        "name": "Anim Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4103,32 +4103,32 @@
     "description": "Cellular glass distortion effect.",
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "density",
+        "name": "Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "refraction",
+        "name": "Refraction",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "shimmer",
+        "name": "Shimmer",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "param4_use_these_for_any_float_sliders",
+        "name": "Param4 (Use these for ANY float sliders)",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4216,32 +4216,32 @@
     },
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "vortex_strength",
+        "name": "Vortex Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "core_size_param",
+        "name": "Core Size Param",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4370,32 +4370,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "vortex_strength",
+        "name": "Vortex Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "core_size_param",
+        "name": "Core Size Param",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,

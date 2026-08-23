@@ -205,32 +205,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "glass_thickness",
+        "name": "Glass Thickness",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "ior",
+        "name": "IOR",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "depth_weight",
+        "name": "Depth Weight",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "distortion",
+        "name": "Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -855,7 +855,7 @@
     "id": "liquid-optimized",
     "name": "Liquid Surface Tension (Optimized)",
     "url": "shaders/liquid-optimized.wgsl",
-    "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement. Audio reactivity drives ambient wave amplitude and virtual ripple sources.",
+    "description": "Capillary surface tension with an ANALYTIC height gradient: the field is evaluated once and its exact derivative accumulated in the same loop, replacing five full evaluations (up to 250 ripple iterations per pixel) with one. The saved budget buys an eight-train FFT capillary spectrum with dispersion-correct phase speeds and Fresnel-weighted Beer-Lambert absorption along the true slant path.",
     "tags": [
       "liquid",
       "surface-tension",
@@ -863,12 +863,25 @@
       "optimized",
       "shared-memory",
       "audio",
-      "music"
+      "music",
+      "capillary",
+      "refraction"
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "capillary-waves",
+      "analytic-gradient",
+      "fresnel",
+      "spectral-absorption",
+      "temporal-sheen"
     ],
     "params": [
       {
@@ -902,6 +915,44 @@
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "surfaceTension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Height scale and refraction strength of the film."
+      },
+      {
+        "id": "gravityScale",
+        "name": "Gravity Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Wavenumber and phase speed of the click ripple packets."
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Ripple packet amplitude retention."
+      },
+      {
+        "id": "turbidity",
+        "name": "Turbidity",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Absorption path multiplier; also dulls the specular."
       }
     ]
   },
@@ -964,7 +1015,7 @@
     "id": "liquid-perspective",
     "name": "Liquid Perspective",
     "url": "shaders/liquid-perspective.wgsl",
-    "description": "Depth-aware liquid perspective warp with silhouette-safe parallax, canonical mouse interaction, audio-reactive ripples, and bioluminescent edges.",
+    "description": "A perspective-compressed three-wave Gerstner sheet with a depth-aware parallax Jacobian, silhouette-safe refraction, secondary shear flow, and bioluminescent click crests.",
     "params": [
       {
         "id": "speed",
@@ -1019,7 +1070,9 @@
       "image-processing",
       "liquid",
       "parallax",
-      "bioluminescent"
+      "bioluminescent",
+      "gerstner",
+      "refraction"
     ],
     "updatedParams": [
       {
@@ -1055,27 +1108,37 @@
         "step": 0.01
       }
     ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded parallax history loads",
     "updated": true
   },
   {
     "id": "liquid-rainbow-prismatic",
     "name": "Liquid Rainbow Prismatic",
     "url": "shaders/liquid-rainbow-prismatic.wgsl",
-    "description": "Liquid Rainbow Prismatic",
+    "description": "Cauchy-separated RGB refraction through animated thin-film thickness, a six-tap caustic kernel, held lens deformation, and prismatic click fronts.",
     "tags": [
       "liquid-rainbow",
       "prismatic-dispersion",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven",
+      "thin-film",
+      "caustics"
     ],
     "features": [
       "liquid-rainbow",
       "prismatic-dispersion",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "click-reactive",
+      "bounded-history"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1083,8 +1146,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1092,8 +1155,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1101,8 +1164,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "spectral_sat",
+        "name": "Spectral Sat",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1110,6 +1173,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded refractive history loads",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -1219,13 +1318,15 @@
     "id": "liquid-rgb",
     "name": "Liquid RGB",
     "url": "shaders/liquid-rgb.wgsl",
-    "description": "Viscous RGB refraction with wavelength-dependent absorption, audio-reactive caustic fringes, and depth-sensitive channel separation.",
+    "description": "Independently advected wavelength channels curl through vortex-flow dispersion, Beer–Lambert absorption, chromatic caustic seams, and held or click-driven shear.",
     "tags": [
       "filter",
       "image-processing",
       "liquid",
       "chromatic",
-      "caustics"
+      "caustics",
+      "beer-lambert",
+      "vortex-flow"
     ],
     "params": [
       {
@@ -1310,13 +1411,14 @@
         "step": 0.01
       }
     ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded wavelength-flow history loads",
     "updated": true
   },
   {
     "id": "liquid-smear",
     "name": "Liquid Smear",
     "url": "shaders/liquid-smear.wgsl",
-    "description": "Smudge pixels like wet paint with your mouse.",
+    "description": "Pigment drag along the pointer's real travel direction, taken from a spring-damped cursor and its velocity in extraBuffer[133..136] — the previous version always pulled toward the cursor centre, which reads as a sink rather than a brush. A five-tap kernel bleeds pigment along the stroke normal with a width set by the local FFT bin. History is fetched with exact textureLoad, bilinear by hand.",
     "params": [
       {
         "id": "strength",
@@ -1349,18 +1451,67 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "velocity-smear",
+      "pigment-diffusion"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "smear",
+      "brush",
+      "paint",
+      "feedback"
+    ],
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Smear Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Drag length along the pointer stroke."
+      },
+      {
+        "id": "size",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Radius of the drag falloff around the cursor."
+      },
+      {
+        "id": "decay",
+        "name": "Persistence",
+        "default": 0.9,
+        "min": 0,
+        "max": 1,
+        "description": "How much of the smeared field survives each frame."
+      },
+      {
+        "id": "mix",
+        "name": "Mix Strength",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "description": "Blend of the smeared field over the live plate."
+      }
     ]
   },
   {
     "id": "liquid-tensor-vortex",
     "name": "Liquid Tensor Vortex",
     "url": "shaders/liquid-tensor-vortex.wgsl",
-    "description": "A 3D tensor field that melts and reforms like liquid metal under mouse vorticity, with bass-driven surface tension and transmission alpha that lets the background breathe through the folds.",
+    "description": "Source-luma structure-tensor eigenflow advects liquid metal through curl vortices, coherent folds, held-pointer torque, and click-launched metallic fronts.",
     "tags": [
       "liquid",
       "metal",
@@ -1368,13 +1519,18 @@
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "vorticity"
+      "vorticity",
+      "structure-tensor"
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "tensor-field"
+      "tensor-field",
+      "temporal",
+      "click-reactive",
+      "bounded-history",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1409,7 +1565,43 @@
         "max": 1,
         "step": 0.05
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flow Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 1,
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Specular",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Transmission",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded tensor-flow loads",
+    "updated": true
   },
   {
     "id": "liquid-v1",
@@ -1433,32 +1625,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "ambient_parallax",
+        "name": "Ambient Parallax",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "foreground_motion",
+        "name": "Foreground Motion",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "depth_waver",
+        "name": "Depth Waver",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "contrast",
+        "name": "Contrast",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1480,7 +1672,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "viscosity",
         "name": "Viscosity",
         "default": 0.5,
         "min": 0,
@@ -1490,7 +1682,7 @@
         "description": "Flow damping and trail persistence"
       },
       {
-        "id": "param2",
+        "id": "flow_turbulence",
         "name": "Flow Turbulence",
         "default": 0.5,
         "min": 0,
@@ -1500,7 +1692,7 @@
         "description": "Domain-warped flow complexity"
       },
       {
-        "id": "param3",
+        "id": "nebula_glow",
         "name": "Nebula Glow",
         "default": 0.5,
         "min": 0,
@@ -1510,7 +1702,7 @@
         "description": "Emissive nebula density and brightness"
       },
       {
-        "id": "param4",
+        "id": "spectral_shift",
         "name": "Spectral Shift",
         "default": 0.5,
         "min": 0,
@@ -1573,7 +1765,7 @@
     "id": "liquid-viscous-simple",
     "name": "Liquid Viscous (Simple)",
     "url": "shaders/liquid-viscous-simple.wgsl",
-    "description": "Viscous laminar flow with cohesive smoothing, audio-reactive click vortices, depth-aware motion, and subtle spectral film.",
+    "description": "An efficient laminar streamline field with a lightweight cohesion stencil, shear-thinning response, spectral surface sheen, and held or click-driven vortices.",
     "tags": [
       "filter",
       "image-processing",
@@ -1664,16 +1856,22 @@
         "step": 0.01
       }
     ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded laminar history loads",
     "updated": true
   },
   {
     "id": "liquid-viscous",
     "name": "Liquid Viscous",
     "url": "shaders/liquid-viscous.wgsl",
-    "description": "",
+    "description": "2D incompressible Navier-Stokes with vorticity confinement. Vorticity at the centre and its four neighbours now comes from ONE shared stencil (was five separate calls, each doing four filtered samples), the pressure solve genuinely relaxes instead of recomputing one value four times, and the audio vortices drift along continuous Lissajous paths instead of teleporting every 0.7 s. Dye is injected per FFT band. dataTextureA carries simulation state.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "fluid",
+      "navier-stokes",
+      "vorticity",
+      "simulation",
+      "dye"
     ],
     "params": [
       {
@@ -1718,53 +1916,161 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "vorticity-confinement",
+      "stencil-vorticity",
+      "local-jacobi-pressure",
+      "fluid-simulation"
+    ],
+    "updatedParams": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Velocity damping and dye dissipation rate."
+      },
+      {
+        "id": "turbulence",
+        "name": "Vorticity Confinement",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of the confinement force that keeps eddies from smearing out (maps to zoom_params.y)."
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Turbulence Injection",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Gain on the three-octave cascade and the per-band dye emitters (maps to zoom_params.z)."
+      },
+      {
+        "id": "color_shift",
+        "name": "Hue Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Rotates the dye/vorticity hue mapping (maps to zoom_params.w)."
+      }
     ]
   },
   {
     "id": "liquid-zoom",
     "name": "Liquid Zoom",
     "url": "shaders/liquid-zoom.wgsl",
-    "description": "",
+    "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "depth-parallax-layers",
+      "volumetric-fog",
+      "chromatic-aberration",
+      "temporal-streaks"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "zoom",
+      "parallax",
+      "tunnel",
+      "depth"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "near_layer_speed",
+        "name": "Near Layer Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
+      },
+      {
+        "id": "far_layer_speed",
+        "name": "Far Layer Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "parallax_strength",
+        "name": "Parallax Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fog_density",
+        "name": "Fog Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Near Layer Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Zoom cadence for near (low-depth) pixels — maps to zoom_params.x."
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Far Layer Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Zoom cadence for far (high-depth) pixels — maps to zoom_params.y."
       },
       {
         "id": "param3",
-        "name": "Scale",
+        "name": "Parallax Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Exponent shaping the depth-to-speed curve — maps to zoom_params.z."
       },
       {
         "id": "param4",
-        "name": "Detail",
+        "name": "Fog Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Distance fog applied to far layers — maps to zoom_params.w."
       }
     ]
   },
@@ -1912,7 +2218,8 @@
         "step": 0.01
       }
     ],
-    "description": "Downward luma-driven melt with exact advected history, held-pointer heat, rapid melt and drip packets, three-band audio response, and bounded click fronts.",
+    "description": "Luma-thresholded cohesive rivulets branch under heat-dependent viscosity, held-pointer melting, exact advected history, and aspect-correct click fronts.",
+    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded melt-history loads",
     "tags": [
       "fluid",
       "liquid",
@@ -2065,7 +2372,7 @@
     "id": "viscous-drag",
     "name": "Viscous Drag",
     "url": "shaders/viscous-drag.wgsl",
-    "description": "A stylized thick-liquid warp with directionally advected RG offset state, traveling vortex packets, mouse-pressure smears, and click-launched pressure fronts. Depth is passed through unchanged.",
+    "description": "Diffused drag state drives traveling jets, pressure and thickness buildup, elastic recovery, held-pointer smears, click fronts, and illuminated viscous ridges.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2138,6 +2445,7 @@
         "default": 0.5
       }
     ],
+    "feedbackPacking": "A/C = offset.xy, thickness, drag energy; raw bounded state via exact loads",
     "tags": [
       "fluid",
       "liquid",

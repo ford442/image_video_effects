@@ -522,24 +522,24 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Sort Mix",
+        "id": "sort_threshold",
+        "name": "Sort Threshold",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Noise Mix",
+        "id": "warp_amplitude",
+        "name": "Warp Amplitude",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Sort Direction",
+        "id": "edge_glow",
+        "name": "Edge Glow",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -550,8 +550,8 @@
         ]
       },
       {
-        "id": "param4",
-        "name": "Noise Octaves",
+        "id": "sort_length",
+        "name": "Sort Length",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -926,7 +926,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -936,7 +936,7 @@
         "description": "Spawn threshold and brush size"
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -946,7 +946,7 @@
         "description": "Propagation growth rate"
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -956,7 +956,7 @@
         "description": "Digital scanline density"
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -1420,7 +1420,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "kernel_radius",
         "name": "Kernel Radius",
         "default": 0.4,
         "min": 0,
@@ -1428,7 +1428,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "video_coupling",
         "name": "Video Coupling",
         "default": 0.5,
         "min": 0,
@@ -1436,7 +1436,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "glow_intensity",
         "name": "Glow Intensity",
         "default": 0.6,
         "min": 0,
@@ -1444,7 +1444,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "composite_mix",
         "name": "Composite Mix",
         "default": 0.5,
         "min": 0,
@@ -1908,7 +1908,7 @@
     "updated": true,
     "params": [
       {
-        "id": "param1",
+        "id": "gravity",
         "name": "Gravity",
         "default": 0.5,
         "min": 0,
@@ -1916,7 +1916,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "particle_density",
         "name": "Particle Density",
         "default": 0.5,
         "min": 0,
@@ -1924,7 +1924,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "curl_force",
         "name": "Curl Force",
         "default": 0.3,
         "min": 0,
@@ -1932,7 +1932,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "bounce",
         "name": "Bounce",
         "default": 0.5,
         "min": 0,
@@ -2079,32 +2079,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "foam_scale",
+        "name": "Foam Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "flow_speed",
+        "name": "Flow Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "diffusion_rate",
+        "name": "Diffusion Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "octave_count",
+        "name": "Octave Count",
         "default": 0.5,
         "min": 0,
         "max": 1,

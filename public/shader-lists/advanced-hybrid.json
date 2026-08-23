@@ -272,8 +272,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "flare_intensity",
+        "name": "Flare Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -281,8 +281,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "streak_length",
+        "name": "Streak Length",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -290,8 +290,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "film_thickness",
+        "name": "Film Thickness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -299,8 +299,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "film_ior",
+        "name": "Film IOR",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -333,7 +333,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "window_size",
         "name": "Window Size",
         "default": 0.3,
         "min": 0,
@@ -341,7 +341,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "anisotropy",
         "name": "Anisotropy",
         "default": 0.5,
         "min": 0,
@@ -349,7 +349,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "nlm_strength",
         "name": "NLM Strength",
         "default": 0.5,
         "min": 0,
@@ -357,7 +357,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "flow_strength",
         "name": "Flow Strength",
         "default": 0.5,
         "min": 0,
@@ -389,7 +389,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "grid_density",
         "name": "Grid Density",
         "default": 0.3,
         "min": 0,
@@ -397,15 +397,15 @@
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Coherency",
+        "id": "coherence_boost",
+        "name": "Coherence Boost",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "lic_blend",
         "name": "LIC Blend",
         "default": 0.5,
         "min": 0,
@@ -413,7 +413,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "mouse_influence",
         "name": "Mouse Influence",
         "default": 0.5,
         "min": 0,
@@ -442,8 +442,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "segments",
+        "name": "Segments",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -451,8 +451,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -460,8 +460,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "spiral_strength",
+        "name": "Spiral Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -469,8 +469,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "aberration",
+        "name": "Aberration",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -504,7 +504,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "segments",
         "name": "Segments",
         "default": 0.5,
         "min": 0,
@@ -512,7 +512,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "rotation_speed",
         "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
@@ -520,7 +520,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "morph_blend",
         "name": "Morph Blend",
         "default": 0.5,
         "min": 0,
@@ -528,7 +528,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "trail_persistence",
         "name": "Trail Persistence",
         "default": 0.5,
         "min": 0,
@@ -1115,8 +1115,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "supercooling",
+        "name": "Supercooling",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1124,8 +1124,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "anisotropy",
+        "name": "Anisotropy",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1133,8 +1133,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "growth_rate",
+        "name": "Growth Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1142,8 +1142,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "color_frequency",
+        "name": "Color Frequency",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1279,7 +1279,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "edge_strength",
         "name": "Edge Strength",
         "default": 0.5,
         "min": 0,
@@ -1287,7 +1287,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "grid_opacity",
         "name": "Grid Opacity",
         "default": 0.5,
         "min": 0,
@@ -1295,15 +1295,15 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Reveal Radius",
+        "id": "radius",
+        "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "softness",
         "name": "Softness",
         "default": 0.5,
         "min": 0,
@@ -1391,8 +1391,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "cycle_speed",
+        "name": "Cycle Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1400,8 +1400,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "segments",
+        "name": "Segments",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1409,8 +1409,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1418,8 +1418,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "breath_depth",
+        "name": "Breath Depth",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1715,7 +1715,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "hardness",
         "name": "Hardness",
         "default": 0.5,
         "min": 0,
@@ -1723,7 +1723,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "texture_scale",
         "name": "Texture Scale",
         "default": 0.5,
         "min": 0,
@@ -1731,7 +1731,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "reveal_rate",
         "name": "Reveal Rate",
         "default": 0.5,
         "min": 0,
@@ -1739,7 +1739,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "diffusion_strength",
         "name": "Diffusion Strength",
         "default": 0.5,
         "min": 0,
@@ -1771,8 +1771,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "tunnel_speed",
+        "name": "Tunnel Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1780,8 +1780,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "ring_density",
+        "name": "Ring Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1789,8 +1789,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1798,8 +1798,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "center_fade",
+        "name": "Center Fade",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1810,7 +1810,7 @@
     "updatedParams": [
       {
         "index": 0,
-        "name": "Param 1",
+        "name": "Tunnel Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1818,7 +1818,7 @@
       },
       {
         "index": 1,
-        "name": "Param 2",
+        "name": "Ring Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1826,7 +1826,7 @@
       },
       {
         "index": 2,
-        "name": "Param 3",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1834,7 +1834,7 @@
       },
       {
         "index": 3,
-        "name": "Param 4",
+        "name": "Center Fade",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1860,8 +1860,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "effect_strength",
+        "name": "Effect Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1869,8 +1869,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "effect_radius",
+        "name": "Effect Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1878,8 +1878,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "luma_influence",
+        "name": "Luma Influence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1887,8 +1887,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "rotation",
+        "name": "Rotation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1917,8 +1917,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "magnification",
+        "name": "Magnification",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1926,8 +1926,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "aberration",
+        "name": "Aberration",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1935,8 +1935,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "lens_radius",
+        "name": "Lens Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1944,8 +1944,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "edge_blur",
+        "name": "Edge Blur",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1972,8 +1972,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "thread_density",
+        "name": "Thread Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1981,8 +1981,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "amplitude",
+        "name": "Amplitude",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1990,8 +1990,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "channel_split",
+        "name": "Channel Split",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1999,8 +1999,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "gabor_response",
+        "name": "Gabor Response",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2029,8 +2029,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "twist",
+        "name": "Twist",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2038,8 +2038,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "spread",
+        "name": "Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2047,8 +2047,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "radius",
+        "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2056,8 +2056,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "center_bias",
+        "name": "Center Bias",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2084,8 +2084,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "crawl_speed",
+        "name": "Crawl Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2093,8 +2093,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "swap_intensity",
+        "name": "Swap Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2102,8 +2102,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "feedback_mix",
+        "name": "Feedback Mix",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2111,8 +2111,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "flash_rate",
+        "name": "Flash Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2188,8 +2188,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "aberration_intensity",
+        "name": "Aberration Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2197,8 +2197,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "focus_radius",
+        "name": "Focus Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2206,8 +2206,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "spectral_spread",
+        "name": "Spectral Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2215,8 +2215,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "animation_speed",
+        "name": "Animation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2243,8 +2243,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "fold_strength",
+        "name": "Fold Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2252,8 +2252,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "pivot_hue",
+        "name": "Pivot Hue",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2261,8 +2261,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "sat_scale",
+        "name": "Sat Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2270,8 +2270,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "depth_influence",
+        "name": "Depth Influence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2370,8 +2370,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "brush_size",
+        "name": "Brush Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2379,8 +2379,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "decay",
+        "name": "Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2388,8 +2388,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "prism_strength",
+        "name": "Prism Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2397,8 +2397,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "dispersion",
+        "name": "Dispersion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2525,8 +2525,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2534,8 +2534,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "tentacle_amp",
+        "name": "Tentacle Amp",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2543,8 +2543,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2552,8 +2552,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "mouse_radius",
+        "name": "Mouse Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2580,8 +2580,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "warp_strength",
+        "name": "Warp Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2589,8 +2589,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "density",
+        "name": "Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2598,8 +2598,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "time",
+        "name": "Time",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2607,8 +2607,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "lic_steps",
+        "name": "LIC Steps",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2709,8 +2709,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "cell_density",
+        "name": "Cell Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2718,8 +2718,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "ior_mix",
+        "name": "IOR Mix",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2727,8 +2727,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "light_power",
+        "name": "Light Power",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2736,8 +2736,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "film_thickness",
+        "name": "Film Thickness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2766,8 +2766,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "radius",
+        "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2775,8 +2775,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "intensity",
+        "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2784,8 +2784,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "prism_strength",
+        "name": "Prism Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2793,8 +2793,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "dispersion",
+        "name": "Dispersion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2823,8 +2823,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "grid_scale",
+        "name": "Grid Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2832,8 +2832,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "distort_strength",
+        "name": "Distort Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2841,8 +2841,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2850,8 +2850,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "radius",
+        "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2880,8 +2880,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "scan_speed",
+        "name": "Scan Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2889,8 +2889,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "organic_scale",
+        "name": "Organic Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2898,8 +2898,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "reveal_radius",
+        "name": "Reveal Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2907,8 +2907,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2937,8 +2937,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "rain_intensity",
+        "name": "Rain Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2946,8 +2946,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "charge_strength",
+        "name": "Charge Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2955,8 +2955,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "field_visibility",
+        "name": "Field Visibility",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2964,8 +2964,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "wiper_size",
+        "name": "Wiper Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2994,8 +2994,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "speed",
+        "name": "Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3003,8 +3003,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3012,8 +3012,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "aberration",
+        "name": "Aberration",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3021,8 +3021,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "frequency",
+        "name": "Frequency",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3051,8 +3051,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "scan_width",
+        "name": "Scan Width",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3060,8 +3060,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "grid_intensity",
+        "name": "Grid Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3069,8 +3069,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "color_speed",
+        "name": "Color Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3078,8 +3078,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "frequency",
+        "name": "Frequency",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3108,8 +3108,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "decay_speed",
+        "name": "Decay Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3117,8 +3117,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3126,8 +3126,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "hue_shift",
+        "name": "Hue Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3135,8 +3135,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "brush_size",
+        "name": "Brush Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3163,8 +3163,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "frequency",
+        "name": "Frequency",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3172,8 +3172,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "sigma",
+        "name": "Sigma",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3181,8 +3181,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "gabor_response",
+        "name": "Gabor Response",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3190,8 +3190,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "scan_width",
+        "name": "Scan Width",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3220,8 +3220,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "stream_speed",
+        "name": "Stream Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3229,8 +3229,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "brush_radius",
+        "name": "Brush Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3238,8 +3238,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "max_corruption",
+        "name": "Max Corruption",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3247,8 +3247,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "bloom_intensity",
+        "name": "Bloom Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3275,8 +3275,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "speed",
+        "name": "Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3284,8 +3284,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "density",
+        "name": "Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3293,8 +3293,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3302,8 +3302,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "glow",
+        "name": "Glow",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3344,8 +3344,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "stream_density",
+        "name": "Stream Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3354,8 +3354,8 @@
         "description": "Flow speed along dominant orientation"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "corruption_rate",
+        "name": "Corruption Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3364,8 +3364,8 @@
         "description": "Stream strip density"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "trail_fade",
+        "name": "Trail Fade",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3374,8 +3374,8 @@
         "description": "Mouse vortex turbulence"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3387,7 +3387,7 @@
     "updatedParams": [
       {
         "index": 0,
-        "name": "Flow Speed",
+        "name": "Stream Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3395,7 +3395,7 @@
       },
       {
         "index": 1,
-        "name": "Strip Density",
+        "name": "Corruption Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3403,7 +3403,7 @@
       },
       {
         "index": 2,
-        "name": "Turbulence",
+        "name": "Trail Fade",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3411,7 +3411,7 @@
       },
       {
         "index": 3,
-        "name": "Glow Mix",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3720,8 +3720,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "corruption_intensity",
+        "name": "Corruption Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3729,8 +3729,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "prism_strength",
+        "name": "Prism Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3738,8 +3738,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "dispersion",
+        "name": "Dispersion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3747,8 +3747,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "decay_rate",
+        "name": "Decay Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3787,8 +3787,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "lens_strength",
+        "name": "Lens Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3797,8 +3797,8 @@
         "description": "Pixel block size"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3807,8 +3807,8 @@
         "description": "Lens radius"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "barrel_distortion",
+        "name": "Barrel Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3817,8 +3817,8 @@
         "description": "Grid line opacity"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "center_glow",
+        "name": "Center Glow",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3830,7 +3830,7 @@
     "updatedParams": [
       {
         "index": 0,
-        "name": "Block Size",
+        "name": "Lens Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3838,7 +3838,7 @@
       },
       {
         "index": 1,
-        "name": "Lens Radius",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3846,7 +3846,7 @@
       },
       {
         "index": 2,
-        "name": "Grid Opacity",
+        "name": "Barrel Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3854,7 +3854,7 @@
       },
       {
         "index": 3,
-        "name": "Dispersion",
+        "name": "Center Glow",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3891,8 +3891,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "moss_density",
+        "name": "Moss Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3901,8 +3901,8 @@
         "description": "RD feed rate"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "growth_rate",
+        "name": "Growth Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3911,8 +3911,8 @@
         "description": "RD kill rate"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "color_shift",
+        "name": "Color Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3921,8 +3921,8 @@
         "description": "Cross-inhibition mix"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "moisture",
+        "name": "Moisture",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3934,7 +3934,7 @@
     "updatedParams": [
       {
         "index": 0,
-        "name": "Feed Rate",
+        "name": "Moss Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3942,7 +3942,7 @@
       },
       {
         "index": 1,
-        "name": "Kill Rate",
+        "name": "Growth Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3950,7 +3950,7 @@
       },
       {
         "index": 2,
-        "name": "Cross Inhibit",
+        "name": "Color Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3958,7 +3958,7 @@
       },
       {
         "index": 3,
-        "name": "Growth Speed",
+        "name": "Moisture",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3996,8 +3996,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "rain_density",
+        "name": "Rain Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4006,8 +4006,8 @@
         "description": "Rain glyph density"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "reveal_size",
+        "name": "Reveal Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4016,8 +4016,8 @@
         "description": "Reveal brush size"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "trail_fade",
+        "name": "Trail Fade",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4026,8 +4026,8 @@
         "description": "Trail fade rate"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "depth_influence",
+        "name": "Depth Influence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4092,8 +4092,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "slice_width",
+        "name": "Slice Width",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4101,8 +4101,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "distortion",
+        "name": "Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4110,8 +4110,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "angle",
+        "name": "Angle",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4119,8 +4119,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "aberration",
+        "name": "Aberration",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4147,8 +4147,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "lens_strength",
+        "name": "Lens Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4156,8 +4156,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "mass_count",
+        "name": "Mass Count",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4165,8 +4165,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "disk_intensity",
+        "name": "Disk Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4174,8 +4174,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "cauchy_dispersion",
+        "name": "Cauchy Dispersion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4204,8 +4204,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "ray_intensity",
+        "name": "Ray Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4213,8 +4213,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "luma_threshold",
+        "name": "Luma Threshold",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4222,8 +4222,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "softness",
+        "name": "Softness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4231,8 +4231,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "ray_count",
+        "name": "Ray Count",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4312,8 +4312,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "intensity",
+        "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4321,8 +4321,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "threshold",
+        "name": "Threshold",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4330,8 +4330,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "spread",
+        "name": "Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4339,8 +4339,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "ghost_count",
+        "name": "Ghost Count",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4369,8 +4369,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "edge_threshold",
+        "name": "Edge Threshold",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4378,8 +4378,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "glow_radius",
+        "name": "Glow Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4387,8 +4387,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4396,8 +4396,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "color_cycle",
+        "name": "Color Cycle",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4435,8 +4435,8 @@
     "updated": true,
     "params": [
       {
-        "id": "param1",
-        "name": "Red Channel Lag",
+        "id": "explosion_force",
+        "name": "Explosion Force",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4444,8 +4444,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Blue Channel Lag",
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4453,8 +4453,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Prism Power",
+        "id": "elastic_snap",
+        "name": "Elastic Snap",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4462,8 +4462,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Saturation Boost",
+        "id": "trail_decay",
+        "name": "Trail Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4474,7 +4474,7 @@
     "updatedParams": [
       {
         "id": "param1",
-        "name": "Red Channel Lag",
+        "name": "Explosion Force",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4483,7 +4483,7 @@
       },
       {
         "id": "param2",
-        "name": "Blue Channel Lag",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4492,7 +4492,7 @@
       },
       {
         "id": "param3",
-        "name": "Prism Power",
+        "name": "Elastic Snap",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4501,7 +4501,7 @@
       },
       {
         "id": "param4",
-        "name": "Saturation Boost",
+        "name": "Trail Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4581,8 +4581,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "hex_scale",
+        "name": "Hex Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4590,8 +4590,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "ripple_speed",
+        "name": "Ripple Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4599,8 +4599,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "impact_strength",
+        "name": "Impact Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4608,8 +4608,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "decay",
+        "name": "Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4691,8 +4691,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "cloud_scale",
+        "name": "Cloud Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4700,8 +4700,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "flow_speed",
+        "name": "Flow Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4709,8 +4709,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "color_speed",
+        "name": "Color Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4718,8 +4718,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "persistence",
+        "name": "Persistence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4814,8 +4814,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "spike_scale",
+        "name": "Spike Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4823,8 +4823,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "attraction_strength",
+        "name": "Attraction Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4832,8 +4832,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "em_influence",
+        "name": "EM Influence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4841,8 +4841,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "color_shift",
+        "name": "Color Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4875,8 +4875,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "fire_intensity",
+        "name": "Fire Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4884,8 +4884,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "smoke_density",
+        "name": "Smoke Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4893,8 +4893,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4902,8 +4902,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "color_temperature",
+        "name": "Color Temperature",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4932,8 +4932,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "grid_size",
+        "name": "Grid Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4941,8 +4941,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4950,8 +4950,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "dye_intensity",
+        "name": "Dye Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4959,8 +4959,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "decay_rate",
+        "name": "Decay Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5138,8 +5138,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5147,8 +5147,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "scale",
+        "name": "Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5156,8 +5156,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "refract_strength",
+        "name": "Refract Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5165,8 +5165,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "bilateral_mix",
+        "name": "Bilateral Mix",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5193,8 +5193,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "noise_scale",
+        "name": "Noise Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5202,8 +5202,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "radius",
+        "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5211,8 +5211,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "edge_width",
+        "name": "Edge Width",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5220,8 +5220,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "nlm_mix",
+        "name": "NLM Mix",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5250,8 +5250,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "growth_speed",
+        "name": "Growth Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5259,8 +5259,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "melt_radius",
+        "name": "Melt Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5268,8 +5268,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "max_opacity",
+        "name": "Max Opacity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5277,8 +5277,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "anisotropy",
+        "name": "Anisotropy",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5307,8 +5307,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "frost_amount",
+        "name": "Frost Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5316,8 +5316,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "lens_radius",
+        "name": "Lens Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5325,8 +5325,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "edge_softness",
+        "name": "Edge Softness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5334,8 +5334,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "film_ior",
+        "name": "Film IOR",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5366,8 +5366,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "intensity",
+        "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5375,8 +5375,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "decay",
+        "name": "Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5384,8 +5384,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "ray_density",
+        "name": "Ray Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5393,8 +5393,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "exposure",
+        "name": "Exposure",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5423,8 +5423,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "scale",
+        "name": "Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5432,8 +5432,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "ior_mix",
+        "name": "IOR Mix",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5441,8 +5441,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "rotation",
+        "name": "Rotation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5450,8 +5450,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "fracture_density",
+        "name": "Fracture Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5480,8 +5480,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "scale_density",
+        "name": "Scale Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5489,8 +5489,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5498,8 +5498,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "breathing_speed",
+        "name": "Breathing Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5507,8 +5507,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "core_heat",
+        "name": "Core Heat",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5537,8 +5537,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "city_density",
+        "name": "City Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5546,8 +5546,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "ascent_speed",
+        "name": "Ascent Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5555,8 +5555,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "gold_glow",
+        "name": "Gold Glow",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5564,8 +5564,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "fog_density",
+        "name": "Fog Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5726,8 +5726,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "step_size",
+        "name": "Step Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5735,8 +5735,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "speed",
+        "name": "Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5744,8 +5744,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "metallic",
+        "name": "Metallic",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5753,8 +5753,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "iridescence",
+        "name": "Iridescence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5783,8 +5783,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "zoom",
+        "name": "Zoom",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5792,8 +5792,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "color_speed",
+        "name": "Color Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5801,8 +5801,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "iterations",
+        "name": "Iterations",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5810,8 +5810,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "mutation",
+        "name": "Mutation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5840,8 +5840,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "symmetry",
+        "name": "Symmetry",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5849,8 +5849,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "pattern_density",
+        "name": "Pattern Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5858,8 +5858,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "color_cycle",
+        "name": "Color Cycle",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5867,8 +5867,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "projection_angle",
+        "name": "Projection Angle",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5951,8 +5951,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "disk_density",
+        "name": "Disk Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5960,8 +5960,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "jet_intensity",
+        "name": "Jet Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5969,8 +5969,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "gravity_warp",
+        "name": "Gravity Warp",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5978,8 +5978,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "time_dilation",
+        "name": "Time Dilation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6622,8 +6622,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "strength",
+        "name": "Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6631,8 +6631,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "radius",
+        "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6640,8 +6640,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "aberration",
+        "name": "Aberration",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6649,8 +6649,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "density",
+        "name": "Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6679,8 +6679,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "heat_gain",
+        "name": "Heat Gain",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6688,8 +6688,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "decay_rate",
+        "name": "Decay Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6697,8 +6697,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "fog_density",
+        "name": "Fog Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6706,8 +6706,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "refraction",
+        "name": "Refraction",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7021,8 +7021,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "grid_size",
+        "name": "Grid Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7030,8 +7030,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "melt_radius",
+        "name": "Melt Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7039,8 +7039,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "distort_strength",
+        "name": "Distort Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7048,8 +7048,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "softness",
+        "name": "Softness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7152,8 +7152,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "jump_strength",
+        "name": "Jump Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7161,8 +7161,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "low_temperature",
+        "name": "Low Temperature",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7170,8 +7170,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "high_temperature",
+        "name": "High Temperature",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7179,8 +7179,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7360,8 +7360,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "zoom",
+        "name": "Zoom",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7369,8 +7369,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "morph_speed",
+        "name": "Morph Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7378,8 +7378,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "color_cycles",
+        "name": "Color Cycles",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7387,8 +7387,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "detail",
+        "name": "Detail",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7417,8 +7417,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "spatial_sigma",
+        "name": "Spatial Sigma",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7426,8 +7426,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "color_sigma",
+        "name": "Color Sigma",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7435,8 +7435,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "hue_shift_amount",
+        "name": "Hue Shift Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7444,8 +7444,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "ink_density",
+        "name": "Ink Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7474,8 +7474,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "zoom_rate",
+        "name": "Zoom Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7483,8 +7483,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "spiral_tightness",
+        "name": "Spiral Tightness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7492,8 +7492,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "color_shift",
+        "name": "Color Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7501,8 +7501,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "feedback_strength",
+        "name": "Feedback Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7531,8 +7531,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "ink_hue",
+        "name": "Ink Hue",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7540,8 +7540,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7549,8 +7549,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "spread_speed",
+        "name": "Spread Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7558,8 +7558,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "density",
+        "name": "Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7661,8 +7661,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "field_strength",
+        "name": "Field Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7670,8 +7670,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "ripple_freq",
+        "name": "Ripple Freq",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7679,8 +7679,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "damping",
+        "name": "Damping",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7688,8 +7688,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "color_rotation",
+        "name": "Color Rotation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7716,8 +7716,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "fold_scale",
+        "name": "Fold Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7725,8 +7725,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "fold_depth",
+        "name": "Fold Depth",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7734,8 +7734,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7743,8 +7743,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "vortex_strength",
+        "name": "Vortex Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7773,8 +7773,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "strength",
+        "name": "Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7782,8 +7782,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7791,8 +7791,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "trails",
+        "name": "Trails",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7800,8 +7800,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "shift",
+        "name": "Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7832,8 +7832,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "prism_strength",
+        "name": "Prism Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7841,8 +7841,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "falloff",
+        "name": "Falloff",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7850,8 +7850,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7859,8 +7859,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "saturation_boost",
+        "name": "Saturation Boost",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7885,8 +7885,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "charge_strength",
+        "name": "Charge Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7894,8 +7894,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "glow_radius",
+        "name": "Glow Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7903,8 +7903,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "color_shift",
+        "name": "Color Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7912,8 +7912,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "density",
+        "name": "Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7927,23 +7927,31 @@
     "id": "liquid-jelly-fluid",
     "name": "Liquid Jelly Fluid",
     "url": "shaders/liquid-jelly-fluid.wgsl",
-    "description": "Catalog entry for Liquid Jelly Fluid.",
+    "description": "Vortical cyan, ultraviolet, and lime elastic dye with Kelvin–Helmholtz curls, pressure projection, vorticity confinement, and strong pointer stirring.",
     "tags": [
       "liquid-jelly",
       "fluid-simulation",
       "elastic-bounce",
-      "subsurface-scattering"
+      "subsurface-scattering",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "features": [
       "liquid-jelly",
       "fluid-simulation",
       "elastic-bounce",
-      "subsurface-scattering"
+      "subsurface-scattering",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7951,8 +7959,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "dye_intensity",
+        "name": "Dye Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7960,8 +7968,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "vorticity_strength",
+        "name": "Vorticity Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7969,8 +7977,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "elasticity",
+        "name": "Elasticity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -7978,6 +7986,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Dye Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Vorticity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Elasticity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = velocity.xy, pressure, density; exact bounded state loads",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -8066,7 +8110,7 @@
     "id": "liquid-metal-prismatic",
     "name": "Liquid Metal Prismatic",
     "url": "shaders/liquid-metal-prismatic.wgsl",
-    "description": "Liquid metal ripple distortion combined with 4-band spectral prismatic dispersion. Curved metal surface acts as a dynamic liquid prism — ripples create varying curvature that refracts light into separated wavelength bands via Cauchy's equation.",
+    "description": "Flowing silver facets split the image into four persistent spectral bands, with moving shard seams, curvature ribbons, rotating light sweeps, and click refraction fronts.",
     "tags": [
       "prismatic",
       "dispersion",
@@ -8081,7 +8125,11 @@
       "liquid",
       "metallic",
       "physical-dispersion",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "params": [
       {
@@ -8117,29 +8165,73 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ripple Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ripple Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Prism Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Spectral Saturation",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = violet, cyan, amber, red spectral-band intensities",
+    "updated": true,
     "target_rating": 4.8
   },
   {
     "id": "liquid-oil-iridescence",
     "name": "Liquid Oil Iridescence",
     "url": "shaders/liquid-oil-iridescence.wgsl",
-    "description": "Liquid Oil Iridescence",
+    "description": "Pearl-black film islands transport magenta, cyan, and lime interference contours through fast capillary streams with held-pointer thinning.",
     "tags": [
       "liquid-oil",
       "thin-film-interference",
       "depth-aware",
-      "spectral-render"
+      "spectral-render",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "features": [
       "liquid-oil",
       "thin-film-interference",
       "depth-aware",
-      "spectral-render"
+      "spectral-render",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-state",
+      "exact-feedback"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8147,8 +8239,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "film_ior",
+        "name": "Film IOR",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8156,8 +8248,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "intensity",
+        "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8165,8 +8257,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8174,6 +8266,42 @@
         "mapping": "zoom_params.w"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Film Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Film IOR",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Interference Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Capillary Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = spectral interference RGB, normalized film thickness",
+    "updated": true,
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
@@ -8197,8 +8325,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "smear_decay",
+        "name": "Smear Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8206,8 +8334,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "lic_steps",
+        "name": "LIC Steps",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8215,8 +8343,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "coherence_boost",
+        "name": "Coherence Boost",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8224,8 +8352,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "mouse_influence",
+        "name": "Mouse Influence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8254,8 +8382,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8263,8 +8391,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "temperature_range_low",
+        "name": "Temperature Range Low",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8272,8 +8400,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "thermal_intensity",
+        "name": "Thermal Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8281,8 +8409,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "glow_amount",
+        "name": "Glow Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8704,7 +8832,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "brush_size",
         "name": "Brush Size",
         "default": 0.3,
         "min": 0,
@@ -8712,7 +8840,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "wetness",
         "name": "Wetness",
         "default": 0.5,
         "min": 0,
@@ -8720,15 +8848,15 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Bilateral Dream",
+        "id": "bilateral_blend",
+        "name": "Bilateral Blend",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "mouse_focus",
         "name": "Mouse Focus",
         "default": 0.5,
         "min": 0,
@@ -8830,8 +8958,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "echo_decay",
+        "name": "Echo Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8839,8 +8967,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "lag_offset_x",
+        "name": "Lag Offset X",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8848,8 +8976,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "lag_offset_y",
+        "name": "Lag Offset Y",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8857,8 +8985,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "hue_shift",
+        "name": "Hue Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -9809,8 +9937,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "diffusion_radius",
+        "name": "Diffusion Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -9818,8 +9946,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "field_intensity",
+        "name": "Field Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -9827,8 +9955,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "channel_bias",
+        "name": "Channel Bias",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -9836,8 +9964,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10050,8 +10178,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "steam_density",
+        "name": "Steam Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10059,8 +10187,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "fog_height",
+        "name": "Fog Height",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10068,8 +10196,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10077,8 +10205,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "wipe_radius",
+        "name": "Wipe Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10431,8 +10559,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "grid_speed",
+        "name": "Grid Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10440,8 +10568,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10449,8 +10577,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "grid_scale",
+        "name": "Grid Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10458,8 +10586,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "warp_amount",
+        "name": "Warp Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10559,8 +10687,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10568,8 +10696,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "color_sigma",
+        "name": "Color Sigma",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10577,8 +10705,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "hue_shift_amount",
+        "name": "Hue Shift Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10586,8 +10714,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "drag_strength",
+        "name": "Drag Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10616,8 +10744,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "warp_strength",
+        "name": "Warp Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10625,8 +10753,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "warp_radius",
+        "name": "Warp Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10634,8 +10762,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "twist",
+        "name": "Twist",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10643,8 +10771,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "viscosity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10675,8 +10803,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "intensity",
+        "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10684,8 +10812,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "aberration",
+        "name": "Aberration",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10693,8 +10821,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "brightness",
+        "name": "Brightness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10702,8 +10830,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "samples",
+        "name": "Samples",
         "default": 0.5,
         "min": 0,
         "max": 1,

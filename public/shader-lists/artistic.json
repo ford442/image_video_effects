@@ -308,7 +308,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "brush_size",
         "name": "Brush Size",
         "default": 0.3,
         "min": 0,
@@ -316,15 +316,15 @@
         "step": 0.1
       },
       {
-        "id": "param2",
-        "name": "Wetness",
+        "id": "paint_wetness",
+        "name": "Paint Wetness",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.1
       },
       {
-        "id": "param3",
+        "id": "color_levels",
         "name": "Color Levels",
         "default": 0.5,
         "min": 0,
@@ -332,8 +332,8 @@
         "step": 0.1
       },
       {
-        "id": "param4",
-        "name": "Canvas Texture",
+        "id": "impasto_strength",
+        "name": "Impasto Strength",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -357,32 +357,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "segments",
+        "name": "Segments",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "spiral_strength",
+        "name": "Spiral Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "trails",
+        "name": "Trails",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -405,32 +405,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "segments",
+        "name": "Segments",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "spiral_strength",
+        "name": "Spiral Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "trails",
+        "name": "Trails",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -452,32 +452,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "segments",
+        "name": "Segments",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "spiral_strength",
+        "name": "Spiral Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "trail_persistence",
+        "name": "Trail Persistence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -545,7 +545,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -553,7 +553,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -561,16 +561,16 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "depth_weight",
+        "name": "Depth Weight",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -593,23 +593,7 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -617,8 +601,24 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion_rate",
+        "name": "Diffusion Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fbm_octaves",
+        "name": "FBM Octaves",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -640,23 +640,7 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -664,8 +648,24 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion_rate",
+        "name": "Diffusion Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fbm_octaves",
+        "name": "FBM Octaves",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -739,32 +739,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "particle_radius",
+        "name": "Particle Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "particle_opacity",
+        "name": "Particle Opacity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "motion_blur",
+        "name": "Motion Blur",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -787,32 +787,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "crawl_speed",
+        "name": "Crawl Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "swap_intensity",
+        "name": "Swap Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "feedback_mix",
+        "name": "Feedback Mix",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "flash_rate",
+        "name": "Flash Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -892,32 +892,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "global_intensity",
+        "name": "Global Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "hyper_factor",
+        "name": "Hyper Factor",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "twist_rate",
+        "name": "Twist Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "chromatic_scale",
+        "name": "Chromatic Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -940,32 +940,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "fold_strength",
+        "name": "Fold Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "pivot_hue",
+        "name": "Pivot Hue",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "sat_scale",
+        "name": "Sat Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "depth_influence",
+        "name": "Depth Influence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -987,32 +987,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "fold_strength",
+        "name": "Fold Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "pivot_hue",
+        "name": "Pivot Hue",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "sat_scale",
+        "name": "Sat Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "depth_influence",
+        "name": "Depth Influence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1081,32 +1081,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "fold_strength",
+        "name": "Fold Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "pivot_hue",
+        "name": "Pivot Hue",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "sat_scale",
+        "name": "Sat Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "depth_influence",
+        "name": "Depth Influence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1197,8 +1197,8 @@
     "author": "AI",
     "params": [
       {
-        "id": "param1",
-        "name": "Phase Speed",
+        "id": "speed_of_the_temporal_phase_oscillation_per_channel",
+        "name": "Speed of the temporal phase oscillation per channel.",
         "min": 0,
         "max": 1,
         "default": 0.35,
@@ -1206,8 +1206,8 @@
         "description": "Speed of the temporal phase oscillation per channel."
       },
       {
-        "id": "param2",
-        "name": "Ghost Offset",
+        "id": "spatial_displacement_of_each_color_ghost_from_the_source",
+        "name": "Spatial displacement of each color ghost from the source.",
         "min": 0,
         "max": 1,
         "default": 0.5,
@@ -1215,8 +1215,8 @@
         "description": "Spatial displacement of each color ghost from the source."
       },
       {
-        "id": "param3",
-        "name": "Inversion Depth",
+        "id": "how_much_depth_accumulates_extra_phase_near_objects_phase_faster",
+        "name": "How much depth accumulates extra phase (near objects phase faster).",
         "min": 0,
         "max": 1,
         "default": 0.4,
@@ -1224,8 +1224,8 @@
         "description": "How much depth accumulates extra phase (near objects phase faster)."
       },
       {
-        "id": "param4",
-        "name": "Spatial Coherence",
+        "id": "mix_of_spatial_noise_field_into_the_phase_low_global_high_local",
+        "name": "Mix of spatial noise field into the phase (low=global, high=local).",
         "min": 0,
         "max": 1,
         "default": 0.5,
@@ -1358,7 +1358,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "lens_strength",
         "name": "Lens Strength",
         "default": 0.5,
         "min": 0,
@@ -1366,7 +1366,7 @@
         "step": 0.1
       },
       {
-        "id": "param2",
+        "id": "mass_count",
         "name": "Mass Count",
         "default": 0.3,
         "min": 0,
@@ -1374,7 +1374,7 @@
         "step": 0.1
       },
       {
-        "id": "param3",
+        "id": "disk_intensity",
         "name": "Disk Intensity",
         "default": 0.5,
         "min": 0,
@@ -1382,8 +1382,8 @@
         "step": 0.1
       },
       {
-        "id": "param4",
-        "name": "Chromatic Aberration",
+        "id": "aberration",
+        "name": "Aberration",
         "default": 0.2,
         "min": 0,
         "max": 1,
@@ -1915,31 +1915,31 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Opacity",
+        "id": "opacity_p",
+        "name": "Opacity P",
         "default": 0.85,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Arm Count",
+        "id": "arm_count_p",
+        "name": "Arm Count P",
         "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Rotation Speed",
+        "id": "rotation_p",
+        "name": "Rotation P",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "arm_spread",
         "name": "Arm Spread",
         "default": 0.4,
         "min": 0,
@@ -2081,7 +2081,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "transparency",
         "name": "Transparency",
         "default": 0.5,
         "min": 0,
@@ -2089,7 +2089,7 @@
         "step": 0.1
       },
       {
-        "id": "param2",
+        "id": "dispersion",
         "name": "Dispersion",
         "default": 0.3,
         "min": 0,
@@ -2097,7 +2097,7 @@
         "step": 0.1
       },
       {
-        "id": "param3",
+        "id": "thickness",
         "name": "Thickness",
         "default": 0.5,
         "min": 0,
@@ -2105,7 +2105,7 @@
         "step": 0.1
       },
       {
-        "id": "param4",
+        "id": "roughness",
         "name": "Roughness",
         "default": 0.1,
         "min": 0,
@@ -2453,7 +2453,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "diffusion",
         "name": "Diffusion",
         "default": 0.3,
         "min": 0,
@@ -2461,7 +2461,7 @@
         "step": 0.1
       },
       {
-        "id": "param2",
+        "id": "viscosity",
         "name": "Viscosity",
         "default": 0.5,
         "min": 0,
@@ -2469,7 +2469,7 @@
         "step": 0.1
       },
       {
-        "id": "param3",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.7,
         "min": 0,
@@ -2477,7 +2477,7 @@
         "step": 0.1
       },
       {
-        "id": "param4",
+        "id": "reaction",
         "name": "Reaction",
         "default": 0.2,
         "min": 0,
@@ -2890,7 +2890,7 @@
     "author": "AI",
     "params": [
       {
-        "id": "param1",
+        "id": "dispersion_strength",
         "name": "Dispersion Strength",
         "min": 0,
         "max": 1,
@@ -2899,7 +2899,7 @@
         "description": "How far each color channel drifts from the source."
       },
       {
-        "id": "param2",
+        "id": "depth_curvature",
         "name": "Depth Curvature",
         "min": 0,
         "max": 1,
@@ -2908,7 +2908,7 @@
         "description": "How strongly depth data amplifies the prism bending."
       },
       {
-        "id": "param3",
+        "id": "prism_twist",
         "name": "Prism Twist",
         "min": 0,
         "max": 1,
@@ -2917,7 +2917,7 @@
         "description": "Rotational twist applied to each channel's dispersion vector."
       },
       {
-        "id": "param4",
+        "id": "depth_weight",
         "name": "Depth Weight",
         "min": 0,
         "max": 1,
@@ -3541,32 +3541,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "cloud_scale",
+        "name": "Cloud Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "flow_speed",
+        "name": "Flow Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "color_speed",
+        "name": "Color Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "persistence",
+        "name": "Persistence",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3701,32 +3701,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "neuron_count",
+        "name": "Neuron Count",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "synapse_glow",
+        "name": "Synapse Glow",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "morph_speed",
+        "name": "Morph Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "feedback_strength",
+        "name": "Feedback Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3849,7 +3849,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "parallax",
         "name": "Parallax",
         "default": 0.5,
         "min": 0,
@@ -3857,7 +3857,7 @@
         "step": 0.1
       },
       {
-        "id": "param2",
+        "id": "layer_density",
         "name": "Layer Density",
         "default": 0.5,
         "min": 0,
@@ -3865,7 +3865,7 @@
         "step": 0.1
       },
       {
-        "id": "param3",
+        "id": "depth_of_field",
         "name": "Depth of Field",
         "default": 0.3,
         "min": 0,
@@ -3873,7 +3873,7 @@
         "step": 0.1
       },
       {
-        "id": "param4",
+        "id": "fog",
         "name": "Fog",
         "default": 0.2,
         "min": 0,
@@ -3945,7 +3945,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "particle_count",
         "name": "Particle Count",
         "default": 0.5,
         "min": 0,
@@ -3953,7 +3953,7 @@
         "step": 0.1
       },
       {
-        "id": "param2",
+        "id": "trail_persistence",
         "name": "Trail Persistence",
         "default": 0.5,
         "min": 0,
@@ -3961,7 +3961,7 @@
         "step": 0.1
       },
       {
-        "id": "param3",
+        "id": "color_shift",
         "name": "Color Shift",
         "default": 0.3,
         "min": 0,
@@ -3969,7 +3969,7 @@
         "step": 0.1
       },
       {
-        "id": "param4",
+        "id": "chaos",
         "name": "Chaos",
         "default": 0.2,
         "min": 0,
@@ -4028,32 +4028,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "agent_radius",
+        "name": "Agent Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "deposit_opacity",
+        "name": "Deposit Opacity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "sensor_dist",
+        "name": "Sensor Dist",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "decay_rate",
+        "name": "Decay Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4076,32 +4076,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "agent_radius",
+        "name": "Agent Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "deposit_opacity",
+        "name": "Deposit Opacity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "sensor_dist",
+        "name": "Sensor Dist",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "decay_rate",
+        "name": "Decay Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4128,32 +4128,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "agent_radius",
+        "name": "Agent Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "deposit_opacity",
+        "name": "Deposit Opacity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "sense_distance",
+        "name": "Sense Distance",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "trail_decay",
+        "name": "Trail Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4180,32 +4180,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "orb_radius",
+        "name": "Orb Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "orbit_speed",
+        "name": "Orbit Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "shadow_depth",
+        "name": "Shadow Depth",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4288,7 +4288,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -4296,7 +4296,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -4304,7 +4304,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -4312,7 +4312,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -4432,7 +4432,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -4440,7 +4440,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -4448,7 +4448,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -4456,7 +4456,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -4577,7 +4577,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -4585,7 +4585,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -4593,7 +4593,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -4601,7 +4601,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -4662,7 +4662,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -4670,7 +4670,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -4678,7 +4678,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -4686,7 +4686,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -4955,7 +4955,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -4963,7 +4963,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -4971,7 +4971,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -4979,7 +4979,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -5042,8 +5042,8 @@
     "author": "AI",
     "params": [
       {
-        "id": "param1",
-        "name": "Fold Depth",
+        "id": "number_of_m_bius_fold_iterations_1_6",
+        "name": "Number of Möbius fold iterations (1–6).",
         "min": 0,
         "max": 1,
         "default": 0.4,
@@ -5051,8 +5051,8 @@
         "description": "Number of Möbius fold iterations (1–6)."
       },
       {
-        "id": "param2",
-        "name": "Fold Radius",
+        "id": "radius_of_each_fold_s_influence_sphere",
+        "name": "Radius of each fold's influence sphere.",
         "min": 0,
         "max": 1,
         "default": 0.5,
@@ -5060,8 +5060,8 @@
         "description": "Radius of each fold's influence sphere."
       },
       {
-        "id": "param3",
-        "name": "Vortex Speed",
+        "id": "speed_and_direction_of_the_vortex_rotation",
+        "name": "Speed and direction of the vortex rotation.",
         "min": 0,
         "max": 1,
         "default": 0.5,
@@ -5069,8 +5069,8 @@
         "description": "Speed and direction of the vortex rotation."
       },
       {
-        "id": "param4",
-        "name": "Mirror Blend",
+        "id": "blend_strength_between_original_and_folded_image",
+        "name": "Blend strength between original and folded image.",
         "min": 0,
         "max": 1,
         "default": 0.6,
@@ -5204,15 +5204,7 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -5220,16 +5212,24 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "density",
+        "name": "Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "wind",
+        "name": "Wind",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "accumulation",
+        "name": "Accumulation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5551,32 +5551,32 @@
     },
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "freq_range",
+        "name": "Freq Range",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "time_window",
+        "name": "Time Window",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "magnification",
+        "name": "Magnification",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "color_scheme",
+        "name": "Color Scheme",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5930,32 +5930,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "orbit_speed",
+        "name": "Orbit Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "star_scale",
+        "name": "Star Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "rotation",
+        "name": "Rotation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6034,32 +6034,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "accumulation_rate",
+        "name": "Accumulation Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "echo_decay",
+        "name": "Echo Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "depth_weight",
+        "name": "Depth Weight",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "temporal_offset",
+        "name": "Temporal Offset",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6196,32 +6196,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "cell_density",
+        "name": "Cell Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "jitter",
+        "name": "Jitter",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "ridge_strength",
+        "name": "Ridge Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "palette_shift",
+        "name": "Palette Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,

@@ -478,8 +478,8 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Param 1",
+        "id": "brush_size",
+        "name": "Brush Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -487,8 +487,8 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Param 2",
+        "id": "texture_amount",
+        "name": "Texture Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -496,8 +496,8 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Param 3",
+        "id": "color_intensity",
+        "name": "Color Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -505,8 +505,8 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "param4",
-        "name": "Param 4",
+        "id": "speed",
+        "name": "Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1343,28 +1343,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "reveal_radius",
         "name": "Reveal Radius",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "rain_speed",
         "name": "Rain Speed",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "code_density",
         "name": "Code Density",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "glow_intensity",
         "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
@@ -3774,32 +3774,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "arc_sharpness",
+        "name": "Arc Sharpness",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "bolt_conductivity",
+        "name": "Bolt Conductivity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "core_energy",
+        "name": "Core Energy",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "shockwave_distortion",
+        "name": "Shockwave Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4137,32 +4137,32 @@
     "description": "Physical glass refraction with single-sample spectral tint, depth-aware mortar edges, and alpha translucency from refraction strength and glass thickness.",
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "refraction_strength",
+        "name": "Refraction Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "grid_scale",
+        "name": "Grid Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "interaction_radius",
+        "name": "Interaction Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "glass_density",
+        "name": "Glass Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6802,7 +6802,7 @@
     "name": "Liquid Lens",
     "url": "shaders/liquid-lens.wgsl",
     "category": "interactive-mouse",
-    "description": "Spherical aberration simulation with Snell's law refraction at curved interfaces, 7-sample chromatic dispersion, caustic highlights, Fresnel reflections, and ACES tone mapping.",
+    "description": "Moving multi-lobed aqua/amber lenses and orbiting lenslets refract the image through animated caustic meshes, click-launched rings, and held-pointer compression.",
     "params": [
       {
         "id": "refraction",
@@ -6833,11 +6833,45 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Lens Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Dispersion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Caustic Waves",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C = display RGBA history",
+    "updated": true,
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal",
+      "click-responsive"
     ],
     "tags": [
       "lens",
@@ -7147,28 +7181,28 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Warp Strength",
+        "id": "strength",
+        "name": "Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
-        "name": "Echo Decay",
+        "id": "decay",
+        "name": "Decay",
         "default": 0.8,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "radius",
         "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "luma_weight",
         "name": "Luma Weight",
         "default": 0.5,
         "min": 0,
@@ -7477,29 +7511,29 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "pull_strength",
         "name": "Pull Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "radius",
         "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
-        "name": "Edge Threshold",
+        "id": "edge_low",
+        "name": "Edge Low",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
-        "name": "Glow",
+        "id": "glow_amount",
+        "name": "Glow Amount",
         "default": 0.2,
         "min": 0,
         "max": 1
@@ -10424,32 +10458,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "burn_speed",
+        "name": "Burn Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "spread_speed",
+        "name": "Spread Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "char_width",
+        "name": "Char Width",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "reset",
+        "name": "Reset",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -10916,7 +10950,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -10924,7 +10958,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -10932,7 +10966,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -10940,7 +10974,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -11085,28 +11119,28 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Repel Radius",
+        "id": "radius",
+        "name": "Radius",
         "default": 0.2,
         "min": 0.05,
         "max": 0.5
       },
       {
-        "id": "param2",
-        "name": "Repel Strength",
+        "id": "strength",
+        "name": "Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "aberration",
         "name": "Aberration",
         "default": 0.05,
         "min": 0,
         "max": 0.2
       },
       {
-        "id": "param4",
+        "id": "smoothing",
         "name": "Smoothing",
         "default": 0.5,
         "min": 0,
@@ -11498,7 +11532,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "warp_strength",
         "name": "Warp Strength",
         "default": 0.5,
         "min": 0,
@@ -11506,7 +11540,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "spiral_amount",
         "name": "Spiral Amount",
         "default": 0,
         "min": 0,
@@ -11514,7 +11548,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "ripple_decay",
         "name": "Ripple Decay",
         "default": 0.5,
         "min": 0,
@@ -11522,7 +11556,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "pinch_expand",
         "name": "Pinch/Expand",
         "default": 0,
         "min": 0,
@@ -12174,7 +12208,7 @@
     "name": "Quantum Prism",
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -12182,7 +12216,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -12190,7 +12224,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -12198,7 +12232,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -13276,32 +13310,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "wave_frequency",
+        "name": "Wave Frequency",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "wave_speed",
+        "name": "Wave Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "wave_amplitude",
+        "name": "Wave Amplitude",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "channel_phase",
+        "name": "Channel Phase",
         "default": 0.5,
         "min": 0,
         "max": 1,
