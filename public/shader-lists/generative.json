@@ -8667,14 +8667,52 @@
     ],
     "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes. Now audio-reactive to bass frequencies with meaningful alpha compositing.",
     "workgroup_size": [
-      8,
-      8,
+      16,
+      16,
       1
+    ],
+    "params": [
+      {
+        "id": "fractalDetail",
+        "name": "Fractal Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "motionSpeed",
+        "name": "Motion Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "tileDensity",
+        "name": "Tile Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouseWarp",
+        "name": "Mouse Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
         "index": 0,
-        "name": "Intensity",
+        "name": "Fractal Detail",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8682,7 +8720,7 @@
       },
       {
         "index": 1,
-        "name": "Speed",
+        "name": "Motion Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8690,7 +8728,7 @@
       },
       {
         "index": 2,
-        "name": "Scale",
+        "name": "Tile Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8698,7 +8736,7 @@
       },
       {
         "index": 3,
-        "name": "Mouse Influence",
+        "name": "Mouse Warp",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8710,7 +8748,17 @@
     "updated": true,
     "id": "gen-dynamic-tessellation-ornate-fractal-tiles",
     "url": "shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl",
-    "features": []
+    "features": [
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Echo Dunes",
@@ -8728,6 +8776,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "duneScale",
+        "name": "Dune Scale",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "windSpeed",
+        "name": "Wind Speed",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "mirage",
+        "name": "Mirage",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "echoRings",
+        "name": "Echo Rings",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -8768,7 +8854,17 @@
     "updated": true,
     "id": "gen-echo-dunes",
     "url": "shaders/gen-echo-dunes.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware",
+      "persistent-envelope"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history; extraBuffer[133] = bass envelope"
   },
   {
     "name": "Eldritch-Quantum Fractal-Eye",
@@ -8787,10 +8883,48 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "fractalDetail",
+        "name": "Fractal Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "pupilDilation",
+        "name": "Pupil Dilation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "plasmaDensity",
+        "name": "Plasma Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "chromaticShift",
+        "name": "Chromatic Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
-        "name": "Intensity",
+        "name": "Fractal Detail",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8798,7 +8932,7 @@
       },
       {
         "index": 1,
-        "name": "Speed",
+        "name": "Pupil Dilation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8806,7 +8940,7 @@
       },
       {
         "index": 2,
-        "name": "Scale",
+        "name": "Plasma Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8814,7 +8948,7 @@
       },
       {
         "index": 3,
-        "name": "Mouse Influence",
+        "name": "Chromatic Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -8826,7 +8960,19 @@
     "updated": true,
     "id": "gen-eldritch-quantum-fractal-eye",
     "url": "shaders/gen-eldritch-quantum-fractal-eye.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Eldritch Tesseract-Hive Mind",
@@ -9011,6 +9157,111 @@
     "id": "gen-emergent-calligraphic-ecosystems",
     "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-emergent-calligraphic-weave",
+    "url": "shaders/gen-emergent-calligraphic-weave.wgsl",
+    "name": "Emergent Calligraphic Weave",
+    "category": "generative",
+    "tags": [
+      "calligraphy",
+      "ink",
+      "weave",
+      "flow-field",
+      "audio-reactive"
+    ],
+    "description": "An emergent weave of pressure-shaped calligraphic filaments, chromatic hairlines, and timestamped ink fronts that bend beneath a held pointer.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "strokeDensity",
+        "name": "Stroke Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "inkWidth",
+        "name": "Ink Width",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "chromaticBloom",
+        "name": "Chromatic Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Stroke Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ink Width",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Emergent Script Gardens",
@@ -10171,6 +10422,219 @@
     "features": []
   },
   {
+    "id": "gen-ferrofluid-monolith",
+    "url": "shaders/gen-ferrofluid-monolith.wgsl",
+    "name": "Ferrofluid Monolith",
+    "category": "generative",
+    "tags": [
+      "ferrofluid",
+      "monolith",
+      "magnetic",
+      "raymarched",
+      "liquid-metal",
+      "audio-reactive"
+    ],
+    "description": "A raymarched liquid-metal obelisk grows magnetic radial spikes around an emissive core, with pointer orbit and click-driven field rings.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "monolithHeight",
+        "name": "Monolith Height",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "spikeStrength",
+        "name": "Spike Strength",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fieldSpeed",
+        "name": "Field Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "coreGlow",
+        "name": "Core Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Monolith Height",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spike Strength",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Field Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Core Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
+    "id": "gen-fibonacci-spiral-garden",
+    "url": "shaders/gen-fibonacci-spiral-garden.wgsl",
+    "name": "Fibonacci Spiral Garden",
+    "category": "generative",
+    "tags": [
+      "fibonacci",
+      "phyllotaxis",
+      "spiral",
+      "garden",
+      "bloom",
+      "audio-reactive"
+    ],
+    "description": "Ninety-six golden-angle blossoms unfurl as an interactive phyllotaxis garden with spectral petals and click-seeded growth fronts.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "spiralScale",
+        "name": "Spiral Scale",
+        "default": 0.62,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "growthCycle",
+        "name": "Growth Cycle",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "petalSize",
+        "name": "Petal Size",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "bloom",
+        "name": "Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Spiral Scale",
+        "default": 0.62,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Growth Cycle",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Petal Size",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
     "name": "4th of July — Audio Symphony",
     "category": "generative",
     "tags": [
@@ -11230,6 +11694,218 @@
     ]
   },
   {
+    "id": "gen-flame-fractal-attractor",
+    "url": "shaders/gen-flame-fractal-attractor.wgsl",
+    "name": "Flame Fractal Attractor",
+    "category": "generative",
+    "tags": [
+      "fractal",
+      "flame",
+      "attractor",
+      "orbit-density",
+      "audio-reactive"
+    ],
+    "description": "A curling orbit-density attractor folds luminous ember filaments through a bass-driven flame field with interactive vortex wakes.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "attractorStrength",
+        "name": "Attractor Strength",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "orbitSpeed",
+        "name": "Orbit Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "curl",
+        "name": "Curl",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "emberBloom",
+        "name": "Ember Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Attractor Strength",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Orbit Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Curl",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ember Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
+    "id": "gen-flowing-silk-ribbons",
+    "url": "shaders/gen-flowing-silk-ribbons.wgsl",
+    "name": "Flowing Silk Ribbons",
+    "category": "generative",
+    "tags": [
+      "silk",
+      "ribbons",
+      "fabric",
+      "iridescent",
+      "flow",
+      "audio-reactive"
+    ],
+    "description": "Layered anisotropic silk ribbons flow through an iridescent field, comb beneath a held pointer, and ring with timestamped clicks.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "ribbonCount",
+        "name": "Ribbon Count",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "silkWidth",
+        "name": "Silk Width",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ribbon Count",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Silk Width",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
     "name": "Fourier Epicycles",
     "category": "generative",
     "tags": [
@@ -11540,6 +12216,220 @@
     "id": "gen-fractal-ember-lattice",
     "url": "shaders/gen-fractal-ember-lattice.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-fractal-flame-classic",
+    "url": "shaders/gen-fractal-flame-classic.wgsl",
+    "name": "Classic Fractal Flame",
+    "category": "generative",
+    "tags": [
+      "fractal",
+      "flame",
+      "ifs",
+      "swirl",
+      "horseshoe",
+      "audio-reactive"
+    ],
+    "description": "A classic fractal flame blends swirl, horseshoe, and polar affine variations into warm spectral density traps with temporal embers.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "iterations",
+        "name": "Iterations",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "variationMix",
+        "name": "Variation Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "flameZoom",
+        "name": "Flame Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "paletteCycle",
+        "name": "Palette Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Iterations",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Variation Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Flame Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Palette Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
+    "id": "gen-fractal-tree-growth",
+    "url": "shaders/gen-fractal-tree-growth.wgsl",
+    "name": "Fractal Tree Growth",
+    "category": "generative",
+    "tags": [
+      "fractal",
+      "tree",
+      "growth",
+      "recursive",
+      "botanical",
+      "audio-reactive"
+    ],
+    "description": "A recursively evaluated distance-field tree unfurls through binary branch paths, luminous leaves, pointer wind, and click-seeded growth fronts.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "branchDepth",
+        "name": "Branch Depth",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "branchSpread",
+        "name": "Branch Spread",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "growthPhase",
+        "name": "Growth Phase",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "leafGlow",
+        "name": "Leaf Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Branch Depth",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Branch Spread",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Growth Phase",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Leaf Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Fractured Monolith",

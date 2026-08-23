@@ -1027,3 +1027,25 @@
 - Proof: Naga 10/10, no focused dead sliders or contract violations, 1,333-shader
   catalog, TypeScript and URL/uniform checks, 81 Jest suites / 545 passes / one
   skip, and production build green. Real-GPU visual proof remains external.
+
+## Ornate / fractal-growth generative cohort (2026-08-23)
+
+- Ten IDs span dynamic tessellation, dunes, eldritch eye, calligraphic weave,
+  ferrofluid monolith, Fibonacci garden, two flame systems, silk ribbons, and
+  fractal tree growth.
+- Apply the same full-13 / ACES / semantic-alpha / A-only raw HDR history /
+  exact-C-load / three-band audio / bounded-state / interaction / four-named-
+  parameter contract, while preserving the preceding completed batch in the
+  shared worktree.
+- Audit found seven requested IDs absent from both the tree and Git history;
+  implement those exact IDs greenfield rather than renaming preset-bearing
+  neighboring effects. The first three remain in-place upgrades.
+- Completed all ten. The seven missing IDs are now independent effects; Dynamic
+  Tiles, Echo Dunes, and Eldritch Eye were repaired in place. A/C is raw HDR
+  display history, C loads are exact, B is never written, and every definition
+  exposes four live named controls.
+- Echo Dunes alone uses persistent state at `[133]`; the other nine use none.
+  Proof: Naga/dead-slider/custom contract 10/10, 448 generative / 1,340 total
+  catalog entries, TypeScript and URL/uniform checks, 81 Jest suites / 545 pass /
+  one skip, and production build green. Real-GPU visual/performance proof remains
+  external.

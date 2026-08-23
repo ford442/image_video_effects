@@ -162,4 +162,6 @@ Format specification:
 - For the completed crystalline/cybernetic generative cohort, require four named
   JSON controls per shader in addition to the standard 13-binding, ACES,
   semantic-alpha, exact-C-load, three-band-audio, bounded-state contract.
+- Applied the same contract to the completed ornate/fractal-growth generative
+  cohort, keeping batch artifacts and validation boundaries independently clear.
 </IMPORTANT_REMINDER>
