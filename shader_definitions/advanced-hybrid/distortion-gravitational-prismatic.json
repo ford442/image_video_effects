@@ -2,16 +2,24 @@
   "id": "distortion-gravitational-prismatic",
   "name": "Distortion Gravitational Prismatic",
   "url": "shaders/distortion-gravitational-prismatic.wgsl",
-  "description": "Distortion Gravitational Prismatic",
+  "description": "Einstein-ring gravitational lensing combined with 4-band Cauchy spectral dispersion, accretion disk, and gravitational redshift.",
   "tags": [
     "gravitational-lensing",
     "spectral-dispersion",
-    "physical-refraction"
+    "physical-refraction",
+    "space",
+    "black-hole",
+    "accretion-disk"
   ],
   "features": [
     "gravitational-lensing",
     "spectral-dispersion",
-    "physical-refraction"
+    "physical-refraction",
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal"
   ],
   "params": [
     {
@@ -49,6 +57,41 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w"
+    }
+  ],
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Lens Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Mass Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Disk Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Cauchy Dispersion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"

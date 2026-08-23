@@ -95,5 +95,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = cell id x, cell id y, edge mask, F1 distance; exact edge-afterglow telemetry load"
 }

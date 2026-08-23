@@ -151,14 +151,19 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let coord = vec2<i32>(global_id.xy);
     let time = u.config.x * 5.0; // Fast motion upgrade
+    let previousTelemetry = textureLoad(dataTextureC, coord, 0);
 
     // Audio
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let audioBands = plasmaBuffer[0].xyz;
+    let bass = audioBands.x;
+    let mids = audioBands.y;
+    let treble = audioBands.z;
 
     // Domain-specific params
     let cellDensityP = u.zoom_params.x;   // Cell Density (bass-pulse)
@@ -168,12 +173,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let density = mix(3.0, 12.0, cellDensityP) * (1.0 + bass * 0.35);
     let edges = mix(0.3, 1.5, edgeGlowP) * (1.0 + mids * 0.6);
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let pointer = u.zoom_config.yz;
+    let held = step(0.5, u.zoom_config.w);
+    let pointerParallax = (pointer - 0.5) * vec2<f32>(aspect, 1.0) * parallax * (0.045 + held * 0.085);
 
-    let uv1 = uv + vec2<f32>(sin(time * 0.05), cos(time * 0.03)) * parallax * 0.02;
+    let uv1 = uv + vec2<f32>(sin(time * 0.05), cos(time * 0.03)) * parallax * 0.02 + pointerParallax;
     let worley1 = fbm_worley(uv1, time * 0.1, density, 3);
-    let uv2 = uv - vec2<f32>(sin(time * 0.07), cos(time * 0.05)) * parallax * 0.03;
+    let uv2 = uv - vec2<f32>(sin(time * 0.07), cos(time * 0.05)) * parallax * 0.03 - pointerParallax * 0.65;
     let worley2 = fbm_worley(uv2, time * 0.15 + 100.0, density * 1.5, 2);
-    let uv3 = uv + vec2<f32>(cos(time * 0.1), sin(time * 0.08)) * parallax * 0.01;
+    let uv3 = uv + vec2<f32>(cos(time * 0.1), sin(time * 0.08)) * parallax * 0.01 + pointerParallax * 1.35;
     let worley3 = fbm_worley(uv3, time * 0.2 + 200.0, density * 3.0, 2);
 
     let combined_f1 = worley1.x * 0.5 + worley2.x * 0.3 + worley3.x * 0.2;
@@ -191,8 +200,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth_shading = 1.0 - combined_f1 * 0.5;
 
     let edge_mask = smoothstep(0.0, 0.15, edge_value);
-    var final_color = mix(inner_color * depth_shading, edge_color, edge_mask);
-    let glow = pow(edge_value, 2.0) * edgeGlowP * 0.5;
+    let edgeAfterglow = max(edge_mask, clamp(previousTelemetry.b, 0.0, 1.0) * 0.91);
+
+    // Clicks launch finite edge rings that illuminate cell boundaries.
+    let rippleCount = min(u32(u.config.y), 50u);
+    var clickEdgeRing = 0.0;
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age < 0.0 || age > 2.2) { continue; }
+        let dist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+        let strength = clamp(ripple.w, 0.0, 1.0) * exp(-age * 1.4);
+        clickEdgeRing += exp(-abs(dist - age * 0.32) * 75.0) * strength;
+    }
+
+    var final_color = mix(inner_color * depth_shading, edge_color, edgeAfterglow);
+    let glow = pow(edge_value, 2.0) * edgeGlowP * 0.5 + clickEdgeRing * edgeAfterglow;
     final_color = final_color + edge_color * glow;
 
     // ─── Creative: micro-cosmic starfield inside each cell ───
@@ -225,7 +248,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let opacity = 0.9;
     let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
-    let edgeAlpha = mix(0.6, 1.0, edge_mask);
+    let edgeAlpha = mix(0.35, 1.0, clamp(edgeAfterglow + clickEdgeRing * 0.4, 0.0, 1.0));
     let generatedAlpha = max(edgeAlpha, smoothstep(0.05, 0.5, luma));
 
     let finalColor = mix(inputColor.rgb, final_color, generatedAlpha * opacity);

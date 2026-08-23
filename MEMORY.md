@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Holographic / Hyper generative cohort complete)
+**Last updated:** 2026-08-23 (Holographic / Hyper + Optical / Glass / Iridescence cohorts synced)
 
 ## 2026-08-23 — Holographic / Hyper generative cohort
 
@@ -16,6 +16,24 @@
 - Forty named controls are live. Focused Naga/contract audits, catalog/uniform/
   TypeScript checks, Jest 84/84, and the production build pass. Real-GPU
   interaction, composition, stability, and performance QA remains external.
+
+## 2026-08-23 — Optical / Glass / Holographic / Iridescence Upgrade Batch (10 shaders)
+
+- Upgraded 10 optical / glass / holographic / iridescence shaders:
+  1. `spec-iridescence-engine` (advanced-hybrid): Thin-film interference & spectral optics with per-wavelength FFT audio, resolved mask write (now stores display RGBA to dataTextureA), ACES tonemap, exact C loads, and spring cursor in `extraBuffer[133..138]`.
+  2. `spec-prismatic-dispersion` (advanced-hybrid): 4-band spectral Cauchy dispersion with CIE color matching, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  3. `frost-reveal-crystal` (advanced-hybrid): Anisotropic dendritic frost & crystal growth phase field with exact 4-neighborhood C loads, ACES tonemap, and spring cursor. Added aligned updatedParams.
+  4. `fractal-glass-distort-bilateral` (advanced-hybrid): Recursive fractal glass rotation with bilateral edge-preserving filter, added writeback to dataTextureA, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  5. `bubble-lens-coupled` (advanced-hybrid): Fluid-coupled magnifying bubble lens with semi-Lagrangian advection, exact C loads, ACES tonemap, and spring cursor. Added aligned updatedParams.
+  6. `chroma-depth-tunnel-prismatic` (advanced-hybrid): Deep prismatic chromatic tunnel with held pointer pull, axial packets, ACES tonemap, exact C loads, and spring cursor.
+  7. `chromatic-focus-coupled` (advanced-hybrid): Fluid-coupled chromatic DOF with semi-Lagrangian advection, exact C loads, ACES tonemap, and spring cursor. Added aligned updatedParams.
+  8. `chromatic-focus-guided` (advanced-hybrid): Depth-guided 7-band chromatic dispersion preventing edge bleeding, added writeback to dataTextureA, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  9. `distortion-gravitational-prismatic` (advanced-hybrid): Einstein-ring gravitational lensing with 4-band Cauchy dispersion, accretion disk, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  10. `multi-fractal-compositor-lens` (advanced-hybrid): Multi-layer fractal compositor with gravitational lensing, clean rewrite from mangled source, added writeback to dataTextureA, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+- Agent contract applied 10/10: Full 13-binding layout, ACES tonemapping, semantic alpha, writeback only to dataTextureA (and writeTexture/writeDepthTexture), exact textureLoad from dataTextureC, plasmaBuffer three-band audio reactivity, bounded extraBuffer[133..138] state only (single-writer), preserved mouse / held / click-ripple interactivity, and naga-clean WGSL.
+- Preserved saved parameter contracts byte-for-byte in JSONs with aligned updatedParams.
+- Proof: Naga 10/10, wgsl_precommit_gate 10/10, extraBuffer audit PASS, dead-sliders audit PASS (all 4 sliders live across all 10), URL policy PASS, Jest 84/84 suites (559 pass, 1 skip), and SKIP_WASM_BUILD=1 production build PASS. Real-GPU visual QA remains external handoff.
+
 
 ## 2026-08-23 — Optical / Prism / Crystal / Lens / Caustic Upgrade Batch (10 shaders)
 
@@ -1251,3 +1269,17 @@
   bounded `[133..138]` state, and four live named JSON params.
 - Focused shader/state/slider gates pass 10/10; catalogs, TypeScript, Jest, and
   production build pass. Real-GPU visual and performance QA remains external.
+
+## Generative Grid / Grok / Holographic cohort (2026-08-23)
+
+- The ten Lotus/Grid/Grok/Bismuth/Data Core shaders preserve catalog IDs, seven
+  underscore-backed filename aliases, bindings 0–12, 16x16 workgroups, saved
+  defaults, interaction contracts, and A-only ownership.
+- Lotus, Grid, Mandelbrot, Bismuth, and Data Core own display history. Life,
+  Perlin, Plasma, Interference, and Voronoi retain raw A simulation/telemetry.
+  Only Lotus `[133..138]`, Grid/Mandelbrot `[133..136]`, and Life `[133..134]`
+  may persist scalar state.
+- Four aligned named controls were added only to Lotus, Bismuth, and Data Core;
+  all existing params and updatedParams are preserved. Structural, catalog,
+  Jest, typecheck, and production-build gates pass; real-GPU QA remains.
+

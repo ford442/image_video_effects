@@ -10,6 +10,16 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
+- **Optical / Glass / Holographic / Iridescence Batch (2026-08-23):** Upgraded
+  spec-iridescence-engine, spec-prismatic-dispersion, frost-reveal-crystal,
+  fractal-glass-distort-bilateral, bubble-lens-coupled,
+  chroma-depth-tunnel-prismatic, chromatic-focus-coupled,
+  chromatic-focus-guided, distortion-gravitational-prismatic, and
+  multi-fractal-compositor-lens under the full 13-binding / ACES /
+  semantic alpha / A-authoritative / exact C loads / three-band plasmaBuffer /
+  guarded extraBuffer[133..138] contract with byte-exact saved params.
+  Naga 10/10, workgroups 16x16, all 4 sliders live, Jest 84/84 (559 pass),
+  and production build green; real-GPU visual QA remains external.
 - **Optical / Prism / Crystal / Lens / Caustic Batch (2026-08-23):** Upgraded
   prism-displacement, prismatic-mosaic, refraction-tunnel, spec-bicubic-crystal,
   spiral-lens, voronoi-faceted-glass, gravitational-lensing,
@@ -250,4 +260,8 @@ Format specification:
 - When a supplied shader list is discovered to contain invented IDs, stop and
   verify against the live catalog; the user will provide real IDs rather than
   authorizing substitutions or accidental net-new catalog entries.
+- Preserve the completed Generative Grid / Grok / Holographic cohort's literal
+  ten-ID scope and its seven underscore-backed filename aliases. Its state split
+  is deliberate: five display-history A effects and five raw simulation or
+  telemetry A effects, with extraBuffer confined to the four documented owners.
 </IMPORTANT_REMINDER>

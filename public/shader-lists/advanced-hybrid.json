@@ -1595,7 +1595,10 @@
       "mouse-driven",
       "fluid-simulation",
       "lens-distortion",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1633,6 +1636,41 @@
       "lens",
       "distortion",
       "interactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bubble Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Magnification",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Film Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2332,7 +2370,10 @@
       "mouse-driven",
       "fluid-simulation",
       "chromatic",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2370,22 +2411,64 @@
       "chromatic",
       "depth-of-field",
       "interactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Blur",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Focus Radius",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.8,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "chromatic-focus-guided",
     "name": "Chromatic Focus Guided",
     "url": "shaders/chromatic-focus-guided.wgsl",
-    "description": "Chromatic Focus Guided",
+    "description": "Seven-band Cauchy chromatic dispersion with depth-guided filtering to eliminate cross-boundary edge bleeding.",
     "tags": [
       "chromatic-focus",
       "guided-filter-depth",
-      "depth-aware"
+      "depth-aware",
+      "spectral",
+      "aberration",
+      "focus"
     ],
     "features": [
       "chromatic-focus",
       "guided-filter-depth",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -2423,6 +2506,41 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Aberration Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Focus Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spectral Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Animation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -4421,16 +4539,24 @@
     "id": "distortion-gravitational-prismatic",
     "name": "Distortion Gravitational Prismatic",
     "url": "shaders/distortion-gravitational-prismatic.wgsl",
-    "description": "Distortion Gravitational Prismatic",
+    "description": "Einstein-ring gravitational lensing combined with 4-band Cauchy spectral dispersion, accretion disk, and gravitational redshift.",
     "tags": [
       "gravitational-lensing",
       "spectral-dispersion",
-      "physical-refraction"
+      "physical-refraction",
+      "space",
+      "black-hole",
+      "accretion-disk"
     ],
     "features": [
       "gravitational-lensing",
       "spectral-dispersion",
-      "physical-refraction"
+      "physical-refraction",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -4468,6 +4594,41 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Lens Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mass Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Disk Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Cauchy Dispersion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -5491,16 +5652,23 @@
     "id": "fractal-glass-distort-bilateral",
     "name": "Fractal Glass Distort Bilateral",
     "url": "shaders/fractal-glass-distort-bilateral.wgsl",
-    "description": "Fractal Glass Distort Bilateral",
+    "description": "Recursive fractal glass rotation layered with an adaptive bilateral edge-preserving dream filter and chromatic dispersion.",
     "tags": [
       "fractal-glass-distortion",
       "bilateral-filter",
-      "mouse-driven"
+      "mouse-driven",
+      "glass",
+      "refraction",
+      "fractal"
     ],
     "features": [
       "fractal-glass-distortion",
       "bilateral-filter",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -5538,6 +5706,41 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Refract Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bilateral Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -5601,18 +5804,23 @@
     "id": "frost-reveal-crystal",
     "name": "Frost Reveal Crystal",
     "url": "shaders/frost-reveal-crystal.wgsl",
-    "description": "Catalog entry for Frost Reveal Crystal.",
+    "description": "A frost layer that melts under mouse interaction to reveal anisotropic crystal dendrites growing beneath.",
     "tags": [
       "frost-reveal",
       "crystal-growth",
       "temporal",
-      "mouse-driven"
+      "mouse-driven",
+      "dendrite",
+      "ice"
     ],
     "features": [
       "frost-reveal",
       "crystal-growth",
       "temporal",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5650,6 +5858,41 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Growth Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Melt Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Max Opacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Anisotropy",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -9335,7 +9578,10 @@
       "interactive",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -9389,6 +9635,41 @@
       "audio",
       "music",
       "reactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Lens Mass",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ring Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ripple Mass",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chroma Boost",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "chunks_used": [
       "hash12 (gen_grid.wgsl)",
@@ -10797,7 +11078,10 @@
       "spectral-rendering",
       "mouse-driven",
       "physical-dispersion",
-      "HDR"
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -10826,6 +11110,41 @@
       },
       {
         "id": "spectral_saturation",
+        "name": "Spectral Saturation",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Glass Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Cauchy B (Dispersion)",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glass Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Spectral Saturation",
         "default": 0.7,
         "min": 0,

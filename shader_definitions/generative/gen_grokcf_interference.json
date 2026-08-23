@@ -101,5 +101,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = membrane displacement, radius, normalized azimuth, semantic coverage; exact damped state load"
 }

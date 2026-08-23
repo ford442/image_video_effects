@@ -95,5 +95,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = harmonic pattern, storm mask, limb factor, validity; exact telemetry stabilization load"
 }

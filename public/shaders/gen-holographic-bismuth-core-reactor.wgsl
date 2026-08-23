@@ -23,7 +23,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount/FrameCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=CoreSize, y=IridescenceShift, z=PulseIntensity, w=PlasmaDensity
+  zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=MouseInfluence
   ripples: array<vec4<f32>, 50>,
 };
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
@@ -34,6 +34,15 @@ fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
   let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
   return vec4<f32>(controlled, color.a);
+}
+
+fn acesToneMap(color: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 
@@ -66,15 +75,19 @@ fn map(p_in: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
 
     // Mouse warp — standard layout: zoom_config.yz = MouseX, MouseY
     let mouse = u.zoom_config.yz;
-    p = rot3D(vec3<f32>(1.0, 0.0, 0.0), mouse.y * 3.14) * p;
-    p = rot3D(vec3<f32>(0.0, 1.0, 0.0), mouse.x * 3.14) * p;
+    let held = step(0.5, u.zoom_config.w);
+    let mouseGain = u.zoom_params.w * (1.0 + held * 0.65);
+    p = rot3D(vec3<f32>(1.0, 0.0, 0.0), (mouse.y - 0.5) * 3.14 * mouseGain) * p;
+    p = rot3D(vec3<f32>(0.0, 1.0, 0.0), (mouse.x - 0.5) * 3.14 * mouseGain) * p;
 
     var s: f32 = 1.0;
 
     // Audio-reactive pulse: bass modulates the pulse amplitude
-    let pulse      = sin(time * 2.0) * 0.5 + 0.5;
+    let speed = mix(0.2, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
+    let pulse      = sin(time * speed * 2.0) * 0.5 + 0.5;
     let bass_boost = 1.0 + bass * 0.5;
-    let core_scale = u.zoom_params.x * (1.0 + pulse * bass_boost * u.zoom_params.z);
+    let core_scale = mix(0.28, 1.05, clamp(u.zoom_params.z, 0.0, 1.0)) *
+                     (1.0 + pulse * bass_boost * (0.08 + u.zoom_params.x * 0.32));
 
     // KIFS Bismuth fractals
     for (var i = 0; i < 4; i++) {
@@ -89,7 +102,7 @@ fn map(p_in: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
 
     // Orbiting micro-crystals
     var p2 = p_in;
-    p2 = rot3D(vec3<f32>(0.0, 1.0, 0.0), time) * p2;
+    p2 = rot3D(vec3<f32>(0.0, 1.0, 0.0), time * speed) * p2;
     p2 = p2 - round(p2 / 2.0) * 2.0; // Domain repetition
     let d2 = sdBox(p2, vec3<f32>(0.05, 0.05, 0.05));
 
@@ -113,7 +126,8 @@ fn getNormal(p: vec3<f32>, time: f32, bass: f32) -> vec3<f32> {
 
 // Iridescence based on thin-film interference — mids drive shift
 fn iridescence(dot_vn: f32, time: f32, bass: f32, mids: f32) -> vec3<f32> {
-    let t = dot_vn * 2.0 + u.zoom_params.y + time * 0.5 + bass * u.zoom_params.z + mids * 0.3;
+    let speed = mix(0.2, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
+    let t = dot_vn * 2.0 + time * speed * 0.5 + bass * u.zoom_params.x + mids * 0.3;
     let r = sin(t * 3.14) * 0.5 + 0.5;
     let g = sin(t * 3.14 + 2.09) * 0.5 + 0.5;
     let b = sin(t * 3.14 + 4.18) * 0.5 + 0.5;
@@ -136,9 +150,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let time = u.config.x;
 
     // Audio reactivity
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let audioBands = plasmaBuffer[0].xyz;
+    let bass   = audioBands.x;
+    let mids   = audioBands.y;
+    let treble = audioBands.z;
+    let held = step(0.5, u.zoom_config.w);
+    let heldPlasma = 1.0 + held * u.zoom_params.w * (0.7 + bass * 0.8);
 
     // Raymarching setup
     let ro = vec3<f32>(0.0, 0.0, -5.0);
@@ -156,7 +173,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         dO += dS;
 
         // Volumetric plasma accumulation — treble adds sparkle
-        accum += (u.zoom_params.w + treble * 0.1) * 0.05 / max(1.0 + abs(dS) * 50.0, 0.001);
+        accum += (0.12 + u.zoom_params.x * 0.65 + treble * 0.1) * heldPlasma * 0.05 / max(1.0 + abs(dS) * 50.0, 0.001);
 
         if (dS < SURF_DIST || dO > MAX_DIST) { break; }
     }
@@ -174,15 +191,35 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var col = surface_col * hit;
 
     // Add plasma bloom (always)
-    col = col + vec3<f32>(0.2, 0.6, 1.0) * accum;
+    col = col + vec3<f32>(0.2, 0.6, 1.0) * accum * heldPlasma;
+
+    // Bounded click rings excite the reactor shell without adding persistent state.
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    var clickRings = 0.0;
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 2.0) { continue; }
+        let dist = length((uv_px - ripple.xy) * vec2<f32>(aspect, 1.0));
+        let strength = clamp(ripple.w, 0.0, 1.0) * exp(-age * 1.5);
+        clickRings += exp(-abs(dist - age * 0.36) * 80.0) * strength;
+    }
+    col += vec3<f32>(1.0, 0.28, 1.25) * clickRings * (0.45 + mids + treble * 0.6);
 
     // Meaningful alpha: 1.0 on surface hit, fades to plasma bloom level for misses
-    let alpha = mix(clamp(accum * 3.0, 0.0, 1.0), 1.0, hit);
+    let alpha = clamp(mix(clamp(accum * 3.0 + clickRings * 0.3, 0.0, 1.0), 1.0, hit), 0.0, 1.0);
 
-    let out_col = vec4<f32>(col, alpha);
+    // Exact-load temporal HDR display history. A remains semantic RGBA rather
+    // than auxiliary masks, while ACES is applied only to the visible output.
+    let previous = textureLoad(dataTextureC, coord, 0);
+    let historyWeight = clamp(0.90 - u.zoom_params.y * 0.25 - held * 0.08, 0.48, 0.90);
+    let historyColor = clamp(max(col, previous.rgb * historyWeight), vec3<f32>(0.0), vec3<f32>(8.0));
+    let historyAlpha = max(alpha, previous.a * historyWeight);
+    let controlled = applyGenerativePrimaryControls(vec4<f32>(historyColor, historyAlpha));
 
-    textureStore(writeTexture, coord, applyGenerativePrimaryControls(out_col));
-    textureStore(dataTextureA, coord, out_col);
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(controlled.rgb), controlled.a));
+    textureStore(dataTextureA, coord, controlled);
 
     // Depth: normalized ray distance (0=near, 1=far/miss)
     let depth_val = clamp(dO / MAX_DIST, 0.0, 1.0);

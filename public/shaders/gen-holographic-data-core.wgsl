@@ -127,6 +127,15 @@ fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
     return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
 }
 
+fn acesToneMap(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Map Function
 // ═══════════════════════════════════════════════════════════════
@@ -216,14 +225,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let travel_speed = u.zoom_params.y;
 
     // Audio reactivity — bass swells node glow, treble drives projection flicker
-    let bass = plasmaBuffer[0].x;
-    let treble = plasmaBuffer[0].z;
+    let audioBands = plasmaBuffer[0].xyz;
+    let bass = audioBands.x;
+    let mids = audioBands.y;
+    let treble = audioBands.z;
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Smooth scan packets replace frame-hash jumps with continuous motion.
     let glitchBand = pow(0.5 + 0.5 * sin(uv.y * 110.0 - time * (7.0 + travel_speed * 3.0)), 18.0);
     uv.x += sin(uv.y * 37.0 + time * 3.0) * 0.055 * glitch_intensity * glitchBand;
+
+    // Mid-band packet motion: smooth diagonal data bursts steer the camera
+    // ray and later illuminate the lattice, with no frame-hash jumps.
+    let packetPhase = fract(uv.y * (4.0 + u.zoom_params.x * 2.0) - time * (0.35 + travel_speed * 0.08));
+    let midPacket = pow(1.0 - abs(packetPhase * 2.0 - 1.0), 10.0) * mids;
+    uv += vec2<f32>(sin(time * 2.2 + uv.y * 19.0), cos(time * 1.7 + uv.x * 13.0)) * midPacket * 0.025;
 
     // Camera setup
     let cam_z = time * travel_speed * 2.0;
@@ -316,6 +333,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Add glow with interference
     col += glow * 0.15;
+    col += vec3<f32>(0.12, 0.72, 1.15) * midPacket * (0.3 + u.zoom_params.z * 0.35);
 
     // Depth fade (fog)
     let fog = 1.0 - exp(-t * t * 0.002);
@@ -399,10 +417,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Cap alpha
     alpha = min(alpha, 0.5);
 
-    let previous = historyLoadUV(uv01).rgb;
-    let display = mix(previous * 0.93, col, 0.32 + mouseDown * 0.12);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, 1.0));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(display, clamp(alpha, 0.0, 0.5)));
+    let previous = historyLoadUV(uv01);
+    let display = clamp(mix(previous.rgb * 0.93, col, 0.32 + mouseDown * 0.12), vec3<f32>(0.0), vec3<f32>(8.0));
+    let semanticAlpha = clamp(max(alpha, previous.a * 0.9), 0.0, 0.65);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, semanticAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(display), semanticAlpha));
 
     // Ray distance is generated scene depth, not source-depth passthrough.
     let depth = clamp(t / max_dist, 0.0, 1.0);

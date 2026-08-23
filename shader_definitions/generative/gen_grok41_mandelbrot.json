@@ -94,5 +94,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = linear Buddhabrot RGB accumulation and semantic presence alpha; exact same-pixel load"
 }
