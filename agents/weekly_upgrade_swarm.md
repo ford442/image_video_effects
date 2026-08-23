@@ -5,9 +5,55 @@
 
 ---
 
-## Recently Completed (474 tracker entries)
+## Recently Completed (480 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 56 (6 shaders) — 2026-08-23 — EFFECT SHADER COMPLEXITY
+
+Six image/video effect shaders across distortion, image, visual-effects and
+retro-glitch. Each keeps its core algorithm, its `params` contract and the
+canonical 13-binding / 16x16x1 layout, and each gains two shader-specific
+structures plus the interaction and colour standard the pool now expects:
+`plasmaBuffer[0].xyz` audio with per-band `plasmaBuffer[1..8]` bins, held-pointer
+response via `zoom_config.w`, bounded click fronts guarded by
+`min(u32(u.config.y), 50u)`, exact `textureLoad(dataTextureC, …)` read-back,
+chromatic dispersion, ACES tone mapping, semantic alpha and honest depth writes.
+Display RGBA goes to A throughout; B is written only by oil-slick (per-channel
+interference + thickness), and no `extraBuffer` access was added.
+
+Three latent bugs were fixed along the way:
+
+- `oil-slick-iridescence` computed thin-film phase from a path difference in
+  arbitrary units divided by a wavelength in nanometres, so every phase was ≈0
+  and all three channels returned ≈1.0 — a constant white wash no slider could
+  shift. Thickness is now in real nanometres (120–900 nm), with the incidence
+  angle taken from the height field's gradient, Snell refraction inside the film
+  and Fresnel-weighted beam combination including the π interface phase step.
+- `voronoi-chaos` recomputed the closest cell's centre **without** the pointer
+  repulsion term, so cells near the cursor sampled the wrong part of the image.
+  The agitated centre is now carried out of the search loop. It was also missing
+  its bounds guard entirely.
+- `vortex-warp` declared a `turbulence` slider (`zoom_params.w`) in its JSON that
+  the WGSL never read — a dead slider. It is now the gain on the FFT-banded
+  azimuthal turbulence.
+
+`neon-pulse-stream` and `ascii-shockwave` carried mislabelled sliders (JSON names
+described behaviour the WGSL did not implement); source `params` are untouched
+for preset compatibility and honest labels land in additive `updatedParams`.
+
+Gate, dead-slider audit, extraBuffer audit and audio-mapping audit pass 6/6;
+shader-list URL and uniform-layout checks pass; `generate_shader_lists.js` is
+clean. Real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 475 | `vortex-warp` | 56 | 141→217 (+76) | FFT-banded azimuthal turbulence lobes, angular (flow-aligned) chromatic dispersion, tangential temporal smear, held-tighten core, capped counter-rotating shock rings; dead `turbulence` slider wired. |
+| 476 | `voronoi-chaos` | 56 | 140→228 (+88) | F1/F2 seam field with bevelled facets and seam-normal refraction, per-cell FFT bins driving jitter/glow/seam width, capped shatter fronts, seam persistence; agitated-centre sampling bug and missing bounds guard fixed. |
+| 477 | `oil-slick-iridescence` | 56 | 131→241 (+110) | Nanometre film with Snell + Fresnel two-beam interference (π step), gradient-derived incidence, curl-advected FFT-banded flow, pointer capillary wave, capped ring waves; degenerate-phase bug fixed. |
+| 478 | `ascii-shockwave` | 56 | 128→200 (+72) | Packed 4x6 glyph ROM (8-step ramp) with box-averaged cell luminance and soft dot footprints, dispersive multi-front wave field with wakes, FFT-banded ring spacing, phosphor persistence. |
+| 479 | `cyber-rain-interactive` | 56 | 133→248 (+115) | Three depth-parallax rain sheets with two drops per column, dot-matrix glyph ROM, per-column FFT bins, wetness from plate luminance, pointer deflection, capped EMP rings; hardcoded alpha replaced. |
+| 480 | `neon-pulse-stream` | 56 | 144→261 (+117) | Five-tube bundle (gaussian core + Fresnel rim + bloom) with curl-perturbed centrelines, per-tube FFT bins, gaussian travelling packets, magnetic pointer attractor, capped pulse fronts, exact-load afterglow. |
 
 ### Batch 55 (4 shaders) — 2026-08-21 — GEOMETRY, FAST MOTION, PSYCHEDELIC COLOR
 
