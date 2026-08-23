@@ -73,5 +73,43 @@
   "updated": true,
   "id": "gen-chronos-labyrinth",
   "url": "shaders/gen-chronos-labyrinth.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "labyrinth_complexity",
+      "name": "Labyrinth Complexity",
+      "default": 1,
+      "min": 0.5,
+      "max": 3,
+      "step": 0.05,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "shift_speed",
+      "name": "Shift Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "temporal_rifts",
+      "name": "Temporal Rifts",
+      "default": 0.8,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "atmospheric_perspective",
+      "name": "Atmospheric Perspective",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }
