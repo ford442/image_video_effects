@@ -21,6 +21,12 @@ _Learn about the person you're helping. Update this as you go._
   shaders own HDR display history; Liquid Metal owns raw
   height/velocity/foam/wetness A state. Saved params are exact, structural,
   Jest, catalog, and build gates are green; real-GPU visual QA is external.
+- **Batch 71 generative-only:** Cybernetic Mycelium, Cyclic Automaton, Cycloid
+  Bloom, Plasma Mandalas, Quantum Silk Loom, De Jong, Stained Glass, DLA Copper,
+  DMT Zoom, and Dragon Curve now satisfy the canonical shader contract. DLA
+  intentionally moved to documented raw persistent state; nine missing JSONs
+  gained four named params. Structural/Jest/build gates are green; real-GPU QA
+  remains external.
 - **Codex (b) liquid batch (2026-08-23):** Upgraded liquid-jelly,
   liquid-oil, liquid-displacement, liquid-fast, liquid-glitch, liquid-mirror,
   ink-marbling, glass-wipes, kimi_liquid_glass, and liquid-metal under the
@@ -70,6 +76,12 @@ _Learn about the person you're helping. Update this as you go._
   A-only graphs; saved params are exact; Naga 17/17, focused contracts, graph
   tests, 84-suite Jest, and the WASM-skipped production build are green.
   Real-GPU visual and long-running simulation QA remains external.
+- **Current generative batch (2026-08-23):** Upgrade ten named generative
+  effects from Cybernetic Mycelium through Dragon Curve under the canonical
+  exact-C, A-only, ACES, semantic-alpha, three-band-audio, bounded-state,
+  interaction, and Naga contract. Every definition must expose four named
+  `params`; nine currently have only `updatedParams`, while Cyclic Automaton
+  already has both.
 ## Context
 
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.

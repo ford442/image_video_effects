@@ -2,7 +2,7 @@
 //  Cymatic Quantum-Silk Loom
 //  Category: generative
 //  Features: raymarched, cymatic, silk-ribbons, iridescent,
-//            audio-reactive, mouse-driven, upgraded-rgba,
+//            audio-reactive, mouse-driven, click-reactive, upgraded-rgba,
 //            depth-aware, flowing, neon-spectrum
 //  Complexity: Very High
 //  Created: 2026-06-28
@@ -289,25 +289,39 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Parameters from zoom_params (clamp to normalized range)
-  let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-  let silkDensity = mix(0.1, 1.0, zparams.x);
-  let cymFreq = mix(0.1, 5.0, zparams.y);
-  let luminescence = mix(0.0, 2.0, zparams.z);
-  let weaveSpeed = mix(0.1, 3.0, zparams.w);
+  let silkDensity = mix(0.1, 1.0, clamp(u.zoom_params.x, 0.0, 1.0));
+  let cymFreq = mix(0.1, 5.0, clamp(u.zoom_params.y, 0.0, 1.0));
+  let luminescence = mix(0.0, 2.0, clamp(u.zoom_params.z, 0.0, 1.0));
+  let weaveSpeed = mix(0.1, 3.0, clamp(u.zoom_params.w, 0.0, 1.0));
+  let sceneTime = time * weaveSpeed;
 
   // Mouse handling: screen top = UP in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
-  let mouseUV = u.zoom_config.yz;
-  let mouseY = mouseUV.y; // Flip Y
+  let mouseUV = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let mouseY = mouseUV.y;
+  let heldGain = select(1.0, 1.8, u.zoom_config.w > 0.5);
   let mousePos = vec3<f32>(
-    (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect,
-    (mouseUV.y * 2.0 - 1.0) * 3.0,
+    (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect / heldGain,
+    (mouseUV.y * 2.0 - 1.0) * 3.0 / heldGain,
     0.0
   );
 
+  // Clicks pluck the loom: finite radial fronts raise cymatic frequency and
+  // luminescence without leaving stale ripple entries active indefinitely.
+  var clickEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 2.4) { continue; }
+    let rippleDistance = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+    clickEnergy += exp(-abs(rippleDistance - age * 0.24) * 72.0) * exp(-age * 1.2);
+  }
+  clickEnergy = clamp(clickEnergy, 0.0, 1.0);
+
   // Camera (looking at the loom)
-  let camDist = 4.0 + sin(time * 0.1) * 0.3;
-  let camAng = time * 0.15 + mouseUV.x * 0.4;
+  let camDist = 4.0 + sin(sceneTime * 0.1) * 0.3;
+  let camAng = sceneTime * 0.15 + mouseUV.x * 0.4;
   let camHeight = mouseY * 0.5;
   let ro = vec3<f32>(cos(camAng) * camDist, camHeight, sin(camAng) * camDist);
   let ta = vec3<f32>(0.0, 0.0, 0.0);
@@ -321,7 +335,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
 
   // Raymarch
-  let result = raymarch(ro, rd, time, audio, bass, mids, treble, silkDensity, cymFreq, luminescence, mousePos);
+  let activeCymFreq = cymFreq * (1.0 + clickEnergy * 0.28 + mids * 0.08);
+  let activeLuminescence = luminescence * heldGain + clickEnergy * 0.7;
+  let result = raymarch(ro, rd, sceneTime, audio, bass, mids, treble, silkDensity, activeCymFreq, activeLuminescence, mousePos);
   var col = result.rgb;
   var alpha = result.a;
 
@@ -331,15 +347,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = col + vec3<f32>(0.2, 0.15, 0.0) * treble * 0.1;
 
   // Temporal persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   col = mix(col, prev.rgb * 0.94, 0.03);
+  col += vec3<f32>(0.55, 0.25, 0.9) * clickEnergy * (0.18 + treble * 0.22);
 
   // Tone map
   col = acesToneMap(col * 1.4);
 
-  let finalDepth = sat(0.95 - alpha * 0.3);
+  let inputDepth = textureLoad(readDepthTexture, coord, 0).r;
+  alpha = clamp(max(alpha, clickEnergy * 0.24 + length(col) * 0.16), 0.0, 1.0);
+  let finalDepth = mix(inputDepth, sat(0.95 - alpha * 0.3), alpha);
+  let finalColor = vec4<f32>(col, alpha);
 
-  textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+  textureStore(writeTexture, coord, finalColor);
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, 1.0));
+  textureStore(dataTextureA, coord, finalColor);
 }

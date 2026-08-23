@@ -229,16 +229,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depthSample = textureLoad(readDepthTexture, coord, 0).r;
 
   // ── temporal feedback — exact load, no filtering ────────────────────
+  // A four-neighbor ridge measure reinforces connected hyphae while keeping
+  // the history payload display-safe RGBA.
   let prevData = textureLoad(dataTextureC, coord, 0);
+  let historyMax = vec2<i32>(i32(u.config.z) - 1, i32(u.config.w) - 1);
+  let prevN = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), historyMax), 0).rgb;
+  let prevS = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), historyMax), 0).rgb;
+  let prevE = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), historyMax), 0).rgb;
+  let prevW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), historyMax), 0).rgb;
+  let neighborHistory = (prevN + prevS + prevE + prevW) * 0.25;
+  let connectivity = clamp(length(prevData.rgb - neighborHistory) * 1.8, 0.0, 1.0);
   let feedbackMix = 0.3 + bass * 0.15;
   col = mix(prevData.rgb * 0.95, col, feedbackMix);
+  col += mycoPalette(baseHue + 0.18, mid) * connectivity * (0.08 + treble * 0.12);
 
   col = acesToneMap(col * (1.05 + mid * 0.25));
 
   // Semantic alpha: mycelial density + firing energy
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(
-    clamp(totalDensity * 0.3, 0.0, 0.7) + luma * 0.45 + pulse * 0.2 + burst * 0.25 + depthSample * 0.1,
+    clamp(totalDensity * 0.3, 0.0, 0.7) + luma * 0.45 + pulse * 0.2
+      + burst * 0.25 + connectivity * 0.12 + depthSample * 0.1,
     0.0, 1.0);
 
   let outColor = vec4<f32>(col, alpha);

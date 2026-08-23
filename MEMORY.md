@@ -15,6 +15,23 @@
   no longer corrupts pixel `(0,0)` with pointer state; Cyber's abstract-literal
   Naga failure is repaired. Real-GPU stability/visual QA remains external.
 
+## 2026-08-23 — Codex generative-only ten requested
+
+- Upgrade Cybernetic Mycelium, Cyclic Automaton, Cycloid Bloom, Cymatic Plasma,
+  Quantum Silk Loom, De Jong Attractor, Depth-Refracted Stained Glass, DLA
+  Copper, DMT Fractal Zoom, and Dragon Curve with the usual exact-C/A-only/
+  ACES/semantic-alpha/three-band-audio/bounded-state/interaction/Naga contract.
+- Ensure four named `params` in every JSON. Nine targets currently expose only
+  `updatedParams`; Cyclic Automaton already has four `params` and uses the
+  historical underscore filenames `gen_cyclic_automaton.{json,wgsl}`.
+- Completed as Batch 71. All ten shaders pass Naga/bind-group validation and
+  scoped contract audits. DLA now owns raw persistent deposit/depletion/
+  oxidation/tip state; Silk Loom's weave-speed control is live; DMT mouse UV is
+  corrected; Plasma spring reads are bounds-safe. Nine definitions gained four
+  aligned named params and all ten document feedback packing. Jest 84/84,
+  TypeScript/uniforms/URLs, catalogs, manifest, and production build are green;
+  real-GPU visual and long-run simulation QA remains external.
+
 
 ## 2026-08-23 — Reconciled main: Batch 70 + #1167 + Batch 67 (#1170)
 
