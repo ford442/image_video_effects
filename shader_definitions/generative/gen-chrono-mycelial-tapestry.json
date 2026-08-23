@@ -57,5 +57,43 @@
   "updated": true,
   "id": "gen-chrono-mycelial-tapestry",
   "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "growth_rate",
+      "name": "Growth Rate",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "temporal_depth",
+      "name": "Temporal Depth",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "color_warmth",
+      "name": "Color Warmth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }
