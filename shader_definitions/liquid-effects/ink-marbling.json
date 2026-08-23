@@ -2,7 +2,7 @@
   "id": "ink-marbling",
   "name": "Ink Marbling",
   "url": "shaders/ink-marbling.wgsl",
-  "description": "Persistent pigment and thickness marbling with exact-load advection, plasma turbulence, sprung stirring, bounded click ink drops, ACES output, and source-depth pass-through.",
+  "description": "Persistent pigment and thickness marbling with exact-load advection and neighbor diffusion, three-band plasma turbulence, sprung held stirring, bounded click ink drops, ACES output, and semantic alpha.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -11,7 +11,8 @@
     "spring-interaction",
     "click-reactive",
     "aces-tone-map",
-    "semantic-alpha"
+    "semantic-alpha",
+    "exact-load-feedback"
   ],
   "tags": [
     "filter",

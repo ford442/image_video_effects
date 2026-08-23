@@ -65,6 +65,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let tintShift = u.zoom_params.w;
   let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
+  // A bounded critically damped pointer gives the gel an elastic recovery
+  // target. Only (0,0) advances state; every pixel consumes the prior frame.
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var sprungMouse = u.zoom_config.yz;
+  var springVelocity = vec2<f32>(0.0);
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    sprungMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    springVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  }
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    var springPos = sprungMouse;
+    var springVel = springVelocity;
+    let seeded = extraBuffer[138] > 0.5;
+    if (!seeded) { springPos = u.zoom_config.yz; springVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.05), seeded);
+    springVel += ((u.zoom_config.yz - springPos) * (95.0 + elasticity * 4.0) - springVel * (18.0 + damping * 2.0)) * dt;
+    springPos += springVel * dt;
+    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time; extraBuffer[138] = 1.0;
+  }
+
   let centerDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let foreground = 1.0 - smoothstep(0.72, 0.98, centerDepth);
 
@@ -81,7 +103,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var edgeEnergy = 0.0;
 
   // Interactive pointer drag / spring mass tether
-  let mousePos = u.zoom_config.yz;
+  let mousePos = sprungMouse;
   let isMouseDown = u.zoom_config.w;
   let mouseDelta = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let mouseDist = max(length(mouseDelta), 0.001);
@@ -118,8 +140,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let histCoord = clamp(vec2<i32>(floor((uv + displacement * 0.25) * resolution)), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
   let history = textureLoad(dataTextureC, histCoord, 0);
 
+  // The previous semantic alpha behaves as a coarse gel thickness field. Exact
+  // neighboring C loads add persistent height slope to the analytic wobble.
+  let histDims = vec2<i32>(resolution);
+  let histL = textureLoad(dataTextureC, clamp(histCoord + vec2<i32>(-1, 0), vec2<i32>(0), histDims - vec2<i32>(1)), 0).a;
+  let histR = textureLoad(dataTextureC, clamp(histCoord + vec2<i32>(1, 0), vec2<i32>(0), histDims - vec2<i32>(1)), 0).a;
+  let histD = textureLoad(dataTextureC, clamp(histCoord + vec2<i32>(0, -1), vec2<i32>(0), histDims - vec2<i32>(1)), 0).a;
+  let histU = textureLoad(dataTextureC, clamp(histCoord + vec2<i32>(0, 1), vec2<i32>(0), histDims - vec2<i32>(1)), 0).a;
+  let historySlope = vec2<f32>(histL - histR, histD - histU) * (2.0 + elasticity * 0.25);
   // 2.5D surface normal & Fresnel rim
-  let normal = normalize(vec3<f32>(-displacement.x * 28.0, -displacement.y * 28.0, 1.0));
+  let normal = normalize(vec3<f32>(-displacement * 28.0 + historySlope, 1.0));
   let fresnel = fresnelSchlick(max(normal.z, 0.0), 0.045);
 
   let thickness = clamp(0.12 + length(displacement) * 22.0 + wobbleEnergy * 0.12, 0.0, 1.8);

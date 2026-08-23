@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Liquid Metal — persistent mercury height/velocity simulation
+//  Liquid Metal — Rosensweig ferro-surface with anisotropic metal reflection
 //  Raw A ownership: R height, G vertical velocity, B foam, A wetness.
 //  C is the exact previous A copy; output is a projection of current state.
 // ═══════════════════════════════════════════════════════════════════
@@ -95,7 +95,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let stateRU = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(1, 1), dims), 0);
 
   let rest = restHeight(uv * vec2<f32>(4.2 * aspect, 4.2), time * (0.2 + flowSpeed * 0.8));
-  let equilibrium = 0.18 + rest * 0.16;
+  // A hexagonal Rosensweig mode approximates the fastest-growing ferrofluid
+  // surface instability. Bass lifts the field; mids precess the spike lattice.
+  let latticeP = (uv - 0.5) * aspectVec * (12.0 + flowSpeed * 7.0);
+  let latticeAngle = time * (0.012 + mids * 0.018);
+  let latticeRot = mat2x2<f32>(cos(latticeAngle), -sin(latticeAngle), sin(latticeAngle), cos(latticeAngle)) * latticeP;
+  let hexMode = (cos(latticeRot.x) + 2.0 * cos(latticeRot.x * 0.5) * cos(latticeRot.y * 0.8660254)) / 3.0;
+  let spikeMode = pow(clamp(hexMode * 0.5 + 0.5, 0.0, 1.0), 5.0);
+  let magneticDrive = (0.035 + reflectivity * 0.11) * (0.75 + bass * 0.45);
+  let equilibrium = 0.16 + rest * 0.12 + spikeMode * magneticDrive;
   let initialized = dot(abs(stateC), vec4<f32>(1.0)) > 0.000001;
   var height = select(equilibrium, max(stateC.r, 0.0), initialized);
   var velocity = select(0.0, clamp(stateC.g, -1.5, 1.5), initialized);
@@ -128,7 +136,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseDelta = (uv - u.zoom_config.yz) * aspectVec;
   let mouseRadius = length(mouseDelta);
   let heldPour = exp(-mouseRadius * mouseRadius * 95.0) * select(0.18, 1.0, u.zoom_config.w > 0.5);
-  acceleration += heldPour * (0.035 + flowSpeed * 0.07);
+  // The held cursor behaves like a local magnetic pole: a raised core and a
+  // shallow moat sharpen into a mobile ferrofluid spike.
+  let poleMoat = exp(-mouseRadius * mouseRadius * 95.0) - 0.42 * exp(-mouseRadius * mouseRadius * 24.0);
+  acceleration += heldPour * (0.025 + flowSpeed * 0.045) + poleMoat * select(0.015, 0.09, u.zoom_config.w > 0.5);
 
   var impulse = 0.0;
   var foamImpulse = 0.0;
@@ -174,13 +185,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rim = normalize(vec3<f32>(0.65, -0.22, 0.73));
   let specKey = pow(max(dot(normal, normalize(viewDir + key)), 0.0), mix(26.0, 170.0, reflectivity));
   let specRim = pow(max(dot(normal, normalize(viewDir + rim)), 0.0), mix(18.0, 90.0, reflectivity));
+  // Ward-style anisotropic lobe aligned to the ferro-domain shear. It makes
+  // each Rosensweig ridge stretch highlights along the local field direction.
+  let shearAngle = atan2(gradient.y, gradient.x) + diagonalShear * 2.5;
+  let tangent = normalize(vec3<f32>(cos(shearAngle), sin(shearAngle), -dot(normal.xy, vec2<f32>(cos(shearAngle), sin(shearAngle))) / max(normal.z, 0.08)));
+  let bitangent = normalize(cross(normal, tangent));
+  let halfKey = normalize(viewDir + key);
+  let ndh = max(dot(normal, halfKey), 0.04);
+  let tangentRoughness = mix(0.32, 0.075, reflectivity);
+  let bitangentRoughness = mix(0.11, 0.035, reflectivity);
+  let wardExponent = -(pow(dot(halfKey, tangent) / tangentRoughness, 2.0)
+    + pow(dot(halfKey, bitangent) / bitangentRoughness, 2.0)) / max(ndh * ndh, 0.002);
+  let anisotropicSpec = exp(wardExponent) / max(4.0 * tangentRoughness * bitangentRoughness * ndh, 0.08);
   let iridescence = 0.55 + 0.45 * cos(TAU * (vec3<f32>(0.86, 1.0, 1.16)
     * (height * 0.62 + curvature * 0.08 + time * 0.018) + vec3<f32>(0.0, 0.18, 0.35)));
   let environment = mix(vec3<f32>(0.16, 0.2, 0.28), iridescence, 0.22 + chromaSpread * 0.45);
   var color = source * (vec3<f32>(1.0) - fresnel * 0.72)
     + environment * fresnel * (0.8 + reflectivity * 0.55)
     + vec3<f32>(1.08, 1.02, 0.92) * specKey * (1.2 + bass * 0.5)
-    + vec3<f32>(0.42, 0.68, 1.0) * specRim * 0.48;
+    + vec3<f32>(0.42, 0.68, 1.0) * specRim * 0.48
+    + vec3<f32>(0.92, 0.97, 1.08) * anisotropicSpec * (0.07 + treble * 0.035) * (0.35 + spikeMode);
   color = mix(color, color + vec3<f32>(0.72, 0.84, 1.0) * foam * (0.38 + mids * 0.35), foam * 0.52);
   let alpha = clamp(wetness * (0.62 + reflectivity * 0.28) + fresnel.g * 0.14 + foam * 0.08, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));

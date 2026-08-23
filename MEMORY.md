@@ -1,6 +1,25 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Batch 69 cosmic/ferrofluid/liquid detail)
+**Last updated:** 2026-08-23 (Codex b liquid-surface cohort)
+
+## 2026-08-23 — Codex (b) liquid-surface cohort
+
+- Requested upgrade set: liquid-jelly, liquid-oil, liquid-displacement,
+  liquid-fast, liquid-glitch, liquid-mirror, ink-marbling, glass-wipes,
+  kimi_liquid_glass, and liquid-metal.
+- Required invariant: canonical 13 core bindings, exact C loads, A-only
+  writeback, ACES, semantic alpha, live plasma bass/mids/treble, bounded
+  persistent state only at `[133..138]`, preserved mouse/held/click-ripple
+  behavior, Naga clean, and byte-exact saved parameter compatibility.
+- Completed with seven raw A simulations (Oil, Displacement, Mirror, Ink,
+  Glass Wipes, Kimi Glass, Metal) and three semantic display-history owners
+  (Jelly, Fast, Glitch). B is unwritten across the cohort.
+- Metal adds bass-driven hexagonal Rosensweig spikes and Ward anisotropy; Ink
+  adds exact-load pigment diffusion; the weaker legacy effects now have truthful
+  persistent physical state and updated metadata without changing `params`.
+- Proof: focused Naga/bind-group and contract audits 10/10, zero unsafe extra
+  writes, saved params exact, 1,333 unique/relative catalog IDs, Jest 81/81
+  (545 pass, 1 skip), and production build PASS. Real-GPU QA is external.
 
 ## 2026-08-23 — Batch 69 cosmic / ferrofluid / liquid detail
 

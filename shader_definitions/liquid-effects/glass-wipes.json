@@ -2,10 +2,18 @@
   "id": "glass-wipes",
   "name": "Rainy Window",
   "url": "shaders/glass-wipes.wgsl",
-  "description": "Simulates rain on a window that distorts the view. Use the mouse to wipe the glass clean.",
+  "description": "Persistent rain, wetness, rivulet flow, and glass thickness with exact C loads, a bounded sprung hand wiper, held clearing, click splashes, three-band glints, physical absorption, ACES, and semantic alpha.",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "held-interaction",
+    "click-reactive",
+    "audio-reactive",
+    "stateful-simulation",
+    "raw-wetness-state",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "params": [
     {

@@ -18,6 +18,15 @@ _Learn about the person you're helping. Update this as you go._
   shaders own HDR display history; Liquid Metal owns raw
   height/velocity/foam/wetness A state. Saved params are exact, structural,
   Jest, catalog, and build gates are green; real-GPU visual QA is external.
+- **Codex (b) liquid batch (2026-08-23):** Upgraded liquid-jelly,
+  liquid-oil, liquid-displacement, liquid-fast, liquid-glitch, liquid-mirror,
+  ink-marbling, glass-wipes, kimi_liquid_glass, and liquid-metal under the
+  canonical exact-C / A-only / ACES / semantic-alpha / three-band-audio /
+  bounded-`extraBuffer[133..138]` contract while preserving presets and all
+  pointer, held, and click-ripple interaction. Seven own raw physical A state;
+  Jelly/Fast/Glitch own display history. Liquid Metal now has Rosensweig spikes
+  and anisotropic reflection. Naga, contract, catalog, Jest, and build gates are
+  green; real-GPU visual QA remains external.
 
 ## Context
 

@@ -76,14 +76,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let advectedUV = clamp(uv - flow - velocity * swirlMask * 0.04, vec2<f32>(0.0), vec2<f32>(1.0));
-  let previous = textureLoad(dataTextureC, historyCoord(advectedUV, dims), 0);
+  let advectedCoord = historyCoord(advectedUV, dims);
+  let previous = textureLoad(dataTextureC, advectedCoord, 0);
+  let prevL = textureLoad(dataTextureC, clamp(advectedCoord + vec2<i32>(-1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  let prevR = textureLoad(dataTextureC, clamp(advectedCoord + vec2<i32>(1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  let prevD = textureLoad(dataTextureC, clamp(advectedCoord + vec2<i32>(0, -1), vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  let prevU = textureLoad(dataTextureC, clamp(advectedCoord + vec2<i32>(0, 1), vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  // Viscosity-dependent pigment diffusion broadens marbled veins without
+  // filtering the rgba32float state texture.
+  let neighborState = (prevL + prevR + prevD + prevU) * 0.25;
+  let diffusion = 0.008 + detail * 0.032 + mids * 0.004;
+  let diffusedState = mix(previous, neighborState, diffusion);
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let sourcePigment = mix(source.rgb, palette(fract(time * 0.025 + dot(uv, vec2<f32>(0.7, 0.3)))), 0.35 + treble * 0.2);
   let injection = clamp(swirlMask * u.zoom_params.x * (0.08 + bass * 0.08) + drop, 0.0, 1.0);
-  let retainedThickness = previous.a * (0.988 - flowSpeed * 0.006);
+  let retainedThickness = diffusedState.a * (0.988 - flowSpeed * 0.006);
   let thickness = clamp(max(retainedThickness, injection) + abs(waveA.x * waveB.y) * 0.002 * detail, 0.0, 1.0);
   let injectedPigment = select(sourcePigment, dropColor / max(drop, 0.001), drop > 0.001);
-  let pigment = clamp(mix(previous.rgb * 0.995, injectedPigment, injection), vec3<f32>(0.0), vec3<f32>(1.5));
+  let pigment = clamp(mix(diffusedState.rgb * 0.995, injectedPigment, injection), vec3<f32>(0.0), vec3<f32>(1.5));
   let state = vec4<f32>(pigment, thickness);
   textureStore(dataTextureA, pixel, state);
 

@@ -3,10 +3,18 @@
     "id": "glass-wipes",
     "name": "Rainy Window",
     "url": "shaders/glass-wipes.wgsl",
-    "description": "Simulates rain on a window that distorts the view. Use the mouse to wipe the glass clean.",
+    "description": "Persistent rain, wetness, rivulet flow, and glass thickness with exact C loads, a bounded sprung hand wiper, held clearing, click splashes, three-band glints, physical absorption, ACES, and semantic alpha.",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "held-interaction",
+      "click-reactive",
+      "audio-reactive",
+      "stateful-simulation",
+      "raw-wetness-state",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -82,7 +90,7 @@
     "id": "ink-marbling",
     "name": "Ink Marbling",
     "url": "shaders/ink-marbling.wgsl",
-    "description": "Persistent pigment and thickness marbling with exact-load advection, plasma turbulence, sprung stirring, bounded click ink drops, ACES output, and source-depth pass-through.",
+    "description": "Persistent pigment and thickness marbling with exact-load advection and neighbor diffusion, three-band plasma turbulence, sprung held stirring, bounded click ink drops, ACES output, and semantic alpha.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -91,7 +99,8 @@
       "spring-interaction",
       "click-reactive",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "exact-load-feedback"
     ],
     "tags": [
       "filter",
@@ -170,14 +179,21 @@
     "id": "kimi-liquid-glass",
     "name": "Kimi Liquid Glass",
     "url": "shaders/kimi_liquid_glass.wgsl",
-    "description": "Realistic liquid surface with caustics, chromatic refraction, and specular highlights.",
+    "description": "Persistent liquid-glass height and thickness with exact C loads, held lens push, click waves, three-band caustics, chromatic Snell refraction, interference highlights, ACES, and semantic alpha.",
     "features": [
       "mouse-driven",
       "liquid",
       "caustics",
       "refraction",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "held-interaction",
+      "click-reactive",
+      "stateful-simulation",
+      "raw-height-thickness-state",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "fluid",
@@ -226,7 +242,7 @@
     "id": "liquid-displacement",
     "name": "Liquid Displacement",
     "url": "shaders/liquid-displacement.wgsl",
-    "description": "Navier-Stokes fluid simulation for realistic water-like displacement. Features swirling eddies, vortices, and volume-conserving flow with pressure projection.",
+    "description": "Persistent velocity and height-field image displacement with exact-load pressure projection, viscosity diffusion, bounded pointer velocity, held flow injection, click waves, three-band turbulence, caustics, ACES, and semantic alpha.",
     "params": [
       {
         "id": "viscosity",
@@ -263,8 +279,16 @@
     ],
     "features": [
       "mouse-driven",
-      "multi-pass",
-      "depth-aware"
+      "held-interaction",
+      "click-reactive",
+      "audio-reactive",
+      "depth-aware",
+      "stateful-simulation",
+      "raw-velocity-height-state",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "navier-stokes",
@@ -282,7 +306,7 @@
     "id": "liquid-fast",
     "name": "Liquid Fast",
     "url": "shaders/liquid-fast.wgsl",
-    "description": "Fast analytical liquid ripples with low-sample motion blur, depth-aware flow, audio acceleration, and spectral edge highlights.",
+    "description": "Low-viscosity analytical liquid with bounded pointer inertia, high-speed vortex wakes, dispersive click packets, exact-load temporal advection, three-band spectral caustics, ACES, and semantic alpha.",
     "tags": [
       "filter",
       "image-processing",
@@ -336,6 +360,12 @@
       "audio-reactive",
       "depth-aware",
       "mouse-driven",
+      "held-interaction",
+      "click-reactive",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha",
       "temporal",
       "upgraded-rgba"
     ],
@@ -379,7 +409,7 @@
     "id": "liquid-glitch",
     "name": "Liquid Glitch",
     "url": "shaders/liquid-glitch.wgsl",
-    "description": "Block-quantized liquid smearing with audio-reactive signal corruption, chromatic splitting, click bursts, and temporal datamosh trails.",
+    "description": "Block-quantized liquid smearing with bounded pointer tear velocity, held vortex corruption, click shard bursts, three-band chromatic splitting, exact-load datamosh history, ACES, and semantic alpha.",
     "tags": [
       "filter",
       "image-processing",
@@ -433,6 +463,12 @@
       "audio-reactive",
       "depth-aware",
       "mouse-driven",
+      "held-interaction",
+      "click-reactive",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha",
       "temporal",
       "upgraded-rgba"
     ],
@@ -476,12 +512,17 @@
     "id": "liquid-jelly",
     "name": "Liquid Jelly",
     "url": "shaders/liquid-jelly.wgsl",
-    "description": "Spring-damped jelly deformation with subsurface scattering, audio-responsive elasticity, depth masking, and temporal wobble trails.",
+    "description": "Spring-damped jelly deformation with bounded pointer inertia, exact-load thickness slopes, soft recovery, subsurface scattering, three-band audio, click waves, ACES output, and semantic alpha.",
     "features": [
       "audio-reactive",
       "depth-aware",
       "elastic-bounce",
       "mouse-driven",
+      "click-reactive",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha",
       "subsurface-scattering",
       "temporal",
       "upgraded-rgba",
@@ -574,7 +615,7 @@
     "id": "liquid-metal",
     "name": "Liquid Metal",
     "url": "shaders/liquid-metal.wgsl",
-    "description": "A persistent mercury simulation whose raw A state packs height, velocity, foam, and wetness, projected through depth-aware flow, pointer pouring, click impulses, chromatic refraction, and PBR metallic reflection.",
+    "description": "A persistent ferro-metal simulation whose raw A state packs height, velocity, foam, and wetness, with a bass-driven hexagonal Rosensweig spike mode, held magnetic pole, click impulses, chromatic refraction, and Ward-style anisotropic metallic reflection.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -584,7 +625,12 @@
       "click-reactive",
       "stateful-simulation",
       "raw-height-velocity-state",
-      "pbr-metal"
+      "pbr-metal",
+      "rosensweig-spikes",
+      "anisotropic-brdf",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "liquid",
@@ -635,7 +681,7 @@
     "id": "liquid-mirror",
     "name": "Liquid Mirror",
     "url": "shaders/liquid-mirror.wgsl",
-    "description": "Metallic liquid surface that reflects the image and ripples under the mouse.",
+    "description": "A persistent reflective height field with bounded sprung pointer push, held dents, click waves, exact C state, three-band steel highlights, Fresnel reflection, ACES, and semantic alpha.",
     "params": [
       {
         "id": "distort",
@@ -667,7 +713,18 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-interaction",
+      "click-reactive",
+      "audio-reactive",
+      "depth-aware",
+      "stateful-simulation",
+      "raw-height-velocity-state",
+      "spring-interaction",
+      "reflective-surface",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",
@@ -678,7 +735,7 @@
     "id": "liquid-oil",
     "name": "Liquid Oil",
     "url": "shaders/liquid-oil.wgsl",
-    "description": "",
+    "description": "A persistent high-viscosity thin-film simulation packing height, response, shear, and coverage in A, with slow capillary flow, pointer stirring, click waves, interference color, specular oil optics, exact C loads, ACES, and semantic alpha.",
     "tags": [
       "filter",
       "image-processing"
@@ -726,7 +783,16 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-interaction",
+      "click-reactive",
+      "audio-reactive",
+      "stateful-simulation",
+      "raw-height-velocity-state",
+      "thin-film-interference",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
     ]
   },
   {

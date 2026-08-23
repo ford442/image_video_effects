@@ -2,14 +2,21 @@
   "id": "kimi-liquid-glass",
   "name": "Kimi Liquid Glass",
   "url": "shaders/kimi_liquid_glass.wgsl",
-  "description": "Realistic liquid surface with caustics, chromatic refraction, and specular highlights.",
+  "description": "Persistent liquid-glass height and thickness with exact C loads, held lens push, click waves, three-band caustics, chromatic Snell refraction, interference highlights, ACES, and semantic alpha.",
   "features": [
     "mouse-driven",
     "liquid",
     "caustics",
     "refraction",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "held-interaction",
+    "click-reactive",
+    "stateful-simulation",
+    "raw-height-thickness-state",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "fluid",

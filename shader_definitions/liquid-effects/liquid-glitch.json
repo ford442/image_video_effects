@@ -2,7 +2,7 @@
   "id": "liquid-glitch",
   "name": "Liquid Glitch",
   "url": "shaders/liquid-glitch.wgsl",
-  "description": "Block-quantized liquid smearing with audio-reactive signal corruption, chromatic splitting, click bursts, and temporal datamosh trails.",
+  "description": "Block-quantized liquid smearing with bounded pointer tear velocity, held vortex corruption, click shard bursts, three-band chromatic splitting, exact-load datamosh history, ACES, and semantic alpha.",
   "tags": [
     "filter",
     "image-processing",
@@ -56,6 +56,12 @@
     "audio-reactive",
     "depth-aware",
     "mouse-driven",
+    "held-interaction",
+    "click-reactive",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha",
     "temporal",
     "upgraded-rgba"
   ],
