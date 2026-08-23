@@ -5,9 +5,35 @@
 
 ---
 
-## Recently Completed (480 tracker entries)
+## Recently Completed (490 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 58C (10 shaders) — 2026-08-23 — HOLOGRAPHIC & QUANTUM
+
+Ten holographic/quantum shaders across advanced-hybrid, visual-effects, image,
+generative, and interactive-mouse. Source `params` stay exact; `updatedParams`
+added where missing. Canonical 13 bindings / 16×16×1; B unused. Fixed
+`holographic-interferometry` fake-audio bug (`config.y` was ripple count).
+Rebuilt `holographic-projection` as a true holo projector (scan/glitch/tint/focus
+params preserved). Repaired `quantum-smear` / `quantum-wormhole` `zoom_config`
+hijacks. Held-pointer + capped click ripples + `plasmaBuffer[0].xyz` + bins
+1..8 + exact `textureLoad(dataTextureC)` throughout feedback paths. Gate 10/10;
+dead-slider audit PASS; Jest 84/84 (550 pass); build green. Real-GPU visual QA
+remains external. Notes: `swarm-outputs/codex-2026-08-23-b58c/`.
+
+| Shader | Lines (approx) | Key changes |
+|--------|----------------|-------------|
+| `holographic-interferometry` | 159→153 | Real audio, mouse tilt, click rings, dataTextureA |
+| `holographic-projection` | 218→117 | Holo projector rebuild; scan/glitch/tint/focus |
+| `quantum-smear` | 173→129 | zoom_config→mouse; semantic alpha; textureLoad C |
+| `quantum-wormhole` | 179→139 | Mouse throat aim; oil-slick; textureLoad C |
+| `quantum-foam` | 274→292 | 16×16; mouse shear; click bursts; textureLoad C |
+| `holographic-entropy-vortex` | 309→324 | Ripples, held tighten, band caustics |
+| `holographic_interference` | 194→205 | Held beam lock, click fronts, dynamic sources |
+| `holographic-shatter` | 162→166 | textureLoad C; thin-film edges; held tighten |
+| `holographic-sticker` | 170→173 | textureLoad C; held foil; band FFT |
+| `quantum-cursor` | 177→179 | Held radius; holographic decoherence tint |
 
 ### Batch 58E (10 shaders) — 2026-08-23 — INTERACTIVE COHORT
 

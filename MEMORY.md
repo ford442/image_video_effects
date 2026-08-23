@@ -1,6 +1,18 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Batch 58E)
+**Last updated:** 2026-08-23 (Batch 58C)
+
+## 2026-08-23 — Shader upgrade Batch 58C — HOLOGRAPHIC & QUANTUM
+
+- Upgraded ten shaders: holographic-interferometry, holographic-projection,
+  quantum-smear, quantum-wormhole, quantum-foam, holographic-entropy-vortex,
+  holographic_interference, holographic-shatter, holographic-sticker, quantum-cursor.
+- Fixed interferometry fake-audio (`config.y` ripple-count collision); rebuilt
+  projection as holo projector; repaired quantum-smear/wormhole zoom_config
+  hijacks; quantum-foam 8×8→16×16.
+- Cohort standard: held-pointer, capped ripples, plasmaBuffer audio + bins,
+  textureLoad on C, semantic alpha, dataTextureA writes. Gate 10/10; Jest
+  84/84 (550 pass); build green. Real-GPU QA external.
 
 ## 2026-08-23 — Shader upgrade Batch 58E — INTERACTIVE COHORT
 

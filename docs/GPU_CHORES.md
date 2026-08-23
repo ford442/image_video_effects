@@ -29,12 +29,14 @@ Workgroups: `@workgroup_size(64)` 1D reduce; `@workgroup_size(8, 8)` 2D image.
 
 - **Single device:** `GpuChoresHost.attach(rendererDevice)` only. No `requestAdapter()` / `requestDevice()`.
 - **Boot probe gate:** chores run only when `window.webgpuProbe.ok === true` (adopt probed device). Probe failure = idle — no silent CPU pre-FX feeding catalog FX.
+- **Shader tools:** `ShaderValidator` and `ShaderScanner` adopt the same boot-probe `GPUDevice` via the adopted-device registry — never `requestAdapter()` / `requestDevice()`.
+- **Depth estimation:** while the canvas WebGPU renderer is live, prefer WASM/CPU for `@xenova/transformers` depth (it may allocate its own `GPUDevice` when `device:'webgpu'`).
 - **No dual-hot WebGL + WebGPU** on the same working set. WebGL2 FBO kernels are later, not required here.
 - Backend order: **WebGPU (adopted) → existing WASM/C++ analysis (none yet) → TS** (`?no_gpu_compute` only when probe succeeded).
 - Kill switch: `?no_gpu_compute` (also `=1` / `=true`). Forces TS.
 - Readback is the 256-bin histogram + 16-byte reduce (~1 KiB), not a full-frame pixel dump.
 
-The shader scanner (`ShaderValidator`) may compile WGSL on a **separate** device for offline checks. That is not the frame working set and is not gpu-chores.
+ShaderValidator / ShaderScanner compile-check WGSL on the **same adopted renderer device** (not a second device). Depth estimation prefers WASM/CPU while the canvas renderer is active — see `src/services/depthEstimation/loader.ts`.
 
 ## Live pre-FX path
 

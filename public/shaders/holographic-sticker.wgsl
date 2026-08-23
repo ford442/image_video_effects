@@ -67,6 +67,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Raw mouse stays the spring target; every thread reads the last
     // integrated position, only thread (0,0) integrates and writes.
     let rawMouse = u.zoom_config.yz;
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
     let hasState = (arrayLength(&extraBuffer) > 138u);
     var mouse = vec2<f32>(0.5, 0.5);
     if (hasState) {
@@ -119,7 +120,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // always-live bins 1..8 so the modulation is always real audio data.
     let palIdx = u32(clamp(hue * 255.0, 0.0, 255.0));
     let palette = plasmaBuffer[(palIdx % 8u) + 1u].rgb;
+    let bandFoil = plasmaBuffer[(u32(fract(hue * 4.0 + time * 0.1) * 8.0) % 8u) + 1u].rgb;
     foil = mix(foil, foil * (0.7 + palette * 0.5), 0.3);
+    foil = mix(foil, foil * (0.85 + bandFoil * 0.3), held * 0.2);
 
     // ── Click foil flashes: clicks scatter hue-cycling rainbow rings ──
     var flash = vec3<f32>(0.0);
@@ -156,7 +159,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Temporal foil shimmer: slow phase drift for organic iridescence
     // (kept subtle and raw - the A write below is never tonemapped).
-    let prevFoil = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prevFoil = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
     let shimmer = mix(finalColor, prevFoil * 0.95, 0.04 + mids * 0.015);
     finalColor = mix(finalColor, shimmer, 0.4);
 
