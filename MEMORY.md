@@ -61,6 +61,24 @@
   audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
   green. Real-GPU visual QA remains external.
 
+## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
+
+- User changed cohort selection policy: use an objective backlog rule such as
+  smallest codewise or missing params, not adjacency to prior batches.
+- Applied rule: eight smallest cataloged single-pass compute WGSL files with
+  exactly four saved params but no `updatedParams`, excluding declared
+  multipass and pass-ID files. Selected Triangle Mosaic, Polka Wave, Sphere
+  Projection, Foil Impression, Bio Touch, Hypnotic Spiral, Spirograph Reveal,
+  and Voronoi Chaos (tracker #491–498).
+- Preserved params 8/8; added continuous geometry, held/click response, spectral
+  color, three-band audio, truthful metadata, and aligned `updatedParams`.
+  Triangle Mosaic now writes display RGBA to A to match its existing exact C
+  feedback. Repaired Hypnotic normalized pointer/click coordinates and event cap,
+  Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
+- Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
+  audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
+  green. Real-GPU visual QA remains external.
+
 ## 2026-08-23 — Shader upgrade Batch 57 — KINETIC IMAGE TRANSFORMATIONS
 
 - Upgraded tracker #483–490: Pixel Sort Radial, Mirror Drag, Psychedelic Noise

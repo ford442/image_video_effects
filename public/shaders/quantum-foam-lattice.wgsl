@@ -133,9 +133,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
   // Previous frame now stores LINEAR HDR (not tonemapped), so the
@@ -270,7 +270,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Semantic alpha: based on edge density + bubble presence + sparkle
   let alpha = clamp(distortedEdge * 0.7 + bubbleMask * 0.5 + node * 0.6 + sparkle * 0.3 + rippleGlow * 0.2, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+  
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(u.config.z/u.config.w, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(uv - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let __finalRGB = color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, alpha));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(linearHDR, alpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(distortedEdge * 0.5 + node * 0.3 + bubbleMask * 0.2, 0.0, 0.0, 0.0));
 }
