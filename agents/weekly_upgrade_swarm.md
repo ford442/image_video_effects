@@ -5,7 +5,7 @@
 
 ---
 
-## Recently Completed (510 tracker entries)
+## Recently Completed (520 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
 
@@ -162,6 +162,29 @@ external.
 | 488 | `liquid-smear` | 58B | 155→203 (+48) | Pointer-velocity drag from `[133..136]` (was a pull-toward-cursor sink), 5-tap FFT-width pigment bleed along the stroke normal, bounded splats; bounds guard and exact-load history added. |
 | 489 | `liquid-time-warp` | 58B | 188→214 (+26) | Divergence-free curl advection banded across three FFT octaves, bounded click wipe fronts, chromatic split, audio wired for the first time, exact-load history, ACES. |
 | 490 | `liquid-zoom` | 58B | 252→249 (−3) | Four-layer depth-parallax stack with per-layer FFT bins and popping-free depth selection, bounded click zoom pulses, temporal streaks, ACES; bounds guard added, slider labels made honest. |
+
+### Batch 59 (10 shaders) — 2026-08-23 — CYBER & DIGITAL
+
+Ten cyber/digital shaders (tracker #511–520). Source `params` stay exact.
+Canonical 13 bindings / 16×16×1. B unused. extraBuffer writes only [133..138]
+from pixel (0,0). Capped click ripples, held-pointer, `plasmaBuffer[0].xyz` +
+bins 1..8, exact `textureLoad(dataTextureC)` on feedback paths, ACES + semantic
+alpha. Gate 10/10; dead-slider and extraBuffer audits PASS. Jest 84/84 (550 pass);
+build green. Notes: `swarm-outputs/codex-2026-08-23-b59/`.
+
+| # | Shader | Batch | Lines (approx) | Key changes |
+|---|--------|-------|----------------|-------------|
+| 511 | `cyber-ripples` | 59 | 212→215 | Ripple shockwaves, held tighten, FFT band shimmer |
+| 512 | `cyber-scan` | 59 | 234→250 | textureLoad C, ACES, click bursts, semantic alpha |
+| 513 | `cyber-trace` | 59 | 187→139 | textureLoad C, ACES composite, semantic alpha |
+| 514 | `cyber-organic` | 59 | 260→274 | Ripple pulses, held reveal, thin-film rim, unpremult |
+| 515 | `cyber-rain` | 59 | 205→177 | extraBuffer[0..7] removed; spring [133..138]; EMP ripples |
+| 516 | `digital-glitch` | 59 | 293→315 | 16×16, C error mask, ripples, held, ACES |
+| 517 | `digital-haze` | 59 | 198→189 | ACES, held clear, C residue, semantic alpha |
+| 518 | `digital-reveal` | 59 | 166→138 | textureLoad C, gated spring, ACES, held brush |
+| 519 | `edge-glow-mouse` | 59 | 136→141 | C trail, ripples, held, mids/treble |
+| 520 | `ferrofluid` | 59 | 142→123 | ACES, semantic alpha, mids/treble runners |
+
 ### Batch 58C (10 shaders) — 2026-08-23 — HOLOGRAPHIC & QUANTUM
 
 Ten holographic/quantum shaders across advanced-hybrid, visual-effects, image,

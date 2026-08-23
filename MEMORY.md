@@ -1,6 +1,18 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Batch 58C)
+**Last updated:** 2026-08-23 (Batch 59)
+
+## 2026-08-23 — Shader upgrade Batch 59 — CYBER & DIGITAL
+
+- Upgraded tracker #501–510: cyber-ripples, cyber-scan, cyber-trace,
+  cyber-organic, cyber-rain, digital-glitch, digital-haze, digital-reveal,
+  edge-glow-mouse, ferrofluid.
+- Critical fixes: cyber-rain extraBuffer[0..7] removed (spring [133..138]);
+  digital-glitch 16×16; textureLoad on C for scan/trace/reveal/glitch/haze;
+  digital-reveal spring gated to (0,0).
+- Cohort standard: held-pointer, capped ripples, plasmaBuffer + bins, ACES,
+  semantic alpha, dataTextureA writes. Gate 10/10; Jest 84/84; build green.
+  Branch: `upgrade/batch-59-cyber-digital`. Real-GPU QA external.
 
 ## 2026-08-23 — Shader upgrade Batch 58C — HOLOGRAPHIC & QUANTUM
 
