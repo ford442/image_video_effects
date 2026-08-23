@@ -2,7 +2,7 @@
   "id": "melting-oil-blackbody",
   "name": "Melting Oil Blackbody",
   "url": "shaders/melting-oil-blackbody.wgsl",
-  "description": "Melting Oil Blackbody",
+  "description": "Thermal-gradient oil transports velocity, temperature, and molten coverage through blackbody-hot pointer and click-driven flow.",
   "tags": [
     "melting-oil",
     "blackbody-radiation",
@@ -53,5 +53,13 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Temperature Range", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Thermal Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Ember Bloom", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = velocity.xy, normalized temperature, molten coverage",
+  "updated": true,
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

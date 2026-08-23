@@ -19,18 +19,18 @@
           "id": "inject",
           "entry": "ripple-tank-inject",
           "reads": ["dataA"],
-          "writes": ["dataB"]
+          "writes": ["dataA"]
         },
         {
           "id": "gather",
           "entry": "ripple-tank-pass2",
-          "reads": ["dataB"],
-          "writes": []
+          "reads": ["dataA"],
+          "writes": ["dataA"]
         },
         {
           "id": "render",
           "entry": "ripple-tank-pass3",
-          "reads": ["dataB"],
+          "reads": ["dataA"],
           "writes": ["color", "dataA"]
         }
       ]
@@ -89,6 +89,14 @@
     "temporal-persistence",
     "interactive"
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Wave Speed", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Damping", "default": 0.65, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Source Strength", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Boundary Reflect", "default": 0.7, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = height, velocity, foam energy, oscillator phase; graph uses A-only writeback",
+  "updated": true,
   "tags": [
     "wave-equation",
     "interference",

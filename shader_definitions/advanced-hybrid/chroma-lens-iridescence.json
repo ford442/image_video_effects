@@ -2,18 +2,26 @@
   "id": "chroma-lens-iridescence",
   "name": "Chroma Lens Iridescence",
   "url": "shaders/chroma-lens-iridescence.wgsl",
-  "description": "Chroma Lens Iridescence",
+  "description": "Chromatic lens magnification fused with physical thin-film optical iridescence. The lens body exhibits true wavelength-dependent interference, radial chromatic aberration, and Fresnel bevel reflections driven by pointer spring dynamics and audio.",
   "tags": [
     "chroma-lens",
     "thin-film-interference",
     "depth-aware",
-    "mouse-driven"
+    "mouse-driven",
+    "lens",
+    "spectral",
+    "advanced-hybrid"
   ],
   "features": [
+    "advanced-hybrid",
     "chroma-lens",
     "thin-film-interference",
     "depth-aware",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "exact-feedback",
+    "temporal-state",
+    "ACES-tonemapped"
   ],
   "params": [
     {
@@ -53,5 +61,13 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    { "index": 0, "name": "Magnification", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Chromatic Dispersion", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Lens Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Iridescence / Rim Blur", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = display RGBA with chromatic lens magnification and iridescent sheen history",
+  "updated": true,
+  "target_rating": 4.8
 }

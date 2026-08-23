@@ -41,6 +41,16 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
@@ -64,13 +74,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-    let uv = vec2<f32>(gid.xy) / res;
+    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let pixel = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let dims = vec2<i32>(res);
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Read current decay state
-    let state = textureLoad(dataTextureC, coord, 0);
+    let state = stateAt(coord, dims);
     var paint = state.r;      // 1.0 = perfect paint
     var metal = state.g;      // 0.0 = no rust
     var organic = state.b;    // 0.0 = no rot
@@ -102,7 +114,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     for (var y: i32 = -1; y <= 1; y++) {
         for (var x: i32 = -1; x <= 1; x++) {
             if (x == 0 && y == 0) { continue; }
-            let nState = textureLoad(dataTextureC, coord + vec2<i32>(x, y), 0);
+            let nState = stateAt(coord + vec2<i32>(x, y), dims);
             // Count how many neighbors have failed structure
             decayedNeighbors += step(0.5, 1.0 - nState.a);
         }
@@ -112,7 +124,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Paint fails first; exposed metal rusts; organic rots; all affect structure
 
     // Paint decay: faster at edges, accelerated by moisture
-    let paintDecayRate = baseDecay * (1.0 + edgeVulnerability * isEdge) * (1.0 + moisture * 0.5);
+    let paintDecayRate = baseDecay * (1.0 + edgeVulnerability * isEdge) *
+        (1.0 + moisture * 0.5 + audio.x * 0.45);
     paint = paint - paintDecayRate * (1.0 + decayedNeighbors * 0.05);
 
     // Metal corrosion: accelerated when paint is gone, by moisture
@@ -132,7 +145,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // === RECOVERY (mouse "restoration") ===
     let mousePos = u.zoom_config.yz;
     let mouseDist = length(uv - mousePos);
-    let mouseRestore = smoothstep(0.1, 0.0, mouseDist);
+    let mouseRestore = smoothstep(0.12, 0.0, mouseDist) * clamp(u.zoom_config.w, 0.0, 1.0);
     paint += recovery * (1.0 + mouseRestore * 20.0);
     structure += recovery * 0.5 * (1.0 + mouseRestore * 20.0);
     metal -= recovery * 0.5 * (1.0 + mouseRestore * 10.0);
@@ -144,10 +157,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ripple = u.ripples[i];
         let rDist = length(uv - ripple.xy);
         let age = time - ripple.z;
-        if (age < 1.5 && rDist < 0.06) {
-            let strength = smoothstep(0.06, 0.0, rDist) * max(0.0, 1.0 - age);
+        if (age >= 0.0 && age < 2.2) {
+            let strength = exp(-abs(rDist - age * 0.18) * 50.0 - age * 1.2);
             paint -= strength * 0.3;
             structure -= strength * 0.2;
+            metal += strength * (0.08 + audio.y * 0.08);
         }
     }
 
@@ -189,12 +203,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Edge corrosion highlight
     let edgeCorrosion = isEdge * (1.0 - paint) * vec3<f32>(0.15, 0.08, 0.03);
-    displayColor += edgeCorrosion;
+    displayColor += edgeCorrosion + audio * vec3<f32>(0.08, 0.04, 0.12) *
+        ((1.0 - paint) + metal + organic) * 0.3;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let totalDamage = (1.0 - paint) * 0.3 + metal * 0.3 + organic * 0.2 + (1.0 - structure) * 0.2;
-    let alpha = mix(0.85, 1.0, 1.0 - totalDamage * 0.2);
+    let alpha = clamp(totalDamage * 0.88 + (1.0 - structure) * 0.12, 0.0, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(aces(displayColor), alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth * (1.0 - totalDamage * 0.15), 0.0, 0.0, 0.0));
 }

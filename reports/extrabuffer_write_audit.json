@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-23T15:44:37.590708+00:00",
+  "generated": "2026-08-23T15:59:04.330562+00:00",
   "files_scanned": 1365,
   "new_violations": [],
   "known_violations": [
@@ -110,14 +110,6 @@
     {
       "file": "public/shaders/gen-chrono-mycelial-tapestry.wgsl",
       "line": 181,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
-      "line": 190,
       "expr": "0",
       "op": "=",
       "index": 0,
@@ -812,7 +804,7 @@
       "class": "fft-zone"
     }
   ],
-  "dynamic_writes": 33,
+  "dynamic_writes": 32,
   "out_of_range_writes": 0,
   "baseline": "reports/extrabuffer_write_audit_baseline.json"
 }

@@ -2,7 +2,7 @@
   "id": "liquid-smear-structure",
   "name": "Liquid Smear Structure",
   "url": "shaders/liquid-smear-structure.wgsl",
-  "description": "Liquid Smear Structure",
+  "description": "Structure-tensor streamlines advect a persistent psychedelic paint layer, with edge-aware LIC, held-pointer stirring, and traveling click fronts.",
   "tags": [
     "liquid-smear",
     "structure-tensor",
@@ -55,5 +55,13 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Smear Memory", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Streamline Length", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Tensor Coherence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Brush Force", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = linear display RGBA history; exact bounded history loads",
+  "updated": true,
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

@@ -2,18 +2,26 @@
   "id": "frosted-glass-lens-iridescence",
   "name": "Frosted Glass Lens Iridescence",
   "url": "shaders/frosted-glass-lens-iridescence.wgsl",
-  "description": "Frosted Glass Lens Iridescence",
+  "description": "Physical frosted glass transmission with thin-film optical iridescence on the glass surface. Multi-tap microfacet scattering and Beer-Lambert absorption blend with soap-bubble Fresnel interference and an interactive chromatic magnifying lens.",
   "tags": [
     "frosted-glass",
     "thin-film-interference",
     "depth-aware",
-    "mouse-driven"
+    "mouse-driven",
+    "lens",
+    "refraction",
+    "advanced-hybrid"
   ],
   "features": [
+    "advanced-hybrid",
     "frosted-glass",
     "thin-film-interference",
     "depth-aware",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "exact-feedback",
+    "temporal-state",
+    "ACES-tonemapped"
   ],
   "params": [
     {
@@ -53,5 +61,13 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    { "index": 0, "name": "Frost Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Lens Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Edge Softness", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Film IOR / Iridescence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = display RGBA with frosted transmission and thin-film iridescent coating",
+  "updated": true,
+  "target_rating": 4.8
 }

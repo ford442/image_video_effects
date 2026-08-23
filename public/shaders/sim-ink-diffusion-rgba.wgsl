@@ -1,25 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Sim: Ink Diffusion RGBA
-//  Category: simulation
-//  Features: simulation, rgba-state-machine, temporal, mouse-driven
-//  Complexity: High
-//  Chunks From: sim-ink-diffusion.wgsl, alpha-fluid-simulation-paint.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-2 - RGBA Simulation Upgrader
-// ═══════════════════════════════════════════════════════════════════
-//  Four-ink wet diffusion on paper texture. Each RGB channel holds
-//  one pigment; alpha holds water content that drives all diffusion.
-//  RGBA Channels:
-//    R = Cyan pigment concentration (0=none, 1=saturated)
-//    G = Magenta pigment concentration
-//    B = Yellow pigment concentration
-//    A = Water saturation (0=dry paper, 1=fully wet)
-//  Water acts as the diffusion medium: wetter = pigments spread faster.
-//  Pigments mix subtractively (CMY) when they overlap on wet paper.
-//  Why f32: Sub-pixel pigment concentration precision required for
-//  realistic ink bleeding and water-front propagation.
-// ═══════════════════════════════════════════════════════════════════
-
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -33,174 +11,85 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+fn aces(x: vec3f) -> vec3f {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + vec3f(b))) / (x * (c * x + vec3f(d)) + vec3f(e)), vec3f(0.0), vec3f(1.0));
 }
 
-fn paperTexture(uv: vec2<f32>) -> f32 {
-    var tex = 0.0;
-    for (var i: i32 = 0; i < 3; i++) {
-        let fi = f32(i);
-        tex += hash12(uv * 100.0 * (fi + 1.0)) * pow(0.5, fi + 1.0);
-    }
-    return 0.8 + tex * 0.4;
+fn stateAt(p: vec2i, dims: vec2i) -> vec4f {
+  return textureLoad(dataTextureC, clamp(p, vec2i(0), dims - vec2i(1)), 0);
+}
+
+fn hash21(p: vec2f) -> f32 {
+  return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let res = u.config.zw;
-    if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+  let dimsU = textureDimensions(dataTextureC);
+  if (gid.x >= dimsU.x || gid.y >= dimsU.y) { return; }
+  let p = vec2i(gid.xy);
+  let dims = vec2i(dimsU);
+  let uv = (vec2f(gid.xy) + vec2f(0.5)) / vec2f(dimsU);
+  let aspect = u.config.zw.x / max(u.config.zw.y, 1.0);
+  let wetness = clamp(u.zoom_params.x, 0.0, 1.0);
+  let diffusion = clamp(u.zoom_params.y, 0.0, 1.0);
+  let mixing = clamp(u.zoom_params.z, 0.0, 1.0);
+  let evaporation = clamp(u.zoom_params.w, 0.0, 1.0);
+  let dt = clamp((1.0 / 60.0), 0.0, 0.033);
+  let c = stateAt(p, dims);
+  let n = stateAt(p + vec2i(0, 1), dims);
+  let s = stateAt(p + vec2i(0, -1), dims);
+  let e = stateAt(p + vec2i(1, 0), dims);
+  let w = stateAt(p + vec2i(-1, 0), dims);
+  let avg = (n + s + e + w) * 0.25;
+  let water = clamp(c.a + (avg.a - c.a) * (0.035 + 0.18 * wetness), 0.0, 1.0);
+  var pigment = max(c.rgb + (avg.rgb - c.rgb) * (0.012 + 0.16 * diffusion * (0.2 + water)), vec3f(0.0));
+  let chromaMean = vec3f(dot(pigment, vec3f(0.333333)));
+  pigment = mix(pigment, chromaMean, 0.012 * mixing * water);
 
-    let uv = vec2<f32>(gid.xy) / res;
-    let ps = 1.0 / res;
-    let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-    let time = u.config.x;
+  let audio = plasmaBuffer[0].xyz;
+  let pointer = u.zoom_config.yz;
+  let q = (uv - pointer) * vec2f(aspect, 1.0);
+  let held = step(0.5, u.zoom_config.w);
+  let brush = exp(-dot(q, q) * (210.0 - 100.0 * wetness));
+  let rotatingInk = 0.5 + 0.5 * cos(vec3f(0.0, 2.094, 4.189) + u.config.x * 0.7);
+  pigment += held * brush * (0.028 + 0.09 * max(audio, vec3f(0.08))) * rotatingInk;
+  var nextWater = water + held * brush * 0.045;
 
-    // Read current state
-    let state = textureLoad(dataTextureC, coord, 0);
-    var cyan = state.r;
-    var magenta = state.g;
-    var yellow = state.b;
-    var water = state.a;
-
-    // Paper texture affects absorption
-    let paper = paperTexture(uv);
-
-    // Seed on first frame: a few ink drops with water
-    if (time < 0.1) {
-        cyan = 0.0;
-        magenta = 0.0;
-        yellow = 0.0;
-        water = paper * 0.3;
-        let centerDist = length(uv - vec2<f32>(0.5));
-        if (centerDist < 0.08) {
-            cyan = 0.6;
-            water = 0.8;
-        }
-        let drop2 = length(uv - vec2<f32>(0.3, 0.6));
-        if (drop2 < 0.05) {
-            magenta = 0.5;
-            water = 0.7;
-        }
-        let drop3 = length(uv - vec2<f32>(0.7, 0.4));
-        if (drop3 < 0.06) {
-            yellow = 0.55;
-            water = 0.75;
-        }
+  let clickCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < clickCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = u.config.x - event.z;
+    if (age >= 0.0 && age < 2.4) {
+      let cp = event.xy;
+      let cq = (uv - cp) * vec2f(aspect, 1.0);
+      let radius = 0.04 + age * (0.09 + 0.06 * wetness);
+      let ring = exp(-pow((length(cq) - radius) * 55.0, 2.0)) * exp(-age * 1.3);
+      let hue = 0.5 + 0.5 * cos(vec3f(0.0, 2.094, 4.189) + f32(i) * 1.7);
+      pigment += ring * hue * (0.018 + 0.045 * audio.y);
+      nextWater += ring * 0.025;
     }
+  }
 
-    // === PARAMETERS ===
-    let wetness = mix(0.5, 2.0, u.zoom_params.x);
-    let pigmentDiffusion = mix(0.1, 0.5, u.zoom_params.y);
-    let colorMixing = u.zoom_params.z;
-    let evaporation = mix(0.98, 0.999, u.zoom_params.w);
+  pigment *= exp(-dt * (0.08 + 0.42 * evaporation));
+  nextWater = clamp(nextWater * exp(-dt * (0.14 + 0.75 * evaporation)), 0.0, 1.0);
+  let grain = hash21(vec2f(p) + floor(u.config.x * 12.0));
+  pigment = clamp(pigment + (grain - 0.5) * 0.0008 * nextWater, vec3f(0.0), vec3f(2.0));
+  textureStore(dataTextureA, p, vec4f(pigment, nextWater));
 
-    // === NEIGHBOR SAMPLING ===
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-
-    // === WATER DIFFUSION (drives everything) ===
-    let lapWater = left.a + right.a + down.a + up.a - 4.0 * water;
-    let waterDiffRate = 0.5 * wetness / paper;
-    water = water + waterDiffRate * lapWater;
-
-    // === PIGMENT DIFFUSION (only where water is present) ===
-    let wetFactor = smoothstep(0.05, 0.2, water);
-    let diffRate = pigmentDiffusion * wetFactor / paper;
-
-    let lapCyan = left.r + right.r + down.r + up.r - 4.0 * cyan;
-    let lapMagenta = left.g + right.g + down.g + up.g - 4.0 * magenta;
-    let lapYellow = left.b + right.b + down.b + up.b - 4.0 * yellow;
-
-    cyan = cyan + diffRate * lapCyan;
-    magenta = magenta + diffRate * lapMagenta;
-    yellow = yellow + diffRate * lapYellow;
-
-    // === COLOR MIXING (subtractive on wet paper) ===
-    let mixStrength = colorMixing * wetFactor * 0.1;
-    cyan = mix(cyan, (cyan + magenta + yellow) / 3.0, mixStrength);
-    magenta = mix(magenta, (cyan + magenta + yellow) / 3.0, mixStrength);
-    yellow = mix(yellow, (cyan + magenta + yellow) / 3.0, mixStrength);
-
-    // === EVAPORATION ===
-    water = water * evaporation;
-
-    // === MOUSE INK DROP ===
-    let mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
-    let mouseDist = length(uv - mousePos);
-    let mouseInfluence = smoothstep(0.08, 0.0, mouseDist) * mouseDown;
-    let hue = fract(time * 0.1 + mousePos.x + mousePos.y);
-    cyan += mouseInfluence * (0.5 + 0.5 * cos(hue * 6.283185307));
-    magenta += mouseInfluence * (0.5 + 0.5 * cos(hue * 6.283185307 + 2.094));
-    yellow += mouseInfluence * (0.5 + 0.5 * cos(hue * 6.283185307 + 4.189));
-    water += mouseInfluence * 0.5;
-
-    // === RIPPLE WATER INJECTION ===
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let rDist = length(uv - ripple.xy);
-        let age = time - ripple.z;
-        if (age < 2.0 && rDist < 0.08) {
-            let strength = smoothstep(0.08, 0.0, rDist) * max(0.0, 1.0 - age * 0.5);
-            water += strength * 0.4;
-            cyan += strength * 0.15 * (0.5 + 0.5 * sin(f32(i) * 1.7));
-            magenta += strength * 0.15 * (0.5 + 0.5 * sin(f32(i) * 2.3));
-            yellow += strength * 0.15 * (0.5 + 0.5 * sin(f32(i) * 3.1));
-        }
-    }
-
-    // Clamp
-    cyan = clamp(cyan, 0.0, 1.0);
-    magenta = clamp(magenta, 0.0, 1.0);
-    yellow = clamp(yellow, 0.0, 1.0);
-    water = clamp(water, 0.0, 1.0);
-
-    // === STORE STATE ===
-    textureStore(dataTextureA, coord, vec4<f32>(cyan, magenta, yellow, water));
-
-    // === STATE -> VISUAL COLOR MAPPING ===
-    // Convert CMY pigment densities to RGB display color
-    // Show ink in their actual colors: cyan, magenta, yellow
-    let inkColor = vec3<f32>(
-        magenta * 0.3 + yellow * 0.3,  // R component
-        cyan * 0.4 + yellow * 0.3,     // G component
-        cyan * 0.5 + magenta * 0.4     // B component
-    );
-
-    // Paper background
-    let paperColor = vec3<f32>(0.95, 0.92, 0.85) * paper;
-
-    // Wet paper darkens slightly
-    let wetPaper = paperColor * (1.0 - water * 0.15);
-
-    // Blend ink with paper based on pigment density
-    let inkDensity = (cyan + magenta + yellow) / 3.0;
-    var displayColor = mix(wetPaper, inkColor, inkDensity);
-
-    // Add paper grain
-    displayColor *= 0.98 + hash12(uv * 500.0) * 0.04;
-
-    // Water glisten at high saturation
-    let glisten = water * water * 0.1;
-    displayColor += vec3<f32>(glisten);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = mix(0.85, 1.0, inkDensity + water * 0.3);
-
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth * (1.0 - inkDensity * 0.1), 0.0, 0.0, 0.0));
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let paper = mix(vec3f(0.96, 0.94, 0.89), source.rgb, 0.55);
+  let absorb = exp(-pigment * vec3f(2.8, 2.45, 2.65));
+  let stained = paper * absorb + pigment.bgr * 0.08 * nextWater;
+  let edge = length(vec2f(e.r - w.r, n.g - s.g));
+  let color = aces(stained + edge * vec3f(0.08, 0.11, 0.15) + audio * pigment * 0.12);
+  let alpha = clamp(max(max(pigment.r, pigment.g), pigment.b) * 0.72 + nextWater * 0.2, 0.0, 1.0);
+  textureStore(writeTexture, p, vec4f(color, alpha));
 }
