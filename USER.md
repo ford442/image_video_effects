@@ -42,6 +42,19 @@ _Learn about the person you're helping. Update this as you go._
   state, live saved controls, full audio/interaction, semantic alpha, ACES, and
   actual Naga 10/10 proof. Catalog, TypeScript, Jest, and build gates pass;
   real-GPU visual QA remains external.
+- **Current shader batch (2026-08-23):** Generative Hyper / Geometry Batch
+  Upgrade covers five in-place Hyper effects plus five independent greenfield
+  exact IDs. Preserve `gen_hyper_warp.*` filenames/catalog URL, enforce the
+  canonical 13 bindings and 16x16x1 workgroups, exact C loads, A-only raw HDR
+  history, ACES display output, semantic alpha/depth, all three audio bands,
+  and four live named parameters. Expected regenerated totals are 453
+  generative and 1,345 overall; real-GPU tuning remains the handoff.
+- **Latest shader batch (2026-08-23):** Generative Hyper / Geometry Batch is
+  complete. Five legacy Hyper effects and five independent exact-ID effects
+  now pass actual Naga 10/10, strict ownership/liveness audits, 453/1,345
+  catalog parity, TypeScript, 81 Jest suites, and production build. Raw HDR
+  A/C packing and the legacy `gen_hyper_warp.*` path are preserved; real-GPU
+  visual/performance tuning remains external.
 
 ## Context
 

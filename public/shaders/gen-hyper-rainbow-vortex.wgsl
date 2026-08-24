@@ -92,8 +92,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let centered = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
 
   let time = u.config.x;
-  let mouseNorm = u.zoom_config.yz / res;
+  // zoom_config.yz is already normalized canvas UV (0..1, top-left origin).
+  let mouseNorm = u.zoom_config.yz;
   let mouseCentered = (mouseNorm - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
 
   let intensity = u.zoom_params.x;
   let speed = u.zoom_params.y;
@@ -101,7 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let colorShift = u.zoom_params.w;
 
   // Vortex center influenced by mouse
-  let vortexCenter = mouseCentered * 0.6;
+  let vortexCenter = mouseCentered * mix(0.18, 0.6, held);
   let pullStrength = 2.0 + intensity * 4.0 + length(mouseCentered) * 2.0;
 
   // Local coordinates relative to vortex center
@@ -118,7 +120,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Secondary vortex from mouse position
   let mouseOffset = mouseCentered * 0.5;
   let mouseVortexR = length(local - mouseOffset);
-  let mouseOmega = 1.5 * length(mouseCentered);
+  let mouseOmega = (0.35 + 1.5 * length(mouseCentered)) * held;
   let mouseCoreR = 0.15;
   let mouseSwirl = select(
     mouseOmega * mouseVortexR,
@@ -181,23 +183,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let interference = spiral1 * spiral2 * spiral3 * 2.0;
   color += vec3<f32>(1.0, 1.0, 1.0) * interference * 0.3;
 
+  // Clicks launch bounded vortex-energy fronts without auxiliary state.
+  var clickEnergy = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var ri = 0u; ri < rippleCount; ri++) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age > 0.0 && age < 3.2) {
+      let center = (ripple.xy - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+      let front = abs(distance(centered, center) - age * (0.18 + speed * 0.22));
+      clickEnergy += exp(-front * 70.0) * exp(-age * 1.25);
+    }
+  }
+  color += neonRainbow(clickEnergy + colorShift + time * 0.03) * clickEnergy * (0.7 + bass * 0.35);
+
   // Brightness boost
   color *= 1.0 + intensity * 1.5;
   color = max(color, vec3<f32>(0.0));
 
   // ── Temporal feedback ──
   let prev = textureLoad(dataTextureC, pixel, 0);
-  color = mix(prev.rgb * 0.96, color, 0.25);
-  textureStore(dataTextureA, pixel, vec4<f32>(color, 1.0));
+  color = clamp(mix(prev.rgb * 0.96, color, 0.25 + bass * 0.035), vec3<f32>(0.0), vec3<f32>(7.0));
 
   // ── Chromatic aberration ──
   let caStr = 0.003 * (1.0 + bass);
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   // ── ACES tone mapping + semantic alpha ──
+  let vortexEnergy = clamp(coreGlow * 0.18 + spiral1 * 0.34 + spiral2 * 0.26 +
+                            spiral3 * 0.2 + abs(fine) * 0.08 + clickEnergy * 0.35,
+                            0.0, 1.0);
+  let alpha = clamp(0.05 + vortexEnergy * 0.9, 0.05, 0.97);
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
   color = acesToneMap(color * 1.1);
-  let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  let depth = clamp(vortexEnergy * (0.72 + vorticityMag * 0.08), 0.0, 1.0);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

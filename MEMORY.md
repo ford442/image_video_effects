@@ -1,6 +1,38 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (simulation / field / growth / decay batch complete)
+**Last updated:** 2026-08-23 (Generative Hyper / Geometry batch complete)
+
+## 2026-08-23 — Generative Hyper / Geometry batch complete
+
+- Upgraded five existing Hyper effects and created the five absent exact-ID
+  ice, moire, iris, Islamic tiling, and Julia effects independently. Hyper Warp
+  keeps its legacy underscore filenames and URL; Rain Matrix keeps numeric
+  preset compatibility while receiving effect-specific labels.
+- All ten use bindings 0–12, 16x16x1, exact C loads, A-only raw HDR feedback,
+  ACES display output, semantic alpha/depth, bass/mids/treble, and four aligned
+  live named controls. No target reads or writes extraBuffer or stores B/C.
+- Proof: actual Naga 30.0.1 and static contract audits 10/10, no dead sliders or
+  extraBuffer violations, relative catalogs at 453 generative / 1,345 unified,
+  clean uniforms/URLs/TypeScript, Jest 81/81 (545 pass, 1 skip), and successful
+  SKIP_WASM_BUILD production compile. Batch briefs, shader packing notes, and
+  coordinator review are recorded; real-GPU tuning remains external.
+
+## 2026-08-23 — Generative Hyper / Geometry batch requested
+
+- Upgrade five existing effects in place: Hyper Rainbow Vortex, Hyper
+  Refractive Rain Matrix, Hyper Warp, Hyperbolic Crystal Symbiosis, and
+  Hyperbolic Tessellation. Preserve the legacy `gen_hyper_warp.*` filename and
+  catalog URL plus saved numeric parameter compatibility.
+- Add five independent exact-ID effects: Ice Crystal Lattice, Interference
+  Moire Field, Iris Bloom Fractal, Islamic Geometric Tiling, and Julia Set
+  Classic. Do not rename or repurpose nearby catalog entries.
+- All ten require the canonical bindings 0–12, 16x16x1 workgroups, exact
+  unfiltered C feedback, A-only raw HDR RGBA history, ACES display output,
+  semantic alpha, generated depth, genuine bass/mids/treble response, four
+  live named controls, and no greenfield extraBuffer use. Expected regenerated
+  totals: 453 generative and 1,345 overall. Require Naga/static/dead-slider,
+  catalogs/uniforms/TypeScript/Jest/build proof; visual and performance tuning
+  remains a real-GPU browser handoff.
 
 ## 2026-08-23 — Remaining simulation / field / growth / decay batch requested
 

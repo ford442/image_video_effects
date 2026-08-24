@@ -17,6 +17,12 @@
     16,
     1
   ],
+  "params": [
+    {"id": "intensity", "name": "Intensity", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
+    {"id": "speed", "name": "Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
+    {"id": "scale", "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
+    {"id": "colorShift", "name": "Color Shift", "default": 0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -56,5 +62,6 @@
   "updated": true,
   "id": "gen-hyper-rainbow-vortex",
   "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
-  "features": []
+  "features": ["rankine-vortex", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "feedbackPacking": "A/C = raw HDR vortex display RGBA history"
 }

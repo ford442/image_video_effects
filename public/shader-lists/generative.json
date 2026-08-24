@@ -14685,6 +14685,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -14724,24 +14762,78 @@
     "updated": true,
     "id": "gen-hyper-rainbow-vortex",
     "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
-    "features": []
+    "features": [
+      "rankine-vortex",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR vortex display RGBA history"
   },
   {
     "name": "Hyper-Refractive Rain-Matrix",
     "category": "generative",
     "tags": [
-      "generative"
+      "generative",
+      "rain",
+      "refraction",
+      "caustics",
+      "raymarch",
+      "audio-reactive"
     ],
-    "description": "",
+    "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, storm flashes, and temporal HDR trails.",
     "workgroup_size": [
       16,
       16,
       1
     ],
+    "params": [
+      {
+        "id": "rainDensity",
+        "name": "Rain Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "dropSpeed",
+        "name": "Drop Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fluidViscosity",
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "stormIntensity",
+        "name": "Storm Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
-        "name": "Intensity",
+        "name": "Rain Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -14749,7 +14841,7 @@
       },
       {
         "index": 1,
-        "name": "Speed",
+        "name": "Drop Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -14757,7 +14849,7 @@
       },
       {
         "index": 2,
-        "name": "Scale",
+        "name": "Fluid Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -14765,7 +14857,7 @@
       },
       {
         "index": 3,
-        "name": "Mouse Influence",
+        "name": "Storm Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -14777,7 +14869,18 @@
     "updated": true,
     "id": "gen-hyper-refractive-rain-matrix",
     "url": "shaders/gen-hyper-refractive-rain-matrix.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware",
+      "input-depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR refractive rain display RGBA history"
   },
   {
     "name": "Hyperbolic Crystal Symbiosis",
@@ -14797,6 +14900,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "growthSpeed",
+        "name": "Growth Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "competition",
+        "name": "Competition",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "curvature",
+        "name": "Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mutation",
+        "name": "Mutation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14841,8 +14982,14 @@
       "audio-reactive",
       "mouse-driven",
       "temporal",
-      "fast-motion"
-    ]
+      "fast-motion",
+      "held-interactive",
+      "ripple-reactive",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR crystal and advected trail RGBA history"
   },
   {
     "name": "Hyperbolic Tessellation Engine",
@@ -14863,6 +15010,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "tileSymmetry",
+        "name": "Tile Symmetry",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "depthColor",
+        "name": "Depth Color",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "rotationSpeed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "boundaryGlow",
+        "name": "Boundary Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14903,7 +15088,19 @@
     "updated": true,
     "id": "gen-hyperbolic-tessellation",
     "url": "shaders/gen-hyperbolic-tessellation.wgsl",
-    "features": []
+    "features": [
+      "hyperbolic-geometry",
+      "recursive",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR tessellation display RGBA history; depth = normalized recursive depth"
   },
   {
     "name": "Hyperbolic Tree Fractal",
@@ -15024,6 +15221,113 @@
     "id": "gen-hypnotic-vortex-tunnel",
     "url": "shaders/gen-hypnotic-vortex-tunnel.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-ice-crystal-lattice",
+    "url": "shaders/gen-ice-crystal-lattice.wgsl",
+    "name": "Ice Crystal Lattice",
+    "category": "generative",
+    "tags": [
+      "ice",
+      "crystal",
+      "hexagonal",
+      "frost",
+      "branching",
+      "audio-reactive"
+    ],
+    "description": "Hexagonal ice branches advance through luminous frost fronts, pointer-seeded nucleation, Fresnel-like rims, and click-launched fracture waves.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "latticeDensity",
+        "name": "Lattice Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "branching",
+        "name": "Branching",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "growthSpeed",
+        "name": "Growth Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "frostGlow",
+        "name": "Frost Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Lattice Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Branching",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Growth Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Frost Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR ice and frost display RGBA history"
   },
   {
     "name": "IFS Fractal Flame",
@@ -15218,6 +15522,113 @@
     "features": []
   },
   {
+    "id": "gen-interference-moire-field",
+    "url": "shaders/gen-interference-moire-field.wgsl",
+    "name": "Interference Moire Field",
+    "category": "generative",
+    "tags": [
+      "moire",
+      "interference",
+      "lines",
+      "optical",
+      "waves",
+      "audio-reactive"
+    ],
+    "description": "Crossed analytic line fields form evolving moire beats through phase warping, held-pointer lenses, and click-driven circular interference pulses.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "lineDensity",
+        "name": "Line Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "crossingAngle",
+        "name": "Crossing Angle",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "warpStrength",
+        "name": "Warp Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "colorPhase",
+        "name": "Color Phase",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Line Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Crossing Angle",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Warp Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Phase",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "analytic-lines",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR moire interference display RGBA history"
+  },
+  {
     "name": "Inverse Mandelbrot Realm",
     "category": "generative",
     "tags": [
@@ -15278,6 +15689,222 @@
     "id": "gen-inverse-mandelbrot",
     "url": "shaders/gen-inverse-mandelbrot.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-iris-bloom-fractal",
+    "url": "shaders/gen-iris-bloom-fractal.wgsl",
+    "name": "Iris Bloom Fractal",
+    "category": "generative",
+    "tags": [
+      "iris",
+      "fractal",
+      "polar",
+      "petals",
+      "eye",
+      "audio-reactive"
+    ],
+    "description": "Recursive polar petals articulate a breathing iris aperture, dark pupil, treble-fine veins, pointer gaze, and click-seeded bloom rings.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "petalCount",
+        "name": "Petal Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "bloomDepth",
+        "name": "Bloom Depth",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "aperture",
+        "name": "Aperture",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "colorCycle",
+        "name": "Color Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Petal Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bloom Depth",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Aperture",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "fractal",
+      "polar-geometry",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR iris display RGBA history"
+  },
+  {
+    "id": "gen-islamic-geometric-tiling",
+    "url": "shaders/gen-islamic-geometric-tiling.wgsl",
+    "name": "Islamic Geometric Tiling",
+    "category": "generative",
+    "tags": [
+      "islamic",
+      "geometric",
+      "tiling",
+      "star",
+      "rosette",
+      "ornament"
+    ],
+    "description": "Interlaced star polygons and recursive rosettes tile the plane with held-pointer twists, spectral ornament, and gilded click waves.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "starPoints",
+        "name": "Star Points",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "tileScale",
+        "name": "Tile Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "lineWidth",
+        "name": "Line Width",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "ornamentDepth",
+        "name": "Ornament Depth",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Star Points",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Tile Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Line Width",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ornament Depth",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "star-polygons",
+      "rosette",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR interlaced ornament display RGBA history"
   },
   {
     "name": "Islamic Geometric Star-Rose",
@@ -15397,6 +16024,114 @@
     "id": "gen-isometric-city",
     "url": "shaders/gen-isometric-city.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-julia-set-classic",
+    "url": "shaders/gen-julia-set-classic.wgsl",
+    "name": "Julia Set Classic",
+    "category": "generative",
+    "tags": [
+      "julia",
+      "fractal",
+      "escape-time",
+      "orbit-trap",
+      "complex",
+      "classic"
+    ],
+    "description": "A classic escape-time Julia set with smooth iteration coloring, orbit-trap highlights, pointer-controlled complex C, and click-ripple perturbations.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "cReal",
+        "name": "C Real",
+        "default": -0.745,
+        "min": -1.5,
+        "max": 1.5,
+        "step": 0.001,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "cImaginary",
+        "name": "C Imaginary",
+        "default": 0.113,
+        "min": -1.5,
+        "max": 1.5,
+        "step": 0.001,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 1.2,
+        "min": 0.2,
+        "max": 4,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "iterations",
+        "name": "Iterations",
+        "default": 96,
+        "min": 16,
+        "max": 160,
+        "step": 1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "C Real",
+        "default": -0.745,
+        "min": -1.5,
+        "max": 1.5,
+        "step": 0.001
+      },
+      {
+        "index": 1,
+        "name": "C Imaginary",
+        "default": 0.113,
+        "min": -1.5,
+        "max": 1.5,
+        "step": 0.001
+      },
+      {
+        "index": 2,
+        "name": "Zoom",
+        "default": 1.2,
+        "min": 0.2,
+        "max": 4,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iterations",
+        "default": 96,
+        "min": 16,
+        "max": 160,
+        "step": 1
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "escape-time",
+      "orbit-trap",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR Julia display RGBA history"
   },
   {
     "id": "gen-kaleidoscopic-synapse-bloom",
@@ -28157,7 +28892,15 @@
       }
     ],
     "updated": true,
-    "category": "generative"
+    "category": "generative",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "feedbackPacking": "A/C = stabilized flow-advected raw HDR display RGBA history"
   },
   {
     "id": "gen-julia-set",
