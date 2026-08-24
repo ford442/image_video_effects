@@ -236,7 +236,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(length(col) * 1.15 + 0.14, 0.14, 0.97);
   let genDepth = clamp(1.0 - length(col) * 0.22, 0.05, 0.98);
 
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(genDepth, 0.0, 0.0, 0.0));
 }

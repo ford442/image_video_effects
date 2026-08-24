@@ -22,6 +22,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "gear-scale", "name": "Gear Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "teeth-count", "name": "Teeth Count", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "rotation-speed", "name": "Rotation Speed", "default": 0.2, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "material", "name": "Material", "default": 0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -68,5 +74,6 @@
     "multi-band-material-lighting",
     "temporal-feedback",
     "depth-output"
-  ]
+  ],
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133..138] = sprung orbit state"
 }

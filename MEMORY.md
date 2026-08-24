@@ -1,5 +1,144 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
+**Last updated:** 2026-08-23 (Generative Hyper / Geometry batch complete)
+
+## 2026-08-23 — Generative Hyper / Geometry batch complete
+
+- Upgraded five existing Hyper effects and created the five absent exact-ID
+  ice, moire, iris, Islamic tiling, and Julia effects independently. Hyper Warp
+  keeps its legacy underscore filenames and URL; Rain Matrix keeps numeric
+  preset compatibility while receiving effect-specific labels.
+- All ten use bindings 0–12, 16x16x1, exact C loads, A-only raw HDR feedback,
+  ACES display output, semantic alpha/depth, bass/mids/treble, and four aligned
+  live named controls. No target reads or writes extraBuffer or stores B/C.
+- Proof: actual Naga 30.0.1 and static contract audits 10/10, no dead sliders or
+  extraBuffer violations, relative catalogs at 453 generative / 1,345 unified,
+  clean uniforms/URLs/TypeScript, Jest 81/81 (545 pass, 1 skip), and successful
+  SKIP_WASM_BUILD production compile. Batch briefs, shader packing notes, and
+  coordinator review are recorded; real-GPU tuning remains external.
+
+## 2026-08-23 — Generative Hyper / Geometry batch requested
+
+- Upgrade five existing effects in place: Hyper Rainbow Vortex, Hyper
+  Refractive Rain Matrix, Hyper Warp, Hyperbolic Crystal Symbiosis, and
+  Hyperbolic Tessellation. Preserve the legacy `gen_hyper_warp.*` filename and
+  catalog URL plus saved numeric parameter compatibility.
+- Add five independent exact-ID effects: Ice Crystal Lattice, Interference
+  Moire Field, Iris Bloom Fractal, Islamic Geometric Tiling, and Julia Set
+  Classic. Do not rename or repurpose nearby catalog entries.
+- All ten require the canonical bindings 0–12, 16x16x1 workgroups, exact
+  unfiltered C feedback, A-only raw HDR RGBA history, ACES display output,
+  semantic alpha, generated depth, genuine bass/mids/treble response, four
+  live named controls, and no greenfield extraBuffer use. Expected regenerated
+  totals: 453 generative and 1,345 overall. Require Naga/static/dead-slider,
+  catalogs/uniforms/TypeScript/Jest/build proof; visual and performance tuning
+  remains a real-GPU browser handoff.
+
+## 2026-08-23 — Remaining simulation / field / growth / decay batch requested
+
+- Upgrade ten named simulations: two decay systems, terrain erosion, crystal
+  phase growth, fire temperature, EM field, multi-state ecosystem, RGBA
+  cellular automata, Lenia-on-video, and digital moss. Preserve original saved
+  parameters and enforce the canonical 13-binding ABI, exact bounded C loads,
+  A-only feedback, all three audio bands, held pointer and click ripples,
+  semantic alpha, ACES, bounded optional state, and actual Naga validation.
+
+## 2026-08-23 — Remaining simulation / field / growth / decay batch complete
+
+- Upgraded all ten requested simulation shaders while retaining their distinct
+  domain models: dual corrosion, hydraulic erosion, crystal phase growth,
+  combustion, EM propagation, two ecosystems, Lenia, and digital moss.
+- Replaced all filtered or unbounded C feedback with exact bounded loads, wired
+  every saved slider and all three audio bands, added held input plus traveling
+  click fronts, ACES, semantic alpha, and truthful four-channel A/C packing.
+  No B or extraBuffer writes were introduced.
+- Saved params compare exact 10/10. Naga/bindgroup passes 10/10; strict buffer
+  and dead-slider audits, catalog URLs, uniform layout, TypeScript, all 81 Jest
+  suites (545 pass, 1 skip), and the production build pass. The unified catalog
+  remains 1,333 shaders. Real-GPU visual/stability tuning remains external.
+
+## 2026-08-23 — Codex (g) wave / smoke / ink / volumetric batch complete
+
+- Upgraded all ten requested effects with distinct stateful solvers: wave tank,
+  condensation glass, volumetric steam, subtractive wet ink, thermal smoke,
+  fire/soot fog, HDR aerogel scatter, heat haze, atmospheric fog, and magnetic
+  EM ripples.
+- All ten use the exact renderer 13-binding ABI, explicit 16×16×1 dispatch,
+  bounded exact C loads, A-only feedback writes, `plasmaBuffer[0].xyz`, held
+  pointer and capped age-guarded `u.ripples`, semantic alpha, and ACES. No
+  shader-owned `extraBuffer` state was needed.
+- Original saved `params` are exact 10/10. Updated metadata, category lists,
+  the 1,333-entry unified manifest, and coordinator notes are present. Actual
+  Naga is 10/10; strict buffer/dead-slider audits, URL/uniform/type gates, all
+  81 Jest suites (545 pass, 1 skip), and the production build pass. Real-GPU
+  visual and performance tuning remains the handoff.
+
+## 2026-08-23 — Gemini batch — optical / glass / holographic / lens set (10) complete
+
+- Completed all 10 advanced-hybrid optical, glass, holographic, and lens shaders to the full Gemini-style contract:
+  1. `holographic-interferometry.wgsl`
+  2. `holographic-interferometry-bilateral.wgsl`
+  3. `holographic-failure-iridescence.wgsl`
+  4. `frosted-glass-lens-iridescence.wgsl`
+  5. `glass-refraction-prismatic.wgsl`
+  6. `glass-wall-prismatic.wgsl`
+  7. `anamorphic-flare-iridescence.wgsl`
+  8. `dynamic-lens-flares-prismatic.wgsl`
+  9. `photonic-caustics-iridescence.wgsl`
+  10. `chroma-lens-iridescence.wgsl`
+- Architectural rigor:
+  - Canonical 13-binding WGSL compute header `@workgroup_size(16, 16, 1)` with out-of-bounds guards.
+  - ACES tone mapping on output RGB.
+  - Semantic alpha (transmission, depth, fringe confidence, or specular glow).
+  - A-only writeback to `dataTextureA` and `writeTexture`; B remains untouched.
+  - Exact `textureLoad(dataTextureC, pixel, 0)` previous frame feedback without filtering.
+  - Three-band audio from `plasmaBuffer[0].x` (bass), `.y` (mids), `.z` (treble).
+  - Single-writer spring-damper dynamics in `extraBuffer[133..138]`.
+  - Capped click-ripple shockwave interaction with age guards `time - r.z`.
+  - Naga-clean WGSL (removed undefined `saturate`, fixed audio indexing bugs, removed unneeded barriers).
+- Definitions & manifest:
+  - Saved parameters preserved byte-exact in all 10 JSON definition files in `shader_definitions/advanced-hybrid/`.
+  - Added aligned `updatedParams`, features, tags, and feedback packing.
+  - Regenerated multipass registry, category shader lists, and unified manifest (`1326` shaders cataloged with relative paths).
+- Validation:
+  - WGSL precommit gate 10/10 passed.
+  - `typecheck`, `verify:uniforms`, `audit:extrabuffer` (0 new violations), `audit:dead-sliders` (0 new dead sliders), and `verify:shader-list-urls` all green.
+  - Jest test suite: 81/81 passed (545 passed, 1 skipped).
+  - Production build: compiled successfully.
+
+
+- Current scope is ten effects: Wave Equation, Steamy Glass, Volumetric Steamy
+  Glass, RGBA Ink Diffusion, Thermal Smoke Trails, Fire/Smoke Volumetric Fog,
+  Aerogel Smoke HDR, Heat-Haze Volumetric, Atmospheric Volumetric Fog, and
+  Interactive Magnetic Ripple EM. Apply the same strict contract as Codex (e):
+  full bindings, ACES, semantic alpha, A-only feedback, bounded exact C loads,
+  bass/mid/treble audio, optional state only at `extraBuffer[133..138]`, full
+  pointer/held/click interaction, and actual Naga validation.
+
+## 2026-08-23 — Codex (e) ferro / melt / tensor / fluid-sim batch requested
+
+- Upgrade ten named effects: Liquid Jelly Fluid, Liquid Metal Prismatic,
+  Liquid Oil Iridescence, Liquid Smear Structure, Melting Oil Blackbody, Honey
+  Melt Blackbody, Viscous Drag Bilateral, Hyper Tensor Fluid, Coupled Fluid
+  Feedback, and Ripple Tank. Enforce the full 13-binding contract, ACES,
+  semantic alpha, A-only writeback, exact C loads, all three plasma audio bands,
+  bounded persistent state only at `extraBuffer[133..138]`, preserved
+  mouse/held/click-ripple response, and actual Naga validation.
+
+## 2026-08-23 — Codex (e) ferro / melt / tensor / fluid-sim batch complete
+
+- Closed all ten targets with thirteen Naga-clean WGSL modules. Legacy smear,
+  thermal oil, honey, bilateral drag, tensor fluid, coupled fluid, and Ripple
+  Tank code now uses distinct A/C state, exact bounded C loads, A-only writes,
+  all-band audio, ACES, semantic alpha, and full interaction. The three already
+  premium Batch 59 liquid shaders were contract-refined and revalidated.
+- Ripple Tank retains seven graph passes while replacing its B handoff and
+  broad scratch grid with A→C barriers and per-pixel capillary/foam state.
+  Saved params remain exact; strict buffer/dead-control audits, catalogs,
+  uniforms, TypeScript, 81 Jest suites, and production build are green. Real-GPU
+  QA remains external.
+- Nine unrelated optical/holographic shader edits appeared concurrently during
+  this batch and were preserved untouched; do not attribute them to Codex (e).
 **Last updated:** 2026-08-23 (Holographic / Hyper + Optical / Glass / Iridescence cohorts synced)
 
 ## 2026-08-23 — Holographic / Hyper generative cohort
@@ -1283,3 +1422,82 @@
   all existing params and updatedParams are preserved. Structural, catalog,
   Jest, typecheck, and production-build gates pass; real-GPU QA remains.
 
+## Crystalline / cybernetic generative cohort (2026-08-23)
+
+- Ten requested IDs run from `gen-crystal-lattice-growth` through
+  `gen-cybernetic-liquid-chrome-engine`; ferro-coral and liquid-chrome-engine
+  have prior upgrades whose visual/state behavior must be preserved during the
+  contract audit.
+- Acceptance adds an explicit four-named-parameter JSON requirement to the
+  standard full-13-binding, ACES, semantic-alpha, A-only writeback, exact-C-load,
+  regional three-band audio, bounded `[133..138]` state, interaction, and Naga
+  gates.
+- Completed 10/10: exact integer C history, raw HDR A-only packing, ACES display,
+  semantic alpha/depth, and three-band audio throughout; no target needs
+  extraBuffer state. Nine prior `updatedParams` arrays stayed exact, while the
+  void-spider's incorrect control order was deliberately aligned to WGSL.
+- Proof: Naga 10/10, no focused dead sliders or contract violations, 1,333-shader
+  catalog, TypeScript and URL/uniform checks, 81 Jest suites / 545 passes / one
+  skip, and production build green. Real-GPU visual proof remains external.
+
+## Ornate / fractal-growth generative cohort (2026-08-23)
+
+- Ten IDs span dynamic tessellation, dunes, eldritch eye, calligraphic weave,
+  ferrofluid monolith, Fibonacci garden, two flame systems, silk ribbons, and
+  fractal tree growth.
+- Apply the same full-13 / ACES / semantic-alpha / A-only raw HDR history /
+  exact-C-load / three-band audio / bounded-state / interaction / four-named-
+  parameter contract, while preserving the preceding completed batch in the
+  shared worktree.
+- Audit found seven requested IDs absent from both the tree and Git history;
+  implement those exact IDs greenfield rather than renaming preset-bearing
+  neighboring effects. The first three remain in-place upgrades.
+- Completed all ten. The seven missing IDs are now independent effects; Dynamic
+  Tiles, Echo Dunes, and Eldritch Eye were repaired in place. A/C is raw HDR
+  display history, C loads are exact, B is never written, and every definition
+  exposes four live named controls.
+- Echo Dunes alone uses persistent state at `[133]`; the other nine use none.
+  Proof: Naga/dead-slider/custom contract 10/10, 448 generative / 1,340 total
+  catalog entries, TypeScript and URL/uniform checks, 81 Jest suites / 545 pass /
+  one skip, and production build green. Real-GPU visual/performance proof remains
+  external.
+
+## Completed fireworks generative cohort (2026-08-23)
+
+- Ten confirmed IDs cover audio symphony, chrysanthemum, comet trail, crackle
+  palm, crossette, dahlia, fan, horse-tail, kamuro gold, and nocturne.
+- Apply full bindings, ACES/semantic alpha, A-only exact C feedback, plasma
+  audio, `[133..138]`-only state, Naga, and four-named-parameter rules while
+  keeping every shell pattern visually distinct.
+- Completed 10/10 in place with characteristic shell geometry intact. All use
+  A-only semantic RGBA history, exact C loads, ACES display, generated depth,
+  and live bass/mids/treble mappings. Audio Symphony alone uses auxiliary state,
+  single-writer at slot 133.
+- Six normalized-pointer conversions were repaired, and Nocturne's command
+  shell is now properly held-pointer gated. All existing `updatedParams` labels
+  and defaults stayed exact while new four-entry `params` arrays were added.
+- Proof: Naga/dead-slider/custom contract 10/10, 448 generative / 1,340 total
+  catalog entries, URL/uniform/typecheck clean, 81 Jest suites / 545 pass / one
+  skip, and production build green. Real-GPU visual/performance QA remains
+  external.
+
+## Completed fractal / gravity generative cohort (2026-08-23)
+
+- Ten confirmed IDs span fractal mechanisms, ember lattice, fractured monolith,
+  aether geode/cavern, ghost flame, refractive mosaic, ferrofluid singularity,
+  gravitational strain, and gravito-phononic accretion.
+- Apply the full bindings, ACES/semantic alpha, A-only exact C feedback,
+  three-band plasma audio, bounded `[133..138]` state, Naga, and four named live
+  JSON control contract while keeping each visual system recognizably distinct.
+- Completed 10/10 in place. The older monolith and geode now consume real plasma
+  bands rather than overloaded config/resolution fields; mosaic and ferrofluid
+  have exact temporal loads plus ACES/semantic output; strain and accretion now
+  persist truthful field/display state and generated depth.
+- Clockwork retains bounded sprung-orbit slots 133–138, Ghost Flame moves its
+  two envelopes to 133–134, and no other target accesses auxiliary state.
+  All definitions expose four aligned named controls with saved
+  `updatedParams` labels/defaults preserved.
+- Proof: Naga/dead-slider/static contract 10/10, 448 generative / 1,340 total
+  catalog entries, URL/uniform/typecheck clean, 81 Jest suites / 545 pass / one
+  skip, and production build green. Real-GPU visual/performance QA remains
+  external.

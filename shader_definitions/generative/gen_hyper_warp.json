@@ -94,5 +94,9 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "workgroup_size": [16, 16, 1],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "feedbackPacking": "A/C = stabilized flow-advected raw HDR display RGBA history"
 }

@@ -11854,14 +11854,52 @@
     ],
     "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes. Now audio-reactive to bass frequencies with meaningful alpha compositing.",
     "workgroup_size": [
-      8,
-      8,
+      16,
+      16,
       1
+    ],
+    "params": [
+      {
+        "id": "fractalDetail",
+        "name": "Fractal Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "motionSpeed",
+        "name": "Motion Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "tileDensity",
+        "name": "Tile Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouseWarp",
+        "name": "Mouse Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
         "index": 0,
-        "name": "Intensity",
+        "name": "Fractal Detail",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -11869,7 +11907,7 @@
       },
       {
         "index": 1,
-        "name": "Speed",
+        "name": "Motion Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -11877,7 +11915,7 @@
       },
       {
         "index": 2,
-        "name": "Scale",
+        "name": "Tile Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -11885,7 +11923,7 @@
       },
       {
         "index": 3,
-        "name": "Mouse Influence",
+        "name": "Mouse Warp",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -11897,7 +11935,17 @@
     "updated": true,
     "id": "gen-dynamic-tessellation-ornate-fractal-tiles",
     "url": "shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl",
-    "features": []
+    "features": [
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Echo Dunes",
@@ -11915,6 +11963,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "duneScale",
+        "name": "Dune Scale",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "windSpeed",
+        "name": "Wind Speed",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "mirage",
+        "name": "Mirage",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "echoRings",
+        "name": "Echo Rings",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -11955,7 +12041,17 @@
     "updated": true,
     "id": "gen-echo-dunes",
     "url": "shaders/gen-echo-dunes.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware",
+      "persistent-envelope"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history; extraBuffer[133] = bass envelope"
   },
   {
     "name": "Eldritch-Quantum Fractal-Eye",
@@ -11974,10 +12070,48 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "fractalDetail",
+        "name": "Fractal Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "pupilDilation",
+        "name": "Pupil Dilation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "plasmaDensity",
+        "name": "Plasma Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "chromaticShift",
+        "name": "Chromatic Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
-        "name": "Intensity",
+        "name": "Fractal Detail",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -11985,7 +12119,7 @@
       },
       {
         "index": 1,
-        "name": "Speed",
+        "name": "Pupil Dilation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -11993,7 +12127,7 @@
       },
       {
         "index": 2,
-        "name": "Scale",
+        "name": "Plasma Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -12001,7 +12135,7 @@
       },
       {
         "index": 3,
-        "name": "Mouse Influence",
+        "name": "Chromatic Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -12013,7 +12147,19 @@
     "updated": true,
     "id": "gen-eldritch-quantum-fractal-eye",
     "url": "shaders/gen-eldritch-quantum-fractal-eye.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Eldritch Tesseract-Hive Mind",
@@ -12312,6 +12458,111 @@
     "id": "gen-emergent-calligraphic-ecosystems",
     "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-emergent-calligraphic-weave",
+    "url": "shaders/gen-emergent-calligraphic-weave.wgsl",
+    "name": "Emergent Calligraphic Weave",
+    "category": "generative",
+    "tags": [
+      "calligraphy",
+      "ink",
+      "weave",
+      "flow-field",
+      "audio-reactive"
+    ],
+    "description": "An emergent weave of pressure-shaped calligraphic filaments, chromatic hairlines, and timestamped ink fronts that bend beneath a held pointer.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "strokeDensity",
+        "name": "Stroke Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "inkWidth",
+        "name": "Ink Width",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "chromaticBloom",
+        "name": "Chromatic Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Stroke Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ink Width",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Emergent Script Gardens",
@@ -14168,6 +14419,219 @@
     "feedbackPacking": "A/C = final ACES display RGBA; exact manually reconstructed echo history; extraBuffer[133] = smoothed bass envelope"
   },
   {
+    "id": "gen-ferrofluid-monolith",
+    "url": "shaders/gen-ferrofluid-monolith.wgsl",
+    "name": "Ferrofluid Monolith",
+    "category": "generative",
+    "tags": [
+      "ferrofluid",
+      "monolith",
+      "magnetic",
+      "raymarched",
+      "liquid-metal",
+      "audio-reactive"
+    ],
+    "description": "A raymarched liquid-metal obelisk grows magnetic radial spikes around an emissive core, with pointer orbit and click-driven field rings.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "monolithHeight",
+        "name": "Monolith Height",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "spikeStrength",
+        "name": "Spike Strength",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fieldSpeed",
+        "name": "Field Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "coreGlow",
+        "name": "Core Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Monolith Height",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spike Strength",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Field Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Core Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
+    "id": "gen-fibonacci-spiral-garden",
+    "url": "shaders/gen-fibonacci-spiral-garden.wgsl",
+    "name": "Fibonacci Spiral Garden",
+    "category": "generative",
+    "tags": [
+      "fibonacci",
+      "phyllotaxis",
+      "spiral",
+      "garden",
+      "bloom",
+      "audio-reactive"
+    ],
+    "description": "Ninety-six golden-angle blossoms unfurl as an interactive phyllotaxis garden with spectral petals and click-seeded growth fronts.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "spiralScale",
+        "name": "Spiral Scale",
+        "default": 0.62,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "growthCycle",
+        "name": "Growth Cycle",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "petalSize",
+        "name": "Petal Size",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "bloom",
+        "name": "Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Spiral Scale",
+        "default": 0.62,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Growth Cycle",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Petal Size",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
     "name": "4th of July — Audio Symphony",
     "category": "generative",
     "tags": [
@@ -14188,6 +14652,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "launch-density",
+        "name": "Launch Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "bass-drive",
+        "name": "Bass Drive",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "mids-layering",
+        "name": "Mids Layering",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "treble-sparkle",
+        "name": "Treble Sparkle",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14228,7 +14730,15 @@
     "updated": true,
     "id": "gen-fireworks-audio-symphony",
     "url": "shaders/gen-fireworks-audio-symphony.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-command-shell",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133] = smoothed bass envelope"
   },
   {
     "name": "4th of July — Chrysanthemum Burst",
@@ -14252,6 +14762,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "burst-size",
+        "name": "Burst Size",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "ring-layers",
+        "name": "Ring Layers",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "spark-density",
+        "name": "Spark Density",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color-spread",
+        "name": "Color Spread",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14296,8 +14844,12 @@
       "audio-reactive",
       "mouse-driven",
       "temporal",
-      "fast-motion"
-    ]
+      "fast-motion",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Comet Trail",
@@ -14318,6 +14870,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "comet-speed",
+        "name": "Comet Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "trail-length",
+        "name": "Trail Length",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "head-brightness",
+        "name": "Head Brightness",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color-shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14358,7 +14948,15 @@
     "updated": true,
     "id": "gen-fireworks-comet-trail",
     "url": "shaders/gen-fireworks-comet-trail.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-comet",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Crackle Palm",
@@ -14380,6 +14978,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "shell-energy",
+        "name": "Shell Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "stage-delay",
+        "name": "Stage Delay",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "crackle",
+        "name": "Crackle",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "palm-spread",
+        "name": "Palm Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14420,7 +15056,16 @@
     "updated": true,
     "id": "gen-fireworks-crackle-palm",
     "url": "shaders/gen-fireworks-crackle-palm.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-command-shell",
+      "multi-stage-burst",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Crossette Split",
@@ -14440,6 +15085,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "shell-power",
+        "name": "Shell Power",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "split-delay",
+        "name": "Split Delay",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "arm-spread",
+        "name": "Arm Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue-shift",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14480,7 +15163,16 @@
     "updated": true,
     "id": "gen-fireworks-crossette",
     "url": "shaders/gen-fireworks-crossette.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-crossette",
+      "four-arm-split",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Dahlia Burst",
@@ -14502,6 +15194,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "petal-count",
+        "name": "Petal Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "disk-size",
+        "name": "Disk Size",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "petal-rows",
+        "name": "Petal Rows",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue-cycle",
+        "name": "Hue Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14546,8 +15276,13 @@
       "fireworks",
       "audio-reactive",
       "mouse-driven",
-      "temporal-feedback"
-    ]
+      "temporal-feedback",
+      "flat-disk-petals",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Fan Shell",
@@ -14568,6 +15303,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "fan-angle",
+        "name": "Fan Angle",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "shell-power",
+        "name": "Shell Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "spark-density",
+        "name": "Spark Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue-cycle",
+        "name": "Hue Cycle",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14618,7 +15391,8 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Horse Tail Brocade",
@@ -14639,6 +15413,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "tail-length",
+        "name": "Tail Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "stream-width",
+        "name": "Stream Width",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "gold-intensity",
+        "name": "Gold Intensity",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "fall-speed",
+        "name": "Fall Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14689,7 +15501,8 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Kamuro Gold",
@@ -14710,6 +15523,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "glitter-density",
+        "name": "Glitter Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "fall-speed",
+        "name": "Fall Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "gold-mix",
+        "name": "Gold Mix",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hang-time",
+        "name": "Hang Time",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14760,7 +15611,8 @@
       "temporal-feedback",
       "aces-tone-map",
       "semantic-alpha"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Fireworks Nocturne",
@@ -14784,6 +15636,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "energy",
+        "name": "Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "tempo",
+        "name": "Tempo",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color-drift",
+        "name": "Color Drift",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -14824,7 +15714,15 @@
     "updated": true,
     "id": "gen-fireworks-nocturne",
     "url": "shaders/gen-fireworks-nocturne.wgsl",
-    "features": []
+    "features": [
+      "three-band-audio-reactive",
+      "mouse-command-shell",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "4th of July — Ring Shell",
@@ -15479,6 +16377,218 @@
     ]
   },
   {
+    "id": "gen-flame-fractal-attractor",
+    "url": "shaders/gen-flame-fractal-attractor.wgsl",
+    "name": "Flame Fractal Attractor",
+    "category": "generative",
+    "tags": [
+      "fractal",
+      "flame",
+      "attractor",
+      "orbit-density",
+      "audio-reactive"
+    ],
+    "description": "A curling orbit-density attractor folds luminous ember filaments through a bass-driven flame field with interactive vortex wakes.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "attractorStrength",
+        "name": "Attractor Strength",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "orbitSpeed",
+        "name": "Orbit Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "curl",
+        "name": "Curl",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "emberBloom",
+        "name": "Ember Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Attractor Strength",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Orbit Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Curl",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ember Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
+    "id": "gen-flowing-silk-ribbons",
+    "url": "shaders/gen-flowing-silk-ribbons.wgsl",
+    "name": "Flowing Silk Ribbons",
+    "category": "generative",
+    "tags": [
+      "silk",
+      "ribbons",
+      "fabric",
+      "iridescent",
+      "flow",
+      "audio-reactive"
+    ],
+    "description": "Layered anisotropic silk ribbons flow through an iridescent field, comb beneath a held pointer, and ring with timestamped clicks.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "ribbonCount",
+        "name": "Ribbon Count",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "silkWidth",
+        "name": "Silk Width",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ribbon Count",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Silk Width",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
     "name": "Fourier Epicycles",
     "category": "generative",
     "tags": [
@@ -15806,6 +16916,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "gear-scale",
+        "name": "Gear Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "teeth-count",
+        "name": "Teeth Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "rotation-speed",
+        "name": "Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "material",
+        "name": "Material",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -15852,7 +17000,8 @@
       "multi-band-material-lighting",
       "temporal-feedback",
       "depth-output"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133..138] = sprung orbit state"
   },
   {
     "name": "Fractal Ember Lattice",
@@ -15874,6 +17023,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "glow-intensity",
+        "name": "Glow Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "shard-size",
+        "name": "Shard Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "lattice-scale",
+        "name": "Lattice Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "spark-density",
+        "name": "Spark Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -15914,7 +17101,228 @@
     "updated": true,
     "id": "gen-fractal-ember-lattice",
     "url": "shaders/gen-fractal-ember-lattice.wgsl",
-    "features": []
+    "features": [
+      "rigid-shard-state",
+      "three-band-audio-reactive",
+      "mouse-shatter-reform",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = shard displacement xy, shard seed, reform progress"
+  },
+  {
+    "id": "gen-fractal-flame-classic",
+    "url": "shaders/gen-fractal-flame-classic.wgsl",
+    "name": "Classic Fractal Flame",
+    "category": "generative",
+    "tags": [
+      "fractal",
+      "flame",
+      "ifs",
+      "swirl",
+      "horseshoe",
+      "audio-reactive"
+    ],
+    "description": "A classic fractal flame blends swirl, horseshoe, and polar affine variations into warm spectral density traps with temporal embers.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "iterations",
+        "name": "Iterations",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "variationMix",
+        "name": "Variation Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "flameZoom",
+        "name": "Flame Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "paletteCycle",
+        "name": "Palette Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Iterations",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Variation Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Flame Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Palette Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
+    "id": "gen-fractal-tree-growth",
+    "url": "shaders/gen-fractal-tree-growth.wgsl",
+    "name": "Fractal Tree Growth",
+    "category": "generative",
+    "tags": [
+      "fractal",
+      "tree",
+      "growth",
+      "recursive",
+      "botanical",
+      "audio-reactive"
+    ],
+    "description": "A recursively evaluated distance-field tree unfurls through binary branch paths, luminous leaves, pointer wind, and click-seeded growth fronts.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "branchDepth",
+        "name": "Branch Depth",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "branchSpread",
+        "name": "Branch Spread",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "growthPhase",
+        "name": "Growth Phase",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "leafGlow",
+        "name": "Leaf Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Branch Depth",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Branch Spread",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Growth Phase",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Leaf Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "fractal",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
   {
     "name": "Fractured Monolith",
@@ -15936,6 +17344,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "fracture-spread",
+        "name": "Fracture Spread",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "levitation-speed",
+        "name": "Levitation Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glow-intensity",
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "rotation-speed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -15976,7 +17422,16 @@
     "updated": true,
     "id": "gen-fractured-monolith",
     "url": "shaders/gen-fractured-monolith.wgsl",
-    "features": []
+    "features": [
+      "raymarched-fractured-monolith",
+      "three-band-audio-reactive",
+      "mouse-orbit",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "Galactic Aether-Crystal Geode-Core",
@@ -15994,6 +17449,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "crystal-density",
+        "name": "Crystal Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "core-glow",
+        "name": "Core Glow",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fractal-iterations",
+        "name": "Fractal Iterations",
+        "default": 5,
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gas-density",
+        "name": "Gas Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -16034,7 +17527,16 @@
     "updated": true,
     "id": "gen-galactic-aether-crystal-geode-core",
     "url": "shaders/gen-galactic-aether-crystal-geode-core.wgsl",
-    "features": []
+    "features": [
+      "raymarched-kifs-crystals",
+      "three-band-audio-reactive",
+      "mouse-orbit",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "name": "Ghost Flame",
@@ -16052,6 +17554,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "flame-height",
+        "name": "Flame Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "cooling-rate",
+        "name": "Cooling Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "diffusion",
+        "name": "Diffusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -16092,7 +17632,14 @@
     "updated": true,
     "id": "gen-ghost-flame",
     "url": "shaders/gen-ghost-flame.wgsl",
-    "features": []
+    "features": [
+      "advected-flame-state",
+      "three-band-audio-reactive",
+      "mouse-and-click-heat",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = temperature, fuel, horizontal velocity, age; extraBuffer[133..134] = smoothed bass/RMS envelopes"
   },
   {
     "name": "Glacial-Aether Quantum-Cavern",
@@ -16114,6 +17661,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "ice-density",
+        "name": "Ice Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasma-glow",
+        "name": "Plasma Glow",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fracture-rate",
+        "name": "Fracture Rate",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "cavern-scale",
+        "name": "Cavern Scale",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -16161,7 +17746,8 @@
       "material-palette",
       "temporal-feedback",
       "depth-output"
-    ]
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "id": "gen-glass-mosaic-liquid-refraction",
@@ -16188,6 +17774,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "facet-density",
+        "name": "Facet Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "bevel-width",
+        "name": "Bevel Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "refraction-strength",
+        "name": "Refraction Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "ripple-speed",
+        "name": "Ripple Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -16226,7 +17850,15 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "features": []
+    "features": [
+      "liquid-voronoi-mosaic",
+      "three-band-audio-reactive",
+      "mouse-warped-refraction",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "id": "gen-gravitational-ferrofluid-singularity-engine",
@@ -16246,7 +17878,9 @@
       "click-reactive",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "tags": [
       "ferrofluid",
@@ -16334,7 +17968,8 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "updated": true
+    "updated": true,
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
   {
     "id": "gen-gravitational-strain",
@@ -16361,6 +17996,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "well-count",
+        "name": "Well Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "well-mass",
+        "name": "Well Mass",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "bend-strength",
+        "name": "Bend Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "emission-scale",
+        "name": "Emission Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -16408,8 +18081,10 @@
       "click-reactive",
       "bounded-raymarch",
       "semantic-alpha",
-      "generated-depth"
-    ]
+      "generated-depth",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = potential depth, ray speed, emission energy, semantic alpha"
   },
   {
     "name": "Gravito-Phononic Accretion",
@@ -16431,6 +18106,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "mass-scale",
+        "name": "Mass Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "body-count",
+        "name": "Body Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "lens-strength",
+        "name": "Lens Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gas-density",
+        "name": "Gas Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -16471,7 +18184,17 @@
     "updated": true,
     "id": "gen-gravito-phononic-accretion",
     "url": "shaders/gen-gravito-phononic-accretion.wgsl",
-    "features": []
+    "features": [
+      "multi-body-accretion",
+      "three-band-audio-reactive",
+      "mouse-mass",
+      "blackbody-disk",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ],
+    "feedbackPacking": "dataTextureA/C = tone-mapped temporal display RGB and semantic alpha"
   },
   {
     "name": "Graviton Plasma Lotus",
@@ -17859,6 +19582,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -17898,24 +19659,78 @@
     "updated": true,
     "id": "gen-hyper-rainbow-vortex",
     "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
-    "features": []
+    "features": [
+      "rankine-vortex",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR vortex display RGBA history"
   },
   {
     "name": "Hyper-Refractive Rain-Matrix",
     "category": "generative",
     "tags": [
-      "generative"
+      "generative",
+      "rain",
+      "refraction",
+      "caustics",
+      "raymarch",
+      "audio-reactive"
     ],
-    "description": "",
+    "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, storm flashes, and temporal HDR trails.",
     "workgroup_size": [
       16,
       16,
       1
     ],
+    "params": [
+      {
+        "id": "rainDensity",
+        "name": "Rain Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "dropSpeed",
+        "name": "Drop Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fluidViscosity",
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "stormIntensity",
+        "name": "Storm Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
-        "name": "Intensity",
+        "name": "Rain Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -17923,7 +19738,7 @@
       },
       {
         "index": 1,
-        "name": "Speed",
+        "name": "Drop Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -17931,7 +19746,7 @@
       },
       {
         "index": 2,
-        "name": "Scale",
+        "name": "Fluid Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -17939,7 +19754,7 @@
       },
       {
         "index": 3,
-        "name": "Mouse Influence",
+        "name": "Storm Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -17951,7 +19766,18 @@
     "updated": true,
     "id": "gen-hyper-refractive-rain-matrix",
     "url": "shaders/gen-hyper-refractive-rain-matrix.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware",
+      "input-depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR refractive rain display RGBA history"
   },
   {
     "name": "Hyperbolic Crystal Symbiosis",
@@ -17971,6 +19797,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "growthSpeed",
+        "name": "Growth Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "competition",
+        "name": "Competition",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "curvature",
+        "name": "Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mutation",
+        "name": "Mutation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -18015,8 +19879,14 @@
       "audio-reactive",
       "mouse-driven",
       "temporal",
-      "fast-motion"
-    ]
+      "fast-motion",
+      "held-interactive",
+      "ripple-reactive",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR crystal and advected trail RGBA history"
   },
   {
     "name": "Hyperbolic Tessellation Engine",
@@ -18037,6 +19907,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "tileSymmetry",
+        "name": "Tile Symmetry",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "depthColor",
+        "name": "Depth Color",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "rotationSpeed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "boundaryGlow",
+        "name": "Boundary Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -18077,7 +19985,19 @@
     "updated": true,
     "id": "gen-hyperbolic-tessellation",
     "url": "shaders/gen-hyperbolic-tessellation.wgsl",
-    "features": []
+    "features": [
+      "hyperbolic-geometry",
+      "recursive",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR tessellation display RGBA history; depth = normalized recursive depth"
   },
   {
     "name": "Hyperbolic Tree Fractal",
@@ -18198,6 +20118,113 @@
     "id": "gen-hypnotic-vortex-tunnel",
     "url": "shaders/gen-hypnotic-vortex-tunnel.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-ice-crystal-lattice",
+    "url": "shaders/gen-ice-crystal-lattice.wgsl",
+    "name": "Ice Crystal Lattice",
+    "category": "generative",
+    "tags": [
+      "ice",
+      "crystal",
+      "hexagonal",
+      "frost",
+      "branching",
+      "audio-reactive"
+    ],
+    "description": "Hexagonal ice branches advance through luminous frost fronts, pointer-seeded nucleation, Fresnel-like rims, and click-launched fracture waves.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "latticeDensity",
+        "name": "Lattice Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "branching",
+        "name": "Branching",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "growthSpeed",
+        "name": "Growth Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "frostGlow",
+        "name": "Frost Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Lattice Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Branching",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Growth Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Frost Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR ice and frost display RGBA history"
   },
   {
     "name": "IFS Fractal Flame",
@@ -18392,6 +20419,113 @@
     "features": []
   },
   {
+    "id": "gen-interference-moire-field",
+    "url": "shaders/gen-interference-moire-field.wgsl",
+    "name": "Interference Moire Field",
+    "category": "generative",
+    "tags": [
+      "moire",
+      "interference",
+      "lines",
+      "optical",
+      "waves",
+      "audio-reactive"
+    ],
+    "description": "Crossed analytic line fields form evolving moire beats through phase warping, held-pointer lenses, and click-driven circular interference pulses.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "lineDensity",
+        "name": "Line Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "crossingAngle",
+        "name": "Crossing Angle",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "warpStrength",
+        "name": "Warp Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "colorPhase",
+        "name": "Color Phase",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Line Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Crossing Angle",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Warp Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Phase",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "analytic-lines",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR moire interference display RGBA history"
+  },
+  {
     "name": "Inverse Mandelbrot Realm",
     "category": "generative",
     "tags": [
@@ -18452,6 +20586,222 @@
     "id": "gen-inverse-mandelbrot",
     "url": "shaders/gen-inverse-mandelbrot.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-iris-bloom-fractal",
+    "url": "shaders/gen-iris-bloom-fractal.wgsl",
+    "name": "Iris Bloom Fractal",
+    "category": "generative",
+    "tags": [
+      "iris",
+      "fractal",
+      "polar",
+      "petals",
+      "eye",
+      "audio-reactive"
+    ],
+    "description": "Recursive polar petals articulate a breathing iris aperture, dark pupil, treble-fine veins, pointer gaze, and click-seeded bloom rings.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "petalCount",
+        "name": "Petal Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "bloomDepth",
+        "name": "Bloom Depth",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "aperture",
+        "name": "Aperture",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "colorCycle",
+        "name": "Color Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Petal Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bloom Depth",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Aperture",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "fractal",
+      "polar-geometry",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR iris display RGBA history"
+  },
+  {
+    "id": "gen-islamic-geometric-tiling",
+    "url": "shaders/gen-islamic-geometric-tiling.wgsl",
+    "name": "Islamic Geometric Tiling",
+    "category": "generative",
+    "tags": [
+      "islamic",
+      "geometric",
+      "tiling",
+      "star",
+      "rosette",
+      "ornament"
+    ],
+    "description": "Interlaced star polygons and recursive rosettes tile the plane with held-pointer twists, spectral ornament, and gilded click waves.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "starPoints",
+        "name": "Star Points",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "tileScale",
+        "name": "Tile Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "lineWidth",
+        "name": "Line Width",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "ornamentDepth",
+        "name": "Ornament Depth",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Star Points",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Tile Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Line Width",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ornament Depth",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "star-polygons",
+      "rosette",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR interlaced ornament display RGBA history"
   },
   {
     "name": "Islamic Geometric Star-Rose",
@@ -18571,6 +20921,114 @@
     "id": "gen-isometric-city",
     "url": "shaders/gen-isometric-city.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-julia-set-classic",
+    "url": "shaders/gen-julia-set-classic.wgsl",
+    "name": "Julia Set Classic",
+    "category": "generative",
+    "tags": [
+      "julia",
+      "fractal",
+      "escape-time",
+      "orbit-trap",
+      "complex",
+      "classic"
+    ],
+    "description": "A classic escape-time Julia set with smooth iteration coloring, orbit-trap highlights, pointer-controlled complex C, and click-ripple perturbations.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "cReal",
+        "name": "C Real",
+        "default": -0.745,
+        "min": -1.5,
+        "max": 1.5,
+        "step": 0.001,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "cImaginary",
+        "name": "C Imaginary",
+        "default": 0.113,
+        "min": -1.5,
+        "max": 1.5,
+        "step": 0.001,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 1.2,
+        "min": 0.2,
+        "max": 4,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "iterations",
+        "name": "Iterations",
+        "default": 96,
+        "min": 16,
+        "max": 160,
+        "step": 1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "C Real",
+        "default": -0.745,
+        "min": -1.5,
+        "max": 1.5,
+        "step": 0.001
+      },
+      {
+        "index": 1,
+        "name": "C Imaginary",
+        "default": 0.113,
+        "min": -1.5,
+        "max": 1.5,
+        "step": 0.001
+      },
+      {
+        "index": 2,
+        "name": "Zoom",
+        "default": 1.2,
+        "min": 0.2,
+        "max": 4,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iterations",
+        "default": 96,
+        "min": 16,
+        "max": 160,
+        "step": 1
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "escape-time",
+      "orbit-trap",
+      "audio-reactive",
+      "mouse-interactive",
+      "held-interactive",
+      "ripple-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware"
+    ],
+    "feedbackPacking": "A/C = raw HDR Julia display RGBA history"
   },
   {
     "id": "gen-kaleidoscopic-synapse-bloom",
@@ -31413,7 +33871,15 @@
       }
     ],
     "updated": true,
-    "category": "generative"
+    "category": "generative",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "feedbackPacking": "A/C = stabilized flow-advected raw HDR display RGBA history"
   },
   {
     "id": "gen-julia-set",

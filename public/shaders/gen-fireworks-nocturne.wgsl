@@ -138,7 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let mouse = vec2<f32>(u.zoom_config.yz);
   let mouseDown = u.zoom_config.w;
-  let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);
+  let mouseUV = (mouse - vec2<f32>(0.5)) * res / min(res.x, res.y);
 
   // Params
   let energy = mix(0.4, 1.6, u.zoom_params.x);
@@ -291,7 +291,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // ── User / mouse command shell (big special burst) ──
-  if (mouseDown > 0.5 || length(mouseUV) < 10.0) {  // always consider mouse pos
+  if (mouseDown > 0.5) {
     let mAge = fract(time * 0.9) * 3.8;  // cycling personal bursts when held
     let mBurstT = 1.1;
     let mCenter = mouseUV + vec2<f32>(0.0, 0.1); // slight lift
@@ -354,9 +354,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(br * 1.15 + 0.15, 0.15, 0.98);
 
   // Persist state for trails/smoke
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.6 + prev * 0.35, 1.0)); // light feedback
+  let generatedDepth = clamp(1.0 - exp(-br * 0.8), 0.0, 1.0) * 0.85;
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
 
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(generatedDepth, 0.0, 0.0, 0.0));
 }

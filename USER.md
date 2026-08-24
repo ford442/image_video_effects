@@ -119,6 +119,20 @@ _Learn about the person you're helping. Update this as you go._
   state in its underscore-backed WGSL and only `[133..136]` spring state;
   Fourier retains packed envelope/trail A state. Naga/Jest/build are green;
   real-GPU visual QA remains external.
+- **Current shader batch (2026-08-23):** Generative Hyper / Geometry Batch
+  Upgrade covers five in-place Hyper effects plus five independent greenfield
+  exact IDs. Preserve `gen_hyper_warp.*` filenames/catalog URL, enforce the
+  canonical 13 bindings and 16x16x1 workgroups, exact C loads, A-only raw HDR
+  history, ACES display output, semantic alpha/depth, all three audio bands,
+  and four live named parameters. Expected regenerated totals are 453
+  generative and 1,345 overall; real-GPU tuning remains the handoff.
+- **Latest shader batch (2026-08-23):** Generative Hyper / Geometry Batch is
+  complete. Five legacy Hyper effects and five independent exact-ID effects
+  now pass actual Naga 10/10, strict ownership/liveness audits, 453/1,345
+  catalog parity, TypeScript, 81 Jest suites, and production build. Raw HDR
+  A/C packing and the legacy `gen_hyper_warp.*` path are preserved; real-GPU
+  visual/performance tuning remains external.
+
 - **Main reconcile (2026-08-23):** Merged local optical/branch-union `main` with
   origin Batch 70, generative named-params #1167/#1169, and Batch 67 (#1170).
   Kept local optical `holographic-flicker`; took Batch 67 `glass-wipes`,
@@ -249,6 +263,16 @@ Format specification:
   through tracker #474; preserve sequential batch boundaries, exact saved-param
   compatibility, truthful feedback packing, and independent verification before
   the next cohort begins. Batch 55 is the four-shader geometry / fast-motion /
+  psychedelic-color cohort.
+- For the completed crystalline/cybernetic generative cohort, require four named
+  JSON controls per shader in addition to the standard 13-binding, ACES,
+  semantic-alpha, exact-C-load, three-band-audio, bounded-state contract.
+- Applied the same contract to the completed ornate/fractal-growth generative
+  cohort, keeping batch artifacts and validation boundaries independently clear.
+- For the next confirmed-ID fireworks cohort, preserve the characteristic shell
+  geometry of each named firework while applying the same strict shader contract.
+- For the confirmed fractal/gravity cohort, preserve each named material and
+  field identity rather than homogenizing the ten shaders around one motif.
   psychedelic-color cohort. Unique leftover Batch 56 shaders from
   `cursor/effect-shaders-complexity-8594` were unioned onto main in 99d09e5c
   without reverting #1137 or Batch 57 fractal-kaleidoscope. Batch 58E closed

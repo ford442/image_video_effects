@@ -19,6 +19,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "mass-scale", "name": "Mass Scale", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "body-count", "name": "Body Count", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "lens-strength", "name": "Lens Strength", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "gas-density", "name": "Gas Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -58,5 +64,15 @@
   "updated": true,
   "id": "gen-gravito-phononic-accretion",
   "url": "shaders/gen-gravito-phononic-accretion.wgsl",
-  "features": []
+  "features": [
+    "multi-body-accretion",
+    "three-band-audio-reactive",
+    "mouse-mass",
+    "blackbody-disk",
+    "temporal-feedback",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map"
+  ],
+  "feedbackPacking": "dataTextureA/C = tone-mapped temporal display RGB and semantic alpha"
 }
