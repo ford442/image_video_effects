@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "performance_policy.h"
+#include "format_pack.h"
 #include "wasm_internal.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
@@ -23,6 +24,43 @@ WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
     return fmt == policy::InternalColorFormat::Rgba16Float
         ? WGPUTextureFormat_RGBA16Float
         : WGPUTextureFormat_RGBA32Float;
+}
+
+void QueueWriteRgba(
+    WGPUQueue queue,
+    WGPUTexture texture,
+    const float* rgba,
+    int width,
+    int height,
+    policy::InternalColorFormat fmt,
+    std::vector<uint8_t>& packed
+) {
+    if (!queue || !texture || !rgba || width <= 0 || height <= 0) return;
+    const size_t floatCount = static_cast<size_t>(width) * static_cast<size_t>(height) * 4u;
+
+    WGPUTexelCopyTextureInfo dest = {};
+    dest.texture = texture;
+    dest.mipLevel = 0;
+    dest.origin = {0, 0, 0};
+    dest.aspect = WGPUTextureAspect_All;
+
+    WGPUTexelCopyBufferLayout layout = {};
+    layout.offset = 0;
+    layout.bytesPerRow = format_pack::BytesPerRow(width, fmt);
+    layout.rowsPerImage = static_cast<uint32_t>(height);
+
+    WGPUExtent3D extent = {};
+    extent.width = static_cast<uint32_t>(width);
+    extent.height = static_cast<uint32_t>(height);
+    extent.depthOrArrayLayers = 1;
+
+    if (fmt == policy::InternalColorFormat::Rgba32Float) {
+        wgpuQueueWriteTexture(queue, &dest, rgba, floatCount * sizeof(float), &layout, &extent);
+        return;
+    }
+
+    format_pack::PackRgba(rgba, floatCount, fmt, packed);
+    wgpuQueueWriteTexture(queue, &dest, packed.data(), packed.size(), &layout, &extent);
 }
 }  // namespace
 
@@ -144,28 +182,12 @@ bool WebGPURenderer::CreateResources() {
     wgpuQueueWriteTexture(queue_.get(), &emptyDest, black, sizeof(black), &emptyDataLayout, &texDesc.size);
 
     // Initialize data texture C and readTexture_ to zeros (avoids uninitialised GPU memory).
+    // bytesPerRow must match the allocated colorFormat_ (rgba16float is 8 B/px, not 16).
     std::vector<float> zeros(static_cast<size_t>(canvasWidth_) * canvasHeight_ * 4, 0.0f);
-
-    WGPUTexelCopyTextureInfo dataDest = {};
-    dataDest.mipLevel = 0;
-    dataDest.origin = {0, 0, 0};
-    dataDest.aspect = WGPUTextureAspect_All;
-
-    WGPUTexelCopyBufferLayout dataLayout = {};
-    dataLayout.offset = 0;
-    dataLayout.bytesPerRow = static_cast<uint32_t>(canvasWidth_) * sizeof(float) * 4;
-    dataLayout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
-
-    WGPUExtent3D dataExtent = {};
-    dataExtent.width = static_cast<uint32_t>(canvasWidth_);
-    dataExtent.height = static_cast<uint32_t>(canvasHeight_);
-    dataExtent.depthOrArrayLayers = 1;
-
-    dataDest.texture = dataTextureC_.get();
-    wgpuQueueWriteTexture(queue_.get(), &dataDest, zeros.data(), zeros.size() * sizeof(float), &dataLayout, &dataExtent);
-
-    dataDest.texture = readTexture_.get();
-    wgpuQueueWriteTexture(queue_.get(), &dataDest, zeros.data(), zeros.size() * sizeof(float), &dataLayout, &dataExtent);
+    QueueWriteRgba(queue_.get(), dataTextureC_.get(), zeros.data(),
+                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
+    QueueWriteRgba(queue_.get(), readTexture_.get(), zeros.data(),
+                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
 
     CreateTimestampQueries();
 
@@ -246,28 +268,10 @@ void WebGPURenderer::RecreateTextures() {
                   0.0f);
     }
 
-    WGPUTexelCopyTextureInfo dest = {};
-    dest.mipLevel = 0;
-    dest.origin = {0, 0, 0};
-    dest.aspect = WGPUTextureAspect_All;
-
-    WGPUTexelCopyBufferLayout layout = {};
-    layout.offset = 0;
-    layout.bytesPerRow  = static_cast<uint32_t>(canvasWidth_) * sizeof(float) * 4;  // rgba32float
-    layout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
-
-    WGPUExtent3D extent = {};
-    extent.width  = static_cast<uint32_t>(canvasWidth_);
-    extent.height = static_cast<uint32_t>(canvasHeight_);
-    extent.depthOrArrayLayers = 1;
-
-    dest.texture = dataTextureC_.get();
-    wgpuQueueWriteTexture(queue_.get(), &dest, videoStagingBuffer_.data(),
-                          floatCount * sizeof(float), &layout, &extent);
-
-    dest.texture = readTexture_.get();
-    wgpuQueueWriteTexture(queue_.get(), &dest, videoStagingBuffer_.data(),
-                          floatCount * sizeof(float), &layout, &extent);
+    QueueWriteRgba(queue_.get(), dataTextureC_.get(), videoStagingBuffer_.data(),
+                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
+    QueueWriteRgba(queue_.get(), readTexture_.get(), videoStagingBuffer_.data(),
+                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
 
     // Rebuild the bind groups with the new texture views.
     // CreateBindGroups() already calls CreateRenderBindGroup() internally.
@@ -327,31 +331,19 @@ void WebGPURenderer::ClearReadTexture() {
                   0.0f);
     }
 
-    WGPUTexelCopyTextureInfo dest = {};
-    dest.texture = readTexture_.get();
-    dest.mipLevel = 0;
-    dest.origin = {0, 0, 0};
-    dest.aspect = WGPUTextureAspect_All;
-
-    WGPUTexelCopyBufferLayout layout = {};
-    layout.offset = 0;
-    layout.bytesPerRow = static_cast<uint32_t>(canvasWidth_) * sizeof(float) * 4;
-    layout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
-
-    WGPUExtent3D extent = {};
-    extent.width = static_cast<uint32_t>(canvasWidth_);
-    extent.height = static_cast<uint32_t>(canvasHeight_);
-    extent.depthOrArrayLayers = 1;
-
-    wgpuQueueWriteTexture(queue_.get(), &dest, videoStagingBuffer_.data(),
-                          floatCount * sizeof(float), &layout, &extent);
+    QueueWriteRgba(queue_.get(), readTexture_.get(), videoStagingBuffer_.data(),
+                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
 }
 
 void WebGPURenderer::SetColorFormat(int formatEnum) {
     if (!initialized_ || deviceLost_) return;
-    const auto fmt = formatEnum == 1
+    auto fmt = formatEnum == 1
         ? policy::InternalColorFormat::Rgba16Float
         : policy::InternalColorFormat::Rgba32Float;
+    if (fmt == policy::InternalColorFormat::Rgba16Float && !supportsRgba16FloatStorage_) {
+        printf("[WASM] rgba16float storage probe failed — fail-soft staying on rgba32float\n");
+        fmt = policy::InternalColorFormat::Rgba32Float;
+    }
     if (colorFormat_ == fmt) return;
 
     printf("[WASM] Switching internal color format to %s\n",
@@ -421,24 +413,8 @@ void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, in
         }
     }
 
-    WGPUTexelCopyTextureInfo dest = {};
-    dest.texture = readTexture_;
-    dest.mipLevel = 0;
-    dest.origin = {0, 0, 0};
-    dest.aspect = WGPUTextureAspect_All;
-
-    WGPUTexelCopyBufferLayout layout = {};
-    layout.offset = 0;
-    layout.bytesPerRow = static_cast<uint32_t>(dstW) * 16;  // 4 floats × 4 bytes
-    layout.rowsPerImage = static_cast<uint32_t>(dstH);
-
-    WGPUExtent3D extent = {};
-    extent.width  = static_cast<uint32_t>(dstW);
-    extent.height = static_cast<uint32_t>(dstH);
-    extent.depthOrArrayLayers = 1;
-
-    wgpuQueueWriteTexture(queue_, &dest, videoStagingBuffer_.data(),
-                          needed * sizeof(float), &layout, &extent);
+    QueueWriteRgba(queue_.get(), readTexture_.get(), videoStagingBuffer_.data(),
+                   dstW, dstH, colorFormat_, packedUploadBuffer_);
 }
 
 

@@ -139,6 +139,310 @@
   QA remains external.
 - Nine unrelated optical/holographic shader edits appeared concurrently during
   this batch and were preserved untouched; do not attribute them to Codex (e).
+**Last updated:** 2026-08-23 (Holographic / Hyper + Optical / Glass / Iridescence cohorts synced)
+
+## 2026-08-23 — Holographic / Hyper generative cohort
+
+- Upgraded Holographic Fracture, Lens-Flare Matrix, Membrane, Plasma Geode,
+  Rainbow Surface, Hopf Fiber Bundle, Bismuth Clockwork, Bismuth Matrix,
+  Tesseract Labyrinth, and Hyper Labyrinth under the canonical exact-C,
+  A-only, three-band audio, pointer/held/click, semantic-alpha, and depth
+  contract with all saved parameter values preserved.
+- Lens-Flare Matrix, Membrane, and Hyper Labyrinth intentionally retain raw A
+  state; the other seven store exact ACES display RGBA. Fracture's spring is
+  guarded at `[133..137]`, Matrix's bass envelope moved from slot 0 to `[133]`,
+  and Hyper Labyrinth no longer reads engine FFT slots.
+- Forty named controls are live. Focused Naga/contract audits, catalog/uniform/
+  TypeScript checks, Jest 84/84, and the production build pass. Real-GPU
+  interaction, composition, stability, and performance QA remains external.
+
+## 2026-08-23 — Optical / Glass / Holographic / Iridescence Upgrade Batch (10 shaders)
+
+- Upgraded 10 optical / glass / holographic / iridescence shaders:
+  1. `spec-iridescence-engine` (advanced-hybrid): Thin-film interference & spectral optics with per-wavelength FFT audio, resolved mask write (now stores display RGBA to dataTextureA), ACES tonemap, exact C loads, and spring cursor in `extraBuffer[133..138]`.
+  2. `spec-prismatic-dispersion` (advanced-hybrid): 4-band spectral Cauchy dispersion with CIE color matching, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  3. `frost-reveal-crystal` (advanced-hybrid): Anisotropic dendritic frost & crystal growth phase field with exact 4-neighborhood C loads, ACES tonemap, and spring cursor. Added aligned updatedParams.
+  4. `fractal-glass-distort-bilateral` (advanced-hybrid): Recursive fractal glass rotation with bilateral edge-preserving filter, added writeback to dataTextureA, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  5. `bubble-lens-coupled` (advanced-hybrid): Fluid-coupled magnifying bubble lens with semi-Lagrangian advection, exact C loads, ACES tonemap, and spring cursor. Added aligned updatedParams.
+  6. `chroma-depth-tunnel-prismatic` (advanced-hybrid): Deep prismatic chromatic tunnel with held pointer pull, axial packets, ACES tonemap, exact C loads, and spring cursor.
+  7. `chromatic-focus-coupled` (advanced-hybrid): Fluid-coupled chromatic DOF with semi-Lagrangian advection, exact C loads, ACES tonemap, and spring cursor. Added aligned updatedParams.
+  8. `chromatic-focus-guided` (advanced-hybrid): Depth-guided 7-band chromatic dispersion preventing edge bleeding, added writeback to dataTextureA, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  9. `distortion-gravitational-prismatic` (advanced-hybrid): Einstein-ring gravitational lensing with 4-band Cauchy dispersion, accretion disk, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  10. `multi-fractal-compositor-lens` (advanced-hybrid): Multi-layer fractal compositor with gravitational lensing, clean rewrite from mangled source, added writeback to dataTextureA, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+- Agent contract applied 10/10: Full 13-binding layout, ACES tonemapping, semantic alpha, writeback only to dataTextureA (and writeTexture/writeDepthTexture), exact textureLoad from dataTextureC, plasmaBuffer three-band audio reactivity, bounded extraBuffer[133..138] state only (single-writer), preserved mouse / held / click-ripple interactivity, and naga-clean WGSL.
+- Preserved saved parameter contracts byte-for-byte in JSONs with aligned updatedParams.
+- Proof: Naga 10/10, wgsl_precommit_gate 10/10, extraBuffer audit PASS, dead-sliders audit PASS (all 4 sliders live across all 10), URL policy PASS, Jest 84/84 suites (559 pass, 1 skip), and SKIP_WASM_BUILD=1 production build PASS. Real-GPU visual QA remains external handoff.
+
+
+## 2026-08-23 — Optical / Prism / Crystal / Lens / Caustic Upgrade Batch (10 shaders)
+
+- Upgraded 10 optical / prism / crystal / lens / caustic shaders:
+  1. `prism-displacement` (distortion): Anamorphic spectral lens dispersion with depth-weighted magnification, rotation, ACES tonemap, exact C loads, and spring cursor in `extraBuffer[133..138]`. Added aligned updatedParams.
+  2. `prismatic-mosaic` (distortion): Multi-layer prismatic facet tiles with volumetric fog, chromatic dispersion, vortex distortion, ACES tonemap, exact C loads, live saturation boost slider, writeback to dataTextureA, and spring cursor. Added aligned updatedParams.
+  3. `refraction-tunnel` (distortion): Curvature-warped prismatic tunnel with hoop rails, liquid-rainbow caustics, ACES tonemap, exact C loads, and spring cursor.
+  4. `spec-bicubic-crystal` (distortion): Bicubic Catmull-Rom crystalline distortion, resolved mask write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  5. `spiral-lens` (distortion): Möbius kaleidoscope & domain-warped spiral refraction, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor.
+  6. `voronoi-faceted-glass` (distortion): Cellular glass distortion with Voronoi facet refraction, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  7. `gravitational-lensing` (advanced-hybrid): Schwarzschild geodesic raytracing with Shakura-Sunyaev disk, Planck blackbody fit, standard clamp tonemap, exact C loads, and spring cursor.
+  8. `gravitational-lensing-nlm` (advanced-hybrid): Relativistic geodesics with Non-Local Means patch filtering, ACES tonemap, exact C loads, writeback to dataTextureA, and spring cursor. Added aligned updatedParams.
+  9. `digital-lens-prismatic` (advanced-hybrid): Digital prismatic lens with hex grid, Cauchy dispersion, resolved metadata write to dataTextureA (stores display RGBA), ACES tonemap, exact C loads, and spring cursor.
+  10. `crystal-illuminator-iridescence` (advanced-hybrid): Faceted glass and gemstone crystal with thin-film rainbow iridescence, ACES tonemap, exact C loads, writeback to dataTextureA, and spring cursor. Added aligned updatedParams.
+- Agent contract applied 10/10: Full 13-binding layout, ACES tonemapping, semantic alpha, writeback only to dataTextureA (and writeTexture/writeDepthTexture), exact textureLoad from dataTextureC, plasmaBuffer three-band audio reactivity, bounded extraBuffer[133..138] state only (single-writer), preserved mouse / held / click-ripple interactivity, and naga-clean WGSL.
+- Preserved saved parameter contracts byte-for-byte in JSONs with aligned updatedParams.
+- Proof: Naga 10/10, wgsl_precommit_gate 10/10, extraBuffer audit PASS, dead-sliders audit PASS (all 4 sliders live across all 10), URL policy PASS, Jest 84/84 suites (559 pass, 1 skip), and SKIP_WASM_BUILD=1 production build PASS. Real-GPU visual QA remains external handoff.
+
+## 2026-08-23 — Optical / Glass / Prism / Crystal / Lens Upgrade Batch (10 shaders)
+
+- Upgraded 10 optical / glass / prism / crystal / lens distortion shaders:
+  1. `bubble-lens` (distortion): Marangoni surfactant convection + per-band membrane resonance modes, thin-film interference, removed dataTextureB write (A-only writeback), ACES tonemap, exact C loads, and spring cursor in `extraBuffer[133..138]`.
+  2. `crystal-facets` (distortion): Prismatic facet refraction & birefringence, canonical three-band audio, ACES tonemap, exact C loads, and spring cursor.
+  3. `cyber-lens` (distortion): Tactical holographic HUD with rolling-shutter scan skew, telemetry rings, removed dataTextureB write (A-only writeback), ACES tonemap, exact C loads, and spring cursor.
+  4. `fractal-glass-distort` (distortion): IFS attractor glass with wired live aberration slider, chromatic dispersion, ACES tonemap, exact C loads, and spring cursor.
+  5. `glass-brick-distortion` (distortion): Fluted architectural glass brick wall with Snell's law dispersion, Schlick Fresnel, Beer-Lambert absorption, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  6. `glass-brick-wall` (distortion): Textured architectural glass with FBM normals, fixed dt calculation and click logic, ACES tonemap, exact C loads, and spring cursor. Normalized updatedParams.
+  7. `infinite-zoom-lens` (distortion): Droste spiral recursion with chromatic dispersion, resolved mask-as-colour trap (stores display RGBA to dataTextureA), ACES tonemap, exact C loads, and spring cursor.
+  8. `liquid-prism` (distortion): Cauchy wavelength dispersion ripple glass, replaced non-standard saturate with clamp, bounded caustic fronts, ACES tonemap, exact C loads, and spring cursor.
+  9. `luma-glass` (distortion): Luminance-driven Sellmeier dispersion, caustic trace, subsurface scatter, click ripples, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+  10. `luminescent-glass-tiles` (distortion): Luminance-warped glass tiles, resolved mask write to dataTextureA (stores display RGBA), Beer-Lambert absorption, click ripples, ACES tonemap, exact C loads, and spring cursor. Added aligned updatedParams.
+- Agent contract applied 10/10: Full 13-binding layout, ACES tonemapping, semantic alpha, writeback only to dataTextureA (and writeTexture/writeDepthTexture), exact textureLoad from dataTextureC, plasmaBuffer three-band audio reactivity, bounded extraBuffer[133..138] state only (single-writer), preserved mouse / held / click-ripple interactivity, and naga-clean WGSL.
+- Preserved saved parameter contracts byte-for-byte in JSONs with aligned updatedParams.
+- Proof: Naga 10/10, wgsl_precommit_gate 10/10, extraBuffer audit PASS, dead-sliders audit PASS (all 4 sliders live across all 10), URL policy PASS, Jest 84/84 suites (559 pass, 1 skip), and SKIP_WASM_BUILD=1 production build PASS. Real-GPU visual QA remains external handoff.
+
+## 2026-08-23 — Reconciled local main with origin/main (Batch 67/70 + #1167/#1169)
+
+- Merged the 8 remote commits (Batch 70 fluid/slime, generative named-params
+  #1167/#1169, Batch 67 fast-motion/psychedelic #1170) into local `main`, which
+  already carried the optical/glass/holographic/crystal batch plus earlier
+  branch-union upgrades.
+- Overlap policy: kept local optical `holographic-flicker` (ACES + clamp; Batch
+  67 still used undefined `saturate` and non-canonical spring slots). Took Batch
+  67 versions of `glass-wipes`, `liquid-jelly`, and `ferrofluid-spikes` (contract
+  base + fast-motion/psychedelic). Unique remote shaders and named-params kept.
+- Catalogs regenerated after conflict resolution. Real-GPU QA remains external.
+
+## 2026-08-23 — Optical / Glass / Holographic / Crystal Upgrade Batch (10 shaders)
+
+- Upgraded 10 optical / glass / holographic / crystal shaders:
+  1. `holographic-projection` (visual-effects): Core holographic projection with Bessel interference, ACES tonemap, exact C loads, and spring cursor.
+  2. `holographic-projection-gpt52` (visual-effects): Volume Bragg diffraction hologram with thin-film interference, ACES tonemap, exact C loads, and spring cursor.
+  3. `holographic-flicker` (visual-effects): Laser diode instability & phosphor raster decay with temporal chromatic ghosting from exact C loads, clamp instead of non-standard saturate, and spring cursor.
+  4. `holographic-sticker` (visual-effects): Rainbow diffraction foil with aspect-corrected geometry, micro-groove grating, ACES tonemap, exact C loads, and spring cursor.
+  5. `alpha-multi-layer-glass` (visual-effects): 3-layer refractive glass stack with live roughness GGX microfacet scatter, Snell's law refraction, Schlick Fresnel, ACES tonemap, exact C loads, and spring cursor.
+  6. `anamorphic-caustic-flare` (visual-effects): Cylindrical anamorphic lens flare with living water caustics, integrated bokeh optics, ACES tonemap, exact C loads, and spring cursor.
+  7. `glass-shatter-morph` (advanced-hybrid): Voronoi glass shard shattering with morphological edge erosion/dilation, 16x16 workgroup, ACES tonemap, exact C loads, and spring cursor.
+  8. `glass-bead-curtain-iridescence` (advanced-hybrid): Spherical thin-film glass bead curtain with fixed dt/mouse/alpha calculations, Beer-Lambert transmission, ACES tonemap, exact C loads, and spring cursor.
+  9. `gemstone-fractures-crystal` (advanced-hybrid): Faceted gemstone shards with interior dendritic crystal growth, quartz-to-diamond IOR dispersion, ACES tonemap, exact C loads, and spring cursor.
+  10. `bismuth-crystal-growth` (advanced-hybrid): 4-fold cubic hopper step crystal growth with phase-field solidification, oxide-layer rainbow iridescence, ACES tonemap, exact C loads, and spring cursor.
+- Agent contract applied 10/10: Full 13-binding layout, ACES tonemapping, semantic alpha, writeback only to dataTextureA (and writeTexture/writeDepthTexture), exact textureLoad from dataTextureC, plasmaBuffer three-band audio reactivity, bounded extraBuffer[133..138] state only (single-writer), preserved mouse / held / click-ripple interactivity, and naga-clean WGSL.
+- Preserved saved parameter contracts byte-for-byte in JSONs with aligned updatedParams.
+- Proof: Naga 10/10, wgsl_precommit_gate 10/10, extraBuffer audit PASS, dead-sliders audit PASS (all 4 sliders live across all 10), URL policy PASS, Jest 84/84 suites (559 pass, 1 skip), and SKIP_WASM_BUILD=1 production build PASS. Real-GPU visual QA remains external handoff.
+
+## 2026-08-23 — Remaining fluid / paint / reaction / slime batch requested
+
+- Scope: alpha-fluid-simulation-paint, chromatographic-fluid,
+  sim-heat-haze-field, sim-slime-mold-growth, sim-slime-mold-growth-em,
+  slime-mold-on-video, gray-scott-tank, spec-runge-kutta-advection,
+  painterly-oil-bilateral, and cyber-ripples-coupled.
+- Preserve saved params and apply canonical exact-C, A-only, ACES, semantic
+  alpha, three-band plasma audio, bounded `[133..138]` state, full pointer/click
+  interaction, and Naga-clean requirements across all 17 WGSL members.
+- Completed as Batch 70. Chromatographic and Gray-Scott retain seven/six graph
+  dispatches with A-only handoffs. All 17 WGSL files pass Naga 30.0.1; params,
+  focused contracts, graph tests, Jest, catalogs, and build are green. EM Slime
+  no longer corrupts pixel `(0,0)` with pointer state; Cyber's abstract-literal
+  Naga failure is repaired. Real-GPU stability/visual QA remains external.
+
+## 2026-08-23 — Codex generative-only ten requested
+
+- Upgrade Cybernetic Mycelium, Cyclic Automaton, Cycloid Bloom, Cymatic Plasma,
+  Quantum Silk Loom, De Jong Attractor, Depth-Refracted Stained Glass, DLA
+  Copper, DMT Fractal Zoom, and Dragon Curve with the usual exact-C/A-only/
+  ACES/semantic-alpha/three-band-audio/bounded-state/interaction/Naga contract.
+- Ensure four named `params` in every JSON. Nine targets currently expose only
+  `updatedParams`; Cyclic Automaton already has four `params` and uses the
+  historical underscore filenames `gen_cyclic_automaton.{json,wgsl}`.
+- Completed as Batch 71. All ten shaders pass Naga/bind-group validation and
+  scoped contract audits. DLA now owns raw persistent deposit/depletion/
+  oxidation/tip state; Silk Loom's weave-speed control is live; DMT mouse UV is
+  corrected; Plasma spring reads are bounds-safe. Nine definitions gained four
+  aligned named params and all ten document feedback packing. Jest 84/84,
+  TypeScript/uniforms/URLs, catalogs, manifest, and production build are green;
+  real-GPU visual and long-run simulation QA remains external.
+
+
+## 2026-08-23 — Reconciled main: Batch 70 + #1167 + Batch 67 (#1170)
+
+- Merged local Batch 70 fluid/slime with origin named-params #1167, then Batch 67
+  fast-motion/psychedelic ten-pack (#1170). No WGSL conflicts between B70 and B67.
+- Regenerated audits after report conflicts; focused gate 25/25; cohort dead
+  sliders 0. Full-tree dead-slider noise (65 unrelated) left as regenerated truth.
+- User chose main↔origin reconcile only; leftover upgrade remotes left alone.
+
+## 2026-08-23 — Merged shader upgrade branches into main
+
+- Landed `cursor/effect-shaders-complexity-8594`, `new-shader-upgrades`, and
+  `claude/shader-upgrades-motion-colors-m55m70` onto `main`.
+- Overlaps kept the stronger cursor/main liquid + Batch 69 upgrades; unique
+  shaders from the other branches retained. Catalogs regenerated to 1,334.
+- Jest 84/84, focused Naga green, WASM-skipped build green. Real-GPU QA external.
+
+## 2026-08-23 — Remaining liquid core + ferro/fluid simulation cohort
+
+- Requested set: liquid-v1, liquid, liquid-rainbow,
+  liquid-viscous-grokcf1, luma-velocity-melt, rain-ripples,
+  ferrofluid-spikes, ferrofluid-em, liquid-magnetic-ferro-em, and
+  ambient-liquid-coupled.
+- Preserve the canonical 13 core bindings, exact C loads, A-only feedback,
+  ACES, semantic alpha, bass/mids/treble, guarded state only at `[133..138]`,
+  mouse/held/click-ripple response, saved params, and Naga cleanliness.
+- Completed with four raw A simulations: Liquid V1 and Liquid own
+  height/velocity/foam/coverage, Magnetic Ferro EM owns
+  height/velocity/potential/charge, and Ambient Coupled owns two coupled
+  height/velocity layers. The other six own semantic HDR display history; B is
+  unwritten for all ten.
+- Eight pointer-heavy effects use guarded single-writer `[133..138]` springs;
+  Liquid V1 and Luma Melt use no extra state. Saved params are byte-exact.
+- Focused Naga and contract gates 10/10, extraBuffer clean, URL policy green,
+  1,333 unique manifest IDs including all ten, Jest 81/81 (545 pass, 1 skip),
+  and the WASM-skipped production build pass. Real-GPU QA remains external.
+
+## 2026-08-23 — Shader upgrade Batch 60 — CYBER/DIGITAL INTERACTIVE TEN
+
+- Upgraded user-requested ten-pack: data-stream-structure, datamosh-brush,
+  datamosh-brush-diffusion, digital-decay-rgba, digital-glitch-pass1/2,
+  digital-lens-prismatic, digital-moss-rgba, digital-reveal-guided,
+  glitch-ripple-drag.
+- Cohort standard: spring cursor [133..138], held-drag, capped ripples,
+  plasmaBuffer + bins, textureLoad on C, ACES, semantic alpha, dataTextureA
+  writes, 16x16. datamosh-brush 8x8→16x16. Params exact; updatedParams added.
+- Gate 10/10; Jest 84/84 (559 pass); build green. Real-GPU QA external.
+  Branch: `cursor/cyber-digital-shader-upgrades-e675`.
+**Last updated:** 2026-08-23 (Batch 58D spectral/datamosh upgrade)
+
+## 2026-08-23 — Batch 58D spectral and datamosh upgrade
+
+- Ten effects now use exact C history/state, authoritative A, no B writes,
+  guarded `[133..138]` springs, real plasma bands/FFT, bounded click windows,
+  canonical ACES, semantic alpha, source depth, and 16x16x1 workgroups.
+- Raw A ownership is explicit for Spectral Vortex (phase/curl/energy), Data
+  Moshing (offset/confidence/age), and Datamosh (motion/age/strength). The other
+  seven own display RGBA; Spectral Waves remains premultiplied.
+- Official Naga 30.0.0 gate 10/10; params exact; indexed controls aligned;
+  catalogs unique and relative; Jest 81/81 and production build green.
+- Cloud VM visual QA remains external, especially raw-state initialization,
+  feedback stability, pointer/click feel, alpha/depth, performance, and presets.
+
+## 2026-08-23 — Batch 56 triple-lineage merge (cursor branch)
+
+- Three concurrent Batch 56 pushes claimed tracker #475–482. Merged on
+  `cursor/effect-shaders-complexity-8594`: kept every unique upgrade;
+  hand-merged cursor↔main overlaps (chromatic-focus-interactive,
+  cmyk-halftone-interactive, quantum-prism) on top of the earlier main
+  dual-lineage merge.
+- **Cursor unique:** ascii-shockwave, heat-haze-gpt52, sphere-projection,
+  fractal-kaleidoscope, rgb-iso-lines.
+- **Overlap policy:** cursor geometry (iris blades, rosette rings, hex grout)
+  + prior optical/feedback polish; CMYK A coverage preserved.
+- Proof: focused gate **17/17**, cohort dead-slider + extraBuffer PASS,
+  catalogs regenerated. Real-GPU visual QA remains external.
+**Last updated:** 2026-08-23 (Batch 59)
+
+## 2026-08-23 — Shader upgrade Batch 59 — CYBER & DIGITAL
+
+- Upgraded tracker #511–520: cyber-ripples, cyber-scan, cyber-trace,
+  cyber-organic, cyber-rain, digital-glitch, digital-haze, digital-reveal,
+  edge-glow-mouse, ferrofluid.
+- Critical fixes: cyber-rain extraBuffer[0..7] removed (spring [133..138]);
+  digital-glitch 16×16; textureLoad on C for scan/trace/reveal/glitch/haze;
+  digital-reveal spring gated to (0,0).
+- Cohort standard: held-pointer, capped ripples, plasmaBuffer + bins, ACES,
+  semantic alpha, dataTextureA writes. Gate 10/10; Jest 84/84; build green.
+  Branch: `upgrade/batch-59-cyber-digital`. Real-GPU QA external.
+
+## 2026-08-23 — Shader upgrade Batch 58C — HOLOGRAPHIC & QUANTUM
+
+- Upgraded ten shaders: holographic-interferometry, holographic-projection,
+  quantum-smear, quantum-wormhole, quantum-foam, holographic-entropy-vortex,
+  holographic_interference, holographic-shatter, holographic-sticker, quantum-cursor.
+- Fixed interferometry fake-audio (`config.y` ripple-count collision); rebuilt
+  projection as holo projector; repaired quantum-smear/wormhole zoom_config
+  hijacks; quantum-foam 8×8→16×16.
+- Cohort standard: held-pointer, capped ripples, plasmaBuffer audio + bins,
+  textureLoad on C, semantic alpha, dataTextureA writes. Gate 10/10; Jest
+  84/84 (550 pass); build green. Real-GPU QA external.
+
+## 2026-08-23 — Shader upgrade Batch 58E — INTERACTIVE COHORT
+
+- Upgraded tracker #491–500: interactive-emboss, film-burn, fisheye, fresnel,
+  glitch-brush, glitch-cubes, halftone-spin, kuwahara, magnetic-ripple, origami.
+- Source `params` exact. Held-drag, capped clicks, oil-slick color, exact C
+  loads. Existing extraBuffer springs kept (0,0 writer). A packing documented
+  per shader. Gate 10/10 naga+bindgroup. Real-GPU QA remains external.
+
+## 2026-08-23 — Unique alternate-branch upgrades unioned onto main
+
+- Fast-forwarded local `main` to `origin/main` (already had #1105, #1132, #1137).
+- Copied unique positive Batch 56 WGSL/JSON from `cursor/effect-shaders-complexity-8594` (#1136, dirty/unmergeable) without reverting #1137 or Batch 57 `fractal-kaleidoscope`.
+- Kept: chromatic-focus, cmyk-halftone, cyber-slit-scan, heat-haze-gpt52, hyb-spectral-fbm-displace, infinite-zoom-lens, liquid-warp-interactive, phosphor-magnifier, quantum-prism, rgb-iso-lines, sphere-projection, warp_drive.
+- Dropped: chrono branch (conflict-marker deletions vs main), claude weekly-plan-only branches (already landed as #1133), cursor `ascii-shockwave` (main #1137 version is the fuller upgrade).
+- Resolved leftover `<<<<<<<` from earlier landings in `gen-abyssal-plasma-void-medusa` and `gen-chrono-kinetic-fractal-engine` (JSON now canonical `params`/`updatedParams`).
+- #1126 device-adoption WIP remains stashed as `wip-1126-and-local-before-branch-union`.
+
+## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
+
+- User changed cohort selection policy: use an objective backlog rule such as
+  smallest codewise or missing params, not adjacency to prior batches.
+- Applied rule: eight smallest cataloged single-pass compute WGSL files with
+  exactly four saved params but no `updatedParams`, excluding declared
+  multipass and pass-ID files. Selected Triangle Mosaic, Polka Wave, Sphere
+  Projection, Foil Impression, Bio Touch, Hypnotic Spiral, Spirograph Reveal,
+  and Voronoi Chaos (tracker #491–498).
+- Preserved params 8/8; added continuous geometry, held/click response, spectral
+  color, three-band audio, truthful metadata, and aligned `updatedParams`.
+  Triangle Mosaic now writes display RGBA to A to match its existing exact C
+  feedback. Repaired Hypnotic normalized pointer/click coordinates and event cap,
+  Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
+- Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
+  audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
+  green. Real-GPU visual QA remains external.
+
+## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
+
+- User changed cohort selection policy: use an objective backlog rule such as
+  smallest codewise or missing params, not adjacency to prior batches.
+- Applied rule: eight smallest cataloged single-pass compute WGSL files with
+  exactly four saved params but no `updatedParams`, excluding declared
+  multipass and pass-ID files. Selected Triangle Mosaic, Polka Wave, Sphere
+  Projection, Foil Impression, Bio Touch, Hypnotic Spiral, Spirograph Reveal,
+  and Voronoi Chaos (tracker #491–498).
+- Preserved params 8/8; added continuous geometry, held/click response, spectral
+  color, three-band audio, truthful metadata, and aligned `updatedParams`.
+  Triangle Mosaic now writes display RGBA to A to match its existing exact C
+  feedback. Repaired Hypnotic normalized pointer/click coordinates and event cap,
+  Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
+- Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
+  audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
+  green. Real-GPU visual QA remains external.
+
+## 2026-08-23 — Shader upgrade Batch 58 — SMALLEST MISSING-PARAM CONTRACTS
+
+- User changed cohort selection policy: use an objective backlog rule such as
+  smallest codewise or missing params, not adjacency to prior batches.
+- Applied rule: eight smallest cataloged single-pass compute WGSL files with
+  exactly four saved params but no `updatedParams`, excluding declared
+  multipass and pass-ID files. Selected Triangle Mosaic, Polka Wave, Sphere
+  Projection, Foil Impression, Bio Touch, Hypnotic Spiral, Spirograph Reveal,
+  and Voronoi Chaos (tracker #491–498).
+- Preserved params 8/8; added continuous geometry, held/click response, spectral
+  color, three-band audio, truthful metadata, and aligned `updatedParams`.
+  Triangle Mosaic now writes display RGBA to A to match its existing exact C
+  feedback. Repaired Hypnotic normalized pointer/click coordinates and event cap,
+  Voronoi/Hypnotic bounds guards, Voronoi sampling bounds, and Foil binding names.
+- Proof: focused gate 8/8 (Naga unavailable), strict focused buffer/dead-slider
+  audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
+  green. Real-GPU visual QA remains external.
+
+**Last updated:** 2026-08-23 (Codex liquid complexity batch)
 
 ## 2026-08-23 — Codex Liquid Shader Complexity Batch requested
 
@@ -180,7 +484,6 @@
   gate 10/10 (Naga unavailable), 1,333 unique catalog/manifest entries with
   parity, clean uniforms/TypeScript, Jest 81/81 (545 pass, 1 skip), and a green
   SKIP_WASM_BUILD production build. Real-GPU visual/performance QA is external.
-
 ## 2026-08-23 — Gemini shader-upgrade branch is unclosed WIP
 
 - `new-shader-upgrades` is 10 commits ahead of `main`, pushed through
@@ -1041,6 +1344,83 @@
   preserved; B unused; no extraBuffer writes. Tunnel no longer uses
   `floor(time)` hash caustics.
 - Structural proof 4/4; visual QA remains real-GPU workstation work.
+## Generative-only ten-shader cohort (2026-08-23)
+
+- Preserve the exact ten IDs and their distinct models: chronal maze/monolith,
+  Conway CA, coral colony, Dyson clockwork, slime mold, velvet hypnosis, cosmic
+  web, cryogenic matrix, and crystal caverns.
+- All ten now use bindings 0–12, ACES, semantic alpha, exact C, A-only state,
+  and plasma XYZ. Persistent scalar/spring state is absent or confined to
+  `extraBuffer[133..138]`.
+- Every definition exposes four truthful named `params`; Dyson's labels match
+  Mechanical Complexity, Clock Speed, Plasma Intensity, and Gear Ratio.
+- Important repairs: Conway declaration order; Cryogenic state slot and A
+  writeback; Monolith/Coral/Slime filtered C; Dyson missing C/ACES; Crystal
+  Purity wiring. Structural, catalog, Jest, and build gates pass; GPU QA remains
+  external.
+
+## Eldritch / emergent / ethereal generative cohort (2026-08-23)
+
+- Ten verified live generative IDs now meet the canonical bindings 0–12,
+  ACES, semantic-alpha, exact-C, A-only, plasma-XYZ contract with 40 truthful
+  named controls.
+- Preserve Script Gardens A.a as ink occupancy. Owl, Manta, Hummingbird,
+  Kaleidoscope, Erosion, Orchid, Anemone and calligraphic effects own HDR or
+  display history in A; Eldritch A.a remains generated depth.
+- Important repairs: no filtered C; Owl no longer reads engine FFT bins through
+  extraBuffer; Manta/Hummingbird no longer treat rippleCount as audio;
+  Hummingbird gained its missing ACES/C/A/semantic-alpha path.
+- Focused Naga/contract/dead-slider gates, catalogs, duplicates, URLs, Jest and
+  canonical build pass. Real-GPU visual/performance acceptance remains external.
+
+## Fireworks / atmospheric / fractal generative cohort (2026-08-23)
+
+- Ring Shell, Roman Candle, Smoke Bloom, Strobe Shell, Willow Cascade, Wind
+  Ripple, Fluffy Raincloud, Fourier Epicycles, Spore Network, and Chrono
+  Dendrite Forge now satisfy the bindings 0–12, ACES, semantic-alpha, exact-C,
+  A-only, plasma-XYZ contract with 40 named controls.
+- Preserve Raincloud raw A packing `[density,vx,vy,moisture]` and Fourier packed
+  `[bass envelope,trail R,trail G,alpha]`; all B writebacks are intentionally
+  absent. Raincloud alone uses extraBuffer state, bounded to `[133..136]`.
+- Important repairs: `gen-fluffy-raincloud` uses the underscore WGSL/JSON path;
+  its WGSL time wrap must not use unsupported `mod()`. Smoke bloom uses exact
+  five-tap C bloom; Chrono must not read engine FFT slots; Spore and Chrono now
+  have exact-load history and bounded click rings. Naga/Jest/build pass; GPU QA
+  remains external.
+
+## Reaction / flow / sand / optical-fluid cohort (2026-08-23)
+
+- Ten selected simulation shaders now obey bindings 0–12, exact C, A-only
+  feedback, ACES display, semantic alpha, live plasma XYZ, full interaction,
+  and byte-exact saved params. All active WGSL passes are Naga-clean.
+- Optical Flow Dream deliberately changed from a binding-13 four-pass graph to
+  a canonical single-pass exact-history effect; update graph/badge/docs/tests
+  together if this ownership changes again. Pixel Sand deliberately migrated
+  its raw density/velocity/energy state from B to authoritative A.
+- Structural proof is green through Jest/build; visual and performance QA still
+  requires real WebGPU hardware.
+
+## Ethereal generative cohort (Batch 72, 2026-08-23)
+
+- The phoenix, void whale/dragon, glass flora, hologram bonsai, fractal coral,
+  medusa, silk veil, cellular gardens, and echo chamber now satisfy bindings
+  0–12, exact C, A-only feedback, ACES display, semantic alpha, plasma XYZ,
+  bounded `[133..138]` state, and four live named JSON params.
+- Focused shader/state/slider gates pass 10/10; catalogs, TypeScript, Jest, and
+  production build pass. Real-GPU visual and performance QA remains external.
+
+## Generative Grid / Grok / Holographic cohort (2026-08-23)
+
+- The ten Lotus/Grid/Grok/Bismuth/Data Core shaders preserve catalog IDs, seven
+  underscore-backed filename aliases, bindings 0–12, 16x16 workgroups, saved
+  defaults, interaction contracts, and A-only ownership.
+- Lotus, Grid, Mandelbrot, Bismuth, and Data Core own display history. Life,
+  Perlin, Plasma, Interference, and Voronoi retain raw A simulation/telemetry.
+  Only Lotus `[133..138]`, Grid/Mandelbrot `[133..136]`, and Life `[133..134]`
+  may persist scalar state.
+- Four aligned named controls were added only to Lotus, Bismuth, and Data Core;
+  all existing params and updatedParams are preserved. Structural, catalog,
+  Jest, typecheck, and production-build gates pass; real-GPU QA remains.
 
 ## Crystalline / cybernetic generative cohort (2026-08-23)
 

@@ -19,7 +19,7 @@
   ],
   "params": [
     {
-      "id": "gridDensity",
+      "id": "grid_density",
       "name": "Grid Density",
       "default": 1,
       "min": 0.1,
@@ -28,7 +28,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "glyphSharpness",
+      "id": "glyph_sharpness",
       "name": "Glyph Sharpness",
       "default": 0.8,
       "min": 0,
@@ -37,7 +37,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "characterBrightness",
+      "id": "character_brightness",
       "name": "Character Brightness",
       "default": 1,
       "min": 0.5,
@@ -46,7 +46,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "scanlineBloom",
+      "id": "scanline_bloom",
       "name": "Scanline Bloom",
       "default": 0.5,
       "min": 0,

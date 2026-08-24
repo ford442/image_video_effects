@@ -85,10 +85,11 @@ Params: Viscosity Split, Wind, Temperature, Dye Inject.
 
 Params: Feed, Kill, Diffusion, Seed Strength.
 
-### Optical Flow Dream (`optical-flow-dream`, 4 passes)
+### Optical Flow Dream (`optical-flow-dream`, 1 pass)
 
-- History ring (binding 13) estimates flow; **hold** freezes the lens; **click** tears time
-- Battery-friendly like photonic; decay + chroma smear along the flow
+- Exact `dataTextureC` history estimates flow in the canonical 13-binding path;
+  **hold** creates a dream vortex and **click** tears the field
+- Battery-friendly single pass; decay + chroma smear follow the inferred flow
 
 Params: Flow Scale, Decay, Chroma Smear, Dream Mix.
 

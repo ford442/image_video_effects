@@ -28,7 +28,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "growthRate",
+      "id": "growth_rate",
       "name": "Growth Rate",
       "default": 0.5,
       "min": 0,

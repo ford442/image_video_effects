@@ -2,7 +2,7 @@
   "id": "liquid-magnetic-ferro-em",
   "name": "Liquid Magnetic Ferro EM",
   "url": "shaders/liquid-magnetic-ferro-em.wgsl",
-  "description": "Black-iron Rosensweig spike lattices driven by a transported electromagnetic field, rotating dipoles, traveling field packets, and violet/cyan/electric-red arcs.",
+  "description": "A persistent magnetohydrodynamic ferro-liquid packing height, velocity, EM potential, and charge in A, with bounded magnet inertia, held polarity, click charges, orbiting dipoles, Rosensweig spikes, three-band iridescence, ACES, and semantic alpha.",
   "features": [
     "advanced-hybrid",
     "ferrofluid",
@@ -11,8 +11,15 @@
     "mouse-driven",
     "temporal",
     "randomization-safe",
+    "held-interaction",
+    "click-reactive",
     "audio-reactive",
-    "exact-feedback"
+    "stateful-simulation",
+    "raw-mhd-state",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "params": [
     {
@@ -56,14 +63,6 @@
       "description": "Number of orbiting magnetic dipoles"
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Field Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Spike Sharpness", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "EM Coupling", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Dipole Motion", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
-  ],
-  "feedbackPacking": "A/C = EM field.xy, scalar potential, charge; exact bounded state loads",
-  "updated": true,
   "chunks_used": [
     "Magnetic dipole field, Rosensweig spikes (liquid_magnetic_ferro.wgsl)",
     "EM wave propagation, charge injection (alpha-em-field-simulation.wgsl)",

@@ -17,7 +17,7 @@
   ],
   "params": [
     {
-      "id": "nodeDensity",
+      "id": "node_density",
       "name": "Node Density",
       "default": 0.5,
       "min": 0.1,
@@ -26,7 +26,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "growthSpeed",
+      "id": "growth_speed",
       "name": "Growth Speed",
       "default": 0.3,
       "min": 0.0,
@@ -35,7 +35,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "glitchIntensity",
+      "id": "glitch_intensity",
       "name": "Glitch Intensity",
       "default": 0.2,
       "min": 0.0,
@@ -44,7 +44,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "neonHueShift",
+      "id": "neon_hue_shift",
       "name": "Neon Hue Shift",
       "default": 0.0,
       "min": 0.0,

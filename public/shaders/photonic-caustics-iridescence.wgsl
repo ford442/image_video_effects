@@ -144,32 +144,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
     let pixel = vec2<i32>(global_id.xy);
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
-    
+
     let time = u.config.x;
     let isMouseDown = u.zoom_config.w > 0.5;
     let mouseUV = u.zoom_config.yz;
-    
+
     // Persistent single-writer state management
     if (global_id.x == 0u && global_id.y == 0u) {
         var targetPos = mouseUV;
         if (!isMouseDown && extraBuffer[137] < 0.5) {
             targetPos = vec2<f32>(0.5 + 0.25 * cos(time * 0.55), 0.5 + 0.2 * sin(time * 0.7));
         }
-        
+
         var curP = vec2<f32>(extraBuffer[133], extraBuffer[134]);
         if (curP.x == 0.0 && curP.y == 0.0) { curP = mouseUV; }
-        
+
         var pVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
         let diff = targetPos - curP;
         pVel = pVel + diff * 0.18;
         pVel = pVel * 0.82;
         curP = curP + pVel;
-        
+
         extraBuffer[133] = clamp(curP.x, 0.0, 1.0);
         extraBuffer[134] = clamp(curP.y, 0.0, 1.0);
         extraBuffer[135] = clamp(pVel.x, -0.05, 0.05);
         extraBuffer[136] = clamp(pVel.y, -0.05, 0.05);
-        
+
         let prevDown = extraBuffer[137];
         var rippleImpulse = extraBuffer[138] * 0.94;
         if (isMouseDown && prevDown < 0.5) {
@@ -178,35 +178,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[137] = select(0.0, 1.0, isMouseDown);
         extraBuffer[138] = rippleImpulse;
     }
-    
+
     let smoothLight = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     let clickImpulse = extraBuffer[138];
-    
+
     let uv = (vec2<f32>(pixel) + 0.5) / res;
     let texelSize = 1.0 / res;
     let aspect = res.x / res.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
-    
+
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    
+
     // Sliders
     let baseIOR = mix(1.15, 1.85, u.zoom_params.x);
     let lightSize = mix(0.06, 0.35, u.zoom_params.y);
     let dispersion = mix(0.01, 0.09, u.zoom_params.z);
     let intensity = mix(0.4, 2.8, u.zoom_params.w);
-    
+
     let lightHeight = 1.2;
     let distLight = length((uv - smoothLight) * aspectVec);
     let holdEffect = smoothstep(0.4, 0.0, distLight) * select(0.3, 1.0, isMouseDown);
-    
+
     // Exact temporal feedback load from dataTextureC
     let prevCaustic = textureLoad(dataTextureC, pixel, 0).rgb;
-    
+
     // Surface normal from depth & procedural fluid waves
     let surfaceNormal = getSurfaceNormal(uv, texelSize, time, bass);
-    
+
     // Photonic photon-tracing accumulation
     var causticAccum = vec3<f32>(0.0);
     for (var p = 0; p < PHOTON_COUNT; p = p + 1) {
@@ -243,9 +243,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         causticAccum = causticAccum + vec3<f32>(cR, cG, cB);
     }
-    
+
     causticAccum = (causticAccum / f32(PHOTON_COUNT)) * intensity;
-    
+
     // Capped click ripple caustics
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -261,51 +261,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     causticAccum = causticAccum + vec3<f32>(0.4, 0.7, 1.0) * sin(distLight * 30.0 - time * 8.0) * exp(-distLight * 6.5) * clickImpulse * intensity * 0.5;
-    
+
     // Temporal caustics blend
     let accumulatedCaustic = mix(prevCaustic, causticAccum, 0.16 + mids * 0.08);
     let causticLuma = dot(accumulatedCaustic, vec3<f32>(0.2126, 0.7152, 0.0722));
-    
+
     // Thin-film iridescence
     let filmThicknessBase = mix(220.0, 750.0, u.zoom_params.x);
     let filmIOR = mix(1.2, 2.4, u.zoom_params.y);
     let iridIntensity = mix(0.4, 1.6, u.zoom_params.z);
     let turbulence = clamp(u.zoom_params.w, 0.0, 1.0);
-    
+
     let toCenter = uv - vec2<f32>(0.5);
     let distCenter = length(toCenter);
     let cosThetaView = sqrt(max(1.0 - distCenter * distCenter * 0.5, 0.02));
-    
+
     let noiseVal = hash21(uv * 12.0 + time * 0.1) * 0.6 + hash21(uv * 24.0 - time * 0.15) * 0.4;
     let thickness = filmThicknessBase * (0.6 + causticLuma * 2.2 + noiseVal * turbulence * 0.4 + holdEffect * 0.3 + bass * 0.2);
     let iridescent = thinFilmColor(thickness, cosThetaView, filmIOR) * iridIntensity;
     let fresnelBlend = pow(1.0 - cosThetaView, 2.5);
-    
+
     // Refracted source image
     let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
+
     let refractDisplace = surfaceNormal.xy * (0.02 + holdEffect * 0.02);
     let colR = textureSampleLevel(readTexture, u_sampler, clamp(uv + refractDisplace + vec2<f32>(dispersion * 0.015, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let colG = textureSampleLevel(readTexture, u_sampler, clamp(uv + refractDisplace, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, clamp(uv + refractDisplace - vec2<f32>(dispersion * 0.015, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     let refractedChromatic = vec3<f32>(colR, colG, colB);
-    
+
     var finalColor = mix(sourceColor, refractedChromatic, 0.45);
     finalColor = finalColor + accumulatedCaustic;
     finalColor = mix(finalColor, iridescent, fresnelBlend * 0.65 * clamp(causticLuma * 1.5, 0.0, 1.0));
-    
+
     // Specular highlight
     let viewDir = vec3<f32>(0.0, 0.0, 1.0);
     let reflectDir = reflect(-viewDir, surfaceNormal);
     let lightDir3D = normalize(vec3<f32>((smoothLight - uv) * aspectVec, lightHeight));
     let specular = pow(max(dot(reflectDir, lightDir3D), 0.0), 48.0) * (1.0 + treble);
     finalColor = finalColor + vec3<f32>(specular * 0.6);
-    
+
     let tonemapped = acesToneMap(finalColor * (1.0 + treble * 0.1));
     let alpha = clamp(dot(sourceColor, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.4 + causticLuma * 0.5 + holdEffect * 0.2 + clickImpulse * 0.15, 0.18, 0.98);
     let outputRGBA = vec4<f32>(tonemapped, alpha);
-    
+
     textureStore(writeTexture, pixel, outputRGBA);
     textureStore(dataTextureA, pixel, outputRGBA);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 1.0));

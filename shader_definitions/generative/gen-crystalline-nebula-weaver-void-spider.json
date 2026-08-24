@@ -43,7 +43,7 @@
   ],
   "params": [
     {
-      "id": "webComplexity",
+      "id": "web_complexity",
       "name": "Web Complexity",
       "default": 1.0,
       "min": 0.1,
@@ -52,7 +52,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "gravityDistortion",
+      "id": "gravity_distortion",
       "name": "Gravity Distortion",
       "default": 0.5,
       "min": 0.0,
@@ -61,7 +61,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "plasmaIntensity",
+      "id": "plasma_intensity",
       "name": "Plasma Intensity",
       "default": 0.8,
       "min": 0.0,
@@ -70,7 +70,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "voidDepth",
+      "id": "void_depth",
       "name": "Void Depth",
       "default": 1.5,
       "min": 0.1,
@@ -115,8 +115,23 @@
   ],
   "updated": true,
   "category": "generative",
+  "description": "A crystalline void-spider weaving at speed: a skittering articulated gait, a faceted plated carapace, and three tiers of web thread down to fine cross-bracing filaments. The nebula and the weaver are both graded through a psychedelic crystalline spectrum. The spring-smoothed cursor drags the gravity field, holding lunges the camera in, and clicks snap the web into expanding rings.",
+  "tags": [
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "audio-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
+  ],
   "supportsDepth": true,
   "supportsDof": false,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "features": [
     "raymarched",
     "audio-reactive",

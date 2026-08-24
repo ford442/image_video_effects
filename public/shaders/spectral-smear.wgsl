@@ -1,12 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Spectral Smear
-//  Category: image
-//  Features: mouse-driven, history, upgraded-rgba, audio-reactive, depth-aware
-//  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  Upgraded by: kimi-swarm 2026-07-19
-//  upgraded-rgba
-// ═══════════════════════════════════════════════════════════════════
+// Spectral Smear — Batch 58D exact-history paint upgrade
+// A owns the decayed spectral display history; B is intentionally unwritten.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -23,136 +16,117 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=TrailDecay, y=BrushSize, z=ShiftSpeed, w=Intensity
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// ── Hashes & Noise (canonical forms) ─────────────────────────────
+const TAU: f32 = 6.28318530718;
+
 fn hash21(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
 fn valueNoise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let uu = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(hash21(i),                         hash21(i + vec2<f32>(1.0, 0.0)), uu.x),
-        mix(hash21(i + vec2<f32>(0.0, 1.0)),   hash21(i + vec2<f32>(1.0, 1.0)), uu.x),
-        uu.y
-    );
+  let i = floor(p); let f = fract(p); let s = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), s.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), s.x), s.y);
 }
 
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-    var sum = 0.0; var amp = 0.5; var freq = 1.0;
-    for (var i = 0; i < octaves; i++) {
-        sum  += amp * valueNoise(p * freq);
-        freq *= 2.0;
-        amp  *= 0.5;
-    }
-    return sum;
+fn fbm(p: vec2<f32>) -> f32 {
+  var sum = 0.0; var amp = 0.5; var q = p;
+  for (var i = 0; i < 3; i++) { sum += amp * valueNoise(q); q *= 2.0; amp *= 0.5; }
+  return sum;
 }
 
-// ── IQ cosine palette: richer spectral rainbow than the naive 3-cos ──
-// t in cycles; d offsets chosen for vivid magenta->cyan->gold spread.
 fn spectralPalette(t: f32) -> vec3<f32> {
-    let a = vec3<f32>(0.5, 0.5, 0.5);
-    let b = vec3<f32>(0.5, 0.5, 0.5);
-    let c = vec3<f32>(1.0, 1.0, 1.0);
-    let d = vec3<f32>(0.00, 0.33, 0.67);
-    return a + b * cos(6.28318 * (c * t + d));
+  return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(TAU * (vec3<f32>(t) + vec3<f32>(0.0, 0.33, 0.67)));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+  return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    let coord = vec2<i32>(global_id.xy);
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
-    let time = u.config.x;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  let pixel = vec2<i32>(gid.xy);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+  let uv = (vec2<f32>(pixel) + 0.5) / res;
+  let dims = vec2<i32>(textureDimensions(dataTextureC));
+  let time = u.config.x;
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  // Saved mapping: trail decay, brush radius, color speed, intensity.
+  let trailDecay = clamp(u.zoom_params.x, 0.0, 1.0);
+  let brushRadius = clamp(u.zoom_params.y, 0.0, 0.5) * (1.0 + bass * 0.2);
+  let colorSpeed = clamp(u.zoom_params.z, 0.0, 2.0) * (1.0 + mids * 0.8);
+  let intensity = clamp(u.zoom_params.w, 0.0, 1.0) * (1.0 + treble * 0.5);
 
-    // Params (mids speeds hue shift, treble lifts smear intensity)
-    // Clamps follow the definition-JSON ranges so labels stay truthful.
-    let trailDecay = clamp(u.zoom_params.x, 0.0, 1.0);
-    let brushSize = clamp(u.zoom_params.y, 0.0, 0.5) * (1.0 + bass * 0.2);
-    let shiftSpeed = clamp(u.zoom_params.z, 0.0, 2.0) * (1.0 + mids * 0.8);
-    let intensity = clamp(u.zoom_params.w, 0.0, 1.0) * (1.0 + treble * 0.5);
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) {
+    springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5;
+  }
+  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 9.0; let springDecay = exp(-omega * dt); let delta = springPos - rawMouse;
+  let temp = (springVel + omega * delta) * dt;
+  springVel = (springVel - omega * temp) * springDecay;
+  springPos = rawMouse + (delta + temp) * springDecay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time; extraBuffer[138] = 1.0;
+  }
 
-    // Aspect-corrected positions
-    let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
-    let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
-    let dist = distance(uvCorrected, mouseCorrected);
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let p = uv * aspectVec;
+  let mouseDistance = length(p - springPos * aspectVec);
+  let edgeNoise = fbm(p * 7.0 + vec2<f32>(time * 0.35, -time * 0.22));
+  let held = select(0.45, 1.0, u.zoom_config.w > 0.5);
+  let brush = smoothstep(brushRadius, brushRadius * 0.72, mouseDistance * (0.82 + 0.32 * edgeNoise)) * held;
 
-    // Organic brush edge: fbm wobble breaks the perfect circle so the
-    // smear looks painted, not stamped. Bass adds a live pulse to the edge.
-    let edgeNoise = fbm(uvCorrected * 7.0 + vec2<f32>(time * 0.35, -time * 0.22), 3);
-    let noisyDist = dist * (0.80 + 0.40 * edgeNoise) - bass * 0.015;
+  var clickBloom = 0.0;
+  var clickHue = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age < 0.0 || age > 1.6) { continue; }
+    let dist = length((uv - ripple.xy) * aspectVec);
+    let radius = 0.03 + age * 0.16;
+    let bloom = exp(-pow((dist - radius) * 24.0, 2.0)) * (1.0 - age / 1.6);
+    clickBloom += bloom;
+    clickHue += bloom * hash21(ripple.xy + vec2<f32>(ripple.z));
+  }
 
-    let inBrush = smoothstep(brushSize, brushSize * 0.8, noisyDist);
-
-    // Get current video frame
-    let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    // Smear flow field: sample history at a slowly drifting offset so
-    // trails crawl organically instead of fading in place. Offset is
-    // tightly bounded (<= ~0.014 uv) and clamped to the frame.
-    let flowP = uvCorrected * 3.0;
-    let flow = vec2<f32>(
-        fbm(flowP + vec2<f32>(time * 0.11, 0.0), 2),
-        fbm(flowP + vec2<f32>(5.2, 1.3) - vec2<f32>(0.0, time * 0.08), 2)
-    ) - vec2<f32>(0.5);
-    let flowOffset = flow * (0.020 + mids * 0.008);
-    let historyUv = clamp(uv - flowOffset, vec2<f32>(0.0), vec2<f32>(1.0));
-
-    // Get history (previous output), advected by the flow
-    let history = textureSampleLevel(dataTextureC, u_sampler, historyUv, 0.0);
-
-    // Spectral paint color: hue cycles with time (shiftSpeed), plus a
-    // radial fringe so the smear splits into rainbow bands around the
-    // cursor, plus a slow spatial drift from the edge noise field.
-    let hue = fract(time * shiftSpeed);
-    let fringe = clamp(dist * 1.6, 0.0, 1.5);
-    let driftHue = (edgeNoise - 0.5) * 0.25;
-    let shiftColor = clamp(spectralPalette(hue + fringe + driftHue), vec3<f32>(0.0), vec3<f32>(1.0));
-
-    // Blend the live video luma into the paint so strokes feel lit by
-    // the underlying frame rather than flat neon.
-    let paint = mix(current.rgb, shiftColor, 0.65);
-
-    let historyDecayed = history.rgb * (0.9 + 0.09 * trailDecay);
-
-    var newHistory = historyDecayed;
-    if (inBrush > 0.01) {
-        newHistory = mix(newHistory, paint * 2.0, inBrush * intensity);
-    }
-
-    newHistory = clamp(newHistory, vec3<f32>(0.0), vec3<f32>(2.0));
-
-    // Final composite: Video + History, with a soft knee on the
-    // highlights so stacked strokes roll off instead of clipping.
-    var finalColor = current.rgb + newHistory * 0.5;
-    let over = max(finalColor - vec3<f32>(1.0), vec3<f32>(0.0));
-    finalColor = min(finalColor, vec3<f32>(1.0)) + over / (vec3<f32>(1.0) + over * 0.5);
-    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(3.0));
-
-    // Alpha: preserve input transparency while blending smear intensity
-    let finalAlpha = mix(current.a, 1.0, inBrush * intensity * 0.7);
-
-    // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0, 0, 1));
-    textureStore(dataTextureA, coord, vec4<f32>(finalColor, finalAlpha));
+  let flow = vec2<f32>(fbm(p * 3.0 + vec2<f32>(time * 0.11, 0.0)),
+                       fbm(p * 3.0 + vec2<f32>(5.2, 1.3 - time * 0.08))) - vec2<f32>(0.5);
+  let historyUv = clamp(uv - flow * (0.020 + mids * 0.008) - springVel * brush * 0.7, vec2<f32>(0.0), vec2<f32>(1.0));
+  let previous = textureLoad(dataTextureC, historyCoord(historyUv, dims), 0);
+  let hue = fract(time * colorSpeed + mouseDistance * 1.6 + (edgeNoise - 0.5) * 0.25 + clickHue);
+  let paint = mix(source.rgb, spectralPalette(hue), 0.65) * (1.0 + clickBloom * 1.2);
+  let paintMask = clamp((brush + clickBloom) * intensity, 0.0, 1.0);
+  let decayed = previous.rgb * (0.90 + 0.09 * trailDecay);
+  let historyColor = mix(decayed, paint * 1.8, paintMask);
+  let hdr = source.rgb + historyColor * 0.5;
+  let effectEnergy = clamp(max(max(historyColor.r, historyColor.g), historyColor.b) * 0.35 + paintMask * 0.65, 0.0, 1.0);
+  let alpha = clamp(source.a + (1.0 - source.a) * effectEnergy, 0.0, 1.0);
+  let display = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), alpha);
+  textureStore(dataTextureA, pixel, display);
+  textureStore(writeTexture, pixel, display);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

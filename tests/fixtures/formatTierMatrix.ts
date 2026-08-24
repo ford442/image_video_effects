@@ -69,7 +69,7 @@ export const FORMAT_TIER_MATRIX: FormatTierCase[] = [
     kind: 'feedback-fluid',
     shaders: [
       shader('sim-fluid-feedback-coupled', 0, { time: 2.5, mouseX: 0.55, mouseY: 0.45 }, {
-        // tags fluid/simulation ⇒ inferRequiresRgba32Float() = true in the real catalog
+        // Catalog JSON / allowlist — not inferred from a generic "fluid" tag.
         meta: { requiresRgba32Float: true },
       }),
     ],

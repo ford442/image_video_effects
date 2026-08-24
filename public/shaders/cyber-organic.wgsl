@@ -1,13 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Organic Scanner — Visualist Enhanced Edition
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba,
-//            bioluminescent, oklab-mixing, blackbody-warmth,
-//            volumetric-glow, aces-tone-map, split-tone
-//  Complexity: High
-//  Chunks From: cyber-organic
-//  Created: 2026-05-30
-//  Upgraded: 2026-06-28
+//  Cyber Organic Scanner — Batch 59
+//  Bioluminescent veins, OkLab mixing, capped ripple pulses, held
+//  tightens reveal, thin-film rim, ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -166,14 +160,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = audio.y;
   let treble = audio.z;
 
+  let held = u.zoom_config.w > 0.5;
   let scanSpeed = 0.15 + u.zoom_params.x * 4.0;
   let organicScale = mix(2.0, 14.0, u.zoom_params.y);
-  let revealRadius = mix(0.10, 0.80, u.zoom_params.z);
+  let revealRadius = mix(0.10, 0.80, u.zoom_params.z) * select(1.0, 0.72, held);
   let pulseSpeed = 0.2 + u.zoom_params.w * 5.0;
 
   let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let dist = length(centered);
-  let reveal = 1.0 - smoothstep(0.0, revealRadius, dist);
+  var reveal = 1.0 - smoothstep(0.0, revealRadius, dist);
+
+  var ripplePulse = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.8) {
+      let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      ripplePulse += smoothstep(0.18, 0.0, rDist) * exp(-age * 1.4);
+      reveal = max(reveal, smoothstep(0.22, 0.0, rDist) * (1.0 - age * 0.45));
+    }
+  }
   let field = fbm(uv * organicScale + vec2<f32>(time * 0.12, -time * 0.09));
   let vein = 1.0 - smoothstep(0.12, 0.32, abs(field - 0.5));
   let scan = 0.5 + 0.5 * sin(uv.y * 40.0 + time * scanSpeed * 6.0 + field * 6.28318);
@@ -221,6 +228,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     pulse * 0.5 + treble * 0.3
   );
   finalColor = finalColor + glowColor * veinGlow;
+  finalColor = finalColor + glowColor * ripplePulse * 0.35;
+
+  // Thin-film oil-slick rim on vein edges
+  let rimPhase = vein * 6.28318 + time * 0.4 + treble * 2.0;
+  let thinFilm = vec3<f32>(
+    0.5 + 0.5 * cos(rimPhase),
+    0.5 + 0.5 * cos(rimPhase + 2.094),
+    0.5 + 0.5 * cos(rimPhase + 4.189)
+  );
+  finalColor = finalColor + thinFilm * vein * vein * 0.12 * select(1.0, 1.2, held);
 
   // ═══════════════════════════════════════════════════════════════
   //  VISUALIST: Split-tone — shadows cool, highlights warm
@@ -246,15 +263,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Bloom-based alpha
   let bloomAlpha = pow(max(0.0, luma - 0.6), 2.0) * 3.0;
-  let finalAlpha = clamp(0.68 + reveal * 0.18 + vein * 0.10 + bloomAlpha * 0.1, 0.42, 0.98);
+  let finalAlpha = clamp(0.68 + reveal * 0.18 + vein * 0.10 + bloomAlpha * 0.1 + ripplePulse * 0.08, 0.42, 0.98);
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
   let depthOut = clamp(mix(baseDepth, 0.24 + reveal * 0.56 + vein * 0.18, 0.32), 0.0, 1.0);
 
-  // Premultiplied alpha writeback
-  let out = vec4<f32>(finalColor * finalAlpha, finalAlpha);
-
-  textureStore(writeTexture, vec2<i32>(gid.xy), out);
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(vein, scan, reveal, finalAlpha));
 }

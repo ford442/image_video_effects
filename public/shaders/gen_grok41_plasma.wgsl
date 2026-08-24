@@ -151,9 +151,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Audio — aggregate bands (preserved) plus per-bin FFT for the
     // band-specific harmonic weighting below.
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let audioBands = plasmaBuffer[0].xyz;
+    let bass = audioBands.x;
+    let mids = audioBands.y;
+    let treble = audioBands.z;
 
     // Per-bin FFT: each spherical-harmonic family dances to its own range.
     // l1 (Y1x) <- bass bins 1..3, l2 (Y2x) <- mid bins 4..6, l3 (Y3x) <- treble bins 7..8.
@@ -187,6 +188,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv_norm = vec2<f32>(global_id.xy) / resolution;
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv_norm, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv_norm, 0.0).r;
+    let previousTelemetry = textureLoad(dataTextureC, coord, 0);
+    let telemetryValid = step(0.5, previousTelemetry.a);
+
+    // Recent clicks launch bounded lightning rings across the visible globe.
+    let screenAspect = resolution.x / max(resolution.y, 1.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    var clickLightning = 0.0;
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = timeRaw - ripple.z;
+        if (age < 0.0 || age > 1.6) { continue; }
+        let delta = (uv_norm - ripple.xy) * vec2<f32>(screenAspect, 1.0);
+        let dist = length(delta);
+        let angle = atan2(delta.y, delta.x);
+        let strength = clamp(ripple.w, 0.0, 1.0) * exp(-age * 2.2);
+        let ring = exp(-abs(dist - age * 0.42) * 90.0);
+        let branches = pow(0.5 + 0.5 * sin(angle * 11.0 + dist * 95.0 - age * 31.0), 8.0);
+        clickLightning += strength * ring * (0.35 + branches);
+    }
 
     var outputColor = inputColor.rgb;
     var depth = inputDepth;
@@ -222,6 +242,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         pattern = pattern + Y2n2(theta, phi) * cos(time * 0.25) * l2 * 0.4;
         pattern = pattern + Y30(theta, phi) * sin(time * 0.7 + phi) * l3 * 0.5;
 
+        // Exact prior A telemetry damps harmonic jumps without reinterpreting
+        // the packed channels as display colour.
+        pattern = mix(pattern, previousTelemetry.r * 0.97, telemetryValid * 0.32);
+
         // Bass turbulence path preserved from v2 (aggregate bass band).
         let turbulence = sin(theta * 15.0 + time) * sin(phi * 12.0 - time * 0.5) * 0.05;
         pattern = pattern + turbulence * (l1 + l2 + l3) * 0.3 * (1.0 + bass * 0.8);
@@ -231,7 +255,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // under a 20% mix so the spherical harmonics stay dominant.
         let stormCoord = vec2<f32>(theta * 4.0, phi * 2.0);
         let stormF1 = worley2D(stormCoord, time * 0.6);
-        let stormMask = smoothstep(0.9, 0.2, stormF1);
+        let stormMaskLive = smoothstep(0.9, 0.2, stormF1);
+        let stormMask = mix(stormMaskLive, previousTelemetry.g * 0.94, telemetryValid * 0.35);
         let bassStorm = 1.0 + bass * 0.5;
 
         // Mouse-controlled light direction (replaces fixed (0.8, 0.3, 1.0))
@@ -270,6 +295,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let lightningMask = step(0.985 - treble * 0.04, lightningSeed) * smoothstep(0.0, 0.6, limbT);
         let arcShape = pow(lightningRand, 8.0);
         litColor = litColor + vec3<f32>(0.7, 0.85, 1.0) * lightningMask * arcShape * (treble * 4.0 + 0.5);
+        litColor = litColor + vec3<f32>(0.55, 0.82, 1.6) * clickLightning * (0.8 + treble * 1.8);
 
         // Tone map
         let tonedColor = acesToneMapping(litColor);

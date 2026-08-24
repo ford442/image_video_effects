@@ -21,31 +21,31 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Edge Enhance",
+      "id": "edge_strength",
+      "name": "Edge Strength",
       "default": 0.35,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Unsharp Mask",
+      "id": "unsharp_amount",
+      "name": "Unsharp Amount",
       "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Temporal Smooth",
+      "id": "temporal_blend",
+      "name": "Temporal Blend",
       "default": 0.25,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
+      "id": "audio_reactivity",
       "name": "Audio Reactivity",
       "default": 0.7,
       "min": 0,

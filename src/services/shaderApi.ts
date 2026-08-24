@@ -449,9 +449,8 @@ class ShaderApiService {
           requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
           requiresHistoryRing: shader.requiresHistoryRing === true,
           requiresRgba32Float: inferRequiresRgba32Float({
+            id: shader.id,
             requiresRgba32Float: shader.requiresRgba32Float === true,
-            category: shader.category || category,
-            tags: shader.tags || [],
           }),
           params: (shader.params || []).map((p: any, idx: number) => ({
             id: p.id || p.name || `param${idx + 1}`,

@@ -2,7 +2,7 @@
   "id": "liquid-oil",
   "name": "Liquid Oil",
   "url": "shaders/liquid-oil.wgsl",
-  "description": "Warm petrol marbling in black, amber, teal, and oxidized orange, driven by advected vortex cells, tendrils, click stirring, and a fast conveyor flow.",
+  "description": "A persistent high-viscosity thin-film simulation packing height, response, shear, and coverage in A, with slow capillary flow, pointer stirring, click waves, interference color, specular oil optics, exact C loads, ACES, and semantic alpha.",
   "tags": [
     "filter",
     "image-processing"
@@ -49,18 +49,16 @@
       "description": "Color manipulation amount"
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Turbulence", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Stir Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Petrol Color Shift", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
-  ],
-  "feedbackPacking": "A/C = display RGBA history",
-  "updated": true,
   "features": [
     "mouse-driven",
+    "held-interaction",
+    "click-reactive",
     "audio-reactive",
-    "temporal",
-    "upgraded-rgba"
+    "stateful-simulation",
+    "raw-height-velocity-state",
+    "thin-film-interference",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ]
 }

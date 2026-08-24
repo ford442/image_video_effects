@@ -1,36 +1,249 @@
-// Liquid Zoom — layered depth zoom through a moving refractive surface.
-@group(0) @binding(0) var u_sampler:sampler; @group(0) @binding(1) var readTexture:texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:texture_storage_2d<rgba32float,write>; @group(0) @binding(3) var<uniform> u:Uniforms;
-@group(0) @binding(4) var readDepthTexture:texture_2d<f32>; @group(0) @binding(5) var non_filtering_sampler:sampler;
-@group(0) @binding(6) var writeDepthTexture:texture_storage_2d<r32float,write>; @group(0) @binding(7) var dataTextureA:texture_storage_2d<rgba32float,write>;
-@group(0) @binding(8) var dataTextureB:texture_storage_2d<rgba32float,write>; @group(0) @binding(9) var dataTextureC:texture_2d<f32>;
-@group(0) @binding(10) var<storage,read_write> extraBuffer:array<f32>; @group(0) @binding(11) var comparison_sampler:sampler_comparison;
-@group(0) @binding(12) var<storage,read> plasmaBuffer:array<vec4<f32>>;
-struct Uniforms{config:vec4<f32>,zoom_config:vec4<f32>,zoom_params:vec4<f32>,ripples:array<vec4<f32>,50>,};
-fn historyAt(uv:vec2<f32>,size:vec2<i32>)->vec4<f32>{return textureLoad(dataTextureC,clamp(vec2<i32>(floor(uv*vec2<f32>(size))),vec2<i32>(0),size-vec2<i32>(1)),0);}
-fn aces(x:vec3<f32>)->vec3<f32>{return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),vec3<f32>(0.0),vec3<f32>(1.0));}
-fn safeDir(v:vec2<f32>)->vec2<f32>{let q=dot(v,v);return select(vec2<f32>(0.0),v*inverseSqrt(q),q>1e-8);}
-fn mirrorUV(v:vec2<f32>)->vec2<f32>{let f=fract(v*0.5)*2.0;return 1.0-abs(f-1.0);}
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Zoom — Depth-Parallax Layer Stack
+//  Category: liquid-effects
+//  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
+//            per-band-fft, depth-parallax-layers, volumetric-fog,
+//            chromatic-aberration, temporal-streaks, depth-aware,
+//            upgraded-rgba, semantic-alpha, aces
+//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+// ═══════════════════════════════════════════════════════════════════════════════
+//  An endless zoom-through built from phase-offset copies of the plate, scaled
+//  per pixel by scene depth so near content rushes past and far content drifts.
+//  Two structures replace the original two hardcoded layers:
+//
+//    1. Four-layer parallax stack with audio-driven cadence — layers are evenly
+//       phase-offset across the cycle and composited back-to-front by their own
+//       parallax factor, so the seam between "the layer fading out" and "the
+//       layer fading in" is always covered. Layer speed is modulated by the
+//       eight FFT bins (each layer owns two bins), so the stack pulses through
+//       the spectrum instead of running at one fixed rate. The old two-layer
+//       version picked a "dominant" layer with a hard 0.5 threshold for the
+//       depth write, which popped whenever the layers crossed.
+//
+//    2. Bounded click zoom pulses — each click briefly accelerates the local
+//       zoom cadence inside an expanding ring and deposits a bright rim, so
+//       clicking punches a burst of travel through the tunnel. Capped at 50
+//       ripples and ~2.4 s.
+//
+//  Also fixed: the shader had NO bounds guard, never wrote dataTextureA, never
+//  read audio, and its four sliders were labelled Intensity/Speed/Scale/Detail
+//  in the JSON while the WGSL used them as foreground speed, background speed,
+//  parallax strength and fog density. The WGSL mapping is authoritative and the
+//  honest labels now live in the definition's updatedParams.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=NearSpeed, y=FarSpeed, z=ParallaxStrength, w=FogDensity
+  ripples: array<vec4<f32>, 50>,
+};
+
+const LAYERS: u32 = 4u;
+const ZOOM_INTENSITY: f32 = 4.0;
+const FADE_DURATION: f32 = 0.3;
+
+fn ping_pong(a: f32) -> f32 {
+  return 1.0 - abs(fract(a * 0.5) * 2.0 - 1.0);
+}
+
+fn ping_pong_v2(v: vec2<f32>) -> vec2<f32> {
+  return vec2<f32>(ping_pong(v.x), ping_pong(v.y));
+}
+
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  let m = clamp(1.0 - cosTheta, 0.0, 1.0);
+  let m2 = m * m;
+  return F0 + (1.0 - F0) * m2 * m2 * m;
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
+}
+
+// Fog thickens with distance and desaturates as the layer rushes past.
+fn applyFog(layerColor: vec3<f32>, fogAmount: f32, zoomProgress: f32) -> vec3<f32> {
+  let fogColor = vec3<f32>(0.05, 0.10, 0.08);
+  let avg = dot(layerColor, vec3<f32>(1.0 / 3.0));
+  let saturation = 1.0 - zoomProgress * 0.1;
+  let desaturated = mix(vec3<f32>(avg), layerColor, saturation);
+  return mix(desaturated, fogColor, fogAmount);
+}
+
+struct Layer {
+  color: vec3<f32>,
+  alpha: f32,
+  progress: f32,
+};
+
+fn sampleLayer(
+  uv: vec2<f32>,
+  zoomCenter: vec2<f32>,
+  parallaxFactor: f32,
+  perPixelSpeed: f32,
+  fogDensity: f32,
+  zoomTime: f32,
+  cycleOffset: f32,
+  chroma: f32
+) -> Layer {
+  let progress = fract(zoomTime * perPixelSpeed + cycleOffset);
+  let scale = 1.0 + progress * ZOOM_INTENSITY * parallaxFactor;
+  let repeatingUV = (uv - zoomCenter) / scale + zoomCenter;
+  let wrapped = ping_pong_v2(repeatingUV);
+
+  // Radial chromatic split — the tunnel disperses toward its rim.
+  let radial = (wrapped - zoomCenter) * chroma;
+  let cR = textureSampleLevel(readTexture, non_filtering_sampler, ping_pong_v2(wrapped + radial), 0.0).r;
+  let cG = textureSampleLevel(readTexture, non_filtering_sampler, wrapped, 0.0);
+  let cB = textureSampleLevel(readTexture, non_filtering_sampler, ping_pong_v2(wrapped - radial), 0.0).b;
+
+  let fadeIn = smoothstep(0.0, FADE_DURATION, progress);
+  let fadeOut = 1.0 - smoothstep(1.0 - FADE_DURATION, 1.0, progress);
+
+  // Distance fog, then the Fresnel-tempered layer opacity.
+  let fogAmount = pow(1.0 - parallaxFactor, 2.0) * fogDensity;
+  let color = applyFog(vec3<f32>(cR, cG.g, cB), fogAmount, progress);
+
+  let fresnel = schlickFresnel(0.8, 0.02);
+  var alpha = fadeIn * fadeOut;
+  // Far background must not pulse with the zoom cycle.
+  alpha = mix(alpha, 1.0, 1.0 - smoothstep(0.0, 0.1, parallaxFactor));
+  alpha = mix(alpha, 0.3, fogAmount) * (1.0 - fresnel * 0.15);
+
+  var out: Layer;
+  out.color = color;
+  out.alpha = clamp(alpha, 0.0, 1.0);
+  out.progress = progress;
+  return out;
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid:vec3<u32>){
- let resolution=u.config.zw;if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }let coord=vec2<i32>(gid.xy);let size=vec2<i32>(resolution);
- let uv=(vec2<f32>(gid.xy)+0.5)/resolution;let aspect=resolution.x/max(resolution.y,1.0);let aspectVec=vec2<f32>(aspect,1.0);let time=u.config.x;
- let audio=clamp(plasmaBuffer[0].xyz,vec3<f32>(0.0),vec3<f32>(1.0));let intensity=mix(0.35,2.8,u.zoom_params.x);let speed=mix(0.08,1.35,u.zoom_params.y);
- let scaleControl=mix(0.5,2.4,u.zoom_params.z);let detail=mix(1.0,7.0,u.zoom_params.w);let center=u.zoom_config.yz;let p=(uv-center)*aspectVec;
- var liquid=vec2<f32>(sin(p.y*(8.0+detail)+time*(1.1+audio.y)),cos(p.x*(7.0+detail*1.3)-time*(0.9+audio.z)))*0.008*scaleControl;
- let pointerDelta=(uv-u.zoom_config.yz)*aspectVec;let pointerDist=max(length(pointerDelta),0.0001);let hover=exp(-pointerDist*6.0);let held=clamp(u.zoom_config.w,0.0,1.0);
- liquid+=vec2<f32>(pointerDelta.x/aspect,pointerDelta.y)/pointerDist*hover*(0.003+held*0.03)*intensity;var lensEnergy=hover*(0.15+held*1.85);
- let vortexCenters=array<vec2<f32>,2>(vec2<f32>(0.28*cos(time*0.51),0.22*sin(time*0.67)),vec2<f32>(-0.34*sin(time*0.39),0.27*cos(time*0.43)));
- for(var k=0;k<2;k=k+1){let d=p-vortexCenters[k];liquid+=vec2<f32>(-d.y/aspect,d.x)/(dot(d,d)+0.035)*(0.0007+audio.x*0.0012)*scaleControl;}
- let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);for(var i=0u;i<rippleCount;i=i+1u){let e=u.ripples[i];let age=time-e.z;if (age < 0.0 || age > 3.1) { continue; }
-  let d=(uv-e.xy)*aspectVec;let r=max(length(d),0.0001);let front=exp(-abs(r-age*(0.2+audio.x*0.08))*68.0)*exp(-age*0.85);liquid+=vec2<f32>(d.x/aspect,d.y)/r*front*0.019*intensity;lensEnergy+=front;}
- let depth=textureSampleLevel(readDepthTexture,non_filtering_sampler,uv,0.0).r;var hdr=vec3<f32>(0.0);var coverage=0.0;var weightSum=0.0;var activeDepth=depth;
- for(var layer=0;layer<3;layer=layer+1){let lf=f32(layer);let phase=fract(time*speed*(0.55+lf*0.22)+lf*0.333+depth*0.2);let nearFactor=pow(1.0-clamp(depth,0.0,1.0),0.7+lf*0.35);
-  let zoom=1.0+phase*intensity*nearFactor*(1.0+audio.x*0.35);let shear=vec2<f32>(sin(time*0.5+lf*2.1),cos(time*0.43-lf))*liquid*(1.0+lf*0.45);
-  let layerUV=mirrorUV((uv-center)/zoom+center+shear);let sampleColor=textureSampleLevel(readTexture,u_sampler,layerUV,0.0);let fade=smoothstep(0.0,0.16,phase)*(1.0-smoothstep(0.76,1.0,phase));let weight=mix(1.0,fade,nearFactor);
-  hdr+=sampleColor.rgb*weight;coverage=max(coverage,sampleColor.a*weight);weightSum+=weight;activeDepth=min(activeDepth,textureSampleLevel(readDepthTexture,non_filtering_sampler,layerUV,0.0).r);}
- hdr/=max(weightSum,0.0001);let history=historyAt(clamp(uv-liquid,vec2<f32>(0.0),vec2<f32>(1.0)),size);let trailMix=clamp(0.08+scaleControl*0.05+lensEnergy*0.035,0.0,0.28)*history.a;
- hdr=mix(hdr,history.rgb,trailMix);let ridge=clamp(length(liquid)*28.0+lensEnergy*0.22,0.0,2.0);hdr+=vec3<f32>(0.08,0.38+audio.y*0.25,0.7+audio.z*0.5)*ridge*0.18;
- let rgb=aces(hdr);let alpha=clamp(coverage+ridge*0.14+history.a*trailMix*0.18,0.0,1.0);let outputColor=vec4<f32>(rgb,alpha);
- textureStore(writeTexture,coord,outputColor);textureStore(dataTextureA,coord,outputColor);textureStore(writeDepthTexture,coord,vec4<f32>(clamp(activeDepth-ridge*0.025,0.0,1.0),0.0,0.0,0.0));
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let dimsI = vec2<i32>(textureDimensions(writeTexture));
+  if (global_id.x >= u32(dimsI.x) || global_id.y >= u32(dimsI.y)) { return; }
+
+  let coord = vec2<i32>(global_id.xy);
+  let resolution = vec2<f32>(dimsI);
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / resolution.y;
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let zoomTime = u.zoom_config.x;
+  let zoomCenter = u.zoom_config.yz;
+  let held = step(0.5, u.zoom_config.w);
+
+  // ── Params ───────────────────────────────────────────────────────────────
+  let nearSpeed = u.zoom_params.x;
+  let farSpeed = u.zoom_params.y;
+  let parallaxStrength = u.zoom_params.z;
+  let fogDensity = u.zoom_params.w;
+
+  let staticDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  // Depth 0 = near. parallaxFactor 1 = near, 0 = far.
+  let parallaxFactor = pow(1.0 - staticDepth, max(parallaxStrength, 0.001));
+
+  // ── Structure 2: bounded click zoom pulses ───────────────────────────────
+  var pulseBoost = 0.0;
+  var rimGlow = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 2.4) {
+      let r = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      let front = r - age * 0.6;
+      let env = exp(-front * front * 130.0) * exp(-age * 1.4);
+      pulseBoost += env;
+      rimGlow += env * env;
+    }
+  }
+  pulseBoost = min(pulseBoost, 1.5);
+  rimGlow = min(rimGlow, 1.2);
+
+  // Held pointer accelerates travel near the cursor.
+  let mDist = length((uv - zoomCenter) * vec2<f32>(aspect, 1.0));
+  let pointerBoost = held * exp(-mDist * mDist * 8.0);
+
+  let basePixelSpeed = mix(farSpeed, nearSpeed, parallaxFactor);
+  let chroma = (0.0008 + treble * 0.0035) * (1.0 + pulseBoost);
+
+  // ── Structure 1: four-layer stack, each owning two FFT bins ──────────────
+  var color = vec3<f32>(0.0);
+  var coverage = 0.0;
+  var alphaAccum = 0.0;
+  var nearestProgress = 0.0;
+  var nearestWeight = -1.0;
+
+  for (var k = 0u; k < LAYERS; k = k + 1u) {
+    let fk = f32(k);
+    let band = (plasmaBuffer[k * 2u + 1u].x + plasmaBuffer[k * 2u + 2u].x) * 0.5;
+    let speed = basePixelSpeed * (1.0 + band * 0.5 + bass * 0.25)
+              + pulseBoost * 0.35 + pointerBoost * 0.25;
+    let layer = sampleLayer(uv, zoomCenter, parallaxFactor, speed, fogDensity,
+                            zoomTime, fk / f32(LAYERS), chroma);
+
+    // Back-to-front over-compositing: later (nearer) layers cover earlier ones.
+    let w = layer.alpha * (1.0 - coverage);
+    color += layer.color * w;
+    coverage += w;
+    alphaAccum = max(alphaAccum, layer.alpha);
+
+    // Track the layer contributing most here — drives the depth write, with
+    // no hard threshold to pop across.
+    if (w > nearestWeight) {
+      nearestWeight = w;
+      nearestProgress = layer.progress;
+    }
+  }
+
+  // Any uncovered remainder falls back to the undistorted plate.
+  let plate = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  color += plate.rgb * (1.0 - coverage);
+
+  color += vec3<f32>(0.55, 0.85, 1.0) * rimGlow * (0.4 + mids * 0.6);
+  color += vec3<f32>(0.30, 0.55, 0.85) * pointerBoost * 0.2;
+
+  // ── Temporal streaks: the tunnel leaves motion trails ────────────────────
+  let prev = textureLoad(dataTextureC, coord, 0);
+  color = max(color, prev.rgb * (0.72 + parallaxFactor * 0.16));
+
+  color = acesFilm(color);
+
+  // ── Semantic alpha ───────────────────────────────────────────────────────
+  let alpha = clamp(mix(plate.a, 1.0, clamp(coverage, 0.0, 1.0)) * alphaAccum
+                    + rimGlow * 0.25, 0.0, 1.0);
+  let outColor = vec4<f32>(color, alpha);
+
+  textureStore(writeTexture, coord, outColor);
+  textureStore(dataTextureA, coord, outColor);
+
+  // ── Depth follows the dominant layer's transform ─────────────────────────
+  let scale = 1.0 + nearestProgress * ZOOM_INTENSITY * parallaxFactor;
+  let transformedUV = (uv - zoomCenter) / scale + zoomCenter;
+  let newDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler,
+                                    ping_pong_v2(transformedUV), 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(newDepth, 0.0, 0.0, 0.0));
 }

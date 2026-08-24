@@ -2,15 +2,13 @@
   "id": "liquid-rainbow",
   "name": "Liquid Rainbow",
   "url": "shaders/liquid-rainbow.wgsl",
-  "description": "Braided spectral ribbons and layered trochoidal crests race through vortex transport, sharp thin-film bands, and energetic click fronts.",
+  "description": "Thin-film liquid refraction with bounded pointer inertia, held vortex shear, dispersive click crests, exact-load trails, Fresnel interference, three-band chromatic separation, ACES, and semantic alpha.",
   "tags": [
     "filter",
     "image-processing",
     "liquid",
     "rainbow",
-    "iridescent",
-    "braided-ribbons",
-    "exact-feedback"
+    "iridescent"
   ],
   "params": [
     {
@@ -59,7 +57,13 @@
     "depth-aware",
     "mouse-driven",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-interaction",
+    "click-reactive",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "updatedParams": [
     {
@@ -95,6 +99,5 @@
       "step": 0.01
     }
   ],
-  "feedbackPacking": "A/C = display RGBA history; exact bounded loads",
   "updated": true
 }

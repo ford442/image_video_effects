@@ -118,7 +118,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  var prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
 
   let plumeSize = mix(0.8, 2.5, u.zoom_params.x);
   let turbulence = u.zoom_params.y;
@@ -154,7 +154,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mouse distortion pushes plume
   let pushDir = normalize(p - mouseUVAspect + vec2<f32>(0.001));
-  let distortedP = p + curl * (0.03 + turbulence * 0.08) + pushDir * mouseInfluence * 0.15;
+  let heldJet = select(0.35, 1.0, u.zoom_config.w > 0.5);
+  let distortedP = p + curl * (0.03 + turbulence * 0.08)
+    + pushDir * mouseInfluence * (0.07 + heldJet * 0.10);
   let distortedToVent = distortedP - ventPos;
   let distortedDist = length(distortedToVent);
 
@@ -169,14 +171,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let plume3Dist = length(distortedP - ventPos + vec2<f32>(0.15 * aspect, 0.0));
   let plume2 = exp(-plume2Dist * plume2Dist * 8.0) * 0.6 * swell;
   let plume3 = exp(-plume3Dist * plume3Dist * 10.0) * 0.4 * swell;
-  let totalPlume = clamp(plumeDensity + plume2 + plume3, 0.0, 1.0);
+  var totalPlume = clamp(plumeDensity + plume2 + plume3, 0.0, 1.0);
+
+  // A vertical stack of widening turbulent billows gives the black smoker
+  // a stratified mushroom structure instead of one homogeneous noise column.
+  var billowDetail = 0.0;
+  for (var bi = 0; bi < 6; bi = bi + 1) {
+    let fi = f32(bi);
+    let rise = fract(time * (0.045 + fi * 0.004) + fi * 0.173);
+    let billowCenter = ventPos + vec2<f32>(
+      sin(time * 0.31 + fi * 2.1) * (0.025 + rise * 0.12) * turbulence,
+      0.08 + rise * 0.82
+    );
+    let billowDelta = (distortedP - billowCenter) / vec2<f32>(0.055 + rise * 0.22, 0.04 + rise * 0.11);
+    let shell = exp(-dot(billowDelta, billowDelta) * 1.8) * (1.0 - rise * 0.45);
+    billowDetail += shell;
+  }
+  totalPlume = clamp(totalPlume + billowDetail * (0.18 + turbulence * 0.32), 0.0, 1.0);
+
+  var clickHeat = 0.0;
+  var clickFlow = vec2<f32>(0.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.4) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      let radius = length(delta);
+      let front = smoothstep(0.03, 0.0, abs(radius - age * 0.23)) * exp(-age * 0.85);
+      clickHeat += front;
+      clickFlow += delta / max(radius, 0.001) * front;
+    }
+  }
+  totalPlume = clamp(totalPlume + clickHeat * 0.32, 0.0, 1.0);
 
   // Mids add particle turbulence within plumes
   let turbNoise = fbm3(vec3<f32>(distortedP * 5.0, time * 0.5), 4);
   let turbParticles = step(1.0 - mids * 0.3, turbNoise) * totalPlume * mids * turbulence;
 
   // Heat glow at vent mouth
-  let ventGlow = exp(-distFromVent * distFromVent * 15.0) * heatGlow * (1.0 + bass * 2.0);
+  let ventGlow = (exp(-distFromVent * distFromVent * 15.0) + clickHeat * 0.45)
+    * heatGlow * (1.0 + bass * 2.0);
 
   // Chromatic dispersion in plume minerals: R=iron sulfide (warm), G=copper, B=calcium
   let caStrength = 0.02 * totalPlume * (1.0 + treble);
@@ -208,6 +243,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let ventWall = smoothstep(0.06, 0.04, abs(ventDist - 0.04)) * floorMask;
   let ventColor = vec3<f32>(0.15, 0.12, 0.08) * (1.0 + floorNoise * 0.3);
 
+  // Layered carbonate chimneys and mineral crust ridges at the seafloor.
+  let chimneyMain = smoothstep(0.065, 0.035, abs(p.x - ventPos.x))
+    * smoothstep(0.0, 0.045, p.y) * (1.0 - smoothstep(0.24, 0.31, p.y));
+  let chimneySide = smoothstep(0.045, 0.022, abs(p.x - (ventPos.x - 0.16)))
+    * smoothstep(0.0, 0.035, p.y) * (1.0 - smoothstep(0.12, 0.17, p.y));
+  let crustRidges = pow(abs(sin(p.x * 92.0 + floorNoise * 8.0)), 13.0)
+    * smoothstep(0.10, 0.0, p.y) * 0.35;
+  let chimneyMask = clamp(chimneyMain + chimneySide + crustRidges, 0.0, 1.0);
+
   // Treble creates bioluminescent microbe flashes
   let microbeTime = time * 3.0;
   let microbeGrid = floor(p * (8.0 + microbeDensity * 12.0));
@@ -224,43 +268,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let h = abs(fract(vec3<f32>(microbeHue) + k) * 6.0 - vec3<f32>(3.0));
   let microbeColor = clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
+  // Bubble/mineral grains rise on staggered helical tracks inside the plume.
+  let bubbleCell = floor(vec2<f32>(p.x * 34.0, (p.y - time * (0.18 + mids * 0.08)) * 28.0));
+  let bubbleSeed = hash21(bubbleCell);
+  let bubbleCenter = (bubbleCell + vec2<f32>(bubbleSeed, fract(bubbleSeed * 7.31))) / vec2<f32>(34.0, 28.0);
+  let bubbleDist = length((p - bubbleCenter) * vec2<f32>(1.0, 1.3));
+  let bubbleRing = smoothstep(0.016, 0.009, bubbleDist) - smoothstep(0.009, 0.004, bubbleDist);
+  let bubbles = bubbleRing * step(0.72 - microbeDensity * 0.16, bubbleSeed) * totalPlume;
+
   // Turbulence particles color
   let turbColor = vec3<f32>(0.7, 0.8, 0.9) * turbParticles;
 
-  var color = floorColor + floorMask * ventColor * ventWall + plumeColor + turbColor;
+  var color = floorColor + floorMask * ventColor * ventWall + ventColor * chimneyMask
+    + plumeColor + turbColor;
   color = color + microbeColor * microbeGlow;
+  color += vec3<f32>(0.42, 0.72, 0.88) * bubbles * (0.35 + treble * 0.75);
 
   // Vent glow adds warm light with temperature-based tint (350C max reference)
   let tempFactor = clamp(ventGlow * 1.2 + totalPlume * 0.2, 0.0, 1.0);
   color = color + ventTempColor(tempFactor) * ventGlow * 0.5;
 
-  // ACES tone mapping
-  color = acesToneMap(color);
-
-  // Temporal feedback: trailing plume smoke
-  let feedback = mix(color, prev.rgb, 0.2 + bass * 0.1);
-  let feedbackMask = smoothstep(0.05, 0.3, prev.a) * totalPlume * 0.4;
-  color = mix(color, feedback, feedbackMask);
-
   // Semantic alpha: plume density + glow + microbes + vent wall
-  let alpha = clamp(totalPlume * 0.8 + ventGlow * 0.6 + microbeGlow * 0.5 + ventWall * 0.9, 0.0, 1.0);
+  let alphaLive = clamp(totalPlume * 0.78 + ventGlow * 0.6 + microbeGlow * 0.5
+    + ventWall * 0.7 + chimneyMask * 0.92 + bubbles * 0.25, 0.0, 1.0);
 
-  
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(vec2<i32>(global_id.xy)) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+  // Advect exact HDR display history upward with the smoker plume.
+  let historyOffset = vec2<i32>(round(vec2<f32>(curl.x * 2.0 + clickFlow.x, 1.0 + turbulence * 2.0)));
+  prev = textureLoad(dataTextureC, clamp(vec2<i32>(global_id.xy) - historyOffset,
+    vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
+  let feedbackMask = smoothstep(0.04, 0.35, prev.a) * totalPlume * (0.24 + bass * 0.12);
+  let temporal = mix(color, prev.rgb * 0.97, feedbackMask);
+  let alpha = mix(alphaLive, prev.a * 0.96, feedbackMask * 0.55);
 
-    let __finalRGB = color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, alpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(__finalRGB, alpha));
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(totalPlume * 0.5 + ventGlow * 0.4 + microbeGlow * 0.3, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(temporal), alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(min(temporal, vec3<f32>(7.0)), alpha));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(totalPlume * 0.46
+    + ventGlow * 0.32 + microbeGlow * 0.18 + chimneyMask * 0.62, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

@@ -5,6 +5,7 @@
 //  Complexity: High
 //  Created: 2026-04-15
 //  Upgraded: 2026-05-23
+//  Batch 58C: 16x16, mouse shear, click bursts, textureLoad history
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -170,19 +171,27 @@ fn spectralPower(color: vec3<f32>, pattern: f32) -> vec3<f32> {
     return mix(lowPass, highPass, pattern) + bandPass * pattern * 0.1;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
-
+    let pixel = vec2<i32>(global_id.xy);
     let dims = u.config.zw;
+    if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) { return; }
+
     var uv = vec2<f32>(global_id.xy) / dims;
+    let aspect = dims.x / max(dims.y, 1.0);
     let texel = 1.0 / dims;
     let time = u.config.x;
+    let mouse = u.zoom_config.yz;
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
     
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let bandJitter = plasmaBuffer[(u32(hash2(uv + time * 0.01) * 8.0) % 8u) + 1u].x * 0.15;
     let globalIntensity = clamp(0.4 + bass * 0.6, 0.0, 1.0);
+
+    let mouseShear = (mouse - uv) * (0.02 + held * 0.03) * vec2<f32>(aspect, 1.0);
+    uv = clamp(uv + mouseShear, vec2<f32>(0.0), vec2<f32>(1.0));
     
     let foamScale = u.zoom_params.x * 3.0 + 1.0;
     let flowSpeed = u.zoom_params.y;
@@ -220,7 +229,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     totalWarp = totalWarp / max(parallaxWeight, 0.001);
     totalWarp = totalWarp + curl * 0.05;
     
-    let cell = voronoi(uv * foamScale + totalWarp * 2.0, time);
+    let cell = voronoi(uv * foamScale + totalWarp * 2.0 + bandJitter, time);
     let cellPattern = 1.0 - smoothstep(0.0, 0.08, cell.x);
     let cellBoundary = smoothstep(0.08, 0.12, cell.y - cell.x);
     let cellInterior = fbm(uv * foamScale * 5.0 + cell.z * 2.0, time, max(octaveCount - 2, 2));
@@ -255,20 +264,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let plasmaColor = hsv2rgb(fract(time * 0.05 + pattern + cell.z), 0.9, 1.0);
     let emissiveColor = mix(dispersedColor, plasmaColor, emission * 0.5);
     
-    let historyUV = clamp(uv + totalWarp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
-    let history = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let history = textureLoad(dataTextureC, pixel, 0).rgb;
     let flowDirection = normalize(totalWarp + curl + vec2<f32>(0.001));
     let anisotropicFactor = 1.0 - abs(dot(flowDirection, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.3;
     let anisotropicBlend = mix(emissiveColor, history, diffusionRate * anisotropicFactor);
     
     let spectralColor = spectralPower(anisotropicBlend, pattern);
     
-    let finalColor = mix(srcColor, spectralColor, globalIntensity);
+    var finalColor = mix(srcColor, spectralColor, globalIntensity);
+
+    var clickBurst = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = max(time - ripple.z, 0.0);
+        let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+        clickBurst += exp(-age * 2.0) * exp(-abs(rDist - age * 0.35) * 60.0);
+    }
+    finalColor = finalColor + plasmaColor * clickBurst * 0.35;
     
     let lumaOut = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alphaOut = clamp(0.4 + lumaOut * 0.3 + globalIntensity * 0.3 + bass * 0.1, 0.0, 1.0);
+    let alphaOut = clamp(0.4 + lumaOut * 0.3 + globalIntensity * 0.3 + bass * 0.1 + clickBurst * 0.1, 0.0, 1.0);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alphaOut));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, alphaOut));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alphaOut));
+    textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alphaOut));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

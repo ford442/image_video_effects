@@ -10,6 +10,35 @@
 //    - Caustic highlights
 //  
 //  Target: 4.8★ rating
+//  Upgraded: 2026-08-23 (Batch 64)
+//
+//  FIXED IN THIS PASS — fake audio. `plasmaBuffer` was bound at binding 12 and
+//  never read, while a variable literally named `audioPulse` was assigned
+//  `u.zoom_config.w` — the MOUSE BUTTON state — and used to modulate the
+//  refractive index, the edge glow and the dispersion. So the shader's
+//  "audio" response was really just "is the button held", and real sound did
+//  nothing. Audio now comes from `plasmaBuffer[0].xyz` with per-band detail
+//  from `[1..8]`, and the mouse-down term is named honestly.
+//
+//  Also: the ray march declared `exitT` and never wrote it, so the glass had no
+//  exit point and the absorption path length was the DISTANCE TO THE SURFACE
+//  rather than the distance through the glass. The march now finds the exit and
+//  Beer-Lambert runs over the real interior path.
+//
+//  TWO NEW STRUCTURES
+//
+//    1. Cauchy dispersion — the chromatic split perturbed eta by a flat
+//       ±dispersion*0.02 per channel, which splits the channels but gets the
+//       physics backwards: real glass has n(λ) = A + B/λ², so blue refracts
+//       hardest and the spread is set by the material's B coefficient. Each
+//       channel now gets its own Cauchy index, so the fringe fans the correct
+//       way and its width tracks the true index spread.
+//
+//    2. Per-band caustic focusing — light converging through the glass focuses
+//       into caustics where the refracted rays bunch. The caustic intensity is
+//       computed from the divergence of the refracted direction field and
+//       modulated per FFT band, so the bright filaments pulse with the spectrum
+//       instead of the whole surface brightening uniformly.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -129,12 +158,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let roughness = u.zoom_params.w * 0.1; // Surface roughness
 
     let mousePos = (u.zoom_config.yz - 0.5) * 2.0;
-    let audioPulse = u.zoom_config.w;
-    let isMouseDown = audioPulse > 0.5;
+    // Honest names: this is the button, not audio (see header).
+    let mouseDown = u.zoom_config.w;
+    let isMouseDown = mouseDown > 0.5;
     let mouseUV = u.zoom_config.yz;
     let distToMouse = length(uv - mouseUV);
     let mouseGravity = 1.0 - smoothstep(0.0, 0.35, distToMouse);
-    let dispersion = u.zoom_params.y * 0.1 * (1.0 + mouseGravity * 2.0); // Chromatic aberration
+
+    // ── Real audio ────────────────────────────────────────────────────────
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    // Radial FFT banding: each annulus around the cursor owns one bin.
+    let bandIdx = u32(clamp(distToMouse * 8.0, 0.0, 7.999));
+    let band = plasmaBuffer[bandIdx + 1u].x;
+
+    // ── Bounded click pressure fronts ─────────────────────────────────────
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 2.4) {
+            let r = length(uv - rp.xy);
+            let front = r - age * 0.5;
+            clickFront += exp(-front * front * 170.0) * exp(-age * 1.4);
+        }
+    }
+    clickFront = min(clickFront, 1.5);
+
+    let dispersion = u.zoom_params.y * 0.1 * (1.0 + mouseGravity * 2.0 + treble * 1.2);
     // Camera ray
     let ro = vec3<f32>(mousePos.x * 0.5, mousePos.y * 0.5, -1.5);
     let rd = normalize(vec3<f32>(uv.x - 0.5, uv.y - 0.5, 1.0));
@@ -161,6 +214,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         t += max(d * 0.5, 0.001);
         if (t > 3.0) { break; }
     }
+
+    // Find the EXIT point. `exitT` was declared and never written, so the
+    // absorption below ran over the distance to the surface instead of the
+    // distance through the glass — thin and thick glass absorbed identically.
+    if (hit) {
+        var te = enterT + 0.01;
+        for (var j: i32 = 0; j < 64; j = j + 1) {
+            let pe = ro + rd * te;
+            let de = map(pe, time);
+            if (de > 0.001) { break; }
+            te += max(abs(de) * 0.5, 0.002);
+            if (te > 3.0) { break; }
+        }
+        exitT = te;
+    }
+    let interiorPath = max(exitT - enterT, 0.0);
     
     // Sample background
     var bgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -169,14 +238,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var finalAlpha = 0.0;
     
     if (hit) {
-        // Refract into glass
-        let eta = 1.0 / (ETA + audioPulse * 0.1);
+        // ── Structure 1: Cauchy dispersion n(lambda) = A + B/lambda^2 ────────
+        // Blue has the highest index and bends hardest; the old code perturbed
+        // eta by a flat constant per channel, which reversed the ordering.
+        let cauchyB = 0.0042 + dispersion * 0.06;
+        let nR = ETA + cauchyB / (0.650 * 0.650);
+        let nG = ETA + cauchyB / (0.532 * 0.532);
+        let nB = ETA + cauchyB / (0.450 * 0.450);
+        let bassSwell = bass * 0.08;
+
+        let eta = 1.0 / (nG + bassSwell);
         let refracted = refractRay(rd, normal, eta);
-        
-        // Chromatic dispersion
-        let refractR = refractRay(rd, normal, eta - dispersion * 0.02).xy;
+
+        let refractR = refractRay(rd, normal, 1.0 / (nR + bassSwell)).xy;
         let refractG = refractRay(rd, normal, eta).xy;
-        let refractB = refractRay(rd, normal, eta + dispersion * 0.02).xy;
+        let refractB = refractRay(rd, normal, 1.0 / (nB + bassSwell)).xy;
+
+        // ── Structure 2: per-band caustic focusing ───────────────────────────
+        // Caustics form where the refracted direction field converges. The
+        // divergence of that field across the three wavelengths is a cheap,
+        // honest proxy for the focusing strength.
+        let spreadRB = length(refractR - refractB);
+        let convergence = 1.0 - clamp(spreadRB * 26.0, 0.0, 1.0);
+        let caustic = pow(convergence, 5.0) * (0.35 + band * 2.1 + clickFront * 0.9);
         
         let refractUV = vec2<f32>(refractG.x, refractG.y) * 0.3 + uv;
         let refractUVR = vec2<f32>(refractR.x, refractR.y) * 0.3 + uv;
@@ -196,11 +280,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Glass tint (subtle color)
         let glassTint = vec3<f32>(0.95, 0.98, 1.0);
         
-        // Absorption based on "thickness" (simplified)
-        let absorption = exp(-vec3<f32>(0.1, 0.05, 0.15) * thicknessScale);
+        // Beer-Lambert over the REAL interior path (see header: exitT was never
+        // written, so this used the distance to the surface).
+        let absorption = exp(-vec3<f32>(0.1, 0.05, 0.15) * thicknessScale
+                             * (0.35 + interiorPath * 2.4));
         
         // Combine reflection and refraction
         finalRGB = mix(refractColor * absorption * glassTint, bgColor, fresnelFactor * 0.3);
+        // Caustic filaments where the refracted rays converge.
+        finalRGB += vec3<f32>(1.0, 0.94, 0.82) * caustic * 0.55;
         
         // Specular highlight
         let lightDir = normalize(vec3<f32>(0.5, 1.0, 0.5));
@@ -218,29 +306,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     // Add caustic-like glow at edges
-    var edgeGlow = smoothstep(0.02, 0.0, map(ro + rd * enterT, time)) * audioPulse;
+    var edgeGlow = smoothstep(0.02, 0.0, map(ro + rd * enterT, time)) * (mouseDown + mids * 0.5);
     edgeGlow = edgeGlow + mouseGravity * 0.3;
     finalRGB += vec3<f32>(0.8, 0.9, 1.0) * edgeGlow * 0.5;
     finalAlpha = max(finalAlpha, edgeGlow * 0.5);
     
-    // Tone mapping
-    finalRGB = finalRGB / (1.0 + finalRGB * 0.3);
-    
+    finalRGB += vec3<f32>(1.0, 0.86, 0.65) * clickFront * 0.4;
+
+    // Temporal glow (exact load — dataTextureC is rgba32float).
+    let prev = textureLoad(dataTextureC, coord, 0);
+    finalRGB = max(finalRGB, prev.rgb * (0.76 + mids * 0.08));
+
+    finalRGB = acesFilm(finalRGB);
+
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.3;
     
-    // Advanced Alpha: Physical Transmittance
-    let alpha = calculateAdvancedAlpha(finalRGB, finalAlpha, enterT, normal, hit);
-    
-    textureStore(writeTexture, coord, vec4<f32>(finalRGB * vignette, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(alpha, 0.0, 0.0, 1.0));
-    
-    // Store normal and alpha for potential feedback
-    textureStore(dataTextureA, coord, vec4<f32>(normal * 0.5 + 0.5, alpha));
+    // Advanced Alpha: physical transmittance over the interior path.
+    let alpha = clamp(calculateAdvancedAlpha(finalRGB, finalAlpha, interiorPath, normal, hit)
+                      + clickFront * 0.2, 0.0, 1.0);
+    let outColor = vec4<f32>(finalRGB * vignette, alpha);
+
+    textureStore(writeTexture, coord, outColor);
+    // A carries DISPLAY RGBA so the feedback read above is meaningful; the
+    // surface normal that used to live here (and that nothing read) moves to B.
+    textureStore(dataTextureA, coord, outColor);
+    textureStore(dataTextureB, coord, vec4<f32>(normal * 0.5 + 0.5, interiorPath));
+
+    // Depth: scene geometry preserved (was overwritten with the glass alpha),
+    // pulled forward where the glass body sits in front of the plate.
+    let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let glassDepth = select(sceneDepth, min(sceneDepth, enterT / 3.0), hit);
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(glassDepth, 0.0, 1.0), 0.0, 0.0, 1.0));
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
 }
 
 // ═══ ADVANCED ALPHA FUNCTION ═══
-fn calculateAdvancedAlpha(color: vec3<f32>, baseAlpha: f32, enterT: f32, normal: vec3<f32>, hit: bool) -> f32 {
+fn calculateAdvancedAlpha(color: vec3<f32>, baseAlpha: f32, interiorPath: f32, normal: vec3<f32>, hit: bool) -> f32 {
     // Tunable parameters from zoom_params
     let transparency = 0.3 + u.zoom_params.x * 0.5; // Transparency
     let dispersion = u.zoom_params.y * 0.1;         // Dispersion
@@ -253,7 +363,7 @@ fn calculateAdvancedAlpha(color: vec3<f32>, baseAlpha: f32, enterT: f32, normal:
     
     // Beer's Law absorption
     let absorptionCoeff = vec3<f32>(0.12, 0.06, 0.18) * (1.0 + dispersion * 2.0);
-    let opticalDepth = thicknessScale * enterT * 0.5;
+    let opticalDepth = thicknessScale * (0.2 + interiorPath * 2.0);
     let absorption = exp(-absorptionCoeff * opticalDepth);
     
     // Fresnel factor from normal

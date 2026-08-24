@@ -4,11 +4,19 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
     "depth-aware",
-    "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "cauchy-dispersion",
+    "fresnel",
+    "caustic-fronts",
+    "temporal-afterglow"
   ],
-  "description": "Fast rotating triangular glass shards split the image into laser RGB dispersion with caustic spokes, refractive sweeps, click fronts, and held-pointer facet bending.",
+  "description": "Ripple glass with wavelength-correct Cauchy dispersion: n(lambda) = A + B/lambda^2 sets each channel's sample offset, so blue bends hardest as real glass does. Fixes the dead-audio bug where u.config.y (the ripple count) was read as an audio level. Clicks emit bounded caustic wavefronts.",
   "params": [
     {
       "id": "strength",
@@ -43,20 +51,55 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Prism Strength", "default": 0.5, "min": 0, "max": 1 },
-    { "index": 1, "name": "Shard Frequency", "default": 0.3, "min": 0, "max": 1 },
-    { "index": 2, "name": "Rotation Speed", "default": 0.2, "min": 0, "max": 1 },
-    { "index": 3, "name": "Aberration", "default": 0.5, "min": 0, "max": 1 }
-  ],
-  "feedbackPacking": "A/C = display RGBA history",
-  "updated": true,
   "tags": [
     "warp",
     "distort",
     "transform",
     "audio",
-    "music"
+    "music",
+    "prism",
+    "dispersion",
+    "glass",
+    "refraction",
+    "chromatic"
   ],
-  "name": "Liquid Prism"
+  "name": "Liquid Prism",
+  "updatedParams": [
+    {
+      "id": "strength",
+      "name": "Prism Strength",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Displacement amplitude of the refraction ripple."
+    },
+    {
+      "id": "frequency",
+      "name": "Wave Frequency",
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Ripple wavenumber; mids and the local FFT band modulate it."
+    },
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "type": "float",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "description": "Phase speed of the pointer ripple."
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration / Transparency",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Dual-purpose: scales the Cauchy index spread AND sets base glass transparency."
+    }
+  ]
 }

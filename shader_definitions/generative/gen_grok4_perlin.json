@@ -94,5 +94,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = erosion, sediment, water, uplift; exact terrain-state loads"
 }

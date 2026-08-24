@@ -20,8 +20,8 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "tunnel_speed",
+      "name": "Tunnel Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -29,8 +29,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "ring_density",
+      "name": "Ring Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -38,8 +38,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "chromatic_spread",
+      "name": "Chromatic Spread",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -47,8 +47,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "center_fade",
+      "name": "Center Fade",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -57,10 +57,38 @@
     }
   ],
   "updatedParams": [
-    { "index": 0, "name": "Param 1", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Param 2", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Param 3", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Param 4", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "index": 0,
+      "name": "Tunnel Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ring Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Chromatic Spread",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Center Fade",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ],
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

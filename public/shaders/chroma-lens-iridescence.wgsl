@@ -78,32 +78,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
     let pixel = vec2<i32>(global_id.xy);
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
-    
+
     let time = u.config.x;
     let isMouseDown = u.zoom_config.w > 0.5;
     let mouseUV = u.zoom_config.yz;
-    
+
     // Persistent single-writer state management
     if (global_id.x == 0u && global_id.y == 0u) {
         var targetPos = mouseUV;
         if (!isMouseDown && extraBuffer[137] < 0.5) {
             targetPos = vec2<f32>(0.5 + 0.22 * cos(time * 0.75), 0.5 + 0.2 * sin(time * 0.9));
         }
-        
+
         var curP = vec2<f32>(extraBuffer[133], extraBuffer[134]);
         if (curP.x == 0.0 && curP.y == 0.0) { curP = mouseUV; }
-        
+
         var pVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
         let diff = targetPos - curP;
         pVel = pVel + diff * 0.18;
         pVel = pVel * 0.82;
         curP = curP + pVel;
-        
+
         extraBuffer[133] = clamp(curP.x, 0.0, 1.0);
         extraBuffer[134] = clamp(curP.y, 0.0, 1.0);
         extraBuffer[135] = clamp(pVel.x, -0.05, 0.05);
         extraBuffer[136] = clamp(pVel.y, -0.05, 0.05);
-        
+
         let prevDown = extraBuffer[137];
         var rippleImpulse = extraBuffer[138] * 0.94;
         if (isMouseDown && prevDown < 0.5) {
@@ -112,18 +112,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[137] = select(0.0, 1.0, isMouseDown);
         extraBuffer[138] = rippleImpulse;
     }
-    
+
     let smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     let clickImpulse = extraBuffer[138];
-    
+
     let uv = (vec2<f32>(pixel) + 0.5) / res;
     let aspect = res.x / res.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
-    
+
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    
+
     // Sliders
     let mag = mix(-0.4, 1.4, u.zoom_params.x) * (1.0 + bass * 0.3);
     let aberration = mix(0.006, 0.055, u.zoom_params.y) * (1.0 + treble * 0.4);
@@ -132,11 +132,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let iridStrength = mix(0.3, 1.6, u.zoom_params.w);
     let blurEdges = mix(0.015, 0.08, u.zoom_params.w);
     let filmIOR = 1.45;
-    
+
     let dVec = (uv - smoothMouse) * aspectVec;
     let dist = length(dVec);
     let holdEffect = smoothstep(0.4, 0.0, dist) * select(0.3, 1.0, isMouseDown);
-    
+
     // Capped click ripple fronts
     var rippleDistortion = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -152,37 +152,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     rippleDistortion = rippleDistortion + sin(dist * 30.0 - time * 8.0) * exp(-dist * 7.0) * clickImpulse * 0.5;
-    
+
     var finalUV_R = uv;
     var finalUV_G = uv;
     var finalUV_B = uv;
-    
+
     let lensMask = 1.0 - smoothstep(radius, radius + blurEdges, dist);
-    
+
     // Spherical / aspherical lens magnification & radial dispersion
     if (dist < radius + blurEdges) {
         let ndist = clamp(dist / max(radius, 0.001), 0.0, 1.0);
         let lensCurve = 1.0 - (1.0 - ndist * ndist) * mag;
         let abbStrength = aberration * ndist + rippleDistortion * 0.01;
-        
+
         let factorR = lensCurve - abbStrength;
         let factorG = lensCurve;
         let factorB = lensCurve + abbStrength;
-        
+
         let delta = uv - smoothMouse;
         finalUV_R = clamp(smoothMouse + delta * factorR, vec2<f32>(0.0), vec2<f32>(1.0));
         finalUV_G = clamp(smoothMouse + delta * factorG, vec2<f32>(0.0), vec2<f32>(1.0));
         finalUV_B = clamp(smoothMouse + delta * factorB, vec2<f32>(0.0), vec2<f32>(1.0));
     }
-    
+
     let colR = textureSampleLevel(readTexture, u_sampler, finalUV_R, 0.0).r;
     let colG = textureSampleLevel(readTexture, u_sampler, finalUV_G, 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, finalUV_B, 0.0).b;
     var color = vec3<f32>(colR, colG, colB);
-    
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, finalUV_G, 0.0).r;
     let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
-    
+
     // Thin-film iridescence overlay inside lens area
     let toCenter = uv - vec2<f32>(0.5);
     let dlen = length(toCenter);
@@ -190,27 +190,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let noiseVal = hash12(uv * 12.0 + time * 0.1) * 0.6 + hash12(uv * 26.0 - time * 0.15) * 0.4;
     var thickness = filmThicknessBase * (0.65 + depth * 0.55 + noiseVal * 0.35 + holdEffect * 0.3 + bass * 0.2);
     thickness = thickness + rippleDistortion * 150.0;
-    
+
     let iridescent = thinFilmColor(thickness, cosTheta, filmIOR) * iridStrength;
     let fresnel = pow(1.0 - cosTheta, 2.5);
     let ndist = clamp(dist / max(radius, 0.001), 0.0, 1.0);
-    
+
     let lensColor = mix(color, iridescent, fresnel * 0.65 * (1.0 - ndist * 0.8) * lensMask);
     color = mix(color, lensColor, lensMask);
-    
+
     // Glass bevel rim highlight
     let rimMask = smoothstep(radius - 0.025, radius, dist) * (1.0 - smoothstep(radius, radius + blurEdges, dist));
     let rimColor = mix(vec3<f32>(1.0), vec3<f32>(0.5, 0.8, 1.0), treble);
     color = color + rimColor * rimMask * 0.45 * (1.0 + treble);
-    
+
     // Exact temporal feedback from dataTextureC
     let prev = textureLoad(dataTextureC, pixel, 0).rgb;
     color = mix(color, prev, 0.1 + mids * 0.06);
-    
+
     let tonemapped = acesToneMap(color * (1.0 + treble * 0.1));
     let alpha = clamp(luma * 0.5 + lensMask * 0.3 + rimMask * 0.25 + holdEffect * 0.15 + clickImpulse * 0.15, 0.2, 0.98);
     let outputRGBA = vec4<f32>(tonemapped, alpha);
-    
+
     textureStore(writeTexture, pixel, outputRGBA);
     textureStore(dataTextureA, pixel, outputRGBA);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 1.0));

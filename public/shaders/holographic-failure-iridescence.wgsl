@@ -78,32 +78,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
     let pixel = vec2<i32>(global_id.xy);
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
-    
+
     let time = u.config.x;
     let isMouseDown = u.zoom_config.w > 0.5;
     let mouseUV = u.zoom_config.yz;
-    
+
     // Persistent single-writer state management
     if (global_id.x == 0u && global_id.y == 0u) {
         var targetPos = mouseUV;
         if (!isMouseDown && extraBuffer[137] < 0.5) {
             targetPos = vec2<f32>(0.5 + 0.2 * cos(time * 0.9), 0.5 + 0.2 * sin(time * 1.1));
         }
-        
+
         var curP = vec2<f32>(extraBuffer[133], extraBuffer[134]);
         if (curP.x == 0.0 && curP.y == 0.0) { curP = mouseUV; }
-        
+
         var pVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
         let diff = targetPos - curP;
         pVel = pVel + diff * 0.18;
         pVel = pVel * 0.82;
         curP = curP + pVel;
-        
+
         extraBuffer[133] = clamp(curP.x, 0.0, 1.0);
         extraBuffer[134] = clamp(curP.y, 0.0, 1.0);
         extraBuffer[135] = clamp(pVel.x, -0.05, 0.05);
         extraBuffer[136] = clamp(pVel.y, -0.05, 0.05);
-        
+
         let prevDown = extraBuffer[137];
         var rippleImpulse = extraBuffer[138] * 0.94;
         if (isMouseDown && prevDown < 0.5) {
@@ -112,27 +112,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[137] = select(0.0, 1.0, isMouseDown);
         extraBuffer[138] = rippleImpulse;
     }
-    
+
     let smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     let clickImpulse = extraBuffer[138];
-    
+
     let uv = (vec2<f32>(pixel) + 0.5) / res;
     let aspect = res.x / res.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
-    
+
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    
+
     // Sliders
     let failureAmount = clamp(u.zoom_params.x, 0.0, 1.0);
     let holographicIntensity = clamp(u.zoom_params.y, 0.0, 1.0);
     let filmIOR = mix(1.2, 2.4, u.zoom_params.z);
     let turbulence = clamp(u.zoom_params.w, 0.0, 1.0);
-    
+
     let distMouse = length((uv - smoothMouse) * aspectVec);
     let holdEffect = smoothstep(0.4, 0.0, distMouse) * select(0.3, 1.0, isMouseDown);
-    
+
     // Capped click ripple fronts
     var rippleDistortion = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -147,36 +147,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     rippleDistortion = rippleDistortion + sin(distMouse * 30.0 - time * 8.0) * exp(-distMouse * 7.0) * clickImpulse * 0.5;
-    
+
     // Failure glitch jitter & scanline desync
     let glitchBlock = hash12(floor(uv * vec2<f32>(18.0, 6.0) + vec2<f32>(time * 12.0, 0.0)));
     let isGlitchRow = step(0.92 - failureAmount * 0.35 - bass * 0.1, glitchBlock);
     let scanlineJitter = sin(uv.y * 180.0 + time * 25.0) * 0.003 * failureAmount;
     let blockJitter = (hash12(vec2<f32>(floor(uv.y * 24.0), floor(time * 15.0))) - 0.5) * 0.04 * failureAmount * isGlitchRow;
-    
+
     let glitchedUV = clamp(uv + vec2<f32>(blockJitter + scanlineJitter + rippleDistortion * 0.02, rippleDistortion * 0.01), vec2<f32>(0.0), vec2<f32>(1.0));
-    
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, glitchedUV, 0.0).r;
     let sample = textureSampleLevel(readTexture, u_sampler, glitchedUV, 0.0).rgb;
     let luma = dot(sample, vec3<f32>(0.2126, 0.7152, 0.0722));
-    
+
     // Laser flicker
     let flickerNoise = hash12(vec2<f32>(floor(time * 24.0), 0.0));
     let flicker = step(failureAmount * 0.35 + bass * 0.1, flickerNoise) * 0.3 + 0.7;
-    
+
     // Iridescence computation
     let toCenter = uv - vec2<f32>(0.5);
     let distCenter = length(toCenter);
     let cosTheta = sqrt(max(1.0 - distCenter * distCenter * 0.5, 0.02));
-    
+
     let filmThicknessBase = mix(220.0, 780.0, holographicIntensity);
     let noiseVal = hash12(uv * 12.0 + time * 0.1) * 0.5 + hash12(uv * 26.0 - time * 0.15) * 0.25;
     var thickness = filmThicknessBase * (0.6 + depth * 0.6 + noiseVal * turbulence + holdEffect * 0.4 + bass * 0.2);
     thickness = thickness + isGlitchRow * 250.0 * failureAmount;
-    
+
     let iridescent = thinFilmColor(thickness, cosTheta, filmIOR);
     let fresnel = pow(1.0 - cosTheta, 2.5);
-    
+
     // Holographic carrier wave
     let holoPhase = uv.x * 28.0 + uv.y * 14.0 + time * 2.0 + depth * 15.0;
     let holoCarrier = vec3<f32>(
@@ -184,30 +184,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         0.45 + 0.45 * sin(holoPhase + 2.094),
         0.65 + 0.35 * sin(holoPhase + 4.188)
     );
-    
+
     // Failure artifacts (digital tears & chromatic breakdown)
     let tearNoise = hash12(floor(uv * vec2<f32>(40.0, 120.0)) + vec2<f32>(time * 18.0, time * 5.0));
     let tearMask = step(0.96 - failureAmount * 0.3, tearNoise);
     let tearColor = vec3<f32>(0.9, 0.3, 0.8) * (1.0 + treble);
-    
+
     var finalColor = mix(sample * flicker, iridescent * (1.2 + bass * 0.3), fresnel * 0.65 * holographicIntensity);
     finalColor = mix(finalColor, holoCarrier * flicker * (luma + 0.3), holographicIntensity * 0.4);
     finalColor = mix(finalColor, tearColor, tearMask * failureAmount * 0.65);
-    
+
     // Chromatic dispersion fringe around failures
     let caOffset = vec2<f32>(0.004 * failureAmount * (1.0 + treble), 0.0);
     let rSample = textureSampleLevel(readTexture, u_sampler, clamp(glitchedUV + caOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let bSample = textureSampleLevel(readTexture, u_sampler, clamp(glitchedUV - caOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     finalColor = mix(finalColor, vec3<f32>(rSample, finalColor.g, bSample), failureAmount * 0.4);
-    
+
     // Exact temporal feedback from dataTextureC
     let prev = textureLoad(dataTextureC, pixel, 0).rgb;
     finalColor = mix(finalColor, prev, 0.1 + mids * 0.08);
-    
+
     let tonemapped = acesToneMap(finalColor * (1.0 + treble * 0.1));
     let alpha = clamp(luma * 0.5 + failureAmount * 0.35 + holographicIntensity * 0.2 + holdEffect * 0.15 + clickImpulse * 0.15, 0.2, 0.98);
     let outputRGBA = vec4<f32>(tonemapped, alpha);
-    
+
     textureStore(writeTexture, pixel, outputRGBA);
     textureStore(dataTextureA, pixel, outputRGBA);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 1.0));

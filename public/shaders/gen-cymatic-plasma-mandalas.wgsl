@@ -5,7 +5,8 @@
 //            temporal-symmetry-memory, audio-cymatic-frequency, depth-edge-glow
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-08-03 (Batch 33)
+//  Upgraded: 2026-08-23 — bounds-safe spring state, held vortex gain,
+//            exact temporal memory, finite click nodes
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -86,14 +87,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(u.config.x - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var mouseUv = rawMouse;
+    var mouseVelocity = vec2<f32>(0.0);
+    var springInitialized = false;
+    var springLastTime = u.config.x;
+    if (hasSpring) {
+        mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        springInitialized = extraBuffer[137] > 0.5;
+        springLastTime = extraBuffer[138];
+    }
+    if (!springInitialized) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(u.config.x - springLastTime, 0.001, 0.05), springInitialized);
     let springOmega = 10.0;
     mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
     mouseUv += mouseVelocity * springDt;
-    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
         extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
         extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
         extraBuffer[137] = 1.0; extraBuffer[138] = u.config.x;
@@ -113,7 +123,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse = vec2<f32>(mX, mY);
 
     let mDist = length(uv - mouse);
-    let swirlStrength = exp(-mDist * 2.0) * swirlChaos;
+    let heldGain = select(1.0, 1.75, u.zoom_config.w > 0.5);
+    let swirlStrength = exp(-mDist * 2.0) * swirlChaos * heldGain;
     let swirlAngle = swirlStrength * sin(t + mDist * 10.0);
     let s = sin(swirlAngle);
     let c = cos(swirlAngle);

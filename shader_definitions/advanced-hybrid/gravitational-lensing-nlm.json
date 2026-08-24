@@ -8,7 +8,12 @@
     "schwarzschild-metric",
     "non-local-means",
     "artistic-overdrive",
-    "randomization-safe"
+    "randomization-safe",
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal"
   ],
   "params": [
     {
@@ -110,5 +115,40 @@
     "nlm",
     "artistic",
     "space"
+  ],
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Black Hole Mass",
+      "default": 0.25,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Accretion Disk Brightness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Camera Orbit",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Gravitational Redshift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
   ]
 }

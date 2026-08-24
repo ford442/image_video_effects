@@ -5,7 +5,12 @@
   "description": "Interactive frost reveal effect with crystalline patterns that form based on mouse interaction.",
   "features": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "audio-reactive",
+    "click-reactive",
+    "fast-motion",
+    "psychedelic",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
@@ -13,36 +18,82 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "growth_speed",
+      "name": "Growth Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "melt_radius",
+      "name": "Melt Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "frost_opacity",
+      "name": "Frost Opacity",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
+      "id": "distortion",
+      "name": "Distortion",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "id": "growth_speed",
+      "name": "Growth Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Rate the frost mask regrows over cleared glass; also sets the crystallisation wavefront speed."
+    },
+    {
+      "index": 1,
+      "id": "melt_radius",
+      "name": "Melt Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Radius of the pointer's melt footprint."
+    },
+    {
+      "index": 2,
+      "id": "frost_opacity",
+      "name": "Frost Opacity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Maximum opacity of the fully frosted state."
+    },
+    {
+      "index": 3,
+      "id": "distortion",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Refraction offset through the frost layer; also gains the radial shatter streaks."
     }
   ]
 }

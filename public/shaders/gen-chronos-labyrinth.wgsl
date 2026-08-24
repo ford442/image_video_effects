@@ -1,6 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Chronos Labyrinth - Escher-esque Shifting Maze
+//  Chronos Labyrinth - Escher-esque Shifting Maze — Batch 63
 //  Category: generative
+//  Batch 63: fast cell-shift + rift storms, psychedelic rift spectra,
+//  masonry//greeble micro-detail on every wall, spring-cursor orbit,
+//  held time-dilation, capped click chronal shockwaves.
+//  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
+//            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
+//            bounded extraBuffer[133..138] state.
 //  Features: raymarching, impossible-geometry, temporal-rifts, mouse-driven, audio-reactive,
 //            aces-tone-map, upgraded-rgba, depth-aware, temporal-feedback, chromatic-aberration,
 //            hue-preserve-clamp, ign-dither, distance-lod
@@ -48,13 +54,35 @@
 struct Uniforms {
     config: vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>, // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>, // x=Complexity, y=ShiftSpeed, z=TemporalRifts, w=AtmosphericPerspective
+    zoom_params: vec4<f32>, // x=Labyrinth Complexity, y=Shift Speed, z=Temporal Rifts, w=Atmospheric Perspective
     ripples: array<vec4<f32>, 50>,
 };
 
 // Parameters (accessed via u.zoom_params.x etc. inside functions)
 // Constants
 const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+
+// Bounded interaction state — safe zone only
+const SPRING_X: i32 = 133;
+const SPRING_Y: i32 = 134;
+const SPRING_VX: i32 = 135;
+const SPRING_VY: i32 = 136;
+const SPRING_T: i32 = 137;
+const SPRING_INIT: i32 = 138;
+
+var<private> g_bass: f32;
+var<private> g_mid: f32;
+var<private> g_treble: f32;
+var<private> g_shock: f32;
+var<private> g_held: f32;
+
+// Psychedelic chronal spectrum — hue wheel spun by the audio
+fn chronoPalette(t: f32, drive: f32) -> vec3<f32> {
+    let phase = vec3<f32>(0.45, 2.1 + drive * 1.2, 4.3 - drive * 0.9);
+    return 0.5 + 0.5 * cos(TAU * t + phase);
+}
+
 const MAX_STEPS: i32 = 80;  // was 128 — 38% reduction, depth coherence hides the difference
 const MAX_DIST: f32 = 40.0;
 const SURF_DIST: f32 = 0.001;
@@ -145,7 +173,7 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 // The Map function - defines the labyrinth geometry
 fn map(p: vec3<f32>) -> vec2<f32> {
     var time = u.config.x;
-    let bass = plasmaBuffer[0].x;
+    let bass = g_bass;
     
     // Base repetition size based on complexity
     let cell_size = mix(4.0, 1.5, u.zoom_params.x);
@@ -156,8 +184,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let cell_id = rep.w;
     let cell_hash = hash1(cell_id);
     
-    // Time-based shifting rotation for each cell
-    let shift_time = time * u.zoom_params.y * (0.5 + cell_hash);
+    // Time-based shifting rotation — Batch 63 runs the maze several times faster,
+    // with bass on the throttle and a held cursor cranking it further.
+    let shiftRate = u.zoom_params.y * (3.4 + g_bass * 2.8 + g_held * 1.6 + g_shock * 2.0);
+    let shift_time = time * shiftRate * (0.5 + cell_hash);
     var rq = rotY(q, shift_time + cell_hash * 6.28);
     rq = rotX(rq, shift_time * 0.7);
     
@@ -201,6 +231,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         d = max(d, -side_cut);
     }
     
+    // Masonry greeble — block coursing and chamfered edges carved into every wall
+    let course = sin(rq.y * 26.0) * sin(rq.x * 18.0 + rq.z * 18.0);
+    d -= course * 0.012;
+
     // Add connecting bridges between nearby cells (creates the maze effect)
     let bridge_hash = hash1(cell_id * 1.618);
     if (bridge_hash > 0.4) {
@@ -213,10 +247,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     }
     
     // Temporal Rifts - glowing anomalies
-    let rift_intensity = u.zoom_params.z * (1.0 + bass * 0.3);
+    let rift_intensity = u.zoom_params.z * (1.0 + bass * 0.5 + g_treble * 0.4 + g_shock * 0.8);
     if (rift_intensity > 0.01) {
         let rift_hash = hash1(cell_id * 3.14159);
-        let rift_time = time * (0.3 + rift_hash * 0.5);
+        let rift_time = time * (2.2 + rift_hash * 2.4 + g_treble * 2.0);
         let rift_pulse = sin(rift_time) * 0.5 + 0.5;
         
         // Only show rift based on intensity and timing
@@ -312,17 +346,70 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     var time = u.config.x;
+    let coord = vec2<i32>(global_id.xy);
+    let uv01 = vec2<f32>(global_id.xy) / resolution;
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    let aspect = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
 
-    // Audio reactivity — bass swells fog, mid brightens rift glow
-    let bass = plasmaBuffer[0].x;
-    let mid  = plasmaBuffer[0].y;
+    // Audio reactivity — three bands: bass swells fog and shift rate, mid brightens
+    // the rift glow, treble drives the rift firing rate and the hue race.
+    g_bass = plasmaBuffer[0].x;
+    g_mid  = plasmaBuffer[0].y;
+    g_treble = plasmaBuffer[0].z;
+    let bass = g_bass;
+    let mid  = g_mid;
+    let treble = g_treble;
 
-    // Camera setup with mouse orbit
-    var mouse = u.zoom_config.yz;
-    let angleX = (mouse.x - 0.5) * 6.2832 + time * 0.05; // Slow auto-rotation
+    let rawMouse = u.zoom_config.yz;
+    let held = u.zoom_config.w > 0.5;
+    g_held = select(0.0, 1.0, held);
+
+    // ── spring cursor (extraBuffer[133..138] only) ──────────────────────
+    var mouse = rawMouse;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[SPRING_INIT] > 0.5) {
+        mouse = vec2<f32>(extraBuffer[SPRING_X], extraBuffer[SPRING_Y]);
+    }
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
+        var springPos = mouse;
+        var springVel = vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]);
+        if (extraBuffer[SPRING_INIT] <= 0.5) {
+            springPos = rawMouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[SPRING_T], 0.001, 0.05);
+            let omega = 9.0;
+            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[SPRING_X] = springPos.x;
+        extraBuffer[SPRING_Y] = springPos.y;
+        extraBuffer[SPRING_VX] = springVel.x;
+        extraBuffer[SPRING_VY] = springVel.y;
+        extraBuffer[SPRING_T] = time;
+        extraBuffer[SPRING_INIT] = 1.0;
+        mouse = springPos;
+    }
+
+    // ── click chronal shockwaves (capped, bounded) ─────────────────────
+    var shock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 1.3) {
+            let front = abs(length((uv01 - rp.xy) * aspect) - age * 0.95);
+            shock = max(shock, exp(-front * 28.0) * (1.0 - age / 1.3));
+        }
+    }
+    shock = min(shock, 1.0);
+    g_shock = shock;
+
+    // Camera setup with mouse orbit — fast auto-rotation, bass-kicked
+    let angleX = (mouse.x - 0.5) * 6.2832 + time * (0.45 + bass * 0.8);
     let angleY = (mouse.y - 0.5) * 1.5 + 0.3; // Slight elevation (mouse up = look up)
-    let cam_dist = mix(8.0, 15.0, u.zoom_params.x * 0.3);
+    let cam_dist = mix(8.0, 15.0, u.zoom_params.x * 0.3) - g_held * 1.5 + shock * 1.2;
     
     var ro = vec3<f32>(
         cam_dist * cos(angleY) * sin(angleX),
@@ -331,7 +418,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     
     // Look-at target
-    let target_pos = vec3<f32>(0.0, sin(time * 0.1) * 2.0, 0.0);
+    let target_pos = vec3<f32>(0.0, sin(time * 0.6) * 2.0, 0.0);
     let fwd = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
     let up = cross(fwd, right);
@@ -377,9 +464,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let obsidian_col = vec3<f32>(0.08, 0.08, 0.12); // Polished obsidian
             base_color = mix(stone_col, obsidian_col, material_blend);
 
+            // Chronal iridescence — the stone is stained by the time field it sits in
+            let wallHue = fract(length(p) * 0.06 + time * (0.15 + treble * 0.5) + shock * 0.3);
+            base_color = mix(base_color, chronoPalette(wallHue, mid * 1.2) * 0.6, 0.45 + treble * 0.2);
+
             // Add procedural texture variation
             let tex_noise = fract(sin(dot(p.xz, vec2<f32>(12.9898, 78.233))) * 43758.5453);
             base_color *= 0.9 + tex_noise * 0.2;
+
+            // Masonry coursing readback — surfaces the greeble carved in map()
+            let coursing = 0.5 + 0.5 * sin(p.y * 26.0) * sin((p.x + p.z) * 18.0);
+            base_color *= 0.82 + coursing * 0.36;
 
             roughness = mix(0.9, 0.1, material_blend); // Stone rough, obsidian smooth
         } else {
@@ -415,9 +510,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         if (mat > 1.5) {
             // Temporal Rift glow — mid energy swells rift brightness
-            let rift_colors = vec3<f32>(0.4, 0.9, 1.0);
-            let pulse = 0.7 + 0.3 * sin(time * 3.0);
-            color = rift_colors * (2.0 + pulse + mid * 0.5) * u.zoom_params.z;
+            let riftHue = fract(time * (0.5 + treble * 1.2) + length(p) * 0.08 + shock * 0.4);
+            let rift_colors = chronoPalette(riftHue, 1.0 + mid);
+            let pulse = 0.7 + 0.3 * sin(time * (9.0 + treble * 12.0));
+            color = rift_colors * (2.0 + pulse + mid * 0.5 + shock * 1.2) * u.zoom_params.z;
             riftGlowNow = dot(color, vec3<f32>(0.333));
         } else {
             // Standard material — ao folds in diffuse shadow role
@@ -451,10 +547,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // blink on/off. Reading last frame's glow from dataTextureC and slow-decaying it
     // (0.96/frame) creates a lingering "afterimage" — the anomaly bleeds through time
     // even after the geometry stops rendering it, which is exactly the shader's conceit.
-    let uvSample = (vec2<f32>(global_id.xy) + 0.5) / resolution;
-    let prevMemory = textureSampleLevel(dataTextureC, u_sampler, uvSample, 0.0);
+    // Exact previous-frame state — textureLoad, no filtering.
+    let prevMemory = textureLoad(dataTextureC, coord, 0);
     let riftEcho = max(riftGlowNow * 0.5, prevMemory.r * 0.96);
-    let echoColor = vec3<f32>(0.4, 0.9, 1.0);
+    let echoColor = chronoPalette(fract(time * (0.4 + treble * 0.9)), 1.0 + mid);
     color += echoColor * riftEcho * 0.12 * (1.0 - alpha * 0.5);
 
     // ═══ CHUNK: chromatic-aberration — mid-band energy splits the rift echo across RGB ═══
@@ -464,6 +560,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color.g,
         color.b - echoColor.b * riftEcho * caStrength * 40.0
     );
+
+    // Chronal shockwave flash + cursor time-dilation halo
+    color += chronoPalette(fract(time * 0.9), 1.0) * shock * 1.4;
+    let cursorDist = length((uv01 - mouse) * aspect);
+    color += chronoPalette(fract(time * 0.5 + cursorDist), bass) * exp(-cursorDist * 7.0) * (0.12 + g_held * 0.45);
+
+    // A rotating chronometer sigil reveals the labyrinth's global time topology.
+    let clockRadius = length(uv);
+    let clockAngle = atan2(uv.y, uv.x);
+    let tick = pow(0.5 + 0.5 * cos(clockAngle * (12.0 + floor(u.zoom_params.x * 6.0)) - time * (1.0 + u.zoom_params.y * 2.0)), 22.0);
+    let clockRing = (1.0 - smoothstep(0.0, 0.018, abs(clockRadius - 0.32 - 0.025 * sin(time * 0.7)))) * tick;
+    color += chronoPalette(fract(clockAngle / 6.28318 + time * 0.08), treble) * clockRing * (0.14 + riftEcho * 0.4 + shock * 0.45);
 
     // Vignette
     let vignette = 1.0 - 0.4 * length(uv);
@@ -479,8 +587,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ign = fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715))));
     color = clamp(color + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth / MAX_DIST, 0.0, 0.0, 0.0));
+    // Semantic alpha: geometry presence through atmosphere, plus rift/shock energy
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let outAlpha = clamp(alpha * 0.7 + luma * 0.35 + riftEcho * 0.3 + shock * 0.25, 0.0, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(color, outAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth / MAX_DIST, 0.0, 0.0, 0.0));
     // Persist rift-echo memory (.r), normalized depth (.g), material id (.b), alpha (.a)
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(riftEcho, depth / MAX_DIST, mat, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(riftEcho, depth / MAX_DIST, mat, outAlpha));
 }

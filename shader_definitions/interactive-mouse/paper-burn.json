@@ -13,32 +13,32 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "burn_speed",
+      "name": "Burn Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "spread_speed",
+      "name": "Spread Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "char_width",
+      "name": "Char Width",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
+      "id": "reset",
+      "name": "Reset",
       "default": 0.5,
       "min": 0,
       "max": 1,

@@ -72,7 +72,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -80,7 +80,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -88,7 +88,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -96,7 +96,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -571,29 +571,29 @@
     "description": "Concentric rings that rotate in alternating directions. Mouse controls the center. Audio-reactive rotation with ring gap opacity.",
     "params": [
       {
-        "id": "param1",
-        "name": "Ring Density",
+        "id": "density",
+        "name": "Density",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
-        "name": "Rotation Speed",
+        "id": "speed",
+        "name": "Speed",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
-        "name": "Smoothness",
+        "id": "smooth_w",
+        "name": "Smooth W",
         "default": 0.1,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
-        "name": "Ring Gap Opacity",
+        "id": "gap_fade",
+        "name": "Gap Fade",
         "default": 0,
         "min": 0,
         "max": 1
@@ -1149,23 +1149,23 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Filter Radius",
+        "id": "rad",
+        "name": "Rad",
         "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Epsilon",
+        "id": "eps",
+        "name": "Eps",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "guide_strength",
         "name": "Guide Strength",
         "default": 0.85,
         "min": 0,
@@ -1173,8 +1173,8 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Mouse Sharpening",
+        "id": "mouse_strength",
+        "name": "Mouse Strength",
         "default": 0.8,
         "min": 0,
         "max": 1,
@@ -1940,7 +1940,12 @@
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
-    "description": "Brown-Conrady digital lens with continuous caustic zoom streaks, spectral radial runners, held gravity-well focus, bounded click iris waves, chromatic dispersion, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+    "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion, caustic streaks, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "updated": true,
     "params": [
       {
@@ -1948,58 +1953,66 @@
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "dispersion",
         "name": "Dispersion",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "vignette",
         "name": "Vignette",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "focus",
         "name": "Focus Point",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "updatedParams": [
       {
-        "id": "distortion",
+        "index": 0,
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "dispersion",
+        "index": 1,
         "name": "Dispersion",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "vignette",
+        "index": 2,
         "name": "Vignette",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "focus",
+        "index": 3,
         "name": "Focus Point",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
@@ -2014,7 +2027,9 @@
       "alpha-layered",
       "luminance-key",
       "continuous-motion",
-      "bounded-click-ripples"
+      "bounded-click-ripples",
+      "spring-cursor",
+      "held-drag"
     ],
     "tags": [
       "filter",
@@ -2669,7 +2684,12 @@
     "description": "Interactive frost reveal effect with crystalline patterns that form based on mouse interaction.",
     "features": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "click-reactive",
+      "fast-motion",
+      "psychedelic",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -2677,36 +2697,82 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "growth_speed",
+        "name": "Growth Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "melt_radius",
+        "name": "Melt Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "frost_opacity",
+        "name": "Frost Opacity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "distortion",
+        "name": "Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "growth_speed",
+        "name": "Growth Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Rate the frost mask regrows over cleared glass; also sets the crystallisation wavefront speed."
+      },
+      {
+        "index": 1,
+        "id": "melt_radius",
+        "name": "Melt Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Radius of the pointer's melt footprint."
+      },
+      {
+        "index": 2,
+        "id": "frost_opacity",
+        "name": "Frost Opacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Maximum opacity of the fully frosted state."
+      },
+      {
+        "index": 3,
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Refraction offset through the frost layer; also gains the radial shatter streaks."
       }
     ]
   },
@@ -2714,7 +2780,7 @@
     "id": "frosted-glass-lens",
     "name": "Frosted Glass Lens",
     "url": "shaders/frosted-glass-lens.wgsl",
-    "description": "A frosted glass effect that reveals the clear image under the mouse cursor.",
+    "description": "Frosted lens with a Beckmann microfacet scattering lobe — five taps drawn from a Beckmann slope distribution, giving the heavy-tailed blur of ground glass rather than a single offset — and depth-dependent frost thickness so far, cold geometry frosts over while near geometry stays clear. Adds ACES, bounded click frost-clear fronts and dataTextureC persistence, and replaces a per-frame hash grain that strobed as static with a spatially coherent drifting field.",
     "params": [
       {
         "id": "frost_amt",
@@ -2746,11 +2812,62 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "per-band-fft",
+      "depth-aware",
+      "upgraded-rgba",
+      "semantic-alpha",
+      "aces",
+      "beckmann-microfacet",
+      "fresnel",
+      "beer-lambert",
+      "chromatic-aberration",
+      "temporal-frost"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "frost",
+      "glass",
+      "lens",
+      "scattering"
+    ],
+    "updatedParams": [
+      {
+        "id": "frost_amt",
+        "name": "Frost Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Microfacet roughness and deposition amount."
+      },
+      {
+        "id": "radius",
+        "name": "Lens Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Clear aperture radius around the pointer."
+      },
+      {
+        "id": "softness",
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Falloff width at the lens rim."
+      },
+      {
+        "id": "aberration",
+        "name": "Edge Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Chromatic split at the lens edge."
+      }
     ]
   },
   {
@@ -2768,28 +2885,28 @@
     "description": "Stylized relativistic-jet visualization with bounded Doppler beaming, synchrotron-inspired emission, magnetic spirals, localized click bursts, chromatic aberration, and ACES tone mapping.",
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "decay",
         "name": "Decay",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "jet_spread",
         "name": "Jet Spread",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "exposure",
         "name": "Exposure",
         "default": 0.5,
         "min": 0,
@@ -2844,10 +2961,21 @@
   {
     "id": "glitch-reveal",
     "name": "Glitch Reveal",
-    "description": "A chaotic digital noise field that is stabilized and clarified by the proximity of the cursor.",
+    "description": "Chaotic block-scatter noise field stabilized by a sprung cursor reveal window; held widens radius, clicks add capped ripples, exact C feedback, ACES composite.",
     "url": "shaders/glitch-reveal.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "held-drag",
+      "upgraded-rgba",
+      "spring-cursor",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -2855,41 +2983,124 @@
         "name": "Block Size",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "scatter",
         "name": "Scatter Amount",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "radius",
         "name": "Reveal Radius",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "speed",
         "name": "Jitter Speed",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Scatter Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reveal Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Jitter Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "glitch",
+      "reveal",
+      "spring-cursor"
+    ],
+    "updated": true
   },
   {
     "id": "glitch-ripple-drag",
     "url": "shaders/glitch-ripple-drag.wgsl",
-    "description": "Mouse emits expanding ripples that permanently drag and glitch the video pixels.",
+    "description": "Exact-load liquid glitch feedback with plasma-driven drag, a sprung origin, bounded click ripple trains, chromatic tearing, ACES display output, and semantic trail alpha.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "exact-history",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Drag Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ripple Freq",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Persistence",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glitch Factor",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -2979,7 +3190,7 @@
     "name": "Heat Haze Mirage",
     "url": "shaders/heat-haze-mirage.wgsl",
     "category": "image",
-    "description": "Vertical heat shimmer driven by a rising hot-air column. Time-varying noise is advected upward, displacing the UV sample with chromatic separation. Bass injects fresh heat bursts; mouse creates a heat source.",
+    "description": "Inferior mirage from a real refractive-index gradient: light curvature follows dn/dy through the hot layer and the lateral deflection accumulates as the square of the path, rather than scaling linearly with a noise sample. Past the critical gradient a vertically mirrored sample folds in, reproducing the false 'water' and doubled horizon of a road mirage. Fixes a depth clobber that overwrote scene geometry with the heat column, and replaces a hard 1.3 clamp with ACES.",
     "tags": [
       "heat",
       "haze",
@@ -2987,7 +3198,10 @@
       "distortion",
       "atmospheric",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "atmosphere",
+      "refraction",
+      "shimmer"
     ],
     "features": [
       "mouse-driven",
@@ -2995,7 +3209,17 @@
       "click-reactive",
       "depth-aware",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "semantic-alpha",
+      "aces",
+      "spring-damper-pointer",
+      "index-gradient-refraction",
+      "inversion-layer",
+      "chromatic-aberration",
+      "temporal-persistence"
     ],
     "supportsDepth": true,
     "params": [
@@ -3034,36 +3258,40 @@
     ],
     "updatedParams": [
       {
-        "index": 0,
+        "id": "heat_intensity",
         "name": "Heat Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Shimmer amplitude and ray-bending gain."
       },
       {
-        "index": 1,
+        "id": "rise_speed",
         "name": "Rise Speed",
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "How fast the hot air column scrolls upward."
       },
       {
-        "index": 2,
+        "id": "wavy_scale",
         "name": "Wave Scale",
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Spatial frequency of the turbulence field."
       },
       {
-        "index": 3,
+        "id": "chroma_shift",
         "name": "Chroma Shift",
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Red/blue split across the mirage."
       }
     ],
     "updated": true
@@ -3076,28 +3304,28 @@
     "description": "Honeycomb microlenses with hexagonal bokeh blur, wavelength-dependent chromatic dispersion, hexagonal aperture diffraction starbursts, FBM domain warping, and 6-fold/12-fold star patterns. Audio-reactive lens rotation and prismatic shimmer.",
     "params": [
       {
-        "id": "param1",
+        "id": "tile_size",
         "name": "Tile Size",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "lens_zoom",
         "name": "Lens Zoom",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "rotation",
         "name": "Rotation",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "mouse_influence",
         "name": "Mouse Influence",
         "default": 0.5,
         "min": 0,
@@ -3447,7 +3675,7 @@
     "id": "liquid-chrome-ripple",
     "name": "Liquid Chrome Ripple",
     "url": "shaders/liquid-chrome-ripple.wgsl",
-    "description": "Metallic liquid effect that ripples with mouse movement.",
+    "description": "A capillary chrome sheet with pointer and click wave trains, derivative normals, RGB refraction, thin-film reflection, dual-lobe highlights, caustics, and advected metallic afterimages.",
     "params": [
       {
         "id": "flow",
@@ -3479,7 +3707,15 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "click-reactive",
+      "audio-reactive",
+      "temporal",
+      "depth-aware",
+      "pbr-chrome",
+      "capillary-waves",
+      "chromatic-dispersion",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -3591,28 +3827,28 @@
     "description": "HSV hue-wheel warping via RK2-integrated magnetic field line advection per RGB channel. Chromatic dispersion, neon glow, and ACES tone mapping.",
     "params": [
       {
-        "id": "param1",
+        "id": "field_strength",
         "name": "Field Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "radius",
         "name": "Radius",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "chromatic",
         "name": "Chromatic",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "falloff",
         "name": "Falloff",
         "default": 0.2,
         "min": 0,
@@ -3820,12 +4056,22 @@
   {
     "id": "neon-pulse-stream",
     "url": "shaders/neon-pulse-stream.wgsl",
-    "description": "Video luminance directs a fluid flow of neon trails injected by the mouse.",
+    "description": "Bundled neon tube bank: five curl-perturbed sinusoidal tubes are shaded with a gaussian core, Fresnel rim and outer bloom, and each owns one FFT bin driving its thickness, hue drift and the gaussian light packets running along it. The pointer is a magnetic attractor that bends the bundle, clicks inject bounded pulse fronts that flare the tubes they cross, and dataTextureC supplies exact-load afterglow.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "semantic-alpha",
+      "aces",
+      "tube-bundle",
+      "chromatic-aberration",
+      "fresnel",
+      "afterglow-persistence"
     ],
     "params": [
       {
@@ -3866,16 +4112,58 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "neon",
+      "tube",
+      "packets",
+      "glow"
     ],
-    "name": "Neon Pulse Stream"
+    "name": "Neon Pulse Stream",
+    "updatedParams": [
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Drift rate of the tube centrelines and their packets."
+      },
+      {
+        "id": "decay",
+        "name": "Tube Density",
+        "type": "float",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "description": "Packet spacing along each tube (maps to zoom_params.y)."
+      },
+      {
+        "id": "intensity",
+        "name": "Glow Threshold",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Luminance key threshold for the neon alpha (zoom_params.z)."
+      },
+      {
+        "id": "chaos",
+        "name": "Key Softness",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Softness of the luminance key edge (zoom_params.w)."
+      }
+    ]
   },
   {
     "id": "oil-slick-iridescence",
     "name": "Oil Slick Iridescence",
     "url": "shaders/oil-slick-iridescence.wgsl",
     "category": "image",
-    "description": "Thin-film optical interference simulation, like oil on water. A procedural flowing height map modulates film thickness, producing shifting rainbow iridescence. Bass warps the film; mouse creates ripples.",
+    "description": "Nanometre-scale thin-film interference: film thickness is expressed in real nanometres (120–900 nm), the incidence angle comes from the height field's own gradient, the in-film angle follows Snell's law, and the two reflected beams combine with Fresnel weighting plus the pi phase step at the external interface. Curl-noise flow banded by the FFT transports the film; pointer and bounded click ring waves deform its surface.",
     "tags": [
       "iridescence",
       "oil",
@@ -3883,13 +4171,23 @@
       "rainbow",
       "interference",
       "audio-reactive",
-      "cinematic"
+      "cinematic",
+      "snell",
+      "fresnel"
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "semantic-alpha"
+      "semantic-alpha",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "depth-aware",
+      "aces",
+      "snell-refraction",
+      "fresnel",
+      "temporal-flow"
     ],
     "params": [
       {
@@ -3923,6 +4221,44 @@
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "thickness",
+        "name": "Film Thickness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Base film thickness, 120–900 nm; bass swells it by up to 55%."
+      },
+      {
+        "id": "iridescent_strength",
+        "name": "Iridescent Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Amplitude of the interference colour."
+      },
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Rate the height field creeps under the curl transport."
+      },
+      {
+        "id": "blend",
+        "name": "Blend",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Mix of the slick over the source plate."
       }
     ]
   },
@@ -4004,28 +4340,28 @@
     "updated": true,
     "params": [
       {
-        "id": "param1",
+        "id": "curl_radius",
         "name": "Curl Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "shadow_strength",
         "name": "Shadow Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "feedback_amount",
         "name": "Feedback Amount",
         "default": 0,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "depth_influence",
         "name": "Depth Influence",
         "default": 0.5,
         "min": 0,
@@ -4291,28 +4627,28 @@
     "description": "LEGO-style plastic bricks with microfacet BRDF, ambient occlusion in stud cavities, fingerprint smudges, and subsurface scattering. Bass drives assembly animation, mouse deconstructs bricks, depth controls stud perspective.",
     "params": [
       {
-        "id": "param1",
-        "name": "Brick Density",
+        "id": "density",
+        "name": "Density",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "stud_size",
         "name": "Stud Size",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
-        "name": "Relief Depth",
+        "id": "relief",
+        "name": "Relief",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "bevel",
         "name": "Bevel",
         "default": 0.2,
         "min": 0,
@@ -4510,7 +4846,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "high_freq_amp",
         "name": "High Freq Amp",
         "default": 0.7,
         "min": 0,
@@ -4518,7 +4854,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "mid_freq_amp",
         "name": "Mid Freq Amp",
         "default": 0.5,
         "min": 0,
@@ -4526,7 +4862,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "low_freq_amp",
         "name": "Low Freq Amp",
         "default": 0.3,
         "min": 0,
@@ -4534,8 +4870,8 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "ROI Radius",
+        "id": "roiradius",
+        "name": "Roiradius",
         "default": 0.2,
         "min": 0.05,
         "max": 0.5,
@@ -5277,8 +5613,8 @@
     "author": "AI",
     "params": [
       {
-        "id": "param1",
-        "name": "Strain Scale",
+        "id": "amplitude_of_the_tensor_field_deformation",
+        "name": "Amplitude of the tensor-field deformation.",
         "min": 0,
         "max": 1,
         "default": 0.4,
@@ -5286,8 +5622,8 @@
         "description": "Amplitude of the tensor-field deformation."
       },
       {
-        "id": "param2",
-        "name": "Detail Preserve",
+        "id": "how_much_high_frequency_detail_is_added_back_after_warping",
+        "name": "How much high-frequency detail is added back after warping.",
         "min": 0,
         "max": 1,
         "default": 0.6,
@@ -5295,8 +5631,8 @@
         "description": "How much high-frequency detail is added back after warping."
       },
       {
-        "id": "param3",
-        "name": "Flow Speed",
+        "id": "speed_of_the_time_varying_noise_flow_that_modulates_the_tensor",
+        "name": "Speed of the time-varying noise flow that modulates the tensor.",
         "min": 0,
         "max": 1,
         "default": 0.3,
@@ -5304,8 +5640,8 @@
         "description": "Speed of the time-varying noise flow that modulates the tensor."
       },
       {
-        "id": "param4",
-        "name": "Tensor Mode",
+        "id": "blend_from_stretch_dominant_0_to_shear_dominant_1_deformation",
+        "name": "Blend from stretch-dominant (0) to shear-dominant (1) deformation.",
         "min": 0,
         "max": 1,
         "default": 0,
@@ -5322,7 +5658,7 @@
     "updated": true,
     "params": [
       {
-        "id": "param1",
+        "id": "4d_rotation_speed",
         "name": "4D Rotation Speed",
         "default": 0.5,
         "min": 0,
@@ -5330,7 +5666,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "projection_scale",
         "name": "Projection Scale",
         "default": 0.5,
         "min": 0,
@@ -5338,7 +5674,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "edge_glow_width",
         "name": "Edge Glow Width",
         "default": 0.5,
         "min": 0,
@@ -5346,7 +5682,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "face_opacity",
         "name": "Face Opacity",
         "default": 0.5,
         "min": 0,
@@ -5431,31 +5767,31 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Edge Enhance",
+        "id": "edge_strength",
+        "name": "Edge Strength",
         "default": 0.35,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Unsharp Mask",
+        "id": "unsharp_amount",
+        "name": "Unsharp Amount",
         "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Temporal Smooth",
+        "id": "temporal_blend",
+        "name": "Temporal Blend",
         "default": 0.25,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "audio_reactivity",
         "name": "Audio Reactivity",
         "default": 0.7,
         "min": 0,

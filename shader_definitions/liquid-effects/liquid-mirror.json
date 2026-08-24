@@ -2,7 +2,7 @@
   "id": "liquid-mirror",
   "name": "Liquid Mirror",
   "url": "shaders/liquid-mirror.wgsl",
-  "description": "Fast mercury ribbons fold into mirror seams with cobalt/rose accents, moving reflection sweeps, click waves, and held push/pull deformation.",
+  "description": "A persistent reflective height field with bounded sprung pointer push, held dents, click waves, exact C state, three-band steel highlights, Fresnel reflection, ACES, and semantic alpha.",
   "params": [
     {
       "id": "distort",
@@ -33,19 +33,19 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Distortion", "default": 0.5, "min": 0, "max": 1 },
-    { "index": 1, "name": "Ribbon Smoothness", "default": 0.5, "min": 0, "max": 1 },
-    { "index": 2, "name": "Reflectivity", "default": 0.8, "min": 0, "max": 1 },
-    { "index": 3, "name": "Push Size", "default": 0.5, "min": 0, "max": 1 }
-  ],
-  "feedbackPacking": "A/C = display RGBA history",
-  "updated": true,
   "features": [
     "mouse-driven",
+    "held-interaction",
+    "click-reactive",
     "audio-reactive",
-    "temporal",
-    "upgraded-rgba"
+    "depth-aware",
+    "stateful-simulation",
+    "raw-height-velocity-state",
+    "spring-interaction",
+    "reflective-surface",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "filter",

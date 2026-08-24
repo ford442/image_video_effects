@@ -120,6 +120,10 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -130,6 +134,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let invRes = 1.0 / resolution;
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
+    let aspect = resolution.x / resolution.y;
+    let held = u.zoom_config.w > 0.5;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Parameters
     let brushSize = i32(3.0 + u.zoom_params.x * 8.0);
@@ -155,22 +164,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // === BILATERAL DREAM POST-PROCESS ===
     // Mouse focus aperture
-    let mouseDist = length(uv - mousePos);
-    let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * mouseInfluence;
+    let mouseDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
+    let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * mouseInfluence * select(1.0, 1.45, held);
     let spatialSigmaBase = mix(0.5, 2.0, bilateralDream);
     let spatialSigma = mix(spatialSigmaBase, spatialSigmaBase * 0.2, mouseFactor);
     let colorSigma = mix(0.1, 0.5, bilateralDream);
 
     // Ripple shockwaves
     var rippleSharpness = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
         let rStart = ripple.z;
         let rElapsed = time - rStart;
         if (rElapsed > 0.0 && rElapsed < 3.0) {
-            let rDist = length(uv - rPos);
+            let rDist = length((uv - rPos) * vec2<f32>(aspect, 1.0));
             let wave = exp(-pow((rDist - rElapsed * 0.3) * 12.0, 2.0));
             rippleSharpness = rippleSharpness + wave * (1.0 - rElapsed / 3.0);
         }
@@ -204,6 +213,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Blend original painterly with bilateral dream
     var finalColor = mix(color, bilateralResult, bilateralDream);
+    let history = textureLoad(dataTextureC, coord, 0);
+    let wetMemory = clamp(paintWetness * (0.18 + bass * 0.08), 0.0, 0.35);
+    finalColor = mix(finalColor, history.rgb, wetMemory);
+    finalColor += vec3<f32>(0.18, 0.08 + mids * 0.08, 0.22 + treble * 0.12) * edgeMag * 0.06;
 
     // Canvas texture
     let canvas_tex = hash12(uv * 100.0) * 0.1 + 0.9;
@@ -230,11 +243,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let thickness_luma = mix(1.15, 0.9, paint_thickness);
     finalColor *= thickness_luma;
 
-    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    finalColor = acesToneMap(max(finalColor, vec3<f32>(0.0)));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
+    let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    paint_alpha = clamp(sourceAlpha * 0.35 + paint_alpha * 0.65 + rippleSharpness * 0.1, 0.0, 1.0);
     textureStore(writeTexture, coord, vec4<f32>(finalColor, paint_alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(paint_thickness, 0.0, 0.0, paint_alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(finalColor, paint_thickness));
 }

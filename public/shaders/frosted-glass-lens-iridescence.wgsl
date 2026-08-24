@@ -78,32 +78,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
     let pixel = vec2<i32>(global_id.xy);
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
-    
+
     let time = u.config.x;
     let isMouseDown = u.zoom_config.w > 0.5;
     let mouseUV = u.zoom_config.yz;
-    
+
     // Persistent single-writer state management
     if (global_id.x == 0u && global_id.y == 0u) {
         var targetPos = mouseUV;
         if (!isMouseDown && extraBuffer[137] < 0.5) {
             targetPos = vec2<f32>(0.5 + 0.2 * cos(time * 0.7), 0.5 + 0.2 * sin(time * 0.85));
         }
-        
+
         var curP = vec2<f32>(extraBuffer[133], extraBuffer[134]);
         if (curP.x == 0.0 && curP.y == 0.0) { curP = mouseUV; }
-        
+
         var pVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
         let diff = targetPos - curP;
         pVel = pVel + diff * 0.18;
         pVel = pVel * 0.82;
         curP = curP + pVel;
-        
+
         extraBuffer[133] = clamp(curP.x, 0.0, 1.0);
         extraBuffer[134] = clamp(curP.y, 0.0, 1.0);
         extraBuffer[135] = clamp(pVel.x, -0.05, 0.05);
         extraBuffer[136] = clamp(pVel.y, -0.05, 0.05);
-        
+
         let prevDown = extraBuffer[137];
         var rippleImpulse = extraBuffer[138] * 0.94;
         if (isMouseDown && prevDown < 0.5) {
@@ -112,28 +112,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[137] = select(0.0, 1.0, isMouseDown);
         extraBuffer[138] = rippleImpulse;
     }
-    
+
     let smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     let clickImpulse = extraBuffer[138];
-    
+
     let uv = (vec2<f32>(pixel) + 0.5) / res;
     let aspect = res.x / res.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
-    
+
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    
+
     // Sliders
     let frostAmt = clamp(u.zoom_params.x, 0.0, 1.0);
     let lensRadius = mix(0.12, 0.72, u.zoom_params.y);
     let edgeSoftness = mix(0.02, 0.28, u.zoom_params.z);
     let filmIOR = mix(1.2, 2.4, u.zoom_params.w);
-    
+
     let distVec = (uv - smoothMouse) * aspectVec;
     let dist = length(distVec);
     let holdEffect = smoothstep(0.35, 0.0, dist) * select(0.3, 1.0, isMouseDown);
-    
+
     // Capped click ripple fronts
     var rippleDistortion = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -148,73 +148,73 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     rippleDistortion = rippleDistortion + sin(dist * 30.0 - time * 8.0) * exp(-dist * 7.0) * clickImpulse * 0.5;
-    
+
     // Lens magnification & chromatic dispersion
     let lensMask = 1.0 - smoothstep(lensRadius, lensRadius + edgeSoftness, dist);
     let lensBulge = (1.0 - dist / (lensRadius + edgeSoftness + 0.001)) * lensMask;
     let magStrength = (0.25 + holdEffect * 0.35 + bass * 0.15) * lensMask;
     let lensOffset = -normalize(distVec + vec2<f32>(0.0001)) * lensBulge * magStrength;
-    
+
     // Multi-tap microfacet frost scattering
     let noiseVal = hash12(uv * 180.0 + vec2<f32>(time * 0.05, -time * 0.03));
     let noiseAngle = hash12(uv * 90.0 - time * 0.02) * TAU;
     let scatterRadius = (frostAmt * 0.025 * (1.0 - lensMask * 0.7) + rippleDistortion * 0.01) * (1.0 + mids * 0.3);
     let frostOffset = vec2<f32>(cos(noiseAngle), sin(noiseAngle)) * noiseVal * scatterRadius;
-    
+
     let caStrength = (0.006 * frostAmt + 0.012 * lensMask + treble * 0.004) * smoothstep(0.0, lensRadius, dist);
     let caDir = normalize(distVec + vec2<f32>(0.0001));
-    
+
     let baseUV = uv + lensOffset + frostOffset;
     let uvR = clamp(baseUV + caDir * caStrength, vec2<f32>(0.0), vec2<f32>(1.0));
     let uvG = clamp(baseUV, vec2<f32>(0.0), vec2<f32>(1.0));
     let uvB = clamp(baseUV - caDir * caStrength * 0.8, vec2<f32>(0.0), vec2<f32>(1.0));
-    
+
     let colR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
     let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
     let scatteredColor = vec3<f32>(colR, colG, colB);
-    
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvG, 0.0).r;
-    
+
     // Beer-Lambert glass absorption
     let glassThickness = 0.04 + frostAmt * 0.12 * (1.0 + noiseVal) + depth * 0.08;
     let glassTint = mix(vec3<f32>(0.92, 0.96, 1.0), vec3<f32>(0.98, 0.93, 0.99), treble);
     let absorption = exp(-(vec3<f32>(1.0) - glassTint) * glassThickness * 3.5);
     let transmission = (absorption.r + absorption.g + absorption.b) * 0.3333;
-    
+
     // Thin-film iridescence coating on glass surface
     let toCenter = uv - vec2<f32>(0.5);
     let viewDist = length(toCenter);
     let cosTheta = sqrt(max(1.0 - viewDist * viewDist * 0.5, 0.02));
-    
+
     let filmThicknessBase = 220.0 + frostAmt * 450.0 + lensMask * 200.0;
     let filmNoise = hash12(uv * 14.0 + time * 0.08) * 0.6 + hash12(uv * 28.0 - time * 0.12) * 0.4;
     let thickness = filmThicknessBase * (0.65 + depth * 0.5 + filmNoise * 0.35 + holdEffect * 0.3 + bass * 0.2);
-    
+
     let iridescent = thinFilmColor(thickness, cosTheta, filmIOR);
     let R0 = 0.04;
     let fresnel = R0 + (1.0 - R0) * pow(1.0 - cosTheta, 4.0);
     let edgeIridescence = fresnel * (0.4 + frostAmt * 0.5 + lensMask * 0.4);
-    
+
     // Composite glass layers
     var finalColor = scatteredColor * absorption * glassTint;
     finalColor = mix(finalColor, iridescent, edgeIridescence * 0.65);
-    
+
     // Lens bevel specular highlight
     let bevelMask = smoothstep(lensRadius - 0.02, lensRadius, dist) * (1.0 - smoothstep(lensRadius, lensRadius + edgeSoftness, dist));
     let specLight = normalize(vec3<f32>(0.5, 0.8, -0.6));
     let normalBevel = normalize(vec3<f32>(distVec * 15.0, 1.0));
     let spec = pow(max(dot(normalBevel, specLight), 0.0), 40.0) * bevelMask * (1.0 + treble);
     finalColor = finalColor + vec3<f32>(spec * 0.8);
-    
+
     // Exact temporal feedback from dataTextureC
     let prev = textureLoad(dataTextureC, pixel, 0).rgb;
     finalColor = mix(finalColor, prev, 0.1 + mids * 0.08);
-    
+
     let tonemapped = acesToneMap(finalColor * (1.0 + treble * 0.1));
     let alpha = clamp(transmission * 0.6 + edgeIridescence * 0.3 + bevelMask * 0.3 + holdEffect * 0.15, 0.2, 0.98);
     let outputRGBA = vec4<f32>(tonemapped, alpha);
-    
+
     textureStore(writeTexture, pixel, outputRGBA);
     textureStore(dataTextureA, pixel, outputRGBA);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 1.0));

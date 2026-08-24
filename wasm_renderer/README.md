@@ -37,7 +37,7 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
 | `wasm_bridge.js` | JS bridge (canonical; copied to `public/wasm/` + `src/wasm/`) |
 | `build.sh` | **Canonical build** — single-pass `emcc` + emdawnwebgpu |
-| `CMakeLists.txt` | Optional IDE/fallback build (link-time port only) |
+| `CMakeLists.txt` | Optional IDE/fallback build (link-time port only). Reads `src/contracts/wasm_exports.json` — not used in CI. |
 
 Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePolicy.ts`
 (must stay in sync with `device.cpp` `CreateDevice()` limits table).

@@ -2,7 +2,7 @@
   "id": "sim-sand-dunes-rgba",
   "name": "Sim: Sand Dunes RGBA",
   "url": "shaders/sim-sand-dunes-rgba.wgsl",
-  "description": "Four-grain-type sand physics with distinct behaviors. Fine sand blows easily in wind, coarse sand is stable with high angle of repose, moist sand clumps together, and dust rises on updrafts. RGBA packs all grain fractions per cell.",
+  "description": "Four-population grain simulation packing fine, coarse, moist, and airborne dust fractions in raw A state, with exact-load transport, audio gusts, held deposition, click dust fronts, ACES material color, and semantic coverage alpha.",
   "tags": [
     "simulation",
     "sand",
@@ -55,5 +55,12 @@
       "max": 1,
       "step": 0.01
     }
+  ],
+  "updated": true,
+  "updatedParams": [
+    { "id": "param1", "name": "Gravity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param2", "name": "Wind", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param3", "name": "Moisture", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param4", "name": "Dustiness", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
   ]
 }

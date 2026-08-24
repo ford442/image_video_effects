@@ -2,11 +2,25 @@
   "id": "glass-brick-distortion",
   "name": "Glass Brick Distortion",
   "url": "shaders/glass-brick-distortion.wgsl",
-  "description": "Physical glass brick wall with per-channel IOR chromatic dispersion (Snell's law), Schlick-Fresnel highlights, Beer-Lambert absorption, depth-aware thickness, audio-reactive refraction pulse, and ripple-driven brick wobble. Mouse cursor clears a window through the glass.",
+  "description": "Architectural glass brick wall with plano-convex lens distortion, chromatic aberration, Fresnel reflection, and depth-based thickness variation.",
   "features": [
     "mouse-driven",
     "depth-aware",
     "audio-reactive",
+    "temporal",
+    "chromatic-aberration",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "distortion",
+    "glass",
+    "brick",
+    "refraction",
+    "fresnel",
+    "chromatic",
+    "grid",
+    "audio-reactive",
+    "depth-aware",
     "temporal"
   ],
   "params": [
@@ -43,15 +57,39 @@
       "step": 0.01
     }
   ],
-  "tags": [
-    "glass",
-    "brick",
-    "refraction",
-    "distortion",
-    "chromatic",
-    "ior",
-    "dispersion",
-    "physical",
-    "lens"
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Brick Size",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "IOR Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Chromatic Aberration",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Depth Influence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
   ]
 }

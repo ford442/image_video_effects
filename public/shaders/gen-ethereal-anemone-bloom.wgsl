@@ -287,7 +287,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x * 0.2;
     // Audio reactivity from plasmaBuffer (was u.config.y = MouseClickCount)
     let audioBass = plasmaBuffer[0].x;
-    let audioReactivity = 1.0 + audioBass * 0.5;
+    let audioMid = plasmaBuffer[0].y;
+    let audioHigh = plasmaBuffer[0].z;
+    let audioReactivity = 1.0 + audioBass * 0.5 + audioMid * 0.2;
 
     // 1. Ray setup and camera matrix
     let ro = vec3<f32>(time * 2.0 * audioReactivity, -1.0, time * 2.0 * audioReactivity);
@@ -383,6 +385,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pointerDelta = (uv01 - u.zoom_config.yz) * vec2<f32>(aspect, 1.0);
     let dragBloom = exp(-length(pointerDelta) * 8.0) * u.zoom_config.w;
     color += vec3<f32>(0.1, 0.8, 1.3) * dragBloom * (0.4 + audioBass);
+    color += vec3<f32>(0.85, 0.18, 1.0) * dragBloom * audioMid * 0.45;
 
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i++) {
@@ -392,12 +395,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let d = length((uv01 - ripple.xy) * vec2<f32>(aspect, 1.0));
         let front = exp(-abs(d - age * 0.22) * 70.0) * exp(-age * 0.9);
         color += vec3<f32>(0.55, 0.15 + audioBass * 0.4, 1.0) * front;
+        color += vec3<f32>(0.25, 0.9, 1.2) * front * audioHigh * 0.5;
         alpha += front * 0.12;
     }
 
     let previous = historyLoadUV(uv01).rgb;
     let display = mix(previous * 0.94, color, 0.3 + u.zoom_config.w * 0.14);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, clamp(alpha, 0.0, 1.0)));
     color = display;
 
     // ACES filmic tone mapping (was gamma-only — bioluminescent tips clipped to white)

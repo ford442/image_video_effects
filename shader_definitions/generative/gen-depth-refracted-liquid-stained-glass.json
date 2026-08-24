@@ -20,6 +20,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "facet_count", "name": "Facet Count", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "bevel_width", "name": "Bevel Width", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "temporal_drift", "name": "Temporal Drift", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "chromatic_amount", "name": "Chromatic Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -66,6 +72,11 @@
     "material-palette",
     "tessellated-facets",
     "chromatic-refraction",
-    "temporal-feedback"
-  ]
+    "temporal-feedback",
+    "mouse-driven",
+    "click-reactive",
+    "aces-tonemap",
+    "semantic-alpha"
+  ],
+  "feedbackPacking": "A/C = final ACES display RGBA; exact stained-glass tint history"
 }

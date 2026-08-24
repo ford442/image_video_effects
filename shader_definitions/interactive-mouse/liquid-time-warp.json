@@ -3,9 +3,21 @@
   "url": "shaders/liquid-time-warp.wgsl",
   "features": [
     "mouse-driven",
-    "webcam"
+    "webcam",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "curl-advection",
+    "wipe-fronts",
+    "chromatic-aberration",
+    "temporal-feedback"
   ],
-  "description": "Fluid feedback loop where time is distorted by mouse movement.",
+  "description": "Temporal feedback advected by a divergence-free curl-noise field whose three octaves are driven by their own FFT bins \u2014 the previous field used raw noise directly as a velocity, which has non-zero divergence and blooms the feedback out. Clicks emit bounded wipe fronts that punch fresh video through the accumulation. History uses exact textureLoad.",
   "params": [
     {
       "name": "Distortion",
@@ -42,7 +54,49 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "feedback",
+    "temporal",
+    "warp",
+    "flow"
   ],
-  "name": "Liquid Time Warp"
+  "name": "Liquid Time Warp",
+  "updatedParams": [
+    {
+      "name": "Distortion",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "id": "distortion",
+      "description": "Advection distance per frame; bass adds up to +50%."
+    },
+    {
+      "name": "Flow Speed",
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "id": "flow_speed",
+      "description": "Drift rate of the curl-noise octaves."
+    },
+    {
+      "name": "Scale",
+      "type": "float",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "id": "scale",
+      "description": "Base spatial frequency of the flow field."
+    },
+    {
+      "name": "Decay",
+      "type": "float",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "id": "decay",
+      "description": "History retention before wipes are applied."
+    }
+  ]
 }

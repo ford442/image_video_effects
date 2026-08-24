@@ -1,11 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Spectrogram Displace
-//  Category: image
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: High
-//  Created: 2026-04-15
-//  Upgraded: 2026-05-23
-// ═══════════════════════════════════════════════════════════════════
+// Spectrogram Displace — Batch 58D live-audio temporal upgrade
+// A owns the scrolling spectrogram display history; B is intentionally unwritten.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -22,275 +16,98 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI:  f32 = 3.14159265358979323846;
-const TAU: f32 = 6.28318530717958647692;
-const NUM_BINS: u32 = 128u;
-const MAX_HARMONICS: i32 = 8;
+const TAU: f32 = 6.28318530718;
 
-fn hash(n: f32) -> f32 {
-    return fract(sin(n) * 43758.5453123);
+fn palette(t: f32) -> vec3<f32> {
+  return vec3<f32>(0.42, 0.36, 0.48) + vec3<f32>(0.58, 0.54, 0.52) *
+         cos(TAU * (vec3<f32>(t) + vec3<f32>(0.02, 0.35, 0.68)));
 }
 
-fn hash2(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn noise(p: f32) -> f32 {
-    let fl = floor(p);
-    let fc = fract(p);
-    return mix(hash(fl), hash(fl + 1.0), fc * fc * (3.0 - 2.0 * fc));
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+  return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
 }
 
-fn noise2(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(hash2(i), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
-        mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
-        u.y
-    );
-}
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw; let pixel = vec2<i32>(gid.xy);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+  let uv = (vec2<f32>(pixel) + 0.5) / res; let time = u.config.x;
+  let dims = vec2<i32>(textureDimensions(dataTextureC));
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
 
-fn linearToLogFreq(t: f32) -> f32 {
-    let minFreq = 20.0;
-    let maxFreq = 20000.0;
-    return minFreq * pow(maxFreq / minFreq, t);
-}
+  // Saved mapping: intensity, scroll speed, scale, spectral detail.
+  let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
+  let speed = clamp(u.zoom_params.y, 0.0, 1.0);
+  let scale = clamp(u.zoom_params.z, 0.0, 1.0);
+  let detail = clamp(u.zoom_params.w, 0.0, 1.0);
 
-fn getFrequency(y: f32, freqRange: f32) -> f32 {
-    let invY = 1.0 - y;
-    return linearToLogFreq(invY * freqRange);
-}
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) {
+    springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5;
+  }
+  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 10.0; let decay = exp(-omega * dt); let delta = springPos - rawMouse; let temp = (springVel + omega * delta) * dt;
+  springVel = (springVel - omega * temp) * decay; springPos = rawMouse + (delta + temp) * decay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time; extraBuffer[138] = 1.0;
+  }
 
-fn generateAudioSignal(time: f32, frequency: f32) -> f32 {
-    let baseFreq1 = 110.0;
-    let baseFreq2 = 220.0;
-    let baseFreq3 = 440.0;
-    
-    let mod1 = sin(time * 0.5) * 0.5 + 0.5;
-    let mod2 = sin(time * 0.7 + 1.0) * 0.5 + 0.5;
-    let mod3 = sin(time * 0.3 + 2.0) * 0.5 + 0.5;
-    
-    let beat = sin(time * 8.0) * 0.5 + 0.5;
-    
-    var amplitude: f32 = 0.0;
-    
-    for (var h: i32 = 1; h <= MAX_HARMONICS; h = h + 1) {
-        let harmonic = f32(h);
-        let harmonicDecay = 1.0 / harmonic;
-        
-        let isBass = step(frequency, 300.0);
-        let ratio1 = frequency / (baseFreq1 * harmonic);
-        let proximity1 = exp(-ratio1 * ratio1 * 100.0);
-        let amp1 = proximity1 * harmonicDecay * mod1 * (0.3 + 0.7 * beat) * isBass;
-        
-        let isMid = step(200.0, frequency) * step(frequency, 2000.0);
-        let ratio2 = frequency / (baseFreq2 * harmonic);
-        let proximity2 = exp(-ratio2 * ratio2 * 200.0);
-        let amp2 = proximity2 * harmonicDecay * mod2 * 0.6 * isMid;
-        
-        let isHigh = step(1000.0, frequency);
-        let ratio3 = frequency / (baseFreq3 * harmonic);
-        let proximity3 = exp(-ratio3 * ratio3 * 400.0);
-        let amp3 = proximity3 * harmonicDecay * mod3 * 0.4 * isHigh;
-        
-        amplitude = amplitude + amp1 + amp2 + amp3;
-    }
-    
-    let noiseFloor = 0.02 * noise(time * 100.0 + frequency * 0.01);
-    let transient = 0.3 * hash(frequency + time) * step(0.95, hash(time * 10.0));
-    
-    return clamp(amplitude + noiseFloor + transient, 0.0, 1.0);
-}
+  // The engine FFT is read-only at [5..132]; logarithmic y selects one of 128 bins.
+  let logY = pow(clamp(1.0 - uv.y, 0.0, 1.0), mix(2.4, 0.65, scale));
+  let bin = u32(clamp(logY * 127.0, 0.0, 127.0));
+  let fft = extraBuffer[5u + bin];
+  let bandBlend = mix(bass, mix(mids, treble, smoothstep(0.55, 1.0, logY)), smoothstep(0.18, 0.72, logY));
+  var magnitude = clamp(mix(bandBlend, fft, 0.55 + detail * 0.35) * (0.6 + intensity * 1.4), 0.0, 2.0);
 
-fn calculateFrequencyBin(binIndex: u32, numBins: u32, time: f32) -> f32 {
-    let binF = f32(binIndex);
-    let numBinsF = f32(numBins);
-    let normalizedBin = binF / numBinsF;
-    let frequency = getFrequency(normalizedBin, 1.0);
-    var magnitude = generateAudioSignal(time, frequency);
-    let aWeight = 1.0 + 0.5 * exp(-pow((frequency - 4000.0) / 2000.0, 2.0));
-    magnitude = magnitude * aWeight;
-    let timeMod = sin(time * 2.0 + normalizedBin * 10.0) * 0.1;
-    magnitude = magnitude + timeMod * magnitude;
-    return clamp(magnitude, 0.0, 1.0);
-}
+  let pointerDist = length((uv - springPos) * aspectVec);
+  let pointerBand = exp(-abs(uv.y - springPos.y) * (18.0 + detail * 30.0)) * exp(-pointerDist * 2.0);
+  magnitude += pointerBand * select(0.18, 0.55, u.zoom_config.w > 0.5);
+  var clickEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age < 0.0 || age > 2.0) { continue; }
+    let dist = length((uv - ripple.xy) * aspectVec);
+    let front = exp(-pow((dist - age * 0.20) * 20.0, 2.0)) * (1.0 - age / 2.0);
+    clickEnergy += front;
+  }
+  magnitude = clamp(magnitude + clickEnergy * 0.8, 0.0, 2.5);
 
-fn heatmapColor(t: f32) -> vec3<f32> {
-    let c1 = vec3<f32>(0.0, 0.0, 0.0);
-    let c2 = vec3<f32>(0.0, 0.0, 0.5);
-    let c3 = vec3<f32>(0.0, 1.0, 0.0);
-    let c4 = vec3<f32>(1.0, 1.0, 0.0);
-    let c5 = vec3<f32>(1.0, 0.0, 0.0);
-    let c6 = vec3<f32>(1.0, 1.0, 1.0);
-    let t1 = clamp(t / 0.16, 0.0, 1.0);
-    let t2 = clamp((t - 0.16) / 0.17, 0.0, 1.0);
-    let t3 = clamp((t - 0.33) / 0.17, 0.0, 1.0);
-    let t4 = clamp((t - 0.5) / 0.16, 0.0, 1.0);
-    let t5 = clamp((t - 0.66) / 0.17, 0.0, 1.0);
-    var col = mix(c1, c2, t1);
-    col = mix(col, c3, t2);
-    col = mix(col, c4, t3);
-    col = mix(col, c5, t4);
-    col = mix(col, c6, t5);
-    return col;
-}
+  // Exact-C scrolling turns A into a real spectrogram conveyor.
+  let scrollPixels = 1 + i32(speed * 4.0 + bass * 2.0);
+  let historyPixel = vec2<i32>(clamp(pixel.x - scrollPixels, 0, dims.x - 1), clamp(pixel.y, 0, dims.y - 1));
+  let previous = textureLoad(dataTextureC, historyPixel, 0);
+  let newColumn = 1.0 - smoothstep(0.0, 0.018 + speed * 0.035, uv.x);
+  let spectralInk = palette(logY * 0.75 + time * 0.025 + mids * 0.1) * magnitude;
+  let spectrogram = mix(previous.rgb * (0.955 + detail * 0.025), spectralInk, newColumn);
 
-fn neonColor(t: f32) -> vec3<f32> {
-    let c1 = vec3<f32>(0.0, 1.0, 1.0);
-    let c2 = vec3<f32>(1.0, 0.0, 1.0);
-    let c3 = vec3<f32>(0.6, 0.0, 1.0);
-    let t1 = clamp(t * 2.0, 0.0, 1.0);
-    let t2 = clamp((t - 0.5) * 2.0, 0.0, 1.0);
-    var col = mix(c1, c2, t1);
-    col = mix(col, c3, t2);
-    return col;
-}
-
-fn oceanColor(t: f32) -> vec3<f32> {
-    let c1 = vec3<f32>(0.0, 0.1, 0.3);
-    let c2 = vec3<f32>(0.0, 0.4, 0.6);
-    let c3 = vec3<f32>(0.0, 0.8, 0.8);
-    let c4 = vec3<f32>(0.2, 1.0, 0.8);
-    let t1 = clamp(t / 0.33, 0.0, 1.0);
-    let t2 = clamp((t - 0.33) / 0.33, 0.0, 1.0);
-    let t3 = clamp((t - 0.66) / 0.34, 0.0, 1.0);
-    var col = mix(c1, c2, t1);
-    col = mix(col, c3, t2);
-    col = mix(col, c4, t3);
-    return col;
-}
-
-fn fireColor(t: f32) -> vec3<f32> {
-    let c1 = vec3<f32>(0.0, 0.0, 0.0);
-    let c2 = vec3<f32>(0.5, 0.0, 0.0);
-    let c3 = vec3<f32>(1.0, 0.0, 0.0);
-    let c4 = vec3<f32>(1.0, 0.5, 0.0);
-    let c5 = vec3<f32>(1.0, 1.0, 0.0);
-    let c6 = vec3<f32>(1.0, 1.0, 1.0);
-    let t1 = clamp(t / 0.16, 0.0, 1.0);
-    let t2 = clamp((t - 0.16) / 0.17, 0.0, 1.0);
-    let t3 = clamp((t - 0.33) / 0.17, 0.0, 1.0);
-    let t4 = clamp((t - 0.5) / 0.16, 0.0, 1.0);
-    let t5 = clamp((t - 0.66) / 0.17, 0.0, 1.0);
-    var col = mix(c1, c2, t1);
-    col = mix(col, c3, t2);
-    col = mix(col, c4, t3);
-    col = mix(col, c5, t4);
-    col = mix(col, c6, t5);
-    return col;
-}
-
-fn getColor(magnitude: f32, scheme: f32) -> vec3<f32> {
-    let t = clamp(magnitude, 0.0, 1.0);
-    let schemeIndex = u32(scheme * 3.0) % 4u;
-    let c0 = heatmapColor(t);
-    let c1 = neonColor(t);
-    let c2 = oceanColor(t);
-    let c3 = fireColor(t);
-    var col = mix(c0, c1, f32(schemeIndex == 1u));
-    col = mix(col, c2, f32(schemeIndex == 2u));
-    col = mix(col, c3, f32(schemeIndex == 3u));
-    return col;
-}
-
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
-    
-    let dimX = u.config.z;
-    let dimY = u.config.w;
-    let uv = vec2<f32>(global_id.xy) / vec2<f32>(dimX, dimY);
-    let time = u.config.x;
-    
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
-    
-    let freqRange = u.zoom_params.x * (1.0 + bass * 0.3);
-    let timeWindow = u.zoom_params.y;
-    let magnification = u.zoom_params.z;
-    let colorScheme = u.zoom_params.w;
-    
-    let effectiveFreqRange = select(freqRange, 1.0, freqRange < 0.01);
-    let effectiveTimeWindow = select(timeWindow, 0.5, timeWindow < 0.01);
-    let effectiveMag = select(magnification, 1.0, magnification < 0.01);
-    
-    let scrollOffset = time * effectiveTimeWindow;
-    let scrolledX = fract(uv.x + scrollOffset);
-    
-    let frequency = getFrequency(uv.y, effectiveFreqRange);
-    let timeSample = time + scrolledX * 2.0;
-    var magnitude = generateAudioSignal(timeSample, frequency);
-    
-    let binIndex = u32(uv.y * f32(NUM_BINS)) % NUM_BINS;
-    let binMagnitude = calculateFrequencyBin(binIndex, NUM_BINS, timeSample);
-    
-    magnitude = mix(magnitude, binMagnitude, 0.7);
-    magnitude = pow(magnitude, 0.5) * effectiveMag;
-    magnitude = clamp(magnitude, 0.0, 1.0);
-    
-    let mousePos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-    let mouseInBounds = step(0.0, mousePos.y) * step(mousePos.y, 1.0);
-    let mouseFreq = getFrequency(mousePos.y, effectiveFreqRange);
-    let freqDist = abs(frequency - mouseFreq) / max(mouseFreq, 0.0001);
-    let nearMouse = step(freqDist, 0.3) * mouseInBounds;
-    let highlight = 1.0 + (0.3 - freqDist) / 0.3 * 1.5;
-    magnitude = magnitude * mix(1.0, highlight, nearMouse);
-    
-    for (var i: i32 = 0; i < 50; i = i + 1) {
-        let ripple = u.ripples[i];
-        let rippleAge = time - ripple.z;
-        let rippleActive = step(0.0, ripple.z) * step(0.0, rippleAge) * step(rippleAge, 3.0);
-        let distToRipple = distance(uv, ripple.xy);
-        let inRange = step(distToRipple, 0.15);
-        let rippleInfluence = (1.0 - rippleAge / 3.0) * (1.0 - distToRipple / 0.15);
-        magnitude = magnitude * mix(1.0, 1.0 + rippleInfluence * 2.0, rippleActive * inRange);
-    }
-    
-    magnitude = clamp(magnitude, 0.0, 1.0);
-    
-    let spectroColor = getColor(magnitude, colorScheme);
-    
-    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    
-    let freqFactor = 1.0 - uv.y;
-    let displacementX = magnitude * (src.r - src.b) * 50.0 * effectiveMag;
-    let displacementY = magnitude * (src.g - 0.5) * 30.0 * effectiveMag * freqFactor;
-    let waveDisp = sin(uv.y * 20.0 + time * 3.0) * magnitude * 10.0;
-    
-    let uvOffsetX = (displacementX + waveDisp) / dimX;
-    let uvOffsetY = displacementY / dimY;
-    let displacedUV = clamp(uv + vec2<f32>(uvOffsetX, uvOffsetY), vec2<f32>(0.0), vec2<f32>(1.0));
-    let displacedColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
-    
-    let blendFactor = magnitude * 0.3;
-    var finalColor = displacedColor.rgb;
-    finalColor = finalColor + spectroColor * magnitude * 0.5 * effectiveMag;
-    
-    let lowFreqBoost = mix(1.0 + magnitude * 0.2, 1.0, step(0.7, uv.y));
-    let highFreqBoost = mix(1.0 + magnitude * 0.1, 1.0, step(uv.y, 0.3));
-    finalColor = finalColor * vec3<f32>(lowFreqBoost, 1.0, highFreqBoost);
-    
-    let vignette = 1.0 - magnitude * 0.3;
-    finalColor = finalColor * vignette;
-    
-    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
-    
-    let lumaOut = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.4 + lumaOut * 0.4 + bass * 0.2 + 0.1, 0.0, 1.0);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, alpha));
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let displacement = vec2<f32>((magnitude - 0.5) * (source.r - source.b), (source.g - 0.5) * magnitude * (1.0 - uv.y)) *
+                     intensity * vec2<f32>(0.035, 0.025);
+  let displacedUv = clamp(uv + displacement + springVel * pointerBand * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
+  var hdr = textureSampleLevel(readTexture, u_sampler, displacedUv, 0.0).rgb;
+  hdr += spectrogram * (0.25 + detail * 0.45);
+  let effectEnergy = clamp(length(displacement) * 16.0 + magnitude * 0.28 + clickEnergy * 0.35 + previous.a * 0.15, 0.0, 1.0);
+  let alpha = clamp(source.a + (1.0 - source.a) * effectEnergy, 0.0, 1.0);
+  let display = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), alpha);
+  textureStore(dataTextureA, pixel, display); textureStore(writeTexture, pixel, display);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

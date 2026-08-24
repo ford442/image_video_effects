@@ -38,7 +38,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "brightness",
+      "id": "aurora_brightness",
       "name": "Brightness / Aurora Intensity",
       "default": 1.0,
       "min": 0.5,

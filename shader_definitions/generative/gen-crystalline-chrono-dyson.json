@@ -28,7 +28,7 @@
   ],
   "params": [
     {
-      "id": "panelDensity",
+      "id": "panel_density",
       "name": "Panel Density",
       "default": 4,
       "min": 1,
@@ -37,7 +37,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "quasarGlow",
+      "id": "quasar_glow",
       "name": "Quasar Glow",
       "default": 1.5,
       "min": 0,
@@ -46,7 +46,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "fluxSpeed",
+      "id": "flux_speed",
       "name": "Flux Speed",
       "default": 1,
       "min": 0.1,
@@ -55,7 +55,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "swarmCount",
+      "id": "swarm_count",
       "name": "Swarm Count",
       "default": 50,
       "min": 10,

@@ -107,32 +107,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
     let pixel = vec2<i32>(global_id.xy);
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
-    
+
     let time = u.config.x;
     let isMouseDown = u.zoom_config.w > 0.5;
     let mouseUV = u.zoom_config.yz;
-    
+
     // Persistent single-writer state management
     if (global_id.x == 0u && global_id.y == 0u) {
         var targetPos = mouseUV;
         if (!isMouseDown && extraBuffer[137] < 0.5) {
             targetPos = vec2<f32>(0.5 + 0.28 * cos(time * 0.5), 0.5 + 0.18 * sin(time * 0.65));
         }
-        
+
         var curP = vec2<f32>(extraBuffer[133], extraBuffer[134]);
         if (curP.x == 0.0 && curP.y == 0.0) { curP = mouseUV; }
-        
+
         var pVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
         let diff = targetPos - curP;
         pVel = pVel + diff * 0.18;
         pVel = pVel * 0.82;
         curP = curP + pVel;
-        
+
         extraBuffer[133] = clamp(curP.x, 0.0, 1.0);
         extraBuffer[134] = clamp(curP.y, 0.0, 1.0);
         extraBuffer[135] = clamp(pVel.x, -0.05, 0.05);
         extraBuffer[136] = clamp(pVel.y, -0.05, 0.05);
-        
+
         let prevDown = extraBuffer[137];
         var rippleImpulse = extraBuffer[138] * 0.94;
         if (isMouseDown && prevDown < 0.5) {
@@ -141,30 +141,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[137] = select(0.0, 1.0, isMouseDown);
         extraBuffer[138] = rippleImpulse;
     }
-    
+
     let smoothLight = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     let clickImpulse = extraBuffer[138];
-    
+
     let uv = (vec2<f32>(pixel) + 0.5) / res;
     let aspect = res.x / res.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
-    
+
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    
+
     // Sliders
     let flareIntensity = mix(0.3, 3.2, u.zoom_params.x);
     let streakLength = mix(0.1, 1.2, u.zoom_params.y) * (1.0 + bass * 0.4);
     let filmThicknessBase = mix(200.0, 850.0, u.zoom_params.z);
     let filmIOR = mix(1.2, 2.4, u.zoom_params.w);
-    
+
     let distLight = length((uv - smoothLight) * aspectVec);
     let holdEffect = smoothstep(0.4, 0.0, distLight) * select(0.3, 1.0, isMouseDown);
-    
+
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
+
     // Capped click ripple fronts
     var rippleDistortion = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -179,20 +179,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     rippleDistortion = rippleDistortion + sin(distLight * 30.0 - time * 8.0) * exp(-distLight * 7.0) * clickImpulse * 0.5;
-    
+
     // Viewing angle for iridescence
     let toCenter = uv - vec2<f32>(0.5);
     let distCenter = length(toCenter);
     let cosTheta = sqrt(max(1.0 - distCenter * distCenter * 0.5, 0.02));
-    
+
     var flareAccum = vec3<f32>(0.0);
-    
+
     // 1. Anamorphic horizontal streak with thin-film interference
     let streak = anamorphicStreak(uv, smoothLight, streakLength, 1.8 + bass * 0.5, aspect);
     let streakThickness = filmThicknessBase * (0.6 + streak * 250.0 + rippleDistortion * 0.2);
     let streakIrid = thinFilmColor(streakThickness, cosTheta, filmIOR);
     flareAccum = flareAccum + streak * streakIrid * flareIntensity * 1.4;
-    
+
     // 2. Hexagonal ghost reflections
     let ghostCount = i32(u.zoom_params.y * 5.0 + 2.0);
     for (var i: i32 = 0; i < ghostCount; i = i + 1) {
@@ -208,13 +208,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ghostIrid = thinFilmColor(ghostThickness, cosTheta, filmIOR);
         flareAccum = flareAccum + ghost * ghostIntensity * ghostIrid;
     }
-    
+
     // 3. Central glow with interference corona
     let glow = centralGlow(uv, smoothLight, 0.16 + bass * 0.06, aspect);
     let glowThickness = filmThicknessBase * (1.0 + glow * 180.0);
     let glowIrid = thinFilmColor(glowThickness, cosTheta, filmIOR);
     flareAccum = flareAccum + glow * glowIrid * flareIntensity * 0.9;
-    
+
     // 4. Starburst with spectral diffraction
     let toLight = (uv - smoothLight) * aspectVec;
     let angle = atan2(toLight.y, toLight.x);
@@ -223,7 +223,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let starThickness = filmThicknessBase * (0.4 + starburst * 350.0);
     let starIrid = thinFilmColor(starThickness, cosTheta, filmIOR);
     flareAccum = flareAccum + starburst * starIrid * flareIntensity * 0.45;
-    
+
     // 5. Rainbow halo ring
     let haloDist = abs(dist - 0.26 * (1.0 + bass * 0.2));
     let haloIntensity = exp(-haloDist * 90.0) * 0.55;
@@ -234,17 +234,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         (sin(rainbowPhase + 2.0 * TAU / 3.0) + 1.0) * 0.5
     );
     flareAccum = flareAccum + rainbow * haloIntensity * flareIntensity * 0.3;
-    
+
     // Exact temporal feedback from dataTextureC
     let prev = textureLoad(dataTextureC, pixel, 0).rgb;
     var finalColor = baseColor + flareAccum;
     finalColor = mix(finalColor, prev, 0.08 + mids * 0.05);
-    
+
     let tonemapped = acesToneMap(finalColor * (1.0 + treble * 0.1));
     let flareLum = dot(flareAccum, vec3<f32>(0.2126, 0.7152, 0.0722));
     let alpha = clamp(dot(baseColor, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.4 + flareLum * 0.6 + holdEffect * 0.2 + clickImpulse * 0.2, 0.15, 0.98);
     let outputRGBA = vec4<f32>(tonemapped, alpha);
-    
+
     textureStore(writeTexture, pixel, outputRGBA);
     textureStore(dataTextureA, pixel, outputRGBA);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 1.0));

@@ -116,6 +116,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bevelParam = clamp(u.zoom_params.y, 0.0, 1.0);
     let driftParam = clamp(u.zoom_params.z, 0.0, 1.0);
     let chromaParam = clamp(u.zoom_params.w, 0.0, 1.0);
+    let heldGain = select(1.0, 1.65, u.zoom_config.w > 0.5);
+
+    // Click fronts flex the virtual glass sheet. Each event is timestamp-bound
+    // and capped to the uniform array's declared capacity.
+    var clickWave = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = u.config.x - ripple.z;
+        if (age < 0.0 || age > 2.6) { continue; }
+        let rippleDistance = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+        clickWave += sin((rippleDistance - age * 0.2) * 72.0)
+          * exp(-rippleDistance * 2.4 - age * 1.25);
+    }
+    clickWave = clamp(clickWave, -1.0, 1.0);
+    centered_p += normalize(centered_p + vec2<f32>(0.0001)) * clickWave * 0.028;
 
     // Every saved control keeps its named role: 3..16 facets, bevel sampling
     // radius, temporal drift rate, and chromatic dispersion amount.
@@ -150,7 +166,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = audio.y;
     let treble = audio.z;
     let depthPulse = 0.65 + 0.35 * sin(u.config.x * mix(0.35, 2.2, driftParam) + mids * PI);
-    let refractionStrength = mix(0.008, 0.09, bevelParam) * depthPulse * (1.0 + bass * 0.35);
+    let refractionStrength = mix(0.008, 0.09, bevelParam) * depthPulse
+      * (1.0 + bass * 0.35) * heldGain;
     let offset = normal.xy * refractionStrength * (1.0 - depth_val);
 
     // Facet seams become glass leading; dispersion grows only around those seams.
@@ -167,6 +184,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col.r = textureSampleLevel(readTexture, u_sampler, clamp(sample_uv + offset + r_offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     col.g = textureSampleLevel(readTexture, u_sampler, clamp(sample_uv + offset + g_offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
     col.b = textureSampleLevel(readTexture, u_sampler, clamp(sample_uv + offset + b_offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let sourceAlpha = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).a;
 
     // Heightfield normal, three-point lighting, Fresnel glass, and a stable
     // tessellated palette turn source depth into visible material structure.
@@ -180,6 +198,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = col * lighting * mix(vec3<f32>(1.0), glassTint + 0.45, 0.24 + chromaParam * 0.24);
     col += glassTint * (fresnel * (0.35 + treble * 0.25) + edgeFactor * (0.22 + bass * 0.18));
     col += mix(glassTint, film, 0.55) * ornament.y * (0.05 + chromaParam * 0.14);
+    col += film * abs(clickWave) * (0.12 + treble * 0.18);
     col *= 1.0 - ornament.x * 0.18;
 
     // Temporal color rotation via dataTextureC tint blend
@@ -187,7 +206,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = mix(col, prevTint * 0.9, 0.04 + mids * 0.02);
 
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.8 + luma * 0.2 + bass * 0.05, 0.0, 1.0);
+    let materialCoverage = clamp(edgeFactor * 0.35 + fresnel * 0.3 + luma * 0.35 + abs(clickWave) * 0.12, 0.0, 1.0);
+    let alpha = max(sourceAlpha, materialCoverage);
 
     let reliefDepth = clamp(depth_val + edgeFactor * 0.1 + length(gradient) * mix(0.5, 2.0, bevelParam), 0.0, 1.0);
     let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);

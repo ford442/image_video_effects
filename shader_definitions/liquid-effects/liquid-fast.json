@@ -2,7 +2,7 @@
   "id": "liquid-fast",
   "name": "Liquid Fast",
   "url": "shaders/liquid-fast.wgsl",
-  "description": "Fast analytical liquid ripples with low-sample motion blur, depth-aware flow, audio acceleration, and spectral edge highlights.",
+  "description": "Low-viscosity analytical liquid with bounded pointer inertia, high-speed vortex wakes, dispersive click packets, exact-load temporal advection, three-band spectral caustics, ACES, and semantic alpha.",
   "tags": [
     "filter",
     "image-processing",
@@ -56,6 +56,12 @@
     "audio-reactive",
     "depth-aware",
     "mouse-driven",
+    "held-interaction",
+    "click-reactive",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha",
     "temporal",
     "upgraded-rgba"
   ],

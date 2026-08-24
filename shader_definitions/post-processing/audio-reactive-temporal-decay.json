@@ -3,20 +3,40 @@
   "name": "Audio Reactive Temporal Decay",
   "url": "shaders/audio-reactive-temporal-decay.wgsl",
   "category": "post-processing",
-  "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range, now enhanced with spectral visualization overlay, chromatic aberration on trails, multi-pass bloom on bright areas, anamorphic streaks, film grain, scanlines, color grading with lift/gamma/gain, and vignette. Low-band energy → long ghostly trails; high-band energy → fast fade with spectral color highlights.",
-  "tags": ["audio-reactive", "temporal", "trails", "feedback", "fft", "decay", "frequency"],
-  "features": ["audio-reactive", "temporal", "fft-bins", "spectral-visualization", "chromatic-aberration", "bloom", "film-grain", "scanlines", "color-grading", "anamorphic-streaks", "vignette"],
+  "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range, now enhanced with spectral visualization overlay, chromatic aberration on trails, multi-pass bloom on bright areas, anamorphic streaks, film grain, scanlines, color grading with lift/gamma/gain, and vignette. Low-band energy \u2192 long ghostly trails; high-band energy \u2192 fast fade with spectral color highlights.",
+  "tags": [
+    "audio-reactive",
+    "temporal",
+    "trails",
+    "feedback",
+    "fft",
+    "decay",
+    "frequency"
+  ],
+  "features": [
+    "audio-reactive",
+    "temporal",
+    "fft-bins",
+    "spectral-visualization",
+    "chromatic-aberration",
+    "bloom",
+    "film-grain",
+    "scanlines",
+    "color-grading",
+    "anamorphic-streaks",
+    "vignette"
+  ],
   "params": [
     {
-      "id": "param1",
-      "name": "Decay Base",
+      "id": "decay",
+      "name": "Decay",
       "default": 0.15,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param2",
+      "id": "audio_drive",
       "name": "Audio Drive",
       "default": 0.6,
       "min": 0.0,
@@ -24,16 +44,16 @@
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Bin Range Lo",
+      "id": "bin_lo",
+      "name": "Bin Lo",
       "default": 0.0,
       "min": 0.0,
       "max": 1.0,
       "step": 0.008
     },
     {
-      "id": "param4",
-      "name": "Bin Range Hi",
+      "id": "bin_hi",
+      "name": "Bin Hi",
       "default": 0.2,
       "min": 0.0,
       "max": 1.0,

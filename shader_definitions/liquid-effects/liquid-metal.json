@@ -2,13 +2,22 @@
   "id": "liquid-metal",
   "name": "Liquid Metal",
   "url": "shaders/liquid-metal.wgsl",
-  "description": "PBR mercury surface with FBM height field, Schlick-Fresnel reflectance, chromatic RGB dispersion, depth-aware pooling, and audio-reactive surface pulsing.",
+  "description": "A persistent ferro-metal simulation whose raw A state packs height, velocity, foam, and wetness, with a bass-driven hexagonal Rosensweig spike mode, held magnetic pole, click impulses, chromatic refraction, and Ward-style anisotropic metallic reflection.",
   "features": [
     "mouse-driven",
     "depth-aware",
     "temporal",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive",
+    "stateful-simulation",
+    "raw-height-velocity-state",
+    "pbr-metal",
+    "rosensweig-spikes",
+    "anisotropic-brdf",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "liquid",

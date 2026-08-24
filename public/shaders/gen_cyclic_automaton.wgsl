@@ -4,7 +4,8 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Medium
 //  Scientific: Greenberg-Hastings excitable media with cardinal-wave triggering, refractory cooling, and bass-driven spontaneous ignition
-//  Upgraded: 2026-07-22 — wavefront leading-edge tracer, treble ignition sparks, directional mouse painting
+//  Upgraded: 2026-08-23 — finite click ignition rings, wavefront tracer,
+//            treble sparks, directional held-mouse painting
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,10 +29,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// extraBuffer layout (indices 0..4 are RESERVED — do not touch):
-//   [5] = previous frame mouse x (uv)
-//   [6] = previous frame mouse y (uv)
-//   [7] = previous frame mouse-down flag
+// extraBuffer layout (shader-owned [133..138] only):
+//   spring mouse xy, velocity xy, lastTime, initialized
 
 fn clampCoord(p: vec2<i32>, size: vec2<i32>) -> vec2<i32> {
   return clamp(p, vec2<i32>(0, 0), size - vec2<i32>(1, 1));
@@ -74,7 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   let size = vec2<i32>(i32(resolution.x), i32(resolution.y));
   let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
-  let time = u.config.x * 5.0; // Fast motion upgrade
+  let time = u.config.x * 6.5; // Fast motion upgrade
 
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -107,24 +106,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Compare the current mouse against the previous frame (extraBuffer[133..135])
   // and stretch the ignition footprint along the drag direction, so strokes
   // seed cardiac-style wavefronts instead of radial blobs.
-  let mouse = u.zoom_config.yz;
+  let mouseRaw = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var mouse = mouseRaw; var springVel = vec2<f32>(0.0); var lastTime = u.config.x; var initialized = false;
+  if (hasSpring) { mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+  if (!initialized) { mouse = mouseRaw; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(u.config.x - lastTime, 0.0, 0.05), initialized);
+  let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = mouse - mouseRaw; let temp = (springVel + omega * sdelta) * dt;
+  springVel = (springVel - omega * temp) * springDecay; mouse = mouseRaw + (sdelta + temp) * springDecay;
+  if (hasSpring && coord.x == 0 && coord.y == 0) {
+    extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+    extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+    extraBuffer[137] = u.config.x; extraBuffer[138] = 1.0;
+  }
   let mouseDown = u.zoom_config.w;
-  let prevMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  let prevDown = extraBuffer[135];
-  let mouseDelta = mouse - prevMouse;
-  let mouseSpeed = length(mouseDelta) * select(0.0, 1.0, mouseDown > 0.5 && prevDown > 0.5);
-  let motionDir = mouseDelta / max(length(mouseDelta), 1e-4);
+  let mouseDelta = springVel;
+  let mouseSpeed = length(mouseDelta);
+  let motionDir = mouseDelta / max(mouseSpeed, 1e-4);
   let toPixel = uv - mouse;
   let pixelDist = length(toPixel);
   let pixelDir = toPixel / max(pixelDist, 1e-4);
   let motionGain = clamp(mouseSpeed * 45.0, 0.0, 1.0);
   let align = dot(pixelDir, motionDir) * 0.5 + 0.5;
   let dirWeight = mix(1.0, mix(0.18, 1.0, align * align), motionGain);
-  let mouseMask = (1.0 - smoothstep(0.0, 0.11, pixelDist)) * mouseDown * dirWeight;
-  if (coord.x == 0 && coord.y == 0) {
-    extraBuffer[133] = mouse.x;
-    extraBuffer[134] = mouse.y;
-    extraBuffer[135] = select(0.0, 1.0, mouseDown > 0.5);
+  let held = select(1.0, 1.4, mouseDown > 0.5);
+  let mouseMask = (1.0 - smoothstep(0.0, 0.13 * held, pixelDist)) * mouseDown * dirWeight;
+
+  // Clicks launch finite ignition rings. Timestamps are honored so a full
+  // uniform array cannot become a permanent source of automaton energy.
+  var clickIgnition = 0.0;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = u.config.x - ripple.z;
+    if (age < 0.0 || age > 2.2) { continue; }
+    let rippleDistance = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+    let ring = exp(-abs(rippleDistance - age * 0.22) * 85.0) * exp(-age * 1.1);
+    clickIgnition = max(clickIgnition, ring);
   }
 
   // ── Ignition sources ─────────────────────────────────────────────
@@ -135,7 +154,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sparkHash = hash21(vec2<f32>(f32(coord.x), f32(coord.y)) * 1.618 + vec2<f32>(time * 113.7, -time * 91.3));
   let trebleSparkProb = spontaneousBase * treble * 9.0 * smoothstep(0.35, 0.95, sparkHash);
   let trebleSpark = sparkHash > 1.0 - clamp(trebleSparkProb, 0.0, 0.9);
-  let ignite = (cardFiring > 0) || (rand < spontaneousProb) || trebleSpark || (mouseMask > 0.02);
+  let ignite = (cardFiring > 0) || (rand < spontaneousProb) || trebleSpark
+    || (mouseMask > 0.02) || (clickIgnition > 0.28);
 
   // ── Greenberg-Hastings state machine (resting=0, firing=1, refractory>=2) ──
   let isResting = currentState == 0;
@@ -171,10 +191,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ── Coloring ─────────────────────────────────────────────────────
   let rpCurve = pow(refractoryProgress, cooldownCurve);
-  let restColor = vec3<f32>(0.01, 0.03, 0.10) + vec3<f32>(0.10, 0.18, 0.34) * bloom * 0.18;
-  let firingColor = mix(vec3<f32>(1.0, 0.93, 0.56), vec3<f32>(1.0, 1.0, 1.0), smoothstep(0.4, 1.0, bass + mouseMask));
-  let refractoryColor = mix(vec3<f32>(0.18, 0.98, 1.0), vec3<f32>(0.03, 0.12, 0.45), clamp(rpCurve * cooldownBoost, 0.0, 1.0));
-  let tracerColor = mix(vec3<f32>(1.0, 0.98, 0.85), vec3<f32>(0.55, 0.95, 1.0), treble * 0.35);
+  let restColor = vec3<f32>(0.04, 0.01, 0.12) + vec3<f32>(0.18, 0.08, 0.42) * bloom * 0.22;
+  let firingColor = mix(vec3<f32>(1.0, 0.2, 0.85), vec3<f32>(0.2, 1.0, 0.95), smoothstep(0.4, 1.0, bass + mouseMask));
+  let refractoryColor = mix(vec3<f32>(0.95, 0.85, 0.12), vec3<f32>(0.12, 0.05, 0.55), clamp(rpCurve * cooldownBoost, 0.0, 1.0));
+  let tracerColor = mix(vec3<f32>(1.0, 0.35, 0.95), vec3<f32>(0.25, 1.0, 0.85), treble * 0.45);
 
   var generatedColor = mix(restColor, refractoryColor, refractoryMask);
   generatedColor = mix(generatedColor, firingColor, firingMask);
@@ -183,6 +203,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   generatedColor += vec3<f32>(0.08, 0.12, 0.22) * smoothstep(0.2, 1.0, mids) * (1.0 - refractoryMask) * 0.15;
   generatedColor += tracerColor * tracer * (0.55 + bloomStrength * 0.9);
   generatedColor += vec3<f32>(0.9, 0.95, 1.0) * select(0.0, 1.0, trebleSpark) * 0.35 * (1.0 - firingMask);
+  generatedColor += vec3<f32>(0.22, 0.75, 1.0) * clickIgnition * (0.25 + mids * 0.35);
 
   let opacity = 0.92;
   let finalColor = mix(inputColor.rgb, generatedColor, opacity);
@@ -195,6 +216,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   textureStore(writeTexture, coord, vec4<f32>(acesToneMap(chromaticColor * 1.1), finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(f32(nextState) / f32(numStates), firingMask, refractoryProgress, bloom));
-  textureStore(dataTextureB, coord, vec4<f32>(f32(cardFiring) / 4.0, tracer, mouseMask, motionGain));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

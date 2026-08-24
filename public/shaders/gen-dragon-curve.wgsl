@@ -109,21 +109,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let coord = vec2<i32>(gid.xy);
     let uv = (vec2<f32>(gid.xy) + 0.5) / vec2<f32>(dims);
-    let time = u.config.x;
+    let time = u.config.x * 2.3;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    let mouse = u.zoom_config.yz;
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-    // Guarded engine FFT bins 1–8 → slow spectral shimmer for the halo
-    var fftPulse = 0.0;
-    if (arrayLength(&extraBuffer) > 13u) {
-        for (var k = 1u; k <= 8u; k = k + 1u) {
-            fftPulse += extraBuffer[5u + k];
-        }
-        fftPulse = clamp(fftPulse * 0.125, 0.0, 1.5);
-    }
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+    if (hasSpring) { springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+    if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+    let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = springPos - rawMouse; let temp = (springVel + omega * sdelta) * dt;
+    springVel = (springVel - omega * temp) * springDecay; springPos = rawMouse + (sdelta + temp) * springDecay;
+    if (hasSpring && gid.x == 0u && gid.y == 0u) { extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
+    let mouse = springPos;
+    let held = select(1.0, 1.4, u.zoom_config.w > 0.5);
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
+    let fftPulse = clamp(bass * 0.55 + mids * 0.35 + treble * 0.25, 0.0, 1.5);
 
     let zoom = mix(0.8, 4.0, u.zoom_params.x);
     let glowWidth = mix(0.015, 0.004, u.zoom_params.y);
@@ -131,11 +133,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let feedback = u.zoom_params.w;
 
     let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
-    let mp = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 0.3;
+    let mp = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 0.45 * held;
     var p = ((uv - 0.5) * vec2<f32>(aspect, 1.0) - mp) * zoom * 40.0 + vec2<f32>(16.0, 8.0);
 
+    var clickEnergy = 0.0;
+    var clickWarp = vec2<f32>(0.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = u.config.x - ripple.z;
+        if (age < 0.0 || age > 2.4) { continue; }
+        let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+        let rippleDistance = length(delta);
+        let front = exp(-abs(rippleDistance - age * 0.21) * 78.0) * exp(-age * 1.15);
+        clickEnergy += front;
+        clickWarp += delta / max(rippleDistance, 0.001) * front;
+    }
+    clickEnergy = clamp(clickEnergy, 0.0, 1.0);
+    p += clickWarp * (1.4 + zoom * 0.35);
+
     // Kaleidoscope symmetry + Clifford strange-attractor warp
-    let kSegs = mix(1.0, 6.0, sin(time * 0.1) * 0.5 + 0.5);
+    let kSegs = mix(2.0, 8.0, sin(time * 0.28) * 0.5 + 0.5);
     p = kaleido(p - vec2<f32>(16.0, 8.0), kSegs) + vec2<f32>(16.0, 8.0);
     let cW = clifford(p * 0.05, 1.5 + time*0.03, -1.7, 1.3, -1.1) * 0.3 * sin(time*0.2);
     p = p + cW;
@@ -175,7 +193,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Branchless HSV with FBM hue perturbation
     let hue = mix(0.0, 0.88, f32(closestIdx) / f32(maxSeg)) + warpedFBM(uv * 3.0, time * 0.05) * 0.06;
-    let sat = 0.85 + bass * 0.15;
+    let sat = 0.92 + bass * 0.08;
     var neon = hsv2rgb(hue, sat, 1.0);
 
     // Thin-film iridescence fused into the neon: phase = fold order along
@@ -201,6 +219,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let halo = exp(-minDist / (glowWidth * 6.0)) * (0.55 + fftPulse * 0.4);
     var color = neon * coreGlow * warmKey * 2.8
               + neon * halo * coolFill * 0.85;
+    color += thinFilm(hue + time * 0.02) * clickEnergy * (0.35 + treble * 0.35);
 
     // Chromatic aberration on tight folds
     let fold = select(0.0, 1.0, t1 != t2) * smoothstep(0.0, glowWidth * 3.0, coreGlow);
@@ -230,7 +249,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Depth controls line thickness perspective
     let curveDensity = exp(-minDist / (glowWidth * (1.0 + depth)));
-    let alpha = curveDensity * turnIntensity * (0.3 + depth * 0.7);
+    let alpha = clamp(curveDensity * turnIntensity * (0.3 + depth * 0.7)
+      + clickEnergy * halo * 0.18, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(curveDensity * depth, 0.0, 0.0, 0.0));

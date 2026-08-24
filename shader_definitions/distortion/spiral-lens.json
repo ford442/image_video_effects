@@ -2,7 +2,7 @@
   "id": "spiral-lens",
   "name": "Spiral Lens",
   "url": "shaders/spiral-lens.wgsl",
-  "description": "Liquid rainbow interference through a Möbius kaleidoscopic lens, with spectral caustics, drag-twisted focus, bounded click-launched iris waves, domain warp, audio response, and layered depth alpha.",
+  "description": "Liquid rainbow interference through a M\u00f6bius kaleidoscopic lens, with spectral caustics, drag-twisted focus, bounded click-launched iris waves, domain warp, audio response, and layered depth alpha.",
   "updated": true,
   "features": [
     "mouse-driven",
@@ -54,28 +54,28 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "spiral_tightness",
       "name": "Spiral Tightness",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param2",
+      "id": "lens_strength",
       "name": "Lens Strength",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param3",
+      "id": "chromatic",
       "name": "Chromatic",
       "default": 0.3,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param4",
+      "id": "rotation_speed",
       "name": "Rotation Speed",
       "default": 0.2,
       "min": 0,

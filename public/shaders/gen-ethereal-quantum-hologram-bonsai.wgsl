@@ -81,6 +81,11 @@ fn bass_env(prev: f32, curr: f32, att: f32, rel: f32) -> f32 {
   else { return mix(prev, curr, rel); }
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  BONSAI L-SYSTEM SDF (simulated via recursive cylinders)
 // ═══════════════════════════════════════════════════════════════
@@ -179,16 +184,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mid = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  let complexity = clamp(u.zoom_params.x, 0.0, 1.0);      // Branch Complexity
-  let instability = clamp(u.zoom_params.y, 0.0, 1.0);     // Hologram Instability
-  let glow = clamp(u.zoom_params.z, 0.0, 1.0);            // Ambient Glow
-  let audioReact = clamp(u.zoom_params.w, 0.0, 1.0);      // Audio Reactivity
+  let complexity = clamp((u.zoom_params.x - 1.0) / 6.0, 0.0, 1.0);
+  let instability = clamp(u.zoom_params.y / 2.0, 0.0, 1.0);
+  let glow = clamp((u.zoom_params.z - 0.5) / 9.5, 0.0, 1.0);
+  let audioReact = clamp(u.zoom_params.w / 3.0, 0.0, 1.0);
 
   // ═══ CHUNK: bass_env smoothing ═══
-  let prevBass = extraBuffer[0];
+  let hasEnvelope = arrayLength(&extraBuffer) >= 134u;
+  var prevBass = bass;
+  if (hasEnvelope) { prevBass = extraBuffer[133]; }
   let bassSmooth = bass_env(prevBass, bass, 0.08, 0.02);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[0] = bassSmooth;
+  if (global_id.x == 0u && global_id.y == 0u && hasEnvelope) {
+    extraBuffer[133] = bassSmooth;
   }
 
   // Camera
@@ -287,10 +294,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col += vec3<f32>(0.0, 0.1, 0.2) * max(rootRipple, 0.0);
 
   // Temporal feedback
-  let prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
-  col = mix(prevCol, col, 0.3);
+  let previous = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  col = mix(previous.rgb, acesToneMap(max(col, vec3<f32>(0.0)) * 1.4), 0.3);
 
   let finalDepth = clamp(0.95 - t * 0.03, 0.0, 1.0);
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+  let hitCoverage = select(0.0, clamp(1.0 - t / MAX_DIST, 0.0, 1.0), t < MAX_DIST);
+  let finalAlpha = clamp(max(hitCoverage, previous.a * 0.94), 0.0, 1.0);
+  let packed = vec4<f32>(col, finalAlpha);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), packed);
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), packed);
 }

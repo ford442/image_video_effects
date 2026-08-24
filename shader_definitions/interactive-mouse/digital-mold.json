@@ -2,7 +2,7 @@
   "id": "digital-mold",
   "name": "Digital Mold",
   "url": "shaders/digital-mold.wgsl",
-  "description": "Continuous Gray-Scott reaction-diffusion kinetics with biological hyphal branching, spore dispersal inoculation, bioluminescent nutrient glow, and exact-load chemical state memory.",
+  "description": "Gray-Scott mycelium with nutrient-gradient chemotaxis \u2014 hyphae extend up the image-luminance gradient the way real mycelium forages, rather than diffusing isotropically \u2014 and per-band sporulation regimes, where each FFT bin pushes its own zone into a different region of the Gray-Scott parameter plane so the colony grows visibly different structures per frequency. Also replaces a per-frame spore hash that strobed with a coherent drifting field, and derives alpha from colony density instead of passing the source alpha through.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -10,7 +10,15 @@
     "spore-noise",
     "depth-humidity",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "depth-aware",
+    "semantic-alpha",
+    "aces",
+    "gray-scott",
+    "chemotaxis"
   ],
   "updated": true,
   "params": [
@@ -49,28 +57,32 @@
       "name": "Feed Rate",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "description": "Gray-Scott feed rate; per-band zones offset it."
     },
     {
       "id": "killRate",
       "name": "Kill Rate",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "description": "Gray-Scott kill rate; per-band zones offset it."
     },
     {
       "id": "diffusionA",
       "name": "Diffusion A",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "description": "Diffusion coefficient of the substrate."
     },
     {
       "id": "diffusionB",
       "name": "Diffusion B",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "description": "Diffusion coefficient of the autocatalyst."
     }
   ],
   "tags": [
@@ -82,6 +94,8 @@
     "mold",
     "reaction-diffusion",
     "organic",
-    "temporal"
+    "temporal",
+    "growth",
+    "bioluminescent"
   ]
 }

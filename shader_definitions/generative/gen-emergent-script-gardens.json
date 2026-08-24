@@ -21,6 +21,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "stroke-density", "name": "Stroke Density", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "curvature", "name": "Curvature", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "garden-scale", "name": "Garden Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "ink-neon", "name": "Ink / Neon", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,

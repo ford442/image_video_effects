@@ -164,18 +164,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let resolution = vec2<f32>(f32(dims.x), f32(dims.y));
     var uv = (vec2<f32>(id.xy) - 0.5 * resolution) / min(resolution.x, resolution.y);
+    let uv01 = (vec2<f32>(id.xy) + 0.5) / resolution;
 
     let time = u.config.x;
-    let audio = u.config.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = bass * 0.55 + mids * 0.3 + treble * 0.15;
     let bio = u.zoom_params.y;
     let darkMatter = u.zoom_params.w;
 
-    // Read previous frame for subtle temporal blend
-    let prev = textureSampleLevel(readTexture, u_sampler, vec2<f32>(id.xy) / resolution, 0.0);
-    let prevDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(id.xy) / resolution, 0.0).r;
+    // Exact previous-frame display history.
+    let prev = textureLoad(dataTextureC, coords, 0);
+
+    var shock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 3.2) {
+            let front = abs(length((uv01 - ripple.xy) * vec2<f32>(resolution.x / resolution.y, 1.0)) - age * (0.16 + u.zoom_params.x * 0.04));
+            shock += (1.0 - smoothstep(0.0, 0.026, front)) * (1.0 - age / 3.2);
+        }
+    }
+    shock = min(shock, 2.0);
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 2.0, -5.0);
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    var ro = vec3<f32>(0.0, 2.0, -5.0 + held * 0.8);
     var rd = normalize(vec3<f32>(uv, 1.5));
 
     // Mouse rotation
@@ -265,9 +281,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Audio bloom on hit distance
     col += vec3<f32>(0.2, 0.5, 1.0) * audio * bio * (1.0 / (1.0 + t * t * 0.05));
+    col += vec3<f32>(0.95, 0.16 + mids * 0.35, 1.0) * shock * (0.45 + treble * 0.8);
 
     // Temporal blend with previous frame
-    col = mix(col, prev.rgb, 0.08);
+    let hdr = mix(prev.rgb * 0.94, col, 0.3 + bass * 0.03);
+    col = hdr;
 
     // HDR clamp preserving hue
     col = hue_preserving_clamp(col, 8.0);
@@ -285,5 +303,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     textureStore(writeTexture, coords, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, coords, vec4<f32>(clamp(t * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, vec4<f32>(fogAccum, bg_density, select(0.0, sss, hit), alpha));
+    textureStore(dataTextureA, coords, vec4<f32>(hdr, alpha));
 }

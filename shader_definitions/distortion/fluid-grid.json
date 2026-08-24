@@ -2,7 +2,7 @@
   "id": "fluid-grid",
   "name": "Fluid Grid",
   "url": "shaders/fluid-grid.wgsl",
-  "description": "Flowing grid distortion with fluid dynamics.",
+  "description": "A strain-aware major/minor lattice drawn in a deformed curl-flow domain, with spring-smoothed mouse pressure, depth obstacles, alternating click eddies, glowing junctions, and advected rail trails.",
   "params": [
     {
       "id": "grid_size",
@@ -41,7 +41,10 @@
     "click-reactive",
     "depth-aware",
     "curl-noise",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal",
+    "strain-aware-lattice",
+    "major-minor-grid"
   ],
   "tags": [
     "filter",

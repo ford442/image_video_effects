@@ -10,6 +10,85 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
+- **Optical / Glass / Holographic / Iridescence Batch (2026-08-23):** Upgraded
+  spec-iridescence-engine, spec-prismatic-dispersion, frost-reveal-crystal,
+  fractal-glass-distort-bilateral, bubble-lens-coupled,
+  chroma-depth-tunnel-prismatic, chromatic-focus-coupled,
+  chromatic-focus-guided, distortion-gravitational-prismatic, and
+  multi-fractal-compositor-lens under the full 13-binding / ACES /
+  semantic alpha / A-authoritative / exact C loads / three-band plasmaBuffer /
+  guarded extraBuffer[133..138] contract with byte-exact saved params.
+  Naga 10/10, workgroups 16x16, all 4 sliders live, Jest 84/84 (559 pass),
+  and production build green; real-GPU visual QA remains external.
+- **Optical / Prism / Crystal / Lens / Caustic Batch (2026-08-23):** Upgraded
+  prism-displacement, prismatic-mosaic, refraction-tunnel, spec-bicubic-crystal,
+  spiral-lens, voronoi-faceted-glass, gravitational-lensing,
+  gravitational-lensing-nlm, digital-lens-prismatic, and
+  crystal-illuminator-iridescence under the full 13-binding / ACES /
+  semantic alpha / A-authoritative / exact C loads / three-band plasmaBuffer /
+  guarded extraBuffer[133..138] contract with byte-exact saved params.
+  Naga 10/10, workgroups 16x16, all 4 sliders live, Jest 84/84 (559 pass),
+  and production build green; real-GPU visual QA remains external.
+- **Optical / Glass / Prism / Crystal / Lens Batch (2026-08-23):** Upgraded
+  bubble-lens, crystal-facets, cyber-lens, fractal-glass-distort,
+  glass-brick-distortion, glass-brick-wall, infinite-zoom-lens,
+  liquid-prism, luma-glass, and luminescent-glass-tiles under the full
+  13-binding / ACES / semantic alpha / A-authoritative / exact C loads /
+  three-band plasmaBuffer / guarded extraBuffer[133..138] contract with
+  byte-exact saved params. Naga 10/10, workgroups 16x16, all 4 sliders live,
+  Jest 84/84 (559 pass), and production build green; real-GPU visual QA
+  remains external.
+- **Optical / Glass / Holographic / Crystal Batch (2026-08-23):** Upgraded
+  holographic-projection, holographic-projection-gpt52, holographic-flicker,
+  holographic-sticker, alpha-multi-layer-glass, anamorphic-caustic-flare,
+  glass-shatter-morph, glass-bead-curtain-iridescence, gemstone-fractures-crystal,
+  and bismuth-crystal-growth under the full 13-binding / ACES / semantic alpha /
+  A-authoritative / exact C loads / three-band plasmaBuffer / guarded
+  extraBuffer[133..138] contract with byte-exact saved params. Naga 10/10,
+  workgroups 16x16, all 4 sliders live, Jest 84/84 (559 pass), and production
+  build green; real-GPU visual QA remains external.
+- **Batch 58D:** Ten spectral/datamosh upgrades completed with A authoritative,
+  exact C, B unused, guarded `[133..138]` springs, saved params unchanged, and
+  raw state retained for Vortex/Data Moshing/Datamosh. Real-GPU QA is external.
+- **Batch 68:** Ten stateful simulation/feedback upgrades completed under the
+  same contract. Raw A belongs to Fire, Ink, Phase, and Prismatic; Temporal
+  alone keeps binding 13/history ring. Structural/Jest/build gates are green;
+  real-GPU stability and composition QA remain external.
+- **Batch 69:** Ten cosmic/ferrofluid/liquid detail upgrades completed. Nine
+  shaders own HDR display history; Liquid Metal owns raw
+  height/velocity/foam/wetness A state. Saved params are exact, structural,
+  Jest, catalog, and build gates are green; real-GPU visual QA is external.
+- **Batch 71 generative-only:** Cybernetic Mycelium, Cyclic Automaton, Cycloid
+  Bloom, Plasma Mandalas, Quantum Silk Loom, De Jong, Stained Glass, DLA Copper,
+  DMT Zoom, and Dragon Curve now satisfy the canonical shader contract. DLA
+  intentionally moved to documented raw persistent state; nine missing JSONs
+  gained four named params. Structural/Jest/build gates are green; real-GPU QA
+  remains external.
+- **Current ethereal generative cohort:** Ten real IDs from Cyber Chrono Nebula
+  Phoenix through Feedback Echo Chamber are next under the same canonical
+  shader contract, with four named live JSON params required for each.
+- **Codex (b) liquid batch (2026-08-23):** Upgraded liquid-jelly,
+  liquid-oil, liquid-displacement, liquid-fast, liquid-glitch, liquid-mirror,
+  ink-marbling, glass-wipes, kimi_liquid_glass, and liquid-metal under the
+  canonical exact-C / A-only / ACES / semantic-alpha / three-band-audio /
+  bounded-`extraBuffer[133..138]` contract while preserving presets and all
+  pointer, held, and click-ripple interaction. Seven own raw physical A state;
+  Jelly/Fast/Glitch own display history. Liquid Metal now has Rosensweig spikes
+  and anisotropic reflection. Naga, contract, catalog, Jest, and build gates are
+  green; real-GPU visual QA remains external.
+- **Completed follow-on liquid/ferro batch (2026-08-23):** Upgraded liquid-v1,
+  liquid, liquid-rainbow, liquid-viscous-grokcf1, luma-velocity-melt,
+  rain-ripples, ferrofluid-spikes, ferrofluid-em,
+  liquid-magnetic-ferro-em, and ambient-liquid-coupled under the unchanged
+  exact-C / A-only / ACES / semantic-alpha / three-band-audio /
+  `[133..138]` state / full interaction contract, preserving saved params.
+  Four shaders own raw physical A state and six own HDR display history; B is
+  unwritten. Naga/contract 10/10, params exact, catalogs/tests/build green;
+  real-GPU visual QA remains external.- **Shader upgrade branch merge (2026-08-23):** Landed cursor/8594,
+  new-shader-upgrades, and claude motion-colors Batch 63 onto `main`. Overlaps
+  kept stronger liquid/Batch 69 upgrades; unique shaders retained. PRs #1164 and
+  #1165 merged. Jest/Naga/build green; real-GPU QA external.
+
 - **Latest shader batch:** Liquid Shader Upgrade Batch 59 is a completed ten-effect
   premium liquid cohort with a mixed performance budget. Jelly Fluid, Magnetic
   Ferro EM, and Oil Iridescence may use heavier bounded state/optics work; the
@@ -20,27 +99,25 @@ _Learn about the person you're helping. Update this as you go._
   duplicate-declaration repair are verified by actual Naga plus strict contract,
   catalog, type, Jest, and production-build gates. Real-GPU visual QA remains the
   explicit handoff.
-- **Current shader batch (2026-08-23):** Codex (e) is a ten-effect ferro / melt /
-  tensor / fluid-simulation cohort. The user explicitly requires the canonical
-  13 bindings, ACES, semantic alpha, A-only writes, exact C loads, three-band
-  audio, state confined to `extraBuffer[133..138]`, preserved pointer/held/click
-  ripple interaction, and Naga-clean WGSL.
-- **Latest shader batch (2026-08-23):** Codex (e) is complete. It closes the
-  ten-effect ferro/melt/tensor/fluid-sim cohort with actual Naga 13/13, A-only
-  temporal ownership, exact C loads, three-band audio, preserved interaction,
-  strict audits, 1,333-ID catalog parity, clean TypeScript/Jest/build gates, and
-  an explicit real-GPU visual/performance handoff.
-- **Latest shader batch (2026-08-23):** Codex (g) is complete across ten
-  wave/smoke/ink/volumetric/ferro-adjacent effects. The renderer ABI, exact-C
-  and A-only feedback, three-band audio, held/click interaction, ACES and
-  semantic-alpha contract pass actual Naga 10/10; saved params, catalogs,
-  TypeScript, Jest, and production build are also verified. Real-GPU visual QA
-  remains external.
-- **Latest shader batch (2026-08-23):** The ten remaining simulation, field,
-  growth, and decay effects are complete. Dual decay, erosion, crystal, fire,
-  EM, ecosystem, RGBA CA, Lenia, and moss models now have exact bounded A/C
-  state, live saved controls, full audio/interaction, semantic alpha, ACES, and
-  actual Naga 10/10 proof. Catalog, TypeScript, Jest, and build gates pass;
+- **Reaction/flow/sand cohort (2026-08-23):** Ten selected simulation effects
+  completed under the exact-C/A-only/ACES/semantic-alpha/audio/interaction
+  contract with exact presets. Optical Flow Dream is now canonical single-pass
+  without binding 13; Pixel Sand raw state now belongs to A. Naga/Jest/build
+  are green; real-GPU QA remains external.
+- **Completed Batch 70 (2026-08-23):** The requested fluid/paint/reaction/slime
+  cohort is upgraded across 17 WGSL members. Chromatographic and Gray-Scott are
+  A-only graphs; saved params are exact; Naga 17/17, focused contracts, graph
+  tests, 84-suite Jest, and the WASM-skipped production build are green.
+  Real-GPU visual and long-running simulation QA remains external.
+- **Completed generative Batch 71 (2026-08-23):** Ten effects from Cybernetic
+  Mycelium through Dragon Curve now meet the exact-C, A-only, ACES,
+  semantic-alpha, three-band-audio, bounded-state, interaction, and Naga
+  contract. Every definition exposes four live named params.
+- **Fireworks/fractal generative cohort (2026-08-23):** Ring Shell through
+  Chrono Dendrite Forge now meet the exact-C/A-only/ACES/semantic-alpha/
+  plasma-XYZ contract with 40 named params. Raincloud retains raw A simulation
+  state in its underscore-backed WGSL and only `[133..136]` spring state;
+  Fourier retains packed envelope/trail A state. Naga/Jest/build are green;
   real-GPU visual QA remains external.
 - **Current shader batch (2026-08-23):** Generative Hyper / Geometry Batch
   Upgrade covers five in-place Hyper effects plus five independent greenfield
@@ -56,6 +133,17 @@ _Learn about the person you're helping. Update this as you go._
   A/C packing and the legacy `gen_hyper_warp.*` path are preserved; real-GPU
   visual/performance tuning remains external.
 
+- **Main reconcile (2026-08-23):** Merged local optical/branch-union `main` with
+  origin Batch 70, generative named-params #1167/#1169, and Batch 67 (#1170).
+  Kept local optical `holographic-flicker`; took Batch 67 `glass-wipes`,
+  `liquid-jelly`, and `ferrofluid-spikes`. Real-GPU QA remains external.
+- **Holographic / Hyper generative cohort (2026-08-23):** Fracture, Lens-Flare
+  Matrix, Membrane, Plasma Geode, Rainbow Surface, Hopf Fiber Bundle, Bismuth
+  Clockwork, Bismuth Matrix, Tesseract Labyrinth, and Hyper Labyrinth now meet
+  the exact-C/A-only/audio/interaction contract with preserved feedback
+  ownership and forty named controls. Membrane, Flare Matrix, and Hyper
+  Labyrinth retain raw state; structural/Jest/build gates are green and real-GPU
+  visual QA remains external.
 ## Context
 
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.
@@ -72,11 +160,14 @@ _Learn about the person you're helping. Update this as you go._
   shaders through tracker #394. Shader upgrade Batch 52 closed through tracker
   #454 (interactive vector fields). Batches 53–55 closed through tracker #474
   (Batch 55 = four-shader geometry / fast-motion / psychedelic-color).
-  Generative volume is no longer the bottleneck.
+  Batch 56 triple lineages merged on cursor branch (tracker #475–482 claimed
+  thrice; unique shaders retained; chromatic/cmyk/quantum overlaps hand-merged). Generative volume is no longer
+  the bottleneck.
 - **2026-08-21 progress audit:** board was empty except #1080 (WASM GPU evidence)
   and #1111 (thumbnail CI; partial landing already in tree). Next work is
   foundation residual before another content wave: compile/feature SoT (#1123),
-  rgba16float tiers actually allocated (#1124), WASM-bridge SoT + drop dead CRA
+  rgba16float tiers (#1124 in progress: probe + C++ packing landed, GPU evidence
+  still workstation-gated), WASM-bridge SoT + drop dead CRA
   deps (#1125), no second `requestDevice` (#1126), gpu-chores on catalog source
   (#1127), catalog id/filename/8×8 hygiene (#1128). Later: Physics Lab set 2 +
   all-slot audio (#1129). Do not port GraphRunner to C++ or flip WASM default
@@ -155,8 +246,9 @@ Format specification:
 - Thumbnail healthy coverage is still the discoverability bottleneck (~21%);
   #1111 CI gate is partially landed (script exists; deferral design is not).
   Capture stays discrete-GPU workstation work. Do not count black PNGs.
-- Shader upgrade Batch 56 is implemented through tracker #482 as an eight-effect
-  interactive-complexity cohort. Preserve its documented Phosphor Magnifier
+- Shader upgrade Batch 56 triple lineages are merged through tracker #482 on
+  the cursor branch; preserve CMYK A coverage, iso-line mask A, and Phosphor
+  Magnifier display-history repack. Preserve Phosphor Magnifier
   display-history repack and Vertical Slice Wave state/display separation.
 - Shader upgrade Batch 57 is implemented through tracker #490 as an eight-effect
   kinetic image-transformation cohort. Its Mirror Drag, Temporal Distortion,
@@ -181,4 +273,19 @@ Format specification:
   geometry of each named firework while applying the same strict shader contract.
 - For the confirmed fractal/gravity cohort, preserve each named material and
   field identity rather than homogenizing the ten shaders around one motif.
+  psychedelic-color cohort. Unique leftover Batch 56 shaders from
+  `cursor/effect-shaders-complexity-8594` were unioned onto main in 99d09e5c
+  without reverting #1137 or Batch 57 fractal-kaleidoscope. Batch 58E closed
+  tracker #491–500 across ten interactive shaders.
+- For the 2026-08-23 generative-only cohort, the user explicitly requires the
+  literal ten supplied IDs, full 13-binding/ACES/semantic-alpha/exact-C/A-only
+  contract, three-band plasma audio, bounded [133..138] state, preserved
+  interaction, Naga-clean WGSL, and four named params in every JSON definition.
+- When a supplied shader list is discovered to contain invented IDs, stop and
+  verify against the live catalog; the user will provide real IDs rather than
+  authorizing substitutions or accidental net-new catalog entries.
+- Preserve the completed Generative Grid / Grok / Holographic cohort's literal
+  ten-ID scope and its seven underscore-backed filename aliases. Its state split
+  is deliberate: five display-history A effects and five raw simulation or
+  telemetry A effects, with extraBuffer confined to the four documented owners.
 </IMPORTANT_REMINDER>

@@ -98,7 +98,7 @@ fn palette(t: f32, hueOff: f32) -> vec3<f32> {
     let a = vec3<f32>(0.5, 0.5, 0.5);
     let b = vec3<f32>(0.5, 0.5, 0.5);
     let c = vec3<f32>(1.0, 1.0, 0.9);
-    let d = vec3<f32>(0.10, 0.40, 0.65);
+    let d = vec3<f32>(0.00, 0.33, 0.67) + vec3<f32>(0.15, -0.1, 0.2);
     return clamp(a + b * cos(TAU * (c * h + d)), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
@@ -117,7 +117,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
     let coord = vec2<i32>(gid.xy);
     let uv    = vec2<f32>(gid.xy) / res;
-    let time  = u.config.x;
+    let time  = u.config.x * 2.15;
 
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
@@ -135,14 +135,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let tubeR  = 0.018 + u.zoom_params.z * 0.05;  // glow slider also fattens the tubes
     let decay  = 0.965 + u.zoom_params.w * 0.025;
 
-    let mouse  = u.zoom_config.yz;
-    let zoom   = 1.0 + u.zoom_config.w * 1.5;
+    let mouseRaw = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var mouse = mouseRaw; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+    if (hasSpring) { mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+    if (!initialized) { mouse = mouseRaw; springVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+    let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = mouse - mouseRaw; let temp = (springVel + omega * sdelta) * dt;
+    springVel = (springVel - omega * temp) * springDecay; mouse = mouseRaw + (sdelta + temp) * springDecay;
+    if (hasSpring && gid.x == 0u && gid.y == 0u) { extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
+    let zoom   = 1.0 + select(0.0, 1.0, u.zoom_config.w > 0.5) * 1.5;
     let centre = (mouse - 0.5) * 2.0;
     let viewPos = (uv - 0.5) * (4.0 / zoom) + centre;
 
+    var clickEnergy = 0.0;
+    let aspect = res.x / max(res.y, 1.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = u.config.x - ripple.z;
+        if (age < 0.0 || age > 2.2) { continue; }
+        let rippleDistance = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+        clickEnergy += exp(-abs(rippleDistance - age * 0.23) * 82.0) * exp(-age * 1.1);
+    }
+    clickEnergy = clamp(clickEnergy, 0.0, 1.0);
+
     // Kaleidoscope fold layer: treble blends the splat plane into wedges
     let foldAmt  = clamp(treble * 0.45, 0.0, 0.5);
-    let splatPos = mix(viewPos, kalei(viewPos, FOLD_COUNT) + centre, foldAmt);
+    let splatPos = mix(viewPos, kalei(viewPos, FOLD_COUNT) + centre, foldAmt)
+      * (1.0 + clickEnergy * 0.07);
 
     let seed   = hash22(uv * 131.7 + vec2<f32>(fract(time * 0.031), fract(time * 0.041 + 0.5)));
     var p      = seed * 4.0 - 2.0;
@@ -219,7 +240,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         tubeDepth = clamp(1.0 - t / MARCH_FAR, 0.0, 1.0);
     }
 
-    let hueOff  = fract(time * 0.015);
+    let hueOff  = fract(time * 0.045);
     let density = clamp(accumulated * 10.0, 0.0, 1.0);
     let warmCol = palette(density, hueOff);
     let coolCol = palette(density, hueOff + 0.2);
@@ -227,8 +248,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var col     = mix(coolCol, warmCol, chromaMix);
     col += palette(hueOff + 0.6, 0.1) * glow3d * (1.0 + bass);   // tube aura bleed
     col = mix(col, tubeCol * 1.4, select(0.0, 0.85, hit));       // branchless composite
+    col += palette(hueOff + clickEnergy * 0.35, 0.3) * clickEnergy * (0.25 + treble * 0.45);
 
-    let alpha    = clamp(density * 0.85 + bass * 0.12 + select(0.0, 0.55, hit) + glow3d * 0.5, 0.0, 1.0);
+    let alpha    = clamp(density * 0.85 + bass * 0.12 + select(0.0, 0.55, hit)
+      + glow3d * 0.5 + clickEnergy * 0.2, 0.0, 1.0);
     let finalOut = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     textureStore(dataTextureA, coord, vec4<f32>(accumulated, hueOff, tubeDepth, alpha));

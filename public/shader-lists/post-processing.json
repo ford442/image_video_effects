@@ -20,7 +20,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "bass_gain",
         "name": "Bass Gain",
         "default": 0.4,
         "min": 0,
@@ -28,7 +28,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "mid_gain",
         "name": "Mid Gain",
         "default": 0.5,
         "min": 0,
@@ -36,7 +36,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "treble_gain",
         "name": "Treble Gain",
         "default": 0.6,
         "min": 0,
@@ -44,7 +44,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "blend",
         "name": "Blend",
         "default": 0.7,
         "min": 0,
@@ -74,15 +74,15 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Dispersion Scale",
+        "id": "scale",
+        "name": "Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "angle_offset",
         "name": "Angle Offset",
         "default": 0,
         "min": 0,
@@ -90,16 +90,16 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Edge Falloff",
+        "id": "falloff",
+        "name": "Falloff",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Original Blend",
+        "id": "orig_blend",
+        "name": "Orig Blend",
         "default": 0.1,
         "min": 0,
         "max": 1,
@@ -137,15 +137,15 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Decay Base",
+        "id": "decay",
+        "name": "Decay",
         "default": 0.15,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "audio_drive",
         "name": "Audio Drive",
         "default": 0.6,
         "min": 0,
@@ -153,16 +153,16 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Bin Range Lo",
+        "id": "bin_lo",
+        "name": "Bin Lo",
         "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.008
       },
       {
-        "id": "param4",
-        "name": "Bin Range Hi",
+        "id": "bin_hi",
+        "name": "Bin Hi",
         "default": 0.2,
         "min": 0,
         "max": 1,
@@ -197,7 +197,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "temporal_spread",
         "name": "Temporal Spread",
         "default": 1,
         "min": 0,
@@ -205,7 +205,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "warp_strength",
         "name": "Warp Strength",
         "default": 0.3,
         "min": 0,
@@ -213,7 +213,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "luma_gamma",
         "name": "Luma Gamma",
         "default": 0.5,
         "min": 0,
@@ -221,7 +221,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "original_blend",
         "name": "Original Blend",
         "default": 0.1,
         "min": 0,
@@ -380,7 +380,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "luma_threshold",
         "name": "Luma Threshold",
         "default": 0.5,
         "min": 0,
@@ -388,7 +388,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "sort_length",
         "name": "Sort Length",
         "default": 0.3,
         "min": 0,
@@ -396,16 +396,16 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Depth Blend",
+        "id": "sort_angle",
+        "name": "Sort Angle",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Noise Mix",
+        "id": "palette_mix",
+        "name": "Palette Mix",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -474,15 +474,15 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
-        "name": "Trail Decay",
+        "id": "decay",
+        "name": "Decay",
         "default": 0.6,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "flow_scale",
         "name": "Flow Scale",
         "default": 0.4,
         "min": 0,
@@ -490,7 +490,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "trail_age",
         "name": "Trail Age",
         "default": 0.5,
         "min": 0,
@@ -498,8 +498,8 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Current Blend",
+        "id": "blend",
+        "name": "Blend",
         "default": 0.35,
         "min": 0,
         "max": 1,
@@ -536,32 +536,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Depth Threshold",
+        "id": "sort_radius",
+        "name": "Sort Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Sort Length",
+        "id": "mids_modulation",
+        "name": "Mids Modulation",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Sort Angle",
+        "id": "chromatic_accent",
+        "name": "Chromatic Accent",
         "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Aberration",
+        "id": "feedback_clamp",
+        "name": "Feedback Clamp",
         "default": 0.2,
         "min": 0,
         "max": 1,
@@ -617,29 +617,29 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "anamorphic",
         "name": "Anamorphic",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "threshold",
         "name": "Threshold",
         "default": 0.6,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
-        "name": "Quality",
+        "id": "quality_param",
+        "name": "Quality Param",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -659,28 +659,28 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Amount",
+        "id": "chromatic_amount",
+        "name": "Chromatic Amount",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "distortion",
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "vignette",
         "name": "Vignette",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "mode",
         "name": "Mode",
         "default": 0,
         "min": 0,
@@ -701,28 +701,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "amount",
         "name": "Amount",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "radius",
         "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
-        "name": "Edge Mask",
+        "id": "edge_threshold",
+        "name": "Edge Threshold",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "mode",
         "name": "Mode",
         "default": 0,
         "min": 0,
@@ -743,28 +743,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "radius",
         "name": "Radius",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "quality",
         "name": "Quality",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "color_bleed",
         "name": "Color Bleed",
         "default": 0.2,
         "min": 0,
@@ -827,28 +827,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "algorithm",
         "name": "Algorithm",
         "default": 0,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "exposure",
         "name": "Exposure",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "contrast",
         "name": "Contrast",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "saturation",
         "name": "Saturation",
         "default": 0.5,
         "min": 0,
@@ -870,29 +870,29 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Vignette",
+        "id": "vignette_intensity",
+        "name": "Vignette Intensity",
         "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
-        "name": "Grain",
+        "id": "grain_intensity",
+        "name": "Grain Intensity",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "color_style",
         "name": "Color Style",
         "default": 0,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
-        "name": "Effect",
+        "id": "blend_mode",
+        "name": "Blend Mode",
         "default": 0,
         "min": 0,
         "max": 1
@@ -945,7 +945,12 @@
     ],
     "features": [
       "mouse-driven",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "click-reactive",
+      "fast-motion",
+      "psychedelic",
+      "upgraded-rgba"
     ],
     "tags": [
       "blur",
@@ -953,6 +958,52 @@
       "depth-of-field",
       "post-processing",
       "chromatic"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "sigma",
+        "name": "Blur Sigma",
+        "default": 0.3,
+        "min": 0.01,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base blur radius; also the length scale of the zoom-burst speed lines."
+      },
+      {
+        "index": 1,
+        "id": "shape",
+        "name": "Bokeh Shape",
+        "default": 0,
+        "min": 0,
+        "max": 2,
+        "step": 1,
+        "mapping": "zoom_params.y",
+        "description": "Aperture shape for the bokeh kernel."
+      },
+      {
+        "index": 2,
+        "id": "focalDepth",
+        "name": "Focal Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Depth plane held in focus by the circle-of-confusion term."
+      },
+      {
+        "index": 3,
+        "id": "maxBlur",
+        "name": "Max Blur",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Upper clamp on the circle of confusion; also gains the rotational shear streaks."
+      }
     ]
   },
   {
@@ -1054,7 +1105,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "spatial_sigma",
         "name": "Spatial Sigma",
         "default": 0.4,
         "min": 0,
@@ -1062,16 +1113,16 @@
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Temporal Depth",
+        "id": "temperature_depth",
+        "name": "Temperature Depth",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Mode (0=Denoise 0.5=MotionBlur 1=Sharpen)",
+        "id": "mode",
+        "name": "Mode",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -1083,8 +1134,8 @@
         ]
       },
       {
-        "id": "param4",
-        "name": "Effect Strength",
+        "id": "strength",
+        "name": "Strength",
         "default": 0.7,
         "min": 0,
         "max": 1,
@@ -1117,7 +1168,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "fast_decay",
         "name": "Fast Decay",
         "default": 0.5,
         "min": 0,
@@ -1125,7 +1176,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "medium_decay",
         "name": "Medium Decay",
         "default": 0.5,
         "min": 0,
@@ -1133,7 +1184,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "slow_decay",
         "name": "Slow Decay",
         "default": 0.5,
         "min": 0,
@@ -1141,7 +1192,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "original_blend",
         "name": "Original Blend",
         "default": 0.3,
         "min": 0,
@@ -1209,15 +1260,15 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
-        "name": "Zoom Power",
+        "id": "zoom",
+        "name": "Zoom",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "rotation",
         "name": "Rotation",
         "default": 0.625,
         "min": 0,
@@ -1225,7 +1276,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "persistence",
         "name": "Persistence",
         "default": 0.71,
         "min": 0,
@@ -1233,8 +1284,8 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Current Blend",
+        "id": "blend",
+        "name": "Blend",
         "default": 0.29,
         "min": 0,
         "max": 1,
@@ -1266,7 +1317,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "target_frequency",
         "name": "Target Frequency",
         "default": 0.25,
         "min": 0,
@@ -1274,7 +1325,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "glow_brightness",
         "name": "Glow Brightness",
         "default": 0.6,
         "min": 0,
@@ -1282,7 +1333,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "glow_hue",
         "name": "Glow Hue",
         "default": 0.17,
         "min": 0,
@@ -1290,7 +1341,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "base_blend",
         "name": "Base Blend",
         "default": 0.8,
         "min": 0,
@@ -1427,28 +1478,28 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "echo_layers",
         "name": "Echo Layers",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "warp_strength",
         "name": "Warp Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "color_intensity",
         "name": "Color Intensity",
         "default": 0.6,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "blend_mix",
         "name": "Blend Mix",
         "default": 0.5,
         "min": 0,
@@ -1481,7 +1532,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "motion_sensitivity",
         "name": "Motion Sensitivity",
         "default": 0.5,
         "min": 0,
@@ -1489,7 +1540,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "max_decay_fast",
         "name": "Max Decay (Fast)",
         "default": 0.5,
         "min": 0,
@@ -1497,7 +1548,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "min_decay_still",
         "name": "Min Decay (Still)",
         "default": 0.5,
         "min": 0,
@@ -1505,7 +1556,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "warm_tint",
         "name": "Warm Tint",
         "default": 0.6,
         "min": 0,
@@ -1553,7 +1604,7 @@
     "id": "temporal-phosphor-burn",
     "name": "Temporal Phosphor Burn",
     "url": "shaders/temporal-phosphor-burn.wgsl",
-    "description": "CRT phosphor persistence: per-channel exponential decay (R=fast, B=slow) creates green/amber afterglow. max(current, decayed_history) luminance floor keeps bright pixels glowing long after the source moves on.",
+    "description": "CRT phosphor persistence combining exact immediate display history with seven older ring frames, sprung beam burns, bounded click afterimages, three-band plasma audio, ACES, and semantic burn alpha.",
     "tags": [
       "temporal",
       "crt",
@@ -1568,12 +1619,51 @@
       "history-ring",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "exact-history",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "r_decay",
+        "name": "R-decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "g_decay",
+        "name": "G-decay",
+        "default": 0.79,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "b_decay",
+        "name": "B-decay",
+        "default": 0.93,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mask_strength",
+        "name": "Mask Strength",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
         "name": "R Decay",
         "default": 0.5,
         "min": 0,
@@ -1581,7 +1671,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "index": 1,
         "name": "G Decay",
         "default": 0.79,
         "min": 0,
@@ -1589,7 +1679,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "index": 2,
         "name": "B Decay",
         "default": 0.93,
         "min": 0,
@@ -1597,7 +1687,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "index": 3,
         "name": "Luma Floor",
         "default": 0,
         "min": 0,
@@ -1630,32 +1720,32 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
-        "name": "G Channel Delay",
+        "id": "g_delay",
+        "name": "G-delay",
         "default": 0.17,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "B Channel Delay",
+        "id": "b_delay",
+        "name": "B-delay",
         "default": 0.67,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Ghost Blend",
+        "id": "blend",
+        "name": "Blend",
         "default": 0.8,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Luma Boost",
+        "id": "displace",
+        "name": "Displace",
         "default": 0.25,
         "min": 0,
         "max": 1,
@@ -1687,7 +1777,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "scan_axis",
         "name": "Scan Axis",
         "default": 0,
         "min": 0,
@@ -1695,7 +1785,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "temporal_spread",
         "name": "Temporal Spread",
         "default": 1,
         "min": 0,
@@ -1703,7 +1793,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "reverse",
         "name": "Reverse",
         "default": 0,
         "min": 0,
@@ -1711,7 +1801,7 @@
         "step": 1
       },
       {
-        "id": "param4",
+        "id": "original_blend",
         "name": "Original Blend",
         "default": 0,
         "min": 0,

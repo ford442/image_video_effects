@@ -179,7 +179,7 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
           "dataC"
         ],
         "writes": [
-          "dataB"
+          "dataA"
         ]
       },
       {
@@ -279,43 +279,6 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       {
         "id": "render",
         "entry": "gray-scott-render",
-        "reads": [
-          "dataC"
-        ],
-        "writes": [
-          "color",
-          "dataA"
-        ]
-      }
-    ]
-  },
-  "optical-flow-dream": {
-    "maxPassesPerFrame": 8,
-    "nodes": [
-      {
-        "id": "flow",
-        "entry": "optical-flow-estimate",
-        "reads": [
-          "dataC"
-        ],
-        "writes": [
-          "dataA"
-        ]
-      },
-      {
-        "id": "advect",
-        "entry": "optical-flow-advect",
-        "reads": [
-          "dataC"
-        ],
-        "writes": [
-          "dataA"
-        ],
-        "repeat": 2
-      },
-      {
-        "id": "grade",
-        "entry": "optical-flow-grade",
         "reads": [
           "dataC"
         ],

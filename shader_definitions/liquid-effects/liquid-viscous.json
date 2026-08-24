@@ -2,13 +2,15 @@
   "id": "liquid-viscous",
   "name": "Liquid Viscous",
   "url": "shaders/liquid-viscous.wgsl",
-  "description": "A bounded exact-load semi-Lagrangian liquid state with viscosity diffusion, one-frame Jacobi pressure projection, vorticity confinement, and audio-driven dye roll-up.",
+  "description": "2D incompressible Navier-Stokes with vorticity confinement. Vorticity at the centre and its four neighbours now comes from ONE shared stencil (was five separate calls, each doing four filtered samples), the pressure solve genuinely relaxes instead of recomputing one value four times, and the audio vortices drift along continuous Lissajous paths instead of teleporting every 0.7 s. Dye is injected per FFT band. dataTextureA carries simulation state.",
   "tags": [
     "filter",
     "image-processing",
-    "liquid",
+    "fluid",
     "navier-stokes",
-    "vorticity"
+    "vorticity",
+    "simulation",
+    "dye"
   ],
   "params": [
     {
@@ -52,13 +54,61 @@
       "description": "Color manipulation amount"
     }
   ],
-  "features": ["mouse-driven", "audio-reactive", "temporal", "click-reactive", "bounded-history", "stateful", "depth-aware", "upgraded-rgba"],
-  "updatedParams": [
-    { "index": 0, "name": "Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Turbulence", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Ripple Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Color Shift", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+  "features": [
+    "mouse-driven",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "vorticity-confinement",
+    "stencil-vorticity",
+    "local-jacobi-pressure",
+    "fluid-simulation"
   ],
-  "feedbackPacking": "A/C = velocity.xy, dye, pressure; raw bounded state via exact loads",
-  "updated": true
+  "updatedParams": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Velocity damping and dye dissipation rate."
+    },
+    {
+      "id": "turbulence",
+      "name": "Vorticity Confinement",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Strength of the confinement force that keeps eddies from smearing out (maps to zoom_params.y)."
+    },
+    {
+      "id": "ripple_strength",
+      "name": "Turbulence Injection",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Gain on the three-octave cascade and the per-band dye emitters (maps to zoom_params.z)."
+    },
+    {
+      "id": "color_shift",
+      "name": "Hue Shift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Rotates the dye/vorticity hue mapping (maps to zoom_params.w)."
+    }
+  ]
 }

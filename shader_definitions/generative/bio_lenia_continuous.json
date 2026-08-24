@@ -18,7 +18,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "radius",
       "name": "Radius",
       "default": 0.3,
       "min": 0,
@@ -28,7 +28,7 @@
       "audio": "bass"
     },
     {
-      "id": "param2",
+      "id": "growth_center",
       "name": "Growth Center",
       "default": 0.4,
       "min": 0,
@@ -38,7 +38,7 @@
       "audio": "mid"
     },
     {
-      "id": "param3",
+      "id": "growth_width",
       "name": "Growth Width",
       "default": 0.2,
       "min": 0,
@@ -48,7 +48,7 @@
       "audio": "treble"
     },
     {
-      "id": "param4",
+      "id": "time_step",
       "name": "Time Step",
       "default": 0.3,
       "min": 0,

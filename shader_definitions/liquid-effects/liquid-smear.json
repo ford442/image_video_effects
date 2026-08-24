@@ -2,7 +2,7 @@
   "id": "liquid-smear",
   "name": "Liquid Smear",
   "url": "shaders/liquid-smear.wgsl",
-  "description": "Anisotropic multi-tap wet-paint advection with viscous streamline diffusion, broad bass wakes, midrange-bent drag flow, treble-lit ridges, and click eddies.",
+  "description": "Pigment drag along the pointer's real travel direction, taken from a spring-damped cursor and its velocity in extraBuffer[133..136] \u2014 the previous version always pulled toward the cursor centre, which reads as a sink rather than a brush. A five-tap kernel bleeds pigment along the stroke normal with a width set by the local FFT bin. History is fetched with exact textureLoad, bilinear by hand.",
   "params": [
     {
       "id": "strength",
@@ -33,20 +33,61 @@
       "max": 1
     }
   ],
-  "features": ["mouse-driven", "audio-reactive", "temporal-persistence", "click-reactive", "bounded-history", "upgraded-rgba"],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "spring-damper-pointer",
+    "velocity-smear",
+    "pigment-diffusion"
+  ],
   "tags": [
     "filter",
     "image-processing",
-    "liquid",
+    "smear",
+    "brush",
     "paint",
-    "advection"
+    "feedback"
   ],
   "updatedParams": [
-    { "index": 0, "name": "Smear Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Brush Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Persistence", "default": 0.9, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Mix Strength", "default": 0.1, "min": 0, "max": 1, "step": 0.01 }
-  ],
-  "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded advected loads",
-  "updated": true
+    {
+      "id": "strength",
+      "name": "Smear Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Drag length along the pointer stroke."
+    },
+    {
+      "id": "size",
+      "name": "Brush Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Radius of the drag falloff around the cursor."
+    },
+    {
+      "id": "decay",
+      "name": "Persistence",
+      "default": 0.9,
+      "min": 0,
+      "max": 1,
+      "description": "How much of the smeared field survives each frame."
+    },
+    {
+      "id": "mix",
+      "name": "Mix Strength",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "description": "Blend of the smeared field over the live plate."
+    }
+  ]
 }

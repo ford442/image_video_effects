@@ -214,7 +214,7 @@
     "id": "alpha-multi-layer-glass",
     "name": "Alpha Multi-Layer Glass",
     "url": "shaders/alpha-multi-layer-glass.wgsl",
-    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, and per-layer tinting. Alpha stores accumulated transmittance.",
+    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, GGX roughness, and per-layer tinting. Alpha stores accumulated transmittance.",
     "tags": [
       "glass",
       "refraction",
@@ -222,11 +222,17 @@
       "interactive",
       "mouse-driven",
       "rgba-state-machine",
-      "fresnel"
+      "fresnel",
+      "audio-reactive",
+      "roughness"
     ],
     "features": [
       "mouse-driven",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -260,6 +266,41 @@
         "id": "roughness",
         "name": "Surface Roughness",
         "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Index of Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glass Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Surface Roughness",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -488,15 +529,55 @@
     "id": "ascii-shockwave",
     "name": "ASCII Shockwave",
     "url": "shaders/ascii-shockwave.wgsl",
-    "description": "A matrix-style digital shockwave that quantizes the image into procedural characters.",
+    "description": "Matrix glyph cells with traveling shock packets, held-pointer ASCII density, bounded click rings, and oil-slick phosphor color. Display RGBA is packed in A.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "glyph-cells"
     ],
     "tags": [
       "filter",
       "image-processing"
     ],
     "params": [
+      {
+        "id": "glyph_density",
+        "name": "Glyph Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "wave_speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "source_tint",
+        "name": "Source Tint",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "phosphor_persistence",
+        "name": "Phosphor Persistence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
       {
         "id": "param1",
         "name": "Intensity",
@@ -642,15 +723,19 @@
     "id": "chromatic-focus-interactive",
     "name": "Chromatic Focus",
     "url": "shaders/chromatic-focus-interactive.wgsl",
-    "description": "Bounded chromatic focus blur with safe radial normalization, zone-plate caustics, held focus squeeze, click iris shells, and stylized wavelength attenuation.",
+    "description": "Chromatic DOF with six-blade iris geometry, multi-tap blur, zone-plate caustics, oil-slick runners/packets, held focus squeeze/pinch, click iris shells, and light display history in A.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "continuous-motion",
       "click-reactive",
       "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
       "bounded-blur",
-      "psychedelic-color"
+      "psychedelic-color",
+      "upgraded-rgba",
+      "aperture-blades"
     ],
     "params": [
       {
@@ -849,28 +934,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "grid_density",
         "name": "Grid Density",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "pulse_speed",
         "name": "Pulse Speed",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "distortion",
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "glow_intensity",
         "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
@@ -988,7 +1073,9 @@
       "holographic-scanlines",
       "data-visualization",
       "hex-grid",
-      "interference-patterns"
+      "interference-patterns",
+      "click-ripples",
+      "aces-tone-map"
     ],
     "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
     "params": [
@@ -1051,32 +1138,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "scan_speed",
+        "name": "Scan Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Audio Reactivity",
+        "id": "audio_pulse",
+        "name": "Audio Pulse",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "scan_width",
+        "name": "Scan Width",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "warp_intensity",
+        "name": "Warp Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1400,7 +1487,10 @@
       "depth-aware",
       "upgraded-rgba",
       "temporal-flicker",
-      "chromatic-ghosting"
+      "chromatic-ghosting",
+      "mouse-driven",
+      "temporal",
+      "click-reactive"
     ],
     "tags": [
       "hologram",
@@ -1411,19 +1501,57 @@
       "depth-aware",
       "chromatic",
       "temporal"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flicker Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Hologram Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ghost Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "holographic-projection-gpt52",
     "name": "Holo Projection Prism gpt52",
     "url": "shaders/holographic-projection-gpt52.wgsl",
-    "description": "Prismatic hologram with stabilized focus, scan interference, and spectral tinting.",
+    "description": "Prismatic volume hologram with Bragg diffraction physics, stabilized focus, scan interference, and spectral tinting.",
     "features": [
       "mouse-driven",
       "glitch",
       "animated",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -1460,7 +1588,45 @@
       "particles",
       "glow",
       "audio",
-      "music"
+      "music",
+      "hologram",
+      "bragg",
+      "diffraction"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 1.2,
+        "min": 0,
+        "max": 5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Holo Tint",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Focus Strength",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1471,7 +1637,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -1510,6 +1678,41 @@
       "audio",
       "music",
       "reactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Holo Tint",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Focus Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1622,32 +1825,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "jump_strength",
+        "name": "Jump Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "streak_decay",
+        "name": "Streak Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "vignette_size",
+        "name": "Vignette Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1659,14 +1862,18 @@
     "id": "interactive-fresnel",
     "name": "Interactive Fresnel",
     "url": "shaders/interactive-fresnel.wgsl",
-    "description": "Gravitational and optical Fresnel lensing with 2.5D heightfield normals, concentric annular curvature, Cauchy chromatic dispersion, and exact-load temporal shimmer.",
+    "description": "2.5D Fresnel lens curvature with Cauchy dispersion, held ring squeeze, oil-slick grout, radial packets, and bounded click shells. Display RGBA in A.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "chromatic-aberration",
       "depth-mass",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color"
     ],
     "updated": true,
     "params": [
@@ -1701,32 +1908,40 @@
     ],
     "updatedParams": [
       {
+        "index": 0,
         "id": "effectStrength",
         "name": "Lensing Power",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 1,
         "id": "ringCount",
         "name": "Ring Count",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 2,
         "id": "ringThickness",
         "name": "Ring Thickness",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 3,
         "id": "dispersion",
         "name": "Dispersion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -1967,7 +2182,7 @@
     "description": "Neon edge detection with interactive flashlight reveal.",
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -1975,7 +2190,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -1983,7 +2198,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -1991,7 +2206,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -2484,10 +2699,22 @@
     "id": "signal-modulation",
     "name": "Signal Modulation",
     "url": "shaders/signal-modulation.wgsl",
-    "description": "Simulates AM/FM signal distortion with mouse-controlled frequency and amplitude.",
+    "description": "AM/FM carrier wave with sprung origin, held widen, capped click carrier bursts, honest regional FFT spectral bands, ACES composite.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
-      "visual-effect"
+      "audio-reactive",
+      "visual-effect",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba",
+      "spectral-bands"
     ],
     "params": [
       {
@@ -2496,7 +2723,8 @@
         "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "amp",
@@ -2504,7 +2732,8 @@
         "type": "float",
         "default": 0.1,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "speed",
@@ -2512,7 +2741,8 @@
         "type": "float",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "shift",
@@ -2520,12 +2750,16 @@
         "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "signal",
+      "carrier",
+      "fft"
     ],
     "updatedParams": [
       {
@@ -2891,12 +3125,14 @@
     "name": "Warp Drive",
     "category": "visual-effects",
     "url": "shaders/warp_drive.wgsl",
-    "description": "Alcubierre warp metric approximation with radial compression ahead and expansion behind. Star streaks with relativistic Doppler shift, HDR bloom on contracted stars, chromatic aberration on high-velocity regions, and ACES tone mapping.",
+    "description": "Alcubierre warp streaks with Doppler aurora packets, held warp aim, analytic stars, click fronts. Diagnostic A packing preserved.",
     "features": [
       "audio-reactive",
       "upgraded-rgba",
       "radial-blur",
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "tags": [
       "warp",
@@ -2909,6 +3145,36 @@
       "alcubierre"
     ],
     "params": [
+      {
+        "id": "warp_speed",
+        "name": "Warp Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "prism_split",
+        "name": "Prism Split",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "core_glow",
+        "name": "Core Glow",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "blur_quality",
+        "name": "Blur Quality",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "warp_speed",
         "name": "Warp Speed",

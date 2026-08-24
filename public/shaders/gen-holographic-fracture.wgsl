@@ -138,17 +138,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseDown = step(0.5, u.zoom_config.w);
 
     // Spring-damper the mouse crack origin so it eases rather than snaps.
-    // Persistent state lives in extraBuffer[133..135] only:
-    //   [133..134] = eased mouse position, [135] = initialized flag
+    // Persistent state: [133..134] position, [135..136] velocity, [137] init.
+    // All accesses are guarded and only invocation (0,0) writes the state.
     var easedMouse = rawMouse;
-    if (extraBuffer[135] > 0.5) {
-        let prev = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        // critically-damped exponential approach (frame-rate friendly)
-        easedMouse = mix(prev, rawMouse, 0.14);
+    var mouseVelocity = vec2<f32>(0.0);
+    let hasSpringState = arrayLength(&extraBuffer) > 137u;
+    if (hasSpringState && extraBuffer[137] > 0.5) {
+        easedMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        mouseVelocity = (mouseVelocity + (rawMouse - easedMouse) * 0.16) * 0.72;
+        easedMouse += mouseVelocity;
     }
-    extraBuffer[133] = easedMouse.x;
-    extraBuffer[134] = easedMouse.y;
-    extraBuffer[135] = 1.0;
+    if (hasSpringState && gid.x == 0u && gid.y == 0u) {
+        extraBuffer[133] = easedMouse.x;
+        extraBuffer[134] = easedMouse.y;
+        extraBuffer[135] = mouseVelocity.x;
+        extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0;
+    }
     let mouse = easedMouse;
 
     // Background substrate with subtle FBM
@@ -161,12 +168,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let centers = array<vec2<f32>, 2>(vec2<f32>(0.0), mouse);
     for (var c = 0; c < 2; c = c + 1) {
-        if (c == 1 && mouseDown < 0.5) { continue; }
         let center = centers[c];
         let toP = p - center;
         let polar = vec2<f32>(length(toP), atan2(toP.y, toP.x));
 
-        let nCracks = i32(fractureCount) + select(0, 3, c == 1);
+        let nCracks = i32(fractureCount) + select(0, 3, c == 1 && mouseDown > 0.5);
+        let pointerGain = select(0.35, 1.0, c == 0 || mouseDown > 0.5);
         for (var i = 0; i < 16; i = i + 1) {
             if (i >= nCracks) { break; }
             let fi = f32(i);
@@ -179,7 +186,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let b = center + vec2<f32>(cos(baseAngle + wave), sin(baseAngle + wave)) * (1.2 + bass * 0.3);
             let d = sdSegment(p, a, b);
             let w = crackWidth * (1.0 + mids * 0.5);
-            let line = 1.0 - smoothstep(0.0, w, d);
+            let line = (1.0 - smoothstep(0.0, w, d)) * pointerGain;
             if (line > crackIntensity) {
                 crackIntensity = line;
                 // Per-crack iridescence phase from audio FFT bins 1..8,
@@ -255,13 +262,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = clamp(substrate * 0.3 + crackDepth * 0.5 + frontDepth * 0.2 + edgeGlow * 0.1,
                       0.0, 1.0);
 
-    // Hue-preserving soft clamp, then filmic ACES, final clamp to 0..1
+    // Hue-preserving soft clamp, then filmic ACES. A/C owns this exact
+    // display RGBA so persistence never re-tonemaps a previous display frame.
     col = huePreserveClamp(col);
-    col = acesToneMap(col * 1.05);
-    let finalColor = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    let currentDisplay = acesToneMap(col * 1.05);
+    let prevDisplay = textureLoad(dataTextureC, coord, 0);
+    let persistence = clamp(0.12 + bass * 0.04, 0.10, 0.22);
+    let finalColor = mix(prevDisplay.rgb * 0.955, currentDisplay, persistence);
+    let fractureCoverage = clamp(
+        0.08 + crackIntensity * 0.52 + crackGlow * 0.20 + edgeGlow * 0.12 + frontGlow * 0.32,
+        0.05, 0.98
+    );
+    let alpha = max(fractureCoverage, prevDisplay.a * 0.94);
 
-    // Output as generative background (alpha = 1.0)
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-    textureStore(dataTextureA, coord, vec4<f32>(finalColor, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }
