@@ -449,11 +449,6 @@
       "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
       "title": "Ethereal Quantum-Glass Nautilus",
       "added": "2026-08-21T15:28:56.185053"
-    },
-    {
-      "filename": "2026-08-23_void-harmonic-cymatic-resonator.md",
-      "title": "Void Harmonic Cymatic Resonator",
-      "added": "2026-08-23T15:16:43.844592"
     }
   ],
   "current": null,
@@ -656,6 +651,13 @@
       "added": "2026-08-22T15:12:59.044203",
       "status": "completed",
       "completed_at": "2026-08-23T08:00:01.112629+00:00"
+    },
+    {
+      "filename": "2026-08-23_void-harmonic-cymatic-resonator.md",
+      "title": "Void Harmonic Cymatic Resonator",
+      "added": "2026-08-23T15:16:43.844592",
+      "status": "completed",
+      "completed_at": "2026-08-25T07:52:21.029053+00:00"
     }
   ],
   "completed": [
