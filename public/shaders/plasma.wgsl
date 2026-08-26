@@ -89,14 +89,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i = 0u; i < BALL_COUNT; i = i + 1u) {
       let fi = f32(i);
       // Procedural orbital motion
-      let angle = time * 0.3 + fi * 0.785398;
-      let radiusOrbit = 0.25 + 0.12 * sin(time * 0.17 + fi * 0.63);
+      let angle = time * (0.1 + u.zoom_params.y * 0.4) + fi * 0.785398;
+      let radiusOrbit = (0.25 + 0.12 * sin(time * 0.17 + fi * 0.63)) * (0.5 + u.zoom_params.x);
       var pos = vec2<f32>(
           0.5 + radiusOrbit * cos(angle),
           0.5 + radiusOrbit * sin(angle) * 0.6
       );
       // Audio reactive pulse
-      let radius = 0.045 + 0.025 * sin(time * 1.5 + fi) + 0.015 * audioBass;
+      let radius = (0.045 + 0.025 * sin(time * 1.5 + fi) + 0.015 * audioBass) * (0.5 + u.zoom_params.x * 0.5);
       let ballColor = hsv2rgb(fract(0.12 * fi + time * 0.05), 0.85, 1.0);
 
       if (radius > 0.0) {
@@ -146,7 +146,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Apply Shadow first (on the image)
   let shadowStr = smoothstep(0.1, 1.0, shadowVal);
-  finalColor = mix(finalColor, finalColor * 0.5, shadowStr * 0.8);
+  finalColor = mix(finalColor, finalColor * 0.5, shadowStr * u.zoom_params.w);
 
   // Render Plasma on top
   if (plasmaField > 0.1) {
@@ -163,7 +163,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let plasmaFinal = mix(wispColor, coreColor, core);
 
       let alpha = clamp(plasmaField, 0.0, 1.0);
-      finalColor = mix(finalColor, plasmaFinal, alpha);
+      finalColor = mix(finalColor, plasmaFinal, alpha * u.zoom_params.z);
   }
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));

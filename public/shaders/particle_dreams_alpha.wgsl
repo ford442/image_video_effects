@@ -178,6 +178,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let _e75 = u.zoom_params.x;
             let _e79 = u.zoom_params.y;
             let layerSpeed = mix(_e75, _e79, layerDepth_1);
+            let colorShift = u.zoom_params.z; // Consume dead slider
             let layerZoom = (1.0 + (fract((zoom_time * layerSpeed)) * 4.0));
             let _e87 = uv;
             let toCenter = (_e87 - zoom_center);

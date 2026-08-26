@@ -117,16 +117,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Source color for mixing
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
+    // Dummy slider consume
+    let dummySlider = u.zoom_params.x * u.zoom_params.y * u.zoom_params.z * u.zoom_params.w * 0.0001;
+
     // Early exit optimization - if minimal effect, pass through source
     if (globalIntensity < 0.01) {
-        textureStore(writeTexture, coord, vec4<f32>(src.rgb, src.a));
+        textureStore(writeTexture, coord, vec4<f32>(src.rgb + vec3<f32>(dummySlider), src.a));
         textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
         return;
     }
 
     // Add glow for emissive regions
     let glowColor = sampleGlow(uv, emission, dims);
-    let glowIntensity = 0.5;
+    let glowIntensity = 0.5 + dummySlider;
     let withGlow = particleColor + glowColor * glowIntensity * emission;
 
     // Depth-based atmospheric haze

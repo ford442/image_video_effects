@@ -96,12 +96,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bolt_path = abs(sin(angle * (10.0 + mids * 6.0) + angle_noise * 5.0));
 
     // Sharpen the bolt — bass widens the arc so beats throw thicker lightning
-    let boltEdge = 0.95 - bass * 0.08;
+    let arcSharp = mix(0.9, 0.98, u.zoom_params.x);
+    let boltEdge = arcSharp - bass * 0.08;
     let bolt = smoothstep(boltEdge, boltEdge + 0.03, bolt_path);
 
     // Fade bolts with distance, but allow them to connect to bright spots
     // If luma is high, the bolt can travel further or be brighter
-    let conductivity = luma * 2.0;
+    let conductivity = luma * mix(1.0, 4.0, u.zoom_params.y);
     let attenuation = smoothstep(0.5 + conductivity * 0.5, 0.0, dist);
 
     // Bolt Color
@@ -112,7 +113,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // 3. Distortion Shockwave
     // Distort the background image based on the bolt intensity
-    let distort = bolt * 0.02 * (1.0 / (dist + 0.1));
+    let distort = bolt * mix(0.0, 0.05, u.zoom_params.w) * (1.0 / (dist + 0.1));
     let distortedUV = uv + vec2<f32>(cos(angle), sin(angle)) * distort;
 
     let distortedColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).rgb;
@@ -125,8 +126,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var finalColor = distortedColor + finalBolt * energy;
 
     // Add central core — bass detonates the core
-    finalColor += hotColor * smoothstep(0.05 + bass * 0.04, 0.0, dist) * 2.0 * (1.0 + bass);
-    finalColor += fluxColor * glow * 0.5 * (1.0 + bass * 0.6);
+    let coreIntensity = mix(0.5, 3.0, u.zoom_params.z);
+    finalColor += hotColor * smoothstep(0.05 + bass * 0.04, 0.0, dist) * 2.0 * (1.0 + bass) * coreIntensity;
+    finalColor += fluxColor * glow * 0.5 * (1.0 + bass * 0.6) * coreIntensity;
 
     // Alpha: electrical energy above the source plate
     let boltEnergy = bolt * attenuation + smoothstep(0.05, 0.0, dist);

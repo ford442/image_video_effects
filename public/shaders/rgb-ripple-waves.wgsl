@@ -68,14 +68,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
 
     // Parameters — mids tighten the wavefronts, bass drives the amplitude
-    let frequency = 50.0 * (1.0 + mids * 0.4);
-    let speed = 5.0 * (1.0 + bass * 0.3);
-    let amplitude = 0.02 * exp(-dist * 2.0) * (1.0 + bass * 0.6);
+    let frequency = 50.0 * (1.0 + mids * 0.4) * mix(0.2, 3.0, u.zoom_params.x);
+    let speed = 5.0 * (1.0 + bass * 0.3) * mix(0.1, 2.0, u.zoom_params.y);
+    let amplitude = 0.02 * exp(-dist * 2.0) * (1.0 + bass * 0.6) * mix(0.0, 3.0, u.zoom_params.z);
 
     // Phase shifts for RGB (simulating chromatic dispersion)
+    let p_shift = mix(0.0, 5.0, u.zoom_params.w);
     let phase_r = 0.0;
-    let phase_g = 1.0;
-    let phase_b = 2.0;
+    let phase_g = 1.0 * p_shift;
+    let phase_b = 2.0 * p_shift;
 
     // Calculate waves
     let wave_r = sin(dist * frequency - time * speed + phase_r);
