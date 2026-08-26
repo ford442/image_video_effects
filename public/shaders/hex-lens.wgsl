@@ -160,7 +160,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = audio.y;
   let treble = audio.z;
 
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
   let scale = mix(8.0, 38.0, zp.x);
   let zoomAmount = mix(1.0, 4.5, zp.y);
   let rotation = zp.z * TAU + time * 0.25 * (0.2 + mids);

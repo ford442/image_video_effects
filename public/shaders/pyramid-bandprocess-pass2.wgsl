@@ -179,6 +179,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let midAmp  = max(u.zoom_params.y, 0.0);  // mid-freq amplitude
   let lowAmp  = max(u.zoom_params.z, 0.0);  // low-freq amplitude
 
+  // Evaluate unused param
+  let unused_w = u.zoom_params.w;
+
   // ── Audio reactivity (plasmaBuffer[0] = bass/mid/treble) ────────────────
   let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
   let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);

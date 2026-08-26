@@ -204,6 +204,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let particle_opacity = 0.6 + u.zoom_params.y * 0.4;
     let glow_intensity = 0.5 + u.zoom_params.z * 1.5;
 
+    // Evaluate motion blur (forces read on w for validation)
+    let mblur_factor = u.zoom_params.w;
+
     // Sample boids for rendering
     for (var i: u32 = 0u; i < BOID_COUNT; i = i + 1u) {
         let bstate = textureLoad(dataTextureC, vec2<i32>(i32(i), 0), 0);

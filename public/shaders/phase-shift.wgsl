@@ -248,6 +248,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
     let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
     let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
+
+    // Evaluate unused parameters
+    let unused_z = u.zoom_params.z;
+
     let fogDensity_1 = u.zoom_params.w;
     let _e273 = uv;
     let _e274 = reconstruct_normal(_e273, baseDepth);

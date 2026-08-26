@@ -60,6 +60,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   let uv = vec2<f32>(global_id.xy) / resolution;
 
+  // Evaluate UI params
+  let orb_eval = u.zoom_params.x;
+  let orbit_eval = u.zoom_params.y;
+  let int_eval = u.zoom_params.z;
+  let shadow_eval = u.zoom_params.w;
+
   // Sample original image
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 

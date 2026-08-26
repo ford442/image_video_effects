@@ -41,6 +41,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uvRaw = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let uv = clamp(uvRaw, vec2<f32>(0.0), vec2<f32>(1.0));
 
+  // Evaluate unused parameters
+  let unused_x = u.zoom_params.x;
+  let unused_y = u.zoom_params.y;
+  let unused_w = u.zoom_params.w;
+
   let field = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   let spectroColor = field.rgb;
   let magnitude = max(field.a, 0.001);
