@@ -79,6 +79,8 @@ def upload_file(sftp, local_path: str, remote_path: str, manifest: dict):
         "hash": get_file_hash(local_path),
         "size": os.path.getsize(local_path),
     }
+    # Persist after each file so SFTP drops mid-run can resume.
+    save_manifest(manifest)
 
 
 def upload_directory(sftp, local_path: str, remote_path: str, manifest: dict):

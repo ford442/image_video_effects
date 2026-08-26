@@ -1,12 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Dynamic Halftone
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Phase A Upgrade Swarm
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-23
-// ═══════════════════════════════════════════════════════════════════
+// Dynamic Halftone — variable-angle CMYK rosettes with morphing print dots.
+// A/C stores premultiplied tone-mapped display RGBA. B and extraBuffer are unused.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -23,25 +16,47 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Density, y=InfluenceRadius, z=Contrast, w=EdgeSharpness
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-fn palette(t: f32) -> vec3<f32> {
-  return vec3<f32>(0.50, 0.49, 0.47) +
-         vec3<f32>(0.48, 0.43, 0.38) *
-         cos(6.28318 * (vec3<f32>(1.0, 0.76, 0.48) * t + vec3<f32>(0.03, 0.28, 0.56)));
-}
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyCoord(uv: vec2<f32>, resolution: vec2<f32>) -> vec2<i32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  return clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution),
+               vec2<i32>(0), hi);
+}
+
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, historyCoord(uv, resolution), 0);
+}
+
+fn rotate2(p: vec2<f32>, angle: f32) -> vec2<f32> {
+  let c = cos(angle);
+  let s = sin(angle);
+  return mat2x2<f32>(c, -s, s, c) * p;
+}
+
+fn plateDot(p: vec2<f32>, density: f32, angle: f32, radius: f32,
+            edgeWidth: f32, morph: f32, petalPhase: f32) -> f32 {
+  let grid = rotate2(p, angle) * density;
+  let local = fract(grid) - 0.5;
+  let polar = atan2(local.y, local.x);
+  let circle = length(local);
+  let diamond = (abs(local.x) + abs(local.y)) * 0.72;
+  let petal = circle * (1.0 + 0.14 * morph * cos(polar * 4.0 + petalPhase));
+  let shapeDistance = mix(circle, mix(diamond, petal, 0.58), morph);
+  return 1.0 - smoothstep(max(radius - edgeWidth, 0.0), radius + edgeWidth, shapeDistance);
 }
 
 fn ign(p: vec2<f32>) -> f32 {
@@ -49,75 +64,88 @@ fn ign(p: vec2<f32>) -> f32 {
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
-  let coords = vec2<i32>(global_id.xy);
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
-  var mouse = u.zoom_config.yz;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
+  let coord = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+  let p = (uv - 0.5) * aspectVec;
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-  let density = max(20.0 + zp.x * 100.0, 0.001);
-  let influenceRadius = zp.y * (1.0 + bass * 0.2);
-  let contrast = max(0.5 + zp.z * 2.0, 0.001);
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 2.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 2.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 2.0);
 
-  let aspectUV = vec2<f32>(uv.x * aspect, uv.y);
-  let scale = vec2<f32>(density, density);
+  let density = 18.0 + u.zoom_params.x * 96.0;
+  let mouseRadius = 0.05 + u.zoom_params.y * 0.56;
+  let contrast = 0.6 + u.zoom_params.z * 2.3;
+  let sharpness = clamp(u.zoom_params.w, 0.0, 1.0);
+  let pointerDelta = (uv - mouse) * aspectVec;
+  let pointerDist = length(pointerDelta);
+  let pointerMask = smoothstep(mouseRadius, 0.0, pointerDist);
+  let magnification = pointerMask * select(0.24, 0.62, held);
 
-  let gridUV = aspectUV * scale;
-  let cellIndex = floor(gridUV);
-  let cellLocalUV = fract(gridUV);
-  let cellCenter = vec2<f32>(0.5, 0.5);
+  var inkWave = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.4) {
+      let dist = length((uv - ripple.xy) * aspectVec);
+      let front = age * (0.26 + bass * 0.08);
+      inkWave += sin((dist - front) * 68.0) * exp(-abs(dist - front) * 30.0) * exp(-age * 1.2);
+    }
+  }
 
-  let cellCenterUV = (cellIndex + cellCenter) / scale;
-  let sampleUV = vec2<f32>(cellCenterUV.x / aspect, cellCenterUV.y);
+  let localDensity = density * (1.0 - magnification * 0.52);
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let ink = clamp(vec4<f32>(1.0 - source.r, 1.0 - source.g, 1.0 - source.b,
+                            1.0 - dot(source.rgb, vec3<f32>(0.299, 0.587, 0.114))),
+                  vec4<f32>(0.0), vec4<f32>(1.0));
+  let angleDrift = sin(time * 0.23 + mids * 2.0) * (0.04 + u.zoom_params.x * 0.08) + inkWave * 0.05;
+  let morph = clamp(pointerMask * select(0.35, 1.0, held) + 0.28 * sin(time * 0.7 + bass * 2.0), 0.0, 1.0);
+  let edgeWidth = mix(0.075, 0.008, sharpness) * (1.0 + treble * 0.18);
+  let radiusBoost = magnification * 0.12 + bass * 0.035 + inkWave * 0.045;
 
-  let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-  let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let cMask = plateDot(p, localDensity, 15.0 * PI / 180.0 + angleDrift,
+                       clamp(0.06 + sqrt(ink.x) * 0.39 + radiusBoost, 0.0, 0.56),
+                       edgeWidth, morph, time * 0.8);
+  let mMask = plateDot(p, localDensity, 75.0 * PI / 180.0 - angleDrift * 0.7,
+                       clamp(0.06 + sqrt(ink.y) * 0.39 + radiusBoost, 0.0, 0.56),
+                       edgeWidth, morph, time * 0.8 + 1.57);
+  let yMask = plateDot(p, localDensity, angleDrift * 0.45,
+                       clamp(0.06 + sqrt(ink.z) * 0.39 + radiusBoost, 0.0, 0.56),
+                       edgeWidth, morph, time * 0.8 + 3.14);
+  let kMask = plateDot(p, localDensity, 45.0 * PI / 180.0 + angleDrift * 0.3,
+                       clamp(0.05 + sqrt(ink.w) * 0.36 + radiusBoost * 0.75, 0.0, 0.54),
+                       edgeWidth, morph * 0.65, time * 0.6);
 
-  let distToMouse = length((sampleUV - mouse) * vec2<f32>(aspect, 1.0));
-  let influence = smoothstep(influenceRadius, 0.0, distToMouse);
-
-  var radius = luma * 0.5;
-  radius = clamp(radius * (1.0 + influence * 0.8), 0.0, 0.6);
-
-  let edgeSharpnessFactor = mix(2.0, 0.1, clamp(u.zoom_params.w, 0.0, 1.0));
-  let edgeWidth = 0.05 * (1.0 + influence) * max(edgeSharpnessFactor, 0.001);
-
-  let centeredCell = cellLocalUV - cellCenter;
-  let plateAngle = sin(time * 0.17 + cellIndex.x * 0.07) * 0.22 + influence * 0.45;
-  let rot = mat2x2<f32>(cos(plateAngle), -sin(plateAngle), sin(plateAngle), cos(plateAngle));
-  let ovalCell = rot * centeredCell * vec2<f32>(1.0 + influence * 0.55, 1.0 - influence * 0.22);
-  let distToDotCenter = length(ovalCell);
-  let dot_alpha = 1.0 - smoothstep(radius - edgeWidth, radius + edgeWidth, distToDotCenter);
-  let inkRim = smoothstep(radius + edgeWidth * 2.2, radius - edgeWidth * 0.25, abs(distToDotCenter - radius));
-  let paper = 0.88 + (ign(vec2<f32>(global_id.xy) * 0.37 + time) - 0.5) * 0.08;
-
-  var hdr = mix(vec3<f32>(0.022, 0.020, 0.018) * paper, color.rgb * paper, dot_alpha);
+  let paperGrain = (ign(vec2<f32>(gid.xy) * 0.43 + time * 0.09) - 0.5) * (0.035 + treble * 0.025);
+  let paper = vec3<f32>(0.94, 0.90, 0.82) + vec3<f32>(paperGrain);
+  let cyanInk = vec3<f32>(0.05, 0.76, 0.92) * cMask;
+  let magentaInk = vec3<f32>(0.92, 0.08, 0.52) * mMask;
+  let yellowInk = vec3<f32>(1.0, 0.78, 0.08) * yMask;
+  let blackInk = vec3<f32>(0.92) * kMask;
+  var hdr = paper * (vec3<f32>(1.0) - cyanInk * 0.78) *
+                    (vec3<f32>(1.0) - magentaInk * 0.78) *
+                    (vec3<f32>(1.0) - yellowInk * 0.72) *
+                    (vec3<f32>(1.0) - blackInk * 0.88);
   hdr = pow(max(hdr, vec3<f32>(0.0)), vec3<f32>(contrast));
-  let spectralInk = palette(luma + time * 0.03 + mids * 0.18 + ign(cellIndex));
-  hdr = hdr + spectralInk * inkRim * (0.30 + treble * 0.75) * (0.35 + luma);
-  hdr = hdr + vec3<f32>(1.0, 0.82, 0.45) * pow(influence, 2.6) * dot_alpha * (0.22 + bass * 0.45);
+  let rosette = cMask * mMask + mMask * yMask + yMask * cMask;
+  hdr += vec3<f32>(0.2, 0.55, 1.1) * rosette * (0.06 + treble * 0.18);
+  hdr += vec3<f32>(1.0, 0.3, 0.12) * abs(inkWave) * (0.08 + bass * 0.18);
+  let history = historyAt(uv - normalize(pointerDelta + vec2<f32>(0.0001)) * inkWave * 0.006, resolution);
+  hdr = mix(hdr, history.rgb, clamp(0.025 + rosette * 0.045, 0.0, 0.08));
+  let display = aces(max(hdr * 1.16, vec3<f32>(0.0)));
+  let coverage = clamp(max(max(cMask, mMask), max(yMask, kMask)), 0.0, 1.0);
+  let alpha = clamp(0.12 + coverage * (0.48 + source.a * 0.26) + rosette * 0.14, 0.0, 1.0);
+  let result = vec4<f32>(display * alpha, alpha);
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
 
-  let radial = length(uv - vec2<f32>(0.5)) * 1.414;
-  hdr = hdr * mix(1.08, 0.68, smoothstep(0.45, 1.0, radial));
-  let dither = (ign(vec2<f32>(global_id.xy) + time * 11.0) - 0.5) / 255.0;
-  let finalColor = clamp(aces(hdr * 1.22) + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
-
-  // Alpha encodes dot coverage: filled dots = high weight, empty cells = transparent
-  let hdrLuma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
-  let alpha = clamp(0.12 + dot_alpha * (0.42 + luma * 0.32) + pow(max(0.0, hdrLuma - 0.55), 2.0) * 2.4, 0.0, 1.0);
-
-  textureStore(writeTexture, coords, vec4<f32>(finalColor * alpha, alpha));
-
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, vec4<f32>(finalColor * alpha, alpha));
+  textureStore(writeTexture, coord, result);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, result);
 }

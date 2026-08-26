@@ -229,7 +229,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
             // Motion blur stretches particle along velocity
             let vel_dir = safeNormalize(vel + vec2<f32>(0.001, 0.001));
-            let along_vel = dot(wrap_delta, vel_dir);
+            let motion_blur_factor = 1.0 + u.zoom_params.w * 2.0; let along_vel = dot(wrap_delta, vel_dir) / motion_blur_factor;
             let perp_vel = length(wrap_delta - vel_dir * along_vel);
 
             // Elongated particle shape for motion blur

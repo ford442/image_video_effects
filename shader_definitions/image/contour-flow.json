@@ -2,7 +2,7 @@
   "id": "contour-flow",
   "name": "Contour Flow",
   "url": "shaders/contour-flow.wgsl",
-  "description": "Per-pixel curl flow with depth advection and bass turbulence. Sobel edge detection drives flow direction, curl noise adds organic swirl, and depth controls sharpness vs advection mix. Treble sparks on edge intersections.",
+  "description": "Multiscale image gradients drive tangent advection and coherent exact-history ribbons, with held pointer vortices and traveling contour fronts from clicks.",
   "params": [
     {
       "name": "Flow Speed",
@@ -33,13 +33,25 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Flow Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Curl Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Flow Size", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Direction", "default": 0, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact tangent-advection history; B is unused",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "curl-flow",
     "depth-advection",
     "edge-aligned",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "exact-history",
+    "aces-tone-map",
+    "three-band-audio",
+    "held-pointer",
+    "click-reactive"
   ],
   "tags": [
     "image",
