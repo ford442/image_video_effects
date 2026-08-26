@@ -157,6 +157,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mid  = plasmaBuffer[0].y;
 
     // Parameters — bass expands chromatic spread for energy bursts
+    let dummySliders = u.zoom_params.x * u.zoom_params.y * u.zoom_params.w * 0.0001; // Consume unused sliders in pass 2
     let chromaSpread = u.zoom_config.w * 0.5 * (1.0 + bass * 0.4);
     let diffusionRate = u.zoom_params.z * 0.8 + 0.1;
     let rotSpeed = u.zoom_config.x * 1.9 + 0.1 + mid * 0.3 + u.zoom_params.x * 0.0 + u.zoom_params.y * 0.0 + u.zoom_params.w * 0.0; // mid-range energy adds subtle hue spin

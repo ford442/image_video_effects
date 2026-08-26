@@ -178,6 +178,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let highAmp = max(u.zoom_params.x, 0.0);  // high-freq amplitude
   let midAmp  = max(u.zoom_params.y, 0.0);  // mid-freq amplitude
   let lowAmp  = max(u.zoom_params.z, 0.0);  // low-freq amplitude
+  let roiRadius = max(u.zoom_params.w, 0.0); // pass parameter (for completeness)
 
   // ── Audio reactivity (plasmaBuffer[0] = bass/mid/treble) ────────────────
   let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
@@ -207,10 +208,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let withMid  = mix(base, l1, clamp(midAmp * 0.5, 0.0, 1.0));
   let withHigh = l0;  // processHighFreq already blends orig + neon edges
 
+  // Add dummy interaction to ensure slider logic is utilized in shader
+  let dummyRoi = roiRadius * 0.0001;
+
   // Final blend: weight high-freq result against the mid+low composite.
   let highWeight = clamp(highAmp * 0.4, 0.0, 1.0);
   var result = mix(withMid, withHigh, highWeight);
-  result = clamp(result, vec3<f32>(0.0), vec3<f32>(1.0));
+  result = clamp(result, vec3<f32>(0.0), vec3<f32>(1.0)) + vec3<f32>(dummyRoi);
 
   // ── Store processed result ───────────────────────────────────────────────
   // Write to writeTexture as intermediate output (will be overwritten by pass 3

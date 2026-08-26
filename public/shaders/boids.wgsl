@@ -203,6 +203,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let particle_radius = 3.0 + u.zoom_params.x * 5.0;
     let particle_opacity = 0.6 + u.zoom_params.y * 0.4;
     let glow_intensity = 0.5 + u.zoom_params.z * 1.5;
+    let motion_blur = 0.1 + u.zoom_params.w * 0.9;
 
     // Sample boids for rendering
     for (var i: u32 = 0u; i < BOID_COUNT; i = i + 1u) {
@@ -232,7 +233,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let perp_vel = length(wrap_delta - vel_dir * along_vel);
 
             // Elongated particle shape for motion blur
-            let blur_alpha = soft_alpha * exp(-(perp_vel * perp_vel) / (particle_radius * 0.5));
+            let stretch = particle_radius * 0.5 * mix(1.0, speed * 2.0, motion_blur);
+            let blur_alpha = soft_alpha * exp(-(perp_vel * perp_vel) / stretch);
 
             // Boid color based on velocity direction
             let velocity_hue = atan2(vel.y, vel.x) / 6.28318530718 + 0.5;
