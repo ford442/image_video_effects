@@ -2,7 +2,11 @@
   {
     "id": "glass-wipes",
     "name": "Rainy Window",
+<<<<<<< HEAD
     "url": "shaders/glass-wipes.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/glass-wipes.wgsl",
+>>>>>>> origin/main
     "description": "Persistent rain, wetness, rivulet flow, and glass thickness with exact C loads, a bounded sprung hand wiper, held clearing, click splashes, three-band glints, physical absorption, ACES, and semantic alpha.",
     "features": [
       "mouse-driven",
@@ -103,7 +107,11 @@
   {
     "id": "ink-marbling",
     "name": "Ink Marbling",
+<<<<<<< HEAD
     "url": "shaders/ink-marbling.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/ink-marbling.wgsl",
+>>>>>>> origin/main
     "description": "Persistent pigment and thickness marbling with exact-load advection and neighbor diffusion, three-band plasma turbulence, sprung held stirring, bounded click ink drops, ACES output, and semantic alpha.",
     "features": [
       "mouse-driven",
@@ -192,7 +200,11 @@
   {
     "id": "kimi-liquid-glass",
     "name": "Kimi Liquid Glass",
+<<<<<<< HEAD
     "url": "shaders/kimi_liquid_glass.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/kimi_liquid_glass.wgsl",
+>>>>>>> origin/main
     "description": "Persistent liquid-glass height and thickness with exact C loads, held lens push, click waves, three-band caustics, chromatic Snell refraction, interference highlights, ACES, and semantic alpha.",
     "features": [
       "mouse-driven",
@@ -255,7 +267,11 @@
   {
     "id": "liquid-displacement",
     "name": "Liquid Displacement",
+<<<<<<< HEAD
     "url": "shaders/liquid-displacement.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-displacement.wgsl",
+>>>>>>> origin/main
     "description": "Persistent velocity and height-field image displacement with exact-load pressure projection, viscosity diffusion, bounded pointer velocity, held flow injection, click waves, three-band turbulence, caustics, ACES, and semantic alpha.",
     "params": [
       {
@@ -319,7 +335,11 @@
   {
     "id": "liquid-fast",
     "name": "Liquid Fast",
+<<<<<<< HEAD
     "url": "shaders/liquid-fast.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-fast.wgsl",
+>>>>>>> origin/main
     "description": "Low-viscosity analytical liquid with bounded pointer inertia, high-speed vortex wakes, dispersive click packets, exact-load temporal advection, three-band spectral caustics, ACES, and semantic alpha.",
     "tags": [
       "filter",
@@ -422,7 +442,11 @@
   {
     "id": "liquid-glitch",
     "name": "Liquid Glitch",
+<<<<<<< HEAD
     "url": "shaders/liquid-glitch.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-glitch.wgsl",
+>>>>>>> origin/main
     "description": "Block-quantized liquid smearing with bounded pointer tear velocity, held vortex corruption, click shard bursts, three-band chromatic splitting, exact-load datamosh history, ACES, and semantic alpha.",
     "tags": [
       "filter",
@@ -525,7 +549,11 @@
   {
     "id": "liquid-jelly",
     "name": "Liquid Jelly",
+<<<<<<< HEAD
     "url": "shaders/liquid-jelly.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-jelly.wgsl",
+>>>>>>> origin/main
     "description": "Spring-damped jelly deformation with bounded pointer inertia, exact-load thickness slopes, soft recovery, subsurface scattering, three-band audio, click waves, ACES output, and semantic alpha.",
     "features": [
       "audio-reactive",
@@ -642,7 +670,11 @@
   {
     "id": "liquid-metal",
     "name": "Liquid Metal",
+<<<<<<< HEAD
     "url": "shaders/liquid-metal.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-metal.wgsl",
+>>>>>>> origin/main
     "description": "A persistent ferro-metal simulation whose raw A state packs height, velocity, foam, and wetness, with a bass-driven hexagonal Rosensweig spike mode, held magnetic pole, click impulses, chromatic refraction, and Ward-style anisotropic metallic reflection.",
     "features": [
       "mouse-driven",
@@ -708,7 +740,11 @@
   {
     "id": "liquid-mirror",
     "name": "Liquid Mirror",
+<<<<<<< HEAD
     "url": "shaders/liquid-mirror.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-mirror.wgsl",
+>>>>>>> origin/main
     "description": "A persistent reflective height field with bounded sprung pointer push, held dents, click waves, exact C state, three-band steel highlights, Fresnel reflection, ACES, and semantic alpha.",
     "params": [
       {
@@ -762,7 +798,11 @@
   {
     "id": "liquid-oil",
     "name": "Liquid Oil",
+<<<<<<< HEAD
     "url": "shaders/liquid-oil.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-oil.wgsl",
+>>>>>>> origin/main
     "description": "A persistent high-viscosity thin-film simulation packing height, response, shear, and coverage in A, with slow capillary flow, pointer stirring, click waves, interference color, specular oil optics, exact C loads, ACES, and semantic alpha.",
     "tags": [
       "filter",
@@ -826,7 +866,11 @@
   {
     "id": "liquid-optimized-pass1",
     "name": "Liquid Optimized (Pass 1)",
+<<<<<<< HEAD
     "url": "shaders/liquid-optimized-pass1.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-optimized-pass1.wgsl",
+>>>>>>> origin/main
     "description": "Physics simulation pass: capillary wave dynamics, Laplace pressure, ripple propagation, and ambient micro-ripples. Outputs height field state to dataTextureA.",
     "tags": [
       "liquid",
@@ -882,7 +926,11 @@
   {
     "id": "liquid-optimized",
     "name": "Liquid Surface Tension (Optimized)",
+<<<<<<< HEAD
     "url": "shaders/liquid-optimized.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-optimized.wgsl",
+>>>>>>> origin/main
     "description": "Capillary surface tension with an ANALYTIC height gradient: the field is evaluated once and its exact derivative accumulated in the same loop, replacing five full evaluations (up to 250 ripple iterations per pixel) with one. The saved budget buys an eight-train FFT capillary spectrum with dispersion-correct phase speeds and Fresnel-weighted Beer-Lambert absorption along the true slant path.",
     "tags": [
       "liquid",
@@ -987,7 +1035,11 @@
   {
     "id": "liquid-pass1",
     "name": "Liquid (Pass 1)",
+<<<<<<< HEAD
     "url": "shaders/liquid-pass1.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-pass1.wgsl",
+>>>>>>> origin/main
     "description": "Capillary wave physics pass: surface tension simulation with Laplacian and biharmonic operators, gravity waves, ripple sources, and ambient micro-ripples. Outputs persistent height field to dataTextureA.",
     "tags": [
       "liquid",
@@ -1042,7 +1094,11 @@
   {
     "id": "liquid-perspective",
     "name": "Liquid Perspective",
+<<<<<<< HEAD
     "url": "shaders/liquid-perspective.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-perspective.wgsl",
+>>>>>>> origin/main
     "description": "A perspective-compressed three-wave Gerstner sheet with a depth-aware parallax Jacobian, silhouette-safe refraction, secondary shear flow, and bioluminescent click crests.",
     "params": [
       {
@@ -1142,7 +1198,11 @@
   {
     "id": "liquid-rainbow-prismatic",
     "name": "Liquid Rainbow Prismatic",
+<<<<<<< HEAD
     "url": "shaders/liquid-rainbow-prismatic.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-rainbow-prismatic.wgsl",
+>>>>>>> origin/main
     "description": "Cauchy-separated RGB refraction through animated thin-film thickness, a six-tap caustic kernel, held lens deformation, and prismatic click fronts.",
     "tags": [
       "liquid-rainbow",
@@ -1242,7 +1302,11 @@
   {
     "id": "liquid-rainbow",
     "name": "Liquid Rainbow",
+<<<<<<< HEAD
     "url": "shaders/liquid-rainbow.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-rainbow.wgsl",
+>>>>>>> origin/main
     "description": "Thin-film liquid refraction with bounded pointer inertia, held vortex shear, dispersive click crests, exact-load trails, Fresnel interference, three-band chromatic separation, ACES, and semantic alpha.",
     "tags": [
       "filter",
@@ -1345,7 +1409,11 @@
   {
     "id": "liquid-rgb",
     "name": "Liquid RGB",
+<<<<<<< HEAD
     "url": "shaders/liquid-rgb.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-rgb.wgsl",
+>>>>>>> origin/main
     "description": "Independently advected wavelength channels curl through vortex-flow dispersion, Beer–Lambert absorption, chromatic caustic seams, and held or click-driven shear.",
     "tags": [
       "filter",
@@ -1445,7 +1513,11 @@
   {
     "id": "liquid-smear",
     "name": "Liquid Smear",
+<<<<<<< HEAD
     "url": "shaders/liquid-smear.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-smear.wgsl",
+>>>>>>> origin/main
     "description": "Pigment drag along the pointer's real travel direction, taken from a spring-damped cursor and its velocity in extraBuffer[133..136] — the previous version always pulled toward the cursor centre, which reads as a sink rather than a brush. A five-tap kernel bleeds pigment along the stroke normal with a width set by the local FFT bin. History is fetched with exact textureLoad, bilinear by hand.",
     "params": [
       {
@@ -1538,7 +1610,11 @@
   {
     "id": "liquid-tensor-vortex",
     "name": "Liquid Tensor Vortex",
+<<<<<<< HEAD
     "url": "shaders/liquid-tensor-vortex.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-tensor-vortex.wgsl",
+>>>>>>> origin/main
     "description": "Source-luma structure-tensor eigenflow advects liquid metal through curl vortices, coherent folds, held-pointer torque, and click-launched metallic fronts.",
     "tags": [
       "liquid",
@@ -1634,7 +1710,11 @@
   {
     "id": "liquid-v1",
     "name": "Liquid (Ambient)",
+<<<<<<< HEAD
     "url": "shaders/liquid-v1.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-v1.wgsl",
+>>>>>>> origin/main
     "description": "A clean baseline persistent liquid height field with ambient capillary modes, held pointer push, click waves, exact C state, three-band caustics, ACES output, and semantic alpha.",
     "features": [
       "mouse-driven",
@@ -1689,7 +1769,11 @@
   {
     "id": "liquid-viscous-grokcf1",
     "name": "Liquid Viscous Nebula grokcf1",
+<<<<<<< HEAD
     "url": "shaders/liquid-viscous-grokcf1.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-viscous-grokcf1.wgsl",
+>>>>>>> origin/main
     "description": "Cosmic viscous flow with bounded heavy pointer inertia, held vortex shear, long-lived click eddies, exact-load nebula trails, three-band emissive veins, ACES, and semantic alpha.",
     "tags": [
       "filter",
@@ -1792,7 +1876,11 @@
   {
     "id": "liquid-viscous-simple",
     "name": "Liquid Viscous (Simple)",
+<<<<<<< HEAD
     "url": "shaders/liquid-viscous-simple.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-viscous-simple.wgsl",
+>>>>>>> origin/main
     "description": "An efficient laminar streamline field with a lightweight cohesion stencil, shear-thinning response, spectral surface sheen, and held or click-driven vortices.",
     "tags": [
       "filter",
@@ -1890,7 +1978,11 @@
   {
     "id": "liquid-viscous",
     "name": "Liquid Viscous",
+<<<<<<< HEAD
     "url": "shaders/liquid-viscous.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-viscous.wgsl",
+>>>>>>> origin/main
     "description": "2D incompressible Navier-Stokes with vorticity confinement. Vorticity at the centre and its four neighbours now comes from ONE shared stencil (was five separate calls, each doing four filtered samples), the pressure solve genuinely relaxes instead of recomputing one value four times, and the audio vortices drift along continuous Lissajous paths instead of teleporting every 0.7 s. Dye is injected per FFT band. dataTextureA carries simulation state.",
     "tags": [
       "filter",
@@ -2004,7 +2096,11 @@
   {
     "id": "liquid-zoom",
     "name": "Liquid Zoom",
+<<<<<<< HEAD
     "url": "shaders/liquid-zoom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-zoom.wgsl",
+>>>>>>> origin/main
     "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses.",
     "features": [
       "mouse-driven",
@@ -2105,7 +2201,11 @@
   {
     "id": "liquid",
     "name": "Liquid (Interactive)",
+<<<<<<< HEAD
     "url": "shaders/liquid.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid.wgsl",
+>>>>>>> origin/main
     "description": "The canonical persistent capillary liquid with viscosity-controlled recovery, bounded pointer inertia, held surface push, click packets, curvature foam, exact C state, three-band optics, ACES, and semantic alpha.",
     "tags": [
       "filter",
@@ -2169,7 +2269,11 @@
   },
   {
     "id": "luma-melt-interactive",
+<<<<<<< HEAD
     "url": "shaders/luma-melt-interactive.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-melt-interactive.wgsl",
+>>>>>>> origin/main
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2259,7 +2363,11 @@
     "id": "luma-velocity-melt",
     "name": "Luma Velocity Melt",
     "category": "liquid-effects",
+<<<<<<< HEAD
     "url": "shaders/luma-velocity-melt.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-velocity-melt.wgsl",
+>>>>>>> origin/main
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2321,7 +2429,11 @@
     "name": "Rain Ripples",
     "category": "liquid-effects",
     "type": "compute",
+<<<<<<< HEAD
     "url": "shaders/rain-ripples.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/rain-ripples.wgsl",
+>>>>>>> origin/main
     "description": "Rain-driven ripple packets with bounded pointer wakes, held water push, exact-load HDR persistence, FBM micro-ripples, Voronoi drops, three-band caustics and thin-film color, ACES, and semantic alpha.",
     "features": [
       "mouse-driven",
@@ -2399,7 +2511,11 @@
   {
     "id": "viscous-drag",
     "name": "Viscous Drag",
+<<<<<<< HEAD
     "url": "shaders/viscous-drag.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/viscous-drag.wgsl",
+>>>>>>> origin/main
     "description": "Diffused drag state drives traveling jets, pressure and thickness buildup, elastic recovery, held-pointer smears, click fronts, and illuminated viscous ridges.",
     "features": [
       "mouse-driven",

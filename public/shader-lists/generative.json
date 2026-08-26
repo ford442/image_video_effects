@@ -2,7 +2,11 @@
   {
     "id": "4d-projection-dream-weavers",
     "name": "4D Projection Dream Weavers",
+<<<<<<< HEAD
     "url": "shaders/4d-projection-dream-weavers.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/4d-projection-dream-weavers.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "A continuous slice through 4-dimensional fractal space. The mouse smoothly controls two extra dimensions, allowing genuine exploration of higher-dimensional forms. Audio modulates scale, speed, and detail.",
     "features": [
@@ -104,7 +108,11 @@
   {
     "id": "acoustic-string-theory",
     "name": "Acoustic String Theory",
+<<<<<<< HEAD
     "url": "shaders/acoustic-string-theory.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/acoustic-string-theory.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Vibrating string harmonics visualized as oscillating sine waves in perspective, with audio-driven pluck and resonance.",
     "tags": [
@@ -201,7 +209,11 @@
   {
     "id": "atmos_volumetric_fog",
     "name": "Volumetric Fog",
+<<<<<<< HEAD
     "url": "shaders/atmos_volumetric_fog.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/atmos_volumetric_fog.wgsl",
+>>>>>>> origin/main
     "description": "Volumetric fog with ray marching, Mie/Rayleigh scattering, height-based density, god rays, and mouse-controlled light source",
     "tags": [
       "volumetric",
@@ -300,7 +312,11 @@
   {
     "id": "audio_geometric_pulse",
     "name": "Geometric Pulse",
+<<<<<<< HEAD
     "url": "shaders/audio_geometric_pulse.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/audio_geometric_pulse.wgsl",
+>>>>>>> origin/main
     "description": "Audio-reactive geometric patterns with kaleidoscope symmetry, shape morphing, neon glow, and frequency band visualization",
     "tags": [
       "geometric",
@@ -399,7 +415,11 @@
     "id": "aurora-borealis-loom",
     "name": "Aurora Borealis Loom",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/aurora-borealis-loom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/aurora-borealis-loom.wgsl",
+>>>>>>> origin/main
     "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric.",
     "features": [
       "audio-reactive",
@@ -500,7 +520,11 @@
     "id": "aurora-curtain",
     "name": "Aurora Curtain",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/aurora-curtain.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/aurora-curtain.wgsl",
+>>>>>>> origin/main
     "description": "Chapman layer auroral excitation with Kelvin-Helmholtz instability and domain-warped curtain folds. Physically inspired colors by altitude via OkLab mixing: red O(1D) high, green O(1S) mid, blue N2+ low. Enhanced with Fresnel rim lighting on folds, temporal feedback trails, two-tone atmospheric key/fill, starfield blackbody temperatures, and audio-reactive chromatic aberration. Mouse drags magnetic zenith; depth drives extinction. Phase B adds advanced alpha compositing: depth-layered fade, luminance-key transparency, edge-preserve curtain opacity, and alpha-aware temporal feedback.",
     "features": [
       "audio-reactive",
@@ -600,7 +624,11 @@
   {
     "id": "bio_lenia_continuous",
     "name": "Lenia Continuous",
+<<<<<<< HEAD
     "url": "shaders/bio_lenia_continuous.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/bio_lenia_continuous.wgsl",
+>>>>>>> origin/main
     "description": "Continuous cellular automata (Lenia) with smooth growth functions, multiple kernel radii, and biological emergence patterns",
     "tags": [
       "lenia",
@@ -698,7 +726,11 @@
   {
     "id": "gen-bioluminescent-abyss",
     "name": "Bioluminescent Abyss",
+<<<<<<< HEAD
     "url": "shaders/gen-bioluminescent-abyss.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-abyss.wgsl",
+>>>>>>> origin/main
     "description": "An infinite deep underwater landscape with swaying tube worms and thermal vents, featuring bioluminescence and deep sea atmosphere.",
     "tags": [
       "underwater",
@@ -796,7 +828,11 @@
     "id": "bioluminescent-bloom",
     "name": "Bioluminescent Bloom",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/bioluminescent-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/bioluminescent-bloom.wgsl",
+>>>>>>> origin/main
     "description": "Deep-ocean bioluminescent colony driven by Gray-Scott reaction-diffusion with chemotaxis and quorum-sensing glow activation. Background tendrils provide ambient light. Audio injects nutrients and triggers stress flashes; mouse drops nutrient pellets. Depth attenuates bioluminescence.",
     "features": [
       "audio-reactive",
@@ -904,7 +940,11 @@
   {
     "id": "bubble-chamber",
     "name": "Bubble Chamber",
+<<<<<<< HEAD
     "url": "shaders/bubble-chamber.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/bubble-chamber.wgsl",
+>>>>>>> origin/main
     "description": "Simulates subatomic particle trails in a magnetic field using a feedback loop.",
     "features": [
       "mouse-driven",
@@ -1009,7 +1049,11 @@
   {
     "id": "chromatic-ghost-tunnel",
     "name": "Chromatic Ghost Tunnel",
+<<<<<<< HEAD
     "url": "shaders/chromatic-ghost-tunnel.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-ghost-tunnel.wgsl",
+>>>>>>> origin/main
     "description": "A perspective tunnel of chromatic ghost echoes. Each ring is RGB-split by audio bands. Bass warps tunnel depth, mids add spiral rotation, treble creates stroboscopic ring flashes. Mouse steers tunnel flight.",
     "tags": [
       "generative",
@@ -1108,7 +1152,11 @@
   {
     "id": "chrono-voronoi-mycelium",
     "name": "Chrono-Voronoi Mycelium",
+<<<<<<< HEAD
     "url": "shaders/chrono-voronoi-mycelium.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/chrono-voronoi-mycelium.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "A living fungal network that grows across multiple time scales. Voronoi cells represent fungal colonies; cell edges glow as mycelium hyphae. Different generations coexist as translucent layers. Temporal feedback accumulates growth rings. Bass = nutrient pulse triggers spore bursts and faster spread via golden-ratio seed displacement. Mouse inoculates new colonies. ACES tonemapped with chromatic aberration.",
     "features": [
@@ -1220,7 +1268,11 @@
     "id": "coral-growth",
     "name": "Coral Growth",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/coral-growth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/coral-growth.wgsl",
+>>>>>>> origin/main
     "description": "Procedural coral and lichen branching structures that grow organically across cells. Audio accelerates growth and adds color vibrancy.",
     "features": [
       "audio-reactive",
@@ -1312,7 +1364,11 @@
   {
     "id": "cosmic-jellyfish",
     "name": "Cosmic Jellyfish",
+<<<<<<< HEAD
     "url": "shaders/cosmic-jellyfish.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/cosmic-jellyfish.wgsl",
+>>>>>>> origin/main
     "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails.",
     "tags": [
       "3d",
@@ -1416,7 +1472,11 @@
   {
     "id": "cosmic-web",
     "name": "Cosmic Web Filament",
+<<<<<<< HEAD
     "url": "shaders/cosmic-web.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/cosmic-web.wgsl",
+>>>>>>> origin/main
     "description": "A multiscale cosmic filament network with dark voids, clustered galaxy nodes, a spring-smoothed gravity well, held-pointer accretion lanes, and click-launched gravitational fronts.",
     "tags": [
       "space",
@@ -1521,7 +1581,11 @@
     "id": "crystalline-fracture",
     "name": "Crystalline Fracture",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/crystalline-fracture.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/crystalline-fracture.wgsl",
+>>>>>>> origin/main
     "description": "Fracture mechanics simulation with stress intensity factor-driven crack propagation, branching, percolation connectivity, and hackle marks on translucent crystal surfaces. Thin-film iridescence and subsurface scattering. Audio loads stress and triggers catastrophic failure; mouse applies point stress. Depth controls crystal thickness perspective.",
     "features": [
       "audio-reactive",
@@ -1625,7 +1689,11 @@
     "id": "crystalline-veins",
     "name": "Crystalline Veins",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/crystalline-veins.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/crystalline-veins.wgsl",
+>>>>>>> origin/main
     "description": "Mineral vein patterns growing through dark stone. FBM-based crack and vein generation with gold, copper, and silver chromatic veins. Bass drives vein pulse, mids control growth density, treble adds crystalline sparkles. Mouse attracts vein growth.",
     "features": [
       "audio-reactive",
@@ -1730,7 +1798,11 @@
     "id": "deep-sea-thermal-vent",
     "name": "Deep Sea Thermal Vent",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/deep-sea-thermal-vent.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/deep-sea-thermal-vent.wgsl",
+>>>>>>> origin/main
     "description": "A layered black-smoker ecosystem with carbonate chimneys, mineral crust, stratified billows, rising bubbles and microbes, mouse-steered jets, click heat fronts, and advected HDR plume history.",
     "features": [
       "audio-reactive",
@@ -1835,7 +1907,11 @@
     "id": "electric-eel-storm",
     "name": "Electric Eel Storm",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/electric-eel-storm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/electric-eel-storm.wgsl",
+>>>>>>> origin/main
     "description": "Electric eels swimming through a conductive storm cloud, discharging arcs between them. Bass drives eel body pulses, mids create storm cloud turbulence, treble triggers lightning arc flashes. Mouse attracts the eel school.",
     "features": [
       "audio-reactive",
@@ -1935,7 +2011,11 @@
   {
     "id": "emergent-calligraphic-weave",
     "name": "Emergent Calligraphic Weave",
+<<<<<<< HEAD
     "url": "shaders/emergent-calligraphic-weave.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/emergent-calligraphic-weave.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Sumi-e ink wash simulation with pressure-sensitive Bézier brush strokes, ink viscosity flow, paper absorption capillary action, and dry-brush texture. Audio drives brush speed and splatter; mouse acts as the brush with pressure from click duration. Depth scales paper grain.",
     "features": [
@@ -2047,7 +2127,11 @@
   {
     "id": "fire_smoke_volumetric",
     "name": "Fire Smoke Volumetric",
+<<<<<<< HEAD
     "url": "shaders/fire_smoke_volumetric.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/fire_smoke_volumetric.wgsl",
+>>>>>>> origin/main
     "description": "Raw smoke and density state advected through exact history loads, with sprung heat injection, bounded ignition fronts, chromatic fire, live plasma turbulence, ACES display, and source-depth ownership.",
     "tags": [
       "fire",
@@ -2154,7 +2238,11 @@
   {
     "id": "fractal-ice-palace",
     "name": "Fractal Ice Palace",
+<<<<<<< HEAD
     "url": "shaders/fractal-ice-palace.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-ice-palace.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Recursive ice crystal palace with fractal branching architecture. Chromatic ice refractions: blue core, cyan edges, white sparkle. Bass shakes the palace, mids control recursion depth visually, treble adds frost glitter. Mouse melts local ice.",
     "tags": [
@@ -2314,7 +2402,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-3d-sierpinski-chaos",
+<<<<<<< HEAD
     "url": "shaders/gen-3d-sierpinski-chaos.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-3d-sierpinski-chaos.wgsl",
+>>>>>>> origin/main
     "features": [
       "chaos-game",
       "3d-fractal",
@@ -2422,7 +2514,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-4d-projection-dream-weavers",
+<<<<<<< HEAD
     "url": "shaders/gen-4d-projection-dream-weavers.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-4d-projection-dream-weavers.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -2533,7 +2629,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-abyssal-chrono-coral",
+<<<<<<< HEAD
     "url": "shaders/gen-abyssal-chrono-coral.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-abyssal-chrono-coral.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -2635,7 +2735,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-abyssal-leviathan-scales",
+<<<<<<< HEAD
     "url": "shaders/gen-abyssal-leviathan-scales.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-abyssal-leviathan-scales.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -2688,7 +2792,11 @@
     "name": "Abyssal Plasma Void-Medusa",
     "description": "A majestic, deep-space biomechanical entity undulating through a quantum fluidic void, driven by audio-reactive bioluminescent plasma nodes.",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-abyssal-plasma-void-medusa.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-abyssal-plasma-void-medusa.wgsl",
+>>>>>>> origin/main
     "features": [
       "organic",
       "fluid",
@@ -2834,7 +2942,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-abyssal-quantum-leviathan-skeleton",
+<<<<<<< HEAD
     "url": "shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
+>>>>>>> origin/main
     "features": [
       "fast-motion",
       "spine-kinematics",
@@ -2900,7 +3012,11 @@
       "raymarching"
     ],
     "description": "A stylized warp-flight through a crystalline cavity with fast gyroid filaments, audio-lit shard pulses, click refraction waves, and bounded iridescent trails.",
+<<<<<<< HEAD
     "url": "shaders/gen-abyssal-silicate-geode-weaver.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-abyssal-silicate-geode-weaver.wgsl",
+>>>>>>> origin/main
     "updated": true,
     "supportsDepth": true,
     "supportsDof": false,
@@ -2994,7 +3110,11 @@
     "id": "gen-acid-lissajous",
     "name": "Acid Lissajous",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-acid-lissajous.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-acid-lissajous.wgsl",
+>>>>>>> origin/main
     "tags": [
       "psychedelic",
       "neon",
@@ -3105,7 +3225,11 @@
   {
     "id": "gen-alien-flora-ecosystem",
     "name": "Gen Alien Flora Ecosystem",
+<<<<<<< HEAD
     "url": "shaders/gen-alien-flora-ecosystem.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-alien-flora-ecosystem.wgsl",
+>>>>>>> origin/main
     "description": "Gen Alien Flora Ecosystem",
     "tags": [
       "multi-species-flora",
@@ -3257,7 +3381,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-alien-flora",
+<<<<<<< HEAD
     "url": "shaders/gen-alien-flora.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-alien-flora.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -3353,7 +3481,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-alpha-aurora",
+<<<<<<< HEAD
     "url": "shaders/gen-alpha-aurora.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-alpha-aurora.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -3454,7 +3586,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-aperiodic-monotile",
+<<<<<<< HEAD
     "url": "shaders/gen-aperiodic-monotile.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-aperiodic-monotile.wgsl",
+>>>>>>> origin/main
     "features": [
       "sdf-relief-sculpture",
       "raymarch",
@@ -3557,7 +3693,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-apollonian-gasket",
+<<<<<<< HEAD
     "url": "shaders/gen-apollonian-gasket.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-apollonian-gasket.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -3657,7 +3797,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-art-deco-sky",
+<<<<<<< HEAD
     "url": "shaders/gen-art-deco-sky.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-art-deco-sky.wgsl",
+>>>>>>> origin/main
     "features": [
       "procedural",
       "audio-reactive",
@@ -3711,7 +3855,11 @@
     "id": "gen-astral-plasma-accretion-forge",
     "name": "Astral Plasma Accretion Forge",
     "category": "generative",
+<<<<<<< HEAD
     "url": "/shaders/gen-astral-plasma-accretion-forge.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-astral-plasma-accretion-forge.wgsl",
+>>>>>>> origin/main
     "params": [
       {
         "id": "core_density",
@@ -3805,7 +3953,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-astral-silk-chrono-weaver-arachnid",
+<<<<<<< HEAD
     "url": "shaders/gen-astral-silk-chrono-weaver-arachnid.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-astral-silk-chrono-weaver-arachnid.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -3903,7 +4055,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-astro-kinetic-chrono-orrery",
+<<<<<<< HEAD
     "url": "shaders/gen-astro-kinetic-chrono-orrery.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-astro-kinetic-chrono-orrery.wgsl",
+>>>>>>> origin/main
     "features": [
       "ray-marching",
       "keplerian-orbits",
@@ -4014,7 +4170,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-astro-mechanical-quantum-furnace-engine",
+<<<<<<< HEAD
     "url": "shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -4112,7 +4272,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-audio-spirograph",
+<<<<<<< HEAD
     "url": "shaders/gen-audio-spirograph.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-audio-spirograph.wgsl",
+>>>>>>> origin/main
     "features": [
       "sampled-spirograph-trails",
       "musical-ratio-harmonics",
@@ -4222,7 +4386,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-audiovisual-mandelbulb-raymarcher",
+<<<<<<< HEAD
     "url": "shaders/gen-audiovisual-mandelbulb-raymarcher.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-audiovisual-mandelbulb-raymarcher.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -4316,7 +4484,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-aurora-borealis-synthesis",
+<<<<<<< HEAD
     "url": "shaders/gen-aurora-borealis-synthesis.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-aurora-borealis-synthesis.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -4415,7 +4587,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-aurora-silk",
+<<<<<<< HEAD
     "url": "shaders/gen-aurora-silk.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-aurora-silk.wgsl",
+>>>>>>> origin/main
     "features": [
       "hdr",
       "aces-tone-mapping",
@@ -4525,7 +4701,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-auroral-ferrofluid-monolith",
+<<<<<<< HEAD
     "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-auroral-ferrofluid-monolith.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -4628,7 +4808,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-barnsley-fern",
+<<<<<<< HEAD
     "url": "shaders/gen-barnsley-fern.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-barnsley-fern.wgsl",
+>>>>>>> origin/main
     "features": [
       "barnsley-ifs",
       "voronoi-displacement",
@@ -4734,7 +4918,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-belousov-zhabotinsky",
+<<<<<<< HEAD
     "url": "shaders/gen-belousov-zhabotinsky.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-belousov-zhabotinsky.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -4832,7 +5020,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-bifurcation-diagram",
+<<<<<<< HEAD
     "url": "shaders/gen-bifurcation-diagram.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bifurcation-diagram.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -4935,7 +5127,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-bio-luminescent-jelly",
+<<<<<<< HEAD
     "url": "shaders/gen-bio-luminescent-jelly.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bio-luminescent-jelly.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -4980,7 +5176,11 @@
     "id": "gen-bioelectric-pulse",
     "name": "Bioelectric Pulse",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-bioelectric-pulse.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioelectric-pulse.wgsl",
+>>>>>>> origin/main
     "description": "Reaction-diffusion-like organic pulses through a noise-driven substrate. Audio energizes the pulse field, and mouse activation emits a secondary bioelectric wave.",
     "features": [
       "generative",
@@ -5135,7 +5335,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-bioluminescent-aether-jellyfish-swarm",
+<<<<<<< HEAD
     "url": "shaders/gen-bioluminescent-aether-jellyfish-swarm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-aether-jellyfish-swarm.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -5233,7 +5437,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-bioluminescent-aether-pulsar",
+<<<<<<< HEAD
     "url": "shaders/gen-bioluminescent-aether-pulsar.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-aether-pulsar.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-aether-pulsar",
       "density-controlled-accretion",
@@ -5284,7 +5492,11 @@
   {
     "id": "gen-bioluminescent-chrono-plasma-astro-owl",
     "name": "Bioluminescent Chrono-Plasma Astro-Owl",
+<<<<<<< HEAD
     "url": "shaders/gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
+>>>>>>> origin/main
     "description": "A hyper-dimensional, cyber-organic celestial owl forged from liquid chrono-plasma and shattered quantum-glass — raymarched SDF plumage folded by live FFT bands, deformed by click ripples, orbited by the mouse, and backed by a kaleidoscopic chrono-tessellation nebula.",
     "category": "generative",
     "tags": [
@@ -5383,7 +5595,11 @@
   {
     "id": "gen-bioluminescent-cyber-aether-void-seahorse",
     "name": "Bioluminescent Cyber-Aether Void-Seahorse",
+<<<<<<< HEAD
     "url": "/shaders/gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
+>>>>>>> origin/main
     "description": "A hyper-majestic, biomechanical void-seahorse woven from shattered liquid-aether and pulsing cybernetic bioluminescence, drifting gracefully through a chaotic, fluid-dynamic quantum reef. Upgraded 2026-08-05: capsule-chain spine anatomy with smooth-union SDF composition, dorsal-fin membrane, tail orbit-trap filaments, domain-warped FBM bioluminescence and void nebula, tetrahedral SDF normals, temporal history feedback and generated relief depth.",
     "tags": [
       "organic",
@@ -5485,7 +5701,11 @@
     "id": "gen-bioluminescent-neural-lattice-weaver",
     "name": "Bioluminescent Neural-Lattice Weaver",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-bioluminescent-neural-lattice-weaver.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-neural-lattice-weaver.wgsl",
+>>>>>>> origin/main
     "tags": [
       "organic",
       "lattice",
@@ -5669,7 +5889,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-bioluminescent-reaction-diffusion",
+<<<<<<< HEAD
     "url": "shaders/gen-bioluminescent-reaction-diffusion.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-reaction-diffusion.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -5774,7 +5998,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-biomechanical-hive",
+<<<<<<< HEAD
     "url": "shaders/gen-biomechanical-hive.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-biomechanical-hive.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -5870,7 +6098,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-bioreactor-bloom",
+<<<<<<< HEAD
     "url": "shaders/gen-bioreactor-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioreactor-bloom.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -5972,7 +6204,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-bismuth-crystal-citadel",
+<<<<<<< HEAD
     "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bismuth-crystal-citadel.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -6026,7 +6262,11 @@
       "bismuth"
     ],
     "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core.",
+<<<<<<< HEAD
     "url": "shaders/gen-bismuth-singularity-loom-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bismuth-singularity-loom-engine.wgsl",
+>>>>>>> origin/main
     "workgroup_size": [
       16,
       16,
@@ -6174,7 +6414,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-brutalist-monument",
+<<<<<<< HEAD
     "url": "shaders/gen-brutalist-monument.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-brutalist-monument.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -6273,7 +6517,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-buddhabrot-aura",
+<<<<<<< HEAD
     "url": "shaders/gen-buddhabrot-aura.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-buddhabrot-aura.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -6372,7 +6620,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-celestial-aether-seraphim-wings",
+<<<<<<< HEAD
     "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-aether-seraphim-wings.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -6420,7 +6672,11 @@
     "description": "A gargantuan interstellar loom of turning astrolabes and celestial gears forged from liquid plasma and starlight, weaving threads of radiant energy across an endless, deep-void chronosphere.",
     "category": "generative",
     "type": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-celestial-clockwork-plasma-loom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-clockwork-plasma-loom.wgsl",
+>>>>>>> origin/main
     "tags": [
       "mechanical",
       "cosmic",
@@ -6603,7 +6859,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-celestial-forge",
+<<<<<<< HEAD
     "url": "shaders/gen-celestial-forge.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-forge.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -6701,7 +6961,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-celestial-glass-tornado",
+<<<<<<< HEAD
     "url": "shaders/gen-celestial-glass-tornado.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-glass-tornado.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-glass-vortex",
       "kifs-crystal-debris",
@@ -6803,7 +7067,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-celestial-nanite-swarm-nebula",
+<<<<<<< HEAD
     "url": "shaders/gen-celestial-nanite-swarm-nebula.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-nanite-swarm-nebula.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -6901,7 +7169,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-celestial-prism-orchid",
+<<<<<<< HEAD
     "url": "shaders/gen-celestial-prism-orchid.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-prism-orchid.wgsl",
+>>>>>>> origin/main
     "features": [
       "procedural",
       "audio-reactive",
@@ -7007,7 +7279,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-celestial-quantum-glass-dragonfly",
+<<<<<<< HEAD
     "url": "shaders/gen-celestial-quantum-glass-dragonfly.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-quantum-glass-dragonfly.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -7103,7 +7379,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-celestial-weave",
+<<<<<<< HEAD
     "url": "shaders/gen-celestial-weave.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-weave.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -7198,7 +7478,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-celestial-yggdrasil-matrix",
+<<<<<<< HEAD
     "url": "shaders/gen-celestial-yggdrasil-matrix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-yggdrasil-matrix.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -7292,7 +7576,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cellular-automata-tapestry",
+<<<<<<< HEAD
     "url": "shaders/gen-cellular-automata-tapestry.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cellular-automata-tapestry.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -7392,7 +7680,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chaos-game-ifs",
+<<<<<<< HEAD
     "url": "shaders/gen-chaos-game-ifs.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chaos-game-ifs.wgsl",
+>>>>>>> origin/main
     "features": [
       "sdf-orbit-sculpture",
       "raymarch",
@@ -7498,7 +7790,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chromatic-acid-drip",
+<<<<<<< HEAD
     "url": "shaders/gen-chromatic-acid-drip.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromatic-acid-drip.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -7595,7 +7891,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chromatic-glass-lattice",
+<<<<<<< HEAD
     "url": "shaders/gen-chromatic-glass-lattice.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromatic-glass-lattice.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -7695,7 +7995,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chromatic-metamorphosis",
+<<<<<<< HEAD
     "url": "shaders/gen-chromatic-metamorphosis.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromatic-metamorphosis.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -7740,7 +8044,11 @@
     "id": "gen-chromatic-oracle-jelly",
     "name": "Chromatic Oracle Jelly",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-chromatic-oracle-jelly.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromatic-oracle-jelly.wgsl",
+>>>>>>> origin/main
     "description": "A psychedelic-inspired swarm of drifting oracle jellyfish with layered bells, sigil eyes, and curling tentacles. Drags attract persistent wakes and clicks trigger bioluminescent prophecies.",
     "params": [
       {
@@ -7890,7 +8198,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chromatic-singularity-loom",
+<<<<<<< HEAD
     "url": "shaders/gen-chromatic-singularity-loom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromatic-singularity-loom.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -7988,7 +8300,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chromatic-zonohedron",
+<<<<<<< HEAD
     "url": "shaders/gen-chromatic-zonohedron.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromatic-zonohedron.wgsl",
+>>>>>>> origin/main
     "features": [
       "generative",
       "geometry",
@@ -8092,7 +8408,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chromodynamic-plasma-collider",
+<<<<<<< HEAD
     "url": "shaders/gen-chromodynamic-plasma-collider.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromodynamic-plasma-collider.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-containment-tunnel",
       "sprung-magnetic-anomaly",
@@ -8142,7 +8462,11 @@
   },
   {
     "id": "gen-chrono-kinetic-fractal-engine",
+<<<<<<< HEAD
     "url": "shaders/gen-chrono-kinetic-fractal-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chrono-kinetic-fractal-engine.wgsl",
+>>>>>>> origin/main
     "name": "Chrono-Kinetic Fractal Engine",
     "category": "generative",
     "author": "Jules",
@@ -8255,7 +8579,11 @@
   {
     "id": "gen-chrono-kitsune-prism-weaver",
     "name": "Chrono-Kitsune Prism Weaver",
+<<<<<<< HEAD
     "url": "shaders/gen-chrono-kitsune-prism-weaver.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chrono-kitsune-prism-weaver.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with deep temporal feedback and audio reactivity. Optimized: bounding-sphere early-out, tetrahedral normals, HDR feedback chain, generated depth.",
     "workgroup_size": [
@@ -8406,7 +8734,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chrono-mycelial-tapestry",
+<<<<<<< HEAD
     "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chrono-mycelial-tapestry.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -8505,7 +8837,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chrono-voronoi-mycelium",
+<<<<<<< HEAD
     "url": "shaders/gen-chrono-voronoi-mycelium.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chrono-voronoi-mycelium.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -8608,7 +8944,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chronodynamic-aether-weaver-automata",
+<<<<<<< HEAD
     "url": "shaders/gen-chronodynamic-aether-weaver-automata.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chronodynamic-aether-weaver-automata.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -8652,7 +8992,11 @@
   {
     "id": "gen-chronos-biomechanical-void-leviathan",
     "name": "Chronos Biomechanical Void-Leviathan",
+<<<<<<< HEAD
     "url": "shaders/gen-chronos-biomechanical-void-leviathan.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chronos-biomechanical-void-leviathan.wgsl",
+>>>>>>> origin/main
     "description": "A colossal, ancient biomechanical leviathan forged from shifting quantum-obsidian and echoing temporal-glass, swimming gracefully through a violently fractured space-time nebula while continuously shedding liquid auroral starlight.",
     "tags": [
       "leviathan",
@@ -8850,7 +9194,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chronos-labyrinth",
+<<<<<<< HEAD
     "url": "shaders/gen-chronos-labyrinth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chronos-labyrinth.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -8947,7 +9295,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-chronos-monolith-resonator",
+<<<<<<< HEAD
     "url": "shaders/gen-chronos-monolith-resonator.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chronos-monolith-resonator.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -9045,7 +9397,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-conway-game-of-life",
+<<<<<<< HEAD
     "url": "shaders/gen-conway-game-of-life.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-conway-game-of-life.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -9145,7 +9501,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-coral-reef-colony",
+<<<<<<< HEAD
     "url": "shaders/gen-coral-reef-colony.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-coral-reef-colony.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -9245,7 +9605,11 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
+<<<<<<< HEAD
     "url": "shaders/gen-cosmic-clockwork-dyson-sphere.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cosmic-clockwork-dyson-sphere.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -9342,14 +9706,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cosmic-slime-mold",
+<<<<<<< HEAD
     "url": "shaders/gen-cosmic-slime-mold.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cosmic-slime-mold.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-cosmic-velvet-hypnosis",
     "name": "Cosmic Velvet Hypnosis",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-cosmic-velvet-hypnosis.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cosmic-velvet-hypnosis.wgsl",
+>>>>>>> origin/main
     "description": "A psychedelic-inspired velvet spiral well with soft chromatic arms, counter-spirals, and moving moire. Drags torque persistent trails and clicks send luminous hypnosis halos outward.",
     "params": [
       {
@@ -9550,7 +9922,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cosmic-web-filament",
+<<<<<<< HEAD
     "url": "shaders/gen-cosmic-web-filament.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cosmic-web-filament.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -9646,7 +10022,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cryogenic-frost-plasma-matrix",
+<<<<<<< HEAD
     "url": "shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -9749,7 +10129,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-crystal-caverns",
+<<<<<<< HEAD
     "url": "shaders/gen-crystal-caverns.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-crystal-caverns.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -9847,7 +10231,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-crystal-lattice-growth",
+<<<<<<< HEAD
     "url": "shaders/gen-crystal-lattice-growth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-crystal-lattice-growth.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-interactive",
@@ -9861,7 +10249,11 @@
   },
   {
     "id": "gen-crystalline-chrono-dyson",
+<<<<<<< HEAD
     "url": "shaders/gen-crystalline-chrono-dyson.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-crystalline-chrono-dyson.wgsl",
+>>>>>>> origin/main
     "name": "Crystalline Chrono Dyson",
     "category": "generative",
     "filename": "gen-crystalline-chrono-dyson.wgsl",
@@ -10067,7 +10459,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-crystalline-mandala-bloom",
+<<<<<<< HEAD
     "url": "shaders/gen-crystalline-mandala-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-crystalline-mandala-bloom.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-interactive",
@@ -10083,7 +10479,11 @@
     "id": "gen-crystalline-nebula-weaver-void-spider",
     "name": "Crystalline Nebula-Weaver Void-Spider",
     "type": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-crystalline-nebula-weaver-void-spider.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-crystalline-nebula-weaver-void-spider.wgsl",
+>>>>>>> origin/main
     "controls": [
       {
         "name": "Web Complexity",
@@ -10318,7 +10718,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cyber-organic-liquid-neon-pulsar",
+<<<<<<< HEAD
     "url": "shaders/gen-cyber-organic-liquid-neon-pulsar.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cyber-organic-liquid-neon-pulsar.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "audio-reactive",
@@ -10426,7 +10830,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cyber-terminal",
+<<<<<<< HEAD
     "url": "shaders/gen-cyber-terminal.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cyber-terminal.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "temporal-feedback",
@@ -10529,7 +10937,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cybernetic-aether-moth-chrysalis",
+<<<<<<< HEAD
     "url": "shaders/gen-cybernetic-aether-moth-chrysalis.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cybernetic-aether-moth-chrysalis.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "audio-reactive",
@@ -10635,7 +11047,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cybernetic-crystalline-neuro-lattice",
+<<<<<<< HEAD
     "url": "shaders/gen-cybernetic-crystalline-neuro-lattice.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cybernetic-crystalline-neuro-lattice.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "audio-reactive",
@@ -10740,7 +11156,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cybernetic-ferro-coral",
+<<<<<<< HEAD
     "url": "shaders/gen-cybernetic-ferro-coral.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cybernetic-ferro-coral.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "iridescence",
@@ -10850,7 +11270,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cybernetic-liquid-chrome-engine",
+<<<<<<< HEAD
     "url": "shaders/gen-cybernetic-liquid-chrome-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cybernetic-liquid-chrome-engine.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -10961,7 +11385,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cybernetic-mycelium-neural-web",
+<<<<<<< HEAD
     "url": "shaders/gen-cybernetic-mycelium-neural-web.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -11068,7 +11496,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cycloid-bloom",
+<<<<<<< HEAD
     "url": "shaders/gen-cycloid-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cycloid-bloom.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -11177,7 +11609,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cymatic-plasma-mandalas",
+<<<<<<< HEAD
     "url": "shaders/gen-cymatic-plasma-mandalas.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cymatic-plasma-mandalas.wgsl",
+>>>>>>> origin/main
     "features": [
       "cymatic-nodal-field",
       "discrete-kaleidoscope-symmetry",
@@ -11286,7 +11722,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-cymatic-quantum-silk-loom",
+<<<<<<< HEAD
     "url": "shaders/gen-cymatic-quantum-silk-loom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-cymatic-quantum-silk-loom.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "audio-reactive",
@@ -11394,7 +11834,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-de-jong-attractor",
+<<<<<<< HEAD
     "url": "shaders/gen-de-jong-attractor.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-de-jong-attractor.wgsl",
+>>>>>>> origin/main
     "features": [
       "sdf-tube-orbit",
       "kaleidoscope-fold",
@@ -11505,7 +11949,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-depth-refracted-liquid-stained-glass",
+<<<<<<< HEAD
     "url": "shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
+>>>>>>> origin/main
     "features": [
       "depth-heightfield-normals",
       "three-point-lighting",
@@ -11618,7 +12066,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-dla-copper-deposition",
+<<<<<<< HEAD
     "url": "shaders/gen-dla-copper-deposition.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-dla-copper-deposition.wgsl",
+>>>>>>> origin/main
     "features": [
       "persistent-state",
       "audio-reactive",
@@ -11725,7 +12177,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-dmt-fractal-zoom",
+<<<<<<< HEAD
     "url": "shaders/gen-dmt-fractal-zoom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-dmt-fractal-zoom.wgsl",
+>>>>>>> origin/main
     "features": [
       "fractal-zoom",
       "audio-reactive",
@@ -11832,7 +12288,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-dragon-curve",
+<<<<<<< HEAD
     "url": "shaders/gen-dragon-curve.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-dragon-curve.wgsl",
+>>>>>>> origin/main
     "features": [
       "thin-film-iridescence",
       "two-temperature-lighting",
@@ -11934,7 +12394,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-dynamic-tessellation-ornate-fractal-tiles",
+<<<<<<< HEAD
     "url": "shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl",
+>>>>>>> origin/main
     "features": [
       "fractal",
       "audio-reactive",
@@ -12040,7 +12504,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-echo-dunes",
+<<<<<<< HEAD
     "url": "shaders/gen-echo-dunes.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-echo-dunes.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-interactive",
@@ -12146,7 +12614,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-eldritch-quantum-fractal-eye",
+<<<<<<< HEAD
     "url": "shaders/gen-eldritch-quantum-fractal-eye.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-eldritch-quantum-fractal-eye.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "fractal",
@@ -12249,7 +12721,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-eldritch-tesseract-hive-mind",
+<<<<<<< HEAD
     "url": "shaders/gen-eldritch-tesseract-hive-mind.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-eldritch-tesseract-hive-mind.wgsl",
+>>>>>>> origin/main
     "features": [
       "fast-motion",
       "hdr-feedback-trails",
@@ -12356,7 +12832,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-electric-kaleidoscope-storm",
+<<<<<<< HEAD
     "url": "shaders/gen-electric-kaleidoscope-storm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-electric-kaleidoscope-storm.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -12456,12 +12936,20 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-emergent-calligraphic-ecosystems",
+<<<<<<< HEAD
     "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-emergent-calligraphic-ecosystems.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-emergent-calligraphic-weave",
+<<<<<<< HEAD
     "url": "shaders/gen-emergent-calligraphic-weave.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-emergent-calligraphic-weave.wgsl",
+>>>>>>> origin/main
     "name": "Emergent Calligraphic Weave",
     "category": "generative",
     "tags": [
@@ -12663,7 +13151,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-emergent-script-gardens",
+<<<<<<< HEAD
     "url": "shaders/gen-emergent-script-gardens.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-emergent-script-gardens.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -12765,7 +13257,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-erosion-strata",
+<<<<<<< HEAD
     "url": "shaders/gen-erosion-strata.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-erosion-strata.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -12863,7 +13359,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-anemone-bloom",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-anemone-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-anemone-bloom.wgsl",
+>>>>>>> origin/main
     "features": [
       "procedural",
       "audio-reactive",
@@ -12972,14 +13472,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-aurora-ghost-orchid",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-ethereal-bismuth-resonance-void-owl",
     "name": "Ethereal Bismuth-Resonance Void-Owl",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-bismuth-resonance-void-owl.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-bismuth-resonance-void-owl.wgsl",
+>>>>>>> origin/main
     "tags": [
       "crystal",
       "bismuth",
@@ -13115,7 +13623,11 @@
   },
   {
     "id": "gen-ethereal-chrono-plasma-void-manta",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
+>>>>>>> origin/main
     "name": "Ethereal Chrono-Plasma Void-Manta",
     "category": "generative",
     "description": "A majestic, hyper-organic cybernetic space-manta ray gliding through a dark-matter ocean, its translucent biomimetic wings rippling with shifting auroral temporal energy as it consumes deep acoustic bass frequencies.",
@@ -13324,14 +13836,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-cyber-aurora-hummingbird-core",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-ethereal-cyber-chrono-nebula-phoenix",
     "name": "Ethereal Cyber-Chrono Nebula-Phoenix",
     "description": "A majestic, hyper-organic cybernetic phoenix rising from a deep-space nebula, its wings woven from liquid auroral plasma and shattered quantum glass that burst into geometric temporal fractals upon acoustic climax.",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "tags": [
       "organic",
@@ -13548,7 +14068,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-cyber-chrono-void-whale",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -13579,7 +14103,11 @@
       "geometry"
     ],
     "description": "A majestic hyper-dimensional cyber-dragon of flowing quantum plasma with octahedral crystal scale-shards, box-ribbed spine segments and a bass-pulsed torus halo engraved with rotating star sigils, soaring through a kaleidoscopically folded dark-matter nebula veined with Voronoi energy circuits.",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+>>>>>>> origin/main
     "updated": true,
     "supportsDepth": true,
     "supportsDof": false,
@@ -13765,7 +14293,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-glass-flora-terrarium",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-glass-flora-terrarium.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-glass-flora-terrarium.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -13869,7 +14401,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-quantum-hologram-bonsai",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -13974,7 +14510,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-quantum-holographic-fractal-coral",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -14074,7 +14614,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-quantum-medusa",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-quantum-medusa.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-quantum-medusa.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -14184,7 +14728,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ethereal-silk-veil",
+<<<<<<< HEAD
     "url": "shaders/gen-ethereal-silk-veil.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-silk-veil.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -14292,7 +14840,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-evolutionary-cellular-gardens",
+<<<<<<< HEAD
     "url": "shaders/gen-evolutionary-cellular-gardens.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-evolutionary-cellular-gardens.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -14405,7 +14957,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-feedback-echo-chamber",
+<<<<<<< HEAD
     "url": "shaders/gen-feedback-echo-chamber.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-feedback-echo-chamber.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -14420,7 +14976,11 @@
   },
   {
     "id": "gen-ferrofluid-monolith",
+<<<<<<< HEAD
     "url": "shaders/gen-ferrofluid-monolith.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ferrofluid-monolith.wgsl",
+>>>>>>> origin/main
     "name": "Ferrofluid Monolith",
     "category": "generative",
     "tags": [
@@ -14527,7 +15087,11 @@
   },
   {
     "id": "gen-fibonacci-spiral-garden",
+<<<<<<< HEAD
     "url": "shaders/gen-fibonacci-spiral-garden.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fibonacci-spiral-garden.wgsl",
+>>>>>>> origin/main
     "name": "Fibonacci Spiral Garden",
     "category": "generative",
     "tags": [
@@ -14729,7 +15293,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-audio-symphony",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-audio-symphony.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-audio-symphony.wgsl",
+>>>>>>> origin/main
     "features": [
       "three-band-audio-reactive",
       "mouse-command-shell",
@@ -14839,7 +15407,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-chrysanthemum",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-chrysanthemum.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-chrysanthemum.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -14947,7 +15519,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-comet-trail",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-comet-trail.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-comet-trail.wgsl",
+>>>>>>> origin/main
     "features": [
       "three-band-audio-reactive",
       "mouse-comet",
@@ -15055,7 +15631,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-crackle-palm",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-crackle-palm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-crackle-palm.wgsl",
+>>>>>>> origin/main
     "features": [
       "three-band-audio-reactive",
       "mouse-command-shell",
@@ -15162,7 +15742,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-crossette",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-crossette.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-crossette.wgsl",
+>>>>>>> origin/main
     "features": [
       "three-band-audio-reactive",
       "mouse-crossette",
@@ -15271,7 +15855,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-dahlia-burst",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-dahlia-burst.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-dahlia-burst.wgsl",
+>>>>>>> origin/main
     "features": [
       "fireworks",
       "audio-reactive",
@@ -15380,7 +15968,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-fan-shell",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-fan-shell.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-fan-shell.wgsl",
+>>>>>>> origin/main
     "features": [
       "ballistic-drag-physics",
       "temporal-coherent-wind",
@@ -15490,7 +16082,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-horse-tail",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-horse-tail.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-horse-tail.wgsl",
+>>>>>>> origin/main
     "features": [
       "ballistic-drag-physics",
       "terminal-velocity-fall",
@@ -15600,7 +16196,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-kamuro-gold",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-kamuro-gold.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-kamuro-gold.wgsl",
+>>>>>>> origin/main
     "features": [
       "hdr-burst-cores",
       "audio-reactive-color-temperature",
@@ -15713,7 +16313,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-nocturne",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-nocturne.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-nocturne.wgsl",
+>>>>>>> origin/main
     "features": [
       "three-band-audio-reactive",
       "mouse-command-shell",
@@ -15824,7 +16428,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-ring-shell",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-ring-shell.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-ring-shell.wgsl",
+>>>>>>> origin/main
     "features": [
       "hdr-burst-cores",
       "audio-reactive-color-temperature",
@@ -15935,7 +16543,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-roman-candle",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-roman-candle.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-roman-candle.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -16048,7 +16660,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-smoke-bloom",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-smoke-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-smoke-bloom.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -16152,7 +16768,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-strobe-shell",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-strobe-shell.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-strobe-shell.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -16258,7 +16878,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-willow-cascade",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-willow-cascade.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-willow-cascade.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -16368,7 +16992,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-wind-ripple",
+<<<<<<< HEAD
     "url": "shaders/gen-fireworks-wind-ripple.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-wind-ripple.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -16378,7 +17006,11 @@
   },
   {
     "id": "gen-flame-fractal-attractor",
+<<<<<<< HEAD
     "url": "shaders/gen-flame-fractal-attractor.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-flame-fractal-attractor.wgsl",
+>>>>>>> origin/main
     "name": "Flame Fractal Attractor",
     "category": "generative",
     "tags": [
@@ -16484,7 +17116,11 @@
   },
   {
     "id": "gen-flowing-silk-ribbons",
+<<<<<<< HEAD
     "url": "shaders/gen-flowing-silk-ribbons.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-flowing-silk-ribbons.wgsl",
+>>>>>>> origin/main
     "name": "Flowing Silk Ribbons",
     "category": "generative",
     "tags": [
@@ -16687,7 +17323,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fourier-epicycles",
+<<<<<<< HEAD
     "url": "shaders/gen-fourier-epicycles.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fourier-epicycles.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -16787,7 +17427,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fractal-bioluminescence-spore-network",
+<<<<<<< HEAD
     "url": "shaders/gen-fractal-bioluminescence-spore-network.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fractal-bioluminescence-spore-network.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -16797,7 +17441,11 @@
     "description": "A hyper-intricate procedural branching structure simulating crystalline growth and decay through a spacetime distortion field, rendered with a bismuth-iridescent glass aesthetic. Upgraded with a three-point warm/cool/rim lighting rig, HDR bloom-ready speculars, volumetric near-miss glow, chrono-violet depth fog, ACES tone mapping, and FFT-shimmered thin-film interference.",
     "type": "generative",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-fractal-chrono-dendrite-forge.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fractal-chrono-dendrite-forge.wgsl",
+>>>>>>> origin/main
     "tags": [
       "fractal",
       "dendrite",
@@ -16992,7 +17640,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fractal-clockwork",
+<<<<<<< HEAD
     "url": "shaders/gen-fractal-clockwork.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fractal-clockwork.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-gears",
       "sprung-orbit-camera",
@@ -17100,7 +17752,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fractal-ember-lattice",
+<<<<<<< HEAD
     "url": "shaders/gen-fractal-ember-lattice.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fractal-ember-lattice.wgsl",
+>>>>>>> origin/main
     "features": [
       "rigid-shard-state",
       "three-band-audio-reactive",
@@ -17112,7 +17768,11 @@
   },
   {
     "id": "gen-fractal-flame-classic",
+<<<<<<< HEAD
     "url": "shaders/gen-fractal-flame-classic.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fractal-flame-classic.wgsl",
+>>>>>>> origin/main
     "name": "Classic Fractal Flame",
     "category": "generative",
     "tags": [
@@ -17219,7 +17879,11 @@
   },
   {
     "id": "gen-fractal-tree-growth",
+<<<<<<< HEAD
     "url": "shaders/gen-fractal-tree-growth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fractal-tree-growth.wgsl",
+>>>>>>> origin/main
     "name": "Fractal Tree Growth",
     "category": "generative",
     "tags": [
@@ -17421,7 +18085,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fractured-monolith",
+<<<<<<< HEAD
     "url": "shaders/gen-fractured-monolith.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fractured-monolith.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-fractured-monolith",
       "three-band-audio-reactive",
@@ -17526,7 +18194,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-galactic-aether-crystal-geode-core",
+<<<<<<< HEAD
     "url": "shaders/gen-galactic-aether-crystal-geode-core.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-galactic-aether-crystal-geode-core.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-kifs-crystals",
       "three-band-audio-reactive",
@@ -17631,7 +18303,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ghost-flame",
+<<<<<<< HEAD
     "url": "shaders/gen-ghost-flame.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ghost-flame.wgsl",
+>>>>>>> origin/main
     "features": [
       "advected-flame-state",
       "three-band-audio-reactive",
@@ -17738,7 +18414,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-glacial-aether-quantum-cavern",
+<<<<<<< HEAD
     "url": "shaders/gen-glacial-aether-quantum-cavern.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-glacial-aether-quantum-cavern.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-sdf",
       "normal-lighting",
@@ -17751,7 +18431,11 @@
   },
   {
     "id": "gen-glass-mosaic-liquid-refraction",
+<<<<<<< HEAD
     "url": "shaders/gen-glass-mosaic-liquid-refraction.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-glass-mosaic-liquid-refraction.wgsl",
+>>>>>>> origin/main
     "name": "Glass Mosaic Liquid Refraction",
     "category": "generative",
     "filename": "gen-glass-mosaic-liquid-refraction.wgsl",
@@ -17863,7 +18547,11 @@
   {
     "id": "gen-gravitational-ferrofluid-singularity-engine",
     "name": "Gravitational Ferrofluid Singularity-Engine",
+<<<<<<< HEAD
     "url": "shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "A stylized ferrofluid singularity with rotating magnetic domains, orbiting spike fronts, accelerating droplets, click shocks, and bounded horizon-aligned light trails driven by live audio.",
     "features": [
@@ -18072,7 +18760,11 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
+<<<<<<< HEAD
     "url": "shaders/gen-gravitational-strain.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-gravitational-strain.wgsl",
+>>>>>>> origin/main
     "features": [
       "procedural",
       "audio-reactive",
@@ -18183,7 +18875,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-gravito-phononic-accretion",
+<<<<<<< HEAD
     "url": "shaders/gen-gravito-phononic-accretion.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-gravito-phononic-accretion.wgsl",
+>>>>>>> origin/main
     "features": [
       "multi-body-accretion",
       "three-band-audio-reactive",
@@ -18253,7 +18949,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-graviton-plasma-lotus",
+<<<<<<< HEAD
     "url": "shaders/gen-graviton-plasma-lotus.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-graviton-plasma-lotus.wgsl",
+>>>>>>> origin/main
     "features": [
       "kifs-lotus-sdf",
       "sprung-gravity-lens",
@@ -18355,7 +19055,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-holographic-bismuth-core-reactor",
+<<<<<<< HEAD
     "url": "shaders/gen-holographic-bismuth-core-reactor.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-holographic-bismuth-core-reactor.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -18464,7 +19168,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-holographic-data-core",
+<<<<<<< HEAD
     "url": "shaders/gen-holographic-data-core.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-holographic-data-core.wgsl",
+>>>>>>> origin/main
     "features": [
       "procedural",
       "audio-reactive",
@@ -18483,7 +19191,11 @@
     "id": "gen-holographic-fracture",
     "name": "Holographic Fracture",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-holographic-fracture.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-holographic-fracture.wgsl",
+>>>>>>> origin/main
     "description": "Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, and mouse interaction spawns new radial cracks.",
     "features": [
       "generative",
@@ -18682,7 +19394,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-holographic-lens-flare-matrix",
+<<<<<<< HEAD
     "url": "shaders/gen-holographic-lens-flare-matrix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-holographic-lens-flare-matrix.wgsl",
+>>>>>>> origin/main
     "features": [
       "flare-matrix",
       "raw-persistent-state",
@@ -18788,7 +19504,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-holographic-membrane",
+<<<<<<< HEAD
     "url": "shaders/gen-holographic-membrane.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-holographic-membrane.wgsl",
+>>>>>>> origin/main
     "features": [
       "thin-film-interference",
       "raw-persistent-state",
@@ -18893,7 +19613,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-holographic-plasma-geode",
+<<<<<<< HEAD
     "url": "shaders/gen-holographic-plasma-geode.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-holographic-plasma-geode.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "plasma-core",
@@ -19003,7 +19727,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-holographic-rainbow-surface",
+<<<<<<< HEAD
     "url": "shaders/gen-holographic-rainbow-surface.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-holographic-rainbow-surface.wgsl",
+>>>>>>> origin/main
     "features": [
       "thin-film-interference",
       "audio-reactive",
@@ -19113,7 +19841,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hopf-fibration-fiber-bundle",
+<<<<<<< HEAD
     "url": "shaders/gen-hopf-fibration-fiber-bundle.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hopf-fibration-fiber-bundle.wgsl",
+>>>>>>> origin/main
     "features": [
       "hopf-fibration",
       "audio-reactive",
@@ -19221,7 +19953,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hyper-bismuth-clockwork",
+<<<<<<< HEAD
     "url": "shaders/gen-hyper-bismuth-clockwork.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hyper-bismuth-clockwork.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "clockwork-mechanical",
@@ -19330,7 +20066,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hyper-dimensional-bismuth-matrix",
+<<<<<<< HEAD
     "url": "shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "bismuth-crystal",
@@ -19436,7 +20176,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hyper-dimensional-tesseract-labyrinth",
+<<<<<<< HEAD
     "url": "shaders/gen-hyper-dimensional-tesseract-labyrinth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hyper-dimensional-tesseract-labyrinth.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "four-dimensional",
@@ -19547,7 +20291,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hyper-labyrinth",
+<<<<<<< HEAD
     "url": "shaders/gen-hyper-labyrinth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hyper-labyrinth.wgsl",
+>>>>>>> origin/main
     "features": [
       "hdr",
       "aces-tonemap",
@@ -19658,7 +20406,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hyper-rainbow-vortex",
+<<<<<<< HEAD
     "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hyper-rainbow-vortex.wgsl",
+>>>>>>> origin/main
     "features": [
       "rankine-vortex",
       "audio-reactive",
@@ -19765,7 +20517,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hyper-refractive-rain-matrix",
+<<<<<<< HEAD
     "url": "shaders/gen-hyper-refractive-rain-matrix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hyper-refractive-rain-matrix.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched",
       "audio-reactive",
@@ -19874,7 +20630,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hyperbolic-crystal-symbiosis",
+<<<<<<< HEAD
     "url": "shaders/gen-hyperbolic-crystal-symbiosis.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hyperbolic-crystal-symbiosis.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -19984,7 +20744,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hyperbolic-tessellation",
+<<<<<<< HEAD
     "url": "shaders/gen-hyperbolic-tessellation.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hyperbolic-tessellation.wgsl",
+>>>>>>> origin/main
     "features": [
       "hyperbolic-geometry",
       "recursive",
@@ -20056,7 +20820,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hyperbolic-tree",
+<<<<<<< HEAD
     "url": "shaders/gen-hyperbolic-tree.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hyperbolic-tree.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -20116,12 +20884,20 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-hypnotic-vortex-tunnel",
+<<<<<<< HEAD
     "url": "shaders/gen-hypnotic-vortex-tunnel.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hypnotic-vortex-tunnel.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-ice-crystal-lattice",
+<<<<<<< HEAD
     "url": "shaders/gen-ice-crystal-lattice.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ice-crystal-lattice.wgsl",
+>>>>>>> origin/main
     "name": "Ice Crystal Lattice",
     "category": "generative",
     "tags": [
@@ -20284,7 +21060,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-ifs-fractal-flame",
+<<<<<<< HEAD
     "url": "shaders/gen-ifs-fractal-flame.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ifs-fractal-flame.wgsl",
+>>>>>>> origin/main
     "features": [
       "depth-aware",
       "alpha-layered",
@@ -20352,7 +21132,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-image-pixel-detonation",
+<<<<<<< HEAD
     "url": "shaders/gen-image-pixel-detonation.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-image-pixel-detonation.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -20415,12 +21199,20 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-image-pyro",
+<<<<<<< HEAD
     "url": "shaders/gen-image-pyro.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-image-pyro.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-interference-moire-field",
+<<<<<<< HEAD
     "url": "shaders/gen-interference-moire-field.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-interference-moire-field.wgsl",
+>>>>>>> origin/main
     "name": "Interference Moire Field",
     "category": "generative",
     "tags": [
@@ -20584,12 +21376,20 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-inverse-mandelbrot",
+<<<<<<< HEAD
     "url": "shaders/gen-inverse-mandelbrot.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-inverse-mandelbrot.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-iris-bloom-fractal",
+<<<<<<< HEAD
     "url": "shaders/gen-iris-bloom-fractal.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-iris-bloom-fractal.wgsl",
+>>>>>>> origin/main
     "name": "Iris Bloom Fractal",
     "category": "generative",
     "tags": [
@@ -20697,7 +21497,11 @@
   },
   {
     "id": "gen-islamic-geometric-tiling",
+<<<<<<< HEAD
     "url": "shaders/gen-islamic-geometric-tiling.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-islamic-geometric-tiling.wgsl",
+>>>>>>> origin/main
     "name": "Islamic Geometric Tiling",
     "category": "generative",
     "tags": [
@@ -20862,7 +21666,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-islamic-star-rose",
+<<<<<<< HEAD
     "url": "shaders/gen-islamic-star-rose.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-islamic-star-rose.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -20919,12 +21727,20 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-isometric-city",
+<<<<<<< HEAD
     "url": "shaders/gen-isometric-city.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-isometric-city.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-julia-set-classic",
+<<<<<<< HEAD
     "url": "shaders/gen-julia-set-classic.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-julia-set-classic.wgsl",
+>>>>>>> origin/main
     "name": "Julia Set Classic",
     "category": "generative",
     "tags": [
@@ -21034,7 +21850,11 @@
     "id": "gen-kaleidoscopic-synapse-bloom",
     "name": "Kaleidoscopic Synapse Bloom",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-kaleidoscopic-synapse-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-kaleidoscopic-synapse-bloom.wgsl",
+>>>>>>> origin/main
     "description": "A psychedelic-inspired neural mandala where traveling axon pulses, counter-rotating dendrites, and bridge sparks bloom around the pointer. Held drags twist persistent synapse trails and clicks launch expanding inoculation rings.",
     "params": [
       {
@@ -21183,7 +22003,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-kinetic-neo-brutalist-megastructure",
+<<<<<<< HEAD
     "url": "shaders/gen-kinetic-neo-brutalist-megastructure.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-kinetic-neo-brutalist-megastructure.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -21242,7 +22066,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-klein-bottle-walk",
+<<<<<<< HEAD
     "url": "shaders/gen-klein-bottle-walk.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-klein-bottle-walk.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -21302,7 +22130,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-koch-snowflake-storm",
+<<<<<<< HEAD
     "url": "shaders/gen-koch-snowflake-storm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-koch-snowflake-storm.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -21359,7 +22191,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-kryonic-quantum-aether-fractal-core",
+<<<<<<< HEAD
     "url": "shaders/gen-kryonic-quantum-aether-fractal-core.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-kryonic-quantum-aether-fractal-core.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -21419,7 +22255,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-langton-ant",
+<<<<<<< HEAD
     "url": "shaders/gen-langton-ant.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-langton-ant.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -21484,7 +22324,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-lenia-2",
+<<<<<<< HEAD
     "url": "shaders/gen-lenia-2.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-lenia-2.wgsl",
+>>>>>>> origin/main
     "features": [
       "four-species-state-feedback",
       "integer-neighborhood-kernels",
@@ -21551,7 +22395,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-lichen-reaction-diffusion",
+<<<<<<< HEAD
     "url": "shaders/gen-lichen-reaction-diffusion.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-lichen-reaction-diffusion.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -21617,14 +22465,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-lichtenberg-storm",
+<<<<<<< HEAD
     "url": "shaders/gen-lichtenberg-storm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-lichtenberg-storm.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-liquid-cathedral-dream",
     "name": "Liquid Cathedral Dream",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-liquid-cathedral-dream.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-liquid-cathedral-dream.wgsl",
+>>>>>>> origin/main
     "description": "A psychedelic-inspired cathedral of melting stained-glass arches, rose tracery, and racing floor caustics. Pointer drags refract the persistent structure and clicks unfold rotating rose-window shock fronts.",
     "params": [
       {
@@ -21780,7 +22636,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-liquid-crystal-hive-mind",
+<<<<<<< HEAD
     "url": "shaders/gen-liquid-crystal-hive-mind.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-liquid-crystal-hive-mind.wgsl",
+>>>>>>> origin/main
     "features": [
       "procedural",
       "audio-reactive",
@@ -21848,7 +22708,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-liquid-neon-cyber-metropolis",
+<<<<<<< HEAD
     "url": "shaders/gen-liquid-neon-cyber-metropolis.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-liquid-neon-cyber-metropolis.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -21908,7 +22772,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-liquid-rainbow-glass",
+<<<<<<< HEAD
     "url": "shaders/gen-liquid-rainbow-glass.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-liquid-rainbow-glass.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -21968,13 +22836,21 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-live-studio-tab",
+<<<<<<< HEAD
     "url": "shaders/gen-live-studio-tab.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-live-studio-tab.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-lorenz-attractor-flow",
     "name": "Lorenz Attractor Flow",
+<<<<<<< HEAD
     "url": "shaders/lorenz-attractor-flow.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/lorenz-attractor-flow.wgsl",
+>>>>>>> origin/main
     "description": "Real-time Lorenz-system integration combining a 2D butterfly-flow field with a swept 3D orbit tube, kaleidoscopic orbit-trap shading, mouse orbit controls, bounded click ripples, temporal feedback, and audio/FFT response.",
     "features": [
       "generative",
@@ -22135,7 +23011,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-lorenz-attractor",
+<<<<<<< HEAD
     "url": "shaders/gen-lorenz-attractor.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-lorenz-attractor.wgsl",
+>>>>>>> origin/main
     "features": [
       "sdf-tube-orbit",
       "symmetry-fold",
@@ -22147,7 +23027,11 @@
   {
     "id": "gen-luminescent-aether-plasma-astro-axolotl",
     "name": "Luminescent Aether-Plasma Astro-Axolotl",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-aether-plasma-astro-axolotl.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-aether-plasma-astro-axolotl.wgsl",
+>>>>>>> origin/main
     "description": "A hyper-dimensional, cyber-organic celestial axolotl drifting gracefully through a fluid-dynamic quantum nebula — raymarched SDF with FFT-folded fractal gills, click-ripple tissue deformation, a mouse-orbit camera, and a kaleidoscopic aether-caustic tessellation sea.",
     "category": "generative",
     "tags": [
@@ -22211,7 +23095,11 @@
     "name": "Luminescent Aether-Plasma Nebula-Koi",
     "category": "generative",
     "description": "A hyper-organic, glowing biomechanical space-koi woven from flowing aether-plasma and shattered chromatic crystal, swimming gracefully through a volumetric quantum nebula while reacting dynamically to ambient acoustic frequencies.",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl",
+>>>>>>> origin/main
     "tags": [
       "organic",
       "quantum",
@@ -22347,7 +23235,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-luminescent-chrono-fluid-astrolabe",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-chrono-fluid-astrolabe",
       "coarse-refined-sdf-culling",
@@ -22370,7 +23262,11 @@
       "volumetric"
     ],
     "description": "A hyper-majestic, biomechanical celestial stag woven from shattered chrono-prisms and glowing liquid-aurora, elegantly galloping through a volumetric cosmic-rift while its crystalline antlers carve temporal geometric fractals into the void.",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-chrono-prism-astro-stag.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-chrono-prism-astro-stag.wgsl",
+>>>>>>> origin/main
     "workgroup_size": [
       16,
       16,
@@ -22473,14 +23369,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-luminescent-cyber-chrono-void-turtle",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-cyber-chrono-void-turtle.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-cyber-chrono-void-turtle.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-luminescent-quantum-flora-symphony",
     "name": "Luminescent Quantum-Flora Symphony",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-quantum-flora-symphony.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-quantum-flora-symphony.wgsl",
+>>>>>>> origin/main
     "updated": true,
     "supportsDepth": true,
     "workgroup_size": [
@@ -22590,14 +23494,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-luminescent-quantum-glass-phoenix-egg",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-luminescent-quantum-silicate-diatom",
     "name": "Luminescent Quantum-Silicate Diatom",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-quantum-silicate-diatom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-quantum-silicate-diatom.wgsl",
+>>>>>>> origin/main
     "description": "A hyper-detailed, microscopic journey into a living quantum silicate organism, where crystalline structures pulse with bioluminescent energy and fold through higher dimensions.",
     "parameters": [
       {
@@ -22690,7 +23602,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-luminescent-quantum-void-anglerfish",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -22747,14 +23663,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-luminescent-quantum-void-astral-turtle",
+<<<<<<< HEAD
     "url": "shaders/gen-luminescent-quantum-void-astral-turtle.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-quantum-void-astral-turtle.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-luminescent-silica-diatom-swarm",
     "name": "Luminescent Silica Diatom Swarm",
     "category": "generative",
+<<<<<<< HEAD
     "url": "/shaders/gen-luminescent-silica-diatom-swarm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-silica-diatom-swarm.wgsl",
+>>>>>>> origin/main
     "uniforms": {
       "zoom_params": {
         "x": {
@@ -22843,7 +23767,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-luminous-cauldron",
+<<<<<<< HEAD
     "url": "shaders/gen-luminous-cauldron.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminous-cauldron.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -22901,7 +23829,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-luminous-fluid-chladni-resonator",
+<<<<<<< HEAD
     "url": "shaders/gen-luminous-fluid-chladni-resonator.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminous-fluid-chladni-resonator.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -22960,7 +23892,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-magnetic-dipole-field",
+<<<<<<< HEAD
     "url": "shaders/gen-magnetic-dipole-field.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-magnetic-dipole-field.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-interactive",
@@ -23032,7 +23968,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-magnetic-ferrofluid-sculpture",
+<<<<<<< HEAD
     "url": "shaders/gen-magnetic-ferrofluid-sculpture.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-magnetic-ferrofluid-sculpture.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -23093,7 +24033,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-magnetic-ferrofluid",
+<<<<<<< HEAD
     "url": "shaders/gen-magnetic-ferrofluid.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-magnetic-ferrofluid.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-ferrofluid",
       "density-driven-spikes",
@@ -23160,7 +24104,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-magnetic-field-lines",
+<<<<<<< HEAD
     "url": "shaders/gen-magnetic-field-lines.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-magnetic-field-lines.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -23225,7 +24173,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-magnetic-field-warp",
+<<<<<<< HEAD
     "url": "shaders/gen-magnetic-field-warp.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-magnetic-field-warp.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -23283,7 +24235,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-magnetic-kelp",
+<<<<<<< HEAD
     "url": "shaders/gen-magnetic-kelp.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-magnetic-kelp.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -23344,7 +24300,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-magnetic-storm",
+<<<<<<< HEAD
     "url": "shaders/gen-magnetic-storm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-magnetic-storm.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -23403,7 +24363,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-mandelbox-explorer",
+<<<<<<< HEAD
     "url": "shaders/gen-mandelbox-explorer.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-mandelbox-explorer.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -23463,7 +24427,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-metaball-soft-body",
+<<<<<<< HEAD
     "url": "shaders/gen-metaball-soft-body.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-metaball-soft-body.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -23525,7 +24493,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-micro-cosmos",
+<<<<<<< HEAD
     "url": "shaders/gen-micro-cosmos.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-micro-cosmos.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -23601,7 +24573,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-minimal-surface-soap-iridescence",
+<<<<<<< HEAD
     "url": "shaders/gen-minimal-surface-soap-iridescence.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-minimal-surface-soap-iridescence.wgsl",
+>>>>>>> origin/main
     "features": [
       "hdr",
       "aces-tone-mapping",
@@ -23676,7 +24652,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-molten-planetary-core",
+<<<<<<< HEAD
     "url": "shaders/gen-molten-planetary-core.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-molten-planetary-core.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -23736,7 +24716,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-multi-scale-evolutionary-cellular-gardens",
+<<<<<<< HEAD
     "url": "shaders/gen-multi-scale-evolutionary-cellular-gardens.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-multi-scale-evolutionary-cellular-gardens.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -23796,14 +24780,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-murmuration-phantom",
+<<<<<<< HEAD
     "url": "shaders/gen-murmuration-phantom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-murmuration-phantom.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-mushroom-mandala-garden",
     "name": "Mushroom Mandala Garden",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-mushroom-mandala-garden.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-mushroom-mandala-garden.wgsl",
+>>>>>>> origin/main
     "description": "A psychedelic-inspired radial garden of breathing mushroom caps, luminous gills, traveling spores, and pulsing mycelium. Drags bend persistent growth and clicks release patterned fairy-ring fronts.",
     "params": [
       {
@@ -23955,7 +24947,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-mycelium-network",
+<<<<<<< HEAD
     "url": "shaders/gen-mycelium-network.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-mycelium-network.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-interactive",
@@ -24032,7 +25028,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-navier-stokes-ink",
+<<<<<<< HEAD
     "url": "shaders/gen-navier-stokes-ink.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-navier-stokes-ink.wgsl",
+>>>>>>> origin/main
     "features": [
       "fluid-inspired",
       "sdf-vortex-tubes",
@@ -24099,7 +25099,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-nebula-light-trail-swarm",
+<<<<<<< HEAD
     "url": "shaders/gen-nebula-light-trail-swarm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-nebula-light-trail-swarm.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -24163,7 +25167,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-nebular-chrono-astrolabe",
+<<<<<<< HEAD
     "url": "shaders/gen-nebular-chrono-astrolabe.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-nebular-chrono-astrolabe.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-astrolabe",
       "bounded-volumetric-nebula",
@@ -24231,7 +25239,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neon-acid-geometry",
+<<<<<<< HEAD
     "url": "shaders/gen-neon-acid-geometry.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neon-acid-geometry.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -24292,7 +25304,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neon-cyber-mandala",
+<<<<<<< HEAD
     "url": "shaders/gen-neon-cyber-mandala.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neon-cyber-mandala.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -24352,7 +25368,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neon-lotus",
+<<<<<<< HEAD
     "url": "shaders/gen-neon-lotus.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neon-lotus.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -24415,7 +25435,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neon-neural-network",
+<<<<<<< HEAD
     "url": "shaders/gen-neon-neural-network.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neon-neural-network.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -24473,7 +25497,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neon-plasma-biomechanical-hive",
+<<<<<<< HEAD
     "url": "shaders/gen-neon-plasma-biomechanical-hive.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neon-plasma-biomechanical-hive.wgsl",
+>>>>>>> origin/main
     "features": [
       "fast-motion",
       "spore-swarm",
@@ -24545,7 +25573,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neon-snowfall",
+<<<<<<< HEAD
     "url": "shaders/gen-neon-snowfall.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neon-snowfall.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -24605,7 +25637,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neon-stellated-octahedron",
+<<<<<<< HEAD
     "url": "shaders/gen-neon-stellated-octahedron.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neon-stellated-octahedron.wgsl",
+>>>>>>> origin/main
     "features": [
       "generative",
       "geometry",
@@ -24675,7 +25711,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neon-tropical-paradise",
+<<<<<<< HEAD
     "url": "shaders/gen-neon-tropical-paradise.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neon-tropical-paradise.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -24732,14 +25772,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neural-bioluminescence-matrix",
+<<<<<<< HEAD
     "url": "shaders/gen-neural-bioluminescence-matrix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neural-bioluminescence-matrix.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-neural-dust",
     "name": "Neural Dust",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-neural-dust.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neural-dust.wgsl",
+>>>>>>> origin/main
     "description": "Drifting luminous particle field driven by domain-warped FBM. Audio reactivity controls density and jitter, while mouse gravity attracts nearby dust motes.",
     "features": [
       "generative",
@@ -24900,7 +25948,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neural-fractal",
+<<<<<<< HEAD
     "url": "shaders/gen-neural-fractal.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neural-fractal.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -24959,7 +26011,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neural-network-glow-synaptic-pulse",
+<<<<<<< HEAD
     "url": "shaders/gen-neural-network-glow-synaptic-pulse.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neural-network-glow-synaptic-pulse.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25022,7 +26078,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neuro-cosmos",
+<<<<<<< HEAD
     "url": "shaders/gen-neuro-cosmos.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neuro-cosmos.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25081,7 +26141,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neuro-fluid-plasma-lotus",
+<<<<<<< HEAD
     "url": "shaders/gen-neuro-fluid-plasma-lotus.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neuro-fluid-plasma-lotus.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25139,7 +26203,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neuro-kinetic-bloom",
+<<<<<<< HEAD
     "url": "shaders/gen-neuro-kinetic-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neuro-kinetic-bloom.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-branching-flora",
       "sprung-mouse-repulsion",
@@ -25241,7 +26309,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-neuro-kinetic-liquid-gold-lotus",
+<<<<<<< HEAD
     "url": "shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -25258,7 +26330,11 @@
     "id": "gen-newton-fractal",
     "name": "Newton Fractal",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-newton-fractal.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-newton-fractal.wgsl",
+>>>>>>> origin/main
     "tags": [
       "generative",
       "fractal",
@@ -25381,7 +26457,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-obsidian-echo-chamber",
+<<<<<<< HEAD
     "url": "shaders/gen-obsidian-echo-chamber.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-obsidian-echo-chamber.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -25446,7 +26526,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-opal-circuit",
+<<<<<<< HEAD
     "url": "shaders/gen-opal-circuit.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-opal-circuit.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25506,7 +26590,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-percolation-threshold",
+<<<<<<< HEAD
     "url": "shaders/gen-percolation-threshold.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-percolation-threshold.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25569,7 +26657,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-phase-transition-memory-weave",
+<<<<<<< HEAD
     "url": "shaders/gen-phase-transition-memory-weave.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-phase-transition-memory-weave.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25627,7 +26719,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-photonic-crystal-brain",
+<<<<<<< HEAD
     "url": "shaders/gen-photonic-crystal-brain.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-photonic-crystal-brain.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25689,7 +26785,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-phyllotaxis-galaxy-spiral",
+<<<<<<< HEAD
     "url": "shaders/gen-phyllotaxis-galaxy-spiral.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-phyllotaxis-galaxy-spiral.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25746,7 +26846,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-physarum-sacred-geometry",
+<<<<<<< HEAD
     "url": "shaders/gen-physarum-sacred-geometry.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-physarum-sacred-geometry.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25807,7 +26911,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-plasma-mandala",
+<<<<<<< HEAD
     "url": "shaders/gen-plasma-mandala.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-plasma-mandala.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25869,7 +26977,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-plasma-psychedelic-wormhole",
+<<<<<<< HEAD
     "url": "shaders/gen-plasma-psychedelic-wormhole.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-plasma-psychedelic-wormhole.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25930,7 +27042,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-polar-rainbow-explosion",
+<<<<<<< HEAD
     "url": "shaders/gen-polar-rainbow-explosion.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-polar-rainbow-explosion.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -25991,7 +27107,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prism-tide",
+<<<<<<< HEAD
     "url": "shaders/gen-prism-tide.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prism-tide.wgsl",
+>>>>>>> origin/main
     "features": [
       "procedural",
       "audio-reactive",
@@ -26061,7 +27181,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prismatic-aether-loom",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-aether-loom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-aether-loom.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -26129,7 +27253,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prismatic-bismuth-lattice",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-bismuth-lattice.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-bismuth-lattice.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -26187,7 +27315,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prismatic-crystal-growth",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-crystal-growth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-crystal-growth.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -26209,7 +27341,11 @@
       "geometry"
     ],
     "description": "A hyper-majestic cybernetic celestial kitsune of shattered prismatic glass and liquid quantum-aether, hex-rune-etched armor and octahedral shoulder crystals, orbited by a prismatic shard swarm and stacked auroral torus rings, its nine radiant tails carving rifts into a kaleidoscopically folded volumetric particle-storm.",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
+>>>>>>> origin/main
     "updated": true,
     "supportsDepth": true,
     "supportsDof": false,
@@ -26258,7 +27394,11 @@
     "name": "Prismatic Cyber-Aurora Astral-Dragonfly",
     "description": "A majestic, hyper-organic biomechanical dragonfly forged from liquid auroral plasma and shattered chromatic crystal.",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
+>>>>>>> origin/main
     "uniforms": [
       {
         "name": "Wingspan",
@@ -26354,7 +27494,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prismatic-cyber-auroral-manta-swarm",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-cyber-auroral-manta-swarm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-auroral-manta-swarm.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -26363,7 +27507,11 @@
     "category": "generative",
     "description": "A hyper-majestic, biomechanical celestial peacock woven from shattered quantum glass and glowing liquid-aurora.",
     "author": "Jules",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
+>>>>>>> origin/main
     "tags": [
       "organic",
       "quantum",
@@ -26446,7 +27594,11 @@
   {
     "id": "gen-prismatic-cyber-chrono-void-kitsune",
     "name": "Prismatic Cyber-Chrono Void-Kitsune",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "tags": [
       "cosmic",
@@ -26587,7 +27739,11 @@
       }
     ],
     "id": "gen-prismatic-cyber-chrono-void-tortoise",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-cyber-chrono-void-tortoise.wgsl"
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-chrono-void-tortoise.wgsl"
+>>>>>>> origin/main
   },
   {
     "name": "Prismatic Fractal-Dunes",
@@ -26643,7 +27799,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prismatic-fractal-dunes",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-fractal-dunes.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-fractal-dunes.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -26708,7 +27868,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prismatic-ion-cascade",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-ion-cascade.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-ion-cascade.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -26768,7 +27932,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prismatic-mobius-helix",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-mobius-helix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-mobius-helix.wgsl",
+>>>>>>> origin/main
     "features": [
       "generative",
       "geometry",
@@ -26834,12 +28002,20 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prismatic-quantum-fractal-nautilus-engine",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-prismatic-quantum-glass-chrysalis-engine",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-quantum-glass-chrysalis-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-quantum-glass-chrysalis-engine.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "name": "Prismatic Quantum-Glass Chrysalis-Engine",
     "tags": [
@@ -26893,7 +28069,11 @@
     "id": "gen-prismatic-serpent-river",
     "name": "Prismatic Serpent River",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-serpent-river.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-serpent-river.wgsl",
+>>>>>>> origin/main
     "description": "Psychedelic-inspired prismatic serpents braid across a luminous current with racing scales, refractive fins, and bright eyes. Drags steer their persistent wakes and clicks shed expanding chromatic skins.",
     "params": [
       {
@@ -27043,7 +28223,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-prismatic-void-weaver-ouroboros",
+<<<<<<< HEAD
     "url": "shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-twisted-ouroboros",
       "coarse-refined-fbm-culling",
@@ -27112,7 +28296,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-protocell-division",
+<<<<<<< HEAD
     "url": "shaders/gen-protocell-division.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-protocell-division.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -27169,7 +28357,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-psychedelic-layered-time-stamps",
+<<<<<<< HEAD
     "url": "shaders/gen-psychedelic-layered-time-stamps.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-psychedelic-layered-time-stamps.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -27228,7 +28420,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-psychedelic-moire-flower",
+<<<<<<< HEAD
     "url": "shaders/gen-psychedelic-moire-flower.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-psychedelic-moire-flower.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -27285,7 +28481,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-psychedelic-time-warp-kaleidoscope",
+<<<<<<< HEAD
     "url": "shaders/gen-psychedelic-time-warp-kaleidoscope.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-psychedelic-time-warp-kaleidoscope.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -27347,11 +28547,19 @@
       }
     ],
     "id": "gen-quantum-acoustic-bioluminescent-void-urchin",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-acoustic-bioluminescent-void-urchin.wgsl"
   },
   {
     "id": "gen-quantum-aether-origami",
     "url": "shaders/gen-quantum-aether-origami.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-acoustic-bioluminescent-void-urchin.wgsl"
+  },
+  {
+    "id": "gen-quantum-aether-origami",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-aether-origami.wgsl",
+>>>>>>> origin/main
     "name": "Quantum Aether Origami",
     "category": "generative",
     "filename": "gen-quantum-aether-origami.wgsl",
@@ -27465,7 +28673,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-chrome-serpent-ouroboros",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-chrome-serpent-ouroboros.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-chrome-serpent-ouroboros.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -27527,7 +28739,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-entangled-ferrofluid-engine",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-entangled-ferrofluid-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-entangled-ferrofluid-engine.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -27585,7 +28801,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-fluorescent-aether-moth-swarm",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl",
+>>>>>>> origin/main
     "features": [
       "swarm",
       "curl-flow",
@@ -27651,7 +28871,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-fluorescent-nebula-anemone",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -27709,7 +28933,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-foam-alpha",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-foam-alpha.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-foam-alpha.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -27772,7 +29000,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-foam",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-foam.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-foam.wgsl",
+>>>>>>> origin/main
     "features": [
       "worley-noise",
       "lod-scaling",
@@ -27789,7 +29021,11 @@
     "id": "gen-quantum-liquid-metal-chronosphere",
     "name": "Quantum Liquid-Metal Chronosphere",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-liquid-metal-chronosphere.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-liquid-metal-chronosphere.wgsl",
+>>>>>>> origin/main
     "parameters": [
       {
         "id": "zoom_params_x",
@@ -27832,7 +29068,11 @@
   {
     "id": "gen-quantum-mycelial-neural-web",
     "name": "Quantum Mycelial Neural Web",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-mycelial-neural-web.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-mycelial-neural-web.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "An emergent, bioluminescent network of mycelial structures that pulses and evolves like a cosmic brain, bridging organic growth patterns with quantum probabilistic entanglement.",
     "features": [
@@ -27986,7 +29226,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-mycelium",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-mycelium.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-mycelium.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -28047,7 +29291,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-neural-lace",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-neural-lace.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-neural-lace.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -28060,7 +29308,11 @@
     "id": "gen-quantum-pollen",
     "name": "Quantum Pollen",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-pollen.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-pollen.wgsl",
+>>>>>>> origin/main
     "tags": [
       "generative",
       "particles",
@@ -28186,7 +29438,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-singularity-forge",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-singularity-forge.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-singularity-forge.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -28249,7 +29505,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-quantum-superposition",
+<<<<<<< HEAD
     "url": "shaders/gen-quantum-superposition.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-superposition.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -28313,7 +29573,11 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
+<<<<<<< HEAD
     "url": "shaders/gen-quasicrystal.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quasicrystal.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive"
     ]
@@ -28373,7 +29637,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-radiant-chrono-glass-nautilus",
+<<<<<<< HEAD
     "url": "shaders/gen-radiant-chrono-glass-nautilus.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-radiant-chrono-glass-nautilus.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -28438,7 +29706,11 @@
       }
     ],
     "id": "gen-radiant-cyber-bismuth-nebula-colossus",
+<<<<<<< HEAD
     "url": "shaders/gen-radiant-cyber-bismuth-nebula-colossus.wgsl"
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-radiant-cyber-bismuth-nebula-colossus.wgsl"
+>>>>>>> origin/main
   },
   {
     "name": "Radiant Cyber-Chrono Void-Stag",
@@ -28490,13 +29762,21 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-radiant-cyber-chrono-void-stag",
+<<<<<<< HEAD
     "url": "shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-radiant-cyber-plasma-astro-griffin",
     "name": "Radiant Cyber-Plasma Astro-Griffin",
+<<<<<<< HEAD
     "url": "shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
+>>>>>>> origin/main
     "description": "A hyper-majestic, biomechanical celestial griffin woven from shattered chrono-prisms and glowing liquid-plasma. Upgraded with a golden eagle head and beak, material-ID driven palettes (plasma wings / prism body / golden head), per-feather and per-facet color variation, triangular chrono-prism tessellation seams, faceted normals with 3-point lighting, Blinn-Phong specular, Fresnel plasma rim, ACES filmic tonemapping and real depth output.",
     "category": "generative",
     "tags": [
@@ -28608,7 +29888,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-radiant-quantum-crystalline-forge",
+<<<<<<< HEAD
     "url": "shaders/gen-radiant-quantum-crystalline-forge.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-radiant-quantum-crystalline-forge.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -28665,7 +29949,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-radiant-quantum-plasma-kraken-core",
+<<<<<<< HEAD
     "url": "shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -28724,7 +30012,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-rainbow-firefly-dance",
+<<<<<<< HEAD
     "url": "shaders/gen-rainbow-firefly-dance.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-rainbow-firefly-dance.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -28792,7 +30084,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-rainbow-icosahedron-cascade",
+<<<<<<< HEAD
     "url": "shaders/gen-rainbow-icosahedron-cascade.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-rainbow-icosahedron-cascade.wgsl",
+>>>>>>> origin/main
     "features": [
       "generative",
       "geometry",
@@ -28857,7 +30153,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-raptor-mini",
+<<<<<<< HEAD
     "url": "shaders/gen-raptor-mini.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-raptor-mini.wgsl",
+>>>>>>> origin/main
     "features": [
       "sprung-mouse-pack-leader",
       "velocity-aware-pursuit",
@@ -28926,14 +30226,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-recursive-ancestral-terrains",
+<<<<<<< HEAD
     "url": "shaders/gen-recursive-ancestral-terrains.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-recursive-ancestral-terrains.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-relay-psychedelia",
     "name": "Relay Psychedelia",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-relay-psychedelia.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-relay-psychedelia.wgsl",
+>>>>>>> origin/main
     "description": "Multi-agent relay generative shader — warped fbm field, palette-driven color, temporal feedback. See agents/RELAY_PROTOCOL.md.",
     "tags": [
       "generative",
@@ -29048,13 +30356,21 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-resonant-crystal-canyons",
+<<<<<<< HEAD
     "url": "shaders/gen-resonant-crystal-canyons.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-resonant-crystal-canyons.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-resonant-quantum-obsidian-astro-manta",
     "name": "Resonant Quantum-Obsidian Astro-Manta",
+<<<<<<< HEAD
     "url": "/shaders/gen-resonant-quantum-obsidian-astro-manta.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-resonant-quantum-obsidian-astro-manta.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "A colossal, biomechanical manta ray forged from fractured quantum-obsidian and liquid neon-aether — raymarched SDF with FFT-twisted fin-helix wings, click-ripple plate buckling, a mouse-orbit camera, glowing vein lattices, and a kaleidoscopic obsidian-shard tessellation sea.",
     "features": [
@@ -29213,7 +30529,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-resonant-quantum-obsidian-scarab-engine",
+<<<<<<< HEAD
     "url": "shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -29273,7 +30593,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-resonant-quantum-plasma-dragon-eye",
+<<<<<<< HEAD
     "url": "shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -29334,7 +30658,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-rgb-diffraction",
+<<<<<<< HEAD
     "url": "shaders/gen-rgb-diffraction.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-rgb-diffraction.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -29391,7 +30719,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-sentient-aether-flora-biosphere",
+<<<<<<< HEAD
     "url": "shaders/gen-sentient-aether-flora-biosphere.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sentient-aether-flora-biosphere.wgsl",
+>>>>>>> origin/main
     "features": [
       "fast-motion",
       "spore-swarm",
@@ -29460,7 +30792,11 @@
       }
     ],
     "id": "gen-sentient-aether-plasma-nebula-moth",
+<<<<<<< HEAD
     "url": "shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
+>>>>>>> origin/main
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -29516,7 +30852,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-sentient-cyber-aurora-void-owl",
+<<<<<<< HEAD
     "url": "shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -29524,7 +30864,11 @@
     "name": "Sentient Cyber-Chrono Void-Serpent",
     "category": "generative",
     "description": "A hyper-dimensional biomechanical serpent of shattered chrono-glass and liquid auroral plasma, octahedral scale-shards and torus chrono-rings clamped around its undulating spine, slithering through a Julia-orbit-trap temporal rift over a decaying void floor, pulsing with hex-etched bioluminescent armor.",
+<<<<<<< HEAD
     "url": "shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
+>>>>>>> origin/main
     "tags": [
       "organic",
       "cybernetic",
@@ -29633,7 +30977,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-sentient-ferro-silicate-swarm",
+<<<<<<< HEAD
     "url": "shaders/gen-sentient-ferro-silicate-swarm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sentient-ferro-silicate-swarm.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -29690,7 +31038,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-sentient-liquid-neon-fractal-heart",
+<<<<<<< HEAD
     "url": "shaders/gen-sentient-liquid-neon-fractal-heart.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sentient-liquid-neon-fractal-heart.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -29756,7 +31108,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-sentient-quantum-chrono-leviathan-moth",
+<<<<<<< HEAD
     "url": "shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -29821,7 +31177,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-showcase-crystalline-pulse",
+<<<<<<< HEAD
     "url": "shaders/gen-showcase-crystalline-pulse.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-showcase-crystalline-pulse.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -29926,7 +31286,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-showcase-kinetic-bloom",
+<<<<<<< HEAD
     "url": "shaders/gen-showcase-kinetic-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-showcase-kinetic-bloom.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -30032,7 +31396,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-showcase-nebula-core",
+<<<<<<< HEAD
     "url": "shaders/gen-showcase-nebula-core.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-showcase-nebula-core.wgsl",
+>>>>>>> origin/main
     "features": [],
     "params": [
       {
@@ -30133,7 +31501,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-sierpinski-tetrahedron",
+<<<<<<< HEAD
     "url": "shaders/gen-sierpinski-tetrahedron.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sierpinski-tetrahedron.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -30193,7 +31565,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-silica-tsunami",
+<<<<<<< HEAD
     "url": "shaders/gen-silica-tsunami.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-silica-tsunami.wgsl",
+>>>>>>> origin/main
     "features": [
       "refractive-particle-wave",
       "density-correct-repetition",
@@ -30260,7 +31636,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-singularity-forge",
+<<<<<<< HEAD
     "url": "shaders/gen-singularity-forge.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-singularity-forge.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -30326,13 +31706,21 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-solar-wind-ribbons",
+<<<<<<< HEAD
     "url": "shaders/gen-solar-wind-ribbons.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-solar-wind-ribbons.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-sonic-lava-flow",
     "name": "Sonic Lava Flow",
+<<<<<<< HEAD
     "url": "shaders/gen-sonic-lava-flow.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sonic-lava-flow.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Navier-Stokes-style fluid solver with domain-warped FBM, Voronoi crust detail, Beer-Lambert volumetric glow, Fresnel molten surface, enhanced curl noise, and deep audio reactivity creating a living molten world.",
     "features": [
@@ -30450,7 +31838,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-sonoluminescent-chrono-geode-matrix",
+<<<<<<< HEAD
     "url": "shaders/gen-sonoluminescent-chrono-geode-matrix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-sonoluminescent-chrono-geode-matrix.wgsl",
+>>>>>>> origin/main
     "features": [
       "fast-motion",
       "flash-burst-physics",
@@ -30520,7 +31912,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-spectral-ferrofluid",
+<<<<<<< HEAD
     "url": "shaders/gen-spectral-ferrofluid.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-spectral-ferrofluid.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -30581,7 +31977,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-stable-fluids-jos-stam",
+<<<<<<< HEAD
     "url": "shaders/gen-stable-fluids-jos-stam.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-stable-fluids-jos-stam.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -30641,14 +32041,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-stardust-nebula",
+<<<<<<< HEAD
     "url": "shaders/gen-stardust-nebula.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-stardust-nebula.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-stellar-acoustic-resonance-manifold",
     "name": "Stellar-Acoustic Resonance-Manifold",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-stellar-acoustic-resonance-manifold.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-stellar-acoustic-resonance-manifold.wgsl",
+>>>>>>> origin/main
     "parameters": [
       {
         "name": "Audio Reactivity",
@@ -30738,7 +32146,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-stellar-plasma-ouroboros",
+<<<<<<< HEAD
     "url": "shaders/gen-stellar-plasma-ouroboros.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-stellar-plasma-ouroboros.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -30798,7 +32210,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-stellar-web-loom",
+<<<<<<< HEAD
     "url": "shaders/gen-stellar-web-loom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-stellar-web-loom.wgsl",
+>>>>>>> origin/main
     "features": [
       "fast-motion",
       "warp-flight",
@@ -30870,7 +32286,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-strange-field-flow",
+<<<<<<< HEAD
     "url": "shaders/gen-strange-field-flow.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-strange-field-flow.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -30930,7 +32350,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-string-theory",
+<<<<<<< HEAD
     "url": "shaders/gen-string-theory.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-string-theory.wgsl",
+>>>>>>> origin/main
     "features": [
       "standing-wave-ensemble",
       "harmonic-mode-synthesis",
@@ -30999,7 +32423,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-superfluid-quantum-foam",
+<<<<<<< HEAD
     "url": "shaders/gen-superfluid-quantum-foam.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-superfluid-quantum-foam.wgsl",
+>>>>>>> origin/main
     "features": [
       "raymarched-quantum-foam",
       "bounded-current-advection",
@@ -31066,7 +32494,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-supernova-remnant",
+<<<<<<< HEAD
     "url": "shaders/gen-supernova-remnant.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-supernova-remnant.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31124,7 +32556,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-symbiotic-chrono-mycelium-engine",
+<<<<<<< HEAD
     "url": "shaders/gen-symbiotic-chrono-mycelium-engine.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-symbiotic-chrono-mycelium-engine.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31133,7 +32569,11 @@
     "author": "Jules",
     "description": "A biomechanical network of luminescent mycelium feeding off the chaotic energy of a fractured quantum singularity. Upgraded with a spring-smoothed mouse gravity-well attractor that steers fungal growth, click-spawned spore-burst shockwaves with bounded energy, hold-to-mutate surges, real audio reactivity (bass/mids/treble plus guarded FFT bins), engine-ripple nutrient rings, temporal feedback memory so growth self-organizes along its own history, generated raymarch depth, and semantic alpha.",
     "type": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-symbiotic-cyber-fungal-core-reactor.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-symbiotic-cyber-fungal-core-reactor.wgsl",
+>>>>>>> origin/main
     "tags": [
       "biomechanical",
       "mycelium",
@@ -31296,7 +32736,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-symbiotic-light-networks",
+<<<<<<< HEAD
     "url": "shaders/gen-symbiotic-light-networks.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-symbiotic-light-networks.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31356,7 +32800,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-symbiotic-plasma-reef-matrix",
+<<<<<<< HEAD
     "url": "shaders/gen-symbiotic-plasma-reef-matrix.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-symbiotic-plasma-reef-matrix.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31416,7 +32864,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-tectonic-plasma-crucible",
+<<<<<<< HEAD
     "url": "shaders/gen-tectonic-plasma-crucible.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-tectonic-plasma-crucible.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31475,7 +32927,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-temporal-motion-smear",
+<<<<<<< HEAD
     "url": "shaders/gen-temporal-motion-smear.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-temporal-motion-smear.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31534,7 +32990,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-thermal-rainbow-topography",
+<<<<<<< HEAD
     "url": "shaders/gen-thermal-rainbow-topography.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-thermal-rainbow-topography.wgsl",
+>>>>>>> origin/main
     "features": [
       "thermal",
       "topography",
@@ -31610,7 +33070,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-topological-acoustic-knots",
+<<<<<<< HEAD
     "url": "shaders/gen-topological-acoustic-knots.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-topological-acoustic-knots.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31675,7 +33139,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-topological-phase-weave",
+<<<<<<< HEAD
     "url": "shaders/gen-topological-phase-weave.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-topological-phase-weave.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31734,7 +33202,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-topology-flow",
+<<<<<<< HEAD
     "url": "shaders/gen-topology-flow.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-topology-flow.wgsl",
+>>>>>>> origin/main
     "features": [
       "hdr",
       "aces-tonemap",
@@ -31751,7 +33223,11 @@
     "id": "gen-torus-knot-rainbow",
     "name": "Torus Knot Rainbow",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-torus-knot-rainbow.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-torus-knot-rainbow.wgsl",
+>>>>>>> origin/main
     "tags": [
       "psychedelic",
       "colorful",
@@ -31871,7 +33347,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-translucent-nebula",
+<<<<<<< HEAD
     "url": "shaders/gen-translucent-nebula.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-translucent-nebula.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31932,7 +33412,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-turing-morphogenesis",
+<<<<<<< HEAD
     "url": "shaders/gen-turing-morphogenesis.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-turing-morphogenesis.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -31991,7 +33475,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-velocity-bloom",
+<<<<<<< HEAD
     "url": "shaders/gen-velocity-bloom.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-velocity-bloom.wgsl",
+>>>>>>> origin/main
     "features": [
       "temporal",
       "audio-reactive",
@@ -32059,7 +33547,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-verlet-cloth-wind",
+<<<<<<< HEAD
     "url": "shaders/gen-verlet-cloth-wind.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-verlet-cloth-wind.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -32119,14 +33611,22 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-vitreous-chrono-chandelier",
+<<<<<<< HEAD
     "url": "shaders/gen-vitreous-chrono-chandelier.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-vitreous-chrono-chandelier.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
     "id": "gen-vitreous-quantum-lotus-singularity",
     "name": "Vitreous Quantum-Lotus Singularity",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/gen-vitreous-quantum-lotus-singularity.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-vitreous-quantum-lotus-singularity.wgsl",
+>>>>>>> origin/main
     "tags": [
       "organic",
       "quantum",
@@ -32226,12 +33726,20 @@
     "id": "gen-void-harmonic-cymatic-resonator",
     "name": "Void Harmonic Cymatic Resonator",
     "category": "generative",
+<<<<<<< HEAD
     "url": "/shaders/gen-void-harmonic-cymatic-resonator.wgsl",
     "description": "A hyper-dimensional sound-reactive sculpture that renders the visible form of acoustic frequencies in the void.",
     "author": "Jules",
     "params": [
       {
         "id": "freq",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-void-harmonic-cymatic-resonator.wgsl",
+    "description": "A hyper-dimensional sound-reactive sculpture that renders the visible form of acoustic frequencies in the void, resembling Chladni patterns suspended in dark matter.",
+    "params": [
+      {
+        "id": "frequency",
+>>>>>>> origin/main
         "name": "Frequency",
         "mapping": "zoom_params.x",
         "default": 1,
@@ -32240,7 +33748,11 @@
         "step": 0.1
       },
       {
+<<<<<<< HEAD
         "id": "amp",
+=======
+        "id": "amplitude",
+>>>>>>> origin/main
         "name": "Amplitude",
         "mapping": "zoom_params.y",
         "default": 1,
@@ -32249,7 +33761,11 @@
         "step": 0.1
       },
       {
+<<<<<<< HEAD
         "id": "glow",
+=======
+        "id": "glow_intensity",
+>>>>>>> origin/main
         "name": "Glow Intensity",
         "mapping": "zoom_params.z",
         "default": 2,
@@ -32258,7 +33774,11 @@
         "step": 0.1
       },
       {
+<<<<<<< HEAD
         "id": "comp",
+=======
+        "id": "complexity",
+>>>>>>> origin/main
         "name": "Complexity",
         "mapping": "zoom_params.w",
         "default": 3,
@@ -32328,7 +33848,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-volcanic-ink",
+<<<<<<< HEAD
     "url": "shaders/gen-volcanic-ink.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-volcanic-ink.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "LOD-scaling",
@@ -32395,7 +33919,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-von-karman-vortex",
+<<<<<<< HEAD
     "url": "shaders/gen-von-karman-vortex.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-von-karman-vortex.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive"
     ]
@@ -32457,7 +33985,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-voronoi-crystal",
+<<<<<<< HEAD
     "url": "shaders/gen-voronoi-crystal.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-voronoi-crystal.wgsl",
+>>>>>>> origin/main
     "features": [
       "animated-voronoi-cells",
       "sprung-seed-refraction",
@@ -32526,7 +34058,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-vortex-cathedral",
+<<<<<<< HEAD
     "url": "shaders/gen-vortex-cathedral.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-vortex-cathedral.wgsl",
+>>>>>>> origin/main
     "features": [
       "volumetric-god-rays",
       "starburst-diffraction",
@@ -32593,7 +34129,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-wasm-hls-physarum-swarm",
+<<<<<<< HEAD
     "url": "shaders/gen-wasm-hls-physarum-swarm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -32652,7 +34192,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-worley-cellular-noise",
+<<<<<<< HEAD
     "url": "shaders/gen-worley-cellular-noise.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-worley-cellular-noise.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -32712,7 +34256,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-xeno-botanical-synth-flora",
+<<<<<<< HEAD
     "url": "shaders/gen-xeno-botanical-synth-flora.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-xeno-botanical-synth-flora.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -32770,7 +34318,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-xeno-mycelial-resonance-web",
+<<<<<<< HEAD
     "url": "shaders/gen-xeno-mycelial-resonance-web.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-xeno-mycelial-resonance-web.wgsl",
+>>>>>>> origin/main
     "features": []
   },
   {
@@ -32830,7 +34382,11 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-zeta-function-landscape",
+<<<<<<< HEAD
     "url": "shaders/gen-zeta-function-landscape.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-zeta-function-landscape.wgsl",
+>>>>>>> origin/main
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -32842,7 +34398,11 @@
   {
     "id": "gen-capabilities",
     "name": "System Monitor",
+<<<<<<< HEAD
     "url": "shaders/gen_capabilities.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_capabilities.wgsl",
+>>>>>>> origin/main
     "description": "Cyberpunk system monitor demonstrating mouse inputs, time, and frame feedback.",
     "features": [
       "mouse-driven"
@@ -32928,7 +34488,11 @@
   {
     "id": "gen-cyclic-automaton",
     "name": "Greenberg-Hastings Automaton",
+<<<<<<< HEAD
     "url": "shaders/gen_cyclic_automaton.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_cyclic_automaton.wgsl",
+>>>>>>> origin/main
     "description": "Excitable cellular medium with firing, refractory cooling, bass-driven spontaneous ignition, directional held-mouse painting, and timestamp-bounded click wavefronts.",
     "features": [
       "upgraded-rgba",
@@ -33027,7 +34591,11 @@
   {
     "id": "gen-fluffy-raincloud",
     "name": "Vorticity Raincloud",
+<<<<<<< HEAD
     "url": "shaders/gen_fluffy_raincloud.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_fluffy_raincloud.wgsl",
+>>>>>>> origin/main
     "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow.",
     "features": [
       "upgraded-rgba",
@@ -33126,7 +34694,11 @@
   {
     "id": "gen-grid",
     "name": "Domain-Warped FBM Grid",
+<<<<<<< HEAD
     "url": "shaders/gen_grid.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_grid.wgsl",
+>>>>>>> origin/main
     "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moiré sub-grids, chromatic dispersion edges, and temporal motion blur.",
     "features": [
       "mouse-driven",
@@ -33229,7 +34801,11 @@
   {
     "id": "gen-grok41-mandelbrot",
     "name": "Buddhabrot Nebula",
+<<<<<<< HEAD
     "url": "shaders/gen_grok41_mandelbrot.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_grok41_mandelbrot.wgsl",
+>>>>>>> origin/main
     "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation.",
     "features": [
       "mouse-driven",
@@ -33328,7 +34904,11 @@
   {
     "id": "gen-grok41-plasma",
     "name": "Spherical Harmonics Plasma",
+<<<<<<< HEAD
     "url": "shaders/gen_grok41_plasma.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_grok41_plasma.wgsl",
+>>>>>>> origin/main
     "description": "Audio-reactive 3D gas giant using Y(l,m) spherical harmonics with HDR ACES tone mapping, Rayleigh limb scattering, mouse-driven light, and treble-triggered lightning tendrils.",
     "features": [
       "mouse-driven",
@@ -33428,7 +35008,11 @@
   {
     "id": "gen-grok4-life",
     "name": "SmoothLife Predator-Prey",
+<<<<<<< HEAD
     "url": "shaders/gen_grok4_life.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_grok4_life.wgsl",
+>>>>>>> origin/main
     "description": "Two-species SmoothLife cellular automaton with Lotka-Volterra predator-prey dynamics. Species A (green prey) uses Rafler 2011 birth/survival rules; species B (red predator) grows on prey density and decays without it. Audio bass drives prey birth-rate, treble drives predator decay, mids control coupling strength.",
     "features": [
       "mouse-driven",
@@ -33519,7 +35103,11 @@
   {
     "id": "gen-grok4-perlin",
     "name": "Stratified Erosion Terrain",
+<<<<<<< HEAD
     "url": "shaders/gen_grok4_perlin.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_grok4_perlin.wgsl",
+>>>>>>> origin/main
     "description": "Depth-aware terrain with sediment transport, layered rock hardness, reflective valley water tables, wind abrasion, and bass-driven seismic uplift.",
     "features": [
       "upgraded-rgba",
@@ -33618,7 +35206,11 @@
   {
     "id": "gen-grokcf-interference",
     "name": "Cylindrical Drum Modes",
+<<<<<<< HEAD
     "url": "shaders/gen_grokcf_interference.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_grokcf_interference.wgsl",
+>>>>>>> origin/main
     "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(α_{mn}·r/R)·cos(mφ)·cos(ω_{mn}·t). GPU polynomial Bessel J₀–J₃ (Abramowitz & Stegun). Audio bands activate mode families (bass→radial, mids→azimuthal, treble→higher-order). Chladni node-line colouring.",
     "features": [
       "upgraded-rgba",
@@ -33724,7 +35316,11 @@
   {
     "id": "gen-grokcf-voronoi",
     "name": "Worley Cellular",
+<<<<<<< HEAD
     "url": "shaders/gen_grokcf_voronoi.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_grokcf_voronoi.wgsl",
+>>>>>>> origin/main
     "description": "Audio-reactive Worley cellular fields with thin-film interference edge glow and micro-cosmic starfields hidden inside each cell.",
     "features": [
       "mouse-driven",
@@ -33824,7 +35420,11 @@
   {
     "id": "gen-hyper-warp",
     "name": "Hyper Warp",
+<<<<<<< HEAD
     "url": "shaders/gen_hyper_warp.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_hyper_warp.wgsl",
+>>>>>>> origin/main
     "description": "Advanced domain warping with fractal noise and reaction-diffusion feedback.",
     "features": [
       "aces-tone-map",
@@ -33930,7 +35530,11 @@
   {
     "id": "gen-julia-set",
     "name": "Julia Set — Orbit Trap",
+<<<<<<< HEAD
     "url": "shaders/gen_julia_set.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_julia_set.wgsl",
+>>>>>>> origin/main
     "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth (continuous) iteration count μ=i−log₂(log₂|z|), multi-trap orbit colouring (circle, line, cross traps), and animated Julia parameter c orbiting a Mandelbrot cardioid boundary. Audio-driven trap scale.",
     "features": [
       "audio-reactive",
@@ -34023,7 +35627,11 @@
   {
     "id": "gen-kimi-crystal",
     "name": "Kimi Crystal",
+<<<<<<< HEAD
     "url": "shaders/gen_kimi_crystal.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_kimi_crystal.wgsl",
+>>>>>>> origin/main
     "description": "Animated crystalline structures growing on a hexagonal grid with physical light transmission. Features ice IOR-based Fresnel reflection, purity-based absorption, and variable crystal thickness.",
     "features": [
       "mouse-driven",
@@ -34127,7 +35735,11 @@
   {
     "id": "gen-kimi-nebula",
     "name": "Kimi Nebula",
+<<<<<<< HEAD
     "url": "shaders/gen_kimi_nebula.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_kimi_nebula.wgsl",
+>>>>>>> origin/main
     "description": "Cosmic nebula cloud swirls with ethereal gas formations, twinkling stars, and mouse-driven stellar winds.",
     "features": [
       "aces-tone-map",
@@ -34227,7 +35839,11 @@
   {
     "id": "gen_mandelbulb_3d",
     "name": "Mandelbulb 3D",
+<<<<<<< HEAD
     "url": "shaders/gen_mandelbulb_3d.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_mandelbulb_3d.wgsl",
+>>>>>>> origin/main
     "description": "3D Mandelbulb fractal with ray marching, orbit trap coloring, soft shadows, and distance-based alpha for atmospheric depth",
     "tags": [
       "mandelbulb",
@@ -34322,7 +35938,11 @@
   {
     "id": "gen-orb",
     "name": "Lorenz Strange Attractor",
+<<<<<<< HEAD
     "url": "shaders/gen_orb.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_orb.wgsl",
+>>>>>>> origin/main
     "description": "Audio-reactive Lorenz strange attractor (σ, ρ, β) with bioluminescent depth halos and persistent scent trails. Mids drive rotation, bass adds streams, treble jitters chaos.",
     "features": [
       "mouse-driven",
@@ -34421,7 +36041,11 @@
   {
     "id": "gen-psychedelic-spiral",
     "name": "Superformula Spirograph Spiral",
+<<<<<<< HEAD
     "url": "shaders/gen_psychedelic_spiral.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_psychedelic_spiral.wgsl",
+>>>>>>> origin/main
     "description": "Superformula-driven spirograph spiral with nested epicycles, audio-reactive petal modulation, mouse-centered orbit drift, and temporal feedback warping.",
     "features": [
       "mouse-driven",
@@ -34521,7 +36145,11 @@
   {
     "id": "gen_quantum_foam",
     "name": "Quantum Foam",
+<<<<<<< HEAD
     "url": "shaders/gen_quantum_foam.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_quantum_foam.wgsl",
+>>>>>>> origin/main
     "description": "Quantum vacuum fluctuation visualization with virtual particle pairs, entanglement webs, and HDR volumetric glow",
     "tags": [
       "quantum",
@@ -34615,7 +36243,11 @@
   {
     "id": "gen-rainbow-smoke",
     "name": "Rainbow Smoke with Dual Scattering",
+<<<<<<< HEAD
     "url": "shaders/gen_rainbow_smoke.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_rainbow_smoke.wgsl",
+>>>>>>> origin/main
     "description": "Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble.",
     "features": [
       "upgraded-rgba",
@@ -34710,7 +36342,11 @@
   {
     "id": "gen-reaction-diffusion",
     "name": "FitzHugh-Nagumo Excitable Media",
+<<<<<<< HEAD
     "url": "shaders/gen_reaction_diffusion.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_reaction_diffusion.wgsl",
+>>>>>>> origin/main
     "description": "Dual-mode excitable media: Gray-Scott morphogenesis or FitzHugh-Nagumo action-potential waves with mouse/current injection and bass-triggered pulses.",
     "features": [
       "upgraded-rgba",
@@ -34812,7 +36448,11 @@
   {
     "id": "gen-trails",
     "name": "Boids Flocking",
+<<<<<<< HEAD
     "url": "shaders/gen_trails.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_trails.wgsl",
+>>>>>>> origin/main
     "description": "Audio-reactive Reynolds boids flocking with bass-driven panic, mids cohesion, treble flash bursts, mouse attraction, motion-blur streaks, and pheromone trails.",
     "features": [
       "mouse-driven",
@@ -34911,7 +36551,11 @@
   {
     "id": "gen-wave-equation",
     "name": "Fluid Ripples",
+<<<<<<< HEAD
     "url": "shaders/gen_wave_equation.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen_wave_equation.wgsl",
+>>>>>>> origin/main
     "description": "Audio-reactive water ripple simulation with wave interference. Bass amplifies wave energy and mouse-driven pulses. Parameters control intensity, speed, scale, and damping detail.",
     "features": [
       "mouse-driven",
@@ -35006,7 +36650,11 @@
   {
     "id": "generative-psy-swirls",
     "name": "Psychedelic Swirls",
+<<<<<<< HEAD
     "url": "shaders/generative-psy-swirls.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/generative-psy-swirls.wgsl",
+>>>>>>> origin/main
     "description": "Multi-layer polar swirl vortex with chromatic hue separation per layer, temporal swirl accumulation, audio-driven twist modulation, HSV rainbow cycles, and ripple glow trails.",
     "workgroup_size": [
       16,
@@ -35117,7 +36765,11 @@
   {
     "id": "generative-turing-veins",
     "name": "Turing Veins Generative",
+<<<<<<< HEAD
     "url": "shaders/generative-turing-veins.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/generative-turing-veins.wgsl",
+>>>>>>> origin/main
     "description": "Multiscale reaction-diffusion Turing patterns generating organic vein/network structures with bioluminescent glow, chromatic activator/inhibitor separation, temporal colony evolution via dataTextureC, and audio-driven feed rate modulation.",
     "features": [
       "mouse-driven",
@@ -35217,7 +36869,11 @@
   {
     "id": "gravito-phononic-accretion",
     "name": "Gravito-Phononic Accretion",
+<<<<<<< HEAD
     "url": "shaders/gravito-phononic-accretion.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/gravito-phononic-accretion.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "SPH density estimation around orbiting accretors with cubic-spline kernel, shock-wave detection, and temperature-based blackbody coloring. Bass adds mass to primaries, mids drive orbital precession, treble creates acoustic standing waves. Mouse introduces a rogue body with tidal forces. Ripples seed density perturbations.",
     "features": [
@@ -35321,7 +36977,11 @@
   {
     "id": "holographic-crystal",
     "name": "Holographic Crystal",
+<<<<<<< HEAD
     "url": "shaders/holographic-crystal.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-crystal.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Crystal facet interference patterns with rainbow holographic shifts. Mouse tilts the crystal lattice.",
     "tags": [
@@ -35419,7 +37079,11 @@
     "id": "holographic-entropy-vortex",
     "name": "Holographic Entropy Vortex",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/holographic-entropy-vortex.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-entropy-vortex.wgsl",
+>>>>>>> origin/main
     "description": "A swirling entropy vortex with holographic color shifts, iridescent thin-film interference, and atmospheric depth.",
     "features": [
       "mouse-driven",
@@ -35507,7 +37171,11 @@
     "id": "holographic_interference",
     "name": "Holographic Interference",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/holographic_interference.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic_interference.wgsl",
+>>>>>>> origin/main
     "description": "Laser interference pattern simulation with multiple coherent sources, object beam and reference beam phase accumulation, speckle pattern, chromatic dispersion on holographic fringes, HDR bloom, and ACES tone mapping. Bass drives reference beam angle, mouse moves the virtual object, depth controls holographic parallax.",
     "tags": [
       "holographic",
@@ -35610,7 +37278,11 @@
   {
     "id": "hyperbolic-crystal-symbiosis",
     "name": "Hyperbolic Crystal Symbiosis",
+<<<<<<< HEAD
     "url": "shaders/hyperbolic-crystal-symbiosis.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/hyperbolic-crystal-symbiosis.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Voronoi crystal facets on a true Poincaré disk with geodesic distance and Gray-Scott reaction-diffusion. Kaleidoscope symmetry mirrors the domain into audio-reactive sectors, while an audio-driven palette shifts crystal hues with bass, mids and treble. Iridescent thin-film coloring on facet edges with HDR bloom at triple junctions. Bass drives crystal growth, mids morph curvature, treble adds sparkle. Mouse warps the disk center; click ripples propagate through the crystal, and organic drift warps the domain. smin blends Euclidean and hyperbolic metrics for smooth geometric transitions. Chromatic aberration and temporal luma feedback add a living, layered glow.",
     "features": [
@@ -35728,7 +37400,11 @@
   {
     "id": "interactive_neural_swarm",
     "name": "Neural Swarm",
+<<<<<<< HEAD
     "url": "shaders/interactive_neural_swarm.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive_neural_swarm.wgsl",
+>>>>>>> origin/main
     "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns",
     "tags": [
       "neural",
@@ -35824,7 +37500,11 @@
   {
     "id": "kimi_flock_symphony",
     "name": "Kimi Flock Symphony",
+<<<<<<< HEAD
     "url": "shaders/kimi_flock_symphony.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/kimi_flock_symphony.wgsl",
+>>>>>>> origin/main
     "description": "Advanced particle flocking simulation with musical visualization, featuring separation, alignment, cohesion, and mouse interaction.",
     "tags": [
       "boids",
@@ -35921,7 +37601,11 @@
   {
     "id": "kimi-fractal-dreams",
     "name": "Kimi Fractal Dreams",
+<<<<<<< HEAD
     "url": "shaders/kimi_fractal_dreams.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/kimi_fractal_dreams.wgsl",
+>>>>>>> origin/main
     "description": "Multi-layer fractal with orbit traps, burning ship variant, and smooth color cycling.",
     "features": [
       "mouse-driven",
@@ -36017,7 +37701,11 @@
   {
     "id": "kimi-nebula-depth",
     "name": "Kimi Nebula Depth",
+<<<<<<< HEAD
     "url": "shaders/kimi_nebula_depth.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/kimi_nebula_depth.wgsl",
+>>>>>>> origin/main
     "description": "Halftone dot and Sobel edge ink-stipple effect: posterized luma rendered as resolution-independent dots with ink outlines, paper grain, and a mouse-driven vignette.",
     "features": [
       "mouse-driven",
@@ -36107,7 +37795,11 @@
   {
     "id": "kimi-quantum-field",
     "name": "Kimi Quantum Field",
+<<<<<<< HEAD
     "url": "shaders/kimi_quantum_field.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/kimi_quantum_field.wgsl",
+>>>>>>> origin/main
     "description": "Wave interference patterns with uncertainty visualization and probability densities.",
     "features": [
       "mouse-driven",
@@ -36203,7 +37895,11 @@
   {
     "id": "lava-lamp-blobs",
     "name": "Lava Lamp Blobs",
+<<<<<<< HEAD
     "url": "shaders/lava-lamp-blobs.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/lava-lamp-blobs.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Metaball lava blobs rise and merge with chromatic warm-cool color shifts and audio-reactive heat.",
     "tags": [
@@ -36304,7 +38000,11 @@
   {
     "id": "liquid_crystal_birefringence",
     "name": "Liquid Crystal",
+<<<<<<< HEAD
     "url": "shaders/liquid_crystal_birefringence.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid_crystal_birefringence.wgsl",
+>>>>>>> origin/main
     "description": "Twisted-nematic cell between crossed polarizers. The analyzer now obeys Malus's law and rotates toward a held pointer, producing the dark extinction brushes real liquid-crystal microscopy shows — previously no analyzer existed at all, so the effect's most recognisable feature could not appear. Transmitted light relaxes through dataTextureC with an asymmetric Frederiks time constant. Scene depth is preserved (it was previously overwritten with polarization alpha).",
     "tags": [
       "interactive",
@@ -36422,7 +38122,11 @@
   {
     "id": "liquid_magnetic_ferro",
     "name": "Magnetic Ferrofluid",
+<<<<<<< HEAD
     "url": "shaders/liquid_magnetic_ferro.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid_magnetic_ferro.wgsl",
+>>>>>>> origin/main
     "description": "Interactive ferrofluid simulation with magnetic field lines, Rosensweig instability spike formation, and metallic iridescent rendering",
     "tags": [
       "ferrofluid",
@@ -36520,7 +38224,11 @@
   {
     "id": "magnetic-flux-garden",
     "name": "Magnetic Flux Garden",
+<<<<<<< HEAD
     "url": "shaders/magnetic-flux-garden.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/magnetic-flux-garden.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Ferrofluid-like magnetic field lines curve between cursor poles, blooming with organic turbulence and treble seeds.",
     "tags": [
@@ -36617,7 +38325,11 @@
   {
     "id": "molten-gold",
     "name": "Molten Gold",
+<<<<<<< HEAD
     "url": "shaders/molten-gold.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/molten-gold.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Molten gold liquid metal effect with flowing fBM noise. Hypnotic idle animation with satisfying mouse claim interaction. Audio-reactive: bass fuels glow, treble adds specular highlights, mid drives ripple shimmer.",
     "features": [
@@ -36724,7 +38436,11 @@
     "id": "morphogenic-resonance",
     "name": "Morphogenic Resonance",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/morphogenic-resonance.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/morphogenic-resonance.wgsl",
+>>>>>>> origin/main
     "description": "Organic shapes that morph between geometric and biological forms via sinusoidal interpolation. Closed-form morph-field conveyor, traveling resonance rings, and advected HDR trails. Bass drives morph speed, mids add surface ripple resonance, treble creates smooth edge discharge. Mouse warps the morph field.",
     "features": [
       "audio-reactive",
@@ -36823,7 +38539,11 @@
   {
     "id": "multi-scale-evolutionary-cellular-gardens",
     "name": "Multi-Scale Evolutionary Cellular Gardens",
+<<<<<<< HEAD
     "url": "shaders/multi-scale-evolutionary-cellular-gardens.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/multi-scale-evolutionary-cellular-gardens.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Two competing cellular species whose growth rules slowly evolve under audio pressure. The garden changes its fundamental behavior over time while remaining visually coherent.",
     "features": [
@@ -36926,7 +38646,11 @@
     "id": "mycelium-network",
     "name": "Mycelium Network",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/mycelium-network.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/mycelium-network.wgsl",
+>>>>>>> origin/main
     "description": "Underground fungal hyphae network with pulsing nutrient flows traveling along branches. Audio triggers bright nutrient pulses.",
     "features": [
       "audio-reactive",
@@ -37019,7 +38743,11 @@
   {
     "id": "nebula-gyroid",
     "name": "Nebula Gyroid",
+<<<<<<< HEAD
     "url": "shaders/nebula-gyroid.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/nebula-gyroid.wgsl",
+>>>>>>> origin/main
     "description": "Ethereal, flowing organic form created with raymarched gyroid SDFs. Features iridescent lighting, multiple blended gyroid layers, and mouse-reactive domain warping for a fluid geometry effect.",
     "tags": [
       "generative",
@@ -37125,7 +38853,11 @@
   {
     "id": "neon-fern-garden",
     "name": "Neon Fern Garden",
+<<<<<<< HEAD
     "url": "shaders/neon-fern-garden.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/neon-fern-garden.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Procedurally generated fern fronds unfurling in neon colors against dark soil. Bass drives growth animation, mids control frond density, treble creates dewdrop sparkles. Mouse attracts or repels frond tips.",
     "tags": [
@@ -37232,7 +38964,11 @@
     "id": "neural-mandala",
     "name": "Neural Mandala",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/neural-mandala.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/neural-mandala.wgsl",
+>>>>>>> origin/main
     "description": "Concentric geometric rings with interconnected node networks that pulse and evolve. Audio drives ring expansion and node brightness.",
     "features": [
       "audio-reactive",
@@ -37324,7 +39060,11 @@
   {
     "id": "neural-synapse-web",
     "name": "Neural Synapse Web",
+<<<<<<< HEAD
     "url": "shaders/neural-synapse-web.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/neural-synapse-web.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Pulsing neural nodes and synaptic signals with guarded six-float spring state, uniform bounded click waves, live plasma audio, exact display history, ACES, semantic alpha, and source depth.",
     "tags": [
@@ -37426,7 +39166,11 @@
   {
     "id": "phase-memory-weave",
     "name": "Phase Memory Weave",
+<<<<<<< HEAD
     "url": "shaders/phase-memory-weave.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/phase-memory-weave.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Authoritative Ginzburg-Landau state packed as psiR, psiI, slow memory, and activity, with exact center/neighbor loads, sprung thermal focus, bounded click phase fronts, opalescent ACES display, semantic alpha, and source depth.",
     "features": [
@@ -37535,7 +39279,11 @@
   {
     "id": "phosphorescent-jellyfish",
     "name": "Phosphorescent Jellyfish",
+<<<<<<< HEAD
     "url": "shaders/phosphorescent-jellyfish.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/phosphorescent-jellyfish.wgsl",
+>>>>>>> origin/main
     "description": "Glowing jellyfish with trailing tentacle bioluminescence. Bass pulses the bell contraction, mids create tentacle wave motion, treble adds individual photophore sparkles. Mouse attracts the jellyfish swarm.",
     "tags": [
       "generative",
@@ -37630,7 +39378,11 @@
   {
     "id": "plasma-jet-stream",
     "name": "Plasma Jet Stream",
+<<<<<<< HEAD
     "url": "shaders/plasma-jet-stream.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/plasma-jet-stream.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "High-energy plasma jets radiate from center with bass-driven intensity, mids-driven spread, and treble sparks.",
     "tags": [
@@ -37728,7 +39480,11 @@
     "id": "plasma-orb",
     "name": "Plasma Orb",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/plasma-orb.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/plasma-orb.wgsl",
+>>>>>>> origin/main
     "description": "Magnetohydrodynamic plasma orb with tokamak-style field lines, Alfvén waves, magnetic reconnection flares, and synchrotron emission. Audio drives plasma temperature and field chaos; mouse pinches the orb. Depth controls field line density perspective.",
     "features": [
       "audio-reactive",
@@ -37827,7 +39583,11 @@
   {
     "id": "psy-swirls",
     "name": "Psychedelic Rainbow Swirls",
+<<<<<<< HEAD
     "url": "shaders/generative-psy-swirls.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/generative-psy-swirls.wgsl",
+>>>>>>> origin/main
     "description": "Generative swirling vortex fields with multi-layer procedural noise flow, spectral rainbow HSV cycles from polar angles, temporal twisting, and psychedelic distortion. Mouse attracts swirls; ripples spawn color bursts.",
     "params": [
       {
@@ -37927,7 +39687,11 @@
     "id": "quantum-foam-lattice",
     "name": "Quantum Foam Lattice",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/quantum-foam-lattice.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-foam-lattice.wgsl",
+>>>>>>> origin/main
     "description": "Quantum foam visualization: bubbling vacuum fluctuations forming a crystalline lattice that pulses to bass. Mids drive lattice distortions, treble creates sparkles at node intersections. Mouse warps the lattice locally.",
     "features": [
       "audio-reactive",
@@ -38032,7 +39796,11 @@
   {
     "id": "recursive-ancestral-terrains",
     "name": "Recursive Ancestral Terrains",
+<<<<<<< HEAD
     "url": "shaders/recursive-ancestral-terrains.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/recursive-ancestral-terrains.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "A fractal landscape where different ancestral 'lineages' of terrain rules coexist. Moving the mouse selects which generational traits are expressed in different regions, revealing the evolutionary history of the land.",
     "features": [
@@ -38135,7 +39903,11 @@
   {
     "id": "retro_phosphor_dream",
     "name": "Phosphor Dream",
+<<<<<<< HEAD
     "url": "shaders/retro_phosphor_dream.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/retro_phosphor_dream.wgsl",
+>>>>>>> origin/main
     "description": "Authentic CRT simulation with RGB phosphor triads, persistence afterglow, interlaced flicker, barrel distortion, and chromatic aberration",
     "tags": [
       "crt",
@@ -38228,7 +40000,11 @@
   {
     "id": "sacred-geometry-torus",
     "name": "Sacred Geometry Torus",
+<<<<<<< HEAD
     "url": "shaders/sacred-geometry-torus.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/sacred-geometry-torus.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Golden ratio torus knots and sacred geometry nodes rotate in layered phi-harmonic patterns driven by bass.",
     "tags": [
@@ -38327,7 +40103,11 @@
     "id": "sand-dunes",
     "name": "Sand Dunes",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/sand-dunes.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/sand-dunes.wgsl",
+>>>>>>> origin/main
     "description": "Bagnold dune physics with domain-warped anisotropic fBm, GGX sun glints on grain faces, Rayleigh-Mie atmospheric haze, and temporal sand-drift feedback. Separation bubbles at crests, ripple superposition on slip faces, OkLab desert palette, subsurface scattering and HDR saltation sparkles. Audio drives wind migration, treble sparkles and temporal blend. Mouse creates wind shadows. Depth controls atmospheric haze.",
     "features": [
       "audio-reactive",
@@ -38431,7 +40211,11 @@
   {
     "id": "solar-flare-cascade",
     "name": "Solar Flare Cascade",
+<<<<<<< HEAD
     "url": "shaders/solar-flare-cascade.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/solar-flare-cascade.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Solar prominence and flare cascades erupting from a stellar limb. Bass drives flare intensity, mids create magnetic loop structures, treble adds coronal mass ejection particles. Mouse position shifts the stellar limb.",
     "tags": [
@@ -38535,7 +40319,11 @@
   {
     "id": "spec-analytic-noise-flow",
     "name": "Analytic Noise Flow",
+<<<<<<< HEAD
     "url": "shaders/spec-analytic-noise-flow.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-analytic-noise-flow.wgsl",
+>>>>>>> origin/main
     "description": "Perlin noise with analytic derivatives for ultra-smooth flow fields. Gradient computed alongside noise value in single evaluation, eliminating finite-difference jitter for perfectly parallel streamlines.",
     "tags": [
       "analytic-derivatives",
@@ -38633,7 +40421,11 @@
   {
     "id": "spec-distance-field-text",
     "name": "Distance Field Text",
+<<<<<<< HEAD
     "url": "shaders/spec-distance-field-text.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-distance-field-text.wgsl",
+>>>>>>> origin/main
     "description": "SDF-based procedural glyph overlay with audio-reactive domain warp, depth-aware shadows, temporal feedback trails, ACES tone mapping, and chromatic aberration. Generates abstract runes and symbols as signed distance fields with smooth scaling, glowing edges, and chromatic cycling.",
     "tags": [
       "SDF",
@@ -38738,7 +40530,11 @@
   {
     "id": "spec-quaternion-julia",
     "name": "Quaternion Julia",
+<<<<<<< HEAD
     "url": "shaders/spec-quaternion-julia.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-quaternion-julia.wgsl",
+>>>>>>> origin/main
     "description": "4D quaternion Julia set raymarched in real-time. The 4th dimension animates over time creating organic morphing fractal forms with orbit-trap coloring and physically-based lighting.",
     "tags": [
       "quaternion",
@@ -38838,7 +40634,11 @@
   {
     "id": "spore-galaxy",
     "name": "Spore Galaxy",
+<<<<<<< HEAD
     "url": "shaders/spore-galaxy.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/spore-galaxy.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Organic spore particles disperse in galactic spiral arms with bass-driven arm swell and treble sparkle.",
     "tags": [
@@ -38935,7 +40735,11 @@
   {
     "id": "stellar-plasma",
     "name": "Stellar Plasma",
+<<<<<<< HEAD
     "url": "shaders/stellar-plasma.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/stellar-plasma.wgsl",
+>>>>>>> origin/main
     "description": "An endlessly morphing procedural cosmos powered by domain-warped fractional brownian motion. Creates swirling, liquid-like cosmic nebulae with interactive mouse gravity.",
     "tags": [
       "generative",
@@ -39044,7 +40848,11 @@
     "id": "supernova-core",
     "name": "Supernova Core",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/supernova-core.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/supernova-core.wgsl",
+>>>>>>> origin/main
     "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing.",
     "features": [
       "audio-reactive",
@@ -39153,7 +40961,11 @@
   {
     "id": "supernova-remnant",
     "name": "Supernova Remnant",
+<<<<<<< HEAD
     "url": "shaders/supernova-remnant.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/supernova-remnant.wgsl",
+>>>>>>> origin/main
     "description": "Expanding supernova shockwave with turbulent ejecta filaments. Bass drives the expansion front, mids create Rayleigh-Taylor instability fingers, treble adds radioactive decay sparkles. Mouse pulls the remnant center.",
     "tags": [
       "generative",
@@ -39248,7 +41060,11 @@
   {
     "id": "symbiotic-light-propagation-networks",
     "name": "Symbiotic Light Propagation Networks",
+<<<<<<< HEAD
     "url": "shaders/symbiotic-light-propagation-networks.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/symbiotic-light-propagation-networks.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Two organic species grow while transporting and transforming light through their network. They support each other symbiotically while competing for resources. Mouse seeds new growth while audio controls light color and transmission.",
     "features": [
@@ -39350,7 +41166,11 @@
   {
     "id": "topological-acoustic-knots",
     "name": "Topological Acoustic Knots",
+<<<<<<< HEAD
     "url": "shaders/topological-acoustic-knots.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/topological-acoustic-knots.wgsl",
+>>>>>>> origin/main
     "category": "generative",
     "description": "Nematic Q-tensor evolution with topological charge computation and trefoil-knot SDF constraint. Schlieren texture with defect-core coloring and HDR bloom on +1 defects. Bass creates defect pairs via Kibble-Zurek quench, mids drive annihilation dynamics, treble adds acoustic phonon waves. Mouse pins director with homeotropic anchoring. Ripples spawn defect loops.",
     "features": [
@@ -39454,7 +41274,11 @@
     "id": "tornado-vortex",
     "name": "Tornado Vortex",
     "category": "generative",
+<<<<<<< HEAD
     "url": "shaders/tornado-vortex.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/tornado-vortex.wgsl",
+>>>>>>> origin/main
     "description": "Rankine vortex model with viscous core, radial inflow, and vertical updraft. Lagrangian debris advection with condensation funnel and subsurface scattering. Lightning flash illumination. Audio drives Fujita-scale intensity. Mouse acts as a probe flung by vorticity. Depth controls debris perspective.",
     "features": [
       "audio-reactive",
@@ -39550,7 +41374,11 @@
   {
     "id": "turing-veins",
     "name": "Turing Veins",
+<<<<<<< HEAD
     "url": "shaders/generative-turing-veins.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/generative-turing-veins.wgsl",
+>>>>>>> origin/main
     "description": "Generative multiscale reaction-diffusion Turing patterns forming organic vein/networks with bioluminescent glow. Procedurally evolves over time; depth increases complexity; mouse perturbs fields. Subtly distorts and overlays input image.",
     "params": [
       {
@@ -39647,7 +41475,11 @@
   {
     "id": "volumetric-cloud-nebula",
     "name": "Volumetric Cloud Nebula",
+<<<<<<< HEAD
     "url": "shaders/volumetric-cloud-nebula.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/volumetric-cloud-nebula.wgsl",
+>>>>>>> origin/main
     "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, and advected HDR streaks. Bass/mids/treble drive flow, color, and sparkle. Extinction slider controls optical depth per march step.",
     "tags": [
       "generative",
@@ -39749,7 +41581,11 @@
   {
     "id": "wolfram-data-demo",
     "name": "Wolfram Data Demo",
+<<<<<<< HEAD
     "url": "shaders/wolfram-data-demo.wgsl",
+=======
+    "url": "https://test.1ink.us/image_video_effects/shaders/wolfram-data-demo.wgsl",
+>>>>>>> origin/main
     "description": "Demonstrates scientific constants and mathematical functions from Wolfram Alpha. Features phyllotaxis patterns, Airy disk diffraction, Fibonacci spirals, and atmospheric scattering using real physical data.",
     "tags": [
       "wolfram",

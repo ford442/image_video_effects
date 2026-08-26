@@ -449,6 +449,19 @@
       "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
       "title": "Ethereal Quantum-Glass Nautilus",
       "added": "2026-08-21T15:28:56.185053"
+<<<<<<< HEAD
+=======
+    },
+    {
+      "filename": "2026-08-23_void-harmonic-cymatic-resonator.md",
+      "title": "Void Harmonic Cymatic Resonator",
+      "added": "2026-08-23T15:16:43.844592"
+    },
+    {
+      "filename": "2026-08-24_synthetic-bismuth-geode-matrix.md",
+      "title": "Synthetic Bismuth Geode Matrix",
+      "added": "2026-08-24T15:08:24.613588"
+>>>>>>> origin/main
     }
   ],
   "current": null,
@@ -651,6 +664,16 @@
       "added": "2026-08-22T15:12:59.044203",
       "status": "completed",
       "completed_at": "2026-08-23T08:00:01.112629+00:00"
+<<<<<<< HEAD
+=======
+    },
+    {
+      "filename": "2026-08-23_void-harmonic-cymatic-resonator.md",
+      "title": "Void Harmonic Cymatic Resonator",
+      "added": "2026-08-23T15:16:43.844592",
+      "status": "completed",
+      "completed_at": "2026-08-25T07:52:21.029053+00:00"
+>>>>>>> origin/main
     }
   ],
   "completed": [
@@ -828,6 +851,7 @@
       "added": "2026-08-20T15:11:37.996029",
       "status": "completed",
       "completed_at": "2026-08-22T08:11:13.109883+00:00"
+<<<<<<< HEAD
     },
     {
       "filename": "2026-08-23_void-harmonic-cymatic-resonator.md",
@@ -835,6 +859,8 @@
       "added": "2026-08-23T15:16:43.844592",
       "status": "completed",
       "completed_at": "2026-08-24T08:01:44.865127+00:00"
+=======
+>>>>>>> origin/main
     }
   ],
   "rejected": [],

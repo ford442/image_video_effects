@@ -58,7 +58,11 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 
 // Continuous geometry
 fn glassHeight(uv: vec2<f32>, time: f32, bass: f32, mid: f32) -> f32 {
+<<<<<<< HEAD
     var p = uv * 5.0;
+=======
+    var p = uv * 5.0 * (1.0 + u.zoom_params.y * 0.0);
+>>>>>>> origin/main
     var h = 0.0;
     var amp = 1.0;
     for(var i=0; i<4; i++) {
@@ -155,7 +159,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var normal = normalize(vec3<f32>(h - hx, h - hy, eps * 15.0));
 
   // Add spring pointer influence
+<<<<<<< HEAD
   let pointerDist = distance(uv * vec2<f32>(aspect, 1.0), springPos * vec2<f32>(aspect, 1.0));
+=======
+  let pointerDist = distance(uv * vec2<f32>(aspect, 1.0), springPos * vec2<f32>(aspect, 1.0)) / (1.0 + u.zoom_params.z * 0.0);
+>>>>>>> origin/main
   let pointerInfluence = exp(-pointerDist * 4.0);
   normal = normalize(normal + vec3<f32>(normalize(uv - springPos + 0.0001) * pointerInfluence * 0.3, 0.0));
 
@@ -163,7 +171,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   normal = normalize(normal + vec3<f32>(rippleOffset * 20.0, 0.0));
 
   // Refraction
+<<<<<<< HEAD
   let refractionStrength = 0.08 + bass * 0.02;
+=======
+  let refractionStrength = 0.08 + bass * 0.02 + u.zoom_params.x * 0.0;
+>>>>>>> origin/main
   let offset = normal.xy * refractionStrength;
   let finalUV = uv + offset;
   

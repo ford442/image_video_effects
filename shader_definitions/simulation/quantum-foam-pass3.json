@@ -18,6 +18,7 @@
     "compositing",
     "glow",
     "tone-mapping"
+<<<<<<< HEAD
   ],
   "params": [
     {
@@ -52,5 +53,7 @@
       "max": 1,
       "step": 0.01
     }
+=======
+>>>>>>> origin/main
   ]
 }

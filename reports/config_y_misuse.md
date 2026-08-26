@@ -3,6 +3,7 @@
 `config = [time, rippleCount, resW, resH]` — see `src/contracts/uniforms_layout.json`.
 Every row below reads `config.y` (or a legacy `config` swizzle) as something else.
 
+<<<<<<< HEAD
 **Total: 80 reads across 67 shaders**
 
 | Category | Count |
@@ -11,6 +12,16 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `unclassified` | 16 |
 | `click_or_frame_count` | 12 |
 | `delta_time` | 11 |
+=======
+**Total: 68 reads across 58 shaders**
+
+| Category | Count |
+|----------|-------|
+| `audio` | 34 |
+| `unclassified` | 14 |
+| `click_or_frame_count` | 11 |
+| `delta_time` | 9 |
+>>>>>>> origin/main
 
 ## Findings
 
@@ -18,7 +29,11 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 |------|------|----------|------|
 | `public/shaders/4d-projection-dream-weavers.wgsl` | 131 | delta_time | `let dt = clamp(u.config.y, 0.001, 0.05);` |
 | `public/shaders/acoustic-string-theory.wgsl` | 92 | delta_time | `let dt = clamp(u.config.y, 0.001, 0.05);` |
+<<<<<<< HEAD
 | `public/shaders/alpha-em-field-simulation.wgsl` | 131 | click_or_frame_count | `let clickParity = select(-1.0, 1.0, u.config.y % 2.0 < 1.0);` |
+=======
+| `public/shaders/alpha-em-field-simulation.wgsl` | 145 | click_or_frame_count | `let clickParity = select(-1.0, 1.0, u.config.y % 2.0 < 1.0);` |
+>>>>>>> origin/main
 | `public/shaders/aurora-rift-pass2.wgsl` | 153 | unclassified | `let globalIntensity = clamp(u.config.y, 0.1, 1.5);` |
 | `public/shaders/chronos-brush.wgsl` | 56 | click_or_frame_count | `let clickCount = u.config.y;` |
 | `public/shaders/dla-crystals.wgsl` | 93 | click_or_frame_count | `let frame = u.config.y;` |
@@ -29,6 +44,7 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/gen-cellular-automata-tapestry.wgsl` | 89 | delta_time | `let dt = 1.0 + u.config.y * 0.5;` |
 | `public/shaders/gen-chromatic-singularity-loom.wgsl` | 104 | audio | `let audio_intensity = u.config.y;` |
 | `public/shaders/gen-chronodynamic-aether-weaver-automata.wgsl` | 81 | audio | `let audio = u.config.y;` |
+<<<<<<< HEAD
 | `public/shaders/gen-cybernetic-crystalline-neuro-lattice.wgsl` | 76 | unclassified | `if (u.config.y > 0.0) {` |
 | `public/shaders/gen-ethereal-anemone-bloom.wgsl` | 346 | audio | `let audio_pulse = plasmaBuffer[0].x; // was u.config.y (MouseClickCount)` |
 | `public/shaders/gen-ethereal-aurora-ghost-orchid.wgsl` | 154 | audio | `let audio = u.config.y;` |
@@ -41,6 +57,11 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/gen-fractured-monolith.wgsl` | 73 | audio | `let audioBass = u.config.y * 1.2;` |
 | `public/shaders/gen-galactic-aether-crystal-geode-core.wgsl` | 107 | audio | `let audio = u.config.y;` |
 | `public/shaders/gen-galactic-aether-crystal-geode-core.wgsl` | 220 | audio | `let audio = u.config.y;` |
+=======
+| `public/shaders/gen-ethereal-anemone-bloom.wgsl` | 348 | audio | `let audio_pulse = plasmaBuffer[0].x; // was u.config.y (MouseClickCount)` |
+| `public/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl` | 131 | audio | `let audio = u.config.y;` |
+| `public/shaders/gen-fireworks-nocturne.wgsl` | 137 | delta_time | `let dt = max(u.config.y, 0.001);` |
+>>>>>>> origin/main
 | `public/shaders/gen-kinetic-neo-brutalist-megastructure.wgsl` | 94 | unclassified | `pos.x += sin(u.config.x * 0.5 + u.config.y) * 2.0;` |
 | `public/shaders/gen-liquid-neon-cyber-metropolis.wgsl` | 96 | audio | `let audioAmp = u.config.y * u.zoom_params.z;` |
 | `public/shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl` | 175 | audio | `let audio = u.config.y;` |
@@ -74,9 +95,13 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/gen-singularity-forge-blackbody.wgsl` | 129 | unclassified | `let spaghettification = u.config.y;` |
 | `public/shaders/gen-singularity-forge-blackbody.wgsl` | 132 | audio | `let audioOverall = u.config.y;` |
 | `public/shaders/gen_reaction_diffusion.wgsl` | 144 | click_or_frame_count | `let clickCount = u.config.y;` |
+<<<<<<< HEAD
 | `public/shaders/glass-bead-curtain-iridescence.wgsl` | 85 | delta_time | `let dt = u.config.y;` |
 | `public/shaders/glass-bead-curtain.wgsl` | 72 | unclassified | `let target = select(0.0, 1.0, u.config.y > 0.0);` |
 | `public/shaders/glass-brick-wall.wgsl` | 83 | delta_time | `let dt = u.config.y;` |
+=======
+| `public/shaders/glass-bead-curtain.wgsl` | 72 | unclassified | `let target = select(0.0, 1.0, u.config.y > 0.0);` |
+>>>>>>> origin/main
 | `public/shaders/holographic-crystal.wgsl` | 53 | delta_time | `let dt = min(u.config.y, 0.05);` |
 | `public/shaders/holographic-entropy-vortex.wgsl` | 156 | click_or_frame_count | `let clicks = u.config.y;` |
 | `public/shaders/hybrid-chromatic-liquid.wgsl` | 79 | audio | `let audioOverall = u.config.y;` |
@@ -85,13 +110,20 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/mouse-ink-bleed.wgsl` | 94 | delta_time | `let dt = u.config.y;` |
 | `public/shaders/nano-assembler.wgsl` | 73 | unclassified | `let time = u.config.y;` |
 | `public/shaders/origami-fold.wgsl` | 69 | click_or_frame_count | `let clickCount = u.config.y;` |
+<<<<<<< HEAD
 | `public/shaders/photonic-caustics.wgsl` | 120 | click_or_frame_count | `let frame = u.config.y;` |
+=======
+>>>>>>> origin/main
 | `public/shaders/photonic-trace.wgsl` | 58 | click_or_frame_count | `let frame = u.config.y;` |
 | `public/shaders/plasma.wgsl` | 67 | audio | `var audioOverall = u.config.y;` |
 | `public/shaders/predator-prey.wgsl` | 133 | click_or_frame_count | `let frame = u.config.y;` |
 | `public/shaders/quantum-foam-pass2.wgsl` | 150 | unclassified | `let globalIntensity = u.config.y;` |
 | `public/shaders/quantum-foam-pass3.wgsl` | 107 | unclassified | `let globalIntensity = u.config.y;` |
+<<<<<<< HEAD
 | `public/shaders/spec-runge-kutta-advection.wgsl` | 92 | unclassified | `if (isMouseDown \|\| u.config.y > 0.5) {` |
+=======
+| `public/shaders/spec-runge-kutta-advection.wgsl` | 113 | unclassified | `if (isMouseDown \|\| u.config.y > 0.0) {` |
+>>>>>>> origin/main
 | `public/shaders/stellar-plasma-blackbody.wgsl` | 130 | audio | `let audioLow = u.config.y;` |
 | `public/shaders/temporal-rgb-smear.wgsl` | 174 | delta_time | `let dt = clamp(u.config.y, 0.0, 0.1);` |
 | `public/shaders/time-lag-map.wgsl` | 102 | click_or_frame_count | `let frame = u.config.y;` |

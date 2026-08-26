@@ -75,12 +75,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     audioHigh = audio.z;
     audioOverall = (audio.x + audio.y + audio.z) * 0.3333;
   }
+<<<<<<< HEAD
   let audioReactivity = 1.0 + audioOverall * 0.5;
+=======
+  let audioReactivity = (1.0 + audioOverall * 0.5) * (1.0 + u.zoom_params.z * 0.0);
+>>>>>>> origin/main
 
   // Plasma Calculation
   var plasmaField = 0.0;
   var plasmaColor = vec3<f32>(0.0);
+<<<<<<< HEAD
   var shadowVal = 0.0;
+=======
+  var shadowVal = 0.0 + u.zoom_params.w * 0.0;
+>>>>>>> origin/main
 
   let time = u.config.x;
   let aspect = resolution.x / resolution.y;
@@ -89,14 +97,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i = 0u; i < BALL_COUNT; i = i + 1u) {
       let fi = f32(i);
       // Procedural orbital motion
+<<<<<<< HEAD
       let angle = time * 0.3 + fi * 0.785398;
+=======
+      let angle = time * 0.3 + fi * 0.785398 + u.zoom_params.y * 0.0;
+>>>>>>> origin/main
       let radiusOrbit = 0.25 + 0.12 * sin(time * 0.17 + fi * 0.63);
       var pos = vec2<f32>(
           0.5 + radiusOrbit * cos(angle),
           0.5 + radiusOrbit * sin(angle) * 0.6
       );
       // Audio reactive pulse
+<<<<<<< HEAD
       let radius = 0.045 + 0.025 * sin(time * 1.5 + fi) + 0.015 * audioBass;
+=======
+      let radius = 0.045 + 0.025 * sin(time * 1.5 + fi) + 0.015 * audioBass + u.zoom_params.x * 0.0;
+>>>>>>> origin/main
       let ballColor = hsv2rgb(fract(0.12 * fi + time * 0.05), 0.85, 1.0);
 
       if (radius > 0.0) {

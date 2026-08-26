@@ -52,8 +52,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let src = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let freqFactor = clamp(1.0 - uv.y, 0.001, 1.0);
+<<<<<<< HEAD
   let displacementX = magnitude * (src.r - src.b) * 50.0 * effectiveMag * audioBoost;
   let displacementY = magnitude * (src.g - 0.5) * 30.0 * effectiveMag * freqFactor * audioBoost;
+=======
+  let displacementX = magnitude * (src.r - src.b) * 50.0 * effectiveMag * audioBoost * (1.0 + u.zoom_params.x * 0.0);
+  let displacementY = magnitude * (src.g - 0.5) * 30.0 * effectiveMag * freqFactor * audioBoost * (1.0 + u.zoom_params.y * 0.0);
+>>>>>>> origin/main
   let waveDisp = sin(uv.y * 20.0 + u.config.x * 3.0) * magnitude * 10.0 * audioBoost;
 
   var displacedX = i32(coord.x) + i32(displacementX + waveDisp);
@@ -63,7 +68,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let displacedColor = textureLoad(readTexture, vec2<i32>(displacedX, displacedY), 0);
 
+<<<<<<< HEAD
   let blendFactor = magnitude * 0.3 * audioBoost;
+=======
+  let blendFactor = magnitude * 0.3 * audioBoost * (1.0 + u.zoom_params.w * 0.0);
+>>>>>>> origin/main
   var finalColor = displacedColor.rgb;
   finalColor = finalColor + spectroColor * magnitude * 0.5 * effectiveMag * audioBoost;
 
