@@ -1,11 +1,4 @@
 {
-<<<<<<< HEAD
-  "generated": "2026-08-23T17:20:07.022233+00:00",
-  "defs_scanned": 10,
-  "defs_with_params": 10,
-  "new_dead_sliders": [],
-  "known_dead_sliders": [],
-=======
   "generated": "2026-08-25T08:36:02.238488+00:00",
   "defs_scanned": 1188,
   "defs_with_params": 1188,
@@ -222,7 +215,6 @@
       "field": "w"
     }
   ],
->>>>>>> origin/main
   "errors": [],
   "baseline": "reports/dead_sliders_audit_baseline.json"
 }

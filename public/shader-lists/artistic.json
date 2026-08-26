@@ -2,11 +2,7 @@
   {
     "id": "alpha-paint-thickness",
     "name": "Alpha Paint Thickness",
-<<<<<<< HEAD
-    "url": "shaders/alpha-paint-thickness.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/alpha-paint-thickness.wgsl",
->>>>>>> origin/main
     "description": "Impasto paint thickness simulation where alpha tracks paint depth. Thin paint creates transparent washes, medium shows full color, thick paint catches specular highlights and casts micro-shadows. Mouse paints with color-cycling brush; ripples create splatters.",
     "tags": [
       "paint",
@@ -65,11 +61,7 @@
   {
     "id": "alpha-watercolor-wetness",
     "name": "Alpha Watercolor Wetness",
-<<<<<<< HEAD
-    "url": "shaders/alpha-watercolor-wetness.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/alpha-watercolor-wetness.wgsl",
->>>>>>> origin/main
     "description": "Watercolor simulation with wetness map in alpha. Pigment flows with water gradients via capillary action. Wet areas allow bleeding; dry areas lock pigment. Mouse drops colored water; ripples add water drops. Authentic dark-edge effects at wet boundaries.",
     "tags": [
       "watercolor",
@@ -130,11 +122,7 @@
     "name": "Ambient Liquid",
     "category": "artistic",
     "type": "compute",
-<<<<<<< HEAD
-    "url": "shaders/ambient-liquid.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/ambient-liquid.wgsl",
->>>>>>> origin/main
     "description": "Curl-advected liquid with a REAL Gray-Scott reaction-diffusion system: U and V concentrations carried in dataTextureA, a five-tap Laplacian from exact textureLoad fetches, and feed/kill rates driven per FFT band so different frequencies push the system between spot, stripe and mitosis regimes. The V concentration raises local surface tension and pulls the metaball isosurface inward. Fixes a shader that advertised reaction-diffusion while its grayScott() was four sine waves with no state at all.",
     "features": [
       "mouse-driven",
@@ -257,11 +245,7 @@
   {
     "id": "anisotropic-kuwahara",
     "name": "Van Gogh Flow",
-<<<<<<< HEAD
-    "url": "shaders/anisotropic-kuwahara.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/anisotropic-kuwahara.wgsl",
->>>>>>> origin/main
     "description": "Anisotropic Kuwahara filter creating painterly Van Gogh-style brushstroke effects.",
     "params": [
       {
@@ -307,11 +291,7 @@
   {
     "id": "artistic_painterly_oil",
     "name": "Oil Painting",
-<<<<<<< HEAD
-    "url": "shaders/artistic_painterly_oil.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/artistic_painterly_oil.wgsl",
->>>>>>> origin/main
     "description": "Oil painting effect with anisotropic Kuwahara filter, impasto texture, wet paint specular highlights, and canvas texture",
     "tags": [
       "oil",
@@ -365,11 +345,7 @@
   {
     "id": "astral-kaleidoscope-gemini",
     "name": "Astral Kaleidoscope Gemini",
-<<<<<<< HEAD
-    "url": "shaders/astral-kaleidoscope-gemini.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/astral-kaleidoscope-gemini.wgsl",
->>>>>>> origin/main
     "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
     "features": [
       "mouse-driven",
@@ -417,11 +393,7 @@
   {
     "id": "astral-kaleidoscope-grokcf1",
     "name": "Astral Kaleidoscope grokcf1",
-<<<<<<< HEAD
-    "url": "shaders/astral-kaleidoscope-grokcf1.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/astral-kaleidoscope-grokcf1.wgsl",
->>>>>>> origin/main
     "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
     "features": [
       "mouse-driven",
@@ -469,11 +441,7 @@
   {
     "id": "astral-kaleidoscope",
     "name": "Astral Kaleidoscope",
-<<<<<<< HEAD
-    "url": "shaders/astral-kaleidoscope.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/astral-kaleidoscope.wgsl",
->>>>>>> origin/main
     "description": "Cosmic kaleidoscope with astral color schemes.",
     "features": [
       "mouse-driven"
@@ -520,11 +488,7 @@
   {
     "id": "astral-veins",
     "name": "Astral Veins",
-<<<<<<< HEAD
-    "url": "shaders/astral-veins.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/astral-veins.wgsl",
->>>>>>> origin/main
     "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour‑cycle. Click to seed new veins.",
     "params": [
       {
@@ -570,11 +534,7 @@
   {
     "id": "aurora-rift-2",
     "name": "Aurora Rift V2",
-<<<<<<< HEAD
-    "url": "shaders/aurora-rift-2.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-2.wgsl",
->>>>>>> origin/main
     "description": "Enhanced aurora effects with improved color gradients.",
     "features": [
       "mouse-driven"
@@ -621,11 +581,7 @@
   {
     "id": "aurora-rift-gemini",
     "name": "Aurora Rift Gemini",
-<<<<<<< HEAD
-    "url": "shaders/aurora-rift-gemini.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-gemini.wgsl",
->>>>>>> origin/main
     "description": "An enhanced simulation of aurora borealis, with dynamic, time-driven color shifts, deeper atmospheric rifts, and shimmering, mouse-driven particle effects.",
     "features": [
       "mouse-driven",
@@ -673,11 +629,7 @@
   {
     "id": "aurora-rift",
     "name": "Aurora Rift",
-<<<<<<< HEAD
-    "url": "shaders/aurora-rift.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift.wgsl",
->>>>>>> origin/main
     "description": "Aurora borealis-inspired lighting effects with atmospheric rifts.",
     "features": [
       "mouse-driven"
@@ -724,11 +676,7 @@
   {
     "id": "bioluminescent",
     "name": "Bioluminescent Growth",
-<<<<<<< HEAD
-    "url": "shaders/bioluminescent.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/bioluminescent.wgsl",
->>>>>>> origin/main
     "description": "Living, organic growth patterns that spread across surfaces like glowing fungus. Click to plant spores, watch them grow over time with depth-aware branching.",
     "params": [
       {
@@ -780,11 +728,7 @@
   {
     "id": "boids",
     "name": "Boids Reveal",
-<<<<<<< HEAD
-    "url": "shaders/boids.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/boids.wgsl",
->>>>>>> origin/main
     "description": "Flocking boids with reveal masking and simple attraction mechanics.",
     "features": [
       "mouse-driven"
@@ -831,11 +775,7 @@
   {
     "id": "chromatic-crawler",
     "name": "Chromatic Crawler",
-<<<<<<< HEAD
-    "url": "shaders/chromatic-crawler.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-crawler.wgsl",
->>>>>>> origin/main
     "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending.",
     "features": [
       "mouse-driven",
@@ -884,11 +824,7 @@
     "id": "chromatic-focus",
     "name": "Chromatic Focus",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/chromatic-focus.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-focus.wgsl",
->>>>>>> origin/main
     "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into colorful chromatic bokeh. Enhanced with OkLab mixing, iridescent thin-film interference, Mie scattering haze, split-tone grading, and ACES filmic tone mapping.",
     "features": [
       "mouse-driven",
@@ -945,11 +881,7 @@
   {
     "id": "chromatic-folds-2",
     "name": "Chromatic Folds V2",
-<<<<<<< HEAD
-    "url": "shaders/chromatic-folds-2.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-folds-2.wgsl",
->>>>>>> origin/main
     "description": "Enhanced geometric color folding with improved warping.",
     "features": [
       "mouse-driven"
@@ -996,11 +928,7 @@
   {
     "id": "chromatic-folds-gemini",
     "name": "Chromatic Folds Gemini",
-<<<<<<< HEAD
-    "url": "shaders/chromatic-folds-gemini.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-folds-gemini.wgsl",
->>>>>>> origin/main
     "description": "An advanced geometric color folding and warping effect with dynamic, time-driven animation, fractal layering, and interactive, mouse-driven vortex manipulation.",
     "features": [
       "mouse-driven",
@@ -1048,11 +976,7 @@
   {
     "id": "chromatic-folds",
     "name": "Chromatic Folds",
-<<<<<<< HEAD
-    "url": "shaders/chromatic-folds.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-folds.wgsl",
->>>>>>> origin/main
     "description": "Geometric color folding and warping effects.",
     "features": [
       "mouse-driven"
@@ -1099,11 +1023,7 @@
   {
     "id": "chromatic-infection",
     "name": "Chromatic Infection",
-<<<<<<< HEAD
-    "url": "shaders/chromatic-infection.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-infection.wgsl",
->>>>>>> origin/main
     "description": "Strong colours spread like a living organism, infecting neutral regions with organic, pulsing tendrils. Watch vibrant hues consume the dull!",
     "params": [
       {
@@ -1150,11 +1070,7 @@
   {
     "id": "chromatic-manifold-2",
     "name": "Chromatic Manifold V2",
-<<<<<<< HEAD
-    "url": "shaders/chromatic-manifold-2.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-manifold-2.wgsl",
->>>>>>> origin/main
     "description": "Enhanced 4D topological color manifold.",
     "features": [
       "mouse-driven"
@@ -1201,11 +1117,7 @@
   {
     "id": "chromatic-manifold",
     "name": "Chromatic Manifold",
-<<<<<<< HEAD
-    "url": "shaders/chromatic-manifold.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-manifold.wgsl",
->>>>>>> origin/main
     "description": "4D topological color manifold with HDR tears, temporal persistence, and depth-driven curvature.",
     "tags": [
       "filter",
@@ -1265,11 +1177,7 @@
   {
     "id": "chromatic-phase-inversion",
     "name": "Chromatic Phase Inversion",
-<<<<<<< HEAD
-    "url": "shaders/chromatic-phase-inversion.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-phase-inversion.wgsl",
->>>>>>> origin/main
     "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image in surreal independent waves. Audio reactivity pulses phase speed and ghost offset with the beat.",
     "tags": [
       "chromatic",
@@ -1329,11 +1237,7 @@
   {
     "id": "chromatographic-separation",
     "name": "Chromatographic Separation",
-<<<<<<< HEAD
-    "url": "shaders/chromatographic-separation.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/chromatographic-separation.wgsl",
->>>>>>> origin/main
     "description": "RGB channel fluid simulation with separate viscosities, wind forces, and inter-layer drag.",
     "params": [
       {
@@ -1382,11 +1286,7 @@
   {
     "id": "cosmic-flow",
     "name": "Cosmic Flow Pro",
-<<<<<<< HEAD
-    "url": "shaders/cosmic-flow.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/cosmic-flow.wgsl",
->>>>>>> origin/main
     "description": "Braided magnetohydrodynamic nebula currents with layered domain warping, lensing eddies, click-launched vortices, depth deflection, chromatic source refraction, and advected HDR persistence.",
     "params": [
       {
@@ -1440,11 +1340,7 @@
   {
     "id": "distortion_gravitational_lens",
     "name": "Gravitational Lens",
-<<<<<<< HEAD
-    "url": "shaders/distortion_gravitational_lens.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/distortion_gravitational_lens.wgsl",
->>>>>>> origin/main
     "description": "Einstein ring gravitational lensing with Schwarzschild metric deflection, accretion disk blackbody radiation, and chromatic aberration",
     "tags": [
       "gravity",
@@ -1499,11 +1395,7 @@
   {
     "id": "dla-crystals",
     "name": "DLA Crystal Growth",
-<<<<<<< HEAD
-    "url": "shaders/dla-crystals.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/dla-crystals.wgsl",
->>>>>>> origin/main
     "description": "Diffusion-limited aggregation creating fractal crystal structures that grow from click points.",
     "params": [
       {
@@ -1554,11 +1446,7 @@
   {
     "id": "double-exposure-zoom",
     "name": "Double Exposure Zoom",
-<<<<<<< HEAD
-    "url": "shaders/double-exposure-zoom.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/double-exposure-zoom.wgsl",
->>>>>>> origin/main
     "description": "Multi-scale double exposure with luminance-based matte extraction, film stock color response curves, light leak artifacts, ACES tone mapping, and chromatic aberration on zoom edges. Bass drives zoom speed, mouse controls secondary exposure position with depth parallax.",
     "params": [
       {
@@ -1610,11 +1498,7 @@
   {
     "id": "echo-trace",
     "name": "Temporal Velocity Echo",
-<<<<<<< HEAD
-    "url": "shaders/echo-trace.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/echo-trace.wgsl",
->>>>>>> origin/main
     "description": "Predictive velocity echo field combining structure-tensor advection, smoothed mouse-motion extrapolation, deformed brush trails, curl-noise flow, and temporal feedback displacement.",
     "params": [
       {
@@ -1673,11 +1557,7 @@
     "id": "encaustic-wax",
     "name": "Encaustic Wax",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/encaustic-wax.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/encaustic-wax.wgsl",
->>>>>>> origin/main
     "description": "Thermal wax flow simulation with layered strata, subsurface scattering, metallic pigment sparkle, HDR specular ridges, ACES tone mapping, and canvas grain. Bass drives heat gun intensity; mouse applies local heat; depth controls wax thickness.",
     "features": [
       "mouse-driven",
@@ -1731,11 +1611,7 @@
     "id": "engraving-stipple",
     "name": "Engraving Stipple",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/engraving-stipple.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/engraving-stipple.wgsl",
->>>>>>> origin/main
     "description": "Copperplate-inspired engraving with continuously traveling hatch runners, held-pointer burin pressure, click-engraved impact rings, ink pooling, and depth-shaped line width.",
     "features": [
       "mouse-driven",
@@ -1823,11 +1699,7 @@
   {
     "id": "fabric-step",
     "name": "Fabric of Reality",
-<<<<<<< HEAD
-    "url": "shaders/fabric-step.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/fabric-step.wgsl",
->>>>>>> origin/main
     "description": "Mass-spring cloth simulation with Verlet integration, constraint solving, and interactive tearing mechanics.",
     "params": [
       {
@@ -1874,11 +1746,7 @@
   {
     "id": "film-cross-process",
     "name": "Film Cross-Process",
-<<<<<<< HEAD
-    "url": "shaders/film-cross-process.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/film-cross-process.wgsl",
->>>>>>> origin/main
     "description": "Simulates E6 slide film developed in C41 negative chemistry. Each RGB channel is routed through a different S-curve (lifted shadows, crushed mids, blown highlights), the colour gamut is skewed so greens shift cyan and reds shift orange-yellow, film grain is layered in, and the image is pushed toward the iconic high-contrast vivid-yet-desaturated cross-processed aesthetic. Bass boosts contrast punch; mids intensify the colour skew; treble raises grain texture.",
     "tags": [
       "film",
@@ -1973,11 +1841,7 @@
   {
     "id": "frosty-window",
     "name": "Frosty Window",
-<<<<<<< HEAD
-    "url": "shaders/frosty-window.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/frosty-window.wgsl",
->>>>>>> origin/main
     "description": "Animated frost crystal patterns on glass with audio-reactive growth and mouse-driven melting.",
     "params": [
       {
@@ -2030,11 +1894,7 @@
   {
     "id": "galaxy-sim",
     "name": "Galaxy Simulation",
-<<<<<<< HEAD
-    "url": "shaders/galaxy.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/galaxy.wgsl",
->>>>>>> origin/main
     "description": "Audio-reactive spiral galaxy with breathing arms, diffraction-spike stars, mouse-parallax center, and silence-driven reverse flow.",
     "features": [
       "depth-aware",
@@ -2091,11 +1951,7 @@
   {
     "id": "gen-chrono-erosion-feedback-melting",
     "name": "Chrono Erosion",
-<<<<<<< HEAD
-    "url": "shaders/gen-chrono-erosion-feedback-melting.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-chrono-erosion-feedback-melting.wgsl",
->>>>>>> origin/main
     "description": "Datamosh-like flow effect where video melts along a curl-noise vector field with feedback decay and audio-driven turbulence.",
     "features": [
       "audio-reactive",
@@ -2185,11 +2041,7 @@
   {
     "id": "glass_refraction_alpha",
     "name": "Glass Refraction RGBA",
-<<<<<<< HEAD
-    "url": "shaders/glass_refraction_alpha.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/glass_refraction_alpha.wgsl",
->>>>>>> origin/main
     "description": "Raymarched glass with wavelength-correct Cauchy dispersion n(lambda) = A + B/lambda^2, so blue refracts hardest as real glass does, plus per-band caustic focusing derived from the convergence of the refracted direction field. Fixes a fake-audio proxy (a variable named audioPulse was actually the mouse button, and plasmaBuffer was bound but never read) and a dead exitT that left Beer-Lambert absorption running over the distance to the surface instead of the path through the glass.",
     "tags": [
       "interactive",
@@ -2304,11 +2156,7 @@
   {
     "id": "green-tracer",
     "name": "Green Tracer World",
-<<<<<<< HEAD
-    "url": "shaders/green-tracer.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/green-tracer.wgsl",
->>>>>>> origin/main
     "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night‑vision aesthetics.",
     "params": [
       {
@@ -2356,11 +2204,7 @@
     "id": "halftone-reveal",
     "name": "Halftone Reveal",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/halftone-reveal.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/halftone-reveal.wgsl",
->>>>>>> origin/main
     "description": "CMYK halftone reveal with stipple patterns, per-channel rotated screening, dot-gain simulation, moiré overlap, paper texture, and depth-controlled perspective dot sizing.",
     "params": [
       {
@@ -2413,11 +2257,7 @@
   {
     "id": "holographic-contour",
     "name": "Holographic Contour",
-<<<<<<< HEAD
-    "url": "shaders/holographic-contour.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/holographic-contour.wgsl",
->>>>>>> origin/main
     "updated": true,
     "workgroup_size": [
       16,
@@ -2524,11 +2364,7 @@
     "id": "ink-diffusion",
     "name": "Ink Diffusion",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/ink-diffusion.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/ink-diffusion.wgsl",
->>>>>>> origin/main
     "description": "Navier-Stokes advection-diffusion ink simulation in water with vorticity confinement and surface tension at boundaries. Sumi-e ink wash with turbulent eddies, paper fiber texture, chromatic edge darkening, ACES tone mapping, and HDR specular on wet regions.",
     "features": [
       "mouse-driven",
@@ -2590,11 +2426,7 @@
   {
     "id": "ink_dispersion_alpha",
     "name": "Ink Dispersion RGBA",
-<<<<<<< HEAD
-    "url": "shaders/ink_dispersion_alpha.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/ink_dispersion_alpha.wgsl",
->>>>>>> origin/main
     "updated": true,
     "workgroup_size": [
       16,
@@ -2692,11 +2524,7 @@
   {
     "id": "ion-stream",
     "name": "Ion Stream",
-<<<<<<< HEAD
-    "url": "shaders/ion-stream.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/ion-stream.wgsl",
->>>>>>> origin/main
     "features": [
       "upgraded-rgba",
       "curl-turbulence",
@@ -2786,11 +2614,7 @@
   {
     "id": "iridescent-oil-slick",
     "name": "Iridescent Oil Slick",
-<<<<<<< HEAD
-    "url": "shaders/iridescent-oil-slick.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/iridescent-oil-slick.wgsl",
->>>>>>> origin/main
     "description": "Mesmerizing thin-film interference simulation that recreates the rainbow patterns of oil on water or soap bubbles. Features flowing organic motion, hexagonal bubble cells, and mouse-reactive disturbances.",
     "tags": [
       "iridescent",
@@ -2847,11 +2671,7 @@
     "id": "iso-hills",
     "name": "Iso Hills v2",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/iso-hills.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/iso-hills.wgsl",
->>>>>>> origin/main
     "description": "Topographic terrain rendering with fBm-generated hills, hydraulic erosion, contour hachures, and depth-based atmospheric haze. Mouse drops carve water channels; bass triggers rainfall.",
     "params": [
       {
@@ -2907,11 +2727,7 @@
   {
     "id": "lenia",
     "name": "Lenia Cellular Automata",
-<<<<<<< HEAD
-    "url": "shaders/lenia.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/lenia.wgsl",
->>>>>>> origin/main
     "description": "A Lenia-inspired continuous cellular field with audio-shaped growth, directional state advection, traveling growth packets, and click-launched inoculation fronts.",
     "features": [
       "mouse-driven",
@@ -3004,11 +2820,7 @@
   {
     "id": "lidar",
     "name": "LiDAR Scanner Pro",
-<<<<<<< HEAD
-    "url": "shaders/lidar.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/lidar.wgsl",
->>>>>>> origin/main
     "description": "Multi-mode LiDAR with point clouds, persistence trails, and 3D edge detection. Modes: Linear/Radial/Spiral scan.",
     "params": [
       {
@@ -3054,11 +2866,7 @@
   {
     "id": "liquid-prism-cascade",
     "name": "Liquid Prism Cascade",
-<<<<<<< HEAD
-    "url": "shaders/liquid-prism-cascade.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/liquid-prism-cascade.wgsl",
->>>>>>> origin/main
     "updated": true,
     "workgroup_size": [
       16,
@@ -3157,11 +2965,7 @@
     "id": "luminance-wind",
     "name": "Luminance Wind",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/luminance-wind.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/luminance-wind.wgsl",
->>>>>>> origin/main
     "description": "Pixels are blown by a curl-noise wind field. Lighter pixels travel further. Chromatic drift separates R/B channels. Audio gusts boost wind strength; depth creates parallax layering.",
     "params": [
       {
@@ -3219,11 +3023,7 @@
   {
     "id": "magnetic-dipole",
     "name": "Magnetic Dipole Field",
-<<<<<<< HEAD
-    "url": "shaders/magnetic-dipole.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/magnetic-dipole.wgsl",
->>>>>>> origin/main
     "description": "Magnetic field visualization with iron filing alignment and dipole physics.",
     "params": [
       {
@@ -3320,11 +3120,7 @@
   {
     "id": "melting-oil",
     "name": "Melting Oil",
-<<<<<<< HEAD
-    "url": "shaders/melting-oil.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/melting-oil.wgsl",
->>>>>>> origin/main
     "description": "Sobel gradient-driven oil-paint flow with viscosity and hue shifts.",
     "features": [
       "mouse-driven",
@@ -3416,11 +3212,7 @@
   {
     "id": "mirror-dimension",
     "name": "Mirror Dimension",
-<<<<<<< HEAD
-    "url": "shaders/mirror-dimension.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/mirror-dimension.wgsl",
->>>>>>> origin/main
     "description": "A rotating kaleidoscope that fractures reality. Mouse moves the center of symmetry.",
     "features": [
       "mouse-driven"
@@ -3498,11 +3290,7 @@
   {
     "id": "mosaic-reveal",
     "name": "Mosaic Reveal",
-<<<<<<< HEAD
-    "url": "shaders/mosaic-reveal.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/mosaic-reveal.wgsl",
->>>>>>> origin/main
     "description": "Hexagonal or square mosaic reveal with opposing tile conveyors, smooth flood runners, held-pointer expansion, bounded click reveal fronts, OkLab blending, audio-reactive rim glow, and preserved A/C display history.",
     "features": [
       "upgraded-rgba",
@@ -3595,11 +3383,7 @@
     "id": "mouse-pixel-sort",
     "name": "Mouse Pixel Sort",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/mouse-pixel-sort.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/mouse-pixel-sort.wgsl",
->>>>>>> origin/main
     "description": "Multi-layer luminance-based pixel sorting with FBM organic thresholds, curl-noise sorting directions, De Jong strange attractor warping, and Voronoi cellular patterns. Audio-reactive sparkle trails and dual-layer compositing.",
     "features": [
       "mouse-driven",
@@ -3658,11 +3442,7 @@
   {
     "id": "multi-turing",
     "name": "Multiscale Turing Patterns",
-<<<<<<< HEAD
-    "url": "shaders/multi-turing.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/multi-turing.wgsl",
->>>>>>> origin/main
     "description": "Multiple reaction-diffusion systems at different scales combined for organic pattern generation.",
     "params": [
       {
@@ -3708,11 +3488,7 @@
   {
     "id": "navier-stokes-dye",
     "name": "Navier-Stokes Dye",
-<<<<<<< HEAD
-    "url": "shaders/navier-stokes-dye.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/navier-stokes-dye.wgsl",
->>>>>>> origin/main
     "description": "Navier-Stokes dye with filament streaks, vortex ribbon detail, held dye injection, and capped click dye bursts.",
     "features": [
       "mouse-driven",
@@ -3805,11 +3581,7 @@
   {
     "id": "nebulous-dream",
     "name": "Nebulous Dream",
-<<<<<<< HEAD
-    "url": "shaders/nebulous-dream.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/nebulous-dream.wgsl",
->>>>>>> origin/main
     "description": "Swirling vortex of rainbow candy clouds with fractal noise and flow fields.",
     "features": [
       "mouse-driven"
@@ -3856,11 +3628,7 @@
   {
     "id": "neon-contour-interactive",
     "name": "Neon Contour",
-<<<<<<< HEAD
-    "url": "shaders/neon-contour-interactive.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/neon-contour-interactive.wgsl",
->>>>>>> origin/main
     "description": "Interactive edge detection with neon glow responsive to mouse proximity.",
     "features": [
       "mouse-driven",
@@ -3908,11 +3676,7 @@
   {
     "id": "neon-edge-diffusion",
     "name": "Neon Edge Diffusion",
-<<<<<<< HEAD
-    "url": "shaders/neon-edge-diffusion.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/neon-edge-diffusion.wgsl",
->>>>>>> origin/main
     "description": "Shared-memory Sobel edge detection with hex-bokeh neon glow, ACES tone mapping, and semantic alpha emission.",
     "features": [
       "mouse-driven",
@@ -3977,11 +3741,7 @@
   {
     "id": "neural-dreamscape",
     "name": "Neural Dreamscape",
-<<<<<<< HEAD
-    "url": "shaders/neural-dreamscape.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/neural-dreamscape.wgsl",
->>>>>>> origin/main
     "description": "Neural network-inspired dreamlike visuals.",
     "features": [
       "mouse-driven"
@@ -4029,11 +3789,7 @@
     "id": "neural-resonance",
     "name": "Neural Resonance",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/neural-resonance.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/neural-resonance.wgsl",
->>>>>>> origin/main
     "description": "A temporal synaptic feedback field bends the source image into chromatic neural currents around the cursor.",
     "features": [
       "mouse-driven",
@@ -4117,11 +3873,7 @@
   {
     "id": "parallax_depth_layers",
     "name": "Parallax Layers RGBA",
-<<<<<<< HEAD
-    "url": "shaders/parallax_depth_layers.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/parallax_depth_layers.wgsl",
->>>>>>> origin/main
     "updated": true,
     "workgroup_size": [
       16,
@@ -4219,11 +3971,7 @@
   {
     "id": "particle_dreams_alpha",
     "name": "Particle Dreams RGBA",
-<<<<<<< HEAD
-    "url": "shaders/particle_dreams_alpha.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/particle_dreams_alpha.wgsl",
->>>>>>> origin/main
     "updated": true,
     "workgroup_size": [
       16,
@@ -4319,11 +4067,7 @@
   {
     "id": "physarum-gemini",
     "name": "Physarum Gemini",
-<<<<<<< HEAD
-    "url": "shaders/physarum-gemini.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/physarum-gemini.wgsl",
->>>>>>> origin/main
     "description": "An advanced, agent-based slime mold simulation with emergent, time-driven growth patterns, complex nutrient interaction, and mouse-driven agent spawning.",
     "features": [
       "mouse-driven",
@@ -4371,11 +4115,7 @@
   {
     "id": "physarum-grokcf1",
     "name": "Physarum grokcf1",
-<<<<<<< HEAD
-    "url": "shaders/physarum-grokcf1.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/physarum-grokcf1.wgsl",
->>>>>>> origin/main
     "description": "An advanced, agent-based slime mold simulation with emergent, time-driven growth patterns, complex nutrient interaction, and mouse-driven agent spawning.",
     "features": [
       "mouse-driven",
@@ -4423,11 +4163,7 @@
   {
     "id": "physarum",
     "name": "Physarum Slime Mold",
-<<<<<<< HEAD
-    "url": "shaders/physarum.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/physarum.wgsl",
->>>>>>> origin/main
     "description": "Agent-based slime mold texture feeder that creates trails and networks.",
     "features": [
       "mouse-driven",
@@ -4479,11 +4215,7 @@
   {
     "id": "plasma",
     "name": "Plasma Ball",
-<<<<<<< HEAD
-    "url": "shaders/plasma.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/plasma.wgsl",
->>>>>>> origin/main
     "description": "",
     "tags": [
       "procedural",
@@ -4535,11 +4267,7 @@
   {
     "id": "poincare-tile",
     "name": "Hyperbolic Tiling",
-<<<<<<< HEAD
-    "url": "shaders/poincare-tile.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/poincare-tile.wgsl",
->>>>>>> origin/main
     "description": "Poincaré disk hyperbolic geometry with Möbius transformations and animated tilings.",
     "params": [
       {
@@ -4584,11 +4312,7 @@
   {
     "id": "polka-dot-reveal",
     "name": "Polka Dot Reveal",
-<<<<<<< HEAD
-    "url": "shaders/polka-dot-reveal.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/polka-dot-reveal.wgsl",
->>>>>>> origin/main
     "description": "Phase-B advanced-alpha halftone effect with 16x16 workgroups, spring-damped mouse follow, attack/release audio envelope, per-cell hash jitter, and temporal feedback trails. Alpha is now composited through depth-layered fade, luminance keying, edge-preservation, and an interaction-energy boost so the 3-slot chain blends meaningfully.",
     "features": [
       "mouse-driven",
@@ -4651,11 +4375,7 @@
   {
     "id": "porcelain-fracture-glow",
     "name": "Porcelain Fracture Glow",
-<<<<<<< HEAD
-    "url": "shaders/porcelain-fracture-glow.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/porcelain-fracture-glow.wgsl",
->>>>>>> origin/main
     "description": "The image is rendered on delicate porcelain that develops fine luminous cracks. The cracks follow image edges and can be drawn with the mouse. Bass makes the golden light pulse and sing through the fractures.",
     "tags": [
       "porcelain",
@@ -4749,11 +4469,7 @@
   {
     "id": "quantum-foam",
     "name": "Quantum Foam",
-<<<<<<< HEAD
-    "url": "shaders/quantum-foam.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/quantum-foam.wgsl",
->>>>>>> origin/main
     "description": "Quantum foam texture with spacetime fluctuations.",
     "features": [
       "mouse-driven",
@@ -4838,11 +4554,7 @@
   {
     "id": "quantum-fractal",
     "name": "Quantum Fractal",
-<<<<<<< HEAD
-    "url": "shaders/quantum-fractal.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/quantum-fractal.wgsl",
->>>>>>> origin/main
     "description": "Fractal quantum interference patterns.",
     "tags": [
       "filter",
@@ -4902,11 +4614,7 @@
   {
     "id": "quantum-smear",
     "name": "Quantum Smear",
-<<<<<<< HEAD
-    "url": "shaders/quantum-smear.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/quantum-smear.wgsl",
->>>>>>> origin/main
     "description": "Quantum particle disintegration with stochastic advection and pointillist effects.",
     "features": [
       "mouse-driven",
@@ -4991,11 +4699,7 @@
   {
     "id": "quantum-wormhole",
     "name": "Quantum Wormhole",
-<<<<<<< HEAD
-    "url": "shaders/quantum-wormhole.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/quantum-wormhole.wgsl",
->>>>>>> origin/main
     "description": "Wormhole-like spacetime distortion effects.",
     "features": [
       "mouse-driven",
@@ -5080,11 +4784,7 @@
   {
     "id": "radiating-displacement",
     "name": "Radiating Displacement",
-<<<<<<< HEAD
-    "url": "shaders/radiating-displacement.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/radiating-displacement.wgsl",
->>>>>>> origin/main
     "description": "Rippling displacement waves emanate only from strong colours; neutrals stay sharp. Mouse-click to seed ripples.",
     "params": [
       {
@@ -5131,11 +4831,7 @@
   {
     "id": "radiating-haze",
     "name": "Radiating Haze",
-<<<<<<< HEAD
-    "url": "shaders/radiating-haze.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/radiating-haze.wgsl",
->>>>>>> origin/main
     "description": "Animated aura around strong colours; browns, greys & blacks are ignored. Now with colour-mode switch.",
     "params": [
       {
@@ -5183,11 +4879,7 @@
     "id": "rain",
     "name": "Rain",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/rain.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/rain.wgsl",
->>>>>>> origin/main
     "description": "Upgraded rain with gravity-accelerated streak physics, chromatic droplet lensing, HDR bloom on light sources, fog layers, and splash particles. Bass drives intensity, mouse creates wind gusts, depth controls droplet perspective.",
     "features": [
       "mouse-driven",
@@ -5241,11 +4933,7 @@
     "id": "rainbow-cloud",
     "name": "Rainbow Cloud",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/rainbow-cloud.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/rainbow-cloud.wgsl",
->>>>>>> origin/main
     "description": "Ray-marched volumetric clouds with 3D Perlin noise density, Mie scattering, iridescent nacreous colors, HDR god rays through cloud gaps, ACES tone mapping, and atmospheric perspective. Bass drives cloud turbulence, mouse scatters cloud particles, depth controls density layering.",
     "features": [
       "mouse-driven",
@@ -5302,11 +4990,7 @@
   {
     "id": "reaction-diffusion",
     "name": "Reaction-Diffusion",
-<<<<<<< HEAD
-    "url": "shaders/reaction-diffusion.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/reaction-diffusion.wgsl",
->>>>>>> origin/main
     "description": "A Gray-Scott-inspired two-channel field with directional state advection, traveling feed packets, audio modulation, and click-launched seed fronts. Legacy control labels are retained for saved presets.",
     "features": [
       "mouse-driven",
@@ -5392,11 +5076,7 @@
   {
     "id": "recursion-mirror-vortex",
     "name": "Recursion Mirror Vortex",
-<<<<<<< HEAD
-    "url": "shaders/recursion-mirror-vortex.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/recursion-mirror-vortex.wgsl",
->>>>>>> origin/main
     "description": "Nested Möbius-fold mirrors that fold the image into itself at precise singularity points, creating infinite-hallway illusions that remain spatially coherent.",
     "tags": [
       "mirror",
@@ -5453,11 +5133,7 @@
   {
     "id": "rorschach-inkblot",
     "name": "Rorschach Inkblot",
-<<<<<<< HEAD
-    "url": "shaders/rorschach-inkblot.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/rorschach-inkblot.wgsl",
->>>>>>> origin/main
     "description": "Symmetrical inkblot visualization with audio-driven ink flow, chromatic ink tints, temporal ink diffusion memory, mouse-controlled symmetry axis, and depth-aware ink density.",
     "params": [
       {
@@ -5516,11 +5192,7 @@
     "id": "rotoscope-ink",
     "name": "Rotoscope Ink",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/rotoscope-ink.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/rotoscope-ink.wgsl",
->>>>>>> origin/main
     "description": "Upgraded rotoscope ink with temporal edge detection, brushstroke-tapered outlines following motion vectors, paint-bucket bleed, film grain, and chromatic separation on fast edges. Bass drives jitter, mouse paints strokes, depth controls parallax.",
     "features": [
       "mouse-driven",
@@ -5573,11 +5245,7 @@
   {
     "id": "snow",
     "name": "Blizzard (Depth-Aware)",
-<<<<<<< HEAD
-    "url": "shaders/snow.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/snow.wgsl",
->>>>>>> origin/main
     "tags": [
       "filter",
       "image-processing"
@@ -5623,11 +5291,7 @@
   {
     "id": "spec-blue-noise-stipple",
     "name": "Blue Noise Stipple",
-<<<<<<< HEAD
-    "url": "shaders/spec-blue-noise-stipple.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/spec-blue-noise-stipple.wgsl",
->>>>>>> origin/main
     "description": "Blue-noise pointillism with golden tertiary dots, treble chromatic crawl, held densification, and capped ink-splatter click fronts.",
     "tags": [
       "pointillism",
@@ -5719,11 +5383,7 @@
   {
     "id": "spectral-bleed-confinement",
     "name": "Spectral Bleed & Confinement",
-<<<<<<< HEAD
-    "url": "shaders/spectral-bleed-confinement.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/spectral-bleed-confinement.wgsl",
->>>>>>> origin/main
     "description": "Sprung spectral bleed focus and bounded click fronts pull three-band edge halos through electromagnetic confinement, with exact temporal afterglow in authoritative A history and ACES output.",
     "tags": [
       "spectral",
@@ -5823,11 +5483,7 @@
   {
     "id": "spectral-slit-scan",
     "name": "Spectral Slit Scan",
-<<<<<<< HEAD
-    "url": "shaders/spectral-slit-scan.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/spectral-slit-scan.wgsl",
->>>>>>> origin/main
     "category": "artistic",
     "description": "Three-to-seven-slit spectral scan with exact-load chromatic history, fast slit and spectral packets, held-pointer curl, click fronts, audio-driven velocity, and depth-layered separation.",
     "tags": [
@@ -5926,11 +5582,7 @@
   {
     "id": "spectrogram-displace-pass1",
     "name": "Spectrogram Displace (Pass 1)",
-<<<<<<< HEAD
-    "url": "shaders/spectrogram-displace-pass1.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/spectrogram-displace-pass1.wgsl",
->>>>>>> origin/main
     "description": "Spectrogram field generation: synthetic audio analysis, frequency bin calculation, perceptual color mapping, and displacement vector computation. Outputs spectrogram data to dataTextureA.",
     "tags": [
       "spectrogram",
@@ -5986,11 +5638,7 @@
   {
     "id": "spectrogram-displace",
     "name": "Spectrogram Displace",
-<<<<<<< HEAD
-    "url": "shaders/spectrogram-displace.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/spectrogram-displace.wgsl",
->>>>>>> origin/main
     "description": "Live three-band and read-only FFT-bin displacement with sprung pointer focus, bounded click accents, and a scrolling exact-C spectrogram persisted through authoritative A display history.",
     "features": [
       "mouse-driven",
@@ -6076,11 +5724,7 @@
   {
     "id": "speed-lines-focus",
     "name": "Speed Lines Focus",
-<<<<<<< HEAD
-    "url": "shaders/speed-lines-focus.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/speed-lines-focus.wgsl",
->>>>>>> origin/main
     "description": "Applies a radial zoom blur and manga-style speed lines focused on the mouse.",
     "params": [
       {
@@ -6164,11 +5808,7 @@
   {
     "id": "spirograph-reveal",
     "name": "Spirograph Reveal",
-<<<<<<< HEAD
-    "url": "shaders/spirograph-reveal.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/spirograph-reveal.wgsl",
->>>>>>> origin/main
     "category": "artistic",
     "description": "Layered epicycloid and hypocycloid gears with moving cusps, held gear deformation, click reveal fronts, three-band audio, depth layers, and spectral metallic ink.",
     "tags": [
@@ -6268,11 +5908,7 @@
   {
     "id": "static-reveal",
     "name": "Static Reveal",
-<<<<<<< HEAD
-    "url": "/shaders/static-reveal.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/static-reveal.wgsl",
->>>>>>> origin/main
     "category": "artistic",
     "description": "Multi-layer temporal static grain with chromatic displacement and depth-reactive decay. Fine + coarse noise layers plus per-channel chromatic shift driven by treble. Mouse scratches reveal video; bass intensifies static flicker.",
     "features": [
@@ -6329,11 +5965,7 @@
   {
     "id": "stella-orbit",
     "name": "Stellar Orbit",
-<<<<<<< HEAD
-    "url": "shaders/stella-orbit.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/stella-orbit.wgsl",
->>>>>>> origin/main
     "description": "Orbital motion patterns with stellar particle systems.",
     "tags": [
       "filter",
@@ -6385,11 +6017,7 @@
   {
     "id": "stipple-render",
     "name": "Stipple Render",
-<<<<<<< HEAD
-    "url": "shaders/stipple-render.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/stipple-render.wgsl",
->>>>>>> origin/main
     "category": "artistic",
     "description": "Weighted Voronoi stippling with Lloyd's relaxation approximation. Dot sizes match local luminance using blue noise distribution. Ink-on-paper aesthetic with dot bleeding, cross-hatching, and ACES tone mapping.",
     "params": [
@@ -6441,11 +6069,7 @@
   {
     "id": "temporal-echo",
     "name": "Temporal Echo",
-<<<<<<< HEAD
-    "url": "shaders/temporal-echo.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/temporal-echo.wgsl",
->>>>>>> origin/main
     "description": "Feedback buffer and history texture for temporally offset echoes.",
     "features": [
       "mouse-driven",
@@ -6498,11 +6122,7 @@
     "id": "thermal-vision",
     "name": "Thermal Vision",
     "category": "artistic",
-<<<<<<< HEAD
-    "url": "shaders/thermal-vision.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/thermal-vision.wgsl",
->>>>>>> origin/main
     "description": "Heat-signature camera with FBM sensor noise, audio-reactive sensitivity, depth-aware fade, ACES tone mapping, IGN dither, blackbody temperature, split-tone, hue-preserve clamp and vignette.",
     "workgroup_size": [
       16,
@@ -6568,11 +6188,7 @@
   {
     "id": "voronoi-dynamics",
     "name": "Voronoi Bubbles",
-<<<<<<< HEAD
-    "url": "shaders/voronoi-dynamics.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/voronoi-dynamics.wgsl",
->>>>>>> origin/main
     "description": "Dynamic Voronoi cells with bubble physics, iridescent edges, and interactive centroids.",
     "params": [
       {
@@ -6618,11 +6234,7 @@
   {
     "id": "voronoi",
     "name": "Voronoi Tessellation",
-<<<<<<< HEAD
-    "url": "shaders/voronoi.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/voronoi.wgsl",
->>>>>>> origin/main
     "description": "Animated Voronoi reconstruction (simplified feature detection).",
     "features": [
       "mouse-driven",
@@ -6671,11 +6283,7 @@
   {
     "id": "vortex-prism",
     "name": "Vortex Prism",
-<<<<<<< HEAD
-    "url": "shaders/vortex-prism.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/vortex-prism.wgsl",
->>>>>>> origin/main
     "description": "Twists the image around the mouse cursor, separating colors like a prism.",
     "params": [
       {

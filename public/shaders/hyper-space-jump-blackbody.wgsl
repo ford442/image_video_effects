@@ -108,13 +108,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let s_color = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset, 0.0);
 
         // Chromatic aberration on streaks
-<<<<<<< HEAD
-        let r = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset + dir_uv * 0.005 * f, 0.0).r;
-        let b = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset - dir_uv * 0.005 * f, 0.0).b;
-=======
         let r = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset + dir_uv * u.zoom_params.w * 0.01 * f, 0.0).r;
         let b = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset - dir_uv * u.zoom_params.w * 0.01 * f, 0.0).b;
->>>>>>> origin/main
         let sample_color = vec3<f32>(r, s_color.g, b);
 
         let luma = dot(sample_color, vec3<f32>(0.299, 0.587, 0.114));

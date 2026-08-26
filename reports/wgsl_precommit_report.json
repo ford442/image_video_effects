@@ -1,17 +1,9 @@
 {
-<<<<<<< HEAD
-  "timestamp": "2026-08-23T19:24:03.801889",
-  "naga_bin": "/root/.cargo/bin/naga",
-  "naga_available": true,
-  "total": 10,
-  "passed": 10,
-=======
   "timestamp": "2026-08-25T08:37:50.689848",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": false,
   "total": 23,
   "passed": 23,
->>>>>>> origin/main
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -20,21 +12,12 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-holographic-fracture.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/aurora-rift-2-pass1.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -44,21 +27,12 @@
       "ok": true
     },
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-holographic-lens-flare-matrix.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/aurora-rift-2-pass2.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -68,21 +42,12 @@
       "ok": true
     },
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-holographic-membrane.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/aurora-rift-pass1.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -92,21 +57,12 @@
       "ok": true
     },
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-holographic-plasma-geode.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/aurora-rift-pass2.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -116,21 +72,12 @@
       "ok": true
     },
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-holographic-rainbow-surface.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/boids.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -140,21 +87,12 @@
       "ok": true
     },
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-hopf-fibration-fiber-bundle.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/flux-core.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -164,21 +102,12 @@
       "ok": true
     },
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-hyper-bismuth-clockwork.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/gen-bioreactor-bloom.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -188,21 +117,12 @@
       "ok": true
     },
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/gen-celestial-weave.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -212,21 +132,12 @@
       "ok": true
     },
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-hyper-dimensional-tesseract-labyrinth.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/glass-wall.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -236,14 +147,6 @@
       "ok": true
     },
     {
-<<<<<<< HEAD
-      "file": "public/shaders/gen-hyper-labyrinth.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-=======
       "file": "public/shaders/hex-lens.wgsl",
       "skipped": false,
       "skip_reason": null,
@@ -445,7 +348,6 @@
       "naga_ok": null,
       "naga_skipped": true,
       "naga_error": null,
->>>>>>> origin/main
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],

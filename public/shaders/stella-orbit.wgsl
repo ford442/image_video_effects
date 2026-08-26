@@ -186,11 +186,7 @@ fn rabbit_vf3_(p_7 : ptr<function, vec3<f32>>) -> f32 {
     return d_1;
 }
 
-<<<<<<< HEAD
-fn map_vf3_(p_8 : ptr<function, vec3<f32>>) -> f32 {
-=======
 fn map_vf3_(p_8 : ptr<function, vec3<f32>>) -> f32 { let dummy = u.zoom_params.x + u.zoom_params.y + u.zoom_params.z + u.zoom_params.w; u_zoom_dummy = u.zoom_params;
->>>>>>> origin/main
     var param_23 = *p_8;
     var d1 = stellas_vf3_(&param_23);
     var param_24 = *p_8;

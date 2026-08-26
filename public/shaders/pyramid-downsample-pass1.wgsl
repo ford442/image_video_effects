@@ -170,11 +170,7 @@ fn main(
 
   // Pass the original image through writeTexture so the slot pipeline
   // has a valid image even if the chain does not run to completion.
-<<<<<<< HEAD
-  let origRGB = tileAt(lid, 0, 0);
-=======
   let dummy = u.zoom_params.x + u.zoom_params.y + u.zoom_params.z + u.zoom_params.w; let origRGB = tileAt(lid, 0, 0);
->>>>>>> origin/main
   textureStore(writeTexture, gid.xy, vec4<f32>(origRGB, 1.0));
   let uv = vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture));
   let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

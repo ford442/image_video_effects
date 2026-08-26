@@ -2,11 +2,7 @@
   {
     "id": "alpha-aurora-bands",
     "name": "Alpha Aurora Bands",
-<<<<<<< HEAD
-    "url": "shaders/alpha-aurora-bands.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/alpha-aurora-bands.wgsl",
->>>>>>> origin/main
     "description": "Physically-motivated aurora borealis simulation with emission-line spectral decomposition. RGB stores oxygen green, oxygen red, and nitrogen blue emission intensities. Alpha tracks altitude layer index. Mouse controls solar wind direction; ripples trigger magnetic reconnection substorms.",
     "tags": [
       "aurora",
@@ -64,11 +60,7 @@
   {
     "id": "aurora-rift-2-pass1",
     "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
-<<<<<<< HEAD
-    "url": "shaders/aurora-rift-2-pass1.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-2-pass1.wgsl",
->>>>>>> origin/main
     "description": "Enhanced volumetric aurora with improved flow dynamics. First pass of 2-pass system.",
     "features": [
       "multi-pass-1",
@@ -125,11 +117,7 @@
   {
     "id": "aurora-rift-pass1",
     "name": "Aurora Rift (Pass 1: Volumetric)",
-<<<<<<< HEAD
-    "url": "shaders/aurora-rift-pass1.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-pass1.wgsl",
->>>>>>> origin/main
     "description": "Raymarches volumetric aurora with curl-driven flow. First pass of 2-pass system.",
     "features": [
       "multi-pass-1",
@@ -186,11 +174,7 @@
   {
     "id": "aurora_borealis",
     "name": "Aurora Borealis",
-<<<<<<< HEAD
-    "url": "shaders/aurora_borealis.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/aurora_borealis.wgsl",
->>>>>>> origin/main
     "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
     "tags": [
       "aurora",
@@ -246,11 +230,7 @@
     "id": "cinematic-flare",
     "name": "Cinematic Flare",
     "category": "lighting-effects",
-<<<<<<< HEAD
-    "url": "shaders/cinematic-flare.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/cinematic-flare.wgsl",
->>>>>>> origin/main
     "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, rainbow chromatic aberration, ACES tone mapping, and film grain. Mouse positions light source.",
     "features": [
       "audio-reactive",
@@ -306,11 +286,7 @@
   {
     "id": "divine-light-gpt52",
     "name": "Divine Light Cathedral gpt52",
-<<<<<<< HEAD
-    "url": "shaders/divine-light-gpt52.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/divine-light-gpt52.wgsl",
->>>>>>> origin/main
     "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
     "params": [
       {
@@ -360,11 +336,7 @@
   {
     "id": "divine-light",
     "name": "Divine Light",
-<<<<<<< HEAD
-    "url": "shaders/divine-light.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/divine-light.wgsl",
->>>>>>> origin/main
     "description": "Volumetric god rays emanating from cursor position. Creates cinematic light beam effects.",
     "params": [
       {
@@ -411,11 +383,7 @@
   {
     "id": "dynamic-lens-flares",
     "name": "Dynamic Lens Flares",
-<<<<<<< HEAD
-    "url": "shaders/dynamic-lens-flares.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/dynamic-lens-flares.wgsl",
->>>>>>> origin/main
     "description": "Cinematic lens flare following cursor. Generates ghost elements and chromatic artifacts.",
     "params": [
       {
@@ -460,11 +428,7 @@
   {
     "id": "lens-flare-brush",
     "name": "Lens Flare Brush",
-<<<<<<< HEAD
-    "url": "shaders/lens-flare-brush.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/lens-flare-brush.wgsl",
->>>>>>> origin/main
     "description": "Generates anamorphic lens flares from bright pixels near the mouse.",
     "params": [
       {
@@ -513,11 +477,7 @@
   {
     "id": "matrix_digital_rain",
     "name": "Matrix Digital Rain",
-<<<<<<< HEAD
-    "url": "shaders/matrix_digital_rain.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/matrix_digital_rain.wgsl",
->>>>>>> origin/main
     "description": "Matrix digital rain with cascading characters, decoding effect, trail fades, and glow. Alpha tracks character brightness.",
     "tags": [
       "matrix",
@@ -573,11 +533,7 @@
   {
     "id": "neon-light",
     "name": "Neon Light",
-<<<<<<< HEAD
-    "url": "shaders/neon-light.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/neon-light.wgsl",
->>>>>>> origin/main
     "description": "Blackbody edge emission with Fresnel-bright depth normals, thermal fog, and mouse-heated hotspots.",
     "params": [
       {
@@ -628,11 +584,7 @@
   {
     "id": "neon-pulse-edge",
     "name": "Neon Pulse Edge",
-<<<<<<< HEAD
-    "url": "shaders/neon-pulse-edge.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/neon-pulse-edge.wgsl",
->>>>>>> origin/main
     "description": "3×3 Sobel edge detection with multi-layer bloom (tight core + wide halo + diffuse), direction-based hue cycling, depth-aware glow intensity, and audio-reactive pulsing.",
     "features": [
       "mouse-driven",
@@ -687,11 +639,7 @@
   {
     "id": "sim-volumetric-fake-em",
     "name": "Volumetric Fake + EM Field",
-<<<<<<< HEAD
-    "url": "shaders/sim-volumetric-fake-em.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/sim-volumetric-fake-em.wgsl",
->>>>>>> origin/main
     "description": "God rays with mouse electromagnetic field distortion. Electric field bends light rays; magnetic field causes chromatic RGB separation. Click ripples spawn secondary light charges.",
     "features": [
       "simulation",
@@ -765,11 +713,7 @@
   {
     "id": "temporal_echo",
     "name": "Temporal Echo",
-<<<<<<< HEAD
-    "url": "shaders/temporal_echo.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/temporal_echo.wgsl",
->>>>>>> origin/main
     "description": "Multi-frame echo accumulation with hue-rotating trails, chromatic aberration on older echoes, depth-layered decay, and audio-reactive beat flash.",
     "tags": [
       "temporal",
@@ -823,11 +767,7 @@
   {
     "id": "underwater_caustics",
     "name": "Underwater Caustics",
-<<<<<<< HEAD
-    "url": "shaders/underwater_caustics.wgsl",
-=======
     "url": "https://test.1ink.us/image_video_effects/shaders/underwater_caustics.wgsl",
->>>>>>> origin/main
     "description": "Realistic underwater caustics with Gerstner wave surface simulation, refracted light patterns, god rays, and depth-based alpha",
     "tags": [
       "water",

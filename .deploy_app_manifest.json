@@ -1,12 +1,7 @@
 {
   "asset-manifest.json": {
-<<<<<<< HEAD
-    "hash": "c703b236f8a94588a537f17a14c666db",
-    "size": 374
-=======
     "hash": "6f1dec48dfb4de3297b61546259d8883",
     "size": 1643
->>>>>>> origin/main
   },
   "b3cursor.gif": {
     "hash": "d41d8cd98f00b204e9800998ecf8427e",
@@ -45,24 +40,15 @@
     "size": 230522
   },
   "image_suggestions.md": {
-<<<<<<< HEAD
-    "hash": "4e5e9e7326a4c3772d00461eeb7f15b0",
-    "size": 485495
-=======
     "hash": "dfb7bfc66d623adc31b21ef3c5459daf",
     "size": 619959
->>>>>>> origin/main
   },
   "image_suggestions_archive.md": {
     "hash": "553b939a8b666406c9338a149770e7f5",
     "size": 322989
   },
   "index.html": {
-<<<<<<< HEAD
-    "hash": "46728495fc64515c67d3cd0f5a91f3b8",
-=======
     "hash": "2e878fa464978a9036fd4c4b4cc8de6b",
->>>>>>> origin/main
     "size": 445
   },
   "reports/shader_params_extracted.json": {
@@ -70,34 +56,6 @@
     "size": 407864
   },
   "shader-lists/advanced-hybrid.json": {
-<<<<<<< HEAD
-    "hash": "4a1d7d1f09e049bad926fe476da6ff4c",
-    "size": 115088
-  },
-  "shader-lists/artistic.json": {
-    "hash": "a33da8af4b63e58b6457ba7732e602cd",
-    "size": 39913
-  },
-  "shader-lists/distortion.json": {
-    "hash": "05d17459925c37bdd132cbc57132ae51",
-    "size": 63127
-  },
-  "shader-lists/generative.json": {
-    "hash": "74f8603c2424a8af58a7e2e17e0b6973",
-    "size": 206488
-  },
-  "shader-lists/geometric.json": {
-    "hash": "ff2991ca9fbb113020160a1508c1e10b",
-    "size": 14077
-  },
-  "shader-lists/image.json": {
-    "hash": "d65020fbf4de9257a9953a1779bc64d7",
-    "size": 377541
-  },
-  "shader-lists/interactive-mouse.json": {
-    "hash": "eba80edeec717f7fe9c012ff09060b67",
-    "size": 87510
-=======
     "hash": "9f733cdaaa3a750ac6f89c8c9394fd40",
     "size": 297991
   },
@@ -124,58 +82,24 @@
   "shader-lists/interactive-mouse.json": {
     "hash": "64902c3b912bb649e942bca084ec888c",
     "size": 369804
->>>>>>> origin/main
   },
   "shader-lists/interactive.json": {
     "hash": "71a4d6dbf9293b8b1c86e2dcde23df80",
     "size": 34372
   },
   "shader-lists/lighting-effects.json": {
-<<<<<<< HEAD
-    "hash": "1cac81ebecd9f7c76f939679dcf31781",
-    "size": 19711
-  },
-  "shader-lists/liquid-effects.json": {
-    "hash": "ebdcf9bb42fe94bff85653a4ecb0df7f",
-    "size": 11844
-=======
     "hash": "45ecaa47a1742f1ddeec70d3063fa684",
     "size": 18824
   },
   "shader-lists/liquid-effects.json": {
     "hash": "6fcf541ac468f95a60bd1959ee896e27",
     "size": 61008
->>>>>>> origin/main
   },
   "shader-lists/liquid.json": {
     "hash": "f4e26ff9422090628e21724d2ccb651c",
     "size": 2429
   },
   "shader-lists/post-processing.json": {
-<<<<<<< HEAD
-    "hash": "6b319cdf258b056baac6f4c8e1b05c3e",
-    "size": 8812
-  },
-  "shader-lists/retro-glitch.json": {
-    "hash": "80af73bcd46725ee630d1d3ba3207c57",
-    "size": 26533
-  },
-  "shader-lists/simulation.json": {
-    "hash": "6e3b5c7f02b7028735c3dc9e47542d2a",
-    "size": 70920
-  },
-  "shader-lists/visual-effects.json": {
-    "hash": "95b3a11ad8ecb6ecd977d44a2c80ae23",
-    "size": 31069
-  },
-  "shader-manifest-unified.json": {
-    "hash": "986ae6588a674691ee658762642d55da",
-    "size": 1168369
-  },
-  "shader_coordinates.json": {
-    "hash": "92104a1739bfd7eff07c2d690d594cb3",
-    "size": 188497
-=======
     "hash": "85f10fb31506ec11a646351f6d221ba9",
     "size": 45550
   },
@@ -198,7 +122,6 @@
   "shader_coordinates.json": {
     "hash": "8729bf443e41248f9a7c29430b86e992",
     "size": 198212
->>>>>>> origin/main
   },
   "static/css/main.9a40ed5e.css": {
     "hash": "90dd426740d81b228239ac1ca58d5689",
@@ -225,18 +148,6 @@
     "size": 5183
   },
   "wasm/pixelocity_wasm.js": {
-<<<<<<< HEAD
-    "hash": "6334fd22a4f6ab421e19b8331dc957d8",
-    "size": 67071
-  },
-  "wasm/pixelocity_wasm.wasm": {
-    "hash": "3a755924fba805b1b50c14ac912508bf",
-    "size": 97826
-  },
-  "wasm/wasm_bridge.js": {
-    "hash": "ebaf16ec30cc882668af170452e03f66",
-    "size": 24512
-=======
     "hash": "947a5012b67457e736f2214b89ff9d44",
     "size": 80494
   },
@@ -1811,6 +1722,5 @@
   "wasm/bridge/wgslFormat.js": {
     "hash": "5dc8efdfa56e2a957e5e9f21af54905b",
     "size": 498
->>>>>>> origin/main
   }
 }

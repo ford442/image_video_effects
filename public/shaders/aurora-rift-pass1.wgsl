@@ -153,11 +153,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Parameters
     let scale = u.zoom_params.x * 3.5 + 0.5;
-<<<<<<< HEAD
-    let flowSpeed = u.zoom_params.y * 2.8 + 0.2;
-=======
     let flowSpeed = u.zoom_params.y * 2.8 + 0.2 + u.zoom_params.z * 0.0;
->>>>>>> origin/main
     let fbmOctaves = i32(u.zoom_params.w * 5.0 + 2.0);
     let depthParallax = u.zoom_config.y * 0.8;
     let emitThresh = u.zoom_config.z * 0.25 + 0.05;

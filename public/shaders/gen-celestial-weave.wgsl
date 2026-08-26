@@ -119,17 +119,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     extraBuffer[0] = smoothBass;
   }
 
-<<<<<<< HEAD
-  let weaveScale = mix(3.0, 30.0, zp.x);
-  let twist = mix(0.0, 2.5, zp.y);
-  let glowAmp = mix(0.2, 2.0, zp.z);
-  let voidDepth = mix(0.1, 1.0, zp.w);
-=======
   let weaveScale = mix(3.0, 30.0, u.zoom_params.x);
   let twist = mix(0.0, 2.5, u.zoom_params.y);
   let glowAmp = mix(0.2, 2.0, u.zoom_params.z);
   let voidDepth = mix(0.1, 1.0, u.zoom_params.w);
->>>>>>> origin/main
 
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   var p = uv * 2.0 - 1.0;

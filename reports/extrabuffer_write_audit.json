@@ -1,11 +1,4 @@
 {
-<<<<<<< HEAD
-  "generated": "2026-08-23T17:20:06.885979+00:00",
-  "files_scanned": 10,
-  "new_violations": [],
-  "known_violations": [],
-  "dynamic_writes": 0,
-=======
   "generated": "2026-08-24T07:38:06.733409+00:00",
   "files_scanned": 1377,
   "new_violations": [],
@@ -756,7 +749,6 @@
     }
   ],
   "dynamic_writes": 32,
->>>>>>> origin/main
   "out_of_range_writes": 0,
   "baseline": "reports/extrabuffer_write_audit_baseline.json"
 }

@@ -43,11 +43,7 @@ REPORT_MD = PROJECT_ROOT / "reports" / "dead_sliders_audit.md"
 BASELINE_JSON = PROJECT_ROOT / "reports" / "dead_sliders_audit_baseline.json"
 
 FIELDS = ("x", "y", "z", "w")
-<<<<<<< HEAD
-_ALIAS_RE = re.compile(r"\blet\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*u\.zoom_params\s*;")
-=======
 _ALIAS_RE = re.compile(r"\blet\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?:clamp\(\s*)?u\.zoom_params\b")
->>>>>>> origin/main
 
 
 def strip_comments(src: str) -> str:

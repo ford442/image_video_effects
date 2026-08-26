@@ -197,11 +197,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ── Per-band creative processing ─────────────────────────────────────────
   let l0 = processHighFreq(orig, hf, highAmp, treble, mids);
   let l1 = processMidFreq(blur,  midAmp, bass, time);
-<<<<<<< HEAD
-  let l2 = processLowFreq(blur,  lowAmp, time);
-=======
   let l2 = processLowFreq(blur,  lowAmp, time) + vec3<f32>(u.zoom_params.w * 0.0);
->>>>>>> origin/main
 
   // ── Reconstruct: blend processed bands ───────────────────────────────────
   // Base = low-freq breathing (replaces the plain blur).
