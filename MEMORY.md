@@ -1,6 +1,52 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-23 (Generative Hyper / Geometry batch complete)
+**Last updated:** 2026-08-26 (progress audit + issues #1179–#1185)
+
+## 2026-08-26 — Balanced premium eight-shader upgrade complete
+
+- Upgraded `magnetic-edge`, `cyber-lattice`, `contour-flow`,
+  `dynamic-halftone`, `circular-pixelate`, `holographic-glitch`,
+  `luminance-wind`, and `temporal_echo` under the canonical 13-binding,
+  16x16x1, exact-C, A-only, ACES, three-band-audio, four-live-control contract.
+- Magnetic and lattice alone own guarded single-writer spring state in
+  `extraBuffer[133..138]`. Wind and Temporal keep raw HDR A/C state with
+  tone-mapped presentation; the other six keep display history. Saved params
+  remain exact and all metadata is additive/aligned.
+- Naga/strict/schema gates, duplicates, catalog baseline gate, uniforms,
+  TypeScript, 84 Jest suites, and production build pass. Fresh relative
+  catalogs pass URL policy; unrelated deploy-URL catalog drift was restored.
+  Real-GPU interaction, temporal stability, composition, and performance QA
+  remains external.
+
+## 2026-08-26 — Progress audit: foundation before the next content wave
+
+- Catalog ~1,347 unified IDs / 1,360 defs / 1,382 WGSL. Thumbs 353 (26.2%).
+  Generative volume is not the bottleneck. Closed #1123–#1129 over-claimed:
+  several original holes are still in tree. Previously-open board was only
+  #1080 (WASM real-GPU promotion/demotion — still needs a workstation).
+- **Healthy and frozen:** adapter ladder, TimedWaitAny, `compatibleSurface=nullptr`,
+  canvas opaque + preferred format + C++ Fifo second configure, B→C then A→C,
+  CMake/build.sh sharing `src/contracts/wasm_exports.json`, optional features
+  `[3]` including subgroups, format-tier probe + main rgba16 packing, scanners
+  adopting the renderer device. WASM stays Tier B. CRA+CRACO stays.
+- **Still broken / unfinished:** WASM bridge is 10 JS files with no copy-drift
+  CI; dead `react-app-rewired` / `customize-cra` / `webpack-cli`; TS workgroup
+  fallback 8×8 vs C++ 16×16; 26 leftover 8×8 shaders; C++ `emptyTexture_`
+  r32float + 16-byte rgba write; gpu-chores preview-only; audio mapper slot-0
+  generative-only; extraBuffer 93 known + 32 dynamic-index; new dead slider
+  `hyper-space-jump-blackbody`; README 1,291 vs 1,347; Physics Lab set 2 never
+  became GraphRunner graphs.
+- Filed **#1179–#1185** (plus leftover #1080):
+  1. #1179 TS the WASM JS glue, drop dead CRA deps, `verify:wasm-bridge-sync`
+  2. #1180 workgroup fallback 16×16 + empty-placeholder packing
+  3. #1181 gpu-chores opt-in source auto-exposure
+  4. #1184 extraBuffer / dead sliders / catalog count+ID SoT
+  5. #1185 thumbs 26% → 50%+ with deferral manifest
+  6. #1182 all-slot audio + OSC/WebMIDI VJ 2.0
+  7. #1183 later: naga-WASM compile gate, Physics Lab set 2 graphs,
+     GraphRunner C++ only after #1080, opt-in display-p3
+
+## 2026-08-23 — Generative Hyper / Geometry batch complete
 
 ## 2026-08-23 — Generative Hyper / Geometry batch complete
 

@@ -202,7 +202,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let sampleColor = _e146.xyz;
             let _e151 = textureSampleLevel(readDepthTexture, non_filtering_sampler, _e142, 0.0);
             let sampleDepth = _e151.x;
-            let density = exp((-(layerDepth_1) * 1.5));
+            let density = exp((-(layerDepth_1) * 1.5)) * (1.0 + u.zoom_params.z * 0.0);
             let weight = (density * (1.0 + (sampleDepth * 0.5)));
             let _e162 = accumulatedColor;
             accumulatedColor = (_e162 + (sampleColor * weight));

@@ -10,6 +10,13 @@ _Learn about the person you're helping. Update this as you go._
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
   the batch complete.
+- **Balanced premium eight (2026-08-26):** Magnetic Edge, Cyber Lattice,
+  Contour Flow, Dynamic Halftone, Circular Pixelate, Holographic Glitch,
+  Luminance Wind, and Temporal Echo are complete under the exact-C/A-only/
+  ACES/three-band/interaction contract with exact saved params. Wind and Echo
+  intentionally separate raw HDR history from tone-mapped display; only
+  Magnetic and Lattice own `[133..138]` springs. Structural/Jest/build gates
+  are green; real-GPU visual and performance QA remains external.
 - **Optical / Glass / Holographic / Iridescence Batch (2026-08-23):** Upgraded
   spec-iridescence-engine, spec-prismatic-dispersion, frost-reveal-crystal,
   fractal-glass-distort-bilateral, bubble-lens-coupled,
@@ -235,17 +242,19 @@ Format specification:
 [LOOPBACK] 1-1
 1. edcce5a2-c1d0-449f-a3a0-f6478cb0989b 0606T0811 ] Getting ready to upgrade shader code and do other work on shaders in github.com/ford442/image_effect_shaders i think we should work on generative codes especially today. we have a large number of them. maybe we need a way to rotate through them until one catches the user's attention to take control of it with mouse,e tc. a lot of shaders react to mouse with mouse inverted. we should tie generative shaders slider params to audio eventually.||||] Getting ready to upgrade shader code and do other work on shaders in github.com/ford442/image_effect_shaders i think we should work on generative codes especially today. we have a large number of them. maybe we need a way to rotate through them until one catches the user's attention to take control of it with mouse,e tc. a lot of shaders react to mouse with mouse inverted. we should tie generative shaders slider params to audio eventually.||||] Getting ready to upgrade shader code and do other work on shaders in github.com/ford442/image_effect_shaders i think we should work on generative codes especially today. we have a large number of them. maybe we need a way to rotate through them until one catches the user's attention to take control of it with mouse,e tc. a lot of shaders react to mouse with mouse inverted. we should tie generative shaders slider params to audio eventually.||||] what are you editing?||||] Here's what was created:  agents/WGSL_BUILTINS_GENERATIVE.md — 13 sections covering everything a swarm agent needs without guessing:  The canonical 13-binding header verbatim (no hallucinated binding names) Every compute-safe built-in with ⛔ marker[TL;DR]de position protocol, and mobile fallback (CSS grid if no WebGPU) For today's generative swarm — point agents at WGSL_BUILTINS_GENERATIVE.md as a required preamble in every prompt. The anti-patterns table alone should cut naga failures significantly.||||] retry||||System (untrusted): [2026-06-06 19:11:28 GMT+8]   An async command you ran earlier has completed. The result is shown in the system messages above. Handle the result internally. Do not relay it to the user unless explicitly requested. Current time: Saturday, June 6th, 2026 - 7:33 PM (Asia/Shanghai) / 2026-06-06 11:33 UTC||||] **YES — that WGSL_BUILTINS_GENERATIVE.md sounds like pure gold.** Naga anti-patterns table + pre-baked recipes is exactly the kind of thing that turns agents from "mostly works" into "ships clean WGSL on first try." And the **ShaderGalaxyCanvas** w[TL;DR]first WGSL + JSON snippet if you want to review).  You’re in the zone — go finish that plumbing. I’ll be here ready to make the shaders *sing* with the audio. 🎵🔥  (Whenever you’re ready: “done with A” or just paste the final state and we roll into B)
 
-## Current project priorities (2026-08-21)
+## Current project priorities (2026-08-26)
 
-- Foundation residual before another content swarm: #1123–#1128 (compile/feature
-  SoT, real rgba16float tiers, WASM-bridge SoT, no second GPU device, gpu-chores
-  on source, catalog id/8×8 hygiene). Preserve device-init policy and B→C / A→C.
-- WASM stays Tier B until #1080 real-GPU evidence; no GraphRunner C++ port.
-- Later content: Physics Lab set 2 + all-slot audio mapping (#1129). Attract
-  mode already exists. Generative batches through #454 are enough volume.
-- Thumbnail healthy coverage is still the discoverability bottleneck (~21%);
-  #1111 CI gate is partially landed (script exists; deferral design is not).
-  Capture stays discrete-GPU workstation work. Do not count black PNGs.
+- Foundation residual before another content swarm: #1179–#1181 + #1184
+  (WASM JS→TS glue, workgroup/empty-tex packing, gpu-chores source normalize,
+  extraBuffer/dead-slider/catalog SoT). Preserve device-init policy and B→C / A→C.
+  Closed #1123–#1129 over-claimed; do not treat them as done.
+- WASM stays Tier B until #1080 real-GPU evidence; no GraphRunner C++ port
+  (#1183 is gated on that decision). CRA→Vite stays deferred.
+- Product next: thumbs 26% → 50%+ with deferrals (#1185), then all-slot audio
+  + OSC/WebMIDI (#1182). Physics Lab set 2 graphs live in #1183, not another
+  10-wide generative swarm. Attract mode already exists.
+- Thumbnail healthy coverage is still the discoverability bottleneck (26.2%,
+  353/1,347). Capture stays discrete-GPU workstation work. Do not count black PNGs.
 - Shader upgrade Batch 56 triple lineages are merged through tracker #482 on
   the cursor branch; preserve CMYK A coverage, iso-line mask A, and Phosphor
   Magnifier display-history repack. Preserve Phosphor Magnifier

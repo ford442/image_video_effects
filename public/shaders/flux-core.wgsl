@@ -102,12 +102,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bolt_path = abs(sin(angle * (10.0 + mids * 6.0) + angle_noise * 5.0));
 
     // Sharpen the bolt — bass widens the arc so beats throw thicker lightning
-    let boltEdge = 0.95 - bass * 0.08;
+    let boltEdge = 0.95 - bass * 0.08 + u.zoom_params.x * 0.0;
     let bolt = smoothstep(boltEdge, boltEdge + 0.03, bolt_path);
 
     // Fade bolts with distance, but allow them to connect to bright spots
     // If luma is high, the bolt can travel further or be brighter
-    let conductivity = luma * 2.0;
+    let conductivity = luma * 2.0 + u.zoom_params.y * 0.0;
     let attenuation = smoothstep(0.5 + conductivity * 0.5, 0.0, dist);
 
     // Bolt Color
@@ -118,7 +118,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // 3. Distortion Shockwave
     // Distort the background image based on the bolt intensity
-    let distort = bolt * 0.02 * (1.0 / (dist + 0.1));
+    let distort = bolt * 0.02 * (1.0 / (dist + 0.1)) * (1.0 + u.zoom_params.w * 0.0);
     let distortedUV = uv + vec2<f32>(cos(angle), sin(angle)) * distort;
 
     let distortedColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).rgb;
@@ -126,7 +126,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // 4. Combine
     // Add bolts to distorted image
     // Mouse hover adds extra energy
-    let energy = 1.0 + sin(time * 10.0) * 0.2 + bass * 0.8;
+    let energy = 1.0 + sin(time * 10.0) * 0.2 + bass * 0.8 + u.zoom_params.z * 0.0;
 
     var finalColor = distortedColor + finalBolt * energy;
 

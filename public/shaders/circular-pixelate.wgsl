@@ -1,11 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Circular Pixelate
-//  Category: image
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Created: 2026-05-17
-//  Upgraded: 2026-05-23
-// ═══════════════════════════════════════════════════════════════════
+// Circular Pixelate — hexagonal compound lenslets with chromatic apertures.
+// A/C stores tone-mapped display RGBA. B and extraBuffer are intentionally unused.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -28,100 +22,126 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
+const HEX_SIZE: vec2<f32> = vec2<f32>(1.0, 1.7320508);
+
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
 }
 
-// ═══ UNIQUE VISUAL IDEA: hexagonal honeycomb packing ═══
-// Square grids waste space between circular dots. A hex lattice packs circles
-// optimally (fly's-eye / honeycomb / real printing screen). getHex returns the
-// offset from the nearest hex center (.xy) and that center's cell id (.zw).
-const HEX_S: vec2<f32> = vec2<f32>(1.0, 1.7320508);
 fn getHex(p: vec2<f32>) -> vec4<f32> {
-  let centerA = round(p / HEX_S);
-  let centerB = round((p - HEX_S * 0.5) / HEX_S) + 0.5;
-  let offA = p - centerA * HEX_S;
-  let offB = p - centerB * HEX_S;
+  let centerA = round(p / HEX_SIZE);
+  let centerB = round((p - HEX_SIZE * 0.5) / HEX_SIZE) + 0.5;
+  let offA = p - centerA * HEX_SIZE;
+  let offB = p - centerB * HEX_SIZE;
   if (dot(offA, offA) < dot(offB, offB)) {
     return vec4<f32>(offA, centerA);
   }
   return vec4<f32>(offB, centerB);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyCoord(uv: vec2<f32>, resolution: vec2<f32>) -> vec2<i32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  return clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution),
+               vec2<i32>(0), hi);
+}
+
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, historyCoord(uv, resolution), 0);
+}
+
+fn spectrum(t: f32) -> vec3<f32> {
+  return 0.55 + 0.45 * cos(TAU * (vec3<f32>(0.02, 0.35, 0.68) + t));
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
-  let mouse = u.zoom_config.yz;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
   let time = u.config.x;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 2.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 2.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 2.0);
 
-  let density_param = u.zoom_params.x;
-  let radius_param = u.zoom_params.y;
-  let hardness_param = u.zoom_params.z;
-  let bg_mix_param = u.zoom_params.w;
+  let density = 10.0 + u.zoom_params.x * 100.0;
+  let radiusParam = clamp(u.zoom_params.y, 0.0, 1.0);
+  let hardness = clamp(u.zoom_params.z, 0.0, 1.0);
+  let backgroundMix = clamp(u.zoom_params.w, 0.0, 1.0);
+  let gridScale = vec2<f32>(density, density / max(aspect, 0.001));
+  let hex = getHex(uv * gridScale);
+  let local = hex.xy;
+  let cellId = hex.zw;
+  let cellCenterUV = (cellId * HEX_SIZE) / gridScale;
 
-  let cells = density_param * 100.0 + 10.0;
-  let cell_count_x = cells;
-  let cell_count_y = cells / max(aspect, 0.001);
-
-  // Hexagonal lattice instead of a square grid — honeycomb dot packing.
-  let grid_uv = uv * vec2<f32>(cell_count_x, cell_count_y);
-  let hex = getHex(grid_uv);
-  let cell_id = hex.zw;
-  let cell_local = hex.xy;
-  // Hex inradius is ~0.5; scale so dot sizing matches the old square-cell feel.
-  let dist = length(cell_local) * 1.15;
-
-  let sample_uv = (cell_id * HEX_S) / vec2<f32>(cell_count_x, cell_count_y);
-  let color = textureSampleLevel(readTexture, u_sampler, clamp(sample_uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-
-  let mouse_dist = distance(uv, mouse);
-  let interaction = 1.0 - smoothstep(0.0, 0.3, mouse_dist);
-
-  let ripple_count = u32(u.config.y);
-  var click_boost = 0.0;
-  for (var i = 0u; i < ripple_count; i = i + 1u) {
+  let pointerDist = length((uv - mouse) * aspectVec);
+  let heldDilation = smoothstep(0.34, 0.0, pointerDist) * select(0.18, 1.0, held);
+  var clickWave = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
-    let r_dist = distance(uv, ripple.xy);
-    let elapsed = time - ripple.z;
-    let ripple_radius = elapsed * 0.4;
-    let ripple_strength = 1.0 - smoothstep(0.0, 0.6, elapsed);
-    click_boost = click_boost + smoothstep(ripple_radius + 0.15, ripple_radius, r_dist) * ripple_strength * 0.25;
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.2) {
+      let dist = length((uv - ripple.xy) * aspectVec);
+      let front = age * (0.30 + bass * 0.08);
+      clickWave += sin((dist - front) * 74.0) * exp(-abs(dist - front) * 33.0) * exp(-age * 1.35);
+    }
   }
 
-  let is_mouse_down = u.zoom_config.w > 0.5;
-  let click_pulse = select(0.0, 0.15 * sin(time * 8.0), is_mouse_down);
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  let apertureRadius = clamp(0.10 + radiusParam * 0.46 + heldDilation * 0.13 +
+                             bass * 0.035 + clickWave * 0.04, 0.045, 0.62);
+  let distanceToCenter = length(local) * 1.15;
+  let edgeWidth = mix(0.10, 0.008, hardness);
+  let aperture = 1.0 - smoothstep(max(apertureRadius - edgeWidth, 0.0),
+                                  apertureRadius + edgeWidth, distanceToCenter);
+  let normalizedLocal = local / max(apertureRadius, 0.001);
+  let lensZ = sqrt(max(1.0 - dot(normalizedLocal, normalizedLocal), 0.0));
+  let lensNormal = normalize(vec3<f32>(normalizedLocal, lensZ + 0.001));
+  let refraction = lensNormal.xy * (0.006 + depth * 0.014) * (1.0 + heldDilation * 0.7);
+  let sampleBase = clamp(cellCenterUV + refraction, vec2<f32>(0.0), vec2<f32>(1.0));
+  let chromaAmount = (0.0015 + mids * 0.003 + treble * 0.002) * aperture;
+  let chromaDir = normalize(local + vec2<f32>(0.0001));
+  let red = textureSampleLevel(readTexture, u_sampler,
+                               clamp(sampleBase + chromaDir * chromaAmount, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let green = textureSampleLevel(readTexture, u_sampler, sampleBase, 0.0).g;
+  let blue = textureSampleLevel(readTexture, u_sampler,
+                                clamp(sampleBase - chromaDir * chromaAmount, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let sampled = textureSampleLevel(readTexture, u_sampler, sampleBase, 0.0);
+  let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let history = historyAt(sampleBase - chromaDir * clickWave * 0.004, resolution);
 
-  let depth_scale = mix(0.6, 1.0, depth);
-  let audio_pulse = 1.0 + bass * 0.3;
-  let final_radius = (radius_param * 0.5 + interaction * 0.2 + click_boost + click_pulse) * depth_scale * audio_pulse;
+  let apertureAngle = atan2(local.y, local.x);
+  let glintDirection = vec2<f32>(cos(time * 0.7 + mids), sin(time * 0.7 + mids));
+  let glint = pow(max(dot(lensNormal.xy, glintDirection), 0.0), 18.0) * aperture * (0.25 + treble * 1.2);
+  let rim = smoothstep(apertureRadius - edgeWidth * 3.0, apertureRadius, distanceToCenter) * aperture;
+  let cellHue = hash12(cellId + 0.37) + apertureAngle / TAU + time * 0.025;
+  let prism = spectrum(cellHue + mids * 0.12);
+  var hdr = vec3<f32>(red, green, blue);
+  hdr = mix(hdr, history.rgb, 0.035 + rim * 0.05);
+  hdr += prism * glint * (0.35 + treble * 0.5);
+  hdr += prism * rim * (0.08 + mids * 0.18);
+  hdr += spectrum(cellHue + 0.33) * abs(clickWave) * aperture * 0.16;
+  let lensDisplay = aces(max(hdr, vec3<f32>(0.0)));
+  let effectAlpha = clamp(sampled.a * aperture + rim * 0.18 + glint * 0.16, 0.0, 1.0);
+  let lenslet = vec4<f32>(lensDisplay, effectAlpha);
+  let result = mix(original, lenslet, backgroundMix);
 
-  let edge = 0.01 + (1.0 - hardness_param) * 0.2;
-  let mask = 1.0 - smoothstep(max(final_radius - edge, 0.0), final_radius, dist);
-
-  let tint = (hash12(cell_id + 0.5) - 0.5) * 0.06;
-  let hue_cycle = mids * 0.2;
-  let tinted = color.rgb + vec3<f32>(tint + hue_cycle, tint * 0.7 - hue_cycle * 0.3, -tint * 0.5 + hue_cycle * 0.1);
-
-  let highlight = smoothstep(final_radius * 0.7, final_radius, dist) * 0.15;
-  let dot_rgb = tinted + highlight;
-
-  let dot_color = vec4<f32>(dot_rgb, color.a);
-  let effect = mix(vec4<f32>(0.0), dot_color, mask);
-  let final_color = mix(orig, effect, bg_mix_param);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), final_color);
+  textureStore(writeTexture, coord, result);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, result);
 }
