@@ -18,7 +18,7 @@
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -66,6 +66,15 @@ fn rgbToLuma(rgb: vec3<f32>) -> f32 {
   return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
+fn ACESFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -76,6 +85,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
+  
+  // Audio reactivity
+  let bass = plasmaBuffer[0].x;
+  let mid = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  // Single-writer spring
+  let is_leader = (global_id.x == 0u && global_id.y == 0u);
+  if (is_leader) {
+      let dt = 0.016;
+      let target = u.zoom_config.w; // mouseDown
+      let k = 100.0;
+      let d = 10.0;
+      let current = extraBuffer[133];
+      let vel = extraBuffer[134];
+      let force = k * (target - current) - d * vel;
+      let new_vel = vel + force * dt;
+      var new_val = current + new_vel * dt;
+      new_val = clamp(new_val, 0.0, 1.0);
+      extraBuffer[133] = new_val;
+      extraBuffer[134] = new_vel;
+  }
+  
+  workgroupBarrier();
+  let spring_val = extraBuffer[133];
+  
+  var ripple_acc = 0.0;
+  for(var i=0u; i<10u; i++) {
+      let r = u.ripples[i];
+      if (r.w > 0.0) {
+          let aspect = resolution.x / resolution.y;
+          let r_uv = vec2<f32>(r.x, r.y);
+          let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(r_uv.x * aspect, r_uv.y));
+          let time_diff = time - r.z;
+          let r_width = 0.05 + 0.1 * spring_val;
+          let r_dist = dist - time_diff * 0.5;
+          let intensity = exp(-time_diff * 2.0) * smoothstep(r_width, 0.0, abs(r_dist));
+          ripple_acc += intensity * min(1.0, 1.0 / (time_diff * 10.0 + 1.0)); // capped
+      }
+  }
+  
+  let pointer_held_effect = spring_val * max(0.0, 1.0 - distance(uv, u.zoom_config.yz) * 3.0);
+  let geometry_base = vec2<f32>(sin(uv.x * 20.0 + time) * cos(uv.y * 20.0 - time * 0.5) * 0.1, cos(uv.x * 20.0 - time) * sin(uv.y * 20.0 + time * 0.5) * 0.1);
 
   let separation_strength = u.zoom_params.x * 0.1;
   let trail_decay = mix(0.5, 0.99, u.zoom_params.y);
@@ -87,9 +139,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv_corrected = vec2<f32>(uv.x * aspect, uv.y);
   let mouse_corrected = vec2<f32>(mousePos.x * aspect, mousePos.y);
   let dist = distance(uv_corrected, mouse_corrected);
-  let influence = smoothstep(0.5, 0.0, dist) * mouse_influence;
+  let influence = smoothstep(0.5, 0.0, dist) * mouse_influence + pointer_held_effect * 0.5;
 
-  let prevFrame = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
+  let prevFrame = textureLoad(dataTextureC, coord, 0).rgb;
 
   let motionDir = normalize(mouse_corrected - uv_corrected + vec2<f32>(0.001, 0.001));
   let motionMag = length(mouse_corrected - uv_corrected);
@@ -99,21 +151,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var totalWeight = 0.0;
   for(var t: i32 = 0; t < taps; t = t + 1) {
     let fi = f32(t);
-    let tapUV = uv + motionDir * fi * 0.003 * motionMag * mouse_influence;
+    let tapUV = uv + motionDir * fi * 0.003 * motionMag * mouse_influence + geometry_base * 0.1;
     let tapWeight = exp(-fi * 0.7);
     temporalAccum = temporalAccum + textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb * tapWeight;
     totalWeight = totalWeight + tapWeight;
   }
   temporalAccum = temporalAccum / max(totalWeight, 0.001);
 
-  let lensStrengthR = mix(-0.3, 0.3, u.zoom_params.x) * 1.2;
-  let lensStrengthG = mix(-0.3, 0.3, u.zoom_params.x);
-  let lensStrengthB = mix(-0.3, 0.3, u.zoom_params.x) * 0.8;
+  let lensStrengthR = mix(-0.3, 0.3, u.zoom_params.x) * 1.2 + ripple_acc * 0.1;
+  let lensStrengthG = mix(-0.3, 0.3, u.zoom_params.x) + ripple_acc * 0.05;
+  let lensStrengthB = mix(-0.3, 0.3, u.zoom_params.x) * 0.8 - ripple_acc * 0.05;
   let lensUVR = lensDistort(uv, lensStrengthR + influence * 0.1);
   let lensUVG = lensDistort(uv, lensStrengthG);
   let lensUVB = lensDistort(uv, lensStrengthB - influence * 0.1);
 
-  let dispersion = mix(0.0, 300.0, separation_strength + influence * 0.1);
+  let dispersion = mix(0.0, 300.0, separation_strength + influence * 0.1) * (1.0 + treble * 2.0);
   let angle = time * hue_shift_speed + dist * 10.0;
   let dir = vec2<f32>(cos(angle), sin(angle));
 
@@ -122,7 +174,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spectralB = sampleSpectral(lensUVB, dispersion, dir).b;
   var spectralColor = vec3<f32>(spectralR, spectralG, spectralB);
 
-  let reverb = plasmaBuffer[0].x * 0.4 + plasmaBuffer[0].z * 0.2;
+  let reverb = bass * 0.4 + mid * 0.2;
   let echoCount = 4;
   var echoColor = vec3<f32>(0.0);
   var echoWeight = 0.0;
@@ -148,7 +200,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   color = mix(color, color * (1.0 + depth * 0.4), 0.35);
 
-  textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(color, 1.0));
+  color = ACESFilm(color);
+  
+  let sem_alpha = clamp(luma + ripple_acc + pointer_held_effect, 0.0, 1.0);
+
+  let final_color = vec4<f32>(color, sem_alpha);
+  
+  textureStore(writeTexture, coord, final_color);
+  textureStore(dataTextureA, coord, final_color);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

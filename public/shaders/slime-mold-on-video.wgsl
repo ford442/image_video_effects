@@ -42,6 +42,10 @@ fn stateAt(coord: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
   return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), maxCoord), 0);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -108,8 +112,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
-    let mouseBoost = smoothstep(0.10, 0.0, length(uv - mousePos)) * mouseDown;
-    deposit = deposit + mouseBoost * 0.12 * (1.0 + bass * 0.5);
+    let aspect = res.x / res.y;
+    let mouseField = smoothstep(0.12, 0.0, length((uv - mousePos) * vec2<f32>(aspect, 1.0)));
+    let mouseBoost = mouseField * mouseDown;
+    deposit = deposit + mouseField * 0.01 + mouseBoost * 0.12 * (1.0 + bass * 0.5);
 
     var clickFoodFront = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -117,7 +123,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ripple = u.ripples[i];
         let age = u.config.x - ripple.z;
         if (age >= 0.0 && age < 2.5) {
-            let front = abs(length(uv - ripple.xy) - age * (0.14 + bass * 0.08));
+            let front = abs(length((uv - ripple.xy) * vec2<f32>(aspect, 1.0)) - age * (0.14 + bass * 0.08));
             clickFoodFront += (1.0 - smoothstep(0.0, 0.018, front)) * (1.0 - age / 2.5);
         }
     }
@@ -134,8 +140,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let tendrilB = 0.62 + treble * 0.05;
     let tendril = vec3<f32>(tendrilR, tendrilG, tendrilB) * nextTrail;
     let hot = vec3<f32>(1.0, 0.55, 0.20) * pow(nextTrail, 2.2) * glowGain;
-    let finalColor = clamp(mix(base.rgb, base.rgb * 0.35 + tendril + hot, nextTrail), vec3<f32>(0.0), vec3<f32>(1.0));
-    let alpha = clamp(nextTrail + 0.2 + bass * 0.05, 0.0, 1.0);
+    let finalColor = acesToneMap(mix(base.rgb, base.rgb * 0.35 + tendril + hot, nextTrail));
+    let alpha = clamp(base.a * 0.25 + nextTrail * 0.75 + clickFoodFront * 0.15, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

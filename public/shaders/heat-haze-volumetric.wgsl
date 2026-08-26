@@ -1,165 +1,33 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Heat Haze Volumetric
-//  Category: advanced-hybrid
-//  Features: heat-diffusion, volumetric-fog, refraction, depth-aware,
-//            mouse-driven, temporal
-//  Complexity: Very High
-//  Chunks From: heat-haze, alpha-depth-fog-volumetric
-//  Created: 2026-04-18
-//  By: Agent CB-26
-// ═══════════════════════════════════════════════════════════════════
-//  Thermal heat fields interact with volumetric fog. Hot regions
-//  evaporate fog and create refractive distortion; cold regions
-//  accumulate dense mist. Depth-aware Beer-Lambert with thermal
-//  modulation creates living atmospheric pockets.
-// ═══════════════════════════════════════════════════════════════════
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-// ═══ CHUNK: hash12 (from alpha-depth-fog-volumetric) ═══
-fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-}
-
-fn valueNoise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-    let a = hash12(i + vec2<f32>(0.0, 0.0));
-    let b = hash12(i + vec2<f32>(1.0, 0.0));
-    let c = hash12(i + vec2<f32>(0.0, 1.0));
-    let d = hash12(i + vec2<f32>(1.0, 1.0));
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
-
-fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
-    var value = 0.0;
-    var amplitude = 0.5;
-    var frequency = 1.0;
-    for (var i: i32 = 0; i < octaves; i = i + 1) {
-        value += amplitude * valueNoise(p * frequency);
-        amplitude *= 0.5;
-        frequency *= 2.0;
-    }
-    return value;
-}
-
+@group(0) @binding(0) var u_sampler:sampler;
+@group(0) @binding(1) var readTexture:texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:texture_storage_2d<rgba32float,write>;
+@group(0) @binding(3) var<uniform> u:Uniforms;
+@group(0) @binding(4) var readDepthTexture:texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler:sampler;
+@group(0) @binding(6) var writeDepthTexture:texture_storage_2d<r32float,write>;
+@group(0) @binding(7) var dataTextureA:texture_storage_2d<rgba32float,write>;
+@group(0) @binding(8) var dataTextureB:texture_storage_2d<rgba32float,write>;
+@group(0) @binding(9) var dataTextureC:texture_2d<f32>;
+@group(0) @binding(10) var<storage,read_write> extraBuffer:array<f32>;
+@group(0) @binding(11) var comparison_sampler:sampler_comparison;
+@group(0) @binding(12) var<storage,read> plasmaBuffer:array<vec4<f32>>;
+struct Uniforms{config:vec4<f32>,zoom_config:vec4<f32>,zoom_params:vec4<f32>,ripples:array<vec4<f32>,50>,};
+fn aces(x:vec3f)->vec3f{let a=2.51;let b=0.03;let c=2.43;let d=0.59;let e=0.14;return clamp((x*(a*x+vec3f(b)))/(x*(c*x+vec3f(d))+vec3f(e)),vec3f(0.0),vec3f(1.0));}
+fn stateAt(p:vec2i,d:vec2i)->vec4f{return textureLoad(dataTextureC,clamp(p,vec2i(0),d-vec2i(1)),0);}
+fn hash21(p:vec2f)->f32{return fract(sin(dot(p,vec2f(113.5,271.9)))*43758.5453);}
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let res = u.config.zw;
-    if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
-
-    let uv = vec2<f32>(gid.xy) / res;
-    let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-    let texel = 1.0 / res;
-    let time = u.config.x;
-
-    // Parameters
-    let heatGain = u.zoom_params.x;
-    let decayRate = u.zoom_params.y;
-    let fogDensity = mix(0.2, 3.0, u.zoom_params.z);
-    let refraction = u.zoom_params.w;
-    let turbulence = 0.5;
-
-    let mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
-    let aspect = res.x / res.y;
-
-    // === READ PREVIOUS HEAT ===
-    let c = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let l = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).r;
-    let r_heat = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
-    let t_heat = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).r;
-    let b_heat = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
-
-    let avg = (l + r_heat + t_heat + b_heat) * 0.25;
-    var diffusedHeat = mix(c, avg, 0.3);
-
-    // Mouse heat injection
-    let dist = distance(uv * vec2<f32>(aspect, 1.0), mousePos * vec2<f32>(aspect, 1.0));
-    var mouseHeat = 0.0;
-    if (mouseDown > 0.5 && dist < 0.05) {
-        mouseHeat = heatGain * (1.0 - dist / 0.05);
-    }
-
-    let newHeat = (diffusedHeat + mouseHeat) * decayRate;
-    let finalHeat = clamp(newHeat, 0.0, 1.0);
-
-    // Write heat to depth for next frame
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(finalHeat, 0.0, 0.0, 0.0));
-
-    // === REFRACTION FROM HEAT GRADIENT ===
-    let heatGradX = r_heat - l;
-    let heatGradY = b_heat - t_heat;
-    let warp = vec2<f32>(heatGradX, heatGradY) * refraction;
-    let finalUV = uv - warp;
-
-    // === VOLUMETRIC FOG MODULATED BY HEAT ===
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let distFactor = (1.0 - depth);
-    let heightFactor = 1.0 - uv.y * 0.5;
-
-    let noiseUV = uv * 3.0 + vec2<f32>(time * 0.02, time * 0.015);
-    let fogNoise = fbm2(noiseUV, 4) * turbulence + (1.0 - turbulence);
-
-    // Heat reduces fog (evaporation)
-    let heatFogMod = 1.0 - finalHeat * 0.9;
-    let opticalDepth = fogDensity * distFactor * heightFactor * fogNoise * heatFogMod * 3.0;
-    let transmittance = exp(-opticalDepth);
-
-    // Fog colors: warm near, cool far, hot = clear
-    let nearFog = vec3<f32>(0.85, 0.75, 0.55);
-    let farFog = vec3<f32>(0.25, 0.35, 0.6);
-    let hotFog = vec3<f32>(0.9, 0.4, 0.2);
-    let fogColor = mix(mix(nearFog, farFog, distFactor), hotFog, finalHeat * 0.3);
-
-    // Mouse clears fog
-    let mouseDist = length(uv - mousePos);
-    let mouseClear = smoothstep(0.2, 0.0, mouseDist) * mouseDown;
-    let modifiedTransmittance = mix(transmittance, 1.0, mouseClear);
-
-    // Ripple fog swirl
-    let rippleCount = min(u32(u.config.y), 50u);
-    var rippleDisturbance = 0.0;
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let rDist = length(uv - ripple.xy);
-        let age = time - ripple.z;
-        if (age < 2.0 && rDist < 0.2) {
-            rippleDisturbance += smoothstep(0.2, 0.0, rDist) * max(0.0, 1.0 - age * 0.5) * 0.3;
-        }
-    }
-    let finalTransmittance = mix(modifiedTransmittance, modifiedTransmittance * 0.5, rippleDisturbance);
-
-    // === SCENE COMPOSITE ===
-    let sceneColor = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
-    let foggedColor = sceneColor * finalTransmittance + fogColor * (1.0 - finalTransmittance);
-
-    // Thermal tint overlay
-    let thermalTint = vec3<f32>(1.0, 0.3, 0.1) * finalHeat * 0.5;
-    let outColor = foggedColor + thermalTint;
-
-    textureStore(dataTextureA, coord, vec4<f32>(outColor, finalTransmittance));
-    textureStore(writeTexture, coord, vec4<f32>(outColor, finalTransmittance));
+fn main(@builtin(global_invocation_id) gid:vec3u){
+ let du=textureDimensions(dataTextureC);if(gid.x>=du.x||gid.y>=du.y){return;}let p=vec2i(gid.xy);let d=vec2i(du);let uv=(vec2f(gid.xy)+0.5)/vec2f(du);let dt=clamp((1.0 / 60.0),0.0,0.033);
+ let strength=0.3+2.7*u.zoom_params.x;let refract=0.5+7.5*u.zoom_params.y;let depth=0.25+2.75*u.zoom_params.z;let turb=u.zoom_params.w;let audio=plasmaBuffer[0].xyz;
+ let c=stateAt(p,d);let adv=stateAt(p-vec2i(round((c.xy+vec2f(0.0,c.z*0.4))*vec2f(du)*dt)),d);let n=stateAt(p+vec2i(0,1),d);let s=stateAt(p-vec2i(0,1),d);let e=stateAt(p+vec2i(1,0),d);let w=stateAt(p-vec2i(1,0),d);let avg=(n+s+e+w)*0.25;
+ var velocity=mix(adv.xy,avg.xy,0.04);var heat=mix(adv.z,avg.z,0.055);var column=mix(adv.w,avg.w,0.025);
+ velocity+=vec2f(n.z-s.z,w.z-e.z)*(0.15+0.55*turb);
+ velocity+=(vec2f(hash21(vec2f(p)+u.config.x),hash21(vec2f(p.yx)-u.config.x))-vec2f(0.5))*0.015*turb+vec2f(0.0,heat*0.018);
+ let aspect=u.config.z/max(u.config.w,1.0);let mp=u.zoom_config.yz;let q=(uv-mp)*vec2f(aspect,1.0);let brush=step(0.5,u.zoom_config.w)*exp(-dot(q,q)*250.0);
+ heat+=brush*(0.035+audio.x*0.09)*strength;column+=brush*(0.025+audio.y*0.06)*depth;velocity+=brush*vec2f(audio.z-audio.y,0.08+audio.x*0.1);
+ let clicks=min(u32(max(u.config.y,0.0)),50u);for(var i=0u;i<clicks;i=i+1u){let event=u.ripples[i];let age=u.config.x-event.z;if(age>=0.0&&age<1.7){let cp=event.xy;let cq=(uv-cp)*vec2f(aspect,1.0);let ring=exp(-pow((length(cq)-(0.02+age*0.2))*62.0,2.0))*exp(-age*1.6);heat+=ring*(0.025+audio.z*0.05);column+=ring*0.02;velocity+=normalize(cq+vec2f(0.0001))*ring*0.06;}}
+ heat=clamp(heat*exp(-dt*0.6),0.0,2.0);column=clamp(column*exp(-dt*0.22),0.0,2.0);velocity=clamp(velocity*exp(-dt*1.3),vec2f(-1.0),vec2f(1.0));textureStore(dataTextureA,p,vec4f(velocity,heat,column));
+ let grad=vec2f(e.z-w.z,n.z-s.z);var accum=vec3f(0.0);var trans=1.0;
+ for(var j=0;j<6;j++){let z=(f32(j)+0.5)/6.0;let shimmer=(hash21(vec2f(p)+vec2f(f32(j)*23.0,u.config.x*8.0))-0.5)*turb;let offset=(grad+velocity*0.25+shimmer*vec2f(1.0,-0.7))*refract*(0.25+z)/vec2f(du);let sampleColor=textureSampleLevel(readTexture,u_sampler,clamp(uv+offset,vec2f(0.0),vec2f(1.0)),0.0).rgb;let extinction=exp(-column*depth*0.07);accum+=trans*sampleColor*(1.0-extinction);trans*=extinction;}
+ let base=textureSampleLevel(readTexture,u_sampler,uv,0.0).rgb;let glow=heat*vec3f(1.8,0.35,0.04)*(0.1+audio.z*0.2);textureStore(writeTexture,p,vec4f(aces(base*trans+accum+glow),clamp(column*0.38+heat*0.16,0.0,1.0)));
 }

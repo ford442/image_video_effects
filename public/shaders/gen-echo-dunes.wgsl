@@ -94,24 +94,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let mouse = u.zoom_config.yz * 2.0 - 1.0;
-
-  // Clamp/normalize parameter vector
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
 
   // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
-  let prevBass = extraBuffer[0];
-  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[0] = smoothBass;
+  var smoothBass = bass;
+  if (arrayLength(&extraBuffer) > 133u) {
+    let prevBass = extraBuffer[133];
+    smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
+  }
+  if (gid.x == 0u && gid.y == 0u && arrayLength(&extraBuffer) > 133u) {
+    extraBuffer[133] = smoothBass;
   }
 
-  let duneScale = mix(1.0, 10.0, zp.x);
-  let windSpeed = mix(0.05, 1.4, zp.y);
-  let mirage = mix(0.0, 1.0, zp.z);
-  let echo = mix(0.0, 1.0, zp.w);
+  let duneScale = mix(1.0, 10.0, clamp(u.zoom_params.x, 0.0, 1.0));
+  let windSpeed = mix(0.05, 1.4, clamp(u.zoom_params.y, 0.0, 1.0));
+  let mirage = clamp(u.zoom_params.z, 0.0, 1.0);
+  let echo = clamp(u.zoom_params.w, 0.0, 1.0);
 
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
+  let mouse = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(aspect, 1.0);
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
 
@@ -144,9 +144,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mirageWarp = vec2<f32>(sin(p.y * 18.0 + time * 2.0), cos(p.x * 14.0 + time * 1.6)) * mirage * 0.025;
   let warped = noise2((p + mirageWarp) * 9.0);
 
-  let md = length((uv * 2.0 - 1.0) - mouse);
+  let md = length(p - mouse);
   let echoRings = sin(md * 50.0 - time * (2.0 + mids * 8.0));
-  let echoField = smoothstep(0.6, 1.0, echoRings) * exp(-md * 3.0) * echo;
+  var echoField = smoothstep(0.6, 1.0, echoRings) * exp(-md * 3.0) * echo;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var ri = 0u; ri < rippleCount; ri++) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age > 0.0 && age < 4.0) {
+      let center = (ripple.xy * 2.0 - 1.0) * vec2<f32>(aspect, 1.0);
+      echoField += exp(-abs(distance(p, center) - age * 0.24) * 65.0) * exp(-age * 1.15) * echo;
+    }
+  }
 
   // ═══ Sunset palette: warm horizon to cool zenith ═══
   let yNorm = sat(0.5 + p.y * 0.5);
@@ -168,12 +177,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color + vec3<f32>(0.65, 0.9, 1.0) * echoField * (0.4 + treble * 0.9);
 
   // Temporal echo persistence: rings decay slowly
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  color = mix(color, prev.rgb * 0.9, echo * 0.06 + bass * 0.01);
+  let prev = textureLoad(dataTextureC, coord, 0);
+  let hdrColor = clamp(mix(color, prev.rgb * 0.9, echo * 0.06 + bass * 0.01), vec3<f32>(0.0), vec3<f32>(6.0));
 
-  color = acesToneMap(color * 1.1);
+  color = acesToneMap(hdrColor * 1.1);
+  let alpha = clamp(duneHeight * 0.58 + echoField * 0.24 + mirage * shimmer * 0.12, 0.04, 1.0);
 
-  textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
-  textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(duneHeight, shadow, echoField, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(duneHeight, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(hdrColor, alpha));
 }

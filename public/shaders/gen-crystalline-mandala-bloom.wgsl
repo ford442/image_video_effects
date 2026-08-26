@@ -134,13 +134,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let star = step(0.992, starSeed) * (0.6 + treble * 1.2);
     rgb += vec3<f32>(star);
 
-    var finalRGB = clamp(rgb, vec3<f32>(0.0), vec3<f32>(4.0));
+    // Click-ripple blooms follow the engine's ripple timestamps.
+    var clickBloom = 0.0;
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age > 0.0 && age < 3.0) {
+            let delta = vec2<f32>((uv.x - ripple.x) * aspect, uv.y - ripple.y);
+            clickBloom += exp(-abs(length(delta) - age * 0.2) * 72.0) * exp(-age * 1.4);
+        }
+    }
+    rgb += crystalWarm * clickBloom * (0.3 + treble * 0.6);
+
+    // A/C contains raw HDR display history; use one exact, unfiltered load.
+    let history = textureLoad(dataTextureC, coord, 0);
+    var finalRGB = clamp(mix(rgb, history.rgb, 0.05 + bass * 0.07), vec3<f32>(0.0), vec3<f32>(5.0));
 
     // Meaningful alpha: petal mask + bloom + ring + base
-    let alpha = clamp(folded.a * 0.2 + petalSDF * 0.6 + ring * 0.3 + bloom * 0.25 + bass * 0.1, 0.0, 1.0);
+    let alpha = clamp(folded.a * 0.2 + petalSDF * 0.6 + ring * 0.3 + bloom * 0.25 + clickBloom * 0.15 + bass * 0.1, 0.0, 1.0);
 
-    // Depth: petals are near, surround is far
-    let depth = clamp(1.0 - petalSDF * 0.6 - bloom * 0.2, 0.0, 1.0);
+    // Relief depth uses the renderer's near-is-one convention.
+    let depth = clamp(petalSDF * 0.72 + bloom * 0.16 + ring * 0.08, 0.0, 1.0);
 
     // Chromatic aberration
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;

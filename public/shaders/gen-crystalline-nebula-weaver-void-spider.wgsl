@@ -150,13 +150,18 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimensions = textureDimensions(writeTexture);
+    if (global_id.x >= dimensions.x || global_id.y >= dimensions.y) { return; }
     let id = vec2<f32>(f32(global_id.x), f32(global_id.y));
     let uv = (id - 0.5 * vec2<f32>(f32(dimensions.x), f32(dimensions.y))) / f32(dimensions.y);
+    let uv01 = (id + vec2<f32>(0.5)) / vec2<f32>(dimensions);
 
     let time = u.config.x;
-    let audioBass = plasmaBuffer[0].x;   // real bass drives the abdomen pulse
-    let audioTreble = plasmaBuffer[0].z; // real treble drives web-thread glint
-    let mouse = u.zoom_config.yz;
+    let audio = plasmaBuffer[0].xyz;
+    let audioBass = audio.x;   // bass drives the abdomen pulse
+    let audioMids = audio.y;   // mids energise the nebula filaments
+    let audioTreble = audio.z; // treble drives web-thread glint
+    let aspect = f32(dimensions.x) / max(f32(dimensions.y), 1.0);
+    let mouse = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(aspect, 1.0);
 
     // Ray setup (void_depth coupling keeps the spider in frame)
     let void_depth = u.zoom_params.w; // Void Depth
@@ -180,20 +185,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Nebula background: true fbm density graded through the cosine palette
     let nebDens = fbm(vec3<f32>(uv * 2.5, time * 0.15));
-    var col = palette(nebDens + uv.x * 0.15 + time * 0.02) * nebDens * nebDens * 0.35;
+    var col = palette(nebDens + uv.x * 0.15 + time * 0.02 + audioMids * 0.12) * nebDens * nebDens * (0.35 + audioMids * 0.2);
 
-    var depthNorm = 1.0;
+    var depthNear = 0.0;
     if (t < max_dist) {
         let hitP = ro + rd * t;
         let n = calcNormal(hitP, time, audioBass, mouse);
         let lightDir = normalize(vec3<f32>(0.6, 0.8, -0.4));
         let diff = max(dot(n, lightDir), 0.0);
         let fres = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
-        depthNorm = clamp(t / max_dist, 0.0, 1.0);
+        depthNear = 1.0 - clamp(t / max_dist, 0.0, 1.0);
 
         // Crystalline hue from the nebula field at the hit point
         let hueT = fbm(hitP * 0.7 + vec3<f32>(time * 0.1));
-        var surf = palette(hueT) * (0.25 + 0.75 * diff) * (1.0 - depthNorm * 0.8);
+        var surf = palette(hueT) * (0.25 + 0.75 * diff) * (0.2 + depthNear * 0.8);
         surf += palette(hueT + 0.35) * fres * 1.2;
 
         // Bass-lit plasma body
@@ -210,12 +215,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Crystalline glow gathered along the march, tinted by palette + plasma
     col += palette(nebDens + 0.5) * glow * (0.6 + audioBass * 0.8) * (0.5 + plasma_intensity);
 
-    // Tame the blowout: hue-preserving clamp at ~2.0, then ACES
-    col = hueClamp(col, 2.0);
-    col = aces(col);
+    // Expanding click fronts pluck the crystalline web.
+    var rippleGlow = 0.0;
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age > 0.0 && age < 3.5) {
+            let delta = vec2<f32>((uv01.x - ripple.x) * aspect, uv01.y - ripple.y);
+            rippleGlow += exp(-abs(length(delta) - age * 0.2) * 75.0) * exp(-age * 1.35);
+        }
+    }
+    col += palette(nebDens + 0.7) * rippleGlow * (0.35 + audioTreble * 0.7);
 
-    let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
-    textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depthNorm, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(glow, audioBass, audioTreble, depthNorm));
+    // Exact A/C display-history feedback; the host copies A → C.
+    let coord = vec2<i32>(global_id.xy);
+    let history = textureLoad(dataTextureC, coord, 0);
+    let hdrColor = clamp(mix(col, history.rgb, 0.07 + audioBass * 0.06), vec3<f32>(0.0), vec3<f32>(6.0));
+
+    // Tame the blowout: hue-preserving clamp at ~2.0, then ACES
+    col = aces(hueClamp(hdrColor, 2.0));
+
+    let hitMask = select(0.0, smoothstep(0.0, 0.18, depthNear), t < max_dist);
+    let alpha = clamp(hitMask * 0.75 + glow * 0.18 + nebDens * 0.12 + rippleGlow * 0.16, 0.02, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthNear, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(hdrColor, alpha));
 }

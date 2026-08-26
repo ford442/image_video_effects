@@ -105,12 +105,12 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     let coreY = p.y - clamp(p.y, -coreH, coreH);
     let dCoreCapsule = length(vec2<f32>(p.x, p.z)) - coreR + p.y*p.y*0.05; // Tapered
 
-    // Audio Reactivity
-    let audio = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.5, 0.5), 0.0).r;
+    // Three-band audio reactivity comes from the engine audio buffer.
+    let audio = plasmaBuffer[0].xyz;
 
     // Core Displacement
     let coreNoise = fbm(p * 2.0 - vec3<f32>(0.0, t * 1.5, 0.0)) * 0.5;
-    let dCore = dCoreCapsule + coreNoise - audio * 0.3;
+    let dCore = dCoreCapsule + coreNoise - audio.x * 0.3;
 
     // Shell
     let complexity = u.zoom_params.x * 5.0 + 3.0;
@@ -121,10 +121,10 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
 
     let v = voronoi(p * complexity + vec3<f32>(0.0, t * 0.2, 0.0));
     let cellEdge = v.y - v.x;
-    let dShell = max(dShellBase, -(cellEdge - thickness));
+    let dShell = max(dShellBase, -(cellEdge - thickness - audio.y * 0.04));
 
     // Fiber Optics (Audio Reactive)
-    let dFibers = length(vec2<f32>(p.x, p.z)) - (coreR + audio * 1.5) + abs(sin(p.y * 10.0 - t * 5.0)) * 0.1;
+    let dFibers = length(vec2<f32>(p.x, p.z)) - (coreR + audio.x * 1.2) + abs(sin(p.y * (10.0 + audio.z * 4.0) - t * 5.0)) * 0.1;
 
     var d = min(dCore, dShell);
     d = min(d, max(dFibers, dCoreCapsule));
@@ -178,7 +178,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var glow = vec3<f32>(0.0);
     var p_current = ro;
 
-    let audio = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.5, 0.5), 0.0).r;
+    let audio = plasmaBuffer[0].xyz;
     let colorShift = u.zoom_params.w;
 
     for (var i = 0; i < 120; i++) {
@@ -195,9 +195,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Accumulate Glow
         if (d.y == 2.0) { // Core
             let c = vec3<f32>(0.1, 0.6, 1.0) * (1.0 - colorShift) + vec3<f32>(0.8, 0.1, 1.0) * colorShift;
-            glow += c * 0.02 / (0.1 + abs(d.x)) * (0.5 + audio * 1.5);
+            glow += c * 0.02 / (0.1 + abs(d.x)) * (0.5 + audio.x * 1.5 + audio.y * 0.4);
         } else if (d.y == 3.0) { // Fibers
-            glow += vec3<f32>(0.2, 1.0, 0.8) * 0.03 / (0.05 + abs(d.x)) * audio * 2.0;
+            glow += vec3<f32>(0.2, 1.0, 0.8) * 0.03 / (0.05 + abs(d.x)) * (audio.x + audio.z * 0.8);
         }
     }
 
@@ -226,10 +226,33 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     col += glow;
 
+    // Click fronts make the chrysalis flare without changing its raymarched silhouette.
+    var clickGlow = 0.0;
+    let uv01 = (vec2<f32>(id.xy) + vec2<f32>(0.5)) / res;
+    let aspect = res.x / max(res.y, 1.0);
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age > 0.0 && age < 3.0) {
+            let delta = vec2<f32>((uv01.x - ripple.x) * aspect, uv01.y - ripple.y);
+            clickGlow += exp(-abs(length(delta) - age * 0.2) * 70.0) * exp(-age * 1.4);
+        }
+    }
+    col += mix(vec3<f32>(0.15, 0.8, 1.2), vec3<f32>(1.0, 0.2, 1.1), colorShift) * clickGlow * (0.25 + audio.z * 0.65);
+
     // Add some noise/dust
     col += hash3(vec3<f32>(p_current.xy * 100.0, u.config.x)).x * 0.03;
 
-    col = acesToneMap(col);
+    let coord = vec2<i32>(id.xy);
+    let history = textureLoad(dataTextureC, coord, 0);
+    let hdrColor = clamp(mix(col, history.rgb, 0.06 + audio.x * 0.08), vec3<f32>(0.0), vec3<f32>(7.0));
+    let mappedColor = acesToneMap(hdrColor);
+    let hit = t < 20.0;
+    let alpha = clamp(select(0.03, 0.32 + length(mappedColor) * 0.32, hit) + clickGlow * 0.12, 0.02, 0.98);
+    let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(mappedColor, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(hdrColor, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

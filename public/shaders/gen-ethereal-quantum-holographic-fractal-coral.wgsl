@@ -134,7 +134,12 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
     return a + b * cos(6.28318 * (c * t + d));
 }
 
-fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     var p = ro;
     var tDist = 0.0;
     var d = 0.0;
@@ -142,7 +147,10 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
 
     var glow = 0.0;
     let maxGlow = u.zoom_params.z;
-    let audioEnergy = plasmaBuffer[0].x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audioEnergy = bass;
 
     for (var i = 0; i < MAX_STEPS; i++) {
         p = ro + rd * tDist;
@@ -175,19 +183,20 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
         // Chromatic interference
         let interference = sin(dot(n, vec3<f32>(1.0)) * 10.0 + u.config.x) * 0.5 + 0.5;
 
-        col = mix(c1, vec3<f32>(1.0), fresnel * interference);
+        col = mix(c1, vec3<f32>(1.0, 0.8 + mids * 0.2, 1.0), fresnel * interference);
 
         // Audio reactive pulsing from the interior
         col = col + vec3<f32>(0.2, 0.8, 1.0) * audioEnergy * maxGlow * fresnel;
     }
 
     // Add volumetric glow (scattering)
-    col = col + vec3<f32>(0.1, 0.5, 0.8) * glow * 0.05 * maxGlow;
+    col = col + vec3<f32>(0.1 + treble * 0.15, 0.5, 0.8) * glow * 0.05 * maxGlow;
 
     // Background fog / attenuation
     col = mix(col, vec3<f32>(0.01, 0.02, 0.05), 1.0 - exp(-0.02 * tDist));
 
-    return clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    let coverage = select(0.0, clamp(1.0 - tDist / MAX_DIST, 0.0, 1.0), tDist < MAX_DIST);
+    return vec4<f32>(max(col, vec3<f32>(0.0)), coverage);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -213,7 +222,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
 
-    let col = render(ro, rd);
+    let rendered = render(ro, rd);
+    let coord = vec2<i32>(id.xy);
+    let previous = textureLoad(dataTextureC, coord, 0);
+    var rawColor = rendered.rgb;
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    let rippleCount = min(i32(u.config.y), 50);
+    for (var i = 0; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age > 0.0 && age < 2.5) {
+            let radius = age * (0.25 + u.zoom_params.w * 0.08);
+            let ring = exp(-abs(distance(fragCoord / res, ripple.xy) - radius) * 90.0) * exp(-age * 1.6) * ripple.w;
+            rawColor += vec3<f32>(0.15, 0.55, 1.0) * ring;
+        }
+    }
+
+    let mapped = acesToneMap(rawColor * 1.25);
+    let col = mix(mapped, previous.rgb, 0.08);
+    let alpha = clamp(max(rendered.a, previous.a * 0.9), 0.0, 1.0);
+    let packed = vec4<f32>(col, alpha);
+    let finalDepth = clamp(1.0 - rendered.a, 0.0, 1.0);
+
+    textureStore(writeTexture, coord, packed);
+    textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, coord, packed);
 }

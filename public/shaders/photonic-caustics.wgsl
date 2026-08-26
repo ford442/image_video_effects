@@ -1,5 +1,5 @@
-// Photonic Caustics Accumulator
-// Simulates light caustics through refractive surfaces with chromatic dispersion
+// Photonic Caustics — refractive height-field convergence accumulator.
+// A/C: HDR irradiance RGB and caustic coverage. B is never written.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -8,265 +8,44 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // caustic accumulation
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>; // photon data
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // read accumulated caustics
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=LightHeight
-  zoom_params: vec4<f32>,  // x=IOR, y=LightSize, z=Dispersion, w=Intensity
-  ripples: array<vec4<f32>, 50>,
-};
-
-const PI: f32 = 3.14159265359;
-const MAX_BOUNCES: i32 = 4;
-const PHOTON_COUNT: i32 = 32;
-
-// Noise functions for surface perturbation
-fn hash31(p: vec3<f32>) -> f32 {
-  var p3 = fract(p * 0.1031);
-  p3 = p3 + dot(p3, vec3<f32>(p3.y + 33.33, p3.z + 33.33, p3.x + 33.33));
-  return fract((p3.x + p3.y) * p3.z);
-}
-
-fn hash21(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
-  p3 = p3 + dot(p3, vec3<f32>(p3.y + 33.33, p3.z + 33.33, p3.x + 33.33));
-  return fract((p3.x + p3.y) * p3.z);
-}
-
-fn noise2D(p: vec2<f32>) -> f32 {
-  var i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash21(i + vec2<f32>(0.0, 0.0)), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
-    mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x),
-    u.y
-  );
-}
-
-fn fbm(p: vec2<f32>, time: f32) -> f32 {
-  var value = 0.0;
-  var amplitude = 0.5;
-  var freq = 1.0;
-  for (var i = 0; i < 4; i = i + 1) {
-    value = value + amplitude * noise2D(p * freq + vec2<f32>(time * 0.2, time * 0.15));
-    freq = freq * 2.0;
-    amplitude = amplitude * 0.5;
-  }
-  return value;
-}
-
-// Compute surface normal from height field
-fn getSurfaceNormal(uv: vec2<f32>, texelSize: vec2<f32>, time: f32) -> vec3<f32> {
-  // Use depth and noise for heightfield
-  let h = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let hL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(-texelSize.x, 0.0), 0.0).r;
-  let hR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
-  let hU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, -texelSize.y), 0.0).r;
-  let hD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
-  
-  // Add animated noise perturbation
-  let noiseScale = 8.0;
-  let noiseAmp = 0.1;
-  let nL = fbm(uv * noiseScale + vec2<f32>(-texelSize.x * noiseScale, 0.0), time) * noiseAmp;
-  let nR = fbm(uv * noiseScale + vec2<f32>(texelSize.x * noiseScale, 0.0), time) * noiseAmp;
-  let nU = fbm(uv * noiseScale + vec2<f32>(0.0, -texelSize.y * noiseScale), time) * noiseAmp;
-  let nD = fbm(uv * noiseScale + vec2<f32>(0.0, texelSize.y * noiseScale), time) * noiseAmp;
-  
-  let dx = ((hR + nR) - (hL + nL)) * 2.0;
-  let dy = ((hD + nD) - (hU + nU)) * 2.0;
-  
-  return normalize(vec3<f32>(-dx, -dy, 0.2));
-}
-
-// Schlick's Fresnel approximation
-fn fresnelSchlick(cosTheta: f32, ior: f32) -> f32 {
-  let r0 = (1.0 - ior) / (1.0 + ior);
-  let r0sq = r0 * r0;
-  return r0sq + (1.0 - r0sq) * pow(1.0 - cosTheta, 5.0);
-}
-
-// Snell's law refraction
-fn refractRay(incident: vec3<f32>, normal: vec3<f32>, eta: f32) -> vec3<f32> {
-  let cosi = -dot(normal, incident);
-  let sin2t = eta * eta * (1.0 - cosi * cosi);
-  if (sin2t > 1.0) {
-    // Total internal reflection
-    return reflect(incident, normal);
-  }
-  let cost = sqrt(1.0 - sin2t);
-  return incident * eta + normal * (eta * cosi - cost);
-}
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453); }
+fn noise(p: vec2<f32>) -> f32 { let i = floor(p); let f = fract(p); let q = f * f * (3.0 - 2.0 * f); return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), q.x), mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0)), q.x), q.y); }
+fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0)); }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
-  let coord = gid.xy;
-  if (coord.x >= size.x || coord.y >= size.y) { return; }
-  
-  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
-  let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
-  let time = u.config.x;
-  let frame = u.config.y;
-  
-  // Parameters
-  let baseIOR = mix(1.1, 1.8, u.zoom_params.x);
-  let lightSize = mix(0.05, 0.3, u.zoom_params.y);
-  let dispersion = mix(0.0, 0.1, u.zoom_params.z);
-  let intensity = mix(0.5, 3.0, u.zoom_params.w);
-  
-  // Light source position (from mouse or center)
-  let lightPos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-  let lightHeight = mix(0.5, 2.0, u.zoom_config.w);
-  
-  // Read previous accumulation for temporal blending
-  let prevCaustic = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-  
-  // Trace photons backwards from this pixel to light sources
-  var causticAccum = vec3<f32>(0.0);
-  let surfaceNormal = getSurfaceNormal(uv, texelSize, time);
-  
-  // For each photon
-  for (var p = 0; p < PHOTON_COUNT; p = p + 1) {
-    // Random offset for photon origin within light area
-    let seed = vec3<f32>(uv, f32(p) + time * 0.01);
-    let randomAngle = hash31(seed) * 2.0 * PI;
-    let randomRadius = sqrt(hash31(seed + vec3<f32>(1.0, 0.0, 0.0))) * lightSize;
-    let photonOrigin = lightPos + vec2<f32>(cos(randomAngle), sin(randomAngle)) * randomRadius;
-    
-    // Direction from light to this pixel
-    let toPixel = uv - photonOrigin;
-    let dist2D = length(toPixel);
-    let dir2D = toPixel / max(dist2D, 0.001);
-    
-    // 3D direction considering light height
-    var lightDir = normalize(vec3<f32>(dir2D, -lightHeight));
-    
-    // Sample surface at photon hit point
-    let hitNormal = getSurfaceNormal(uv, texelSize, time);
-    
-    // Fresnel and refraction for each color channel (chromatic dispersion)
-    let cosTheta = abs(dot(lightDir, hitNormal));
-    
-    // Different IOR for R, G, B channels
-    let iorR = baseIOR - dispersion;
-    let iorG = baseIOR;
-    let iorB = baseIOR + dispersion;
-    
-    // Refract for each channel
-    let refractR = refractRay(lightDir, hitNormal, 1.0 / iorR);
-    let refractG = refractRay(lightDir, hitNormal, 1.0 / iorG);
-    let refractB = refractRay(lightDir, hitNormal, 1.0 / iorB);
-    
-    // Compute caustic intensity based on ray convergence
-    let convergenceR = abs(dot(refractR, vec3<f32>(0.0, 0.0, -1.0)));
-    let convergenceG = abs(dot(refractG, vec3<f32>(0.0, 0.0, -1.0)));
-    let convergenceB = abs(dot(refractB, vec3<f32>(0.0, 0.0, -1.0)));
-    
-    // Fresnel term
-    let fresnel = 1.0 - fresnelSchlick(cosTheta, baseIOR);
-    
-    // Attenuation with distance
-    let attenuation = 1.0 / (1.0 + dist2D * 5.0);
-    
-    // Caustic intensity - brighter where rays converge
-    let causticR = pow(convergenceR, 4.0) * fresnel * attenuation;
-    let causticG = pow(convergenceG, 4.0) * fresnel * attenuation;
-    let causticB = pow(convergenceB, 4.0) * fresnel * attenuation;
-    
-    causticAccum = causticAccum + vec3<f32>(causticR, causticG, causticB);
-  }
-  
-  // Normalize by photon count
-  causticAccum = causticAccum / f32(PHOTON_COUNT);
-  causticAccum = causticAccum * intensity;
-  
-  // Add ripple-based light sources
-  for (var i = 0; i < 50; i = i + 1) {
-    let ripple = u.ripples[i];
-    if (ripple.z > 0.0) {
-      let rippleAge = time - ripple.z;
-      if (rippleAge > 0.0 && rippleAge < 3.0) {
-        let toRipple = uv - ripple.xy;
-        let dist = length(toRipple);
-        let rippleStrength = (1.0 - rippleAge / 3.0) * 0.5;
-        
-        // Caustic pattern around ripple
-        let angle = atan2(toRipple.y, toRipple.x);
-        let wave = sin(dist * 30.0 - rippleAge * 5.0) * 0.5 + 0.5;
-        let causticRing = wave * rippleStrength / (1.0 + dist * 10.0);
-        
-        causticAccum = causticAccum + vec3<f32>(causticRing * 0.5, causticRing * 0.7, causticRing * 1.0);
-      }
-    }
-  }
-  
-  // Temporal accumulation for smoother caustics
-  let blendFactor = 0.15;
-  let accumulatedCaustic = mix(prevCaustic.rgb, causticAccum, blendFactor);
-  
-  // Store accumulated caustics
-  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(accumulatedCaustic, 1.0));
-  
-  // Get source image
-  let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  
-  // Refraction displacement based on surface normal
-  let refractDisplace = surfaceNormal.xy * 0.02;
-  let refractedColor = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace, 0.0);
-  
-  // Chromatic aberration for refracted view
-  let chromaOffset = dispersion * 0.01;
-  let colorR = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace + vec2<f32>(chromaOffset, 0.0), 0.0).r;
-  let colorG = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace, 0.0).g;
-  let colorB = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace - vec2<f32>(chromaOffset, 0.0), 0.0).b;
-  let refractedChromatic = vec3<f32>(colorR, colorG, colorB);
-  
-  // Blend refracted image with caustics
-  var finalColor = mix(sourceColor.rgb, refractedChromatic, 0.3);
-  
-  // Add caustic highlights
-  finalColor = finalColor + accumulatedCaustic;
-  
-  // Specular highlights
-  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-  let reflectDir = reflect(-viewDir, surfaceNormal);
-  var lightDir = normalize(vec3<f32>(lightPos - uv, lightHeight));
-  let specular = pow(max(dot(reflectDir, lightDir), 0.0), 64.0);
-  finalColor = finalColor + vec3<f32>(specular * 0.5);
-  
-  // Advanced Alpha: Luminance Key
-  let alpha = calculateAdvancedAlpha(finalColor, uv);
-  
-  // Output
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, alpha));
-  textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
-}
-
-// ═══ ADVANCED ALPHA FUNCTION ═══
-fn calculateAdvancedAlpha(color: vec3<f32>, uv: vec2<f32>) -> f32 {
-    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    
-    // Tunable parameters from zoom_params
-    let intensity = u.zoom_params.w * 0.5 + 0.4;    // Intensity
-    let threshold = u.zoom_params.y * 0.15 + 0.05;  // LightSize
-    let softness = u.zoom_params.z * 0.1 + 0.02;    // Dispersion
-    let depthWeight = u.zoom_params.x * 0.5;        // IOR
-    
-    // Luminance key: caustic highlights opaque, dark areas transparent
-    let lumaAlpha = smoothstep(threshold - softness, threshold + softness, luma) * intensity;
-    
-    // Depth-layered blend
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthAlpha = mix(0.3, 1.0, depth);
-    let alpha = mix(lumaAlpha, depthAlpha, depthWeight);
-    
-    return clamp(alpha, 0.0, 1.0);
+  let size = vec2<u32>(u32(u.config.z), u32(u.config.w)); if (gid.x >= size.x || gid.y >= size.y) { return; }
+  let p = vec2<i32>(gid.xy); let hi = vec2<i32>(size) - vec2<i32>(1); let res = vec2<f32>(size); let uv = (vec2<f32>(p) + 0.5) / res;
+  let aspect = res.x / max(res.y, 1.0); let texel = 1.0 / res; let time = u.config.x; let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+  let ior = mix(1.05, 1.82, u.zoom_params.x); let lightSize = mix(0.025, 0.34, u.zoom_params.y); let dispersion = mix(0.0, 0.16, u.zoom_params.z); let intensity = mix(0.35, 4.2, u.zoom_params.w);
+  let hL = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let hR = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let hT = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv - vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let hB = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let rippleHeight = noise(uv * (9.0 + audio.y * 4.0) + vec2<f32>(time * 0.11, -time * 0.08));
+  let normal = normalize(vec3<f32>((hL - hR) * 8.0 + sin(uv.y * 42.0 + time) * 0.08, (hT - hB) * 8.0 + cos(uv.x * 37.0 - time * 0.8) * 0.08, 1.0));
+  let lightPos = u.zoom_config.yz; let toLight = (lightPos - uv) * vec2<f32>(aspect, 1.0); let lightDist = length(toLight) + 0.001;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5); let aperture = exp(-lightDist * (3.0 + 10.0 * (1.0 - lightSize))) * (1.0 + held * 1.4);
+  let bend = normal.xy * (ior - 1.0) * (0.018 + lightSize * 0.025); let focus = 1.0 / (0.035 + abs(dot(normalize(toLight), normalize(bend + vec2<f32>(0.0001))))) ;
+  let wavePhase = (uv.x + normal.x * 0.08) * 74.0 + (uv.y + normal.y * 0.08) * 61.0 + rippleHeight * 8.0 - time * (1.4 + audio.y * 2.0);
+  let bands = pow(0.5 + 0.5 * cos(vec3<f32>(wavePhase - dispersion * 18.0, wavePhase, wavePhase + dispersion * 18.0)), vec3<f32>(6.0));
+  var clickLight = 0.0; let count = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 2.2) { let d = length((uv - e.xy) * vec2<f32>(aspect, 1.0)); clickLight += exp(-age * 1.5) * exp(-abs(d - age * (0.22 + audio.x * 0.08)) * 82.0); } }
+  let spectral = vec3<f32>(1.15 + audio.x * 0.25, 0.95 + audio.y * 0.20, 1.25 + audio.z * 0.35);
+  let fresh = bands * spectral * intensity * (0.08 + aperture * 0.55 + clamp(focus * 0.025, 0.0, 0.8)) + clickLight * vec3<f32>(0.45, 0.95, 2.1) * intensity;
+  let drift = normalize(toLight + vec2<f32>(0.0001)) * (1.0 + ior * 2.0); let histP = clamp(p - vec2<i32>(drift), vec2<i32>(0), hi); let history = textureLoad(dataTextureC, histP, 0);
+  let persistence = clamp(0.86 + lightSize * 0.10 - audio.z * 0.015, 0.78, 0.98); let irradiance = mix(fresh, history.rgb * persistence, 0.72);
+  let coverage = clamp(max(max(irradiance.r, irradiance.g), irradiance.b) * 0.45 + clickLight * 0.35 + aperture * 0.15, 0.0, 1.0);
+  let state = vec4<f32>(clamp(irradiance, vec3<f32>(0.0), vec3<f32>(12.0)), coverage); textureStore(dataTextureA, p, state);
+  let refractUV = clamp(uv + bend + normalize(toLight + vec2<f32>(0.0001)) * clickLight * 0.006, vec2<f32>(0.0), vec2<f32>(1.0)); let src = textureSampleLevel(readTexture, u_sampler, refractUV, 0.0);
+  let fresnel = pow(1.0 - clamp(normal.z, 0.0, 1.0), 5.0); let hdr = src.rgb * (0.72 + fresnel * 0.28) + irradiance;
+  let alpha = clamp(src.a * 0.58 + coverage * 0.62 + fresnel * 0.12, 0.0, 1.0); let mapped = aces(max(hdr, vec3<f32>(0.0)));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r; textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, p, vec4<f32>(clamp(depth - coverage * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

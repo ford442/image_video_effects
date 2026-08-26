@@ -119,6 +119,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     totalGlow += crystalBranch(p, vec2<f32>(0.0), armDir, branchLen, depth, t, bass, thickness);
   }
 
+  // Clicks seed short-lived secondary crystallisation fronts.
+  var clickFront = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i];
+    let age = t - ripple.z;
+    if (age > 0.0 && age < 3.0) {
+      let center = (ripple.xy * 2.0 - 1.0) * vec2<f32>(aspect, 1.0);
+      let radius = age * (0.22 + growRate * 0.12);
+      clickFront += exp(-abs(distance(p, center) - radius) * 42.0) * exp(-age * 1.2);
+    }
+  }
+  totalGlow += min(clickFront, 1.5) * (0.5 + treble);
+
   // Colour: prismatic mapping along hue spectrum
   let hue = fract(hueBase + totalGlow * 0.15 + treble * 0.05);
   var col = vec3<f32>(
@@ -138,13 +152,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let caStr = 0.003 * (1.0 + bass);
   col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-  col = acesToneMap(col);
-  let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = clamp(luma * 0.85 + totalGlow * 0.1, 0.0, 1.0);
+  // Exact temporal load: the host copies display history A → C.
+  let history = textureLoad(dataTextureC, coord, 0);
+  let historyMix = 0.06 + bass * 0.08;
+  let hdrColor = clamp(mix(col, history.rgb, historyMix), vec3<f32>(0.0), vec3<f32>(6.0));
+  let mappedColor = acesToneMap(hdrColor * 1.1);
+  let luma = dot(mappedColor, vec3<f32>(0.299, 0.587, 0.114));
+  let alpha = clamp(luma * 0.75 + totalGlow * 0.12 + clickFront * 0.12, 0.0, 1.0);
   let depth2 = clamp(1.0 - length(p) * 0.5, 0.0, 1.0);
 
-  let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
+  let finalColor = vec4<f32>(mappedColor, alpha);
   textureStore(writeTexture,      coord, finalColor);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth2, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA,      coord, finalColor);
+  textureStore(dataTextureA,      coord, vec4<f32>(hdrColor, alpha));
 }

@@ -119,7 +119,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mousePos = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
 
     // Temporal feedback
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prev = textureLoad(dataTextureC, coord, 0);
 
     var lensDisplace = vec2<f32>(0.0);
     let nBodies = i32(clamp(numBodies, 2.0, 6.0));
@@ -220,11 +220,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Temporal feedback
     let decay = 0.96;
     let temporal = mix(prev.rgb * decay, finalColor, 0.25);
-    textureStore(dataTextureA, coord, vec4<f32>(temporal, 1.0));
 
     // Semantic alpha
     let presence = clamp(length(finalColor) * 1.2, 0.0, 1.0);
     let alpha = clamp(presence * 0.8, 0.2, 0.95);
+    let generatedDepth = clamp(presence * 0.75 + min(lensArc * 0.05, 0.2), 0.0, 0.95);
+    textureStore(dataTextureA, coord, vec4<f32>(temporal, alpha));
     textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(generatedDepth, 0.0, 0.0, 0.0));
 }

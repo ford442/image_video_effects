@@ -1,16 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Glass Shatter Morph
+//  Glass Shatter Morph — Voronoi Shards & Morphological Edge Scrape
 //  Category: advanced-hybrid
-//  Features: mouse-driven, voronoi-shards, morphological, chromatic-aberration
+//  Features: mouse-driven, audio-reactive, voronoi-shards, morphological,
+//            chromatic-aberration, fresnel, semantic-alpha, ACES
 //  Complexity: Very High
-//  Chunks From: glass-shatter, conv-morphological-erosion-dilation
-//  Created: 2026-04-18
-//  By: Agent CB-24 — Glass & Reflection Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Shattered glass with morphological edge processing on each shard.
-//  Voronoi shards are physically displaced by mouse interaction,
-//  while morphological erosion/dilation sculpts shard edges.
-//  The gradient channel reveals crack propagation patterns.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -35,150 +28,195 @@ struct Uniforms {
 };
 
 struct VoronoiResult {
-    dist: f32,
-    id: vec2<f32>,
-    center: vec2<f32>
+  dist: f32,
+  id: vec2<f32>,
+  center: vec2<f32>,
 };
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
-    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.xx + p3.yz) * p3.zy);
+  var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
+  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  return fract((p3.xx + p3.yz) * p3.zy);
 }
 
 fn voronoi(uv: vec2<f32>, scale: f32) -> VoronoiResult {
-    var g = floor(uv * scale);
-    let f = fract(uv * scale);
+  let g = floor(uv * scale);
+  let f = fract(uv * scale);
+  var res = VoronoiResult(8.0, vec2<f32>(0.0), vec2<f32>(0.0));
 
-    var res = VoronoiResult(8.0, vec2<f32>(0.0), vec2<f32>(0.0));
+  for (var y: i32 = -1; y <= 1; y = y + 1) {
+    for (var x: i32 = -1; x <= 1; x = x + 1) {
+      let lattice = vec2<f32>(f32(x), f32(y));
+      let offset = hash22(g + lattice);
+      let p = lattice + offset - f;
+      let d = dot(p, p);
 
-    for(var y: i32 = -1; y <= 1; y = y + 1) {
-        for(var x: i32 = -1; x <= 1; x = x + 1) {
-            let lattice = vec2<f32>(f32(x), f32(y));
-            var offset = hash22(g + lattice);
-            var p = lattice + offset - f;
-            let d = dot(p, p);
-
-            if(d < res.dist) {
-                res.dist = d;
-                res.id = g + lattice;
-                res.center = (g + lattice + offset) / scale;
-            }
-        }
+      if (d < res.dist) {
+        res.dist = d;
+        res.id = g + lattice;
+        res.center = (g + lattice + offset) / scale;
+      }
     }
+  }
 
-    res.dist = sqrt(res.dist);
-    return res;
+  res.dist = sqrt(res.dist);
+  return res;
 }
 
-@compute @workgroup_size(8, 8, 1)
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+  let pixel = vec2<i32>(global_id.xy);
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let time = u.config.x;
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  // Sliders: exact parameter contracts
+  let shardScaleParam = u.zoom_params.x; // 0..1, def 0.5
+  let displaceParam = u.zoom_params.y;   // 0..1, def 0.5
+  let morphParam = u.zoom_params.z;      // 0..1, def 0.5
+  let edgeWidthParam = u.zoom_params.w;  // 0..1, def 0.3
+
+  let shardScale = (shardScaleParam * 18.0 + 3.5) * (1.0 + bass * 0.35);
+  let displaceStr = displaceParam * 0.45 * (1.0 + mids * 0.45);
+  let morphBlend = clamp(morphParam + treble * 0.2, 0.0, 1.0);
+  let edgeWidth = edgeWidthParam * 0.08 + 0.005;
+
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let rawMouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  let isWriter = (global_id.x == 0u && global_id.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var mouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.1);
+    var sPos = mouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    let time = u.config.x;
+    let stiffness = 36.0;
+    let damping = 12.0;
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel = sVel + accel * dt;
+    sPos = sPos + sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
 
-    var mousePos = u.zoom_config.yz;
+  // Voronoi shards with aspect compensation
+  let aspectUV = vec2<f32>(uv.x * aspect, uv.y);
+  let v = voronoi(aspectUV, shardScale);
 
-    // Audio: bass shatters into finer shards, mids displaces harder, treble drives morph
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  // Calculate mouse displacement on shard center
+  let mouseAspect = vec2<f32>(mouse.x * aspect, mouse.y);
+  let mouseVec = v.center - mouseAspect;
+  let mouseDist = length(mouseVec);
 
-    // Parameters
-    let shardScale = (u.zoom_params.x * 20.0 + 3.0) * (1.0 + bass * 0.4);
-    let displaceStr = u.zoom_params.y * 0.5 * (1.0 + mids * 0.5);
-    let morphBlend = clamp(u.zoom_params.z + treble * 0.2, 0.0, 1.0); // 0=erosion, 1=dilation
-    let edgeWidth = u.zoom_params.w * 0.1;
+  var shatterOffset = vec2<f32>(0.0);
+  if (mouseDist < 0.55 && mouseDist > 0.001) {
+    let force = (1.0 - smoothstep(0.0, 0.55, mouseDist)) * displaceStr * (0.6 + held * 0.4);
+    shatterOffset = normalize(mouseVec) * force;
+  }
 
-    // Voronoi for shards
-    let aspectUV = vec2<f32>(uv.x * aspect, uv.y);
-    let v = voronoi(aspectUV, shardScale);
+  // Click shockwave displacement
+  let rippleCount = min(u32(u.config.y), 50u);
+  var rippleForce = vec2<f32>(0.0);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 2.0) { continue; }
+    let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+    let wave = sin((rDist - age * 0.6) * 35.0) * exp(-rDist * 4.0) * exp(-age * 1.5);
+    let rDir = normalize(uv - ripple.xy + vec2<f32>(0.0001));
+    rippleForce += rDir * wave * 0.08;
+  }
 
-    // Calculate vector from mouse to shard center
-    let cellCenter = v.center;
-    let mouseVec = cellCenter - vec2<f32>(mousePos.x * aspect, mousePos.y);
-    var dist = length(mouseVec);
+  let randTilt = (hash22(v.id) - 0.5) * 0.03 * displaceStr;
+  let finalUV = clamp(uv - vec2<f32>(shatterOffset.x / aspect, shatterOffset.y) - randTilt - rippleForce, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Repulsion force
-    var offset = vec2<f32>(0.0);
-    if (dist < 0.5 && dist > 0.001) {
-        let force = (1.0 - smoothstep(0.0, 0.5, dist)) * displaceStr;
-        offset = normalize(mouseVec) * force;
+  // Morphological erosion/dilation on shard boundaries
+  let pixelSize = 1.0 / resolution;
+  let kRadius = clamp(i32(edgeWidth * resolution.y * 0.15), 1, 4);
+
+  var minVal = vec3<f32>(999.0);
+  var maxVal = vec3<f32>(-999.0);
+
+  for (var dy = -kRadius; dy <= kRadius; dy = dy + 1) {
+    for (var dx = -kRadius; dx <= kRadius; dx = dx + 1) {
+      let sUV = clamp(finalUV + vec2<f32>(f32(dx), f32(dy)) * pixelSize, vec2<f32>(0.0), vec2<f32>(1.0));
+      let sample = textureSampleLevel(readTexture, u_sampler, sUV, 0.0).rgb;
+      minVal = min(minVal, sample);
+      maxVal = max(maxVal, sample);
     }
+  }
 
-    let randOffset = (hash22(v.id) - 0.5) * 0.02 * displaceStr;
-    let finalUV = uv - offset - randOffset;
+  let erosion = minVal;
+  let dilation = maxVal;
+  let morphGradient = dilation - erosion;
+  let morphRGB = mix(erosion, dilation, morphBlend);
 
-    // ═══ Morphological edge processing on shard boundaries ═══
-    let pixelSize = 1.0 / resolution;
-    let kernelRadius = i32(mix(1.0, 4.0, edgeWidth));
-    let maxRadius = min(kernelRadius, 5);
+  // Shard facet normal and Fresnel reflection
+  let shardTilt = normalize(shatterOffset + randTilt * 10.0 + rippleForce * 5.0 + vec2<f32>(0.001));
+  let normal = normalize(vec3<f32>(shardTilt * 2.0, 1.0));
+  let cosTheta = clamp(normal.z, 0.0, 1.0);
+  let R0 = 0.045;
+  let fresnel = R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
 
-    var minVal = vec3<f32>(999.0);
-    var maxVal = vec3<f32>(-999.0);
-    var minLuma = 999.0;
-    var maxLuma = -999.0;
+  // Chromatic refraction per shard
+  let aberration = edgeWidth * 0.35 * (1.0 + treble * 0.5);
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + vec2<f32>(aberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(finalUV - vec2<f32>(aberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
 
-    for (var dy = -maxRadius; dy <= maxRadius; dy++) {
-        for (var dx = -maxRadius; dx <= maxRadius; dx++) {
-            let sampleOffset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-            let sample = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + sampleOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-            let luma = dot(sample, vec3<f32>(0.299, 0.587, 0.114));
+  let glassTint = vec3<f32>(0.94, 0.98, 0.96);
+  var color = vec3<f32>(r, g, b) * glassTint;
 
-            minVal = min(minVal, sample);
-            maxVal = max(maxVal, sample);
-            minLuma = min(minLuma, luma);
-            maxLuma = max(maxLuma, luma);
-        }
-    }
+  // Shard crack edge proximity
+  let edgeProx = smoothstep(0.0, 0.12, v.dist) * (1.0 - smoothstep(0.12, 0.3, v.dist));
+  color = mix(color, morphRGB + morphGradient * 0.35, edgeProx * 0.5);
 
-    let erosion = minVal;
-    let dilation = maxVal;
-    let morphGradient = (dilation - erosion);
+  // Facet specular glint
+  let lightDir = normalize(vec2<f32>(0.6, -0.6));
+  let specular = pow(max(dot(shardTilt, lightDir), 0.0), 12.0) * fresnel * 2.0;
+  color += vec3<f32>(1.0, 0.98, 0.95) * specular;
 
-    // Shard normal for fresnel
-    let shardTilt = normalize(offset + randOffset + vec2<f32>(0.001));
-    let normal = normalize(vec3<f32>(shardTilt * 2.0, 1.0));
-    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-    let cos_theta = max(dot(viewDir, normal), 0.0);
-    let R0 = 0.04;
-    let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
+  // Exact dataTextureC shard trail persistence
+  let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+  color = mix(color, prev, 0.08 + held * 0.06);
 
-    // Glass properties
-    let thickness = 0.05 + (1.0 - v.dist) * 0.1;
-    let glassColor = vec3<f32>(0.92, 0.98, 0.95);
-    let absorption = exp(-(1.0 - glassColor) * thickness * 2.0);
-    let transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
+  // ACES Tonemap
+  let finalRGB = aces(color);
 
-    // Sample with chromatic aberration
-    let aberration = edgeWidth * 0.5;
-    let r = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + vec2<f32>(aberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, clamp(finalUV - vec2<f32>(aberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-    var color = vec4<f32>(r, g, b, transmission);
+  // Semantic transmittance alpha
+  let transmission = (1.0 - fresnel) * 0.85;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let alpha = clamp(mix(srcA, transmission + edgeProx * 0.3, 0.8) + specular * 0.2, 0.25, 1.0);
+  let finalPixel = vec4<f32>(finalRGB, alpha);
 
-    // Apply glass tint
-    color = vec4<f32>(color.rgb * glassColor, transmission);
-
-    // Blend morphological result on shard edges
-    let edgeProximity = smoothstep(0.0, 0.15, v.dist) * (1.0 - smoothstep(0.15, 0.35, v.dist));
-    let morphRGB = mix(erosion, dilation, morphBlend);
-    color = vec4<f32>(mix(color.rgb, morphRGB + morphGradient * 0.3, edgeProximity * 0.4), color.a);
-
-    // Highlight edges with specular
-    let lightDir = normalize(vec2<f32>(0.5, -0.5));
-    let tilt = normalize(offset + randOffset + vec2<f32>(0.001));
-    let light = dot(tilt, lightDir);
-    color = color + max(light, 0.0) * 0.2;
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
-
-    // Depth pass-through
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, pixel, finalPixel);
+  textureStore(dataTextureA, pixel, finalPixel);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

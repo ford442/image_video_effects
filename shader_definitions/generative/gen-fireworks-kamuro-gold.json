@@ -18,6 +18,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "glitter-density", "name": "Glitter Density", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "fall-speed", "name": "Fall Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "gold-mix", "name": "Gold Mix", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "hang-time", "name": "Hang Time", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -67,5 +73,6 @@
     "temporal-feedback",
     "aces-tone-map",
     "semantic-alpha"
-  ]
+  ],
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

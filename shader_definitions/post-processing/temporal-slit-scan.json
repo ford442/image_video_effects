@@ -22,7 +22,7 @@
   "requiresHistoryRing": true,
   "params": [
     {
-      "id": "param1",
+      "id": "scan_axis",
       "name": "Scan Axis",
       "default": 0,
       "min": 0,
@@ -30,7 +30,7 @@
       "step": 0.01
     },
     {
-      "id": "param2",
+      "id": "temporal_spread",
       "name": "Temporal Spread",
       "default": 1,
       "min": 0,
@@ -38,7 +38,7 @@
       "step": 0.01
     },
     {
-      "id": "param3",
+      "id": "reverse",
       "name": "Reverse",
       "default": 0,
       "min": 0,
@@ -46,7 +46,7 @@
       "step": 1
     },
     {
-      "id": "param4",
+      "id": "original_blend",
       "name": "Original Blend",
       "default": 0,
       "min": 0,

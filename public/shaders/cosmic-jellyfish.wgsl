@@ -75,57 +75,57 @@ fn huePreserveClamp(col: vec3<f32>, maxVal: f32) -> vec3<f32> {
     return col;
 }
 
-// SDF for the Jellyfish (silhouette hand-tuned: bell hollow +
-// 8-tentacle capsule loop, smin k=0.2 - preserved verbatim).
-fn map(p: vec3<f32>, time: f32) -> f32 {
-    // Audio: bass drives the bell pulse amplitude, treble the tentacle
-    // wave frequency. Read here (inside map) so the SDF stays honest.
+// Ribbed bell, scalloped rim, ten fine tentacles, and four broad oral arms.
+fn map(pIn: vec3<f32>, time: f32) -> f32 {
     let bass = plasmaBuffer[0].x;
     let treble = plasmaBuffer[0].z;
+    let pulseSpeed = 0.35 + u.zoom_params.x * 1.8;
+    let pulse = sin(time * pulseSpeed) * (0.075 + bass * 0.11);
+    let activity = u.zoom_params.y;
+    let pointer = (u.zoom_config.yz - 0.5) * vec2<f32>(0.55, -0.42);
+    let held = select(0.35, 1.0, u.zoom_config.w > 0.5);
 
-    // Pulse animation
-    let pulse_speed = u.zoom_params.x * 2.0;
-    let pulse = sin(time * pulse_speed) * (0.1 + bass * 0.12);
+    var p = pIn;
+    p = vec3<f32>(p.xy - pointer * held, p.z);
+    var bellP = p - vec3<f32>(0.0, 0.46, 0.0);
+    let azimuth = atan2(bellP.z, bellP.x);
+    let ribs = 1.0 + cos(azimuth * 12.0 + time * 0.18) * 0.035 * (0.4 + activity);
+    let bellScale = vec3<f32>((1.0 + pulse) * ribs, 0.78 - pulse * 0.55, (1.0 + pulse) * ribs);
+    let outerBell = length(bellP / bellScale) * 0.79 - 0.51;
+    let innerBell = length((bellP + vec3<f32>(0.0, 0.30, 0.0)) / vec3<f32>(0.78, 0.55, 0.78)) - 0.43;
+    let scallop = cos(azimuth * 8.0) * 0.025 * (1.0 - smoothstep(-0.18, 0.08, bellP.y));
+    let bell = max(outerBell + scallop, -innerBell);
 
-    // Tentacle Activity
-    let tentacle_amp = u.zoom_params.y;
-
-    // Bell (Ellipsoid-ish)
-    var p_bell = p;
-    p_bell.y -= 0.5;
-
-    // Stretch
-    let d_bell = length(p_bell / vec3<f32>(1.0 + pulse, 0.8 - pulse, 1.0 + pulse)) * 0.8 - 0.5;
-
-    // Hollow out bottom
-    let d_hollow = length(p_bell + vec3<f32>(0.0, 0.5, 0.0)) - 0.4;
-    let bell_final = max(d_bell, -d_hollow);
-
-    // Tentacles
-    var d_tentacles = 100.0;
-    let num_tentacles = 8.0;
-    let wave_freq = 2.0 + treble * 4.0;
-    for (var i = 0.0; i < num_tentacles; i = i + 1.0) {
-        var angle = (i / num_tentacles) * 6.28318;
-        let radius = 0.3;
-        let tentacle_pos = vec3<f32>(cos(angle) * radius, 0.0, sin(angle) * radius);
-        var p_t = p - tentacle_pos;
-
-        // Waving motion (treble-modulated frequency)
-        p_t.x += sin(p_t.y * 3.0 + time * wave_freq + i) * 0.1 * tentacle_amp;
-        p_t.z += cos(p_t.y * 3.0 + time * wave_freq + i) * 0.1 * tentacle_amp;
-
-        // Capsule shape for tentacle
-        p_t.y += 1.0; // Shift down
-        var h = 2.0; // Length
-        p_t.y = clamp(p_t.y, 0.0, h);
-        let d_t = length(p_t) - 0.05 * (1.0 - p_t.y / h); // Taper
-
-        d_tentacles = min(d_tentacles, d_t);
+    var fineTentacles = 100.0;
+    let waveFrequency = 2.2 + treble * 4.5;
+    for (var i = 0; i < 10; i += 1) {
+        let fi = f32(i);
+        let angle = fi / 10.0 * 6.2831853;
+        let anchor = vec3<f32>(cos(angle) * 0.33, -0.02, sin(angle) * 0.33);
+        var q = p - anchor;
+        let lengthScale = 1.25 + 0.35 * sin(fi * 2.17);
+        let along = clamp(-q.y, 0.0, lengthScale);
+        q.x += sin(along * (3.0 + fi * 0.07) + time * waveFrequency + fi) * 0.10 * activity;
+        q.z += cos(along * 2.7 - time * waveFrequency * 0.82 + fi * 1.7) * 0.10 * activity;
+        q.y += along;
+        let taper = mix(0.045, 0.012, along / lengthScale);
+        fineTentacles = min(fineTentacles, length(q) - taper);
     }
 
-    // Smooth blend bell and tentacles
-    return smin(bell_final, d_tentacles, 0.2);
+    var oralArms = 100.0;
+    for (var j = 0; j < 4; j += 1) {
+        let fj = f32(j);
+        let angle = fj * 1.5707963 + 0.785398;
+        var q = p - vec3<f32>(cos(angle) * 0.13, -0.02, sin(angle) * 0.13);
+        let along = clamp(-q.y, 0.0, 1.05);
+        q.x += sin(along * 4.2 + time * 1.1 + fj * 1.9) * 0.15 * activity;
+        q.z += cos(along * 3.4 - time * 0.9 + fj) * 0.12 * activity;
+        q.y += along;
+        let ribbon = length(vec2<f32>(length(q.xz) * 0.62, q.y)) - mix(0.09, 0.022, along / 1.05);
+        oralArms = min(oralArms, ribbon);
+    }
+
+    return smin(smin(bell, fineTentacles, 0.11), oralArms, 0.14);
 }
 
 // Simple hash for stars
@@ -150,26 +150,43 @@ fn stars(dir: vec3<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     var uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / resolution.y;
     let time = u.config.x;
     let texUV = vec2<f32>(global_id.xy) / resolution;
     let pixel = vec2<i32>(global_id.xy);
 
-    // Previous frame's temporal trail (dataTextureA of last frame,
-    // mirrored read-only through dataTextureC).
-    let prev = textureSampleLevel(dataTextureC, u_sampler, texUV, 0.0);
+    // Clicks send a pressure wave through the camera ray and the glow field.
+    var clickGlow = 0.0;
+    var clickWarp = vec2<f32>(0.0);
+    let aspect = resolution.x / resolution.y;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri += 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.2) {
+            let delta = (texUV - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let radius = length(delta);
+            let front = smoothstep(0.028, 0.0, abs(radius - age * 0.31)) * exp(-age * 1.05);
+            clickGlow += front;
+            clickWarp += delta / max(radius, 0.001) * front;
+        }
+    }
+    uv += clickWarp * 0.10;
+
+    // Previous A is mirrored read-only through C and must be loaded exactly.
+    let prev = textureLoad(dataTextureC, pixel, 0);
 
     // Camera
     var mouse = u.zoom_config.yz * 2.0 - 1.0;
     var ro = vec3<f32>(0.0, 0.0, -4.0);
-    // Rotate camera based on mouse
-    var cam_rot = rot(mouse.x * 2.0);
-    ro.x = cam_rot[0][0] * ro.x + cam_rot[0][1] * ro.z;
-    ro.z = cam_rot[1][0] * ro.x + cam_rot[1][1] * ro.z;
-
-    cam_rot = rot(mouse.y * 2.0);
-    ro.y = cam_rot[0][0] * ro.y + cam_rot[0][1] * ro.z;
-    ro.z = cam_rot[1][0] * ro.y + cam_rot[1][1] * ro.z;
+    let yaw = rot(mouse.x * 1.45);
+    let yawed = yaw * ro.xz;
+    ro = vec3<f32>(yawed.x, ro.y, yawed.y);
+    let pitch = rot(mouse.y * 1.05);
+    let pitched = pitch * ro.yz;
+    ro = vec3<f32>(ro.x, pitched.x, pitched.y);
+    ro *= select(1.0, 0.88, u.zoom_config.w > 0.5);
 
     let look_at = vec3<f32>(0.0, 0.0, 0.0);
     let f = normalize(look_at - ro);
@@ -200,8 +217,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Coloring
     var col = vec3<f32>(0.0);
 
-    // Starfield background
-    col += vec3<f32>(stars(rd));
+    // Starfield plus a very low-frequency cosmic dust veil.
+    let star = stars(rd);
+    let dust = 0.5 + 0.5 * sin(rd.x * 17.0 + rd.y * 11.0 + time * 0.07)
+        * sin(rd.z * 13.0 - rd.y * 7.0 - time * 0.05);
+    col += vec3<f32>(star) + vec3<f32>(0.035, 0.012, 0.075) * dust;
 
     if (hit) {
         var p = ro + rd * t;
@@ -217,8 +237,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let diff = max(dot(n, light_dir), 0.0);
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
 
-        let base_color = vec3<f32>(0.2, 0.5, 0.8);
-        col = base_color * diff * 0.5 + base_color * fresnel * 0.8;
+        let ribPhase = atan2(p.z, p.x) * 12.0;
+        let ribGlow = pow(max(0.0, cos(ribPhase)), 10.0) * smoothstep(-0.2, 0.6, p.y);
+        let base_color = vec3<f32>(0.16, 0.48, 0.82);
+        col = base_color * diff * 0.45 + base_color * fresnel * 0.95;
+        col += vec3<f32>(0.7, 0.86, 1.15) * ribGlow * (0.18 + plasmaBuffer[0].y * 0.28);
     }
 
     // Add accumulated glow (bioluminescence) via IQ cosine palette.
@@ -235,15 +258,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ), vec3<f32>(0.0));
 
     let glow_intensity = u.zoom_params.w;
-    col += glow * glowColor * glow_intensity * 0.02;
+    col += glow * glowColor * glow_intensity * 0.018;
+    col += glowColor * clickGlow * (0.45 + glow_intensity * 0.18);
 
     // ── Temporal feedback: compute the trail AND display it ──────────
     // decay stays < 1.0 so the accumulation is stable; the accumulated
     // trail is clamped pre-tint at ~1.2 so old frames cannot blow out.
-    let decay = 0.96;
-    var temporal = mix(prev.rgb * decay, col, 0.25);
-    temporal = min(temporal, vec3<f32>(1.2));
-    textureStore(dataTextureA, pixel, vec4<f32>(temporal, 1.0));
+    let decay = 0.962;
+    var temporal = mix(prev.rgb * decay, col, 0.28);
+    temporal = min(temporal, vec3<f32>(5.0));
+    let liveAlpha = clamp(select(glow * 0.006 + star * 0.7, 0.94, hit) + clickGlow * 0.3, 0.0, 1.0);
+    let temporalAlpha = mix(prev.a * decay, liveAlpha, 0.30);
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, temporalAlpha));
 
     // Blend the live frame toward the accumulated trail: the jelly now
     // leaves visible bioluminescent motion trails instead of dropping
@@ -262,6 +288,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         depth_out = clamp(t / 10.0, 0.0, 1.0);
     }
 
-    textureStore(writeTexture, pixel, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, pixel, vec4<f32>(col, temporalAlpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth_out, 0.0, 0.0, 0.0));
 }

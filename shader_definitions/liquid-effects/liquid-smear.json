@@ -2,7 +2,7 @@
   "id": "liquid-smear",
   "name": "Liquid Smear",
   "url": "shaders/liquid-smear.wgsl",
-  "description": "Smudge pixels like wet paint with your mouse.",
+  "description": "Pigment drag along the pointer's real travel direction, taken from a spring-damped cursor and its velocity in extraBuffer[133..136] \u2014 the previous version always pulled toward the cursor centre, which reads as a sink rather than a brush. A five-tap kernel bleeds pigment along the stroke normal with a width set by the local FFT bin. History is fetched with exact textureLoad, bilinear by hand.",
   "params": [
     {
       "id": "strength",
@@ -35,10 +35,59 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence"
+    "temporal-persistence",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "spring-damper-pointer",
+    "velocity-smear",
+    "pigment-diffusion"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "smear",
+    "brush",
+    "paint",
+    "feedback"
+  ],
+  "updatedParams": [
+    {
+      "id": "strength",
+      "name": "Smear Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Drag length along the pointer stroke."
+    },
+    {
+      "id": "size",
+      "name": "Brush Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Radius of the drag falloff around the cursor."
+    },
+    {
+      "id": "decay",
+      "name": "Persistence",
+      "default": 0.9,
+      "min": 0,
+      "max": 1,
+      "description": "How much of the smeared field survives each frame."
+    },
+    {
+      "id": "mix",
+      "name": "Mix Strength",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "description": "Blend of the smeared field over the live plate."
+    }
   ]
 }

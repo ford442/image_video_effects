@@ -12,16 +12,23 @@
     "dreamy",
     "convolution"
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Brush Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Wetness", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Bilateral Blend", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Mouse Focus", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = final ACES display RGB and paint thickness; exact wet-paint memory",
   "features": [
     "advanced-convolution",
     "upgraded-rgba",
     "depth-aware",
     "mouse-driven",
-    "randomization-safe"
+    "randomization-safe", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-focus", "click-shockwaves", "aces-tone-map", "semantic-alpha"
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "brush_size",
       "name": "Brush Size",
       "default": 0.3,
       "min": 0,
@@ -29,7 +36,7 @@
       "step": 0.01
     },
     {
-      "id": "param2",
+      "id": "wetness",
       "name": "Wetness",
       "default": 0.5,
       "min": 0,
@@ -37,15 +44,15 @@
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Bilateral Dream",
+      "id": "bilateral_blend",
+      "name": "Bilateral Blend",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
+      "id": "mouse_focus",
       "name": "Mouse Focus",
       "default": 0.5,
       "min": 0,

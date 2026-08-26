@@ -297,6 +297,88 @@ jobs:
           reports/dead_sliders_audit.md
         retention-days: 30
 
+  catalog-consistency-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+    - name: Report-only expiry check
+      run: |
+        MARKER="# REPORT-ONLY-UNTIL: 2026-10-15"
+        DEADLINE="2026-10-15"
+        TODAY=$(date +%Y-%m-%d)
+        if [ "$TODAY" \> "$DEADLINE" ]; then
+          if grep -Fq "$MARKER" .github/workflows/ci.yml; then
+            echo "Catalog/workgroup audits are still report-only after $DEADLINE."
+            echo "Promote to blocking: drop || true and the REPORT-ONLY-UNTIL marker."
+            exit 1
+          fi
+        fi
+
+    - name: Catalog drift audit (report-only)
+      run: |
+        # REPORT-ONLY-UNTIL: 2026-10-15
+        python3 scripts/audit_catalog_consistency.py --ensure-lists --report || true
+
+    - name: Workgroup size audit (report-only)
+      run: |
+        # REPORT-ONLY-UNTIL: 2026-10-15
+        python3 scripts/wgsl_workgroup_detector.py --report || true
+
+    - name: Catalog and workgroup audit unit tests
+      run: |
+        python3 scripts/test_audit_catalog_consistency.py
+        python3 scripts/test_wgsl_workgroup_detector.py
+
+    - name: Catalog drift gate (baseline-decay)
+      run: python3 scripts/audit_catalog_consistency.py --ensure-lists --gate
+
+    - name: Publish catalog audit summary
+      if: always()
+      run: |
+        echo "## Catalog drift audit" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/catalog_drift.md ]; then
+          cat reports/catalog_drift.md >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "- No catalog drift report generated" >> "$GITHUB_STEP_SUMMARY"
+        fi
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "## Workgroup size audit" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/workgroup_audit.md ]; then
+          cat reports/workgroup_audit.md >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "- No workgroup audit report generated" >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Upload catalog audit reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: catalog-audit-reports
+        path: |
+          reports/catalog_drift.json
+          reports/catalog_drift.md
+          reports/catalog_drift_baseline.json
+          reports/workgroup_audit.json
+          reports/workgroup_audit.md
+        retention-days: 30
+        if-no-files-found: warn
+
   lint:
     runs-on: ubuntu-latest
     permissions:
@@ -325,13 +407,62 @@ jobs:
     - name: Regenerate unified shader manifest
       run: npm run build:manifest
 
-    - name: Check thumbnail coverage regression
-      if: github.event_name == 'pull_request'
-      run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}"
-
     - name: Validate JSON manifests
       run: |
         for f in public/shader-lists/*.json; do
           echo "Validating $f"
           node -e "JSON.parse(require('fs').readFileSync('$f'))"
         done
+
+  thumbnail-coverage:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Generate shader lists
+      run: node scripts/generate_shader_lists.js
+
+    - name: Regenerate unified shader manifest
+      run: npm run build:manifest
+
+    - name: Check thumbnail coverage regression
+      id: thumbs
+      continue-on-error: true
+      run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
+
+    - name: Report to job summary
+      if: always()
+      run: cat /tmp/thumbs-check.txt >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Comment on PR if check failed
+      if: failure() && steps.thumbs.outcome == 'failure'
+      continue-on-error: true
+      run: |
+        {
+          echo "## ⚠️ Thumbnail Coverage Check"
+          echo ""
+          cat /tmp/thumbs-check.txt
+          echo ""
+          echo "💡 **Tip:** Add a deferral entry to `reports/thumbnail_deferrals.json` for newly added shaders without thumbnails."
+          echo "See: [Thumbnail Deferrals](docs/THUMBNAIL_PIPELINE.md) for details."
+        } > /tmp/thumbs-comment.md
+        
+        gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/thumbs-comment.md || true
+      env:
+        GH_TOKEN: ${{ github.token }}

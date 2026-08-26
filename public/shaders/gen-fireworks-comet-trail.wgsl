@@ -119,7 +119,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   if (u.zoom_config.w > 0.5) {
-    let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);
+    let mUV = (u.zoom_config.yz-vec2<f32>(0.5))*res/min(res.x,res.y);
     let mAge = fract(time*1.2)*3.0;
     let mVel = vec2<f32>(0.0, 1.0)*speed*headBright;
     let head = mUV + mVel*mAge;
@@ -133,9 +133,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = mix(prev*mix(0.88, 0.95, trailLen), col, 0.32);
   col = acesToneMap(col*1.08);
   let alpha = clamp(length(col)*1.2+0.1, 0.12, 0.96);
-  let persistent = col*0.55 + prev*0.38;
-  textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
+  let depth = clamp((alpha-0.12)/0.84, 0.0, 1.0)*0.85;
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -80,7 +80,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseAttraction = u.zoom_params.w;
 
   let mouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  let aspect = resolution.x / resolution.y;
   let depth = smoothstep(0.0, 1.0, uv.y);
+
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 3.5) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      let front = abs(length(delta) - age * (0.12 + growth * 0.08));
+      clickFront += (1.0 - smoothstep(0.0, 0.025, front)) * (1.0 - age / 3.5);
+    }
+  }
+  clickFront = min(clickFront, 2.0);
 
   let nutrient = growth * (0.6 + bass * 0.8);
   let current = vec2<f32>(sin(time * 0.2 + mids * 2.0), cos(time * 0.15 - mids * 1.5)) * 0.3;
@@ -100,8 +115,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dla = fbm(uv * 12.0 + hash21(floor(colonyUV)) * 3.0, time * 0.5);
   let dlaBranch = smoothstep(0.35, 0.7, dla) * nutrient;
 
-  let mousePull = (1.0 - smoothstep(0.0, 0.55, length(uv - mouse))) * mouseAttraction;
-  let coralDensity = clamp((branch * 0.7 + dlaBranch * 0.5 + spawnPulse * 0.3) * nutrient + mousePull, 0.0, 1.0);
+  let mousePull = (1.0 - smoothstep(0.0, 0.55, length((uv - mouse) * vec2<f32>(aspect, 1.0)))) * mouseAttraction * (0.35 + held * 0.9);
+  let coralDensity = clamp((branch * 0.7 + dlaBranch * 0.5 + spawnPulse * 0.3) * nutrient + mousePull + clickFront * 0.32, 0.0, 1.0);
 
   let polypGrid = fract(uv * (18.0 + polypSize * 14.0)) - 0.5;
   let polypDist = length(polypGrid);
@@ -125,6 +140,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloom = polyp * vec3<f32>(0.6, 1.0, 0.8) * (0.5 + bass * 0.6);
   color += bloom * 0.6;
   color += vec3<f32>(0.1, 0.3, 0.5) * causticLight;
+  color += vec3<f32>(0.15, 1.0, 0.72) * clickFront * (0.25 + treble * 0.6);
 
   let sparkle = pow(abs(sin(caustics * 12.0 + time * 2.0 + branchNoise * 30.0)), 20.0) * 1.68 * coralDensity;
   color += vec3<f32>(0.7, 0.9, 1.0) * sparkle * 0.2;
@@ -134,14 +150,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(waterTint * depthAtten, color, clamp(coralDensity + polyp * 0.5, 0.0, 1.0));
 
   let biolum = polyp * (0.4 + bass * 0.5);
-  let semantic_alpha = clamp(coralDensity * biolum * depthAtten, 0.2, 0.98);
+  let semantic_alpha = clamp(coralDensity * (0.25 + biolum) * depthAtten + clickFront * 0.2, 0.05, 0.98);
 
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   color = acesToneMap(color * (1.0 + bass * 0.25));
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
   let decay = 0.96;
   let temporal = mix(prev.rgb * decay, color, 0.25);
   color = temporal;

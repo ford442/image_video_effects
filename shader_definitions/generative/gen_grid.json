@@ -23,7 +23,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "warp_amount",
       "name": "Warp Amount",
       "default": 0.4,
       "min": 0,
@@ -32,7 +32,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "grid_density",
       "name": "Grid Density",
       "default": 0.5,
       "min": 0,
@@ -41,7 +41,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "line_thickness",
       "name": "Line Thickness",
       "default": 0.4,
       "min": 0,
@@ -50,7 +50,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "palette_shift",
       "name": "Palette Shift",
       "default": 0,
       "min": 0,
@@ -98,5 +98,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load"
 }

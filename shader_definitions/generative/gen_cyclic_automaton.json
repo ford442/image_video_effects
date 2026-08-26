@@ -2,13 +2,16 @@
   "id": "gen-cyclic-automaton",
   "name": "Greenberg-Hastings Automaton",
   "url": "shaders/gen_cyclic_automaton.wgsl",
-  "description": "Excitable cellular medium with firing, refractory cooling, bass-driven spontaneous ignition, and mouse-triggered wavefronts.",
+  "description": "Excitable cellular medium with firing, refractory cooling, bass-driven spontaneous ignition, directional held-mouse painting, and timestamp-bounded click wavefronts.",
   "features": [
     "upgraded-rgba",
     "depth-aware",
     "audio-reactive",
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "click-reactive",
+    "aces-tonemap",
+    "semantic-alpha"
   ],
   "tags": [
     "procedural",
@@ -20,38 +23,38 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "states",
       "name": "States",
       "default": 0.45,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "spontaneity",
       "name": "Spontaneity",
       "default": 0.3,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "bloom",
       "name": "Bloom",
       "default": 0.6,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "cooldown",
       "name": "Cooldown",
       "default": 0.4,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.w"
     }
@@ -91,5 +94,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = normalized automaton state, firing mask, refractory progress, neighbor bloom; exact cellular state"
 }

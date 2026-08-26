@@ -3523,5 +3523,15 @@
       0.75
     ],
     "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "gen-chrono-kinetic-fractal-engine": {
+    "thumbnail_url": "thumbnails/gen-chrono-kinetic-fractal-engine.png",
+    "generated_at": "2026-08-19T08:00:00.000Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
   }
 }

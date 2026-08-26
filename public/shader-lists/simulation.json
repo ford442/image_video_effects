@@ -2,7 +2,7 @@
   {
     "id": "aero-chromatics",
     "name": "Aero Chromatics",
-    "url": "shaders/aero-chromatics.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aero-chromatics.wgsl",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -86,7 +86,7 @@
   {
     "id": "alpha-crystal-growth-phase",
     "name": "Alpha Crystal Growth Phase",
-    "url": "shaders/alpha-crystal-growth-phase.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-crystal-growth-phase.wgsl",
     "description": "Phase-field model of crystal growth with RGBA-packed state. Phase (solid/liquid), temperature, crystal orientation, and impurity concentration evolve together. Creates dendritic crystal patterns with orientation-dependent color. Mouse seeds new crystals; ripples trigger nucleation.",
     "tags": [
       "crystal",
@@ -140,12 +140,48 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Supercooling",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Anisotropy",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Growth Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Impurity Level",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = crystal phase, temperature, orientation, impurity concentration",
+    "updated": true
   },
   {
     "id": "alpha-em-field-simulation",
     "name": "Alpha EM Field Simulation",
-    "url": "shaders/alpha-em-field-simulation.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-em-field-simulation.wgsl",
     "description": "Electromagnetic field simulation using RGBA32FLOAT as four data channels: R=E-field X, G=E-field Y, B=magnetic potential, A=charge density. Mouse and ripples inject alternating positive/negative charges. Wave equation propagation with damping.",
     "tags": [
       "electromagnetic",
@@ -198,12 +234,48 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Field Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Charge Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "B-Field Visibility",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = electric field xy, magnetic potential, charge density",
+    "updated": true
   },
   {
     "id": "alpha-erosion-terrain",
     "name": "Alpha Erosion Terrain",
-    "url": "shaders/alpha-erosion-terrain.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-erosion-terrain.wgsl",
     "description": "Hydraulic erosion simulation with RGBA-packed terrain state. Height from image luminance is eroded by flowing water that picks up sediment and deposits it in flat areas. Mouse creates rainstorms; ripples trigger flash floods. Alpha tracks cumulative erosion history.",
     "tags": [
       "erosion",
@@ -257,12 +329,48 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rain Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Erosion Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Deposition Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Sediment Capacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = terrain height, water, suspended sediment, cumulative erosion",
+    "updated": true
   },
   {
     "id": "alpha-fire-temperature",
     "name": "Alpha Fire Temperature",
-    "url": "shaders/alpha-fire-temperature.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-fire-temperature.wgsl",
     "description": "Fire simulation with RGBA-packed state: fuel, temperature, smoke density, and combustion age. Temperature drives blackbody radiation color. Fuel burns, generates smoke, and heat rises via convection. Mouse injects fuel; ripples create sparks.",
     "tags": [
       "fire",
@@ -316,12 +424,48 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Burn Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Convection",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Smoke Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ember Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = fuel, temperature, smoke density, combustion age",
+    "updated": true
   },
   {
     "id": "alpha-fluid-simulation-paint",
     "name": "Alpha Fluid Simulation Paint",
-    "url": "shaders/alpha-fluid-simulation-paint.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-fluid-simulation-paint.wgsl",
     "description": "Full 2D incompressible fluid simulation packed into a single RGBA32FLOAT texture. R=velocity.x, G=velocity.y, B=pressure, A=dye density. Mouse creates vortices and injects dye. Requires f32 for signed velocity and pressure fields.",
     "tags": [
       "fluid",
@@ -333,10 +477,53 @@
       "colorful",
       "rgba-state-machine"
     ],
+    "requiresRgba32Float": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Dye Brightness",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Vorticity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = velocity.xy, signed pressure, dye density; raw simulation state via exact bounded loads",
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-drag",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -380,7 +567,7 @@
   {
     "id": "alpha-multi-state-ecosystem",
     "name": "Alpha Multi-State Ecosystem",
-    "url": "shaders/alpha-multi-state-ecosystem.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-multi-state-ecosystem.wgsl",
     "description": "Continuous multi-species ecosystem simulation packed into RGBA32FLOAT. Two species compete for shared resources while producing toxins. Species diffuse, grow, compete, and die. Mouse nurtures by adding resources.",
     "tags": [
       "ecosystem",
@@ -433,13 +620,49 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Species 1 Growth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Species 2 Growth",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Diffusion Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Toxin Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = species one, species two, shared resource, toxin",
+    "updated": true
   },
   {
     "id": "alpha-reaction-diffusion-rgba",
     "name": "Alpha Reaction Diffusion RGBA",
-    "url": "shaders/alpha-reaction-diffusion-rgba.wgsl",
-    "description": "Four-species reaction-diffusion simulation packed into RGBA32FLOAT. A feeds B, C feeds D, with cross-inhibition between pairs. Creates complex multi-color patterns impossible in 2-species systems.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-reaction-diffusion-rgba.wgsl",
+    "description": "Four-species ecological Gray-Scott field with exact-load state stencils, cross-inhibited warm/cool colonies, three-band mutation pressure, held inoculation, click seed fronts, ACES display, and semantic activity alpha. Raw RGBA chemistry persists in dataTextureA.",
     "tags": [
       "reaction-diffusion",
       "simulation",
@@ -491,12 +714,47 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Feed Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Kill Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Cross Inhibition",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Source Mix",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "bitonic-sort",
     "name": "Bitonic Pixel Sort",
-    "url": "shaders/bitonic-sort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/bitonic-sort.wgsl",
     "description": "Workgroup bitonic pixel sort with polar kaleidoscope symmetry, Voronoi ridge sort keys, domain-warped FBM, Halton quasi-random jitter, depth-aware weighting, ACES tone mapping, chromatic aberration, bass-reactive mixing, and temporal feedback.",
     "features": [
       "upgraded-rgba",
@@ -522,24 +780,24 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Sort Mix",
+        "id": "sort_threshold",
+        "name": "Sort Threshold",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Noise Mix",
+        "id": "warp_amplitude",
+        "name": "Warp Amplitude",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Sort Direction",
+        "id": "edge_glow",
+        "name": "Edge Glow",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -550,8 +808,8 @@
         ]
       },
       {
-        "id": "param4",
-        "name": "Noise Octaves",
+        "id": "sort_length",
+        "name": "Sort Length",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -597,7 +855,7 @@
   {
     "id": "cellular-automata-rgba",
     "name": "Cellular Automata RGBA",
-    "url": "shaders/cellular-automata-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cellular-automata-rgba.wgsl",
     "description": "2D ecosystem cellular automaton with four interacting species packed into RGBA. Plants grow from nutrients, herbivores eat plants, predators eat herbivores, and all dead matter cycles back to soil nutrients. Continuous densities enable stable predator-prey oscillations.",
     "tags": [
       "simulation",
@@ -651,13 +909,49 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Plant Growth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Herbivore Efficiency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Predator Efficiency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = plants, herbivores, predators, nutrients",
+    "updated": true
   },
   {
     "id": "chromatic-reaction-diffusion-rgba",
     "name": "Chromatic Reaction Diffusion RGBA",
-    "url": "shaders/chromatic-reaction-diffusion-rgba.wgsl",
-    "description": "Four-species reaction-diffusion with chromatic cross-coupling. Activators A/C and inhibitors B/D form warm/cool tone pairs that suppress each other at boundaries, creating iridescent fringe patterns. RGBA packs full simulation state.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-reaction-diffusion-rgba.wgsl",
+    "description": "Two cross-coupled warm/cool Turing systems with exact-load RGBA chemistry, audio-shifted spectral phases, pointer spiral seeding, bounded click fronts, ACES color, and semantic boundary alpha. Raw state persists only in dataTextureA.",
     "tags": [
       "reaction-diffusion",
       "simulation",
@@ -710,12 +1004,47 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Feed Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Kill Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Chromatic Separation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Cross Coupling",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "chromatographic-fluid",
     "name": "Chromatographic Fluid",
-    "url": "shaders/chromatographic-force.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatographic-force.wgsl",
     "description": "Physics Lab — RGB dyes with distinct viscosity in a shared wind field. Hold to paint, click solvent splashes, audio gusts. graph · 7 passes · rgba32float.",
     "requiresRgba32Float": true,
     "multipass": {
@@ -760,7 +1089,7 @@
               "dataC"
             ],
             "writes": [
-              "dataB"
+              "dataA"
             ]
           },
           {
@@ -829,6 +1158,41 @@
         "description": "Hold-paint and click-splash amount"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity Split",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wind",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Temperature",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Dye Inject",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = separated dye RGB and solvent temperature; all seven graph dispatches hand off through A only",
     "features": [
       "simulation",
       "multi-pass",
@@ -836,7 +1200,13 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "held-drag",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "fluid",
@@ -849,14 +1219,49 @@
   {
     "id": "cymatic-sand",
     "name": "Cymatic Sand",
-    "description": "Multi-harmonic Chladni plate simulation. Sand accumulates on nodal lines with temporal persistence, audio-driven harmonic superposition, and SDF-based rounded grain rendering.",
-    "url": "shaders/cymatic-sand.wgsl",
+    "description": "Damped Chladni plate simulation with exact-load sand transport, persistent resonance and strike memory, three-band harmonic forcing, held mode displacement, bounded click strikes, ACES grain color, semantic alpha, and raw A-only state.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cymatic-sand.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal",
       "upgraded-rgba",
       "depth-aware"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Frequency Mode",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Harmonic Mix",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Grain Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Audio Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -907,14 +1312,68 @@
   {
     "id": "digital-moss",
     "name": "Digital Moss",
-    "url": "shaders/digital-moss.wgsl",
-    "description": "Digital moss grows on dark areas. Use the mouse to clean it.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-moss.wgsl",
+    "description": "Four-state digital moss colonizes dark regions through moisture and spores; held input cleans colonies while clicks launch new growth fronts.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "simulation"
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Spawn threshold and brush size"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Propagation growth rate"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Digital scanline density"
+      },
+      {
+        "id": "detail",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Moss thickness and opacity detail"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -922,7 +1381,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "index": 1,
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -930,7 +1389,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "index": 2,
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -938,7 +1397,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -948,13 +1407,18 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "simulation",
+      "organic",
+      "moss"
+    ],
+    "feedbackPacking": "A/C = moss growth, moisture, spores, colony age",
+    "updated": true
   },
   {
     "id": "fabric-of-reality",
     "name": "Fabric of Reality",
-    "url": "shaders/fabric-verlet.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fabric-verlet.wgsl",
     "description": "Living mass-spring cloth — hold to tear, release to watch Self Heal knit seams. Bass breathes the drape; mouse spotlight rides the weave. Tier C graph · 7 passes.",
     "requiresRgba32Float": true,
     "multipass": {
@@ -1069,8 +1533,8 @@
     "id": "ferrofluid-spikes",
     "name": "Ferrofluid Spikes",
     "category": "simulation",
-    "url": "shaders/ferrofluid-spikes.wgsl",
-    "description": "Mouse-driven ferrofluid simulation. The cursor acts as a magnet, pulling up metallic spikes from a dark liquid surface. Enhanced with full 3-point studio lighting (key/fill/rim), GGX PBR specular, Fresnel-Schlick reflections, anisotropic metallic sheen, ambient occlusion, and subsurface scattering glow.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ferrofluid-spikes.wgsl",
+    "description": "A classic Rosensweig ferrofluid lattice with bounded magnet inertia, held polarity strength, click-launched spike fronts, exact-load viscous persistence, three-band response, honest depth, and studio-lit anisotropic GGX metal.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1083,7 +1547,18 @@
       "anisotropic-sheen",
       "ambient-occlusion",
       "subsurface-scattering",
-      "light-attenuation"
+      "light-attenuation",
+      "click-reactive",
+      "temporal",
+      "depth-aware",
+      "rosensweig-lattice",
+      "held-interaction",
+      "spring-interaction",
+      "exact-load-feedback",
+      "aces-tone-map",
+      "semantic-alpha",
+      "fast-motion",
+      "psychedelic"
     ],
     "params": [
       {
@@ -1127,12 +1602,58 @@
       "3-point-lighting",
       "anisotropic",
       "ambient-occlusion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "magnet",
+        "name": "Magnet Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Rosensweig spike amplitude; bass adds up to +50% and drives the eruption-packet speed."
+      },
+      {
+        "index": 1,
+        "id": "density",
+        "name": "Spike Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Lattice frequency of the Rosensweig peaks; also sets the travelling field-conveyor rate."
+      },
+      {
+        "index": 2,
+        "id": "viscosity",
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Damping on the magnet spring and the spike relaxation; higher values slow the snap-back."
+      },
+      {
+        "index": 3,
+        "id": "highlight",
+        "name": "Highlight Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "GGX roughness for the metallic specular lobe on the spike tips."
+      }
     ]
   },
   {
     "id": "flow-sort",
     "name": "Streamline Pixel Sort",
-    "url": "shaders/flow-sort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/flow-sort.wgsl",
     "description": "Pixel sorting along vector field lines derived from luminance gradients.",
     "params": [
       {
@@ -1178,7 +1699,7 @@
   {
     "id": "galaxy-compute",
     "name": "Galaxy Compute",
-    "url": "shaders/galaxy-compute.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/galaxy-compute.wgsl",
     "description": "Volumetric spiral galaxy with logarithmic spiral SDF, procedural nebula clouds, Keplerian orbital mechanics, and stellar particle glow.",
     "params": [
       {
@@ -1224,7 +1745,7 @@
   {
     "id": "gray-scott-tank",
     "name": "Gray-Scott Tank",
-    "url": "shaders/gray-scott-step.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gray-scott-step.wgsl",
     "description": "Physics Lab — true multi-step Gray–Scott reaction-diffusion (Jacobi ×4 / frame). Hold paints V, clicks seed spots. graph · 6 passes · rgba32float.",
     "requiresRgba32Float": true,
     "multipass": {
@@ -1308,6 +1829,41 @@
         "description": "Hold-paint and click seed amplitude"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Feed",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Kill",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Diffusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Seed Strength",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = Gray-Scott U, V, reaction age, seed mask; six graph dispatches use A-only handoffs",
     "features": [
       "simulation",
       "multi-pass",
@@ -1315,7 +1871,13 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "held-seeding",
+      "click-seeding",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "reaction-diffusion",
@@ -1328,7 +1890,7 @@
   {
     "id": "lenia-on-video",
     "name": "Lenia on Video",
-    "url": "shaders/lenia-on-video.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/lenia-on-video.wgsl",
     "category": "simulation",
     "description": "Continuous Lenia cellular automaton (Chan 2019) seeded and continuously driven by live video. Video luminance seeds the initial cell state; video hue and saturation modulate Lenia's growth center and width parameters in real time, coupling the CA tightly to the subject. Bass beats inject fresh cells from bright video regions. Mouse spawns or clears cells. Outputs a neon bioluminescent CA layer composited over the source video.",
     "tags": [
@@ -1353,7 +1915,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "kernel_radius",
         "name": "Kernel Radius",
         "default": 0.4,
         "min": 0,
@@ -1361,7 +1923,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "video_coupling",
         "name": "Video Coupling",
         "default": 0.5,
         "min": 0,
@@ -1369,7 +1931,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "glow_intensity",
         "name": "Glow Intensity",
         "default": 0.6,
         "min": 0,
@@ -1377,20 +1939,56 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "composite_mix",
         "name": "Composite Mix",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Kernel Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Video Coupling",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Composite Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = Lenia density, kernel neighborhood, signed growth response, video luminance",
+    "updated": true
   },
   {
     "id": "lichtenberg-fractal",
     "name": "Lichtenberg Fractal",
     "description": "High-voltage electrical discharge with curl-noise branching, depth-aware strike targeting, audio-reactive spread, and chromatic glow (white core → cyan → deep purple).",
-    "url": "shaders/lichtenberg-fractal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/lichtenberg-fractal.wgsl",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -1444,13 +2042,48 @@
   {
     "id": "luma-flow-field",
     "name": "Luma Flow Field",
-    "url": "shaders/luma-flow-field.wgsl",
-    "description": "Luma-gradient curl-noise flow field. Pixels stream along iso-luminance curves driven by multi-octave divergence-free noise, with depth-aware vortices, audio-reactive speed/turbulence, and iridescent palette streaks.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-flow-field.wgsl",
+    "description": "Exact-history luma-gradient flow field with iso-luminance advection, curl ribbons, three-band spectral coloring, pointer vortices, bounded click shocks, ACES display, and semantic HDR trail alpha in dataTextureA.",
     "features": [
       "audio-reactive",
       "depth-aware",
       "temporal",
       "upgraded-rgba"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Flow Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Curl Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Audio Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -1501,7 +2134,7 @@
   {
     "id": "nano-assembler",
     "name": "Nano Assembler",
-    "url": "shaders/nano-assembler.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/nano-assembler.wgsl",
     "description": "Simulates nanobots constructing the image. Mouse movement disrupts the assembly, scattering the particles.",
     "params": [
       {
@@ -1544,49 +2177,8 @@
   {
     "id": "optical-flow-dream",
     "name": "Optical Flow Dream",
-    "url": "shaders/optical-flow-estimate.wgsl",
-    "description": "Physics Lab — history-ring optical flow (binding 13) with controlled decay and chroma smear. Hold freezes time, clicks tear. graph · 4 passes · battery OK.",
-    "requiresRgba32Float": true,
-    "requiresHistoryRing": true,
-    "multipass": {
-      "graph": {
-        "maxPassesPerFrame": 8,
-        "nodes": [
-          {
-            "id": "flow",
-            "entry": "optical-flow-estimate",
-            "reads": [
-              "dataC"
-            ],
-            "writes": [
-              "dataA"
-            ]
-          },
-          {
-            "id": "advect",
-            "entry": "optical-flow-advect",
-            "reads": [
-              "dataC"
-            ],
-            "writes": [
-              "dataA"
-            ],
-            "repeat": 2
-          },
-          {
-            "id": "grade",
-            "entry": "optical-flow-grade",
-            "reads": [
-              "dataC"
-            ],
-            "writes": [
-              "color",
-              "dataA"
-            ]
-          }
-        ]
-      }
-    },
+    "url": "https://test.1ink.us/image_video_effects/shaders/optical-flow-estimate.wgsl",
+    "description": "Canonical single-pass optical-flow dream field using exact dataTextureC history, temporal luma gradients, chromatic advection, held pointer vortices, bounded click tears, three-band color, ACES display, semantic alpha, and A-only feedback.",
     "params": [
       {
         "id": "flowScale",
@@ -1629,10 +2221,43 @@
         "description": "Blend between live input and advected dream"
       }
     ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Flow Scale",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Decay",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Chroma Smear",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Dream Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "simulation",
-      "multi-pass",
-      "graph-runner",
       "physics",
       "mouse-driven",
       "audio-reactive",
@@ -1641,7 +2266,7 @@
     "tags": [
       "optical-flow",
       "feedback",
-      "history-ring",
+      "exact-load-feedback",
       "simulation",
       "showcase"
     ]
@@ -1649,7 +2274,7 @@
   {
     "id": "photonic-caustics-graph",
     "name": "Photonic Caustics",
-    "url": "shaders/photonic-emitter.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/photonic-emitter.wgsl",
     "description": "Temporal caustic pool — move the light, watch chromatic ribbons accumulate. 4 graph passes fit battery; trace×2 under balanced. Tier C flagship.",
     "requiresRgba32Float": true,
     "multipass": {
@@ -1752,8 +2377,8 @@
   {
     "id": "photonic-caustics",
     "name": "Photonic Caustics",
-    "url": "shaders/photonic-caustics.wgsl",
-    "description": "Light caustics simulation with chromatic dispersion, Fresnel reflections, and refractive surfaces.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/photonic-caustics.wgsl",
+    "description": "Exact-history refractive height-field caustics with chromatic convergence bands, Fresnel response, three-band illumination, held light focus, bounded click wavefronts, HDR A-only accumulation, ACES display, and semantic caustic alpha.",
     "params": [
       {
         "id": "ior",
@@ -1784,6 +2409,41 @@
         "max": 1
       }
     ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Index of Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Light Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Chromatic Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "depth-aware",
       "temporal-persistence",
@@ -1802,8 +2462,8 @@
   {
     "id": "pixel-sand",
     "name": "Pixel Sand",
-    "url": "shaders/pixel-sand.wgsl",
-    "description": "Falling granular automata crossed with domain-warped FBM flow fields, temporal feedback echo, and an audio-driven palette. Warm blackbody spawns, OkLab video-to-sand blending, mouse gravity wells, ripple shockwaves, depth shading, ACES tone mapping, and IGN dither remain intact.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-sand.wgsl",
+    "description": "Granular density and velocity automaton with avalanche sheets, rising jet lanes, held-pointer gravity, bounded click shelves, three-band spectral heat, depth shading, ACES display, semantic alpha, and raw A-only state feedback.",
     "features": [
       "upgraded-rgba",
       "mouse-driven",
@@ -1816,7 +2476,9 @@
       "ign-dither",
       "domain-warped-fbm",
       "feedback-echo",
-      "audio-palette"
+      "audio-palette",
+      "continuous-motion",
+      "bounded-click-ripples"
     ],
     "tags": [
       "sand",
@@ -1836,7 +2498,42 @@
       "temporal-echo",
       "palette"
     ],
+    "updated": true,
     "params": [
+      {
+        "id": "gravity",
+        "name": "Gravity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "particle_density",
+        "name": "Particle Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "curl_force",
+        "name": "Curl Force",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bounce",
+        "name": "Bounce",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
       {
         "id": "param1",
         "name": "Gravity",
@@ -1874,7 +2571,7 @@
   {
     "id": "predator-prey",
     "name": "Pixel Ecology",
-    "url": "shaders/predator-prey.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/predator-prey.wgsl",
     "description": "Cellular automata ecosystem with plants, herbivores, and carnivores - watch the food chain unfold.",
     "params": [
       {
@@ -1920,7 +2617,7 @@
   {
     "id": "quantum-foam-pass1",
     "name": "Quantum Foam (Pass 1: Field Generation)",
-    "url": "shaders/quantum-foam-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-foam-pass1.wgsl",
     "description": "Generates quantum probability field with curl noise and FBM. First pass of 3-pass system.",
     "features": [
       "multi-pass-1",
@@ -1975,32 +2672,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "foam_scale",
+        "name": "Foam Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "flow_speed",
+        "name": "Flow Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "diffusion_rate",
+        "name": "Diffusion Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "octave_count",
+        "name": "Octave Count",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2011,8 +2708,8 @@
   {
     "id": "rd-on-video-pass1",
     "name": "RD on Video (Pass 1: State Update)",
-    "url": "shaders/rd-on-video-pass1.wgsl",
-    "description": "Gray-Scott reaction-diffusion seeded and continuously driven by video luminance.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/rd-on-video-pass1.wgsl",
+    "description": "Gray-Scott reaction-diffusion seeded and continuously driven by video luminance, with exact-load chemistry, three-band kinetics, held inoculation, click seed fronts, ACES preview, semantic alpha, and A-only state ownership.",
     "features": [
       "multi-pass-1",
       "temporal",
@@ -2064,12 +2761,47 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Feed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Kill",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Diffusion",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Time Step",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "ripple-tank",
     "name": "Ripple Tank",
-    "url": "shaders/ripple-tank-step.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ripple-tank-step.wgsl",
     "description": "Physics Lab flagship — click for rings, hold for a driven oscillator, audio rains droplets across the tank. 7 graph passes · target 60 fps at balanced.",
     "requiresRgba32Float": true,
     "multipass": {
@@ -2094,22 +2826,24 @@
               "dataA"
             ],
             "writes": [
-              "dataB"
+              "dataA"
             ]
           },
           {
             "id": "gather",
             "entry": "ripple-tank-pass2",
             "reads": [
-              "dataB"
+              "dataA"
             ],
-            "writes": []
+            "writes": [
+              "dataA"
+            ]
           },
           {
             "id": "render",
             "entry": "ripple-tank-pass3",
             "reads": [
-              "dataB"
+              "dataA"
             ],
             "writes": [
               "color",
@@ -2172,6 +2906,42 @@
       "temporal-persistence",
       "interactive"
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wave Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Damping",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Source Strength",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Boundary Reflect",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = height, velocity, foam energy, oscillator phase; graph uses A-only writeback",
+    "updated": true,
     "tags": [
       "wave-equation",
       "interference",
@@ -2184,7 +2954,7 @@
   {
     "id": "sim-decay-system-rgba",
     "name": "Sim: Decay System RGBA",
-    "url": "shaders/sim-decay-system-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-decay-system-rgba.wgsl",
     "description": "Four-layer material decay simulation with cross-coupling. Paint integrity, metal corrosion, organic rot, and structural integrity each decay at different rates. When one layer fails, others decay faster. Mouse interaction can restore/repair.",
     "tags": [
       "simulation",
@@ -2238,12 +3008,48 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Base Decay",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Edge Vulnerability",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Moisture",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Recovery Rate",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = paint integrity, metal corrosion, organic rot, structural integrity",
+    "updated": true
   },
   {
     "id": "sim-decay-system",
     "name": "Decay System",
-    "url": "shaders/sim-decay-system.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-decay-system.wgsl",
     "description": "Multi-layer decay and corrosion simulation. Image corrodes from edges inward with different materials.",
     "features": [
       "simulation",
@@ -2302,13 +3108,50 @@
     ],
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Decay Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Edge Vulnerability",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Recovery Rate",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = damage, material class, corrosion bloom, protection memory",
+    "updated": true
   },
   {
     "id": "sim-fluid-feedback-coupled",
     "name": "Fluid Feedback Coupled",
-    "url": "shaders/sim-fluid-feedback-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-fluid-feedback-coupled.wgsl",
     "description": "Mouse-steerable coupled fluid simulation combining Navier-Stokes feedback fields with viscous fluid stirring. Mouse drags fluid creating vortex streets; click ripples inject bursts. Fluid thickness drives color absorption, blur, and glow.",
+    "requiresRgba32Float": true,
     "features": [
       "simulation",
       "mouse-driven",
@@ -2359,6 +3202,42 @@
         "description": "Glow intensity from fluid density"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Fade Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = velocity.xy, pressure, density",
+    "updated": true,
     "chunks_used": [
       "hash12 (gen_grid.wgsl)",
       "curlNoise (sim-fluid-feedback-field)",
@@ -2379,7 +3258,7 @@
   {
     "id": "sim-fluid-feedback-field",
     "name": "Fluid Feedback Field",
-    "url": "shaders/sim-fluid-feedback-field-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-fluid-feedback-field-pass1.wgsl",
     "description": "Multi-pass Navier-Stokes fluid simulation with feedback trails. Glowing fluid that swirls and mixes.",
     "features": [
       "simulation",
@@ -2466,14 +3345,56 @@
   {
     "id": "sim-heat-haze-field",
     "name": "Heat Haze Field",
-    "url": "shaders/sim-heat-haze-field.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-heat-haze-field.wgsl",
     "description": "Temperature simulation with convection currents. Desert mirage effect with rising heat patterns.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Temperature Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Convection Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Distortion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Heat Source Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = temperature, gradient.xy, refractive activity; raw thermal state via exact bounded loads",
     "features": [
       "simulation",
       "temperature-field",
       "convection",
       "refraction",
-      "randomization-safe"
+      "randomization-safe",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-heat",
+      "click-fronts",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -2530,7 +3451,7 @@
   {
     "id": "sim-ink-diffusion-rgba",
     "name": "Sim: Ink Diffusion RGBA",
-    "url": "shaders/sim-ink-diffusion-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-ink-diffusion-rgba.wgsl",
     "description": "Four-ink wet diffusion simulation on paper texture. RGB channels hold cyan, magenta, and yellow pigment concentrations; alpha holds water saturation that drives all diffusion. Pigments mix subtractively on wet paper.",
     "tags": [
       "simulation",
@@ -2584,12 +3505,48 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wetness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pigment Diffusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Mixing",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Evaporation Rate",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = cyan, magenta, yellow pigment and water saturation",
+    "updated": true
   },
   {
     "id": "sim-ink-diffusion",
     "name": "Ink Diffusion",
-    "url": "shaders/sim-ink-diffusion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-ink-diffusion.wgsl",
     "description": "Fluid ink diffusion with paper absorption. Multi-channel Gray-Scott with Wolfram-validated parameters.",
     "features": [
       "simulation",
@@ -2658,8 +3615,8 @@
   {
     "id": "sim-sand-dunes-rgba",
     "name": "Sim: Sand Dunes RGBA",
-    "url": "shaders/sim-sand-dunes-rgba.wgsl",
-    "description": "Four-grain-type sand physics with distinct behaviors. Fine sand blows easily in wind, coarse sand is stable with high angle of repose, moist sand clumps together, and dust rises on updrafts. RGBA packs all grain fractions per cell.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-sand-dunes-rgba.wgsl",
+    "description": "Four-population grain simulation packing fine, coarse, moist, and airborne dust fractions in raw A state, with exact-load transport, audio gusts, held deposition, click dust fronts, ACES material color, and semantic coverage alpha.",
     "tags": [
       "simulation",
       "sand",
@@ -2712,19 +3669,89 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Gravity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Wind",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Moisture",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Dustiness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "sim-sand-dunes",
     "name": "Sand Dunes",
-    "url": "shaders/sim-sand-dunes.wgsl",
-    "description": "Falling sand physics with wind erosion. Sand falls, piles at angle of repose, wind moves loose sand.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-sand-dunes.wgsl",
+    "description": "Persistent dune height field with saltation, angle-of-repose avalanches, wind erosion, moisture cohesion, three-band gusts, held sand deposition, bounded click shelves, ACES shading, semantic alpha, and raw A-only state.",
     "features": [
       "simulation",
       "cellular-automata",
       "falling-sand",
       "wind-erosion",
       "randomization-safe"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "param1",
+        "name": "Gravity Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Wind Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Sand Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Erosion Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -2780,15 +3807,57 @@
   {
     "id": "sim-slime-mold-growth-em",
     "name": "Slime Mold Growth + EM Field",
-    "url": "shaders/sim-slime-mold-growth-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-slime-mold-growth-em.wgsl",
     "description": "Physarum slime mold simulation with mouse electromagnetic field interaction. Agents steer along electric field lines; click ripples spawn secondary charges.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sensor Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "EM Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ripple Charge",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = trail, electric magnitude, signed magnetic field, growth activity; pointer history uses only extraBuffer[133..138]",
     "features": [
       "simulation",
       "agent-based",
       "mouse-driven",
       "electromagnetic",
       "interactive",
-      "randomization-safe"
+      "randomization-safe",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-charge",
+      "click-charges",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -2855,14 +3924,56 @@
   {
     "id": "sim-slime-mold-growth",
     "name": "Slime Mold Growth",
-    "url": "shaders/sim-slime-mold-growth.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-slime-mold-growth.wgsl",
     "description": "Physarum-style slime mold with trail following. Branching network of glowing trails exploring space.",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sensor Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Particle Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Randomness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = trail, diffused nutrient, growth activity, deposit strength; exact Physarum state",
     "features": [
       "simulation",
       "agent-based",
       "chemoattractant",
       "sensor-steering",
-      "randomization-safe"
+      "randomization-safe",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-growth",
+      "click-growth-fronts",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -2920,7 +4031,7 @@
   {
     "id": "sim-smoke-trails",
     "name": "Smoke Trails",
-    "url": "shaders/sim-smoke-trails.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-smoke-trails.wgsl",
     "description": "Volumetric smoke with vorticity and buoyancy. Billowing smoke rising with natural turbulence.",
     "features": [
       "simulation",
@@ -2984,7 +4095,7 @@
   {
     "id": "sim-volumetric-fake",
     "name": "Volumetric Fake (God Rays)",
-    "url": "shaders/sim-volumetric-fake.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-volumetric-fake.wgsl",
     "description": "Fast approximation of volumetric lighting. Radial blur from light source with depth-based scattering.",
     "features": [
       "simulation",
@@ -3049,8 +4160,9 @@
     "id": "slime-mold-on-video",
     "name": "Slime Mold on Video",
     "category": "simulation",
-    "url": "shaders/slime-mold-on-video.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/slime-mold-on-video.wgsl",
     "description": "Video luminance feeds a slime-mold trail simulation with velocity-biased history advection, traveling chemotactic pulse packets, and click food fronts. Audio shifts tendril colors, depth boosts glow, and the mouse deposits food.",
+    "feedbackPacking": "A/C = trail, video food luminance, encoded drift.xy; exact bounded video-guided state",
     "features": [
       "simulation",
       "temporal",
@@ -3062,7 +4174,12 @@
       "click-reactive",
       "fast-motion",
       "upgraded-rgba",
-      "chromatic-tendril"
+      "chromatic-tendril",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "held-food",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "slime",
@@ -3147,7 +4264,7 @@
   {
     "id": "spec-runge-kutta-advection",
     "name": "Runge-Kutta Advection",
-    "url": "shaders/spec-runge-kutta-advection.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-runge-kutta-advection.wgsl",
     "description": "4th-order Runge-Kutta fluid advection. Dramatically more accurate than Euler method, preserving fine dye structures 10x longer. Mouse creates counter-rotating vortex pairs.",
     "tags": [
       "runge-kutta",
@@ -3158,12 +4275,54 @@
       "vortex",
       "temporal"
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Time Step",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Diffusion",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Vortex Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Temporal Feedback",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = un-tonemapped advected dye RGB and flow speed; exact manually reconstructed history",
     "features": [
       "runge-kutta",
       "RK4",
       "fluid-advection",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "audio-reactive",
+      "held-vortex",
+      "click-fronts",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -3204,7 +4363,7 @@
   {
     "id": "split-flap-display",
     "name": "Split Flap Display",
-    "url": "shaders/split-flap-display.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/split-flap-display.wgsl",
     "features": [
       "interactive",
       "simulation",
@@ -3264,8 +4423,8 @@
   {
     "id": "steamy-glass",
     "name": "Steamy Glass",
-    "url": "shaders/steamy-glass.wgsl",
-    "description": "Simulates a foggy window that can be wiped clean with the mouse. The steam slowly returns over time.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/steamy-glass.wgsl",
+    "description": "Stateful condensation, droplets, and runoff refract a fogged window that can be wiped with held input and disturbed by click fronts.",
     "params": [
       {
         "name": "Fog Density",
@@ -3296,6 +4455,42 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fog Density",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fade Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wipe Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Blur Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = steam density, droplet mass, runoff, wipe memory",
+    "updated": true,
     "features": [
       "mouse-driven",
       "feedback",
@@ -3311,7 +4506,7 @@
   {
     "id": "wave-equation",
     "name": "Wave Tank",
-    "url": "shaders/wave-equation.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/wave-equation.wgsl",
     "description": "Psychedelic ripple tank — click to drop interference rings, drag to stir, bass pulses the waves. Rainbow phase bands and caustic sparkles over your image.",
     "params": [
       {
@@ -3355,6 +4550,42 @@
         "description": "Edge absorption (0) vs reflection (1)"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Source Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Boundary Reflect",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = wave height, velocity, foam energy, oscillator phase",
+    "updated": true,
     "features": [
       "depth-aware",
       "temporal-persistence",
@@ -3372,7 +4603,7 @@
   {
     "id": "wave-tank",
     "name": "Wave Tank",
-    "url": "shaders/wave-step.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/wave-step.wgsl",
     "description": "Psychedelic 2D wave interference — click to drop ripples, drag to stir, bass pulses the tank. Tier C graph runner demo.",
     "params": [
       {

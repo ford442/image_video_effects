@@ -155,6 +155,10 @@ fn jewelColor(cellId: f32, dist: f32, border: f32, t: f32,
     return vec3<f32>(r, g, b);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = vec2<f32>(u.config.zw);
@@ -191,9 +195,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let r2 = dot(diskUV, diskUV);
     if (r2 >= 0.99) {
         let boundaryColor = vec3<f32>(0.05, 0.04, 0.08);
-        textureStore(writeTexture, global_id.xy, vec4<f32>(boundaryColor, 1.0));
-        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.05, 0.0, 0.0, 0.0));
-        textureStore(dataTextureA, global_id.xy, vec4<f32>(boundaryColor, 1.0));
+        textureStore(writeTexture, global_id.xy, vec4<f32>(acesToneMap(boundaryColor), 0.08));
+        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.02, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, global_id.xy, vec4<f32>(boundaryColor, 0.08));
         return;
     }
 
@@ -236,6 +240,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let growthFront = smoothstep(0.1, 0.0, abs(facetDist - (0.8 + bass * 0.3)));
     color += vec3<f32>(0.8, 1.0, 0.9) * growthFront * treble * 0.8;
 
+    var clickFront = 0.0;
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var ri = 0u; ri < rippleCount; ri++) {
+        let ripple = u.ripples[ri];
+        let age = t - ripple.z;
+        if (age > 0.0 && age < 3.0) {
+            var center = (ripple.xy - vec2<f32>(0.5)) * 2.2;
+            center.x *= res.x / res.y;
+            let front = abs(distance(diskUV, center) - age * (0.18 + growthSpeed * 0.045));
+            clickFront += exp(-front * 56.0) * exp(-age * 1.4);
+        }
+    }
+    color += jewelColor(combinedId + clickFront * 0.2, facetDist, facetBorder, warpT, bass, mids, treble) * clickFront * 0.45;
+
     // Vignette from disk edge
     let diskEdge = 1.0 - smoothstep(0.7, 1.0, sqrt(r2));
     color *= diskEdge;
@@ -244,10 +262,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let histCoord = clamp(pixel - vec2<i32>(vec2<f32>(cos(warpT * 0.4), sin(warpT * 0.38)) * (2.0 + growthSpeed * 2.0)),
                           vec2<i32>(0), vec2<i32>(i32(res.x) - 1, i32(res.y) - 1));
     let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
-    let temporal = clamp(color + prev * (0.84 + growthSpeed * 0.04), vec3<f32>(0.0), vec3<f32>(5.5));
-    let depth = clamp(1.0 - facetDist * 1.8, 0.08, 0.98);
+    let temporal = clamp(mix(prev * (0.9 + growthSpeed * 0.015), color, 0.28 + competition * 0.08), vec3<f32>(0.0), vec3<f32>(6.5));
+    let edgeCoverage = clamp(edgeGlow * 0.48 + growthFront * 0.24 + frontGlow * 0.18 + clickFront * 0.18, 0.0, 1.0);
+    let crystalCoverage = clamp((1.0 - smoothstep(0.15, 1.1, facetDist)) * diskEdge, 0.0, 1.0);
+    let alpha = clamp(0.05 + crystalCoverage * 0.72 + edgeCoverage * 0.22, 0.05, 0.97);
+    let depth = clamp(crystalCoverage * 0.7 + edgeCoverage * 0.3, 0.02, 0.99);
+    let display = acesToneMap(temporal * (1.0 + mids * 0.08));
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(temporal, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(display, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(clamp(temporal, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, alpha));
 }

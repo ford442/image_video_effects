@@ -86,35 +86,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let colPhase = hash12(vec2<f32>(column, 0.0));
   let colVel = 0.6 + noise21(vec2<f32>(column * 0.07, time * 0.03)) * 1.8;
   let spawnRate = step(0.92 - bass * 0.18, hash12(vec2<f32>(column, floor(time * 2.0))));
-  let shiftX = (mouse.x - 0.5) * 0.08 * width;
+  let shiftX = (mouse.x - 0.5) * 0.08 * width + (depth - 0.5) * 0.035;
   let shiftedUV = vec2<f32>(fract(uv.x + shiftX), uv.y);
   let rainSpeed = speed * colVel * (0.5 + mouse.y * 1.5);
 
   let fall = fract(shiftedUV.y * (10.0 + density * 0.1) + time * rainSpeed + colPhase * 6.28);
   let row = floor((1.0 - fall) * 32.0 + time * 4.0);
   let gol = gol_state(column, row, time);
-  let glyph = step(0.55, gol * spawnRate + hash12(vec2<f32>(column, row)) * 0.25);
+  let glyphCell = fract(vec2<f32>(uv.x * density, (1.0 - fall) * 32.0));
+  let glyphSeed = hash12(vec2<f32>(column, row));
+  let glyphStroke = max(step(abs(glyphCell.x - 0.5), 0.10 + glyphSeed * 0.08), step(abs(glyphCell.y - 0.5), 0.07));
+  let glyph = step(0.55, gol * spawnRate + glyphSeed * 0.25) * glyphStroke;
 
   let curtainMask = smoothstep(width * 0.5 + 0.04, 0.0, abs(uv.x - mouse.x));
   let scan = smoothstep(0.22, 0.0, abs(fall - 0.12));
   let ghost = smoothstep(0.55, 0.0, abs(fall - 0.35)) * colVel * 0.35;
 
-  let prevUV = clamp(uv + vec2<f32>(0.0, -1.0 / resolution.y), vec2<f32>(0.001), vec2<f32>(0.999));
-  let prev = textureSampleLevel(dataTextureC, u_sampler, prevUV, 0.0);
+  let prevCoord = vec2<i32>(i32(global_id.x), max(i32(global_id.y) - 1, 0));
+  let prev = textureLoad(dataTextureC, prevCoord, 0);
   let phosphorDecay = prev.r * 0.82;
 
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let phosphorGreen = vec3<f32>(0.05, 0.95, 0.25);
+  var front = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    front += exp(-age * 1.7) * exp(-abs(length((uv - event.xy) * vec2<f32>(resolution.x / resolution.y, 1.0)) - age * 0.4) * 55.0);
+  }
+  let heldVortex = select(0.0, sin(atan2(uv.y - mouse.y, (uv.x - mouse.x) * resolution.x / resolution.y) * 5.0 - time * 4.0) * exp(-length(uv - mouse) * 12.0), mouseDown);
+  let hue = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + time * 0.25 + mids * 3.0);
+  let phosphorGreen = mix(vec3<f32>(0.05, 0.95, 0.25), hue, 0.18 + treble * 0.35);
   let phosphorDim = vec3<f32>(0.02, 0.45, 0.12);
   let codeColor = mix(phosphorDim, phosphorGreen, glyph) * curtainMask;
   let bloom = vec3<f32>(0.15, 1.0, 0.4) * scan * curtainMask * (0.22 + bass * 0.18);
   let trail = phosphorGreen * ghost * curtainMask * 0.14;
-  var hdr = baseColor.rgb * 0.25 + codeColor + bloom + trail + phosphorDecay * vec3<f32>(0.08, 0.35, 0.12);
+  var hdr = baseColor.rgb * 0.25 + codeColor + bloom + trail + phosphorDecay * vec3<f32>(0.08, 0.35, 0.12) + hue * (front * 0.35 + abs(heldVortex) * 0.18);
 
   let scanlineBeat = sin(uv.y * resolution.y * 0.5 + time * 12.0 + bass * 6.28) * 0.5 + 0.5;
   hdr = hdr * (0.92 - scanlineBeat * 0.06);
 
-  let parallax = depth * 0.04 * (mouse.x - 0.5);
   let vign = 1.0 - length((uv - 0.5) * vec2<f32>(1.0, resolution.y / resolution.x)) * 0.6;
   hdr = hdr * max(vign, 0.3);
 

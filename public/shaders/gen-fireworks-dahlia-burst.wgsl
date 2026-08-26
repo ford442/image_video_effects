@@ -81,7 +81,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = (vec2<f32>(pixel) - res*0.5) / min(res.x, res.y);
   let sampleUV = (vec2<f32>(pixel) + 0.5) / res;
   let time = u.config.x;
-  let mouseUV = (u.zoom_config.yz - res*0.5) / min(res.x, res.y);
+  let mouseUV = (u.zoom_config.yz - vec2<f32>(0.5)) * res / min(res.x, res.y);
 
   let petalCount = mix(12.0, 36.0, u.zoom_params.x);
   let diskSize = mix(0.25, 0.75, u.zoom_params.y);
@@ -181,9 +181,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = acesToneMap(col * 1.12);
 
   let alpha = clamp(length(col) * 1.2 + 0.1, 0.12, 0.97);
-  let persistent = col * 0.55 + prev * 0.38;
-  textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
+  let depth = clamp((alpha - 0.12) / 0.85, 0.0, 1.0) * 0.85;
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

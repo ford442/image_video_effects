@@ -2,45 +2,32 @@
   "id": "byte-mosh",
   "name": "Byte-Mosh Glitch",
   "url": "shaders/byte-mosh.wgsl",
-  "description": "Bitwise XOR, AND, shift, and rotate operations creating digital corruption effects.",
+  "description": "LFSR/GF(2) datamosh corruption with spring cursor, held burst, capped ripple packets, wired zoom_params, regional FFT edges, and ACES output.",
+  "workgroup_size": [16, 16, 1],
   "params": [
-    {
-      "id": "operationMix",
-      "name": "Operation Mix",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "bitShift",
-      "name": "Bit Shift",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "errorRate",
-      "name": "Error Rate",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "blockSize",
-      "name": "Block Size",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    }
+    { "id": "operationMix", "name": "Operation Mix", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.x" },
+    { "id": "bitShift", "name": "Bit Shift", "default": 0.3, "min": 0, "max": 1, "mapping": "zoom_params.y" },
+    { "id": "errorRate", "name": "Error Rate", "default": 0.3, "min": 0, "max": 1, "mapping": "zoom_params.z" },
+    { "id": "blockSize", "name": "Block Size", "default": 0.3, "min": 0, "max": 1, "mapping": "zoom_params.w" }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Operation Mix", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Bit Shift", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Error Rate", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Block Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
   ],
   "features": [
     "interactive",
     "chromatic-aberration",
     "glitch",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "held-drag",
+    "spring-cursor",
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
-  "tags": [
-    "filter",
-    "image-processing"
-  ]
+  "tags": ["filter", "image-processing", "bitwise", "datamosh"],
+  "updated": true
 }

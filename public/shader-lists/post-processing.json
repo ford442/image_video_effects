@@ -2,7 +2,7 @@
   {
     "id": "audio-reactive-pyramid",
     "name": "Audio Reactive Pyramid",
-    "url": "shaders/audio-reactive-pyramid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/audio-reactive-pyramid.wgsl",
     "category": "post-processing",
     "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
@@ -20,7 +20,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "bass_gain",
         "name": "Bass Gain",
         "default": 0.4,
         "min": 0,
@@ -28,7 +28,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "mid_gain",
         "name": "Mid Gain",
         "default": 0.5,
         "min": 0,
@@ -36,7 +36,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "treble_gain",
         "name": "Treble Gain",
         "default": 0.6,
         "min": 0,
@@ -44,7 +44,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "blend",
         "name": "Blend",
         "default": 0.7,
         "min": 0,
@@ -56,7 +56,7 @@
   {
     "id": "audio-reactive-rgb-dispersion",
     "name": "Audio Reactive RGB Dispersion",
-    "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/audio-reactive-rgb-dispersion.wgsl",
     "category": "post-processing",
     "description": "Chromatic (RGB) dispersion effect whose offset magnitudes and direction are driven by the spectral centroid of the live 128-bin FFT array. Bass-heavy music produces tight warm dispersion; treble-heavy music produces wide cool dispersion. Compatible with ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
@@ -74,15 +74,15 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Dispersion Scale",
+        "id": "scale",
+        "name": "Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "angle_offset",
         "name": "Angle Offset",
         "default": 0,
         "min": 0,
@@ -90,16 +90,16 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Edge Falloff",
+        "id": "falloff",
+        "name": "Falloff",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Original Blend",
+        "id": "orig_blend",
+        "name": "Orig Blend",
         "default": 0.1,
         "min": 0,
         "max": 1,
@@ -110,7 +110,7 @@
   {
     "id": "audio-reactive-temporal-decay",
     "name": "Audio Reactive Temporal Decay",
-    "url": "shaders/audio-reactive-temporal-decay.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/audio-reactive-temporal-decay.wgsl",
     "category": "post-processing",
     "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range, now enhanced with spectral visualization overlay, chromatic aberration on trails, multi-pass bloom on bright areas, anamorphic streaks, film grain, scanlines, color grading with lift/gamma/gain, and vignette. Low-band energy → long ghostly trails; high-band energy → fast fade with spectral color highlights.",
     "tags": [
@@ -137,15 +137,15 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Decay Base",
+        "id": "decay",
+        "name": "Decay",
         "default": 0.15,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "audio_drive",
         "name": "Audio Drive",
         "default": 0.6,
         "min": 0,
@@ -153,16 +153,16 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Bin Range Lo",
+        "id": "bin_lo",
+        "name": "Bin Lo",
         "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.008
       },
       {
-        "id": "param4",
-        "name": "Bin Range Hi",
+        "id": "bin_hi",
+        "name": "Bin Hi",
         "default": 0.2,
         "min": 0,
         "max": 1,
@@ -173,7 +173,7 @@
   {
     "id": "chrono-luma-slit-scan",
     "name": "Chrono Luma Slit Scan",
-    "url": "shaders/chrono-luma-slit-scan.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chrono-luma-slit-scan.wgsl",
     "category": "post-processing",
     "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts.",
     "tags": [
@@ -197,7 +197,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "temporal_spread",
         "name": "Temporal Spread",
         "default": 1,
         "min": 0,
@@ -205,7 +205,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "warp_strength",
         "name": "Warp Strength",
         "default": 0.3,
         "min": 0,
@@ -213,7 +213,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "luma_gamma",
         "name": "Luma Gamma",
         "default": 0.5,
         "min": 0,
@@ -221,7 +221,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "original_blend",
         "name": "Original Blend",
         "default": 0.1,
         "min": 0,
@@ -267,7 +267,7 @@
   {
     "id": "long-exposure",
     "name": "Long Exposure Light Painting",
-    "url": "shaders/long-exposure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/long-exposure.wgsl",
     "description": "Simulates an open camera shutter accumulating light over time. Bright regions of each frame persist and blend into a glowing exposure buffer stored in dataTextureC; darker regions fade slowly, leaving luminous light-painting trails. Mouse click resets the exposure. Bass brightens incoming frames for punchier accumulation; mids control bloom halo radius; treble adds sparkle to the brightest traces.",
     "tags": [
       "long-exposure",
@@ -362,7 +362,7 @@
   {
     "id": "luma-pixel-sort",
     "name": "Luma Pixel Sort",
-    "url": "shaders/luma-pixel-sort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-pixel-sort.wgsl",
     "description": "Fibonacci disk neighborhood pixel sorting with depth-aware blending, audio-reactive threshold modulation, and luminance-keyed alpha.",
     "features": [
       "upgraded-rgba",
@@ -380,7 +380,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "luma_threshold",
         "name": "Luma Threshold",
         "default": 0.5,
         "min": 0,
@@ -388,7 +388,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "sort_length",
         "name": "Sort Length",
         "default": 0.3,
         "min": 0,
@@ -396,16 +396,16 @@
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Depth Blend",
+        "id": "sort_angle",
+        "name": "Sort Angle",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Noise Mix",
+        "id": "palette_mix",
+        "name": "Palette Mix",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -451,7 +451,7 @@
   {
     "id": "optical-flow-tracer",
     "name": "Optical Flow Tracer",
-    "url": "shaders/optical-flow-tracer.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/optical-flow-tracer.wgsl",
     "category": "post-processing",
     "description": "Lucas-Kanade optical flow tracer: computes per-pixel motion vectors between the current frame and the previous history frame, then warps after-images along those trajectories. Moving objects leave physically-accurate ghost trails that follow actual motion paths rather than fading in place.",
     "tags": [
@@ -474,15 +474,15 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
-        "name": "Trail Decay",
+        "id": "decay",
+        "name": "Decay",
         "default": 0.6,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "flow_scale",
         "name": "Flow Scale",
         "default": 0.4,
         "min": 0,
@@ -490,7 +490,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "trail_age",
         "name": "Trail Age",
         "default": 0.5,
         "min": 0,
@@ -498,8 +498,8 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Current Blend",
+        "id": "blend",
+        "name": "Blend",
         "default": 0.35,
         "min": 0,
         "max": 1,
@@ -510,7 +510,7 @@
   {
     "id": "pixel-depth-sort",
     "name": "Pixel Depth Sort",
-    "url": "shaders/pixel-depth-sort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-depth-sort.wgsl",
     "description": "Directional pixel sorting by depth with a 25-comparator sorting network, mouse-following sort angle, depth-weighted color selection, distance-based LOD, chromatic aberration at boundaries, bass-driven sort length, depth-layered alpha, temporal feedback, and ACES tone mapping.",
     "features": [
       "upgraded-rgba",
@@ -536,32 +536,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Depth Threshold",
+        "id": "sort_radius",
+        "name": "Sort Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Sort Length",
+        "id": "mids_modulation",
+        "name": "Mids Modulation",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Sort Angle",
+        "id": "chromatic_accent",
+        "name": "Chromatic Accent",
         "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Aberration",
+        "id": "feedback_clamp",
+        "name": "Feedback Clamp",
         "default": 0.2,
         "min": 0,
         "max": 1,
@@ -607,7 +607,7 @@
   {
     "id": "pp-bloom",
     "name": "PP Bloom",
-    "url": "shaders/pp-bloom.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-bloom.wgsl",
     "description": "High-quality HDR bloom with multi-tap Gaussian blur, anamorphic stretch, and lens dirt effects",
     "tags": [
       "post-process",
@@ -617,29 +617,29 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "anamorphic",
         "name": "Anamorphic",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "threshold",
         "name": "Threshold",
         "default": 0.6,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
-        "name": "Quality",
+        "id": "quality_param",
+        "name": "Quality Param",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -649,7 +649,7 @@
   {
     "id": "pp-chromatic",
     "name": "PP Chromatic",
-    "url": "shaders/pp-chromatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-chromatic.wgsl",
     "description": "Chromatic aberration with RGB channel separation, barrel/pincushion distortion, and vignette",
     "tags": [
       "post-process",
@@ -659,28 +659,28 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Amount",
+        "id": "chromatic_amount",
+        "name": "Chromatic Amount",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "distortion",
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "vignette",
         "name": "Vignette",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "mode",
         "name": "Mode",
         "default": 0,
         "min": 0,
@@ -691,7 +691,7 @@
   {
     "id": "pp-sharpen",
     "name": "PP Sharpen",
-    "url": "shaders/pp-sharpen.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-sharpen.wgsl",
     "description": "Unsharp mask sharpening with edge detection, halo control, and multiple enhancement modes",
     "tags": [
       "post-process",
@@ -701,28 +701,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "amount",
         "name": "Amount",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "radius",
         "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
-        "name": "Edge Mask",
+        "id": "edge_threshold",
+        "name": "Edge Threshold",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "mode",
         "name": "Mode",
         "default": 0,
         "min": 0,
@@ -733,7 +733,7 @@
   {
     "id": "pp-ssao",
     "name": "PP SSAO",
-    "url": "shaders/pp-ssao.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-ssao.wgsl",
     "description": "Stylized screen-space depth occlusion with rotating sample kernels, held-pointer focus, rapid scan packets, three-band audio response, color bleed, and bounded click fronts.",
     "tags": [
       "post-process",
@@ -743,28 +743,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "radius",
         "name": "Radius",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "quality",
         "name": "Quality",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "color_bleed",
         "name": "Color Bleed",
         "default": 0.2,
         "min": 0,
@@ -817,7 +817,7 @@
   {
     "id": "pp-tone-map",
     "name": "PP Tone Map",
-    "url": "shaders/pp-tone-map.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-tone-map.wgsl",
     "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Includes exposure, contrast, and saturation controls.",
     "tags": [
       "post-process",
@@ -827,28 +827,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "algorithm",
         "name": "Algorithm",
         "default": 0,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "exposure",
         "name": "Exposure",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "contrast",
         "name": "Contrast",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "saturation",
         "name": "Saturation",
         "default": 0.5,
         "min": 0,
@@ -859,7 +859,7 @@
   {
     "id": "pp-vignette",
     "name": "PP Vignette",
-    "url": "shaders/pp-vignette.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-vignette.wgsl",
     "description": "Film vignette with grain, sepia/warm/cool color grading, and retro scanline effects",
     "tags": [
       "post-process",
@@ -870,29 +870,29 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Vignette",
+        "id": "vignette_intensity",
+        "name": "Vignette Intensity",
         "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
-        "name": "Grain",
+        "id": "grain_intensity",
+        "name": "Grain Intensity",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "color_style",
         "name": "Color Style",
         "default": 0,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
-        "name": "Effect",
+        "id": "blend_mode",
+        "name": "Blend Mode",
         "default": 0,
         "min": 0,
         "max": 1
@@ -902,7 +902,7 @@
   {
     "id": "radial-blur",
     "name": "Radial Blur",
-    "url": "shaders/radial-blur.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/radial-blur.wgsl",
     "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
     "params": [
       {
@@ -945,7 +945,12 @@
     ],
     "features": [
       "mouse-driven",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "click-reactive",
+      "fast-motion",
+      "psychedelic",
+      "upgraded-rgba"
     ],
     "tags": [
       "blur",
@@ -953,12 +958,58 @@
       "depth-of-field",
       "post-processing",
       "chromatic"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "sigma",
+        "name": "Blur Sigma",
+        "default": 0.3,
+        "min": 0.01,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base blur radius; also the length scale of the zoom-burst speed lines."
+      },
+      {
+        "index": 1,
+        "id": "shape",
+        "name": "Bokeh Shape",
+        "default": 0,
+        "min": 0,
+        "max": 2,
+        "step": 1,
+        "mapping": "zoom_params.y",
+        "description": "Aperture shape for the bokeh kernel."
+      },
+      {
+        "index": 2,
+        "id": "focalDepth",
+        "name": "Focal Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Depth plane held in focus by the circle-of-confusion term."
+      },
+      {
+        "index": 3,
+        "id": "maxBlur",
+        "name": "Max Blur",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Upper clamp on the circle of confusion; also gains the rotational shear streaks."
+      }
     ]
   },
   {
     "id": "soft-vignette-bloom",
     "name": "Soft Vignette Bloom",
-    "url": "shaders/soft-vignette-bloom.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/soft-vignette-bloom.wgsl",
     "category": "post-processing",
     "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Enhanced with lens flare ghost images, 8-pointed starburst diffraction spikes, chromatic aberration at edges, bokeh depth-of-field with hexagonal aperture, and enhanced light falloff with realistic attenuation.",
     "tags": [
@@ -1031,7 +1082,7 @@
   {
     "id": "spatio-temporal-3d-conv",
     "name": "Spatio-Temporal 3D Convolution",
-    "url": "shaders/spatio-temporal-3d-conv.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spatio-temporal-3d-conv.wgsl",
     "category": "post-processing",
     "description": "3×3×T spatio-temporal convolution using the history ring buffer. A Gaussian spatial kernel is applied at each of T past frames and blended with temporal weights. Param 3 selects the operation mode: Temporal Noise Reduction (averages frames to kill flicker), Motion Blur (exponential frame accumulation), or Temporal Sharpening (subtracts the temporal mean to amplify transient changes).",
     "tags": [
@@ -1054,7 +1105,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "spatial_sigma",
         "name": "Spatial Sigma",
         "default": 0.4,
         "min": 0,
@@ -1062,16 +1113,16 @@
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Temporal Depth",
+        "id": "temperature_depth",
+        "name": "Temperature Depth",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Mode (0=Denoise 0.5=MotionBlur 1=Sharpen)",
+        "id": "mode",
+        "name": "Mode",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -1083,8 +1134,8 @@
         ]
       },
       {
-        "id": "param4",
-        "name": "Effect Strength",
+        "id": "strength",
+        "name": "Strength",
         "default": 0.7,
         "min": 0,
         "max": 1,
@@ -1095,7 +1146,7 @@
   {
     "id": "temporal-decay-multiresolution",
     "name": "Temporal Decay Multiresolution",
-    "url": "shaders/temporal-decay-multiresolution.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-decay-multiresolution.wgsl",
     "description": "Four-timescale temporal decomposition with a spring-following history lens and click echo rings. R=fast, G=medium, B=slow, and A=ultra-slow luminance.",
     "tags": [
       "temporal",
@@ -1117,7 +1168,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "fast_decay",
         "name": "Fast Decay",
         "default": 0.5,
         "min": 0,
@@ -1125,7 +1176,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "medium_decay",
         "name": "Medium Decay",
         "default": 0.5,
         "min": 0,
@@ -1133,7 +1184,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "slow_decay",
         "name": "Slow Decay",
         "default": 0.5,
         "min": 0,
@@ -1141,7 +1192,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "original_blend",
         "name": "Original Blend",
         "default": 0.3,
         "min": 0,
@@ -1188,7 +1239,7 @@
   {
     "id": "temporal-feedback-zoom-tracer",
     "name": "Temporal Feedback Zoom Tracer",
-    "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-feedback-zoom-tracer.wgsl",
     "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
     "tags": [
       "temporal",
@@ -1209,15 +1260,15 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
-        "name": "Zoom Power",
+        "id": "zoom",
+        "name": "Zoom",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "rotation",
         "name": "Rotation",
         "default": 0.625,
         "min": 0,
@@ -1225,7 +1276,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "persistence",
         "name": "Persistence",
         "default": 0.71,
         "min": 0,
@@ -1233,8 +1284,8 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Current Blend",
+        "id": "blend",
+        "name": "Blend",
         "default": 0.29,
         "min": 0,
         "max": 1,
@@ -1245,7 +1296,7 @@
   {
     "id": "temporal-frequency-decomposition",
     "name": "Temporal Frequency Decomposition",
-    "url": "shaders/temporal-frequency-decomposition.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-frequency-decomposition.wgsl",
     "description": "Discrete temporal Fourier analysis across the 8-frame history ring. Static pixels cancel to near-zero; pixels flickering or oscillating near the target frequency glow brightly. Reveals hidden temporal rhythms in video content.",
     "tags": [
       "temporal",
@@ -1266,7 +1317,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "target_frequency",
         "name": "Target Frequency",
         "default": 0.25,
         "min": 0,
@@ -1274,7 +1325,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "glow_brightness",
         "name": "Glow Brightness",
         "default": 0.6,
         "min": 0,
@@ -1282,7 +1333,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "glow_hue",
         "name": "Glow Hue",
         "default": 0.17,
         "min": 0,
@@ -1290,7 +1341,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "base_blend",
         "name": "Base Blend",
         "default": 0.8,
         "min": 0,
@@ -1337,7 +1388,7 @@
   {
     "id": "temporal-halation-freeze",
     "name": "Temporal Halation Freeze",
-    "url": "shaders/temporal-halation-freeze.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-halation-freeze.wgsl",
     "description": "Long-exposure halation and ghost echoes using a 7-tap hex-bokeh bloom, audio envelope, ACES tone mapping, depth-aware fog, and semantic alpha for dreamy time-blurred composites.",
     "tags": [
       "halation",
@@ -1407,7 +1458,7 @@
   {
     "id": "temporal-layered-time-stamps",
     "name": "Temporal Layered Time-Stamps",
-    "url": "shaders/temporal-layered-time-stamps.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-layered-time-stamps.wgsl",
     "description": "Psychedelic temporal echo: blends 4–8 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion",
     "tags": [
       "temporal",
@@ -1427,28 +1478,28 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "echo_layers",
         "name": "Echo Layers",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "warp_strength",
         "name": "Warp Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "color_intensity",
         "name": "Color Intensity",
         "default": 0.6,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "blend_mix",
         "name": "Blend Mix",
         "default": 0.5,
         "min": 0,
@@ -1459,7 +1510,7 @@
   {
     "id": "temporal-phosphor-burn-motion-adaptive",
     "name": "Temporal Phosphor Burn (Motion Adaptive)",
-    "url": "shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
     "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance.",
     "tags": [
       "temporal",
@@ -1481,7 +1532,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "motion_sensitivity",
         "name": "Motion Sensitivity",
         "default": 0.5,
         "min": 0,
@@ -1489,7 +1540,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "max_decay_fast",
         "name": "Max Decay (Fast)",
         "default": 0.5,
         "min": 0,
@@ -1497,7 +1548,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "min_decay_still",
         "name": "Min Decay (Still)",
         "default": 0.5,
         "min": 0,
@@ -1505,7 +1556,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "warm_tint",
         "name": "Warm Tint",
         "default": 0.6,
         "min": 0,
@@ -1552,8 +1603,8 @@
   {
     "id": "temporal-phosphor-burn",
     "name": "Temporal Phosphor Burn",
-    "url": "shaders/temporal-phosphor-burn.wgsl",
-    "description": "CRT phosphor persistence: per-channel exponential decay (R=fast, B=slow) creates green/amber afterglow. max(current, decayed_history) luminance floor keeps bright pixels glowing long after the source moves on.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-phosphor-burn.wgsl",
+    "description": "CRT phosphor persistence combining exact immediate display history with seven older ring frames, sprung beam burns, bounded click afterimages, three-band plasma audio, ACES, and semantic burn alpha.",
     "tags": [
       "temporal",
       "crt",
@@ -1568,12 +1619,51 @@
       "history-ring",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "exact-history",
+      "spring-interaction",
+      "click-reactive",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "r_decay",
+        "name": "R-decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "g_decay",
+        "name": "G-decay",
+        "default": 0.79,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "b_decay",
+        "name": "B-decay",
+        "default": 0.93,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mask_strength",
+        "name": "Mask Strength",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
         "name": "R Decay",
         "default": 0.5,
         "min": 0,
@@ -1581,7 +1671,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "index": 1,
         "name": "G Decay",
         "default": 0.79,
         "min": 0,
@@ -1589,7 +1679,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "index": 2,
         "name": "B Decay",
         "default": 0.93,
         "min": 0,
@@ -1597,7 +1687,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "index": 3,
         "name": "Luma Floor",
         "default": 0,
         "min": 0,
@@ -1609,7 +1699,7 @@
   {
     "id": "temporal-rgb-ghost",
     "name": "Temporal RGB Ghost",
-    "url": "shaders/temporal-rgb-ghost.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-rgb-ghost.wgsl",
     "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal.",
     "tags": [
       "temporal",
@@ -1630,32 +1720,32 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
-        "name": "G Channel Delay",
+        "id": "g_delay",
+        "name": "G-delay",
         "default": 0.17,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "B Channel Delay",
+        "id": "b_delay",
+        "name": "B-delay",
         "default": 0.67,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Ghost Blend",
+        "id": "blend",
+        "name": "Blend",
         "default": 0.8,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Luma Boost",
+        "id": "displace",
+        "name": "Displace",
         "default": 0.25,
         "min": 0,
         "max": 1,
@@ -1666,7 +1756,7 @@
   {
     "id": "temporal-slit-scan",
     "name": "Temporal Slit Scan",
-    "url": "shaders/temporal-slit-scan.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-slit-scan.wgsl",
     "description": "Classic slit-scan time-smear: each column (or row) samples a different point in the 8-frame history ring. One edge shows the current frame, the opposite edge shows 7 frames ago. Creates the flowing painterly time-smear of Radiohead's Street Spirit video on any motion.",
     "tags": [
       "temporal",
@@ -1687,7 +1777,7 @@
     "requiresHistoryRing": true,
     "params": [
       {
-        "id": "param1",
+        "id": "scan_axis",
         "name": "Scan Axis",
         "default": 0,
         "min": 0,
@@ -1695,7 +1785,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "temporal_spread",
         "name": "Temporal Spread",
         "default": 1,
         "min": 0,
@@ -1703,7 +1793,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "reverse",
         "name": "Reverse",
         "default": 0,
         "min": 0,
@@ -1711,7 +1801,7 @@
         "step": 1
       },
       {
-        "id": "param4",
+        "id": "original_blend",
         "name": "Original Blend",
         "default": 0,
         "min": 0,
@@ -1758,7 +1848,7 @@
   {
     "id": "tone-histogram-apply",
     "name": "Tone Histogram (Pass 2: Apply)",
-    "url": "shaders/tone-histogram-apply.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/tone-histogram-apply.wgsl",
     "description": "Reads histogram buckets, computes auto-exposure and tone curve, and applies histogram-driven grading.",
     "features": [
       "multi-pass-2",
@@ -1817,7 +1907,7 @@
     "id": "tone-histogram",
     "name": "Tone Histogram v2",
     "category": "post-processing",
-    "url": "shaders/tone-histogram.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/tone-histogram.wgsl",
     "description": "Single-pass local adaptive histogram equalization with film-like tonal curves, split-tone shadows/highlights, grain texture, and depth-driven haze removal. Bass stretches histogram dynamically.",
     "features": [
       "audio-reactive",

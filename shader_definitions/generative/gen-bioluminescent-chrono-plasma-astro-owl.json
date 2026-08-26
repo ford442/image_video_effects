@@ -2,7 +2,7 @@
   "id": "gen-bioluminescent-chrono-plasma-astro-owl",
   "name": "Bioluminescent Chrono-Plasma Astro-Owl",
   "url": "shaders/gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
-  "description": "A hyper-dimensional, cyber-organic celestial owl forged from liquid chrono-plasma and shattered quantum-glass — raymarched SDF plumage folded by live FFT bands, deformed by click ripples, orbited by the mouse, and backed by a kaleidoscopic chrono-tessellation nebula.",
+  "description": "A hyper-dimensional, cyber-organic celestial owl forged from liquid chrono-plasma and shattered quantum-glass \u2014 raymarched SDF plumage folded by live FFT bands, deformed by click ripples, orbited by the mouse, and backed by a kaleidoscopic chrono-tessellation nebula.",
   "category": "generative",
   "tags": [
     "organic",
@@ -56,6 +56,44 @@
       "min": 0.0,
       "max": 1.0,
       "step": 0.01
+    }
+  ],
+  "params": [
+    {
+      "id": "wing_plasma_distortion",
+      "name": "Wing Plasma Distortion",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "core_gravity_intensity",
+      "name": "Core Gravity Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "nebula_particle_density",
+      "name": "Nebula Particle Density",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "temporal_echo_fade",
+      "name": "Temporal Echo Fade",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

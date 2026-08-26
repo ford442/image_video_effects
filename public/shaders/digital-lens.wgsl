@@ -1,12 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Lens v3.1 — Advanced Alpha
+//  Digital Lens v3.2 — Batch 61
 //  Category: image
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
-//            barrel-distortion, chromatic-dispersion, anamorphic,
-//            temporal-feedback, gravity-well, alpha-layered, luminance-key
-//  Complexity: High
-//  Created: 2026-05-10
-//  Upgraded: 2026-07-08
+//  Features: sprung gravity-well focus, held boost, capped ripples,
+//            barrel-distortion, chromatic-dispersion, temporal-feedback
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,6 +28,14 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+
+// Sprung gravity-well target in extraBuffer[133..138] (0,0 writer).
+const SPRING_POS_X: u32 = 133u;
+const SPRING_POS_Y: u32 = 134u;
+const SPRING_VEL_X: u32 = 135u;
+const SPRING_VEL_Y: u32 = 136u;
+const SPRING_TIME: u32 = 137u;
+const SPRING_INITIALIZED: u32 = 138u;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -128,9 +132,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── Mouse interaction ────────────────────────────────────────────
   // Mouse position drives a gravity well that warps the lens center.
   // Mouse down triples well strength and adds a click burst.
-  let mouse = u.zoom_config.yz;
+  let rawMouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w > 0.5;
-  let gravityStrength = p4 * 0.08 * (1.0 + f32(mouseDown) * 2.0);
+
+  var smoothMouse = rawMouse;
+  let hasSpring = arrayLength(&extraBuffer) > SPRING_INITIALIZED;
+  if (hasSpring && extraBuffer[SPRING_INITIALIZED] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[SPRING_POS_X], extraBuffer[SPRING_POS_Y]);
+  }
+  if (pixel.x == 0 && pixel.y == 0 && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[SPRING_VEL_X], extraBuffer[SPRING_VEL_Y]);
+    if (extraBuffer[SPRING_INITIALIZED] <= 0.5) {
+      springPos = rawMouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[SPRING_TIME], 0.001, 0.05);
+      let omega = 10.0;
+      let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[SPRING_POS_X] = springPos.x;
+    extraBuffer[SPRING_POS_Y] = springPos.y;
+    extraBuffer[SPRING_VEL_X] = springVel.x;
+    extraBuffer[SPRING_VEL_Y] = springVel.y;
+    extraBuffer[SPRING_TIME] = time;
+    extraBuffer[SPRING_INITIALIZED] = 1.0;
+    smoothMouse = springPos;
+  }
+  let mouse = smoothMouse;
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
+      clickWave = max(clickWave,
+        exp(-abs(distance(uv01, rp.xy) - age * 0.46) * 72.0) * (1.0 - age / 1.5));
+    }
+  }
+  let gravityStrength = p4 * 0.08 * select(1.0, 3.0, mouseDown);
   let gravity = gravityWell(uv01, mouse, gravityStrength);
   let focusPoint = mouse + gravity * 0.15;
 
@@ -146,6 +188,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var p = (uv01 - center + gravity * 0.02) * vec2<f32>(aspect, 1.0);
   p.x = p.x * (1.0 + anamorphicSqueeze * 0.3);
 
+  // Smooth caustic zoom streaks ride over the Brown-Conrady lens surface.
+  let polarAngle = atan2(p.y, p.x);
+  let zoomRunner = sin(length(p) * 42.0 - time * (5.0 + p1 * 6.0));
+  let causticStreak = pow(max(0.0, sin(polarAngle * 9.0 + time * 3.4 + zoomRunner)), 8.0);
+  let streakDir = select(vec2<f32>(0.0), p / max(length(p), 0.0001), length(p) > 0.0001);
+  p += streakDir * (zoomRunner * 0.004 + causticStreak * 0.008 + clickWave * 0.018);
   let distortedP = brownConrady(p, k1, k2, k1 * 0.05, k1 * 0.03);
   let sampleCenter = center + distortedP / vec2<f32>(aspect, 1.0) + (focusPoint - 0.5) * 0.06;
 
@@ -169,11 +217,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
 
   // ── Film grain + treble sparkle ──────────────────────────────────
-  let grain = hash22(uv01 * 800.0 + time * 60.0).x - 0.5;
+  let grainPhase = hash22(uv01 * 800.0).x * TAU;
+  let grain = sin(time * 15.0 + grainPhase) * 0.5;
   color += grain * 0.03 * (1.0 + treble * 0.6);
 
+  let spectralCaustic = 0.5 + 0.5 * cos(TAU * (vec3<f32>(polarAngle / TAU + time * 0.08)
+                              + vec3<f32>(0.0, 0.33, 0.67)));
+  color += spectralCaustic * (causticStreak * 0.18 + clickWave * 0.24) * (0.5 + mids);
+
   // ── Click burst around mouse ─────────────────────────────────────
-  let clickPulse = f32(mouseDown) * exp(-distance(uv01, mouse) * 8.0) * bassEnv;
+  let clickPulse = f32(mouseDown) * exp(-distance(uv01, mouse) * 8.0) * bassEnv + clickWave;
   color += vec3<f32>(clickPulse * 0.25);
 
   // ── Vignette (Param3) ────────────────────────────────────────────

@@ -6,7 +6,7 @@
 //  Complexity: High
 //  Upgraded: 2026-07-30 (Batch 18 - Algorithmist: honest slider rewiring,
 //            click prism bursts, glow term, feedback blowout guard)
-//  upgraded-rgba
+//  Batch 68: exact raw accumulation, sprung held deformation, ACES display
 //
 //  Slider contract (ids/defaults are the saved-preset contract - the WGSL
 //  now honors the LABELS, not the legacy mislabeled roles):
@@ -71,6 +71,11 @@ fn rot2(v: vec2<f32>, angle: f32) -> vec2<f32> {
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -81,6 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
 
     // ── Honest slider wiring (labels now match behavior) ─────────────
     // x "Feedback": temporal mix toward the previous frame. Guarded to
@@ -97,13 +103,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let chromaFan = clamp(u.zoom_params.w, 0.0, 0.2) * PI;
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let historyDims = vec2<i32>(textureDimensions(dataTextureC));
+    let prev = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), historyDims - vec2<i32>(1)), 0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var prismFocus = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+    if (hasSpring) { prismFocus = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+    if (!initialized) { prismFocus = rawMouse; springVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+    let omega = 10.0; let springDecay = exp(-omega * dt); let springDelta = prismFocus - rawMouse; let springTemp = (springVel + omega * springDelta) * dt;
+    springVel = (springVel - omega * springTemp) * springDecay; prismFocus = rawMouse + (springDelta + springTemp) * springDecay;
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) { extraBuffer[133] = prismFocus.x; extraBuffer[134] = prismFocus.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
 
     // ── Prismatic chromatic separation ───────────────────────────────
     // The legacy z-slider rotation is now a slow constant drift so the
     // prism keeps breathing without stealing a slider.
-    let centered = uv - 0.5;
+    let focusDelta = (uv - prismFocus) * aspectVec;
+    let heldWarp = smoothstep(0.65, 0.0, length(focusDelta)) * u.zoom_config.w;
+    let centered = uv - 0.5 + (uv - prismFocus) * heldWarp * 0.18 + springVel * heldWarp * 0.08;
     let drift = rot2(centered, time * 0.1);
 
     // Chromatic fan-out: r and b taps rotate apart by ±chromaFan.
@@ -124,13 +143,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ripple = u.ripples[i];
         let age = time - ripple.z;
         if (age >= 0.0 && age < RIPPLE_LIFE) {
-            let toPixel = uv - ripple.xy;
+            let toPixel = (uv - ripple.xy) * aspectVec;
             let dist = length(toPixel);
             // Radial falloff around the click, exponential time decay.
             let falloff = exp(-dist * 9.0) * exp(-age * (3.0 / RIPPLE_LIFE));
             // Kick direction points radially outward from the click.
             let kickDir = toPixel / max(dist, 1e-4);
-            let kick = kickDir * falloff * 0.06;
+            let kick = kickDir / aspectVec * falloff * 0.06;
             rOffset = rOffset + kick;
             bOffset = bOffset - kick;
         }
@@ -155,7 +174,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
 
     let brightness = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
-    let newAlpha = clamp(mix(baseColor.a, brightness, feedbackMix), 0.0, 1.0);
+    let effectEnergy = clamp(brightness * feedbackMix + heldWarp * 0.35, 0.0, 1.0);
+    let newAlpha = clamp(baseColor.a + (1.0 - baseColor.a) * effectEnergy, 0.0, 1.0);
 
     // dataTextureA is accumulation state: store the raw accumulated
     // value (capped only by accumulativeAlpha itself) - no tonemap, no
@@ -169,7 +189,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // the trail feeds back as an additive halo. Exactly 0 at glow 0.
     let trailLum = max(dot(accumulated.rgb, vec3<f32>(0.299, 0.587, 0.114)) - 0.25, 0.0);
     let glow = trailLum * trailLum * glowIntensity * 0.6;
-    let outColor = clamp(accumulated.rgb + accumulated.rgb * glow, vec3<f32>(0.0), vec3<f32>(1.0));
+    let outColor = acesToneMap(max(accumulated.rgb + accumulated.rgb * glow, vec3<f32>(0.0)));
 
     textureStore(writeTexture, global_id.xy, vec4<f32>(outColor, accumulated.a));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -103,6 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv01 = vec2<f32>(pixel) / res;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
   let p1 = u.zoom_params.x;
   let p2 = u.zoom_params.y;
   let p3 = u.zoom_params.z;
@@ -121,8 +122,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let invScale = 1.0 / max(scale, 0.001);
   let d0 = length(p);
 
+  var clickShell = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
+      clickShell = max(clickShell,
+        exp(-abs(distance(uv01, rp.xy) - age * 0.5) * 72.0) * (1.0 - age / 1.5));
+    }
+  }
+
   // Early-exit: beyond ~2.6 fold radii the vignette is negligible
-  if (d0 * invScale > 2.6 && p4 < 0.02 && p3 < 0.02) {
+  if (d0 * invScale > 2.6 && p4 < 0.02 && p3 < 0.02 && held < 0.5 && clickShell < 0.01) {
     let base = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
     textureStore(writeTexture, pixel, vec4<f32>(base.rgb, base.a * (1.0 - p4)));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
@@ -134,6 +146,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let a2 = time * p1 * 0.4 + treble * 0.35;
   let R = rot2(a2) * rot2(a1);
   p = R * p + rot2(a2) * vec2<f32>(0.04 * sin(time * 0.7));
+  // Held projection-plane deformation shears the hypercube toward the pointer.
+  let planeShear = held * (mouse - 0.5) * vec2<f32>(aspect, 1.0);
+  p += vec2<f32>(planeShear.x * p.y, planeShear.y * p.x) * 0.7;
+  p += normalize(p + vec2<f32>(0.0001)) * clickShell * 0.08;
 
   // Distance-based LOD: fewer noise octaves far from fold center
   let lod = i32(clamp(5.0 - d0 * invScale * 2.0, 1.0, 5.0));
@@ -182,13 +198,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                       vec3<f32>(0.0, 0.15, 0.25));
   color = mix(color, color * grade * 2.0, 0.3 + mids * 0.2);
 
+  // Neon stained-glass faces, spectral edge diffraction, and inner-face interference.
+  let faceCells = abs(fract(p * (6.0 + p2 * 8.0)) - 0.5);
+  let lead = 1.0 - smoothstep(0.035, 0.09, min(faceCells.x, faceCells.y));
+  let innerWave = pow(0.5 + 0.5 * sin((p.x + p.y) * 28.0 - time * 4.0 + angle * 3.0), 6.0);
+  let glass = palette(hue + hash21(floor(p * 8.0)) * 0.35,
+                      vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
+  color = mix(color, color * glass * 1.8, 0.26 + p4 * 0.25);
+  color += glass * (innerWave * 0.14 + clickShell * 0.32);
+  color *= 1.0 - lead * 0.42;
+
   // Atmospheric vignette around the mouse
   let vignette = exp(-radius * radius * (2.5 + p3 * 2.0));
   color = mix(color * 0.15, color, vignette);
 
   // Treble-driven edge glow at fold boundaries
   let edgeDist = abs(fract(angle / segAngle + 0.5) - 0.5) * 2.0;
-  let edgeGlow = smoothstep(1.0 - p3 * 0.4, 1.0, edgeDist) * (0.6 + treble * 0.6);
+  let diffraction = pow(0.5 + 0.5 * cos(edgeDist * 18.0 - time * 5.0), 8.0);
+  let edgeGlow = smoothstep(1.0 - p3 * 0.4, 1.0, edgeDist) * (0.6 + treble * 0.6)
+               + diffraction * (0.12 + p3 * 0.22);
   color = neonGlow(color, 0.25 + edgeGlow * 0.35);
 
   // Tone map and gamma encode

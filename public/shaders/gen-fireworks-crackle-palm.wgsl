@@ -141,7 +141,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let mouse = vec2<f32>(u.zoom_config.yz);
   let mouseDown = u.zoom_config.w;
-  let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);
+  let mouseUV = (mouse - vec2<f32>(0.5)) * res / min(res.x, res.y);
 
   let energy = mix(0.45, 1.6, u.zoom_params.x);
   let stageDelay = mix(0.25, 1.2, u.zoom_params.y);
@@ -287,8 +287,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = acesToneMap(col * 1.08);
 
   let alpha = clamp(length(col) * 1.1 + 0.13, 0.14, 0.96);
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.55 + prev * 0.38, 1.0));
+  let generatedDepth = clamp((alpha - 0.14) / 0.82, 0.0, 1.0) * 0.85;
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(generatedDepth, 0.0, 0.0, 0.0));
 }

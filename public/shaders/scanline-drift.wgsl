@@ -1,11 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Scanline Drift
-//  Category: retro-glitch
-//  Features: audio-reactive, mouse-driven
-//  Complexity: Low
-//  Upgraded: 2026-05-23
-//  Upgraded: 2026-07-31 — spring-damped tracking band, click tears
-//  upgraded-rgba
+//  Scanline Drift — Batch 62
+//  Spring tracking band [133..138], held jitter boost, capped click tears,
+//  regional FFT flicker, exact C drift memory, ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -36,6 +32,10 @@ fn hash11(p: f32) -> f32 {
     return fract(p2);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -49,33 +49,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    let held = u.zoom_config.w > 0.5;
     var mouse = u.zoom_config.yz;
 
-    // Params — saved-preset contract: same ids, defaults and roles.
     let driftSpeed = u.zoom_params.x * 2.0 * (1.0 + bass * 0.2);
     let lineHeight = mix(0.001, 0.1, u.zoom_params.y);
-    let jitter = u.zoom_params.z * 0.1 * (1.0 + mids * 0.3);
+    let jitter = u.zoom_params.z * 0.1 * (1.0 + mids * 0.3) * select(1.0, 1.35, held);
     let colorShiftBase = u.zoom_params.w * 0.05;
 
-    // ── Spring-damper tracking band (extraBuffer[133..134]) ─────────
-    // [0..4] reserved, [5..132] engine FFT — shader state lives at 133+.
-    // Position in [133], velocity in [134]. Raw mouse.y stays the target.
-    var bandPos = extraBuffer[133];
-    var bandVel = extraBuffer[134];
-    // Branchless first-frames snap: untouched state jumps to the target.
-    let stateZero = 1.0 - step(0.0001, abs(bandPos));
-    bandPos = mix(bandPos, mouse.y, stateZero);
-    // Critically damped spring (fixed 60 Hz step): the jitter band glides
-    // vertically instead of snapping. Every thread writes identical values.
-    let springDt = 1.0 / 60.0;
-    let springOmega = 2.0 * 3.14159265 * 4.0; // ~4 Hz settle frequency
-    let springExp = exp(-springOmega * springDt);
-    let springX = bandPos - mouse.y;
-    let springTemp = (bandVel + springOmega * springX) * springDt;
-    bandPos = mouse.y + (springX + springTemp) * springExp;
-    bandVel = (bandVel - springOmega * springTemp) * springExp;
-    extraBuffer[133] = bandPos;
-    extraBuffer[134] = bandVel;
+    var bandPos = mouse.y;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[138] > 0.5) {
+      bandPos = extraBuffer[133];
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+      var springVel = extraBuffer[134];
+      if (extraBuffer[138] <= 0.5) {
+        bandPos = mouse.y;
+        springVel = 0.0;
+      } else {
+        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+        let omega = 8.0;
+        let accel = (mouse.y - bandPos) * (omega * omega) - springVel * (2.0 * omega);
+        springVel += accel * dt;
+        bandPos += springVel * dt;
+      }
+      extraBuffer[133] = bandPos;
+      extraBuffer[134] = springVel;
+      extraBuffer[137] = time;
+      extraBuffer[138] = 1.0;
+    }
 
     // Determine which horizontal strip we are in
     let stripId = floor(uv.y / lineHeight);
@@ -96,7 +99,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Audio flicker: treble adds a faint per-strip shimmer on the drift so
     // the tracking breathes with the soundtrack (hash-timed at 12 Hz).
-    let flicker = 1.0 + treble * 0.3 * (hash11(stripId * 3.7 + floor(time * 12.0)) - 0.5);
+    let stripBin = (u32(abs(stripId)) % 8u) + 1u;
+    let flicker = 1.0 + treble * 0.3 * (hash11(stripId * 3.7 + floor(time * 12.0)) - 0.5) * (1.0 + plasmaBuffer[stripBin].x * 0.2);
     offset *= flicker;
 
     // ── Click tracking tears ─────────────────────────────────────────
@@ -139,15 +143,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = vec3<f32>(r, g, b);
     color *= mix(0.8, 1.0, lineDark);
+    color = acesToneMap(color * (0.96 + bass * 0.04));
+
+    let prevDrift = textureLoad(dataTextureC, coord, 0).rgb;
+    color = mix(color, prevDrift, tearChroma * 0.08);
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let driftMag = abs(rOffset - bOffset);
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let effectIntensity = clamp(driftMag * 10.0 + mouseEffect * 0.3 + tearChroma * 0.3 + luma * 0.2, 0.0, 1.0);
-    let finalAlpha = mix(baseColor.a, 1.0, effectIntensity * 0.7);
+    let finalAlpha = clamp(mix(baseColor.a, 1.0, effectIntensity * 0.7) + bass * 0.05, 0.0, 1.0);
 
-    // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
 
     textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

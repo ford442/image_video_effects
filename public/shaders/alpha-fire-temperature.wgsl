@@ -34,6 +34,16 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
 // Blackbody approximation (simplified)
 fn blackbodyColor(t: f32) -> vec3<f32> {
     // t is normalized 0-1, maps to temperature range
@@ -56,13 +66,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-    let uv = vec2<f32>(gid.xy) / res;
+    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let dims = vec2<i32>(res);
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Read previous state
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = stateAt(coord, dims);
     var fuel = prevState.r;
     var temperature = prevState.g;
     var smoke = prevState.b;
@@ -89,15 +101,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     age = clamp(age, 0.0, 5.0);
 
     // === PARAMETERS ===
-    let burnRate = mix(0.01, 0.08, u.zoom_params.x);
-    let convectionStrength = mix(0.5, 3.0, u.zoom_params.y);
+    let burnRate = mix(0.01, 0.08, u.zoom_params.x) * (1.0 + audio.x * 0.65);
+    let convectionStrength = mix(0.5, 3.0, u.zoom_params.y) * (1.0 + audio.y * 0.3);
+    let smokeDensity = mix(0.2, 1.8, u.zoom_params.z);
+    let emberGlow = mix(0.2, 2.5, u.zoom_params.w);
     let smokeRise = 0.02;
 
     // === DIFFUSION & CONVECTION ===
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+    let right = stateAt(coord + vec2<i32>(1, 0), dims);
+    let down = stateAt(coord + vec2<i32>(0, -1), dims);
+    let up = stateAt(coord + vec2<i32>(0, 1), dims);
 
     // Heat rises: sample from below (advection upward)
     let below = down;
@@ -126,7 +140,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     age += burning * 0.5;
 
     // Smoke generation from burning
-    smoke += burning * 0.5;
+    smoke += burning * smokeDensity * (0.35 + audio.y * 0.3);
 
     // === COOLING & DECAY ===
     temperature *= 0.97; // Radiative cooling
@@ -150,9 +164,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ripple = u.ripples[i];
         let rDist = length(uv - ripple.xy);
         let ageR = time - ripple.z;
-        if (ageR < 0.5 && rDist < 0.05) {
-            let spark = smoothstep(0.05, 0.0, rDist) * max(0.0, 1.0 - ageR * 2.0);
-            temperature += spark * 1.5;
+        if (ageR >= 0.0 && ageR < 1.8) {
+            let spark = exp(-abs(rDist - ageR * 0.21) * 58.0 - ageR * 1.7);
+            temperature += spark * (1.2 + audio.z * 1.4);
             fuel += spark * 0.3;
         }
     }
@@ -171,14 +185,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var displayColor = mix(fireColor, smokeColor, min(smoke, 0.9));
 
     // Age adds red ember glow
-    let ember = smoothstep(0.5, 2.0, age) * 0.3;
-    displayColor.r += ember;
+    let ember = smoothstep(0.5, 2.0, age) * emberGlow;
+    displayColor += ember * vec3<f32>(1.8, 0.18 + audio.y * 0.18, 0.025);
 
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(2.0));
-    displayColor = displayColor / (1.0 + displayColor * 0.3); // Soft tone map
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    displayColor += audio * vec3<f32>(0.22, 0.08, 0.3) * temperature;
 
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, temperature * 0.25));
+    let alpha = clamp(temperature * 0.2 + smoke * 0.36 + ember * 0.1, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(aces(displayColor), alpha));
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

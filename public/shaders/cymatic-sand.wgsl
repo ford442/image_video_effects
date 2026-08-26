@@ -1,20 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Cymatic Sand — Phase A Upgrade
-//  Category: simulation
-//  Features: mouse-driven, audio-reactive, temporal
-//  Complexity: Medium
-//  Chunks From: original cymatic-sand.wgsl
-//  Created: 2026-05-23
-//  By: Claude (Sonnet 4.6)
-// ═══════════════════════════════════════════════════════════════════
-//
-//  Param1: frequency_mode    — primary harmonic mode index (1–20)
-//  Param2: harmonic_mix      — blend of audio-driven secondary harmonics
-//  Param3: grain_density     — sand accumulation density
-//  Param4: audio_sensitivity — how strongly audio reshapes nodal pattern
-//
-//  Mouse XY: selects sub-mode within the harmonic space
-//  State: dataTextureC.r = accumulated sand density (persists across frames)
+// Cymatic Sand — damped Chladni plate with persistent grain transport.
+// A/C: sand density, radial velocity, resonant energy, strike memory.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -29,148 +14,36 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+fn stateAt(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> { return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0); }
+fn chladni(p: vec2<f32>, n: f32, m: f32) -> f32 { return cos(n * 3.14159265 * p.x) * cos(m * 3.14159265 * p.y) - cos(m * 3.14159265 * p.x) * cos(n * 3.14159265 * p.y); }
+fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(91.7, 313.9))) * 43758.5453); }
+fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0)); }
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=FreqMode, y=HarmonicMix, z=GrainDensity, w=AudioSensitivity
-  ripples: array<vec4<f32>, 50>,
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────
-
-fn hash2d(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-}
-
-// 2D value noise for grain texture
-fn vnoise2(p: vec2<f32>) -> f32 {
-    let i = floor(p); let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash2d(i),                   hash2d(i + vec2<f32>(1.0, 0.0)), u.x),
-               mix(hash2d(i + vec2<f32>(0.0, 1.0)), hash2d(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
-}
-
-// Chladni wave function: cos(n*pi*x)*cos(m*pi*y) - cos(m*pi*x)*cos(n*pi*y)
-fn chladni(p: vec2<f32>, n: f32, m: f32) -> f32 {
-    let pi = 3.14159265;
-    return cos(n * pi * p.x) * cos(m * pi * p.y)
-         - cos(m * pi * p.x) * cos(n * pi * p.y);
-}
-
-// SDF circle for rounded grain rendering
-fn sdCircle(p: vec2<f32>, r: f32) -> f32 {
-    return length(p) - r;
-}
-
-// ─── Main ─────────────────────────────────────────────────────────
-
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-
-    let uv     = vec2<f32>(global_id.xy) / resolution;
-    let time   = u.config.x;
-    let aspect = resolution.x / resolution.y;
-    let mouse  = u.zoom_config.yz;
-
-    // Params
-    let freqMode      = floor(u.zoom_params.x * 18.0) + 1.0;  // 1–19
-    let harmonicMix   = u.zoom_params.y;
-    let grainDensity  = u.zoom_params.z * 0.85 + 0.1;
-    let audioSens     = u.zoom_params.w;
-
-    // Audio bands
-    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
-    let bass   = select(0.0, plasmaBuffer[0].x, hasAudio);
-    let mids   = select(0.0, plasmaBuffer[0].y, hasAudio);
-    let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
-
-    // UV in [-1, 1] space, corrected for aspect
-    var p = uv * 2.0 - 1.0;
-    p.x *= aspect;
-
-    // Primary mode: mouse selects within harmonic space
-    let mxn = select(freqMode,     floor(mouse.x * 18.0) + 1.0, mouse.x >= 0.0);
-    let mxm = select(freqMode + 2.0, floor(mouse.y * 18.0) + 1.0, mouse.y >= 0.0);
-
-    // Secondary modes driven by audio
-    let bassN   = freqMode + 1.0 + bass   * audioSens * 6.0;
-    let midsN   = freqMode + 3.0 + mids   * audioSens * 4.0;
-    let trebleN = freqMode + 5.0 + treble * audioSens * 8.0;
-
-    // Slow temporal drift for ambient animation when no audio
-    let driftN = freqMode + sin(time * 0.07) * 1.5;
-    let driftM = mxm      + cos(time * 0.05) * 1.5;
-
-    // Multi-harmonic superposition
-    let w0 = chladni(p, mxn, mxm);                     // primary
-    let w1 = chladni(p, bassN,   mxm + 1.0);            // bass harmonic
-    let w2 = chladni(p, midsN,   midsN + 2.0);          // mids harmonic
-    let w3 = chladni(p, trebleN, freqMode + 4.0);       // treble harmonic
-    let w4 = chladni(p, driftN,  driftM);               // drift
-
-    // Blend: primary always dominant, harmonics blend in via param + audio
-    let audioBlend = clamp(harmonicMix + (bass + mids + treble) * audioSens * 0.2, 0.0, 1.0);
-    let combined = w0 * (1.0 - audioBlend)
-                 + (w1 * 0.5 + w2 * 0.3 + w3 * 0.15 + w4 * 0.05) * audioBlend;
-
-    // Nodal lines: sand accumulates where |wave| ≈ 0
-    let vibration = abs(combined);
-    let lineWidth = 0.06 + harmonicMix * 0.04 + bass * audioSens * 0.03;
-    let targetDensity = 1.0 - smoothstep(0.0, lineWidth, vibration);
-
-    // Sand persistence — smooth temporal accumulation
-    let prevDensity = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
-
-    // Check for ripple reset (mouse click clears the canvas locally)
-    var resetStrength = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var ri = 0u; ri < rippleCount; ri++) {
-        let r = u.ripples[ri];
-        let elapsed = time - r.z;
-        if (elapsed >= 0.0 && elapsed < 0.3) {
-            let rDist = length((uv - r.xy) * vec2<f32>(aspect, 1.0));
-            resetStrength = max(resetStrength, exp(-rDist * 8.0) * (1.0 - elapsed / 0.3));
-        }
-    }
-
-    // Blend speed: faster when audio is strong (pattern shifts quicker)
-    let blendSpeed = 0.04 + bass * audioSens * 0.08;
-    var newDensity = mix(prevDensity, targetDensity, blendSpeed);
-    newDensity = mix(newDensity, 0.0, resetStrength);  // ripple clears
-
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newDensity, 0.0, 0.0, 1.0));
-
-    // ── Render ───────────────────────────────────────────────────
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let baseAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
-
-    // Rounded grain texture via fine noise SDF
-    let grainScale = 300.0 + treble * audioSens * 200.0;
-    let grainCell  = floor(uv * grainScale);
-    let grainFrac  = fract(uv * grainScale) - 0.5;
-    let grainRng   = hash2d(grainCell);
-    let grainJitter = (vec2<f32>(hash2d(grainCell + 0.1), hash2d(grainCell + 0.2)) - 0.5) * 0.3;
-    let grainSDF   = sdCircle(grainFrac - grainJitter, 0.25 + grainRng * 0.15);
-    let grainMask  = 1.0 - smoothstep(-0.05, 0.05, grainSDF);
-
-    // Threshold: draw grain where accumulated density is high enough
-    let sandVisible = step(1.0 - newDensity * grainDensity, grainRng) * grainMask;
-
-    // Sand colour: warm beige with subtle hue shift from audio
-    let sandHue    = vec3<f32>(0.9 + bass * 0.1, 0.82 + mids * 0.1, 0.62 - treble * 0.15);
-    let bgDarken   = mix(baseColor * 0.45, baseColor * 0.6, newDensity);
-    let finalColor = mix(bgDarken, sandHue, sandVisible);
-
-    // RGBA alpha: sand pixels opaque, gaps semi-transparent
-    let alpha = mix(baseAlpha * 0.5, 1.0, sandVisible * grainDensity);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-
-    // Depth: sand grains are slightly raised
-    let heightDepth = newDensity * 0.7 + 0.1;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy),
-                 vec4<f32>(heightDepth, 0.0, 0.0, 1.0));
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let size = vec2<u32>(u32(u.config.z), u32(u.config.w)); if (gid.x >= size.x || gid.y >= size.y) { return; }
+  let px = vec2<i32>(gid.xy); let hi = vec2<i32>(size) - vec2<i32>(1); let res = vec2<f32>(size); let uv = (vec2<f32>(px) + 0.5) / res;
+  let aspect = res.x / max(res.y, 1.0); let time = u.config.x; let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0)); var s = stateAt(px, hi);
+  if (time < 0.12 || dot(s, s) < 0.000001) { let seed = hash21(vec2<f32>(px)); s = vec4<f32>(0.22 + seed * 0.18, 0.0, 0.0, 0.0); }
+  let mode = 2.0 + floor(u.zoom_params.x * 15.0); let harmonic = u.zoom_params.y; let densityControl = u.zoom_params.z; let sensitivity = u.zoom_params.w;
+  var plate = (uv * 2.0 - 1.0) * vec2<f32>(aspect, 1.0); let mouseOffset = (u.zoom_config.yz - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+  plate -= mouseOffset * (0.12 + select(0.0, 0.32, u.zoom_config.w > 0.5));
+  let w0 = chladni(plate, mode + audio.x * sensitivity * 3.0, mode + 2.0 + audio.y * sensitivity * 4.0);
+  let w1 = chladni(plate.yx + vec2<f32>(time * 0.012, 0.0), mode + 3.0 + audio.z * 4.0, mode + 5.0);
+  let w2 = sin(length(plate) * (18.0 + mode) - time * (1.0 + audio.x * 3.0)); let wave = mix(w0, w1, harmonic) + w2 * harmonic * 0.22;
+  let node = 1.0 - smoothstep(0.015, 0.12 + audio.x * sensitivity * 0.04, abs(wave));
+  let l = stateAt(px + vec2<i32>(-1, 0), hi); let r = stateAt(px + vec2<i32>(1, 0), hi); let t = stateAt(px + vec2<i32>(0, -1), hi); let b = stateAt(px + vec2<i32>(0, 1), hi);
+  let lapDensity = l.r + r.r + t.r + b.r - 4.0 * s.r; let drive = (node - s.r) * (0.025 + audio.x * sensitivity * 0.035);
+  var velocity = (s.g + drive + lapDensity * 0.035) * (0.91 - audio.y * 0.03); var strikes = 0.0; let count = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 2.0) { let d = length((uv - e.xy) * vec2<f32>(aspect, 1.0)); strikes += exp(-age * 1.7) * exp(-abs(d - age * (0.24 + audio.x * 0.07)) * 72.0); } }
+  velocity += strikes * 0.18; let held = select(0.0, 1.0, u.zoom_config.w > 0.5); let md = length((uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0)); let hover = exp(-md * 18.0);
+  velocity += hover * (0.004 + held * 0.10); let newDensity = clamp(s.r + velocity * 0.08 + node * (0.008 + densityControl * 0.018) - abs(wave) * s.r * 0.008, 0.0, 1.0);
+  let energy = clamp(mix(s.b, abs(wave) * (0.35 + audio.y * sensitivity) + strikes, 0.12), 0.0, 1.0); let memory = clamp(max(s.a * 0.94, strikes + hover * held * 0.5), 0.0, 1.0);
+  let next = vec4<f32>(newDensity, clamp(velocity, -1.0, 1.0), energy, memory); textureStore(dataTextureA, px, next);
+  let grain = step(hash21(vec2<f32>(px)), clamp(newDensity * (0.35 + densityControl), 0.0, 1.0)); let bronze = vec3<f32>(1.35, 0.58, 0.14); let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + wave * 4.0 + time * 0.15);
+  var hdr = bronze * grain * (0.55 + newDensity + energy * 0.5) + spectral * (node * 0.28 + strikes * 0.65 + audio * sensitivity * 0.12);
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0); hdr = mix(src.rgb * 0.45, hdr, clamp(newDensity * 0.75 + node * 0.25, 0.25, 0.95));
+  let alpha = clamp(src.a * 0.15 + newDensity * 0.75 + node * 0.25 + memory * 0.25, 0.0, 1.0); let mapped = aces(max(hdr, vec3<f32>(0.0)));
+  textureStore(writeTexture, px, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, px, vec4<f32>(clamp(1.0 - newDensity * 0.62 - node * 0.12, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

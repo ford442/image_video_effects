@@ -2,7 +2,7 @@
   "id": "liquid-magnetic-ferro-em",
   "name": "Liquid Magnetic Ferro EM",
   "url": "shaders/liquid-magnetic-ferro-em.wgsl",
-  "description": "Ferrofluid simulation coupled with electromagnetic wave propagation. Rosensweig instability spikes are driven by both static magnetic dipoles and time-varying EM waves, with metallic iridescence colored by field direction.",
+  "description": "A persistent magnetohydrodynamic ferro-liquid packing height, velocity, EM potential, and charge in A, with bounded magnet inertia, held polarity, click charges, orbiting dipoles, Rosensweig spikes, three-band iridescence, ACES, and semantic alpha.",
   "features": [
     "advanced-hybrid",
     "ferrofluid",
@@ -10,7 +10,16 @@
     "wave-propagation",
     "mouse-driven",
     "temporal",
-    "randomization-safe"
+    "randomization-safe",
+    "held-interaction",
+    "click-reactive",
+    "audio-reactive",
+    "stateful-simulation",
+    "raw-mhd-state",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "params": [
     {

@@ -2,7 +2,7 @@
   "id": "photonic-caustics-iridescence",
   "name": "Photonic Caustics Iridescence",
   "url": "shaders/photonic-caustics-iridescence.wgsl",
-  "description": "Backward photon-traced caustics combined with thin-film interference iridescence. Caustic intensity modulates film thickness, creating soap-bubble colors on light concentrations. Features chromatic dispersion, Fresnel reflections, and temporal accumulation.",
+  "description": "Backward photon-traced caustics combined with thin-film optical iridescence. High-energy caustic focal concentrations illuminate an iridescent surface layer with chromatic dispersion, Fresnel reflections, and exact temporal feedback.",
   "tags": [
     "caustics",
     "iridescence",
@@ -12,14 +12,19 @@
     "refraction",
     "dispersion",
     "photon-tracing",
-    "temporal"
+    "temporal",
+    "advanced-hybrid"
   ],
   "features": [
+    "advanced-hybrid",
     "depth-aware",
     "temporal",
     "spectral-render",
     "mouse-driven",
-    "HDR"
+    "audio-reactive",
+    "exact-feedback",
+    "temporal-state",
+    "ACES-tonemapped"
   ],
   "params": [
     {
@@ -54,5 +59,14 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Index of Refraction", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Light Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Chromatic Dispersion", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = display RGBA with accumulated photonic caustics and thin-film iridescent sheen",
+  "updated": true,
+  "target_rating": 4.8
 }

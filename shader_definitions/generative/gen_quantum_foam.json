@@ -18,7 +18,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "foam_scale",
       "name": "Foam Scale",
       "default": 0.5,
       "min": 0,
@@ -27,7 +27,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "web_density",
       "name": "Web Density",
       "default": 0.5,
       "min": 0,
@@ -36,7 +36,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "glow_intensity",
       "name": "Glow Intensity",
       "default": 0.5,
       "min": 0,
@@ -45,7 +45,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "evolution_speed",
       "name": "Evolution Speed",
       "default": 0.3,
       "min": 0,

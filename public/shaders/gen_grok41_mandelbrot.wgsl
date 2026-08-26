@@ -103,7 +103,7 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let time = u.config.x;
+    let time = u.config.x * 5.0; // Fast motion upgrade
 
     // ─── OOB bounds guard: dispatch is rounded up to workgroup multiples ───
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -115,9 +115,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / max(resolution.y, 1.0);
 
     // Audio
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let audioBands = plasmaBuffer[0].xyz;
+    let bass = audioBands.x;
+    let mids = audioBands.y;
+    let treble = audioBands.z;
 
     // ─── Gliding navigation state (extraBuffer[133..136], safe zone) ───
     // [133] = smoothed center X, [134] = smoothed center Y,
@@ -259,7 +260,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // dataTextureA/C carry pre-tonemap linear color. Previous version stored
     // ACES-tonemapped output and read it back, progressively fading contrast.
     let uv_norm = vec2<f32>(global_id.xy) / resolution;
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv_norm, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
     // Param4 doubles as history blend (high evolution_speed → less persistence)
     let historyBlend = clamp(0.85 - u.zoom_params.w * 0.5, 0.0, 0.85);
     let linearColor = mix(color, prev, historyBlend);

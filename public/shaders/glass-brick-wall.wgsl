@@ -1,14 +1,10 @@
-// ================================================================
-//  Glass Brick Wall
+// ═══════════════════════════════════════════════════════════════════
+//  Glass Brick Wall — Textured Architectural Glass Surface
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
-//            caustic-refraction, depth-layers, chromatic-dispersion, fbm-texture
-//  Complexity: Very High
-//  Chunks From: glass-brick-wall
-//  Created: 2026-05-31
-//  Upgraded: 2026-06-28
-//  By: The Complexity Architect
-// ================================================================
+//            caustic-refraction, depth-layers, chromatic-dispersion, fbm-texture, ACES
+//  Complexity: High
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -31,22 +27,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265359;
-const TAU: f32 = 6.28318530718;
-const PHI: f32 = 1.61803398875;
-
-fn safeNormalize3(v: vec3<f32>) -> vec3<f32> {
-  let lenSq = max(dot(v, v), 1e-6);
-  return v * inverseSqrt(lenSq);
-}
-
 fn hash12(p: vec2<f32>) -> f32 {
   let h = sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453;
-  return fract(h);
-}
-
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-  let h = sin(vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)))) * 43758.5453;
   return fract(h);
 }
 
@@ -66,92 +48,66 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
   var amplitude = 0.5;
   var frequency = 1.0;
   for (var i = 0; i < octaves; i = i + 1) {
-    total = total + amplitude * noise2(p * frequency);
-    amplitude = amplitude * 0.5;
-    frequency = frequency * 2.1;
+    total += amplitude * noise2(p * frequency);
+    amplitude *= 0.5;
+    frequency *= 2.1;
   }
   return total;
 }
 
-fn voronoiF2F1(p: vec2<f32>, time: f32) -> vec2<f32> {
-  let n = floor(p);
-  let f = fract(p);
-  var minDist1 = 100.0;
-  var minDist2 = 100.0;
-  for (var j = -1; j <= 1; j = j + 1) {
-    for (var i = -1; i <= 1; i = i + 1) {
-      let g = vec2<f32>(f32(i), f32(j));
-      let h = hash22(n + g);
-      let o = vec2<f32>(sin(h.x * TAU + time * 0.15), cos(h.y * TAU + time * 0.12)) * 0.25 + 0.5;
-      let r = g + o - f;
-      let d = dot(r, r);
-      if (d < minDist1) {
-        minDist2 = minDist1;
-        minDist1 = d;
-      } else if (d < minDist2) {
-        minDist2 = d;
-      }
-    }
-  }
-  return vec2<f32>(sqrt(minDist1), sqrt(minDist2));
-}
-
-fn causticPattern(p: vec2<f32>, time: f32, freq: f32) -> f32 {
-  // Multi-frequency caustic simulation
-  let c1 = sin(p.x * freq + time * 1.5) * cos(p.y * freq * 0.7 + time * 1.2);
-  let c2 = sin(p.x * freq * 1.3 - time * 2.0) * cos(p.y * freq * 1.1 + time * 0.8);
-  let c3 = sin(p.x * freq * 0.8 + time * 0.7) * cos(p.y * freq * 1.5 - time * 1.1);
-  let vor = voronoiF2F1(p * freq * 0.3, time);
-  let voroCaustic = pow(vor.y - vor.x, 2.0) * 2.0;
-  return max(0.0, (c1 + c2 + c3) / 3.0 * 0.5 + 0.5 + voroCaustic * 0.3);
-}
-
-fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-fn chromaticRefraction(uv: vec2<f32>, normal: vec3<f32>, distortion: f32, offsetScale: f32, time: f32) -> vec3<f32> {
-  // Wavelength-dependent refraction (simplified chromatic dispersion)
-  let n_r = 1.0 / 1.50;
-  let n_g = 1.0 / 1.52;
-  let n_b = 1.0 / 1.54;
-
-  let lightDir = vec3<f32>(0.0, 0.0, 1.0);
-  let refractR = refract(-lightDir, normal, n_r);
-  let refractG = refract(-lightDir, normal, n_g);
-  let refractB = refract(-lightDir, normal, n_b);
-
-  let offsetR = refractR.xy * distortion * offsetScale + fbm(uv * 5.0 + time * 0.1, 4) * 0.01;
-  let offsetG = refractG.xy * distortion * offsetScale + fbm(uv * 5.0 + vec2<f32>(10.0) + time * 0.12, 4) * 0.008;
-  let offsetB = refractB.xy * distortion * offsetScale + fbm(uv * 5.0 + vec2<f32>(20.0) + time * 0.08, 4) * 0.012;
-
-  let sampleR = clamp(uv + offsetR, vec2<f32>(0.0), vec2<f32>(1.0));
-  let sampleG = clamp(uv + offsetG, vec2<f32>(0.0), vec2<f32>(1.0));
-  let sampleB = clamp(uv + offsetB, vec2<f32>(0.0), vec2<f32>(1.0));
-
-  return vec3<f32>(
-    textureSampleLevel(readTexture, u_sampler, sampleR, 0.0).r,
-    textureSampleLevel(readTexture, u_sampler, sampleG, 0.0).g,
-    textureSampleLevel(readTexture, u_sampler, sampleB, 0.0).b
-  );
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
-  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
-    return;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
+
+  let pixel = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / dims;
+  let aspect = dims.x / max(dims.y, 1.0);
+  let time = u.config.x;
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let rawMouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let isWriter = (gid.x == 0u && gid.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var mouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
   }
 
-  let uv = vec2<f32>(gid.xy) / dims;
-  let aspect = dims.x / dims.y;
-  let mouse = u.zoom_config.yz;
-  let time = u.config.x;
-  let audio = plasmaBuffer[0].xyz;
-  let bass = audio.x;
-  let mids = audio.y;
-  let treble = audio.z;
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.05);
+    var sPos = mouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
+    }
+    let stiffness = 42.0;
+    let damping = 12.96; // 2 * sqrt(42)
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel += accel * dt;
+    sPos += sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
 
+  // Exact parameter contracts
   let brickSize = mix(10.0, 54.0, u.zoom_params.x);
   let distortion = mix(0.0, 0.12, u.zoom_params.y);
   let mortarSize = mix(0.01, 0.12, u.zoom_params.z);
@@ -160,86 +116,66 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gridUV = uv * vec2<f32>(brickSize * aspect, brickSize);
   let cellId = floor(gridUV);
   let cell = fract(gridUV) - 0.5;
-  let r2 = dot(cell, cell) * 4.0;
 
   // FBM-perturbed normal for organic glass surface
   let normalNoise = fbm(cell * 4.0 + cellId * 0.5 + time * 0.05, 5) * 0.15;
   let normalXY = cell * -2.0 + vec2<f32>(normalNoise, normalNoise * 0.7);
   let normalZ = sqrt(max(0.0, 1.0 - dot(normalXY, normalXY)));
-  let normal = safeNormalize3(vec3<f32>(normalXY, normalZ));
+  let normal = normalize(vec3<f32>(normalXY, normalZ));
   let mortarMask = smoothstep(0.48 - mortarSize, 0.5, max(abs(cell.x), abs(cell.y)));
 
-  // Depth layers: front and back refraction
-  let refractOffset = normal.xy * distortion * (1.0 - mortarMask) * (1.0 + bass * 0.35);
-  let frontUV = clamp(uv + refractOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+  // Pointer interaction
+  let p_dist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  let ptr_influence = smoothstep(0.35 + held * 0.15, 0.0, p_dist) * (1.0 + bass * 0.5);
 
-  // Secondary bounce (depth layer)
-  let bounceNormal = safeNormalize3(vec3<f32>(normal.xy * 0.5, normal.z));
-  let bounceOffset = bounceNormal.xy * distortion * 0.5 * (1.0 - mortarMask);
-  let backUV = clamp(frontUV + bounceOffset, vec2<f32>(0.0), vec2<f32>(1.0));
-
-  var color = textureSampleLevel(readTexture, u_sampler, frontUV, 0.0);
-  let backColor = textureSampleLevel(readTexture, u_sampler, backUV, 0.0);
-
-  // Blend front and back for depth
-  let depthBlend = fbm(cell * 3.0 + time * 0.08, 4) * 0.3 + 0.2;
-  color = mix(color, backColor, depthBlend * (1.0 - mortarMask));
-
-  let lightPos = vec3<f32>(mouse * vec2<f32>(aspect, 1.0), 0.55);
-  let pixelPos = vec3<f32>(uv * vec2<f32>(aspect, 1.0), 0.0);
-  let lightDir = safeNormalize3(lightPos - pixelPos);
-  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-  let halfDir = safeNormalize3(lightDir + viewDir);
-
-  var transmission = 0.45;
-  if (mortarMask < 0.5) {
-    let cosTheta = max(dot(viewDir, normal), 0.0);
-    let fresnel = fresnelSchlick(cosTheta, 0.04);
-    let thickness = 0.08 + r2 * 0.16 + fbm(cell * 6.0 + time * 0.1, 5) * 0.05;
-    let glassTint = mix(
-      vec3<f32>(0.94, 0.97, 1.0),
-      vec3<f32>(0.98, 0.85, 1.0),
-      0.5 + 0.5 * sin(time * 0.35 + cellId.x * 0.4 + fbm(cellId * 0.5 + time * 0.1, 4) * PI)
-    );
-    let absorption = exp(-(1.0 - glassTint) * thickness * glassDensity);
-    transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
-
-    // Enhanced specular with FBM roughness
-    let roughness = fbm(cell * 3.0 + time * 0.05, 4) * 0.5 + 0.5;
-    let specular = pow(max(dot(normal, halfDir), 0.0), 18.0 * roughness + 4.0) * (0.22 + mids * 0.45);
-
-    // Caustic refraction patterns
-    let causticUV = uv * 6.0 + cellId * 0.3;
-    let caustic1 = causticPattern(causticUV, time * 0.5 + bass * 2.0, 3.0 + bass * 2.0);
-    let caustic2 = causticPattern(causticUV * 1.5 + vec2<f32>(5.0), time * 0.3 + mids * 1.5, 2.0 + mids * 2.0);
-    let caustic3 = causticPattern(causticUV * 0.7, time * 0.7 + treble, 4.0 + treble * 3.0);
-    let totalCaustic = caustic1 * 0.5 + caustic2 * 0.3 + caustic3 * 0.2;
-
-    let curvature = smoothstep(0.0, 0.6, r2);
-    let causticIntensity = totalCaustic * (0.35 + curvature * 0.85) * (1.0 + treble * 0.5);
-    let causticColor = vec3<f32>(1.0, 0.9, 0.7) + vec3<f32>(-0.2, 0.1, 0.4) * sin(time * 0.5 + cellId.x);
-
-    // Chromatic dispersion through the brick
-    let chromatic = chromaticRefraction(uv, normal, distortion, 1.0 - mortarMask, time);
-    let chromaticMix = treble * 0.3 * (1.0 - fresnel);
-    color = vec4<f32>(mix(color.rgb, chromatic, chromaticMix), color.a);
-
-    color = vec4<f32>(color.rgb * glassTint * transmission + specular + causticColor * causticIntensity * 1.2, transmission);
-
-    // Internal reflections (depth layers)
-    let internalReflect = fbm(cell * 8.0 + time * 0.2, 4) * 0.1 * (1.0 - fresnel);
-    color = vec4<f32>(color.rgb + glassTint * internalReflect, color.a);
-  } else {
-    color = vec4<f32>(color.rgb * 0.42, 0.42);
+  // Click ripple shocks
+  let rippleCount = min(u32(u.config.y), 50u);
+  var click_wave = 0.0;
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let rAge = time - rp.z;
+    if (rAge >= 0.0 && rAge < 2.0) {
+      let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      let wave = sin((rDist - rAge * 0.5) * 30.0) * exp(-rDist * 3.5) * exp(-rAge * 1.4);
+      click_wave += abs(wave) * 0.4;
+    }
   }
 
-  let finalAlpha = clamp(color.a + (1.0 - mortarMask) * 0.10, 0.15, 0.98);
-  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, frontUV, 0.0).r;
-  let outDepth = clamp(mix(baseDepth, baseDepth * 0.45 + (1.0 - mortarMask) * 0.45, 0.25), 0.0, 1.0);
+  let refractOffset = normal.xy * distortion * (1.0 - mortarMask) * (1.0 + bass * 0.35 + ptr_influence * 0.2 + click_wave * 0.5);
+  let frontUV = clamp(uv + refractOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  // Premultiplied alpha
-  let premultColor = color.rgb * finalAlpha;
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(premultColor, finalAlpha));
-  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(1.0 - mortarMask, transmission, abs(refractOffset.x) + abs(refractOffset.y), finalAlpha));
+  // Chromatic dispersion
+  let cr = textureSampleLevel(readTexture, u_sampler, clamp(frontUV + vec2<f32>(0.005) * (treble * 0.5 + 0.5), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let cg = textureSampleLevel(readTexture, u_sampler, frontUV, 0.0).g;
+  let cb = textureSampleLevel(readTexture, u_sampler, clamp(frontUV - vec2<f32>(0.005) * (treble * 0.5 + 0.5), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let base_a = textureSampleLevel(readTexture, u_sampler, frontUV, 0.0).a;
+
+  var color = vec3<f32>(cr, cg, cb);
+
+  // Exact dataTextureC persistence
+  let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
+  color = mix(color, prevC, 0.07);
+
+  var finalAlpha = base_a;
+  if (mortarMask < 0.5) {
+    let lightDir = normalize(vec3<f32>(0.0, 0.0, 1.0));
+    let spec = pow(max(dot(normal, lightDir), 0.0), 32.0) * (0.5 + mids);
+    let glassColor = vec3<f32>(0.85, 0.94, 1.0) * (1.0 - glassDensity * 0.15);
+    color = color * glassColor + spec;
+    finalAlpha = mix(0.85, 0.3, 1.0 - mortarMask);
+  } else {
+    color *= 0.3; // mortar is dark
+    finalAlpha = 0.95;
+  }
+
+  color += ptr_influence * vec3<f32>(0.2, 0.4, 0.8) * mids;
+  color += click_wave * vec3<f32>(1.0, 0.85, 0.5);
+
+  let finalRGB = aces(color);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, frontUV, 0.0).r;
+  let finalPixel = vec4<f32>(finalRGB, clamp(finalAlpha + ptr_influence * 0.1, 0.1, 1.0));
+
+  textureStore(writeTexture, pixel, finalPixel);
+  textureStore(dataTextureA, pixel, finalPixel);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

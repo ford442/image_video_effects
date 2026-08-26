@@ -5,9 +5,408 @@
 
 ---
 
-## Recently Completed (454 tracker entries)
+## Recently Completed (502 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Reaction / Flow / Sand / Optical-Fluid cohort (10 shaders) — 2026-08-23
+
+Upgraded `alpha-reaction-diffusion-rgba`,
+`chromatic-reaction-diffusion-rgba`, `rd-on-video-pass1`, `luma-flow-field`,
+`optical-flow-dream`, `sim-sand-dunes`, `sim-sand-dunes-rgba`, `pixel-sand`,
+`cymatic-sand`, and `photonic-caustics` under the canonical exact-C/A-only
+contract. Optical Flow Dream intentionally moved from its binding-13 graph to
+a single canonical pass; Pixel Sand intentionally moved raw state from B to A.
+Naga/contract gates pass 10/10, params are exact, Jest/build are green, and
+real-GPU QA remains external. Notes:
+`swarm-outputs/codex-2026-08-23-rd-flow-sand/`.
+
+### Batch 67 (10 shaders) — 2026-08-23 — FAST MOTION / PSYCHEDELIC / HIGH ENERGY
+
+Ten shaders on tracker #521–530, upgraded under an extra creative brief on top
+of the usual contract: **two distinct closed-form fast-motion techniques per
+shader** (no frame-hash strobing, velocities clamped), **vivid multi-hue
+psychedelic colour**, and **playful high-energy personality** coherent with each
+shader's original identity.
+
+Every shader carries the pool standard — ACES, semantic alpha, `dataTextureA`
+writeback, `plasmaBuffer[0].xyz` audio with per-band `[1..8]` bins, held-pointer
+response, bounded click fronts guarded by `min(u32(u.config.y), 50u)`, exact
+`textureLoad` from `dataTextureC`, `@workgroup_size(16, 16, 1)` and a bounds
+guard. `extraBuffer` writes stay in `[133..138]`, written by invocation `(0,0)`
+only.
+
+**Note on the base.** Four of the ten (`ferrofluid-spikes`, `glass-wipes`,
+`holographic-flicker`, `liquid-jelly`) were rewritten on `main` by concurrent
+agents while this batch was in flight. The finished Batch 67 versions of those
+four were discarded and **re-derived on top of main's newer code** rather than
+force-landed over it, so those agents' contract fixes are preserved and this
+batch adds only the creative brief. Worth noting for process: a per-batch claim
+range is no longer preventing overlap, because the claim reaches `main` well
+before the work does.
+
+**Headline: `holographic-flicker` did not compile on `main`.** `let target = …`
+uses a WGSL reserved keyword and naga rejects it outright, so the gate was not
+run on that file before it merged. The same shader read `u.config.y` — the
+ripple count — as a mouse-down flag, which latched the press spring on after the
+first click of the session and never released it, and treated `ripples[i].z` as
+an elapsed age when it is a start time. All three are fixed here, along with the
+two time-hash strobe sites the brief targets.
+
+Other bugs fixed:
+
+- **`heat-haze` depth clobber.** It wrote its heat field into
+  `writeDepthTexture` — simulation state smuggled through the depth target, so
+  every depth-aware shader downstream read a temperature as scene geometry. The
+  heat sim now lives in `dataTextureA`/`dataTextureC` where feedback state
+  belongs, and the depth target passes real geometry through.
+- **`radial-blur` never wrote `dataTextureA` on either exit path**, so nothing
+  downstream saw it in the feedback chain, and its early-return path wrote a
+  hardcoded alpha of `0.0` — an invisible frame whenever that path was taken. It
+  also derived pointer velocity from `u.ripples[0].zw`: `.z` is a ripple start
+  time and `.w` is padding the engine always leaves at `0.0`, so the "velocity"
+  was a timestamp paired with a constant. Velocity now comes from a bounded
+  spring-damper in `extraBuffer[133..136]`.
+- **`magnetic-dipole` bound `plasmaBuffer` and never read it** — catalogued
+  audio-reactive with no audio path at all. It also packed `dataTextureA` as
+  `[fieldDirection.xy, fieldStrength, …]` while reading channel `b` back as
+  *alignment*, so the persistence term consumed the wrong quantity; A is
+  repacked as `[fieldDir.xy, alignment, fieldStrength]`.
+- **`frost-reveal` had no bounds guard**, so invocations past the image edge ran
+  the full body.
+- **`bubble-chamber` quantised its spawn field with `floor(time * 3.0)`** and
+  sampled `dataTextureC` through the *filtering* sampler, which is unsafe on
+  `rgba32float` because `float32-filterable` is an optional device feature.
+- **`crystal-freeze` ran at `@workgroup_size(8, 8, 1)`** and sampled C rather
+  than loading it exactly.
+- **Four `holographic-flicker` sliders were carried in the dead-slider
+  baseline.** They were in fact wired, but through a whole-`vec4` clamp the
+  audit's pattern matcher could not see; the reads are now per-field and the
+  four grandfathered entries are retired from
+  `reports/dead_sliders_audit_baseline.json` (89 → 88 entries).
+
+Fast-motion pairs, one per shader: relativistic streak stretch + helical
+momentum spiral (`bubble-chamber`); dendrite growth fronts + facet light-burst
+whip (`crystal-freeze`); spike eruption packets + travelling field conveyor
+(`ferrofluid-spikes`); crystallisation wavefronts + radial shatter streaks
+(`frost-reveal`); elastic wiper sweep with snap-back recoil + bead conveyor
+(`glass-wipes`); buoyant updraft packets + shear-layer shimmer streaks
+(`heat-haze`); scan-line conveyor + parallax ghost whip
+(`holographic-flicker`); finite-speed shear wave propagation
+(`c = sqrt(G/rho)`) + jiggle overshoot streaks (`liquid-jelly`); field-line
+particle dance + pole-flip orbital whip (`magnetic-dipole`); zoom-burst speed
+lines + rotational shear streaks (`radial-blur`).
+
+Colour is IQ cosine palettes keyed to a physical quantity per shader (momentum,
+freeze fraction, spike height, film thickness, field strength, blur radius),
+with prismatic dispersion along the motion direction and per-band FFT hue
+offsets. Saturation is boosted by extrapolating away from luma rather than
+averaging, which is what keeps summed multi-hue palettes from collapsing to
+grey.
+
+Gate, dead-slider, `extraBuffer`, audio-mapping and `config.y` audits pass
+10/10; the strobe grep comes back clean of motion-driving hits; lists, URL and
+uniform checks pass. Notes: `swarm-outputs/claude-2026-08-23-b67/`. Real-GPU
+visual QA remains external — the vividness and motion claims are verified
+structurally (palette maths, clamped velocity bounds, analytic phases), not
+visually.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 521 | `bubble-chamber` | 67 | 229→371 (+142) | Relativistic streak stretch (Lorentz gamma, beta clamped 0.985), helical momentum spiral, momentum-keyed prismatic fan; `floor(time*3)` spawn quantisation and filtering-sampler C reads fixed. |
+| 522 | `crystal-freeze` | 67 | 193→296 (+103) | Dendrite growth fronts, facet light-burst whip, IOR-blended dispersion palette; 8×8 workgroup and sampled C fixed. |
+| 523 | `ferrofluid-spikes` | 67 | 317→370 (+53) | Spike eruption packets, travelling field conveyor, iridescent height-keyed palette. Rebased on main's concurrent rewrite. |
+| 524 | `frost-reveal` | 67 | 163→279 (+116) | Crystallisation wavefronts, radial shatter streaks, prismatic ice palette; missing bounds guard, audio, ripples and ACES fixed. |
+| 525 | `glass-wipes` | 67 | 107→166 (+59) | Elastic wiper sweep with `exp(-t*6)sin(34t)` snap-back recoil, thin-film iridescence keyed to film thickness. Rebased on main's concurrent rewrite, which already carried the bead conveyor. |
+| 526 | `heat-haze` | 67 | 144→231 (+87) | Buoyant updraft packets, shear-layer shimmer streaks, thermal-gradient palette; **depth clobber** fixed by moving the heat sim into A/C, plus missing C read and ACES. |
+| 527 | `holographic-flicker` | 67 | 183→259 (+76) | Scan-line conveyor, parallax ghost whip, per-band spectrum palette; **reserved-keyword compile failure**, `config.y`-as-mouse-down, `ripples[].z`-as-age, two time-hash strobe sites and four baseline-listed dead sliders all fixed. |
+| 528 | `liquid-jelly` | 67 | 184→249 (+65) | Finite-speed shear wave with arrival gating, jiggle overshoot streaks, IQ candy palette replacing a warm/cool two-tone lerp. Rebased on main's concurrent rewrite. |
+| 529 | `magnetic-dipole` | 67 | 214→312 (+98) | Field-line particle dance, pole-flip orbital whip, field-strength spectral palette; **dead `plasmaBuffer`**, mismatched A channel packing, sampled C and hardcoded alpha fixed. |
+| 530 | `radial-blur` | 67 | 225→372 (+147) | Zoom-burst speed lines, rotational shear streaks, radius-keyed dispersion palette; **no A writeback on either exit path**, hardcoded `0.0` alpha and `ripples[0].zw` fake velocity fixed. |
+
+### Batch 64 (10 shaders) — 2026-08-23 — LIQUID / OPTICAL / CRYSTAL / CYBER
+
+Ten shaders on tracker #511–520. Every shader carries the pool standard — ACES,
+semantic alpha, `dataTextureA` writeback, `plasmaBuffer[0].xyz` audio with
+per-band `[1..8]` bins, held-pointer response, bounded click fronts guarded by
+`min(u32(u.config.y), 50u)`, exact `textureLoad` from `dataTextureC`,
+`@workgroup_size(16, 16, 1)` and a bounds guard — plus two shader-specific
+structures each. (The request named `glass-refraction.wgsl`, which does not
+exist; `glass_refraction_alpha` was the confirmed target.)
+
+**Headline: `extraBuffer` audio-slot corruption.** Two shaders in this cohort
+were writing their interactive state into `extraBuffer[0..8]` — which per
+`docs/BINDING_CONTRACT.md` are bass, mid, treble, reserved, `historyHead` and
+FFT bins 5–8. They were overwriting the audio **every other shader in the chain
+reads**, and reading back values the engine rewrites each frame, so their own
+state was garbage too:
+
+- `optical-feedback` held nine values there. The state did not even need nine
+  slots: `clickTime`/`clickPos` duplicate what `u.ripples[i]` already provides
+  and `prevPress` only detected an edge the ripple queue already detects.
+  Dropping those and the two velocity slots leaves smoothed pointer + hue phase
+  at `[133..135]`.
+- `magnetic-interference` held the previous pointer at `[0..1]` (bass and mid),
+  and additionally smuggled its audio envelope through texel (0,0) of
+  `dataTextureA`, corrupting the feedback buffer's corner.
+
+Both are migrated into the scratch range and their **11 grandfathered entries
+are retired from `reports/extrabuffer_write_audit_baseline.json`** (46 → 44
+entries; 128 → 117 known violations repo-wide).
+
+Other bugs fixed:
+
+- **`optical-feedback` used `u.config.y` as delta time** — the ripple count,
+  explicitly on the do-not-reintroduce list. It fed a spring integrator, so with
+  no clicks `dt == 0` and the pointer spring and hue phase were **frozen**; with
+  clicks it jumped to 1–50 and a k=55 spring integrated at dt=50 **diverges**.
+- **`glass_refraction_alpha` had a fake-audio proxy**: `plasmaBuffer` was bound
+  and never read, while a variable named `audioPulse` was assigned
+  `u.zoom_config.w` — the mouse button — and used to modulate the refractive
+  index. It also declared `exitT` and never wrote it, so Beer-Lambert absorption
+  ran over the distance *to* the surface, not *through* the glass.
+- **`ambient-liquid` advertised `reaction-diffusion` with no state at all**: its
+  `grayScott()` was four sine waves, `dataTextureA` was never written and
+  `dataTextureC` never read. A real Gray-Scott step is now wired.
+- **`magnetic-interference` had an unguarded ripple loop** (`u32(u.config.y)`).
+- **Mask-as-colour hazards** in `cyber-lens`, `bubble-lens` and
+  `crystal-facets`: `dataTextureA` held mask tuples nothing consumed, leaving C
+  poisoned for anything reading it as colour. Display moved to A, masks to B.
+- **Per-frame hash strobing** replaced with coherent drifting fields in
+  `frosted-glass-lens` and `digital-mold`.
+
+Gate, dead-slider, extraBuffer and audio-mapping audits pass 10/10; lists, URL
+and uniform checks pass. Notes: `swarm-outputs/claude-2026-08-23-b64/`.
+Real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 511 | `optical-feedback` | 64 | 228→287 (+59) | Time-correct spring, multi-front ripple shockwaves, per-band spectral hue rings; dt-as-rippleCount and 9 audio-slot writes fixed. |
+| 512 | `glass_refraction_alpha` | 64 | 275→385 (+110) | Cauchy dispersion, per-band caustic focusing, real interior absorption path; fake-audio proxy and dead `exitT` fixed. |
+| 513 | `crystal-facets` | 64 | 229→328 (+99) | Facet-normal Fresnel with total internal reflection, uniaxial birefringence; A/C wired, click fracture fronts, ACES. |
+| 514 | `ambient-liquid` | 64 | 195→282 (+87) | Real Gray-Scott state with per-band feed/kill, surface-tension coupling to the metaballs; unwired RD claim fixed. |
+| 515 | `frosted-glass-lens` | 64 | 132→233 (+101) | Beckmann microfacet lobe, depth-dependent frost thickness, click clear-fronts; strobing grain fixed. |
+| 516 | `cyber-lens` | 64 | 169→249 (+80) | Rolling-shutter scan skew, per-band telemetry rings, lock pings; A/B packing corrected. |
+| 517 | `bubble-lens` | 64 | 208→277 (+69) | Marangoni convection, per-band membrane resonance modes; ACES, C trails, A/B packing corrected. |
+| 518 | `liquid-metal` | 64 | 198→294 (+96) | Rosensweig hexagonal spike instability, anisotropic Ward BRDF; exact C loads, ACES. |
+| 519 | `magnetic-interference` | 64 | 210→288 (+78) | Per-band domain-wall spectrum, hysteresis memory with coercivity gate; audio-slot writes, texel-(0,0) envelope and unguarded loop fixed. |
+| 520 | `digital-mold` | 64 | 142→194 (+52) | Nutrient-gradient chemotaxis, per-band sporulation regimes; strobing spore hash and pass-through alpha fixed. |
+
+### Batch 60 (10 shaders) — 2026-08-23 — DEAD FEATURES & FEEDBACK CONTRACTS
+
+Ten shaders across interactive-mouse, distortion, advanced-hybrid, artistic and
+image. Every shader now carries the pool standard — ACES, semantic alpha,
+`dataTextureA` writeback, `plasmaBuffer[0].xyz` audio with per-band `[1..8]`
+bins, held-pointer response, bounded click fronts guarded by
+`min(u32(u.config.y), 50u)`, exact `textureLoad` from `dataTextureC`,
+`@workgroup_size(16, 16, 1)` and a bounds guard — plus two shader-specific
+structures each. `extraBuffer` writes stay in `[133..137]`, written by
+invocation `(0,0)` only.
+
+The theme of this batch is **features that were catalogued but not wired**, and
+**feedback slots whose contents did not match how they were read**.
+
+Dead features found and fixed:
+
+- **`gravitational-lensing` — time read as audio.** `let audioOverall =
+  u.zoom_config.x;` — that field is TIME, not an audio level. So
+  `audioReactivity = 1.0 + time * 0.3` grew without bound and the camera angle
+  `time * 0.1 * audioReactivity` accelerated QUADRATICALLY forever, while no
+  audio reached anything. The `zoom_config` hijack class from Batch 58C.
+- **`holographic-contour` — dead audio.** Declared `audio-reactive` and
+  `audio-driven`, bound `plasmaBuffer` at binding 12, and never read one sample
+  from it. Its source was also naga round-trip output (`_e20` temporaries,
+  `loop { continuing { } }`) and has been rewritten as readable WGSL.
+- **`neon-pulse` — declared `mouse-driven`, never read the mouse.**
+  `zoom_config` appeared exactly once in the file: in the struct declaration.
+- **`kaleidoscope` — never read the mouse either**, and never wrote
+  `dataTextureA`, so that slot was dead.
+- **`particle-swarm` — degenerate scattering.** The Henyey-Greenstein phase
+  function was fed `dot(velocity_dir, vec2<f32>(0.0, 0.0))`, which is
+  identically zero, so the "anisotropic scattering" contributed one fixed
+  constant. It also had no bounds guard at all.
+- **`holographic-contour` — dead halftone radius.** `sqrt(luma) * 0.5` was
+  computed for the dot size and never used.
+- **`gravitational-lensing` — dead Einstein radius.** Computed, then the ring
+  was drawn at a hardcoded 0.3. It now sets the ring's screen radius.
+
+Feedback-contract fixes (the mask-as-colour class):
+
+- **`magnetic-field`** stored the field state `[b_field.x, b_field.y,
+  line_sharp, b_mag]` in `dataTextureA` while its "smooth temporal history" line
+  read `prev_state.rgb` back as colour — blending signed, unbounded field
+  components into every displayed frame. The field is recomputed analytically
+  each frame and nothing reads the state back into the simulation, so A now
+  carries display RGBA and the diagnostics move to B.
+- **`glass-shatter`** held a mask tuple in A that nothing read, leaving C
+  poisoned for any shader (or future edit) that read it as colour. Display moved
+  to A, masks to B.
+- **`neon-pulse`** needed the opposite call: its new thermal diffusion genuinely
+  requires temperature in A, so A is documented as sim state (Batch 58B
+  convention) rather than a half-colour/half-Kelvin hybrid.
+
+Depth clobbers fixed in `heat-haze-mirage` (wrote the heat column),
+`holographic-contour` (wrote ink alpha) and `neon-pulse` (wrote emission luma).
+
+One initial diagnosis was withdrawn during review: `ink-bleed`'s state reads go
+through an identifier named `filteringSampler`, but binding 5 is the engine's
+NON-filtering sampler, so the reads were safe. The misleading name (1333 other
+shaders call it `non_filtering_sampler`) is corrected and the reads moved to
+exact `textureLoad` anyway.
+
+Gate, dead-slider, extraBuffer and audio-mapping audits pass 10/10; URL and
+uniform-layout checks pass; lists regenerate clean. Real-GPU visual QA remains
+external.
+
+### Batch 56 (8 shaders) — 2026-08-23 — GEOMETRY, FAST MOTION, PSYCHEDELIC COLOR
+
+The next clean single-pass effect cohort upgrades ASCII Shockwave, CMYK
+Halftone Interactive, Heat Haze Mirage gpt52, Quantum Prism, Sphere
+Projection, Fractal Kaleidoscope, RGB Iso Lines, and Chromatic Focus.
+Each keeps its core algorithm and adds shader-specific geometry (glyph
+cells, print rosettes, thermal filaments, hex grout, meridians, kaleido
+seams, iso ticks, iris blades), two continuous motion structures, held
+pointer response, and bounded click fronts. Heat haze and iso-lines move
+to 16x16x1. Source `params` stay exact; indexed `updatedParams` are
+aligned. Kaleido sliders that were previously unread now drive segments,
+speed, zoom, and detail. CMYK A remains coverage `[C,M,Y,K]`; iso-lines A
+packs `[lineR, lineG, lineB, alpha]`; the rest write display RGBA. B is
+unused and no extraBuffer access was added. Structural gates 8/8; Jest
+81/81 (545 pass / 1 skip); production build green. Notes:
+`swarm-outputs/codex-2026-08-23-b56/`. Real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 475 | `ascii-shockwave` | 56 | 128→106 | Glyph cells, shock packets, oil-slick phosphor, held density, click rings; display A. |
+| 476 | `cmyk-halftone-interactive` | 56 | 128→135 | Rosette rings, ink conveyors, rainbow registration, held shear; CMYK A preserved. |
+| 477 | `heat-haze-gpt52` | 56 | 129→135 | 16x16, thermal filaments, rise packets, held source, click rings; display A. |
+| 478 | `quantum-prism` | 56 | 130→124 | Live sliders, hex grout/runners, oil-slick prism, click fronts; display A. |
+| 479 | `sphere-projection` | 56 | 131→110 | Meridians/parallels, held zoom, rainbow lighting, click shells; display A. |
+| 480 | `fractal-kaleidoscope` | 56 | 131→114 | Canonical bindings, live sliders, seams/conveyors, held pivot; display A. |
+| 481 | `rgb-iso-lines` | 56 | 131→106 | 16x16, iso-runners, rainbow hypsometry, held parallax; line-mask A. |
+| 482 | `chromatic-focus-interactive` | 56 | 130→105 | Aperture blades, radial packets, held pinch, click rings; display A. |
+
+### Batch 56 merge note — cursor + prior main lineages
+
+Tracker #475–482 was claimed by three concurrent Batch 56 pushes. On
+`cursor/effect-shaders-complexity-8594`, unique shaders from all lineages are
+retained. Overlaps hand-merged: chromatic-focus-interactive, cmyk-halftone-
+interactive, quantum-prism (cursor geometry + prior optical/feedback polish).
+
+### Batch 56 (8 shaders) — 2026-08-23 — FAST MOTION + PSYCHEDELIC COLOR
+
+The next ~129L clean single-pass cohort upgrades Cyber Slit Scan, Spectral FBM
+Displace, Infinite Zoom Lens, Phosphor Magnifier, Quantum Prism, Warp Drive,
+Chromatic Focus Interactive, and Liquid Warp Interactive. Each receives two
+shader-specific continuous-motion structures (conveyors, runners, axial packets,
+interference bands), held-pointer response, capped click ripples, and psychedelic
+oil-slick / liquid-rainbow / phosphor-aurora palettes without frame-hash strobing.
+Filtered `dataTextureC` history reads become bounded `textureLoad` where temporal
+state is used. Infinite Zoom Lens, Phosphor Magnifier, and Warp Drive retain
+diagnostic A packing; the other five pack display RGBA in A. B remains unused
+throughout and no `extraBuffer` access was introduced. Source `params` stay
+exact; indexed `updatedParams` are aligned. The explicit gate, dead-slider audit,
+and uniform-layout checks pass 8/8; duplicates are 1,345/1,345; Jest is 81/81
+suites (545 pass / 1 skip). Notes: `swarm-outputs/codex-2026-08-23-b56/`. Real-GPU
+visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 475 | `cyber-slit-scan` | 56 | 129→112 (-17) | Aurora scan bands, oil-slick hue, exact C scroll, held slit, click fronts; display A. |
+| 476 | `hyb-spectral-fbm-displace` | 56 | 129→142 (+13) | Conveyor/runner interference, held warp pull, click rings, display A + exact C blend. |
+| 477 | `infinite-zoom-lens` | 56 | 129→140 (+11) | Axial packets, interference runners, analytic rainbow, IGN dither, exact C load; diagnostic A preserved. |
+| 478 | `phosphor-magnifier` | 56 | 129→135 (+6) | Aurora scan runners, phosphor trail from scan channel, click blooms; diagnostic A preserved. |
+| 479 | `quantum-prism` | 56 | 130→122 (-8) | Live sliders wired, facet runners, oil-slick caustics, click shocks; display A. |
+| 480 | `warp_drive` | 56 | 129→141 (+12) | Doppler aurora packets, analytic star phases, held warp, click fronts; diagnostic A preserved. |
+| 481 | `chromatic-focus-interactive` | 56 | 130→102 (-28) | Focus runners, oil-slick aberration, click iris rings, exact C blend; display A. |
+| 482 | `liquid-warp-interactive` | 56 | 130→153 (+23) | Curl conveyors, liquid-rainbow ripples, hash→value noise, exact C advection; display A. |
+
+
+### Batch 55 (4 shaders) — 2026-08-21 — GEOMETRY, FAST MOTION, PSYCHEDELIC COLOR
+
+This four-shader cohort upgrades Kaleido-Scope Prism grokcf1, RGB Topology,
+Elastic Strip, and Refraction Tunnel. Each keeps its core algorithm and adds
+shader-specific geometry (facet seams/grout, index isolines/ridge ticks,
+beveled sub-ribs, wall ribs/hoops/helical rails), two continuous motion
+structures plus held-pointer and capped click fronts, and psychedelic
+oil-slick / hypsometric / thin-film / liquid-rainbow color. Kaleido moves
+to 16x16x1 and keeps origin A as `[env, springXY, vel]` with display trails
+elsewhere; topology A stays `[lineR, lineG, lineB, alpha]`; strip and tunnel
+keep display RGBA in A. B is unused and no extraBuffer access was added.
+Tunnel's `floor(time)` hash caustics are replaced with analytic phases.
+Source `params` stay exact; indexed `updatedParams` are aligned. The explicit
+gate, strict buffer audit, dead-slider audit, and schema-aware contract audit
+pass 4/4; URL, duplicate, and uniform-layout checks pass; the production
+build is green. Full Jest is 80/81 suites (544 pass / 1 skip), blocked only by
+the unrelated committed malformed `gen-chrono-kinetic-fractal-engine.json`.
+Notes: `swarm-outputs/codex-2026-08-21-b55/`. Real-GPU visual QA remains
+external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 471 | `kaleido-scope-grokcf1` | 55 | 130→148 (+18) | 16x16, facet seams, wedge conveyor, radial packets, oil-slick prism, iris clicks; origin A state preserved. |
+| 472 | `rgb-topology` | 55 | 129→167 (+38) | Index isolines, ridge ticks, iso-runners, rainbow hypsometry, held shear, click fronts; mask A preserved. |
+| 473 | `elastic-strip` | 55 | 129→161 (+32) | Beveled sub-ribs, traveling plucks, thin-film stretch color, held drag, click plucks. |
+| 474 | `refraction-tunnel` | 55 | 129→147 (+18) | Ribs/hoops/helix, axial packets, analytic rainbow caustics, held aim, click rings. |
+
+### Batch 54 (8 shaders) — 2026-08-21 — PSYCHEDELIC UPGRADE
+
+This distinct psychedelic cohort upgrades Spiral Lens, Tile Twist, Page Curl
+Interactive, Tesseract Fold, Polar Warp Interactive, Echo Ripple, Scanline Wave,
+and Quantum Ripples. The effects now combine liquid rainbow interference,
+Möbius caustics, animated moiré seams, impossible-page tunnels, stained-glass
+hypercube faces, recursive polar mandalas, oil-slick echo wakes, phosphor
+auroras, probability clouds, and chromatic Voronoi diffraction with stronger
+held-pointer and bounded click response. Tile Twist's swapped Tile Size/Twist
+mapping is corrected and A is repaired to `[bassEnvelope, trailRGB]`; Polar Warp
+keeps truthful `[bassEnvelope, mouseX, mouseY, alpha]` state without treating it
+as RGB history. B remains unused throughout the cohort and no `extraBuffer`
+access was introduced. Source `params`, canonical bindings, 16x16x1 workgroups,
+depth ownership, and `plasmaBuffer[0].xyz` audio remain intact. The explicit
+gate, strict buffer audit, dead-slider audit, and schema-aware contract audit
+pass 8/8; URL, duplicate, and uniform-layout checks pass; the production build
+is green. Full Jest is 80/81 suites (544 pass / 1 skip), blocked only by the
+unrelated committed malformed `gen-chrono-kinetic-fractal-engine.json`. Notes:
+`swarm-outputs/codex-2026-08-21-b54/`. Real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 463 | `spiral-lens` | 54 | 195→217 (+22) | Liquid rainbow interference, Möbius caustics, held spiral focus, capped iris waves. |
+| 464 | `tile-twist` | 54 | 216→238 (+22) | Quilt palettes, moiré seams, held kaleidoscope, capped tile blasts; mapping and A feedback repaired. |
+| 465 | `page-curl-interactive` | 54 | 218→233 (+15) | Impossible-page tunnel, aurora backside, held curl/twist, capped fold shockwaves. |
+| 466 | `tesseract-fold` | 54 | 204→232 (+28) | Stained-glass faces, edge diffraction, held projection shear, capped fold shells; closed-form. |
+| 467 | `polar-warp-interactive` | 54 | 187→197 (+10) | Liquid tunnel bands, mandalas, stable sparkles, held singularity, capped spirals; truthful A state. |
+| 468 | `echo-ripple` | 54 | 193→203 (+10) | Thin-film rings, caustic wakes, spectral harmonics, bounded exact-load history advection. |
+| 469 | `scanline-wave` | 54 | 197→219 (+22) | Phosphor auroras, Lissajous bands, capped CRT shocks, smooth sparkle phases. |
+| 470 | `quantum-ripples` | 54 | 234→256 (+22) | Probability clouds, Voronoi diffraction, entangled twins, stronger bounded interaction. |
+
+### Batch 53 (8 shaders) — 2026-08-21 — FAST MOTION ENCORE
+
+The next clean single-pass cohort upgrades Pixel Sand, CRT Magnet, Scan Distort
+Matrix gpt52, Digital Lens, Chromatic Mosaic Projector, Chrono Slit Scan, Mosaic
+Reveal, and Quad Mirror. Each receives two shader-specific continuous-motion
+structures plus held-pointer and bounded click response: avalanche shelves and
+jets, degauss rings and beam sweeps, smooth scan tears, caustic zoom streaks,
+mosaic conveyors, traveling slit heads, flood runners, and mirrored spectral
+ribbons. Frame-quantized/time-hashed motion was replaced with analytic phases.
+Source `params`, established A/B/C packing, canonical bindings, 16x16x1
+workgroups, depth writes, and `plasmaBuffer[0].xyz` audio remain intact. The
+explicit gate, strict buffer audit, dead-slider audit, and schema-aware contract
+audit pass 8/8; URL, duplicate, and uniform-layout checks pass; the production
+build is green. Full Jest is 80/81 suites (544 pass / 1 skip), blocked only by
+the unrelated committed malformed `gen-chrono-kinetic-fractal-engine.json`.
+Notes: `swarm-outputs/codex-2026-08-21-b53/`. Real-GPU visual QA remains external.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|--------------------|--------------|
+| 455 | `pixel-sand` | 53 | 214→228 (+14) | Smooth avalanche sheets, rising jet lanes, held gravity, capped click shelves; B state preserved. |
+| 456 | `crt-magnet` | 53 | 211→234 (+23) | Degauss rings, beam sweeps, held field gain, exact C echo, capped shocks; A control packing preserved. |
+| 457 | `scan-distort-gpt52` | 53 | 206→233 (+27) | Smooth scan tears, diagonal conveyor, held band pull, stable grain, capped click shocks. |
+| 458 | `digital-lens` | 53 | 200→221 (+21) | Caustic zoom streaks, spectral runners, held gravity lens, capped iris waves; `[bassEnvelope, trailRGB]` preserved. |
+| 459 | `chromatic-mosaic-projector` | 53 | 204→223 (+19) | Crossed mosaic conveyors, tile runners, held gravity, capped chromatic blasts. |
+| 460 | `chrono-slit-scan` | 53 | 191→214 (+23) | Traveling slit heads, cross-runners, held slit bend, capped temporal fronts. |
+| 461 | `mosaic-reveal` | 53 | 237→258 (+21) | Opposing tile conveyors, smooth flood runners, held expansion, capped reveal fronts. |
+| 462 | `quad-mirror` | 53 | 180→201 (+21) | Mirrored ribbons, seam runners, held twist, capped fold shells; A/C trail preserved. |
 
 ### Batch 52 (8 shaders) — 2026-08-16 — INTERACTIVE VECTOR FIELDS & OPTICAL DYNAMICS
 

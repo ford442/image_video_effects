@@ -3,13 +3,22 @@
   "name": "Ambient Liquid Coupled",
   "url": "shaders/ambient-liquid-coupled.wgsl",
   "category": "advanced-hybrid",
-  "description": "Two viscous liquid layers coupled through a living membrane. Mouse presses like a finger into the surface, creating tears that slowly heal. Bass increases surface tension, making deformations more dramatic and persistent.",
+  "description": "Two persistent viscous height fields coupled through a living membrane, with bounded pointer velocity, held press and twist, click counter-waves, three-band tension, layer-separation optics, exact C state, ACES, and semantic alpha.",
   "features": [
     "mouse-pressure",
     "liquid-membrane",
     "audio-reactive",
     "depth-aware",
-    "temporal-feedback"
+    "temporal-feedback",
+    "mouse-driven",
+    "held-interaction",
+    "click-reactive",
+    "stateful-simulation",
+    "raw-coupled-height-state",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "liquid",

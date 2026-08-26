@@ -95,14 +95,6 @@ fn fresnelIridescence(cosTheta: f32, shift: f32) -> vec3<f32> {
   return hue * fresnel * 2.0;
 }
 
-// ═══ CHUNK: damped_wave ═══
-fn dampedWave(edgeConf: f32, time: f32, speed: f32, damp: f32, bass: f32, attract: f32) -> f32 {
-  let freq = edgeConf * 40.0 + 10.0;
-  let phase = time * speed * (1.0 + bass * 0.5);
-  let envelope = exp(-damp * 3.0) * (1.0 + bass * 0.6) * attract;
-  return sin(freq - phase) * envelope;
-}
-
 // ═══ CHUNK: depth_layer_separation ═══
 fn depthLayerSeparation(depth: f32, baseSep: f32, shift: f32) -> vec3<f32> {
   let layer1 = diffractionHue(depth * 2.0 + shift, shift);
@@ -115,29 +107,75 @@ fn depthLayerSeparation(depth: f32, baseSep: f32, shift: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+  // Persistent State (Single-Writer)
+  if (all(global_id.xy == vec2<u32>(0, 0))) {
+      let isDown = u.zoom_config.w > 0.5;
+      let target = select(0.0, 1.0, isDown);
+      var pos = extraBuffer[133];
+      var vel = extraBuffer[134];
+      let dt = 0.016;
+      let springForce = (target - pos) * 200.0;
+      let dampingForce = -vel * 15.0;
+      vel += (springForce + dampingForce) * dt;
+      pos += vel * dt;
+      pos = clamp(pos, 0.0, 1.0);
+      vel = clamp(vel, -10.0, 10.0);
+      extraBuffer[133] = pos;
+      extraBuffer[134] = vel;
+  }
+  
+  let pointerSpring = extraBuffer[133];
+
   let uv = vec2<f32>(global_id.xy) / resolution;
   let ps = 1.0 / resolution;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
+  
+  // Truthful three-band audio
   let bass = plasmaBuffer[0].x;
+  let mid = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let bin1 = plasmaBuffer[1].x;
+  
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
+  // Preserve existing params exactly
   let edgeThreshold = u.zoom_params.x * 0.5 + 0.05;
   let rippleSpeed = u.zoom_params.y * 5.0;
   let rippleDamp = u.zoom_params.z * 0.8 + 0.1;
   let holoShift = u.zoom_params.w * 2.0;
 
+  // Continuous geometry (edge mapping)
   let edgeConf = laplacianEdge(uv, ps);
   let edgeMask = smoothstep(edgeThreshold * 0.3, edgeThreshold, edgeConf);
-
   let grad = sobelGradient(uv, ps);
-  let edgeNormal = normalize(vec3(grad.x, grad.y, 0.05));
+  let edgeNormal = normalize(vec3(grad.x, grad.y, 0.05 + mid * 0.05));
 
   let aspect = resolution.x / resolution.y;
   let mouseDist = length((uv - mouse) * vec2(aspect, 1.0));
-  let mouseAttract = exp(-mouseDist * 4.0);
+  let mouseAttract = exp(-mouseDist * (4.0 - pointerSpring * 2.0)) * pointerSpring;
 
-  let wave = dampedWave(edgeConf, time, rippleSpeed, rippleDamp, bass, mouseAttract);
+  // Capped click fronts
+  var clickRipples = 0.0;
+  let clickCount = min(u32(u.config.y), 10u);
+  for (var i = 0u; i < clickCount; i = i + 1u) {
+      let r = u.ripples[i];
+      let dist = length((uv - r.xy) * vec2(aspect, 1.0));
+      let age = time - r.w;
+      if (age > 0.0 && age < 3.0) {
+          let front = age * rippleSpeed * 0.5;
+          let width = 0.1 + age * rippleDamp;
+          let wave = sin((dist - front) * 20.0) * exp(-age * 2.0) * smoothstep(width, 0.0, abs(dist - front));
+          clickRipples += wave * 0.5;
+      }
+  }
+  clickRipples = clamp(clickRipples, -1.0, 1.0);
+
+  let freq = edgeConf * 40.0 + 10.0;
+  let phase = time * rippleSpeed * (1.0 + bass * 0.5);
+  let envelope = exp(-rippleDamp * 3.0) * (1.0 + bass * 0.6) * mouseAttract;
+  let wave = sin(freq - phase) * envelope + clickRipples;
 
   let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let bgLuma = dot(bg.rgb, vec3(0.299, 0.587, 0.114));
@@ -145,7 +183,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let viewDir = normalize(vec3(uv - 0.5, 1.0));
   let cosTheta = dot(edgeNormal, viewDir);
 
-  let holo = fresnelIridescence(cosTheta, holoShift + time * 0.1 + edgeConf * 2.0);
+  let holo = fresnelIridescence(cosTheta, holoShift + time * 0.1 + edgeConf * 2.0 + mid * 0.2);
   let depthSep = depth * 0.3 + 0.1;
   let diffraction = holo * edgeMask * (1.0 + wave * 0.5) * depthSep;
 
@@ -153,23 +191,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let displaced = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
   let secondaryRipple = sin(edgeConf * 80.0 + time * rippleSpeed * 1.3) * 0.3 * edgeMask * mouseAttract;
-  let caustic = max(0.0, secondaryRipple) * diffractionHue(edgeConf * 6.0, holoShift) * 0.5;
+  let caustic = max(0.0, secondaryRipple) * diffractionHue(edgeConf * 6.0, holoShift) * 0.5 * (1.0 + treble * 0.4);
 
   let layeredHolo = depthLayerSeparation(depth, depthSep, holoShift);
   let layerMix = layeredHolo * edgeMask * 0.3 * (1.0 + bass * 0.3);
 
   let grain = hash21(uv * 500.0 + time) * 0.03 * edgeMask;
-  let emission = mix(bg.rgb, displaced, edgeMask * 0.35)
+  
+  // Exact textureLoad from dataTextureC
+  let pastData = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  
+  var emission = mix(bg.rgb, displaced, edgeMask * 0.35)
                + diffraction * (0.6 + bass * 0.4)
                + caustic
                + layerMix
-               + grain;
+               + grain
+               + clickRipples * vec3(0.2, 0.5, 1.0) * (1.0 + bin1);
+
+  emission = mix(emission, pastData.rgb, 0.3 * edgeMask);
+
+  // ACES tone map
   let tonemapped = aces_tonemap(emission);
 
-  var alpha = edgeMask * length(diffraction) * 2.5;
-  alpha = clamp(alpha + bg.a * (1.0 - edgeMask) * 0.25, 0.0, 1.0);
+  // Semantic alpha
+  var alpha = edgeMask * length(diffraction) * 2.5 + abs(clickRipples) * 2.0;
+  alpha = clamp(alpha + bg.a * (1.0 - edgeMask * 0.5), 0.0, 1.0);
 
-  let outCol = vec4(tonemapped, alpha);
+  let outCol = vec4<f32>(tonemapped, alpha);
+
+  // Write final display RGBA ONLY to dataTextureA (and writeTexture)
   textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, vec2<i32>(global_id.xy), outCol);

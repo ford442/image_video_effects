@@ -1,16 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  melting-oil-blackbody
-//  Category: advanced-hybrid
-//  Features: melting-oil, blackbody-radiation, HDR, gradient-flow
-//  Complexity: High
-//  Chunks From: melting-oil.wgsl, spec-blackbody-thermal.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-14 — Liquid Effects Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Oil paint melts along Sobel gradient flows while its luminance
-//  is mapped to blackbody temperature, creating physically-based
-//  thermal colors that flow like heated liquid metal.
-// ═══════════════════════════════════════════════════════════════════
+// Melting Oil Blackbody — Codex (e) thermal-gradient oil transport.
+// A/C packing: velocity.xy, normalized temperature, molten coverage.
+// B and extraBuffer are intentionally unused; C loads are exact and bounded.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,142 +23,131 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: toneMapACES (from spec-blackbody-thermal.wgsl) ═══
-fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// ═══ CHUNK: blackbodyColor (from spec-blackbody-thermal.wgsl) ═══
-fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
-  let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
-  var r: f32;
-  var g: f32;
-  var b: f32;
+fn blackbody(kelvin: f32) -> vec3<f32> {
+  let t = clamp(kelvin / 1000.0, 0.8, 15.0);
+  var rgb = vec3<f32>(1.0);
   if (t <= 6.5) {
-    r = 1.0;
-    g = clamp(0.39 * log(t) - 0.63, 0.0, 1.0);
-    b = clamp(0.54 * log(t - 1.0) - 1.0, 0.0, 1.0);
+    rgb.r = 1.0;
+    rgb.g = clamp(0.39 * log(max(t, 0.001)) - 0.63, 0.0, 1.0);
+    rgb.b = clamp(0.54 * log(max(t - 1.0, 0.001)) - 1.0, 0.0, 1.0);
   } else {
-    r = clamp(1.29 * pow(t - 0.6, -0.133), 0.0, 1.0);
-    g = clamp(1.29 * pow(t - 0.6, -0.076), 0.0, 1.0);
-    b = 1.0;
+    rgb.r = clamp(1.29 * pow(max(t - 0.6, 0.001), -0.133), 0.0, 1.0);
+    rgb.g = clamp(1.29 * pow(max(t - 0.6, 0.001), -0.076), 0.0, 1.0);
+    rgb.b = 1.0;
   }
-  let radiance = pow(t / 6.5, 4.0);
-  return vec3<f32>(r, g, b) * radiance;
+  return rgb * (0.35 + 0.65 * pow(t / 6.5, 2.0));
+}
+
+fn stateAt(pixel: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC,
+    clamp(pixel, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
+fn stateUV(uv: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+  return stateAt(vec2<i32>(floor(uv * vec2<f32>(dims))), dims);
+}
+
+fn sourceLuma(uv: vec2<f32>) -> f32 {
+  let c = textureSampleLevel(readTexture, u_sampler,
+    clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let id = vec2<u32>(global_id.xy);
-  let coord = vec2<i32>(i32(id.x), i32(id.y));
-  let dim = textureDimensions(readTexture);
-  var uv = vec2<f32>(f32(id.x), f32(id.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let dims = vec2<i32>(res);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+  let texel = 1.0 / res;
+  let aspect = res.x / max(res.y, 1.0);
   let time = u.config.x;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  let viscosity = mix(0.85, 0.99, u.zoom_params.x);
-  let tempRangeLow = mix(800.0, 2500.0, u.zoom_params.y);
-  let tempRangeHigh = mix(4000.0, 15000.0, u.zoom_params.y);
-  let thermalIntensity = mix(0.5, 3.0, u.zoom_params.z);
-  let glowAmount = mix(0.0, 0.8, u.zoom_params.w);
+  let viscosity = mix(0.985, 0.84, u.zoom_params.x);
+  let thermalRange = mix(0.65, 1.55, u.zoom_params.y);
+  let radiation = mix(0.55, 2.8, u.zoom_params.z);
+  let emberBloom = mix(0.02, 0.75, u.zoom_params.w);
 
-  // === SOBEL GRADIENT FLOW (from melting-oil) ===
-  var h: array<f32, 9>;
-  var k: u32 = 0u;
-  for (var y: i32 = -1; y <= 1; y = y + 1) {
-    for (var x: i32 = -1; x <= 1; x = x + 1) {
-      let sample = textureLoad(readTexture, coord + vec2<i32>(x, y), 0).r;
-      h[k] = sample;
-      k = k + 1u;
+  let gx = sourceLuma(uv + vec2<f32>(texel.x, 0.0)) -
+    sourceLuma(uv - vec2<f32>(texel.x, 0.0));
+  let gy = sourceLuma(uv + vec2<f32>(0.0, texel.y)) -
+    sourceLuma(uv - vec2<f32>(0.0, texel.y));
+  let gradient = vec2<f32>(gx, gy);
+  let gradLength = max(length(gradient), 0.0001);
+  let downhill = vec2<f32>(gradient.x, abs(gradient.y) + 0.08) / gradLength;
+
+  let previous = stateAt(coord, dims);
+  var velocity = previous.xy * viscosity;
+  velocity += vec2<f32>(-gradient.y, gradient.x) * (0.004 + audio.y * 0.005);
+  velocity += downhill * (0.0015 + (1.0 - viscosity) * 0.014);
+  velocity += vec2<f32>(sin(uv.y * 19.0 + time * 2.1),
+    cos(uv.x * 17.0 - time * 1.7)) * audio.z * 0.0016;
+
+  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseP = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseDelta = p - mouseP;
+  let mouseDist = max(length(mouseDelta), 0.0001);
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
+  let mouseHeat = exp(-mouseDist * mouseDist * 70.0) * held;
+  velocity += vec2<f32>(-mouseDelta.y / aspect, mouseDelta.x) / mouseDist *
+    mouseHeat * 0.018;
+
+  var clickHeat = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = time - event.z;
+    if (age >= 0.0 && age < 3.0) {
+      let q = (uv - event.xy) * vec2<f32>(aspect, 1.0);
+      let d = max(length(q), 0.0001);
+      let front = exp(-abs(d - age * 0.30) * 34.0 - age * 0.9);
+      velocity += vec2<f32>(q.x / aspect, q.y) / d * front * 0.011;
+      clickHeat += front;
     }
   }
-  let gx = (h[2] + 2.0*h[5] + h[8]) - (h[0] + 2.0*h[3] + h[6]);
-  let gy = (h[6] + 2.0*h[7] + h[8]) - (h[0] + 2.0*h[1] + h[2]);
-  var flow_dir = normalize(vec2<f32>(gx, gy));
 
-  // Mouse influence on drag center
-  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-  let to_mouse = mouse_pos - uv;
-  let dist_to_mouse = length(to_mouse);
-  if (dist_to_mouse < 0.3) {
-    let mouse_force = normalize(to_mouse) * (1.0 - dist_to_mouse / 0.3);
-    flow_dir = normalize(flow_dir + mouse_force * 0.5);
-  }
+  velocity = clamp(velocity, vec2<f32>(-0.055), vec2<f32>(0.055));
+  let advectedUV = clamp(uv - velocity, vec2<f32>(0.0), vec2<f32>(1.0));
+  let advected = stateUV(advectedUV, dims);
+  let neighbors = (stateAt(coord + vec2<i32>(-1, 0), dims) +
+    stateAt(coord + vec2<i32>(1, 0), dims) +
+    stateAt(coord + vec2<i32>(0, -1), dims) +
+    stateAt(coord + vec2<i32>(0, 1), dims)) * 0.25;
 
-  // Ripples stir the flow
-  for (var i = 0; i < 50; i++) {
-    let ripple = u.ripples[i];
-    if (ripple.z > 0.0) {
-      let ripple_age = time - ripple.z;
-      if (ripple_age > 0.0 && ripple_age < 3.0) {
-        let to_ripple = uv - ripple.xy;
-        let dist_to_ripple = length(to_ripple);
-        if (dist_to_ripple < 0.15) {
-          let ripple_force = vec2<f32>(-to_ripple.y, to_ripple.x) * 0.3 * (1.0 - ripple_age / 3.0);
-          flow_dir = normalize(flow_dir + ripple_force);
-        }
-      }
-    }
-  }
+  let luma = sourceLuma(advectedUV);
+  var temperature = mix(advected.z, neighbors.z, 0.08 + (1.0 - viscosity) * 0.18);
+  temperature += (0.12 + luma * 0.42) * thermalRange * 0.035;
+  temperature += mouseHeat * 0.14 + clickHeat * 0.055 + audio.x * 0.018;
+  temperature *= 0.988;
+  temperature = clamp(temperature, 0.03, 1.35);
+  var molten = mix(advected.w, smoothstep(0.18, 0.72, temperature), 0.075);
+  molten = clamp(molten + mouseHeat * 0.04 + clickHeat * 0.018, 0.0, 1.0);
 
-  // Viscosity drag
-  let last_pos = vec2<f32>(f32(coord.x), f32(coord.y)) - flow_dir * viscosity * 3.0;
-  let color = textureSampleLevel(readTexture, u_sampler, last_pos / vec2<f32>(f32(dim.x), f32(dim.y)), 0.0);
-  let flow_speed = length(vec2<f32>(gx, gy));
+  textureStore(dataTextureA, coord, vec4<f32>(velocity, temperature, molten));
 
-  // === BLACKBODY THERMAL (from spec-blackbody-thermal) ===
-  let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let source = textureSampleLevel(readTexture, u_sampler, advectedUV, 0.0);
+  let kelvin = mix(850.0, 12500.0, clamp(temperature * thermalRange, 0.0, 1.0));
+  let thermal = blackbody(kelvin) * radiation;
+  let ember = pow(clamp(temperature, 0.0, 1.0), 3.0) *
+    (emberBloom + audio.z * 0.22);
+  var rgb = mix(source.rgb * vec3<f32>(0.23, 0.16, 0.12), thermal,
+    clamp(0.28 + molten * 0.68, 0.0, 0.94));
+  rgb += blackbody(kelvin * 1.18) * ember + vec3<f32>(1.0, 0.08, 0.01) * clickHeat * 0.15;
+  let alpha = clamp(source.a * (0.58 + molten * 0.32) +
+    temperature * 0.16 + mouseHeat * 0.08, 0.0, 1.0);
+  textureStore(writeTexture, coord, vec4<f32>(aces(rgb), alpha));
 
-  // Map luminance + flow speed to temperature
-  var temperature = mix(tempRangeLow, tempRangeHigh, luma + flow_speed * 0.05);
-
-  // Mouse creates local hotspots
-  let isMouseDown = u.zoom_config.w > 0.5;
-  if (isMouseDown) {
-    let mouseDist = length(uv - mouse_pos);
-    let mouseHeat = exp(-mouseDist * mouseDist * 400.0);
-    temperature += mouseHeat * tempRangeHigh * 0.5;
-  }
-
-  var thermalColor = blackbodyColor(temperature) * thermalIntensity;
-
-  // Ember glow around bright/flowing regions
-  if (glowAmount > 0.01) {
-    let glowRadius = 0.03;
-    var glowAccum = vec3<f32>(0.0);
-    let glowSamples = 16;
-    for (var i: i32 = 0; i < glowSamples; i = i + 1) {
-      let angle = f32(i) * 0.392699 + time * 0.3;
-      let offset = vec2<f32>(cos(angle), sin(angle)) * glowRadius;
-      let s = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
-      let sLuma = dot(s, vec3<f32>(0.299, 0.587, 0.114));
-      let sTemp = mix(tempRangeLow, tempRangeHigh, sLuma);
-      glowAccum += blackbodyColor(sTemp) * thermalIntensity;
-    }
-    glowAccum /= f32(glowSamples);
-    thermalColor = mix(thermalColor, glowAccum, glowAmount * 0.4);
-  }
-
-  let displayColor = toneMapACES(thermalColor);
-
-  // Melting hue shift based on flow
-  let hue_shift = flow_speed * 0.1 + time * 0.01;
-  let shifted = vec3<f32>(
-    displayColor.r * (0.8 + 0.2 * sin(hue_shift)),
-    displayColor.g * (0.8 + 0.2 * cos(hue_shift)),
-    displayColor.b * (0.8 + 0.2 * sin(hue_shift + 1.57))
-  );
-
-  // Alpha based on flow speed (more flow = more opaque)
-  let alpha = clamp(0.5 + flow_speed * 2.0 + luma * 0.3, 0.0, 1.0);
-
-  textureStore(dataTextureB, coord, vec4<f32>(shifted, alpha));
-  textureStore(writeTexture, id, vec4<f32>(shifted, alpha));
-
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler,
+    advectedUV, 0.0).r;
+  textureStore(writeDepthTexture, coord,
+    vec4<f32>(clamp(depth - molten * 0.018 - temperature * 0.008, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

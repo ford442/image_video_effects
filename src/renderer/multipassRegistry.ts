@@ -179,7 +179,7 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
           "dataC"
         ],
         "writes": [
-          "dataB"
+          "dataA"
         ]
       },
       {
@@ -289,43 +289,6 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       }
     ]
   },
-  "optical-flow-dream": {
-    "maxPassesPerFrame": 8,
-    "nodes": [
-      {
-        "id": "flow",
-        "entry": "optical-flow-estimate",
-        "reads": [
-          "dataC"
-        ],
-        "writes": [
-          "dataA"
-        ]
-      },
-      {
-        "id": "advect",
-        "entry": "optical-flow-advect",
-        "reads": [
-          "dataC"
-        ],
-        "writes": [
-          "dataA"
-        ],
-        "repeat": 2
-      },
-      {
-        "id": "grade",
-        "entry": "optical-flow-grade",
-        "reads": [
-          "dataC"
-        ],
-        "writes": [
-          "color",
-          "dataA"
-        ]
-      }
-    ]
-  },
   "photonic-caustics-graph": {
     "maxPassesPerFrame": 8,
     "nodes": [
@@ -419,22 +382,24 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
           "dataA"
         ],
         "writes": [
-          "dataB"
+          "dataA"
         ]
       },
       {
         "id": "gather",
         "entry": "ripple-tank-pass2",
         "reads": [
-          "dataB"
+          "dataA"
         ],
-        "writes": []
+        "writes": [
+          "dataA"
+        ]
       },
       {
         "id": "render",
         "entry": "ripple-tank-pass3",
         "reads": [
-          "dataB"
+          "dataA"
         ],
         "writes": [
           "color",

@@ -13,11 +13,17 @@
     "oxidation",
     "patina"
   ],
-  "description": "Procedural diffusion-limited aggregation copper dendrite growth. Domain-warped fBm noise simulates random walker deposition with stick probability, producing metallic branching structures with oxidation patina and electrolyte depletion fields.",
+  "description": "Persistent diffusion-limited copper growth with exact eight-neighbor aggregation, electrolyte depletion, stored oxidation age, and conductive tip activity. Bass thickens deposition, mids tune attachment, treble drives sparks, held mouse acts as an electrode, and timestamp-bounded clicks nucleate new dendrites.",
   "workgroup_size": [
     16,
     16,
     1
+  ],
+  "params": [
+    { "id": "growth_scale", "name": "Growth Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "arm_count", "name": "Arm Count", "default": 0.35, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "oxidation", "name": "Oxidation", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "spark_intensity", "name": "Spark Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
   ],
   "updatedParams": [
     {
@@ -58,5 +64,6 @@
   "updated": true,
   "id": "gen-dla-copper-deposition",
   "url": "shaders/gen-dla-copper-deposition.wgsl",
-  "features": []
+  "features": ["persistent-state", "audio-reactive", "mouse-driven", "click-reactive", "semantic-alpha", "aces-tonemap"],
+  "feedbackPacking": "A/C = deposit, electrolyte depletion, oxidation age, fresh-tip activity; exact eight-neighbor DLA state"
 }

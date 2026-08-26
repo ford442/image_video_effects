@@ -1,0 +1,26 @@
+{
+  "id": "gen-fibonacci-spiral-garden",
+  "url": "shaders/gen-fibonacci-spiral-garden.wgsl",
+  "name": "Fibonacci Spiral Garden",
+  "category": "generative",
+  "tags": ["fibonacci", "phyllotaxis", "spiral", "garden", "bloom", "audio-reactive"],
+  "description": "Ninety-six golden-angle blossoms unfurl as an interactive phyllotaxis garden with spectral petals and click-seeded growth fronts.",
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {"id": "spiralScale", "name": "Spiral Scale", "default": 0.62, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
+    {"id": "growthCycle", "name": "Growth Cycle", "default": 0.38, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
+    {"id": "petalSize", "name": "Petal Size", "default": 0.38, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
+    {"id": "bloom", "name": "Bloom", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
+  ],
+  "updatedParams": [
+    {"index": 0, "name": "Spiral Scale", "default": 0.62, "min": 0, "max": 1, "step": 0.01},
+    {"index": 1, "name": "Growth Cycle", "default": 0.38, "min": 0, "max": 1, "step": 0.01},
+    {"index": 2, "name": "Petal Size", "default": 0.38, "min": 0, "max": 1, "step": 0.01},
+    {"index": 3, "name": "Bloom", "default": 0.65, "min": 0, "max": 1, "step": 0.01}
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": ["audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "feedbackPacking": "A/C = raw HDR display RGBA history"
+}

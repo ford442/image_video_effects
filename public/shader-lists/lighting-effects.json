@@ -2,7 +2,7 @@
   {
     "id": "alpha-aurora-bands",
     "name": "Alpha Aurora Bands",
-    "url": "shaders/alpha-aurora-bands.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-aurora-bands.wgsl",
     "description": "Physically-motivated aurora borealis simulation with emission-line spectral decomposition. RGB stores oxygen green, oxygen red, and nitrogen blue emission intensities. Alpha tracks altitude layer index. Mouse controls solar wind direction; ripples trigger magnetic reconnection substorms.",
     "tags": [
       "aurora",
@@ -60,7 +60,7 @@
   {
     "id": "aurora-rift-2-pass1",
     "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
-    "url": "shaders/aurora-rift-2-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-2-pass1.wgsl",
     "description": "Enhanced volumetric aurora with improved flow dynamics. First pass of 2-pass system.",
     "features": [
       "multi-pass-1",
@@ -81,23 +81,7 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -105,8 +89,24 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion_rate",
+        "name": "Diffusion Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fbm_octaves",
+        "name": "FBM Octaves",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -117,7 +117,7 @@
   {
     "id": "aurora-rift-pass1",
     "name": "Aurora Rift (Pass 1: Volumetric)",
-    "url": "shaders/aurora-rift-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-pass1.wgsl",
     "description": "Raymarches volumetric aurora with curl-driven flow. First pass of 2-pass system.",
     "features": [
       "multi-pass-1",
@@ -138,23 +138,7 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -162,8 +146,24 @@
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion_rate",
+        "name": "Diffusion Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fbm_octaves",
+        "name": "FBM Octaves",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -174,7 +174,7 @@
   {
     "id": "aurora_borealis",
     "name": "Aurora Borealis",
-    "url": "shaders/aurora_borealis.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aurora_borealis.wgsl",
     "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
     "tags": [
       "aurora",
@@ -192,15 +192,15 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Ribbons",
+        "id": "num_ribbons",
+        "name": "Num Ribbons",
         "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.1
       },
       {
-        "id": "param2",
+        "id": "flow_speed",
         "name": "Flow Speed",
         "default": 0.4,
         "min": 0,
@@ -208,7 +208,7 @@
         "step": 0.1
       },
       {
-        "id": "param3",
+        "id": "ribbon_width",
         "name": "Ribbon Width",
         "default": 0.3,
         "min": 0,
@@ -216,8 +216,8 @@
         "step": 0.1
       },
       {
-        "id": "param4",
-        "name": "Glow",
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
         "default": 0.7,
         "min": 0,
         "max": 1,
@@ -230,7 +230,7 @@
     "id": "cinematic-flare",
     "name": "Cinematic Flare",
     "category": "lighting-effects",
-    "url": "shaders/cinematic-flare.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cinematic-flare.wgsl",
     "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, rainbow chromatic aberration, ACES tone mapping, and film grain. Mouse positions light source.",
     "features": [
       "audio-reactive",
@@ -286,7 +286,7 @@
   {
     "id": "divine-light-gpt52",
     "name": "Divine Light Cathedral gpt52",
-    "url": "shaders/divine-light-gpt52.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/divine-light-gpt52.wgsl",
     "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
     "params": [
       {
@@ -336,7 +336,7 @@
   {
     "id": "divine-light",
     "name": "Divine Light",
-    "url": "shaders/divine-light.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/divine-light.wgsl",
     "description": "Volumetric god rays emanating from cursor position. Creates cinematic light beam effects.",
     "params": [
       {
@@ -383,7 +383,7 @@
   {
     "id": "dynamic-lens-flares",
     "name": "Dynamic Lens Flares",
-    "url": "shaders/dynamic-lens-flares.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/dynamic-lens-flares.wgsl",
     "description": "Cinematic lens flare following cursor. Generates ghost elements and chromatic artifacts.",
     "params": [
       {
@@ -428,7 +428,7 @@
   {
     "id": "lens-flare-brush",
     "name": "Lens Flare Brush",
-    "url": "shaders/lens-flare-brush.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/lens-flare-brush.wgsl",
     "description": "Generates anamorphic lens flares from bright pixels near the mouse.",
     "params": [
       {
@@ -477,7 +477,7 @@
   {
     "id": "matrix_digital_rain",
     "name": "Matrix Digital Rain",
-    "url": "shaders/matrix_digital_rain.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/matrix_digital_rain.wgsl",
     "description": "Matrix digital rain with cascading characters, decoding effect, trail fades, and glow. Alpha tracks character brightness.",
     "tags": [
       "matrix",
@@ -496,32 +496,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Speed",
+        "id": "layer_speed_low",
+        "name": "Layer Speed Low",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.1
       },
       {
-        "id": "param2",
-        "name": "Density",
+        "id": "layer_speed_high",
+        "name": "Layer Speed High",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.1
       },
       {
-        "id": "param3",
-        "name": "Glow Size",
+        "id": "edge_glow",
+        "name": "Edge Glow",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.1
       },
       {
-        "id": "param4",
-        "name": "Scanlines",
+        "id": "fog_density",
+        "name": "Fog Density",
         "default": 0.2,
         "min": 0,
         "max": 1,
@@ -533,7 +533,7 @@
   {
     "id": "neon-light",
     "name": "Neon Light",
-    "url": "shaders/neon-light.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neon-light.wgsl",
     "description": "Blackbody edge emission with Fresnel-bright depth normals, thermal fog, and mouse-heated hotspots.",
     "params": [
       {
@@ -584,7 +584,7 @@
   {
     "id": "neon-pulse-edge",
     "name": "Neon Pulse Edge",
-    "url": "shaders/neon-pulse-edge.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neon-pulse-edge.wgsl",
     "description": "3×3 Sobel edge detection with multi-layer bloom (tight core + wide halo + diffuse), direction-based hue cycling, depth-aware glow intensity, and audio-reactive pulsing.",
     "features": [
       "mouse-driven",
@@ -639,7 +639,7 @@
   {
     "id": "sim-volumetric-fake-em",
     "name": "Volumetric Fake + EM Field",
-    "url": "shaders/sim-volumetric-fake-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-volumetric-fake-em.wgsl",
     "description": "God rays with mouse electromagnetic field distortion. Electric field bends light rays; magnetic field causes chromatic RGB separation. Click ripples spawn secondary light charges.",
     "features": [
       "simulation",
@@ -714,7 +714,7 @@
     "id": "temporal_echo",
     "name": "Temporal Echo",
     "url": "shaders/temporal_echo.wgsl",
-    "description": "Multi-frame echo accumulation with hue-rotating trails, chromatic aberration on older echoes, depth-layered decay, and audio-reactive beat flash.",
+    "description": "Raw HDR echoes orbit the pointer with depth weighting, exact chromatic channel transport, hue rotation, held acceleration, and click-launched echo fronts.",
     "tags": [
       "temporal",
       "echo",
@@ -727,7 +727,14 @@
     "features": [
       "temporal",
       "depth-aware",
-      "audio-reactive"
+      "audio-reactive",
+      "exact-history",
+      "raw-hdr-feedback",
+      "aces-tone-map",
+      "three-band-audio",
+      "mouse-driven",
+      "held-pointer",
+      "click-reactive"
     ],
     "params": [
       {
@@ -762,12 +769,47 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Decay Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Hue Shift Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chroma Spread",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = raw HDR echo RGB and semantic alpha via bounded exact chromatic loads; writeTexture alone is ACES tone-mapped; B is unused"
   },
   {
     "id": "underwater_caustics",
     "name": "Underwater Caustics",
-    "url": "shaders/underwater_caustics.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/underwater_caustics.wgsl",
     "description": "Realistic underwater caustics with Gerstner wave surface simulation, refracted light patterns, god rays, and depth-based alpha",
     "tags": [
       "water",
@@ -785,7 +827,7 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "wave_scale",
         "name": "Wave Scale",
         "default": 0.4,
         "min": 0,
@@ -793,7 +835,7 @@
         "step": 0.1
       },
       {
-        "id": "param2",
+        "id": "caustic_intensity",
         "name": "Caustic Intensity",
         "default": 0.7,
         "min": 0,
@@ -801,7 +843,7 @@
         "step": 0.1
       },
       {
-        "id": "param3",
+        "id": "depth",
         "name": "Depth",
         "default": 0.3,
         "min": 0,
@@ -809,7 +851,7 @@
         "step": 0.1
       },
       {
-        "id": "param4",
+        "id": "clarity",
         "name": "Clarity",
         "default": 0.7,
         "min": 0,

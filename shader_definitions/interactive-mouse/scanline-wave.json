@@ -2,6 +2,8 @@
   "id": "scanline-wave",
   "name": "Scanline Wave",
   "url": "shaders/scanline-wave.wgsl",
+  "description": "CRT phosphor aurora with sprung cursor, held local distortion, capped click shockwaves, exact C bass-envelope trail, ACES premultiplied alpha. Preserves [premultipliedRGB, drive] A packing.",
+  "workgroup_size": [16, 16, 1],
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -13,52 +15,25 @@
     "HDR-color-grading",
     "ACES-tone-map",
     "IGN-dither",
-    "premultiplied-alpha"
+    "premultiplied-alpha",
+    "phosphor-aurora",
+    "lissajous-bands",
+    "bounded-click-ripples",
+    "spring-cursor",
+    "held-drag"
   ],
-  "description": "Temporal scanline persistence with chromatic CRT aberration, envelope-smoothed audio reactivity, and HDR color grading. Each scanline undulates with bass-driven amplitude; mouse proximity boosts local distortion. Treble adds per-scanline chromatic shift and high-frequency sparkle, while the smoothed bass envelope rolls the field and drives blackbody color temperature shifts. ACES tone mapping, hue-preserving HDR clamp, and IGN dither finish the image.",
+  "updated": true,
   "params": [
-    {
-      "id": "waveAmount",
-      "name": "Wave Amount",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "lineCount",
-      "name": "Line Count",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "persistence",
-      "name": "Persistence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "audioMix",
-      "name": "Audio Mix",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
+    { "id": "waveAmount", "name": "Wave Amount", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.x" },
+    { "id": "lineCount", "name": "Line Count", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.y" },
+    { "id": "persistence", "name": "Persistence", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.z" },
+    { "id": "audioMix", "name": "Audio Mix", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.w" }
   ],
-  "tags": [
-    "mouse-driven",
-    "interactive",
-    "distortion",
-    "scanlines",
-    "CRT",
-    "temporal",
-    "chromatic",
-    "audio-reactive",
-    "audio-envelope",
-    "treble-sparkle",
-    "HDR",
-    "ACES",
-    "dither"
-  ]
+  "updatedParams": [
+    { "index": 0, "name": "Wave Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Line Count", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Persistence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Audio Mix", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "tags": ["mouse-driven", "interactive", "distortion", "scanlines", "CRT", "temporal", "chromatic", "audio-reactive", "ACES", "dither"]
 }

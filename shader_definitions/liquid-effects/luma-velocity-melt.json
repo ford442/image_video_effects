@@ -9,9 +9,15 @@
     "depth-aware",
     "upgraded-rgba",
     "chromatic-drip",
-    "curl-turbulence"
+    "curl-turbulence",
+    "held-interaction",
+    "click-reactive",
+    "temporal",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
-  "description": "Image melts downwards with curl-noise turbulence. Bright pixels drip faster; chromatic separation makes R/B channels drip at different rates. Audio heat pulses and depth viscosity modulate flow.",
+  "description": "Exact-load HDR history melts downward under luma-derived velocity, curl turbulence, depth viscosity, held pointer stirring, click fronts, three-band heat and chromatic flow, ACES, and semantic alpha.",
   "params": [
     {
       "name": "Melt Speed",

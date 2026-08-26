@@ -71,6 +71,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let highlightShift = u.zoom_params.w;
   let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
+  // Low-viscosity pointer inertia uses only the safe persistent range.
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var sprungMouse = u.zoom_config.yz;
+  var pointerVelocity = vec2<f32>(0.0);
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    sprungMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    pointerVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  }
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    var springPos = sprungMouse; var springVel = pointerVelocity;
+    let seeded = extraBuffer[138] > 0.5;
+    if (!seeded) { springPos = u.zoom_config.yz; springVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.04), seeded);
+    springVel += ((u.zoom_config.yz - springPos) * 260.0 - springVel * 24.0) * dt;
+    springPos += springVel * dt;
+    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time; extraBuffer[138] = 1.0;
+  }
+
   let rawDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthFactor = mix(1.0, 0.35, clamp(rawDepth, 0.0, 1.0));
 
@@ -87,13 +107,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var kineticEnergy = length(totalDisp);
 
   // Interactive pointer drag / vortex circulation
-  let mousePos = u.zoom_config.yz;
+  let mousePos = sprungMouse;
   let isMouseDown = u.zoom_config.w;
   let mouseDelta = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let mouseDist = max(length(mouseDelta), 0.001);
   let dragCore = exp(-mouseDist * 7.5);
   let vortexTangent = vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDist;
-  let dragWake = vortexTangent * dragCore * (0.008 + turbulence * 0.015) * (1.0 + isMouseDown * 2.5);
+  let inertialJet = pointerVelocity / vec2<f32>(aspect, 1.0) * dragCore * 0.012;
+  let dragWake = vortexTangent * dragCore * (0.008 + turbulence * 0.015) * (1.0 + isMouseDown * 2.5) + inertialJet;
   totalDisp += vec2<f32>(dragWake.x / aspect, dragWake.y);
 
   // Capped ripple shockwaves with radial wave packet dispersion

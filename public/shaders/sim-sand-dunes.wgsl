@@ -1,14 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Sim: Sand Dunes
-//  Category: simulation
-//  Features: simulation, cellular-automata, falling-sand, wind-erosion
-//  Complexity: High
-//  Created: 2026-03-22
-//  By: Agent 3B - Advanced Hybrid Creator
-// ═══════════════════════════════════════════════════════════════════
-//  Falling sand physics with wind erosion
-//  Grid-based: sand falls, piles at angle of repose, wind moves loose sand
-// ═══════════════════════════════════════════════════════════════════
+// Sand Dunes — height-field saltation, avalanching, and wind erosion.
+// A/C: height, loose grains, downslope velocity, moisture/cohesion.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -23,133 +14,37 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-}
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+fn sandAt(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> { return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0); }
+fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453); }
+fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0)); }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
-    
-    let uv = vec2<f32>(gid.xy) / resolution;
-    let time = u.config.x;
-    
-    // Parameters
-    let gravity = mix(0.5, 2.0, u.zoom_params.x);     // x: Gravity strength
-    let wind = mix(-0.1, 0.1, u.zoom_params.y);       // y: Wind direction/speed
-    let viscosity = mix(0.9, 0.99, u.zoom_params.z);  // z: Sand viscosity
-    let erosion = mix(0.0, 0.1, u.zoom_params.w);     // w: Erosion rate
-    
-    // Read current cell
-    let this_val = textureLoad(dataTextureC, gid.xy, 0).r;
-    let selfType = textureLoad(dataTextureC, gid.xy, 0).g; // Sand type/color variation
-    
-    // Read neighbors
-    let below = textureLoad(dataTextureC, gid.xy - vec2<u32>(0u, 1u), 0).r;
-    let belowLeft = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 1u), 0).r;
-    let belowRight = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 1u), 0).r;
-    let left = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 0u), 0).r;
-    let right = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 0u), 0).r;
-    let above = textureLoad(dataTextureC, gid.xy + vec2<u32>(0u, 1u), 0).r;
-    
-    var newState = this_val;
-    var newType = selfType;
-    
-    // Sand physics
-    if (this_val > 0.5) {
-        // This cell has sand - try to fall
-        if (below < 0.5) {
-            // Fall straight down
-            newState = 0.0;
-        } else if (belowLeft < 0.5 && belowRight < 0.5) {
-            // Slide down randomly
-            newState = select(0.0, 1.0, hash12(uv + time) > 0.5);
-        } else if (belowLeft < 0.5) {
-            // Slide left
-            newState = 0.0;
-        } else if (belowRight < 0.5) {
-            // Slide right
-            newState = 0.0;
-        }
-        
-        // Wind erosion - move sand horizontally
-        if (newState > 0.5 && hash12(uv + time * 0.1) < abs(wind) * 5.0) {
-            if (wind > 0.0 && right < 0.5) {
-                newState = 0.0;
-            } else if (wind < 0.0 && left < 0.5) {
-                newState = 0.0;
-            }
-        }
-    } else {
-        // Empty - check if sand falls into here
-        let aboveLeft = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 1u), 0).r;
-        let aboveRight = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 1u), 0).r;
-        let aboveType = textureLoad(dataTextureC, gid.xy + vec2<u32>(0u, 1u), 0).g;
-        
-        if (above > 0.5) {
-            newState = above;
-            newType = aboveType;
-        } else if (aboveLeft > 0.5 && wind > 0.0 && hash12(uv + time) < abs(wind) * 10.0) {
-            newState = aboveLeft;
-            newType = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 1u), 0).g;
-        } else if (aboveRight > 0.5 && wind < 0.0 && hash12(uv + time) < abs(wind) * 10.0) {
-            newState = aboveRight;
-            newType = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 1u), 0).g;
-        }
-    }
-    
-    // Add new sand at mouse position
-    let mousePos = u.zoom_config.yz;
-    let mouseDist = length(uv - mousePos);
-    if (mouseDist < 0.03) {
-        newState = 1.0;
-        newType = fract(time * 0.1);
-    }
-    
-    // Initialize with some sand at bottom
-    if (time < 1.0 && uv.y < 0.1 && hash12(uv * 10.0) > 0.3) {
-        newState = 1.0;
-        newType = hash12(uv);
-    }
-    
-    // Store state
-    textureStore(dataTextureA, gid.xy, vec4<f32>(newState, newType, 0.0, 1.0));
-    
-    // Color based on sand type
-    let sandColors = array<vec3<f32>, 4>(
-        vec3<f32>(0.94, 0.78, 0.53), // Gold
-        vec3<f32>(0.91, 0.67, 0.41), // Orange
-        vec3<f32>(0.85, 0.55, 0.32), // Rust
-        vec3<f32>(0.76, 0.60, 0.42)  // Brown
-    );
-    
-    let colorIdx = i32(newType * 4.0) % 4;
-    var sandColor = sandColors[colorIdx];
-    
-    // Add shading based on neighbors
-    if (newState > 0.5) {
-        let heightDiff = above - below;
-        sandColor *= (0.8 + heightDiff * 0.2);
-    }
-    
-    // Blend with background
-    let bgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let finalColor = mix(bgColor * 0.5, sandColor, newState);
-    
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = mix(0.85, 1.0, newState);
-    
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - newState * 0.2), 0.0, 0.0, 0.0));
+  let size = vec2<u32>(u32(u.config.z), u32(u.config.w)); if (gid.x >= size.x || gid.y >= size.y) { return; }
+  let p = vec2<i32>(gid.xy); let hi = vec2<i32>(size) - vec2<i32>(1); let res = vec2<f32>(size);
+  let uv = (vec2<f32>(p) + 0.5) / res; let aspect = res.x / max(res.y, 1.0); let time = u.config.x;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0)); var s = sandAt(p, hi);
+  if (time < 0.12 || dot(s, s) < 0.000001) { let src0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0); let seed = hash21(floor(uv * 180.0)); s = vec4<f32>(clamp(uv.y * 0.72 + dot(src0.rgb, vec3<f32>(0.18)) * 0.22 + seed * 0.08, 0.0, 1.0), 0.18 + seed * 0.12, 0.0, 0.08); }
+  let l = sandAt(p + vec2<i32>(-1, 0), hi); let r = sandAt(p + vec2<i32>(1, 0), hi); let t = sandAt(p + vec2<i32>(0, -1), hi); let b = sandAt(p + vec2<i32>(0, 1), hi);
+  let lap = l.r + r.r + t.r + b.r - 4.0 * s.r; let slope = vec2<f32>(r.r - l.r, b.r - t.r) * 0.5;
+  let gravity = mix(0.02, 0.18, u.zoom_params.x) * (1.0 + audio.x * 0.25);
+  let wind = (u.zoom_params.y * 2.0 - 1.0) * (0.02 + audio.y * 0.05); let viscosity = mix(0.96, 0.55, u.zoom_params.z);
+  let erosion = mix(0.002, 0.045, u.zoom_params.w) * (1.0 + audio.z * 0.5); let repose = mix(0.035, 0.16, u.zoom_params.z);
+  let avalanche = max(length(slope) - repose, 0.0); var velocity = s.b * viscosity + slope.y * gravity + wind * slope.x;
+  var loose = clamp(s.g + erosion * (abs(slope.x) + audio.z * 0.15) - avalanche * 0.22, 0.0, 1.0);
+  var height = s.r + lap * (0.018 + avalanche * gravity) - velocity * 0.018 + loose * wind * (l.g - r.g);
+  let mq = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0); let md = length(mq); let hover = exp(-md * 16.0); let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  height += hover * held * (0.035 + audio.x * 0.02); loose += hover * (0.002 + held * 0.08); velocity += hover * held * 0.04;
+  var impacts = 0.0; let count = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 1.8) { let d = length((uv - e.xy) * vec2<f32>(aspect, 1.0)); impacts += exp(-age * 1.8) * exp(-abs(d - age * 0.26) * 76.0); } }
+  height += impacts * 0.028; loose += impacts * 0.10; velocity -= impacts * 0.06;
+  let moisture = clamp(mix(s.a, 0.05 + audio.x * 0.08 + u.zoom_params.z * 0.28, 0.015) + hover * held * 0.01, 0.0, 1.0);
+  let next = vec4<f32>(clamp(height, 0.0, 1.2), clamp(loose, 0.0, 1.0), clamp(velocity, -1.0, 1.0), moisture); textureStore(dataTextureA, p, next);
+  let normal = normalize(vec3<f32>(-slope.x * 8.0, -slope.y * 8.0, 1.0)); let sun = normalize(vec3<f32>(-0.45 + wind * 2.0, -0.55, 0.75));
+  let light = 0.18 + 0.82 * max(dot(normal, sun), 0.0); let strata = 0.5 + 0.5 * sin((uv.x * 70.0 + next.r * 34.0) + time * wind * 7.0);
+  let dry = vec3<f32>(1.35, 0.63, 0.14); let wet = vec3<f32>(0.38, 0.15, 0.05); var hdr = mix(dry, wet, moisture) * (light + strata * loose * 0.18);
+  hdr += vec3<f32>(1.6, 0.9, 0.25) * impacts * (0.4 + audio.z); let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0); hdr = mix(src.rgb, hdr, clamp(next.r * 0.8 + loose * 0.3, 0.0, 0.95));
+  let alpha = clamp(src.a * 0.20 + next.r * 0.68 + loose * 0.25 + impacts * 0.25, 0.0, 1.0); let mapped = aces(max(hdr, vec3<f32>(0.0)));
+  textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, p, vec4<f32>(clamp(1.0 - next.r * 0.78, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

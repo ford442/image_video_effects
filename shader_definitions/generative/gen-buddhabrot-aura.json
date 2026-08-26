@@ -57,5 +57,43 @@
   "updated": true,
   "id": "gen-buddhabrot-aura",
   "url": "shaders/gen-buddhabrot-aura.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "orbit_threshold",
+      "name": "Orbit Threshold",
+      "default": 0.6,
+      "min": 0.1,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "density_scale",
+      "name": "Density Scale",
+      "default": 0.7,
+      "min": 0.2,
+      "max": 1.4,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "mouse_zoom",
+      "name": "Mouse Zoom",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "aura_intensity",
+      "name": "Aura Intensity",
+      "default": 0.65,
+      "min": 0,
+      "max": 1.5,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

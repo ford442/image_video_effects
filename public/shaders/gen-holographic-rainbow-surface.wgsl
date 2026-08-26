@@ -141,6 +141,7 @@ fn spectralDiffraction(normal: vec3<f32>, lightDir: vec3<f32>, viewDir: vec3<f32
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
     let uv = (vec2<f32>(pixel) + 0.5) / res;
     let aspect = res.x / res.y;
 
@@ -163,8 +164,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scaledP = p * (1.0 + scale * 3.0);
     let t = time * (0.3 + speed * 2.0);
 
-    let h = smoothSurfaceHeight(scaledP, t);
-    let normal = computeNormal(scaledP, t, 0.005);
+    var h = smoothSurfaceHeight(scaledP, t);
+    var normal = computeNormal(scaledP, t, 0.005);
+
+    let surfaceUV = centeredUV - 0.5;
+    let mouseSurface = (mousePos - 0.5) * vec2<f32>(aspect, 1.0);
+    let mouseDelta = surfaceUV - mouseSurface;
+    let mouseDist = length(mouseDelta);
+    let hoverWave = sin(mouseDist * 24.0 - time * 5.0) * exp(-mouseDist * 7.0);
+    h += hoverWave * select(0.018, 0.075, mouseDown > 0.5);
+    normal = normalize(normal + vec3<f32>(mouseDelta / max(mouseDist, 1e-4) * hoverWave * select(0.05, 0.22, mouseDown > 0.5), 0.0));
+
+    // Expand every live click timestamp into a finite surface wave.
+    let rippleCount = min(u32(u.config.y), 50u);
+    var rippleDistort = 0.0;
+    var rippleSlope = vec2<f32>(0.0);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 4.0) { continue; }
+        let rPos = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0);
+        let delta = surfaceUV - rPos;
+        let rDist = length(delta);
+        let waveRadius = age * mix(0.16, 0.48, speed);
+        let envelope = exp(-pow((rDist - waveRadius) * 34.0, 2.0)) * exp(-age * 0.62);
+        let wave = sin((rDist - waveRadius) * 42.0) * envelope;
+        rippleDistort += wave;
+        rippleSlope += delta / max(rDist, 1e-4) * wave;
+    }
+    h += rippleDistort * 0.10;
+    normal = normalize(normal + vec3<f32>(rippleSlope * 0.28, 0.0));
 
     let lightDir1 = normalize(vec3<f32>(sin(t * 0.4) * 2.0, cos(t * 0.35) * 2.0, 1.5));
     let lightDir2 = normalize(vec3<f32>(cos(t * 0.3) * 1.5, sin(t * 0.25) * 1.5, 1.2));
@@ -197,26 +226,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
     let edgeColor = holographicColor(fresnel * 2.0, time * 0.2 + colorShift);
 
-    let mouseEffect = select(0.0, 1.0, mouseDown > 0.5);
-    let mouseUV = vec2<f32>(mousePos.x / res.x * aspect - (aspect - 1.0) * 0.5, mousePos.y / res.y);
-    let mouseDist = length(centeredUV - mouseUV);
-    let mouseWave = sin(mouseDist * 25.0 - time * 6.0) * exp(-mouseDist * 8.0) * mouseEffect;
+    let mouseEffect = select(0.25, 1.0, mouseDown > 0.5);
+    let mouseWave = hoverWave * mouseEffect;
     let mouseColor = holographicColor(mouseWave * 0.5 + 0.5, time * 0.5 + colorShift) * mouseWave * 2.0;
-
-    var rippleDistort = 0.0;
-    for (var i: i32 = 0; i < 10; i = i + 1) {
-        let ripple = u.ripples[i];
-        let rPos = ripple.xy;
-        let rTime = ripple.z;
-        let rStrength = ripple.w;
-        let age = time - rTime;
-        if (rStrength > 0.0 && age > 0.0 && age < 4.0) {
-            let rDist = length(centeredUV - rPos);
-            let waveRadius = age * 0.3;
-            let wave = exp(-pow((rDist - waveRadius) * 40.0, 2.0)) * exp(-age * 0.5) * rStrength;
-            rippleDistort += wave;
-        }
-    }
     let rippleColor = holographicColor(rippleDistort * 2.0, time * 0.3 + colorShift) * rippleDistort * 1.5;
 
     var color = baseColor * (NdotL1 * 0.5 + NdotL2 * 0.3 + NdotL3 * 0.2 + 0.3);
@@ -239,15 +251,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let caStr = 0.003 * (1.0 + bass);
     color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
-    // Temporal feedback
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    color = mix(prev.rgb * 0.96, color, 0.25);
-
-    // ACES tone map + semantic alpha
-    color = acesToneMap(color * 1.1);
-    let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+    // ACES is applied once to the current display path. A/C then preserves
+    // that exact display RGBA with an integer history load.
+    let currentDisplay = acesToneMap(color * 1.1);
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    color = mix(prev.rgb * 0.96, currentDisplay, 0.25 + bass * 0.03);
+    let alpha = max(clamp(length(currentDisplay) * 0.58 + fresnel * 0.25 + abs(rippleDistort) * 0.3, 0.08, 0.96), prev.a * 0.93);
+    let surfaceDepth = clamp(0.28 + h * 0.42 + (1.0 - normal.z) * 0.30 + abs(rippleDistort) * 0.25, 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(surfaceDepth, 0.0, 0.0, 0.0));
 }

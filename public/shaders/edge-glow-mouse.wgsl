@@ -1,11 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Edge Glow Mouse
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
-//  Complexity: High
-//  Chunks From: edge-glow-mouse
-//  Created: 2026-05-30
-//  By: 4-Agent Upgrade Swarm
+//  Edge Glow Mouse — Batch 59
+//  Unsharp edge glow, C-persisted halo trail, capped click bursts,
+//  held tightens radius, ACES + semantic alpha, FFT band shimmer.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,12 +34,7 @@ fn sampleLuma(uv: vec2<f32>) -> f32 {
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = vec3<f32>(2.51, 2.51, 2.51);
-  let b = vec3<f32>(0.03, 0.03, 0.03);
-  let c = vec3<f32>(2.43, 2.43, 2.43);
-  let d = vec3<f32>(0.59, 0.59, 0.59);
-  let e = vec3<f32>(0.14, 0.14, 0.14);
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn hash21(p: vec2<f32>) -> f32 {
@@ -57,24 +48,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
     return;
   }
+  let pixel = vec2<i32>(gid.xy);
 
   let uv = vec2<f32>(gid.xy) / dims;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
   let aspect = dims.x / dims.y;
-  let audio = plasmaBuffer[0].xyz;
-  let bass = audio.x;
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let held = u.zoom_config.w > 0.5;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  let prev = textureLoad(dataTextureC, pixel, 0);
 
   let edgeThreshold = mix(0.02, 0.35, u.zoom_params.x);
-  let glowRadius = mix(0.08, 0.70, u.zoom_params.y) * (1.0 + bass * 0.35);
-  let intensity = mix(0.3, 2.5, u.zoom_params.z);
+  let glowRadius = mix(0.08, 0.70, u.zoom_params.y) * (1.0 + bass * 0.35) * select(1.0, 0.82, held);
+  let intensity = mix(0.3, 2.5, u.zoom_params.z) * select(1.0, 1.25, held);
   let colorSpeed = 0.2 + u.zoom_params.w * 4.0;
 
   let px = vec2<f32>(1.0 / dims.x, 1.0 / dims.y);
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-  // Unsharp masking kernel
   let center = sampleLuma(uv);
   let nb = sampleLuma(uv + vec2<f32>(px.x, 0.0)) + sampleLuma(uv - vec2<f32>(px.x, 0.0))
          + sampleLuma(uv + vec2<f32>(0.0, px.y)) + sampleLuma(uv - vec2<f32>(0.0, px.y));
@@ -85,9 +79,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let edgeGrad = vec2<f32>(edgeX, edgeY);
   let edgeMag = length(edgeGrad);
   let edgeTangent = normalize(vec2<f32>(-edgeY, edgeX) + 0.0001);
-  let glowMask = smoothstep(edgeThreshold, edgeThreshold + 0.15, edgeMag);
+  var glowMask = smoothstep(edgeThreshold, edgeThreshold + 0.15, edgeMag);
 
-  // Multi-octave glow bloom with anisotropic diffusion
   var glowAccum = vec3<f32>(0.0);
   var weightSum = 0.0;
   for (var o: i32 = 0; o < 4; o = o + 1) {
@@ -102,35 +95,47 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
   let mouseAura = 1.0 - smoothstep(0.0, glowRadius, mouseDist);
-  let hue = 0.5 + 0.5 * sin(time * colorSpeed + mouseDist * 18.0);
+  let hue = 0.5 + 0.5 * sin(time * colorSpeed + mouseDist * 18.0 + mids * 2.0);
   let neonTint = mix(vec3<f32>(0.10, 0.85, 1.0), vec3<f32>(1.0, 0.45, 0.75), hue);
 
-  // Chromatic aberration on glow halos
-  let caStrength = 0.003 * glowMask * intensity;
+  let caStrength = (0.003 + treble * 0.002) * glowMask * intensity;
   let rSamp = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(caStrength, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let bSamp = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(caStrength, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   var chromatic = vec3<f32>(rSamp, baseColor.g, bSamp);
   chromatic = mix(baseColor, chromatic, glowMask * 0.5);
 
-  // HDR bloom composite
-  var finalColor = chromatic + neonTint * glowMask * intensity * (0.25 + mouseAura + bass * 0.4);
+  var clickBurst = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.2) {
+      let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      clickBurst += smoothstep(0.15, 0.0, rDist) * (1.0 - age * 0.7);
+    }
+  }
+  glowMask = clamp(glowMask + clickBurst * 0.5, 0.0, 1.5);
+
+  let band = min(u32(uv.x * 8.0), 7u);
+  let bandShimmer = plasmaBuffer[band + 1u].x * 0.2;
+
+  var finalColor = chromatic + neonTint * glowMask * intensity * (0.25 + mouseAura + bass * 0.4 + bandShimmer);
   finalColor = finalColor + glowColor * glowMask * intensity * 0.35 * (1.0 + mouseAura);
   finalColor = mix(finalColor, finalColor * (1.0 + sharpened * 0.15), glowMask);
 
-  // Depth-driven glow falloff
+  let trailGlow = mix(prev.rgb * 0.9, finalColor, 0.2 + glowMask * 0.15);
+  finalColor = mix(finalColor, trailGlow, 0.25);
+
   let depthFalloff = mix(1.0, 0.3, depth);
   finalColor = finalColor * depthFalloff;
-
-  // ACES tone mapping + film grain
   finalColor = acesToneMap(finalColor * 1.2);
-  let grain = (hash21(uv * 1000.0 + time * 60.0) - 0.5) * 0.03;
+  let grain = (hash21(uv * 1000.0 + time * 60.0) - 0.5) * 0.03 * (1.0 + treble);
   finalColor = finalColor + grain;
 
-  // Semantic alpha: edge_strength * glow_radius * depth
-  let finalAlpha = clamp(glowMask * glowRadius * depth * 2.5, 0.15, 0.95);
+  let finalAlpha = clamp(glowMask * glowRadius * depth * 2.5 + clickBurst * 0.15, 0.15, 0.95);
   let depthOut = clamp(mix(depth, 0.20 + glowMask * 0.72, 0.26), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
-  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(glowMask, mouseAura, intensity, finalAlpha));
+  textureStore(writeTexture, pixel, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(glowMask, mouseAura, intensity, finalAlpha));
 }

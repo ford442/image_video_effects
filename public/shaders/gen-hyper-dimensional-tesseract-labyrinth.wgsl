@@ -115,6 +115,10 @@ fn calcNormal(p: vec3<f32>, complexity: f32, warp: f32, audio: f32, time: f32, m
     ));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -133,9 +137,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let warpField = u.zoom_params.z;
     let flySpeed = u.zoom_params.w;
 
+    // Held input strengthens the pointer warp. Click timestamps create finite
+    // fold shocks which locally over-rotate the 4D cells.
+    let held = u.zoom_config.w > 0.5;
+    let rippleCount = min(u32(u.config.y), 50u);
+    var foldShock = 0.0;
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 3.4) { continue; }
+        let center = (ripple.xy - 0.5) * vec2<f32>(res.x / max(res.y, 1.0), 1.0) * 2.0;
+        let radius = age * (0.32 + flySpeed * 0.035);
+        foldShock += exp(-pow((length(uv - center) - radius) * 18.0, 2.0)) * exp(-age * 0.82);
+    }
+    let effectiveWarp = warpField * (1.0 + select(0.0, 0.75, held)) + foldShock * (0.8 + complexity * 0.35);
+
     // Mouse Interaction
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
-    let mouseY = u.zoom_config.z * 2.0 - 1.0;  // Flip Y: screen top = +1 (look up)
+    let mouseY = u.zoom_config.z * 2.0 - 1.0;
 
     // Camera setup - flying through the maze
     var ro = vec3<f32>(time * flySpeed * 0.5, time * flySpeed * 0.2, time * flySpeed);
@@ -162,14 +181,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     for(var i = 0; i < 80; i++) {
         p = ro + rd * t;
-        let res_map = map(p, complexity, warpField, audio, time, mousePos);
+        let res_map = map(p, complexity, effectiveWarp, audio, time, mousePos);
         d = res_map.x;
         matId = res_map.y;
 
         // Volumetric glow accumulation near edges
         if (matId == 1.0) {
             let glowColorBase = 0.5 + 0.5 * cos(time * 2.0 + p.xyz * 0.5 + vec3<f32>(0.0, 2.0, 4.0));
-            glowCol += glowColorBase * (0.005 / (abs(d) + 0.01)) * edgeGlow * (1.0 + audio * 2.0);
+            glowCol += glowColorBase * (0.005 / (abs(d) + 0.01)) * edgeGlow * (1.0 + audio * 2.0 + mids * 0.7);
         }
 
         if(d < 0.01 || t > 60.0) { break; }
@@ -179,13 +198,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var col = vec3<f32>(0.0);
 
     if(t < 60.0) {
-        let n = calcNormal(p, complexity, warpField, audio, time, mousePos);
+        let n = calcNormal(p, complexity, effectiveWarp, audio, time, mousePos);
         let viewDir = -rd;
         let fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 3.0);
 
         if (matId == 1.0) {
             // Solid emissive edges
-            col = vec3<f32>(1.0) * edgeGlow * (1.0 + audio);
+            col = mix(vec3<f32>(1.0, 0.45, 0.85), vec3<f32>(0.25, 0.9, 1.25), clamp(mids, 0.0, 1.0)) * edgeGlow * (1.0 + audio + foldShock);
         } else {
             // Glassy faces
             let envReflection = vec3<f32>(0.1, 0.3, 0.8) * fresnel * 2.0;
@@ -197,16 +216,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Add volumetric edge glow and distance fog
     col += glowCol * exp(-0.02 * t);
+    col += vec3<f32>(0.8, 0.35 + mids * 0.4, 1.2) * foldShock * (0.7 + treble * 0.5);
     col = mix(col, vec3<f32>(0.02, 0.01, 0.05), smoothstep(0.0, 60.0, t));
 
-    col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    let currentDisplay = acesToneMap(max(col, vec3<f32>(0.0)) * (0.95 + mids * 0.1));
+    let coord = vec2<i32>(id.xy);
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let display = mix(prev.rgb * 0.95, currentDisplay, 0.24 + audio * 0.035);
+    let luma = dot(currentDisplay, vec3<f32>(0.299, 0.587, 0.114));
+    let semantic_alpha = max(clamp(luma * 0.9 + length(glowCol) * 0.2 + foldShock * 0.25, 0.05, 0.98), prev.a * 0.92);
+    let outDepth = 1.0 - clamp(t / 60.0, 0.0, 1.0);
+    let outColor = vec4<f32>(display, semantic_alpha);
 
-    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let semantic_alpha = clamp(luma * 1.4 + length(glowCol) * 0.2, 0.05, 0.98);
-    let outDepth = clamp(t / 60.0, 0.0, 1.0);
-    let outColor = vec4<f32>(col, semantic_alpha);
-
-    textureStore(writeTexture, vec2<i32>(id.xy), outColor);
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(id.xy), outColor);
+    textureStore(writeTexture, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

@@ -2,7 +2,7 @@
   "id": "spectrum-bleed",
   "name": "Spectrum Bleed",
   "url": "shaders/spectrum-bleed.wgsl",
-  "description": "Color channel separation and bleeding effects.",
+  "description": "Sprung spectrum-ink diffusion with bounded click splatters, read-only FFT shimmer, exact-C persistence, semantic display RGBA in authoritative A, and ACES output.",
   "tags": [
     "filter",
     "image-processing"
@@ -11,11 +11,12 @@
     "mouse-driven",
     "audio-reactive",
     "click-reactive",
-    "temporal"
+    "temporal",
+    "aces-tone-map"
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "intensity",
       "name": "Intensity",
       "default": 0.5,
       "min": 0,
@@ -23,7 +24,7 @@
       "step": 0.01
     },
     {
-      "id": "param2",
+      "id": "speed",
       "name": "Speed",
       "default": 0.5,
       "min": 0,
@@ -31,7 +32,7 @@
       "step": 0.01
     },
     {
-      "id": "param3",
+      "id": "scale",
       "name": "Scale",
       "default": 0.5,
       "min": 0,
@@ -39,7 +40,7 @@
       "step": 0.01
     },
     {
-      "id": "param4",
+      "id": "detail",
       "name": "Detail",
       "default": 0.5,
       "min": 0,

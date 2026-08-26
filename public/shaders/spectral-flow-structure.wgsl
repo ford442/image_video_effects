@@ -1,21 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  spectral-flow-structure
-//  Category: advanced-hybrid
-//  Features: pixel-sorting, structure-tensor, LIC, optical-flow,
-//            audio-reactive, mouse-driven
-//  Complexity: Very High
-//  Chunks From: spectral-flow-sorting (pixel sorting along flow,
-//               frequency analysis), conv-structure-tensor-flow
-//               (structure tensor eigenvectors, coherency, LIC)
-//  Created: 2026-04-18
-//  By: Agent CB-7 — Flow & Multi-Pass Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Structure-tensor-guided pixel sorting. Eigenvectors from the
-//  structure tensor replace optical flow as the sort direction.
-//  Coherency (eigenvalue ratio) modulates sort threshold and blend.
-//  LIC texture adds flow-line visualization. Audio reactivity and
-//  mouse vortices disturb the natural texture flow.
-// ═══════════════════════════════════════════════════════════════════
+// Spectral Flow Structure — Batch 58D truthful temporal LIC upgrade
+// A owns exact display RGBA history; B is intentionally unwritten.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -38,236 +22,129 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
-fn hash12(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+const TAU: f32 = 6.28318530718;
+
+fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.299, 0.587, 0.114)); }
+
+fn sampleLuma(uv: vec2<f32>) -> f32 {
+  return luma(textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
 }
 
-fn sampleLuma(uv: vec2<f32>, pixelSize: vec2<f32>, dx: i32, dy: i32) -> f32 {
-  let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-  return dot(textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+fn flowDirection(uv: vec2<f32>, texel: vec2<f32>) -> vec4<f32> {
+  let gx = sampleLuma(uv + vec2<f32>(texel.x, 0.0)) - sampleLuma(uv - vec2<f32>(texel.x, 0.0));
+  let gy = sampleLuma(uv + vec2<f32>(0.0, texel.y)) - sampleLuma(uv - vec2<f32>(0.0, texel.y));
+  let jxx = gx * gx; let jyy = gy * gy; let jxy = gx * gy;
+  let trace = jxx + jyy;
+  let delta = sqrt(max((jxx - jyy) * (jxx - jyy) + 4.0 * jxy * jxy, 0.0));
+  let l1 = 0.5 * (trace + delta); let l2 = 0.5 * (trace - delta);
+  var dir = vec2<f32>(1.0, 0.0);
+  if (abs(jxy) > 0.00001 || abs(jxx - l1) > 0.00001) { dir = normalize(vec2<f32>(l1 - jyy, jxy)); }
+  let coherency = clamp((l1 - l2) / max(l1 + l2, 0.0001), 0.0, 1.0);
+  return vec4<f32>(dir, coherency, trace);
 }
 
-// ═══ CHUNK: structureTensor (from conv-structure-tensor-flow) ═══
-fn structureTensor(uv: vec2<f32>, pixelSize: vec2<f32>) -> vec4<f32> {
-  let gx =
-    -1.0 * sampleLuma(uv, pixelSize, -1, -1) +
-    -2.0 * sampleLuma(uv, pixelSize, -1,  0) +
-    -1.0 * sampleLuma(uv, pixelSize, -1,  1) +
-     1.0 * sampleLuma(uv, pixelSize,  1, -1) +
-     2.0 * sampleLuma(uv, pixelSize,  1,  0) +
-     1.0 * sampleLuma(uv, pixelSize,  1,  1);
-  let gy =
-    -1.0 * sampleLuma(uv, pixelSize, -1, -1) +
-    -2.0 * sampleLuma(uv, pixelSize,  0, -1) +
-    -1.0 * sampleLuma(uv, pixelSize,  1, -1) +
-     1.0 * sampleLuma(uv, pixelSize, -1,  1) +
-     2.0 * sampleLuma(uv, pixelSize,  0,  1) +
-     1.0 * sampleLuma(uv, pixelSize,  1,  1);
-  let Ix2 = gx * gx;
-  let Iy2 = gy * gy;
-  let Ixy = gx * gy;
-  return vec4<f32>(Ix2, Iy2, Ixy, 0.0);
-}
-
-fn smoothTensor(uv: vec2<f32>, pixelSize: vec2<f32>) -> vec4<f32> {
-  var sum = vec4<f32>(0.0);
-  for (var dy = -1; dy <= 1; dy++) {
-    for (var dx = -1; dx <= 1; dx++) {
-      let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-      sum += structureTensor(uv + offset, pixelSize);
-    }
-  }
-  return sum / 9.0;
-}
-
-// ═══ CHUNK: LIC (from conv-structure-tensor-flow) ═══
-fn lic(uv: vec2<f32>, direction: vec2<f32>, pixelSize: vec2<f32>, steps: i32, stepSize: f32) -> f32 {
-  var pos = uv;
-  var accum = 0.0;
-  var weight = 0.0;
-  for (var i = 0; i < steps; i++) {
-    let lum = dot(textureSampleLevel(readTexture, u_sampler, pos, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let w = 1.0 - f32(i) / f32(steps);
-    accum += lum * w;
+fn lic(uv: vec2<f32>, dir: vec2<f32>, texel: vec2<f32>, steps: i32, stride: f32) -> f32 {
+  var sum = 0.0; var weight = 0.0;
+  for (var i = -steps; i <= steps; i++) {
+    let w = 1.0 - abs(f32(i)) / f32(steps + 1);
+    sum += sampleLuma(uv + dir * texel * stride * f32(i)) * w;
     weight += w;
-    pos += direction * stepSize * pixelSize;
   }
-  pos = uv;
-  for (var i = 0; i < steps; i++) {
-    let lum = dot(textureSampleLevel(readTexture, u_sampler, pos, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let w = 1.0 - f32(i) / f32(steps);
-    accum += lum * w;
-    weight += w;
-    pos -= direction * stepSize * pixelSize;
-  }
-  return accum / max(weight, 0.001);
+  return sum / max(weight, 0.001);
 }
 
-// ═══ PIXEL SORTING ALONG STRUCTURE FLOW ═══
-fn sortAlongFlow(uv: vec2<f32>, flowDir: vec2<f32>, threshold: f32, pixelSize: vec2<f32>) -> vec3<f32> {
-  var sorted = vec3<f32>(0.0);
-  var weights = 0.0;
-  for (var i: i32 = -4; i <= 4; i++) {
-    let t = f32(i) / 4.0;
-    let sampleUV = uv + flowDir * t * 0.08;
-    if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) {
-      continue;
-    }
-    let sample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-    let luma = dot(sample, vec3<f32>(0.299, 0.587, 0.114));
-    let weight = select(0.0, luma, luma > threshold);
-    sorted += sample * weight;
-    weights += weight;
-  }
-  return select(vec3<f32>(0.0), sorted / weights, weights > 0.001);
+fn palette(t: f32) -> vec3<f32> {
+  return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(TAU * (vec3<f32>(t) + vec3<f32>(0.0, 0.33, 0.67)));
 }
 
-// ═══ FREQUENCY ANALYSIS ═══
-fn analyzeFrequency(uv: vec2<f32>, pixel: vec2<f32>) -> f32 {
-  var gradientSum = 0.0;
-  var sampleCount = 0.0;
-  for (var i: i32 = -2; i <= 2; i++) {
-    for (var j: i32 = -2; j <= 2; j++) {
-      let offset = vec2<f32>(f32(i), f32(j)) * pixel * 3.0;
-      let sample = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
-      let luma = dot(sample, vec3<f32>(0.299, 0.587, 0.114));
-      let nextOffset = vec2<f32>(f32(i + 1), f32(j)) * pixel * 3.0;
-      let nextSample = textureSampleLevel(readTexture, u_sampler, uv + nextOffset, 0.0).rgb;
-      let nextLuma = dot(nextSample, vec3<f32>(0.299, 0.587, 0.114));
-      gradientSum += abs(luma - nextLuma);
-      sampleCount += 1.0;
-    }
-  }
-  return gradientSum / sampleCount;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
-  return a + b * cos(6.28318 * (c * t + d));
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+  return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw; let pixel = vec2<i32>(gid.xy);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+  let uv = (vec2<f32>(pixel) + 0.5) / res;
+  let texel = 1.0 / res; let time = u.config.x;
+  let dims = vec2<i32>(textureDimensions(dataTextureC));
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let pixelSize = 1.0 / resolution;
-  let time = u.config.x;
-  let id = vec2<i32>(global_id.xy);
-
-  // Audio input
-  let audioOverall = u.zoom_config.x;
-  let audioReactivity = 1.0 + audioOverall * 0.3;
-
-  // Parameters
+  // Saved mapping: LIC steps, coherency boost, sort threshold, temporal smoothing.
   let licSteps = i32(mix(6.0, 24.0, u.zoom_params.x));
   let coherencyBoost = mix(0.5, 3.0, u.zoom_params.y);
   let sortThreshold = u.zoom_params.z * 0.5;
   let smoothing = mix(0.0, 0.9, u.zoom_params.w);
 
-  // Mouse interaction
-  let mousePos = u.zoom_config.yz;
-  let isMouseDown = u.zoom_config.w > 0.5;
-  let distToMouse = length(uv - mousePos);
-  let mouseGravity = 1.0 - smoothstep(0.0, 0.35, distToMouse);
-  let clickPulse = select(0.0, 1.0, isMouseDown) * sin(distToMouse * 25.0 - time * 5.0) * exp(-distToMouse * 3.0);
-
-  // ═══ STRUCTURE TENSOR ═══
-  let tensor = smoothTensor(uv, pixelSize);
-  let Jxx = tensor.x;
-  let Jyy = tensor.y;
-  let Jxy = tensor.z;
-
-  // Eigenvalues
-  let trace = Jxx + Jyy;
-  let diff = sqrt(max((Jxx - Jyy) * (Jxx - Jyy) + 4.0 * Jxy * Jxy, 0.0));
-  let lambda1 = (trace + diff) * 0.5;
-  let lambda2 = (trace - diff) * 0.5;
-
-  // Dominant eigenvector (texture flow direction)
-  var eigenvec = vec2<f32>(1.0, 0.0);
-  if (abs(Jxy) > 0.0001 || abs(Jxx - lambda1) > 0.0001) {
-    eigenvec = normalize(vec2<f32>(lambda1 - Jyy, Jxy));
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) {
+    springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5;
+  }
+  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 8.0; let decay = exp(-omega * dt); let delta = springPos - rawMouse;
+  let temp = (springVel + omega * delta) * dt;
+  springVel = (springVel - omega * temp) * decay; springPos = rawMouse + (delta + temp) * decay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time; extraBuffer[138] = 1.0;
   }
 
-  // Coherency: how strongly oriented
-  let coherency = select(0.0, (lambda1 - lambda2) / (lambda1 + lambda2 + 0.0001), lambda1 + lambda2 > 0.0001);
-  let boostedCoherency = pow(coherency, 1.0 / coherencyBoost);
+  let tensor = flowDirection(uv, texel);
+  let coherence = pow(tensor.z, 1.0 / coherencyBoost);
+  var dir = tensor.xy;
+  let mouseDelta = (uv - springPos) * aspectVec;
+  let mouseDist = length(mouseDelta);
+  let held = select(0.45, 1.0, u.zoom_config.w > 0.5);
+  let vortex = vec2<f32>(-mouseDelta.y, mouseDelta.x) / max(mouseDist, 0.001) * exp(-mouseDist * 6.0) * held;
 
-  // Mouse vortex disturbance
-  let mouseDist = length(uv - mousePos);
-  let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * mouseGravity;
-  let mouseAngle = atan2(uv.y - mousePos.y, uv.x - mousePos.x);
-  let vortex = vec2<f32>(-sin(mouseAngle), cos(mouseAngle)) * mouseFactor;
-  eigenvec = normalize(mix(eigenvec, vortex, mouseFactor));
-
-  // Ripple turbulence
-  var rippleTurb = vec2<f32>(0.0);
-  let rippleCount = u32(u.config.y);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let ripple = u.ripples[i];
-    let rPos = ripple.xy;
-    let rStart = ripple.z;
-    let rElapsed = time - rStart;
-    if (rElapsed > 0.0 && rElapsed < 3.0) {
-      let rDist = length(uv - rPos);
-      let wave = exp(-pow((rDist - rElapsed * 0.3) * 8.0, 2.0));
-      let turbAngle = atan2(uv.y - rPos.y, uv.x - rPos.x) + rElapsed * 3.0;
-      rippleTurb += vec2<f32>(cos(turbAngle), sin(turbAngle)) * wave * (1.0 - rElapsed / 3.0);
-    }
+  var rippleTurbulence = vec2<f32>(0.0); var rippleEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age < 0.0 || age > 2.2) { continue; }
+    let deltaR = (uv - ripple.xy) * aspectVec; let dist = length(deltaR);
+    let front = exp(-pow((dist - age * 0.24) * 18.0, 2.0)) * (1.0 - age / 2.2);
+    rippleTurbulence += vec2<f32>(-deltaR.y, deltaR.x) / max(dist, 0.001) * front;
+    rippleEnergy += front;
   }
-  eigenvec = normalize(eigenvec + rippleTurb * 2.0);
+  dir = normalize(dir + vortex * (1.0 + bass) + rippleTurbulence * 1.4 + vec2<f32>(mids, -treble) * 0.05);
+  let audioRotation = time * (0.10 + bass * 0.13) + mids * 0.25;
+  let c = cos(audioRotation); let s = sin(audioRotation);
+  dir = mat2x2<f32>(c, -s, s, c) * dir;
 
-  // Animate flow
-  let rotAngle = time * 0.2;
-  let cosR = cos(rotAngle);
-  let sinR = sin(rotAngle);
-  let animatedDir = vec2<f32>(
-    eigenvec.x * cosR - eigenvec.y * sinR,
-    eigenvec.x * sinR + eigenvec.y * cosR
-  );
+  let licValue = lic(uv, dir, texel, licSteps, 1.2 + treble * 1.8);
+  let sortExtent = (0.015 + coherence * 0.07) * (1.0 + bass * 0.7);
+  var sorted = vec3<f32>(0.0); var weights = 0.0;
+  for (var i = -4; i <= 4; i++) {
+    let sampleUv = clamp(uv + dir * sortExtent * f32(i) / 4.0, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sample = textureSampleLevel(readTexture, u_sampler, sampleUv, 0.0).rgb;
+    let weight = select(0.0, luma(sample), luma(sample) > sortThreshold * (1.0 - coherence * 0.5));
+    sorted += sample * weight; weights += weight;
+  }
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let sortedColor = select(source.rgb, sorted / max(weights, 0.001), weights > 0.001);
+  var hdr = mix(source.rgb, sortedColor, clamp(coherence * (0.35 + smoothing * 0.65), 0.0, 1.0));
+  hdr *= 0.65 + licValue * (0.5 + mids * 0.2);
+  hdr += palette(atan2(dir.y, dir.x) / TAU + 0.5 + time * 0.03) * coherence * (0.22 + treble * 0.16);
 
-  // LIC along the structure flow
-  let licValue = lic(uv, animatedDir, pixelSize, licSteps, 1.5);
-
-  // ═══ PIXEL SORT ALONG STRUCTURE FLOW ═══
-  let flowMag = length(eigenvec);
-  let cursorFlow = normalize(uv - mousePos + 0.001) * mouseGravity * 3.0 * (1.0 + select(0.0, 3.0, isMouseDown));
-  let combinedFlow = eigenvec * flowMag * 5.0 + cursorFlow + clickPulse;
-  let combinedDir = select(vec2<f32>(0.0), normalize(combinedFlow), length(combinedFlow) > 0.001);
-
-  let sortedColor = sortAlongFlow(uv, combinedDir, sortThreshold * (1.0 - boostedCoherency * 0.5), pixelSize);
-
-  // Frequency analysis
-  let dominantFreq = analyzeFrequency(uv, pixelSize);
-
-  // Base color
-  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-
-  // Blend based on flow and coherency
-  var color = mix(baseColor, sortedColor, length(combinedFlow) * smoothing * boostedCoherency);
-
-  // Coherency-based color shift
-  let flowAngle = atan2(eigenvec.y, eigenvec.x) / 6.28 + 0.5;
-  let flowColor = palette(flowAngle, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
-  color = mix(color, flowColor * (0.3 + 0.7 * boostedCoherency), boostedCoherency * 0.4);
-
-  // Frequency tint
-  let freqColor = vec3<f32>(dominantFreq * 2.0, dominantFreq * 1.5, dominantFreq * 3.0);
-  color = mix(color, freqColor, dominantFreq * 0.3);
-
-  // LIC texture overlay
-  color = mix(color, color * (0.5 + 0.5 * licValue), 0.3);
-
-  // Audio reactivity boost
-  color *= audioReactivity;
-
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let alpha = mix(0.8, 1.0, flowMag * 0.5 * boostedCoherency + mouseGravity * 0.2);
-
-  textureStore(writeTexture, id, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, id, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Temporal Smoothing is now a real exact-C display-history blend.
+  let historyUv = clamp(uv - dir * texel * (2.0 + bass * 5.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let previous = textureLoad(dataTextureC, historyCoord(historyUv, dims), 0);
+  hdr = mix(hdr, previous.rgb * 0.965, smoothing * (0.35 + coherence * 0.45));
+  let effectEnergy = clamp(coherence * 0.55 + rippleEnergy * 0.35 + length(vortex) * 0.2 + previous.a * smoothing * 0.2, 0.0, 1.0);
+  let alpha = clamp(source.a + (1.0 - source.a) * effectEnergy, 0.0, 1.0);
+  let display = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), alpha);
+  textureStore(dataTextureA, pixel, display); textureStore(writeTexture, pixel, display);
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

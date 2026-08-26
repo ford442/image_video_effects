@@ -23,6 +23,10 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 const PI: f32 = 3.14159265359;
 const MAX_STEPS: i32 = 100;
 const MAX_DIST: f32 = 100.0;
@@ -181,14 +185,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     let t = u.config.x;
-    let audio = u.config.y * 2.0 + 1.0;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = 1.0 + bass * 1.1 + mids * 0.45 + treble * 0.25;
 
-    // Sliders (clamp zoom_params to valid normalized range)
-    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-    let flutter = mix(0.1, 5.0, zparams.x); // Flutter Speed
-    let aura_intensity = mix(0.0, 2.0, zparams.y); // Aura Intensity
-    let pollen_density = mix(0.0, 3.0, zparams.z); // Pollen Density
-    let aberration = mix(0.0, 1.0, zparams.w); // Aberration
+    let flutter = clamp(u.zoom_params.x, 0.1, 5.0);
+    let aura_intensity = clamp(u.zoom_params.y, 0.0, 2.0);
+    let pollen_density = clamp(u.zoom_params.z, 0.0, 3.0);
+    let aberration = clamp(u.zoom_params.w, 0.0, 1.0);
+
+    let uv01 = (vec2<f32>(id.xy) + 0.5) / res;
+    var shock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = t - ripple.z;
+        if (age >= 0.0 && age < 2.5) {
+            let front = abs(length((uv01 - ripple.xy) * vec2<f32>(res.x / res.y, 1.0)) - age * (0.2 + flutter * 0.025));
+            shock += (1.0 - smoothstep(0.0, 0.025, front)) * (1.0 - age / 2.5);
+        }
+    }
+    shock = min(shock, 2.0);
 
     // Mouse Interaction
     var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -198,7 +216,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let m_uv = (mouse - 0.5) * PI * 2.0;
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 1.0, -4.0);
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    var ro = vec3<f32>(0.0, 1.0, -4.0 + held * 0.7);
 
     // Mouse rotation
     let rot_x = rot(m_uv.x);
@@ -229,6 +248,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Render Function
     var final_color = vec3<f32>(0.0);
     var final_depth = 0.0;
+    var coverage = 0.0;
 
     let rds = array<vec3<f32>, 3>(rd_r, rd, rd_b);
     let colors = array<vec3<f32>, 3>(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(0.0, 0.0, 1.0));
@@ -269,6 +289,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         var col = vec3<f32>(0.0);
 
         if (hit) {
+            coverage = max(coverage, 1.0);
             let n = calcNormal(p, t, audio, flutter);
             let l = normalize(vec3<f32>(1.0, 2.0, -1.0));
             let diff = max(dot(n, l), 0.0);
@@ -307,6 +328,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         final_color += col * colors[i];
     }
 
-    textureStore(writeTexture, id.xy, vec4<f32>(final_color, 1.0));
+    final_color += vec3<f32>(0.25, 0.8, 1.0) * shock * (0.45 + treble * 0.8);
+    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    let hdr = mix(prev.rgb * 0.93, final_color, 0.3 + bass * 0.03);
+    let mapped = acesToneMap(hdr * 1.15);
+    let alpha = clamp(coverage * 0.68 + length(hdr) * 0.12 + shock * 0.22, 0.03, 1.0);
+    textureStore(writeTexture, id.xy, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(1.0 - clamp(final_depth / MAX_DIST, 0.0, 1.0), 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(hdr, alpha));
 }

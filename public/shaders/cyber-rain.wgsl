@@ -1,12 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Rain
-//  Category: interactive-mouse
-//  Features: upgraded-rgba, rain, neon, wet-glass, mouse-driven,
-//            audio-reactive, temporal-feedback, depth-aware,
-//            chromatic-aberration, semantic-alpha, gravity-well,
-//            click-shockwave, spring-damper, thunder-flash
-//  Complexity: High
-//  Upgraded: 2026-07-12 (retry expansion)
+//  Cyber Rain — Batch 59
+//  Neon rain on wet glass: spring wiper, capped EMP ripples, held punch,
+//  exact C wetness trail, extraBuffer[133..138] spring at (0,0) only.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,20 +26,6 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265359;
-const TAU: f32 = 6.28318530718;
-
-const PREV_PRESS: i32 = 0;
-const CLICK_TIME: i32 = 1;
-const CLICK_X: i32 = 2;
-const CLICK_Y: i32 = 3;
-const SMOOTH_X: i32 = 4;
-const SMOOTH_Y: i32 = 5;
-const VEL_X: i32 = 6;
-const VEL_Y: i32 = 7;
-
-fn hash21(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
-}
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * .1031);
@@ -60,21 +41,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn luma(rgb: vec3<f32>) -> f32 {
-    return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-}
-
 fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
     let len = length(v);
     return select(v / len, vec2<f32>(0.0), len < 0.0001);
 }
 
-fn shockwave(uv: vec2<f32>, clickPos: vec2<f32>, age: f32) -> f32 {
-    let radius = age * 0.6;
-    let delta = uv - clickPos;
-    let dRing = length(delta);
-    let arg = (dRing - radius) * 14.0;
-    return exp(-arg * arg) * (1.0 - age * 0.8) * 1.8;
+fn empRing(uvAspect: vec2<f32>, center: vec2<f32>, age: f32) -> f32 {
+    let radius = age * 0.55;
+    let dRing = abs(length(uvAspect - center) - radius);
+    return exp(-dRing * dRing * 180.0) * (1.0 - age * 0.75) * 1.6;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -84,16 +59,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let dt = u.config.y;
     let aspect = resolution.x / resolution.y;
     let mouse = u.zoom_config.yz;
-    let mouse_aspect = vec2<f32>(mouse.x * aspect, mouse.y);
-    let isPress = u.zoom_config.w;
+    let held = u.zoom_config.w > 0.5;
 
     let rainBase = clamp(u.zoom_params.x, 0.0, 1.0);
     let blurStrength = u.zoom_params.y * 0.1;
     let bloomThreshold = u.zoom_params.z;
-    let wiperSize = u.zoom_params.w * 0.5;
+    let wiperSize = u.zoom_params.w * 0.5 * select(1.0, 0.82, held);
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -101,50 +74,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureLoad(dataTextureC, coord, 0);
     let env = bass_env(prev.a, bass, 0.8, 0.15);
 
-    // ---- persistent interactive state ----
-    var prevPress = extraBuffer[PREV_PRESS];
-    var clickTime = extraBuffer[CLICK_TIME];
-    var clickPos = vec2<f32>(extraBuffer[CLICK_X], extraBuffer[CLICK_Y]);
-    var smoothMouse = vec2<f32>(extraBuffer[SMOOTH_X], extraBuffer[SMOOTH_Y]);
-    var velocity = vec2<f32>(extraBuffer[VEL_X], extraBuffer[VEL_Y]);
-
-    let k = 60.0;
-    let d = 10.0;
-    let accel = (mouse - smoothMouse) * k - velocity * d;
-    velocity = velocity + accel * dt;
-    smoothMouse = smoothMouse + velocity * dt;
-    let smoothMouse_aspect = vec2<f32>(smoothMouse.x * aspect, smoothMouse.y);
-
-    if (isPress > 0.5 && prevPress <= 0.5) {
-        clickTime = time;
-        clickPos = mouse;
+    // Spring wiper: extraBuffer[133..138], single writer at (0,0).
+    var smoothMouse = mouse;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring) {
+        smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+        var springPos = smoothMouse;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = mouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 9.0;
+            let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+        smoothMouse = springPos;
     }
 
-    extraBuffer[PREV_PRESS] = isPress;
-    extraBuffer[CLICK_TIME] = clickTime;
-    extraBuffer[CLICK_X] = clickPos.x;
-    extraBuffer[CLICK_Y] = clickPos.y;
-    extraBuffer[SMOOTH_X] = smoothMouse.x;
-    extraBuffer[SMOOTH_Y] = smoothMouse.y;
-    extraBuffer[VEL_X] = velocity.x;
-    extraBuffer[VEL_Y] = velocity.y;
-
     let rainIntensity = clamp(rainBase * (1.0 + env * 0.5), 0.0, 1.0);
+    let uvAspect = uv * vec2<f32>(aspect, 1.0);
+    let smoothAspect = vec2<f32>(smoothMouse.x * aspect, smoothMouse.y);
 
-    // ---- spring-damper wiper follows the cursor smoothly ----
-    let distVec = (uv - smoothMouse) * vec2<f32>(aspect, 1.0);
+    let distVec = uvAspect - smoothAspect;
     let dist = length(distVec);
-    let wiper = smoothstep(wiperSize, wiperSize * 0.75, dist) * (1.0 - isPress * 0.5);
+    let wiper = smoothstep(wiperSize, wiperSize * 0.75, dist) * select(1.0, 1.25, held);
 
-    // ---- mouse gravity well bends falling rain toward the cursor ----
-    let toMouse = smoothMouse_aspect - (uv * vec2<f32>(aspect, 1.0));
+    let toMouse = smoothAspect - uvAspect;
     let gravityStrength = smoothstep(0.55, 0.0, length(toMouse)) * (0.08 + env * 0.06);
     let rainBend = safeNormalize(toMouse).x * gravityStrength;
 
     var blurredColor = vec3<f32>(0.0);
-    let samples = 5;
-    for (var i = 0; i < samples; i++) {
-        let t = f32(i) / f32(samples - 1);
+    for (var i = 0; i < 5; i++) {
+        let t = f32(i) / 4.0;
         let offset = (t - 0.5) * blurStrength * 2.0 * (1.0 - wiper);
         let sampleUV = clamp(uv + vec2<f32>(0.0, offset), vec2<f32>(0.0), vec2<f32>(1.0));
         let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
@@ -152,45 +124,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let bloom = smoothstep(bloomThreshold, 1.0, brightness);
         blurredColor += col * (1.0 + bloom * (2.0 + mids));
     }
-    blurredColor /= f32(samples);
+    blurredColor /= 5.0;
 
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    var color = mix(baseColor, blurredColor, rainIntensity * 0.8);
+    var color = mix(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb, blurredColor, rainIntensity * 0.8);
 
-    // ---- falling drops with gravity bend ----
+    let band = min(u32(uv.x * 8.0), 7u);
+    let bandRain = 1.0 + plasmaBuffer[band + 1u].x * 0.35;
+
     let rainUV = uv * vec2<f32>(24.0, 2.5) + vec2<f32>(time * (0.2 + rainBend * 4.0), time * (8.0 + env * 12.0));
-    let rainNoise = hash12(floor(rainUV));
-    let drop = smoothstep(0.88, 0.95, rainNoise) * rainIntensity * (1.0 - wiper);
+    let drop = smoothstep(0.88, 0.95, hash12(floor(rainUV))) * rainIntensity * (1.0 - wiper) * bandRain;
 
-    // ---- streaks also bend toward the mouse ----
     let streakUV = uv * vec2<f32>(8.0, 40.0) + vec2<f32>(time * 0.3 + rainBend * 2.0, time * 25.0);
     let streak = smoothstep(0.92, 0.98, hash12(floor(streakUV))) * rainIntensity * (1.0 - wiper) * 0.5;
 
     let rainColor = vec3<f32>(0.45, 0.75, 1.0) + vec3<f32>(0.2, 0.1, 0.0) * env;
     color += rainColor * (drop + streak);
 
-    // ---- click shockwave: a radial splash that momentarily clears rain ----
-    let age = time - clickTime;
     var shock = 0.0;
-    if (age < 1.25) {
-        let click_aspect = vec2<f32>(clickPos.x * aspect, clickPos.y);
-        shock = shockwave(uv * vec2<f32>(aspect, 1.0), click_aspect, age);
-        color = color + rainColor * shock * (0.7 + treble);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 1.25) {
+            let clickAspect = vec2<f32>(rp.x * aspect, rp.y);
+            shock += empRing(uvAspect, clickAspect, age);
+        }
     }
+    color += rainColor * shock * (0.7 + treble);
 
-    // ---- thunder flash on strong bass peaks ----
-    let flash = smoothstep(0.7, 0.9, env) * (0.0 + 0.25 * fract(time * 16.0));
-    color = color + vec3<f32>(0.9, 0.95, 1.0) * flash;
+    let flash = smoothstep(0.7, 0.9, env) * 0.25 * fract(time * 16.0);
+    color += vec3<f32>(0.9, 0.95, 1.0) * flash;
 
     let wetTrail = mix(prev.rgb * 0.93, color, 0.08 + rainIntensity * 0.1);
     color = mix(color, wetTrail, 0.35 + rainIntensity * 0.3);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     let fog = 1.0 - exp(-depth * 2.0);
     color = mix(color, color * 0.6 + rainColor * 0.05, fog * 0.45);
 
-    let delta = uv - vec2<f32>(0.5);
-    let dir = delta / (length(delta) + 0.0001);
+    let dir = (uv - vec2<f32>(0.5)) / (length(uv - vec2<f32>(0.5)) + 0.0001);
     let caAmt = (0.002 + depth * 0.0015) * (1.0 + env);
     let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + dir * caAmt, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - dir * caAmt * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;

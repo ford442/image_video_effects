@@ -23,7 +23,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "fog_density",
       "name": "Fog Density",
       "default": 0.3,
       "min": 0,
@@ -32,7 +32,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "light_intensity",
       "name": "Light Intensity",
       "default": 0.5,
       "min": 0,
@@ -41,7 +41,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "scattering",
       "name": "Scattering",
       "default": 0.5,
       "min": 0,
@@ -50,7 +50,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "god_rays",
       "name": "God Rays",
       "default": 0.5,
       "min": 0,

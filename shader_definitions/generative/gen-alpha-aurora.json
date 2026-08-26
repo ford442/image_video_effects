@@ -54,5 +54,43 @@
   "updated": true,
   "id": "gen-alpha-aurora",
   "url": "shaders/gen-alpha-aurora.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "band_speed",
+      "name": "Band Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "color_temperature",
+      "name": "Color Temperature",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "band_density",
+      "name": "Band Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "atmospheric_glow",
+      "name": "Atmospheric Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

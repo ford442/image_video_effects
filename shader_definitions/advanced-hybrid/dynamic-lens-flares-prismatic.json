@@ -2,23 +2,30 @@
   "id": "dynamic-lens-flares-prismatic",
   "name": "Dynamic Lens Flares Prismatic",
   "url": "shaders/dynamic-lens-flares-prismatic.wgsl",
-  "description": "Dynamic Lens Flares Prismatic",
+  "description": "Cinematic optical lens flares with physical prismatic dispersion. Ghost elements refract through virtual glass lens surfaces using Cauchy's equation, creating distinct chromatic splitting along the optical axis with starburst diffraction and ring halos.",
   "tags": [
     "lens-flares",
     "prismatic-dispersion",
     "spectral-rendering",
-    "mouse-driven"
+    "mouse-driven",
+    "optical",
+    "advanced-hybrid"
   ],
   "features": [
+    "advanced-hybrid",
     "lens-flares",
     "prismatic-dispersion",
     "spectral-rendering",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "exact-feedback",
+    "temporal-state",
+    "ACES-tonemapped"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "intensity",
+      "name": "Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,8 +33,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "threshold",
+      "name": "Threshold",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -35,8 +42,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "spread",
+      "name": "Spread",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -44,8 +51,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "ghost_count",
+      "name": "Ghost Count",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -53,5 +60,13 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    { "index": 0, "name": "Flare Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Threshold / Sensitivity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Dispersion / Spread", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Ghost Count / Saturation", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = display RGBA with dispersed ghost elements and optical flare persistence",
+  "updated": true,
+  "target_rating": 4.8
 }

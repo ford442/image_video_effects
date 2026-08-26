@@ -9,11 +9,14 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { loadThumbnailSkipIds } = require('./lib/thumbnailSkipAllowlist');
 
 const ROOT = path.join(__dirname, '..');
 const LISTS_DIR = path.join(ROOT, 'public', 'shader-lists');
 const THUMB_DIR = path.join(ROOT, 'public', 'thumbnails');
 const THUMB_MANIFEST_PATH = path.join(THUMB_DIR, 'manifest.json');
+const INTEGRITY_PATH = path.join(ROOT, 'reports', 'thumbnail_integrity_audit.json');
+const DEFERRALS_PATH = path.join(ROOT, 'reports', 'thumbnail_deferrals.json');
 
 function gitText(args) {
   return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
@@ -83,8 +86,54 @@ function loadCurrentThumbManifest() {
     : {};
 }
 
-function healthyIds(catalog, pngs, manifest) {
-  return new Set([...catalog].filter(id => pngs.has(id) && Boolean(manifest[id])));
+/**
+ * Load base integrity flags from git ref
+ */
+function loadBaseIntegrityFlags(ref) {
+  const integrity = readGitJson(ref, 'reports/thumbnail_integrity_audit.json');
+  return new Set((integrity?.entries || []).map(e => e.id));
+}
+
+/**
+ * Load current integrity flags
+ */
+function loadCurrentIntegrityFlags() {
+  if (!fs.existsSync(INTEGRITY_PATH)) {
+    return new Set();
+  }
+  const integrity = JSON.parse(fs.readFileSync(INTEGRITY_PATH, 'utf8'));
+  return new Set((integrity?.entries || []).map(e => e.id));
+}
+
+/**
+ * Load deferral entries and validate them for current PR
+ */
+function loadDeferralEntries() {
+  if (!fs.existsSync(DEFERRALS_PATH)) {
+    return { valid: new Set(), all: [] };
+  }
+  const data = JSON.parse(fs.readFileSync(DEFERRALS_PATH, 'utf8'));
+  const entries = data.entries || [];
+  
+  const today = new Date().toISOString().split('T')[0];
+  const valid = new Set();
+  
+  for (const entry of entries) {
+    if (!entry.id || !entry.expires) {
+      continue; // Skip invalid entries
+    }
+    
+    // Only include non-expired deferrals
+    if (entry.expires >= today) {
+      valid.add(entry.id);
+    }
+  }
+  
+  return { valid, all: entries };
+}
+
+function healthyIds(catalog, pngs, manifest, flaggedIds) {
+  return new Set([...catalog].filter(id => pngs.has(id) && Boolean(manifest[id]) && !flaggedIds.has(id)));
 }
 
 function changedAddedDefinitionIds(ref) {
@@ -116,14 +165,27 @@ function main() {
     throw new Error(`Could not load a shader catalog from git ref "${baseRef}"`);
   }
 
+  // Load eligibility (catalog minus skip list)
+  const skipIds = loadThumbnailSkipIds();
   const currentCatalog = loadCurrentCatalog();
-  const baseHealthy = healthyIds(baseCatalog, loadBasePngs(baseRef), loadBaseThumbManifest(baseRef));
-  const currentHealthy = healthyIds(currentCatalog, loadCurrentPngs(), loadCurrentThumbManifest());
+  const currentEligible = new Set([...currentCatalog].filter(id => !skipIds.has(id)));
+  const baseEligible = new Set([...baseCatalog].filter(id => !skipIds.has(id)));
+  
+  // Load integrity flags and deferrals
+  const currentIntegrity = loadCurrentIntegrityFlags();
+  const baseIntegrity = loadBaseIntegrityFlags(baseRef);
+  const deferrals = loadDeferralEntries();
+  
+  // Calculate healthy thumbnails
+  const baseHealthy = healthyIds(baseEligible, loadBasePngs(baseRef), loadBaseThumbManifest(baseRef), baseIntegrity);
+  const currentHealthy = healthyIds(currentEligible, loadCurrentPngs(), loadCurrentThumbManifest(), currentIntegrity);
+  
   const basePct = (baseHealthy.size / baseCatalog.size) * 100;
   const currentPct = (currentHealthy.size / currentCatalog.size) * 100;
-  const addedIds = changedAddedDefinitionIds(baseRef);
-  const missingAddedIds = addedIds.filter(id => !currentHealthy.has(id));
-
+  
+  // Calculate newly eligible IDs (not in skip list, not in base)
+  const newlyEligible = new Set([...currentEligible].filter(id => !baseEligible.has(id)));
+  
   console.log(
     `Thumbnail PR baseline: ${baseHealthy.size}/${baseCatalog.size} (${basePct.toFixed(1)}%)`,
   );
@@ -131,25 +193,61 @@ function main() {
     `Thumbnail PR head: ${currentHealthy.size}/${currentCatalog.size} (${currentPct.toFixed(1)}%)`,
   );
 
-  if (addedIds.length === 0) {
-    console.log('No new shader definitions in this pull request; coverage check is informational.');
-    return;
+  let exitCode = 0;
+
+  // RULE 1: Check newly eligible IDs for healthy thumbnails or deferrals
+  if (newlyEligible.size > 0) {
+    const offendingIds = [];
+    for (const id of newlyEligible) {
+      const hasHealthyThumb = currentHealthy.has(id);
+      const hasDeferral = deferrals.valid.has(id);
+      
+      if (!hasHealthyThumb && !hasDeferral) {
+        offendingIds.push(id);
+      }
+    }
+    
+    if (offendingIds.length > 0) {
+      console.error(
+        `❌ New eligible shaders without thumbnails (${offendingIds.length}): ` +
+        offendingIds.join(', '),
+      );
+      exitCode = 1;
+    } else {
+      console.log(`✓ ${newlyEligible.size} new eligible shader(s) have thumbnails or deferrals`);
+    }
+  } else {
+    console.log('No newly eligible shaders in this pull request; coverage check is informational.');
   }
 
-  if (missingAddedIds.length > 0) {
+  // RULE 2: Check for thumbnail deletions
+  const currentPngs = loadCurrentPngs();
+  const basePngs = loadBasePngs(baseRef);
+  const deletedPngs = new Set([...basePngs].filter(id => !currentPngs.has(id) && baseHealthy.has(id)));
+  
+  if (deletedPngs.size > 0) {
     console.error(
-      `New shader definitions without healthy thumbnails (${missingAddedIds.length}): ` +
-      missingAddedIds.join(', '),
+      `❌ Thumbnails deleted for healthy shaders (${deletedPngs.size}): ` +
+      [...deletedPngs].join(', '),
     );
-    process.exitCode = 1;
+    exitCode = 1;
   }
 
-  if (currentPct + 1e-9 < basePct) {
+  // RULE 3: Healthy count should not decrease
+  if (currentHealthy.size < baseHealthy.size) {
     console.error(
-      `Thumbnail coverage regressed by ${(basePct - currentPct).toFixed(2)} percentage points.`,
+      `❌ Healthy thumbnail count decreased: ${baseHealthy.size} → ${currentHealthy.size}`,
     );
-    process.exitCode = 1;
+    exitCode = 1;
   }
+
+  if (exitCode === 0) {
+    console.log('✓ Thumbnail coverage regression check passed');
+  } else {
+    console.error('❌ Thumbnail coverage regression check FAILED');
+  }
+  
+  process.exitCode = exitCode;
 }
 
 if (require.main === module) main();
@@ -158,4 +256,5 @@ module.exports = {
   healthyIds,
   loadCurrentCatalog,
   parseArgs,
+  loadDeferralEntries,
 };

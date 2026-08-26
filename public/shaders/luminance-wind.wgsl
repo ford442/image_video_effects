@@ -1,12 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Luminance Wind
-//  Category: artistic
-//  Features: mouse-driven, audio-reactive, curl-noise, chromatic-drift, depth-parallax, upgraded-rgba
-//  Complexity: High
-//  Chunks From: luminance-wind, curl2D, fbm, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-05-31
-// ═══════════════════════════════════════════════════════════════════
+// Luminance Wind — exact-history advection with layered curl gusts.
+// A/C stores raw HDR trail RGB plus semantic alpha; writeTexture is ACES display.
+// B and extraBuffer are intentionally unused.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -23,106 +17,123 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
 fn hash21(p: vec2<f32>) -> f32 {
-  let h = dot(p, vec2<f32>(127.1, 311.7));
-  return fract(sin(h) * 43758.5453123);
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
 fn valueNoise(p: vec2<f32>) -> f32 {
   let i = floor(p);
   let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  let a = hash21(i);
-  let b = hash21(i + vec2<f32>(1.0, 0.0));
-  let c = hash21(i + vec2<f32>(0.0, 1.0));
-  let d = hash21(i + vec2<f32>(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  let s = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), s.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), s.x), s.y);
 }
 
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-  var sum = 0.0;
-  var amp = 0.5;
-  var freq = 1.0;
-  for (var i = 0; i < octaves; i = i + 1) {
-    sum = sum + amp * valueNoise(p * freq);
-    freq = freq * 2.0;
-    amp = amp * 0.5;
-  }
-  return sum;
+fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
+  let e = 0.035;
+  let nx0 = valueNoise(p - vec2<f32>(e, 0.0) + vec2<f32>(time * 0.13, -time * 0.09));
+  let nx1 = valueNoise(p + vec2<f32>(e, 0.0) + vec2<f32>(time * 0.13, -time * 0.09));
+  let ny0 = valueNoise(p - vec2<f32>(0.0, e) + vec2<f32>(time * 0.13, -time * 0.09));
+  let ny1 = valueNoise(p + vec2<f32>(0.0, e) + vec2<f32>(time * 0.13, -time * 0.09));
+  return vec2<f32>((ny1 - ny0) / (2.0 * e), -(nx1 - nx0) / (2.0 * e));
 }
 
-fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
-  let eps = 0.01;
-  let n1 = fbm(p + vec2<f32>(eps, 0.0) + t * 0.1, 3);
-  let n2 = fbm(p - vec2<f32>(eps, 0.0) + t * 0.1, 3);
-  let n3 = fbm(p + vec2<f32>(0.0, eps) + t * 0.1, 3);
-  let n4 = fbm(p - vec2<f32>(0.0, eps) + t * 0.1, 3);
-  let dy = (n1 - n2) / (2.0 * eps);
-  let dx = (n3 - n4) / (2.0 * eps);
-  return vec2<f32>(dx, -dy);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn bass_env(bass: f32, mids: f32) -> f32 {
-  return 1.0 + bass * 0.5 + mids * 0.2;
+fn historyCoord(uv: vec2<f32>, resolution: vec2<f32>) -> vec2<i32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  return clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution),
+               vec2<i32>(0), hi);
+}
+
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, historyCoord(uv, resolution), 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let coord = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+  let time = u.config.x;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 2.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 2.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 2.0);
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+  let windSpeed = 0.001 + u.zoom_params.x * 0.045;
+  let trailDecay = mix(0.78, 0.985, clamp(u.zoom_params.y, 0.0, 1.0));
+  let threshold = clamp(u.zoom_params.z, 0.0, 1.0);
+  let turbulence = 0.05 + u.zoom_params.w * 1.4;
+  let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let currentLuma = dot(current.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  let depthLayer = mix(0.48, 1.52, depth);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthLayer = mix(0.5, 1.5, depth);
+  let joystick = (mouse - 0.5) * aspectVec;
+  let heldDirection = joystick / max(length(joystick), 0.0001);
+  let baseDirection = select(vec2<f32>(1.0, 0.08 * sin(time * 0.35)), heldDirection, held);
+  let pointerDelta = (uv - mouse) * aspectVec;
+  let pointerDist = length(pointerDelta);
+  let localJet = smoothstep(0.48, 0.0, pointerDist) * select(0.15, 1.0, held);
+  let curlLarge = curlNoise(uv * 2.7, time * 0.55);
+  let curlFine = curlNoise(uv * 7.3 + vec2<f32>(3.1, -1.7), -time * 0.82);
+  let layeredCurl = normalize(curlLarge + curlFine * (0.42 + treble * 0.18) + vec2<f32>(0.0001));
 
-    let speed = mix(0.0, 0.05, u.zoom_params.x) * bass_env(bass, mids);
-    let decay = mix(0.8, 0.99, u.zoom_params.y);
-    let threshold = u.zoom_params.z;
-    let noiseAmt = u.zoom_params.w;
+  var gustFront = 0.0;
+  var gustDirection = vec2<f32>(0.0);
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.8) {
+      let delta = (uv - ripple.xy) * aspectVec;
+      let dist = length(delta);
+      let front = age * (0.30 + bass * 0.11);
+      let pulse = sin((dist - front) * 62.0) * exp(-abs(dist - front) * 25.0) * exp(-age * 1.0);
+      gustFront += pulse;
+      gustDirection += delta / max(dist, 0.0001) * pulse;
+    }
+  }
 
-    let windDir = select(vec2<f32>(1.0, 0.0), normalize(uv - mouse), mouse.x > 0.0 && mouse.y > 0.0);
+  let lumaGate = smoothstep(threshold - 0.08, threshold + 0.08, currentLuma);
+  let audioGust = 1.0 + bass * 0.85 + mids * 0.25;
+  let wind = normalize(baseDirection + layeredCurl * turbulence * (0.28 + mids * 0.18) +
+                       gustDirection * (0.38 + bass * 0.35) + vec2<f32>(0.0001));
+  let localSpeed = windSpeed * lumaGate * depthLayer * audioGust * (1.0 + localJet * 1.25 + abs(gustFront) * 0.5);
+  let sourceUV = clamp(uv - wind / aspectVec * localSpeed, vec2<f32>(0.0), vec2<f32>(1.0));
+  let chroma = wind / aspectVec * localSpeed * (0.12 + treble * 0.30);
+  let historyR = historyAt(sourceUV - chroma, resolution);
+  let historyG = historyAt(sourceUV, resolution);
+  let historyB = historyAt(sourceUV + chroma, resolution);
+  let rawHistory = vec3<f32>(historyR.r, historyG.g, historyB.b);
+  let historyAlpha = max(historyR.a, max(historyG.a, historyB.a));
 
-    let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let luma = dot(current.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let injection = clamp(0.07 + lumaGate * 0.15 + mids * 0.035 + localJet * 0.08, 0.05, 0.34);
+  var rawHDR = rawHistory * trailDecay + current.rgb * injection;
+  rawHDR += current.rgb * abs(gustFront) * (0.07 + bass * 0.12);
+  rawHDR += vec3<f32>(0.10, 0.42, 0.78) * length(layeredCurl) * lumaGate * treble * 0.025;
+  rawHDR = clamp(rawHDR, vec3<f32>(0.0), vec3<f32>(8.0));
+  let rawAlpha = clamp(historyAlpha * trailDecay + current.a * injection +
+                       localSpeed * 5.0 + abs(gustFront) * 0.08, 0.0, 1.0);
+  let rawState = vec4<f32>(rawHDR, rawAlpha);
+  let display = vec4<f32>(aces(rawHDR), rawAlpha);
 
-    var localSpeed = speed * luma * depthLayer;
-    if (luma < threshold) { localSpeed = 0.0; }
-
-    // Curl noise for organic wind turbulence
-    let curl = curl2D(uv * 3.0, time * 0.2) * 0.02 * bass_env(bass, mids);
-    let noise = (hash21(uv * 100.0 + time) - 0.5) * noiseAmt;
-    let noisyWind = normalize(windDir + vec2<f32>(0.0, noise)) + curl;
-
-    let sourceUV = clamp(uv - noisyWind * localSpeed, vec2<f32>(0.0), vec2<f32>(1.0));
-    let history = textureSampleLevel(dataTextureC, non_filtering_sampler, sourceUV, 0.0);
-
-    // Chromatic drift: R and B channels drift at different rates
-    let driftR = clamp(uv - noisyWind * localSpeed * 1.1, vec2<f32>(0.0), vec2<f32>(1.0));
-    let driftB = clamp(uv - noisyWind * localSpeed * 0.9, vec2<f32>(0.0), vec2<f32>(1.0));
-    let r = textureSampleLevel(dataTextureC, non_filtering_sampler, driftR, 0.0).r;
-    let b = textureSampleLevel(dataTextureC, non_filtering_sampler, driftB, 0.0).b;
-    let g = history.g;
-
-    let injection = 0.1 + bass * 0.05;
-    let newColor = mix(vec4<f32>(r, g, b, history.a), current, injection);
-    let finalColor = newColor * decay;
-
-    let alpha = clamp(finalColor.a + localSpeed * 10.0 + bass * 0.05, 0.0, 1.0);
-
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor.rgb, alpha));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, rawState);
+  textureStore(writeTexture, coord, display);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

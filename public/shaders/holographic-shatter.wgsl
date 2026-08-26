@@ -70,12 +70,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
-    let dM = distance(uv, mouse);
+    let held = select(0.0, 1.0, mouseDown > 0.5);
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let dM = length((uv - mouse) * vec2<f32>(aspect, 1.0));
 
     // FIXED: impact falloff was inverted (grew with distance, so mouse-down
     // flung far shards while the cursor zone sat still). Now near-focused,
     // with a small global baseline so idle / far-field drift survives.
-    let mouseGain = 0.4 + mouseDown * 0.6;
+    let mouseGain = 0.4 + mouseDown * 0.6 + held * 0.15;
     let nearImpact = mouseGain * smoothstep(0.6, 0.0, dM);
     let impact = max(nearImpact, 0.25 * mouseGain);
 
@@ -127,7 +129,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let holographic = 0.5 + 0.5 * sin(vec3<f32>(phase, phase + 2.094, phase + 4.188));
     let palIdx = u32(clamp((shardRand + time * 0.05) * 255.0, 0.0, 255.0));
     let palette = plasmaBuffer[(palIdx % 8u) + 1u].rgb;
-    let foil = mix(holographic, holographic * (0.6 + palette * 0.7), 0.4);
+    var foil = mix(holographic, holographic * (0.6 + palette * 0.7), 0.4);
+    let thinFilm = 0.5 + 0.5 * cos(vec3<f32>(phase * 1.3, phase * 1.3 + 2.1, phase * 1.3 + 4.2) + mids * 2.0);
+    foil = mix(foil, foil * thinFilm, edgeGlow * 0.35);
 
     // Per-channel refraction along the flight direction: shard edges split
     // light like a prism; strength is mids-driven so edges shimmer with audio.
@@ -137,7 +141,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let refrB = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV - refr, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
     // Temporal shard persistence: previous frame offsets blend for settling glass
-    let prevShards = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prevShards = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
     let settled = mix(sample.rgb, prevShards * 0.92, 0.06 + bass * 0.02);
 
     var finalColor = mix(settled, foil, edgeGlow * holographicIntensity);

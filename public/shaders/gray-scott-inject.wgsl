@@ -37,13 +37,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
   let held = u.zoom_config.w > 0.5;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let aspect = res.x / res.y;
   let seed = mix(0.2, 1.0, u.zoom_params.w);
   var st = textureLoad(dataTextureC, pixel, 0);
   var U = st.r;
   var V = st.g;
   var mask = st.a;
 
-  let md = length(uv - mouse);
+  let md = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  let hover = smoothstep(0.07, 0.0, md);
+  V = clamp(V + hover * 0.002 * (1.0 + mids), 0.0, 1.0);
   if (held && md < 0.045) {
     let w = smoothstep(0.045, 0.0, md) * seed;
     V = clamp(V + w * 0.55, 0.0, 1.0);
@@ -55,9 +61,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i = 0u; i < nRipple; i = i + 1u) {
     let rp = u.ripples[i];
     let age = time - rp.z;
-    if (age > 0.0 && age < 0.25) {
-      let d = length(uv - rp.xy);
-      let punch = smoothstep(0.03, 0.0, d) * seed * (1.0 - age / 0.25);
+    if (age >= 0.0 && age < 0.55) {
+      let d = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      let punch = smoothstep(0.045 + treble * 0.015, 0.0, d) * seed * (1.0 - age / 0.55) * (1.0 + bass * 0.25);
       V = clamp(V + punch * 0.8, 0.0, 1.0);
       U = clamp(U * (1.0 - punch * 0.4), 0.0, 1.0);
     }

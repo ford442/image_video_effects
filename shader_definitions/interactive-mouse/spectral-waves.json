@@ -2,7 +2,7 @@
   "id": "spectral-waves",
   "name": "Luma Ripple",
   "url": "shaders/spectral-waves.wgsl",
-  "description": "Luminance-reactive waves ripple out from the mouse cursor, displacing the image with chromatic aberration. Audio bass boosts wave amplitude.",
+  "description": "Premultiplied luminance waves from a guarded sprung origin, with bounded click trains, three-band and read-only FFT caustics, exact-C persistence, and authoritative A display history.",
   "params": [
     {
       "id": "frequency",
@@ -41,7 +41,11 @@
     "mouse-driven",
     "audio-reactive",
     "image",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive",
+    "temporal",
+    "premultiplied-alpha",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",

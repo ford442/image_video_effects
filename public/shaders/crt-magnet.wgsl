@@ -106,6 +106,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let uv01 = vec2<f32>(pixel) / res;
   let mousePos = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
@@ -145,7 +146,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthAtten = mix(0.7, 1.0, depth);
 
-  let field = magnetStrength * falloff * sdfMask * depthAtten * (1.0 + env * 2.0);
+  // Smooth degauss rings and rolling beam sweeps keep the tube in motion.
+  let screenRadius = length((uv01 - 0.5) * vec2<f32>(aspect, 1.0));
+  let degauss = exp(-abs(screenRadius - (0.24 + 0.16 * sin(time * 1.7))) * 38.0);
+  let beamSweep = exp(-abs(uv01.y - (0.5 + 0.48 * sin(time * 2.3 + uv01.x * 3.0))) * 90.0);
+
+  var clickWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (rp.z > 0.0 && age >= 0.0 && age < 1.4) {
+      let ring = exp(-abs(distance(uv01, rp.xy) - age * 0.5) * 75.0) * (1.0 - age / 1.4);
+      clickWave = max(clickWave, ring);
+    }
+  }
+
+  let field = magnetStrength * falloff * sdfMask * depthAtten
+            * (1.0 + env * 2.0 + held * 0.8 + degauss * 0.45 + clickWave);
 
   let curl = curl2(uv * 6.0 + smoothMouse * 3.0, time * 0.2);
   let displacement = dVec * field * 4.0 + curl * field * 0.4;
@@ -178,6 +196,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bloomThreshold = smoothstep(0.6, 1.0, luma(color));
   color += bloom * bloomThreshold * bloomIntensity * (2.0 + mids * 1.5) + vec3<f32>(treble * 0.05);
+  color += vec3<f32>(0.18, 0.55, 1.0) * beamSweep * (0.08 + bloomIntensity * 0.22);
+  color += palette(time * 0.12 + screenRadius * 1.8,
+                   vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67))
+         * (degauss * 0.18 + clickWave * 0.3);
 
   // Audio-driven palette: shift hues based on bass envelope and mids.
   let pal = palette(luma(color) * 0.7 + env * 0.6 + mids * 0.2 + time * 0.03,
@@ -187,7 +209,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Temporal feedback echo from the previous frame's color buffer.
   let echoUV = clamp(uv - displacement * 0.6, vec2<f32>(0.0), vec2<f32>(1.0));
-  let echo = textureSampleLevel(dataTextureC, u_sampler, echoUV, 0.0).rgb;
+  let echoPixel = vec2<i32>(clamp(echoUV * res, vec2<f32>(0.0), res - 1.0));
+  let echo = textureLoad(dataTextureC, echoPixel, 0).rgb;
   color = mix(color, echo, 0.2 * field + 0.04 * env);
 
   let stripe = f32(global_id.x % 3u);

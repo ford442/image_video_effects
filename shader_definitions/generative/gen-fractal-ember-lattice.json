@@ -19,6 +19,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "glow-intensity", "name": "Glow Intensity", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "shard-size", "name": "Shard Size", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "lattice-scale", "name": "Lattice Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "spark-density", "name": "Spark Density", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -58,5 +64,12 @@
   "updated": true,
   "id": "gen-fractal-ember-lattice",
   "url": "shaders/gen-fractal-ember-lattice.wgsl",
-  "features": []
+  "features": [
+    "rigid-shard-state",
+    "three-band-audio-reactive",
+    "mouse-shatter-reform",
+    "semantic-alpha",
+    "aces-tone-map"
+  ],
+  "feedbackPacking": "dataTextureA/C = shard displacement xy, shard seed, reform progress"
 }

@@ -1,10 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Byte Mosh
-//  Category: retro-glitch
-//  Features: upgraded-rgba, depth-aware, audio-reactive
-//  Complexity: Very High
-//  Scientific: LFSR packet corruption over GF(2) with Gilbert-Elliott burst errors driving datamosh block-copy artifacts.
-//  Upgraded: 2026-05-23
+//  Byte Mosh — Batch 62
+//  LFSR/GF(2) datamosh: spring cursor, held burst, capped ripples,
+//  wired zoom_params, regional FFT, ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -78,6 +75,10 @@ fn galois_mult(a: u32, b: u32) -> u32 {
   return result & 0xffu;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -93,8 +94,53 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
   let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
   let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+  let held = u.zoom_config.w > 0.5;
   let mouse = u.zoom_config.yz;
-  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
+
+  let operationMix = u.zoom_params.x;
+  let bitShift = u.zoom_params.y;
+  let errorRate = u.zoom_params.z;
+  let blockSizeParam = u.zoom_params.w;
+
+  var smoothMouse = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = mouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 9.0;
+      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
+  }
+
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  var rippleBurst = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.4) {
+      let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      rippleBurst = max(rippleBurst, smoothstep(0.12, 0.0, rDist) * (1.0 - age * 0.75));
+    }
+  }
+  let mouseDown = select(clamp(u.zoom_config.w, 0.0, 1.0), 1.0, held);
 
   let blockOriginU = (global_id.xy / 8u) * 8u;
   let blockOrigin = vec2<i32>(blockOriginU);
@@ -116,7 +162,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   lfsr = lfsr_step(lfsr);
 
   var badState = prevMode > 0.5;
-  let goodToBad = clamp(0.0001 + bass * bass * 0.18 + step(0.82, bass) * 0.035, 0.0001, 0.24);
+  let goodToBad = clamp((0.0001 + bass * bass * 0.18 + step(0.82, bass) * 0.035) * (0.35 + errorRate * 1.2) + rippleBurst * 0.25, 0.0001, 0.35);
   let badToGood = 0.1;
   if (badState) {
     badState = !(rand0 < badToGood);
@@ -126,25 +172,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let errorProb = select(0.0001, 0.1, badState);
   let burstMask = select(0u, lfsr ^ (prevMask << 1u), rand1 < errorProb || badState);
-  let blockTrigger = badState && (((lfsr ^ prevMask) & 0x003fu) == 0x002du || rand2 < bass * 0.12);
+  let blockTrigger = badState && (((lfsr ^ prevMask) & u32(mix(0x003fu, 0x00ffu, blockSizeParam))) == 0x002du || rand2 < bass * 0.12 + rippleBurst * 0.2);
   let mode = select(select(0.0, 1.0, badState), 2.0, blockTrigger);
   let corruptionAge = select(0.0, min(prevAge + 1.0, 63.0), badState);
 
   let sourceColor = textureSampleLevel(readTexture, u_sampler, clamp_uv(uv), 0.0);
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp_uv(uv), 0.0).r;
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
 
+  let shiftScale = 1.0 + bitShift * 4.0 + select(0.0, 0.5, held);
   let offsetPixels = vec2<f32>(
-    f32(i32((lfsr >> 4u) & 31u) - 15) * (1.5 + bass * 8.0),
-    f32(i32((lfsr >> 9u) & 15u) - 7) * (0.5 + mids * 2.0)
+    f32(i32((lfsr >> 4u) & 31u) - 15) * (1.5 + bass * 8.0) * shiftScale,
+    f32(i32((lfsr >> 9u) & 15u) - 7) * (0.5 + mids * 2.0) * shiftScale
   );
-  let mouseBias = (uv - mouse) * mouseDown * (8.0 + bass * 18.0);
+  let mouseBias = (uv - smoothMouse) * mouseDown * (8.0 + bass * 18.0);
   let offsetUV = (offsetPixels + mouseBias) * texel;
   let wrongFrameUV = clamp_uv(blockCenterUV + offsetUV);
   let wrongFrameColor = textureSampleLevel(readTexture, u_sampler, wrongFrameUV, 0.0);
   let smearColor = textureSampleLevel(readTexture, u_sampler, clamp_uv(uv + offsetUV), 0.0);
 
-  var glitched = mix(sourceColor.rgb, smearColor.rgb, 0.25 + 0.45 * f32(badState));
-  glitched = mix(glitched, wrongFrameColor.rgb, 0.75 * step(1.5, mode));
+  var glitched = mix(sourceColor.rgb, smearColor.rgb, mix(0.25, 0.7, operationMix) + 0.45 * f32(badState));
+  glitched = mix(glitched, wrongFrameColor.rgb, mix(0.75, 0.95, operationMix) * step(1.5, mode));
 
   var rgb8 = pack_rgb8(glitched);
   let maskR = galois_mult((burstMask >> 0u) & 0xffu, 0x1du ^ ((lfsr >> 3u) & 0xffu));
@@ -173,8 +220,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let scanPhase = sin((uv.y * resolution.y + time * 24.0) * PI);
   let scanline = 0.92 + 0.08 * scanPhase;
-  let edgeGlow = boundary * (0.18 + 0.35 * treble);
+  let bandBin = (u32(blockOriginU.x + blockOriginU.y) % 8u) + 1u;
+  let fftEdge = plasmaBuffer[bandBin].x;
+  let edgeGlow = boundary * (0.18 + 0.35 * treble + fftEdge * 0.12);
   finalRgb = finalRgb * scanline + rainbow * edgeGlow;
+  finalRgb = acesToneMap(finalRgb * (0.95 + bass * 0.06));
 
   let luma = dot(finalRgb, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(sourceColor.a * (0.88 + 0.12 * luma) + edgeGlow * 0.05, 0.0, 1.0);

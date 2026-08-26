@@ -29,17 +29,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
-}
-
-
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 const PHI: f32 = 1.61803398874989484820;
@@ -84,31 +73,45 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let mouse = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
+    let mouseDown = u.zoom_config.w > 0.5;
     let mouse_p = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
+    let intensityControl = clamp(u.zoom_params.x, 0.0, 1.0);
+    let speedControl = clamp(u.zoom_params.y, 0.0, 1.0);
+    let scaleControl = clamp(u.zoom_params.z, 0.0, 1.0);
+    let mouseInfluence = clamp(u.zoom_params.w, 0.0, 1.0);
+    let phaseTime = time * mix(0.25, 2.8, speedControl);
 
     var mouseOffset = vec2<f32>(0.0);
-    // Fast ripple accumulation: unroll with early exit
-    for (var i = 0; i < 6; i++) {
+    let toMouse = p - mouse_p;
+    let mouseDistance = length(toMouse);
+    let hoverLens = exp(-mouseDistance * mouseDistance * 7.0) * mouseInfluence;
+    mouseOffset -= toMouse / max(mouseDistance, 1e-4) * hoverLens * select(0.025, 0.11, mouseDown);
+
+    // Click timestamps launch finite flare-burst fronts. ripple.w is padding.
+    let rippleCount = min(u32(u.config.y), 50u);
+    var clickBurst = 0.0;
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
-        let alive = step(1e-4, ripple.w);
-        if (alive < 0.5) { continue; }
-        let rPos = ripple.xy;
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 2.6) { continue; }
+        let rPos = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0);
         let toR = p - rPos;
         let d = length(toR);
-        let push = exp(-d * d * 50.0) * ripple.w * alive;
-        mouseOffset = mouseOffset + (toR / max(d, 1e-4)) * push;
+        let radius = age * mix(0.18, 0.55, speedControl);
+        let front = exp(-pow((d - radius) * 34.0, 2.0)) * exp(-age * 1.15);
+        clickBurst += front;
+        mouseOffset += toR / max(d, 1e-4) * front * 0.055 * mouseInfluence;
     }
 
-    let gridSize = 10.0 + u.zoom_params.x * 5.0 + bass * 2.0;
-    let flareSpread = u.zoom_params.y;
+    let gridSize = mix(5.0, 16.0, scaleControl) + bass * 1.5;
+    let flareSpread = mix(0.08, 0.42, scaleControl);
 
     let gUv = (p + mouseOffset * 0.1) * gridSize;
     let idc = floor(gUv);
     let fUv = fract(gUv) - vec2<f32>(0.5);
 
     // Blue noise offset for flare position (decorrelates grid aliasing)
-    let bn = blueNoise2(idc + time * 0.01);
+    let bn = blueNoise2(idc + phaseTime * 0.03);
     let offset = (vec2<f32>(bn, fract(bn * PHI)) - vec2<f32>(0.5)) * flareSpread * 2.0;
     let flarePos = fUv - offset;
     let dist = length(flarePos);
@@ -116,17 +119,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Fast approximate streak: x^2 instead of exp for performance
     let streak = exp(-flarePos.y * flarePos.y * 80.0) * exp(-abs(flarePos.x) * 4.0);
 
-    let size = 0.08 + bass * 0.25 + mouseDown * 0.05;
-    let spinSpeed = time * (1.0 + bass * 2.0);
-    let angle = atan2(flarePos.y, flarePos.x) + spinSpeed + u.zoom_params.z * TAU;
+    let size = mix(0.045, 0.14, scaleControl) + bass * 0.09 + hoverLens * 0.025;
+    let spinSpeed = phaseTime * (1.0 + bass * 1.2);
+    let angle = atan2(flarePos.y, flarePos.x) + spinSpeed;
 
     // Core: fast approximation using smoothstep instead of exp for small distances
     let core = exp(-dist * dist / max(size * size, 1e-6));
     let starMod = 0.5 + 0.5 * fastSin(angle * 4.0 + time * 5.0);
-    let density = core * starMod + streak * 0.4;
+    var density = core * starMod + streak * (0.3 + mids * 0.18) + clickBurst * 0.75;
 
     // Chromatic dispersion per flare: RGB stars at different angular offsets
-    let chromaOff = u.zoom_params.w * 0.3 + treble * 0.2;
+    let chromaOff = 0.04 + treble * 0.22;
     let angleR = angle + chromaOff;
     let angleB = angle - chromaOff;
     let starR = 0.5 + 0.5 * fastSin(angleR * 4.0 + time * 5.0);
@@ -138,27 +141,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Fast plasma color lookup with blue noise jitter
     let plasmaIdx = u32(abs(fract(bn + time * 0.1)) * 256.0);
     let pColor = plasmaBuffer[plasmaIdx % 256u].rgb;
-    let brightness = 1.0 + u.zoom_params.w + bass * 0.5;
+    let brightness = mix(0.55, 2.4, intensityControl) * (1.0 + bass * 0.45);
     var col = vec3<f32>(pColor.r * densityR, pColor.g * densityG, pColor.b * densityB) * brightness;
 
     let motion = textureLoad(readTexture, coords, 0).rgb;
     col = motion * (1.0 - density * 0.6) + col;
 
-    // Temporal flare persistence: previous frame density burns in
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let prevDensity = prev.r;
-    let persistent = mix(density, prevDensity, 0.08 + bass * 0.03);
-    textureStore(dataTextureA, coords, vec4<f32>(persistent, streak, dist, 1.0));
+    // A/C owns raw flare state: density, streak, nearest distance, alpha.
+    // Keep it un-tone-mapped and use exact history loads.
+    let prev = textureLoad(dataTextureC, coords, 0);
+    let persistentDensity = max(density, prev.r * mix(0.86, 0.95, speedControl));
+    let persistentStreak = max(streak + clickBurst * 0.35, prev.g * 0.91);
+    let persistentDistance = mix(dist, prev.b, 0.18);
+    density = persistentDensity;
 
     // Depth-aware compositing: flares behind depth are dimmer
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthDim = 0.6 + depth * 0.4;
     col = col * depthDim;
+    col += pColor * persistentDensity * (0.18 + mids * 0.12);
 
     let lumaOut = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let bloom = max(0.0, lumaOut - 0.7) * 3.0;
-    let alpha = clamp(0.4 + density * 0.4 + bloom * 0.3 + bass * 0.1, 0.0, 1.0);
+    let alpha = clamp(0.08 + density * 0.62 + persistentStreak * 0.22 + bloom * 0.25, 0.02, 0.98);
+    let stateAlpha = max(alpha, prev.a * 0.92);
+    let display = acesToneMap(col * mix(0.85, 1.35, intensityControl));
 
-    textureStore(writeTexture, coords, applyGenerativePrimaryControls(vec4<f32>(col, alpha)));
-    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coords, vec4<f32>(display, stateAlpha));
+    textureStore(writeDepthTexture, coords, vec4<f32>(clamp(depth * (0.7 + persistentDensity * 0.3), 0.0, 1.0), 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(persistentDensity, persistentStreak, persistentDistance, stateAlpha));
 }

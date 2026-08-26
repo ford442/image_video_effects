@@ -21,7 +21,7 @@
     },
     {
       "index": 1,
-      "name": "Speed",
+      "name": "Simulation Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -29,7 +29,7 @@
     },
     {
       "index": 2,
-      "name": "Scale",
+      "name": "Spatial Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -55,5 +55,43 @@
     "simulation",
     "depth-aware",
     "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "simulation_speed",
+      "name": "Simulation Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "spatial_scale",
+      "name": "Spatial Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mouse_influence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

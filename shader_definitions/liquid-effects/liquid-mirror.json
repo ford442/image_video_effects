@@ -2,7 +2,7 @@
   "id": "liquid-mirror",
   "name": "Liquid Mirror",
   "url": "shaders/liquid-mirror.wgsl",
-  "description": "Metallic liquid surface that reflects the image and ripples under the mouse.",
+  "description": "A persistent reflective height field with bounded sprung pointer push, held dents, click waves, exact C state, three-band steel highlights, Fresnel reflection, ACES, and semantic alpha.",
   "params": [
     {
       "id": "distort",
@@ -34,7 +34,18 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "held-interaction",
+    "click-reactive",
+    "audio-reactive",
+    "depth-aware",
+    "stateful-simulation",
+    "raw-height-velocity-state",
+    "spring-interaction",
+    "reflective-surface",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "filter",

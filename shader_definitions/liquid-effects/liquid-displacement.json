@@ -2,7 +2,7 @@
   "id": "liquid-displacement",
   "name": "Liquid Displacement",
   "url": "shaders/liquid-displacement.wgsl",
-  "description": "Navier-Stokes fluid simulation for realistic water-like displacement. Features swirling eddies, vortices, and volume-conserving flow with pressure projection.",
+  "description": "Persistent velocity and height-field image displacement with exact-load pressure projection, viscosity diffusion, bounded pointer velocity, held flow injection, click waves, three-band turbulence, caustics, ACES, and semantic alpha.",
   "params": [
     {
       "id": "viscosity",
@@ -39,8 +39,16 @@
   ],
   "features": [
     "mouse-driven",
-    "multi-pass",
-    "depth-aware"
+    "held-interaction",
+    "click-reactive",
+    "audio-reactive",
+    "depth-aware",
+    "stateful-simulation",
+    "raw-velocity-height-state",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "navier-stokes",

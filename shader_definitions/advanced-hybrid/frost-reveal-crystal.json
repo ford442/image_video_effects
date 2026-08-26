@@ -2,23 +2,28 @@
   "id": "frost-reveal-crystal",
   "name": "Frost Reveal Crystal",
   "url": "shaders/frost-reveal-crystal.wgsl",
-  "description": "Catalog entry for Frost Reveal Crystal.",
+  "description": "A frost layer that melts under mouse interaction to reveal anisotropic crystal dendrites growing beneath.",
   "tags": [
     "frost-reveal",
     "crystal-growth",
     "temporal",
-    "mouse-driven"
+    "mouse-driven",
+    "dendrite",
+    "ice"
   ],
   "features": [
     "frost-reveal",
     "crystal-growth",
     "temporal",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "growth_speed",
+      "name": "Growth Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,8 +31,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "melt_radius",
+      "name": "Melt Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -35,8 +40,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "max_opacity",
+      "name": "Max Opacity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -44,13 +49,48 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "anisotropy",
+      "name": "Anisotropy",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w"
+    }
+  ],
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Growth Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Melt Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Max Opacity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Anisotropy",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"

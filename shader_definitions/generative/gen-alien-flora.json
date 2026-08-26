@@ -59,5 +59,43 @@
   "updated": true,
   "id": "gen-alien-flora",
   "url": "shaders/gen-alien-flora.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "vegetation_density",
+      "name": "Vegetation Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "sway_speed",
+      "name": "Sway Speed",
+      "default": 1,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "default": 1.5,
+      "min": 0.5,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

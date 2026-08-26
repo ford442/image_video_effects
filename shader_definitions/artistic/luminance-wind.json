@@ -3,7 +3,7 @@
   "name": "Luminance Wind",
   "category": "artistic",
   "url": "shaders/luminance-wind.wgsl",
-  "description": "Pixels are blown by a curl-noise wind field. Lighter pixels travel further. Chromatic drift separates R/B channels. Audio gusts boost wind strength; depth creates parallax layering.",
+  "description": "Luminance-gated raw HDR history is advected by layered curl gusts, held directional wind, depth parallax, chromatic drift, and traveling click fronts.",
   "params": [
     {
       "name": "Wind Speed",
@@ -38,13 +38,26 @@
       "id": "turbulence"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Wind Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Trail Decay", "default": 0.8, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Luma Threshold", "default": 0.1, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Turbulence", "default": 0.2, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = raw HDR trail RGB and semantic alpha via bounded exact advection loads; writeTexture alone is ACES tone-mapped; B is unused",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
     "upgraded-rgba",
     "curl-noise",
-    "chromatic-drift"
+    "chromatic-drift",
+    "exact-history",
+    "raw-hdr-feedback",
+    "aces-tone-map",
+    "three-band-audio",
+    "held-pointer",
+    "click-reactive"
   ],
   "tags": [
     "filter",

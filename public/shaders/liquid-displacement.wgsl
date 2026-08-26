@@ -1,11 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Liquid Displacement
-//  Category: liquid-effects
-//  Features: mouse-driven, multi-pass, depth-aware, fluid transparency
-//  Complexity: High
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
-// ═══════════════════════════════════════════════════════════════════
+// Liquid Displacement — persistent incompressible flow and height-field warp.
+// Raw A ownership: RG=velocity, B=surface height, A=activity/initialization.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -15,291 +9,105 @@
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-struct Uniforms {
-  config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
-  zoom_config: vec4<f32>,         // time, mouseX, mouseY, mouseDown
-  zoom_params: vec4<f32>,         // viscosity, pressure_iterations, flow_speed, turbidity
-  ripples: array<vec4<f32>, 50>,
-};
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 
-// Constants
-const DT: f32 = 0.016;
-const DISSIPATION: f32 = 0.995;
-const PRESSURE_ALPHA: f32 = 0.25;
-const PI:  f32 = 3.14159265358979323846;
-const TAU: f32 = 6.28318530717958647692;
-const PHI: f32 = 1.61803398874989484820;
-
-// Schlick's approximation for Fresnel reflection
-fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+fn clampPixel(p: vec2<i32>, dims: vec2<i32>) -> vec2<i32> { return clamp(p, vec2<i32>(0), dims - vec2<i32>(1)); }
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
-
-// Calculate fluid alpha based on flow properties
-fn calculateFlowAlpha(
-    flowMagnitude: f32,
-    pressure: f32,
-    turbidity: f32,
-    viewDotNormal: f32
-) -> f32 {
-  // Fresnel: more reflective at glancing angles
-  let F0 = 0.02;
-  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
-  
-  // Flow thickness based on velocity magnitude and pressure
-  // High velocity = thicker liquid layer
-  let flowThickness = flowMagnitude * 0.5 + pressure * 0.3 + 0.1;
-  
-  // Beer-Lambert absorption
-  let effectiveDepth = flowThickness * (1.0 + turbidity * 3.0);
-  let absorption = exp(-effectiveDepth * 1.5);
-  
-  // Base alpha: more transparent when flow is slow
-  let baseAlpha = mix(0.4, 0.9, absorption);
-  
-  // Fresnel reduces transmission
-  let alpha = baseAlpha * (1.0 - fresnel * 0.4);
-  
-  return clamp(alpha, 0.0, 1.0);
-}
-
-// Calculate flow color with absorption
-fn calculateFlowColor(
-    baseColor: vec3<f32>,
-    velocity: vec2<f32>,
-    pressure: f32,
-    turbidity: f32
-) -> vec3<f32> {
-  let velMag = length(velocity);
-  
-  // Wavelength-dependent absorption (motion blur effect)
-  let flowDepth = velMag * 0.3 + pressure * 0.2;
-  let absorptionR = exp(-flowDepth * (1.0 + turbidity));
-  let absorptionG = exp(-flowDepth * (0.9 + turbidity * 0.9));
-  let absorptionB = exp(-flowDepth * (0.8 + turbidity * 0.8));
-  
-  // Add subtle flow tint (cyan/blue for liquid feel)
-  let flowTint = vec3<f32>(0.0, 0.05, 0.1) * velMag * 2.0;
-  
-  return vec3<f32>(
-      baseColor.r * absorptionR,
-      baseColor.g * absorptionG + flowTint.g,
-      baseColor.b * absorptionB + flowTint.b
-  );
-}
+fn schlick(cosTheta: f32, f0: f32) -> f32 { return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0); }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    let texSize = vec2<i32>(i32(resolution.x), i32(resolution.y));
-    let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
-    
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+  let pixel = vec2<i32>(gid.xy); let dims = vec2<i32>(resolution);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0); let time = u.config.x;
+  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
+  // Saved slots: viscosity, pressure iterations, flow speed, turbulence.
+  let viscosity = u.zoom_params.x; let pressureGain = mix(0.12, 0.48, u.zoom_params.y);
+  let flowSpeed = mix(0.45, 2.2, u.zoom_params.z) * (1.0 + bass * 0.28); let turbulence = u.zoom_params.w;
+
+  let c = textureLoad(dataTextureC, pixel, 0);
+  let l = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(-1, 0), dims), 0);
+  let r = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(1, 0), dims), 0);
+  let d = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(0, -1), dims), 0);
+  let t = textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(0, 1), dims), 0);
+  let initialized = c.a > 0.00001;
+  var velocity = select(vec2<f32>(0.0), clamp(c.rg, vec2<f32>(-1.2), vec2<f32>(1.2)), initialized);
+  var height = select(0.12, c.b, initialized);
+  let vL = select(vec2<f32>(0.0), l.rg, initialized); let vR = select(vec2<f32>(0.0), r.rg, initialized);
+  let vD = select(vec2<f32>(0.0), d.rg, initialized); let vU = select(vec2<f32>(0.0), t.rg, initialized);
+  let hL = select(0.12, l.b, initialized); let hR = select(0.12, r.b, initialized);
+  let hD = select(0.12, d.b, initialized); let hU = select(0.12, t.b, initialized);
+  let divergence = (vR.x - vL.x + vU.y - vD.y) * 0.5;
+  let lapV = vL + vR + vD + vU - 4.0 * velocity;
+  let heightGrad = vec2<f32>(hR - hL, hU - hD) * 0.5;
+  let lapH = hL + hR + hD + hU - 4.0 * height;
+
+  // Bounded global pointer spring. All pixels consume the prior completed
+  // state; only invocation (0,0) advances [133..138] for the next frame.
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var pointer = u.zoom_config.yz; var pointerVelocity = vec2<f32>(0.0);
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    pointer = vec2<f32>(extraBuffer[133], extraBuffer[134]); pointerVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  }
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
+    var sPos = pointer; var sVel = pointerVelocity; let seeded = extraBuffer[138] > 0.5;
+    if (!seeded) { sPos = u.zoom_config.yz; sVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.05), seeded);
+    let accel = (u.zoom_config.yz - sPos) * 150.0 - sVel * 22.0;
+    sVel += accel * dt; sPos += sVel * dt;
+    extraBuffer[133] = sPos.x; extraBuffer[134] = sPos.y; extraBuffer[135] = sVel.x; extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time; extraBuffer[138] = 1.0;
+  }
+
+  let mouseDelta = (uv - pointer) * aspectVec; let mouseDist = length(mouseDelta);
+  let mouseMask = exp(-mouseDist * mouseDist * 62.0);
+  let radial = select(vec2<f32>(0.0), mouseDelta / mouseDist, mouseDist > 0.001);
+  let heldScale = select(0.18, 1.0, u.zoom_config.w > 0.5);
+  velocity += (pointerVelocity / aspectVec * 0.16 - radial / aspectVec * 0.055) * mouseMask * heldScale;
+
+  var clickHeight = 0.0; let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i += 1u) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.8) {
+      let delta = (uv - ripple.xy) * aspectVec; let dist = length(delta);
+      let ring = exp(-pow((dist - age * (0.18 + flowSpeed * 0.08)) * 42.0, 2.0)) * exp(-age * 1.15);
+      let dir = select(vec2<f32>(0.0), delta / dist, dist > 0.001);
+      velocity += dir / aspectVec * ring * (0.055 + turbulence * 0.08); clickHeight += ring;
     }
+  }
 
-    // Normalized coordinates
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let texel = 1.0 / resolution;
+  let p = (uv - 0.5) * aspectVec;
+  let curl = vec2<f32>(sin(p.y * 12.0 + time * flowSpeed), -sin(p.x * 11.0 - time * flowSpeed * 0.83));
+  velocity += lapV * mix(0.025, 0.13, viscosity) - heightGrad * pressureGain;
+  velocity += curl * turbulence * (0.002 + mids * 0.0015);
+  velocity *= mix(0.982, 0.935, viscosity);
+  velocity = clamp(velocity, vec2<f32>(-1.1), vec2<f32>(1.1));
+  height = clamp(height + (-divergence * 0.055 + lapH * 0.025 + clickHeight * 0.012) * flowSpeed, 0.015, 0.85);
+  let activity = clamp(max(c.a * 0.996, 0.12 + length(velocity) * 0.7 + clickHeight * 0.2 + mouseMask * heldScale), 0.0, 1.0);
+  textureStore(dataTextureA, pixel, vec4<f32>(velocity, height, activity));
 
-    // Parameters — bass amplifies flow speed and turbidity
-    let bass = plasmaBuffer[0].x;
-    let viscosity = max(u.zoom_params.x * 0.01, 0.0001);
-    let pressureIters = clamp(u.zoom_params.y * 20.0, 2.0, 20.0);
-    let flowSpeed = u.zoom_params.z * 2.0 * (1.0 + bass * 0.4);
-    let turbidity = u.zoom_params.w * (1.0 + bass * 0.2);
-
-    // Mouse interaction
-    let mouse = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w > 0.5;
-    let prevMouse = vec2<f32>(
-        textureLoad(dataTextureC, vec2<i32>(0, 0), 0).b,
-        textureLoad(dataTextureC, vec2<i32>(0, 0), 0).a
-    );
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 1. READ PREVIOUS VELOCITY FIELD from dataTextureC
-    // ═════════════════════════════════════════════════════════════════════════
-    let centerVel = textureLoad(dataTextureC, coord, 0);
-    var velocity = centerVel.rg * 2.0 - 1.0;  // Decode from [0,1] to [-1,1]
-    var pressure = centerVel.b;
-
-    // Neighbor sampling for derivatives
-    let leftCoord = clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), texSize - 1);
-    let rightCoord = clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), texSize - 1);
-    let downCoord = clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), texSize - 1);
-    let upCoord = clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), texSize - 1);
-
-    let leftVel = textureLoad(dataTextureC, leftCoord, 0).rg * 2.0 - 1.0;
-    let rightVel = textureLoad(dataTextureC, rightCoord, 0).rg * 2.0 - 1.0;
-    let downVel = textureLoad(dataTextureC, downCoord, 0).rg * 2.0 - 1.0;
-    let upVel = textureLoad(dataTextureC, upCoord, 0).rg * 2.0 - 1.0;
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 2. ADVECTION (Semi-Lagrangian)
-    // Trace backward along velocity field and sample velocity at that point
-    // v(x, t+dt) = v(x - dt * v(x), t)
-    // ═════════════════════════════════════════════════════════════════════════
-    let dt = DT * flowSpeed;
-    let backPos = uv - velocity * dt;
-    
-    // Bilinear sample of velocity at back-traced position
-    let sampleCoord = backPos * resolution;
-    let fcoord = fract(sampleCoord);
-    let icoord = vec2<i32>(floor(sampleCoord));
-    
-    let s00 = textureLoad(dataTextureC, clamp(icoord + vec2<i32>(0, 0), vec2<i32>(0), texSize - 1), 0).rg * 2.0 - 1.0;
-    let s10 = textureLoad(dataTextureC, clamp(icoord + vec2<i32>(1, 0), vec2<i32>(0), texSize - 1), 0).rg * 2.0 - 1.0;
-    let s01 = textureLoad(dataTextureC, clamp(icoord + vec2<i32>(0, 1), vec2<i32>(0), texSize - 1), 0).rg * 2.0 - 1.0;
-    let s11 = textureLoad(dataTextureC, clamp(icoord + vec2<i32>(1, 1), vec2<i32>(0), texSize - 1), 0).rg * 2.0 - 1.0;
-    
-    velocity = mix(mix(s00, s10, fcoord.x), mix(s01, s11, fcoord.x), fcoord.y);
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 3. MOUSE INTERACTION - Inject velocity at mouse position
-    // ═════════════════════════════════════════════════════════════════════════
-    let aspect = resolution.x / resolution.y;
-    let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
-    let mouseRadius = 0.15;
-    
-    if (dist < mouseRadius) {
-        let mouseForce = smoothstep(mouseRadius, 0.0, dist);
-        
-        // Calculate mouse velocity for dragging effect
-        var mouseDelta = mouse - prevMouse;
-        // Handle wrap-around cases
-        if (abs(mouseDelta.x) > 0.5) { mouseDelta.x = 0.0; }
-        if (abs(mouseDelta.y) > 0.5) { mouseDelta.y = 0.0; }
-        mouseDelta = mouseDelta * 30.0; // Scale to reasonable velocity
-        
-        if (mouseDown) {
-            // Dragging creates strong directional flow
-            velocity = velocity + mouseDelta * mouseForce * 2.0;
-        } else {
-            // Hover creates gentle outward flow
-            let outward = normalize(distVec) * 0.5;
-            velocity = velocity + outward * mouseForce * 0.3;
-        }
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 4. VISCOSITY (Laplacian smoothing)
-    // ν∇²v - diffusion of velocity
-    // ═════════════════════════════════════════════════════════════════════════
-    let laplacian = leftVel + rightVel + upVel + downVel - 4.0 * velocity;
-    velocity = velocity + laplacian * viscosity;
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 5. TURBULENCE INJECTION (procedural noise)
-    // Add some swirling motion for visual interest
-    // ═════════════════════════════════════════════════════════════════════════
-    let time = u.config.x;
-    let noisePos = uv * 3.0 + time * 0.1;
-    let curlNoise = vec2<f32>(
-        sin(noisePos.y * 6.28 + time) * cos(noisePos.x * 4.28),
-        -cos(noisePos.x * 6.28 + time * 0.7) * sin(noisePos.y * 4.28)
-    );
-    velocity = velocity + curlNoise * turbidity * 0.002;
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 6. PRESSURE PROJECTION (Simplified)
-    // Ensure divergence-free velocity field: ∇·v = 0
-    // ═════════════════════════════════════════════════════════════════════════
-    
-    // Compute divergence: ∇·v = ∂u/∂x + ∂v/∂y
-    let divergence = (rightVel.x - leftVel.x) * 0.5 + (upVel.y - downVel.y) * 0.5;
-    
-    // Jacobi iteration for pressure
-    // ∇²p = ∇·v
-    pressure = 0.0;
-    let leftP = textureLoad(dataTextureC, leftCoord, 0).b;
-    let rightP = textureLoad(dataTextureC, rightCoord, 0).b;
-    let downP = textureLoad(dataTextureC, downCoord, 0).b;
-    let upP = textureLoad(dataTextureC, upCoord, 0).b;
-    pressure = (leftP + rightP + downP + upP - divergence) * PRESSURE_ALPHA;
-    
-    // Additional iterations for better incompressibility
-    for (var i: i32 = 1; i < i32(pressureIters); i = i + 1) {
-        let pLeft = textureLoad(dataTextureC, leftCoord, 0).b;
-        let pRight = textureLoad(dataTextureC, rightCoord, 0).b;
-        let pDown = textureLoad(dataTextureC, downCoord, 0).b;
-        let pUp = textureLoad(dataTextureC, upCoord, 0).b;
-        pressure = (pLeft + pRight + pDown + pUp - divergence) * PRESSURE_ALPHA;
-    }
-
-    // Subtract pressure gradient from velocity: v' = v - ∇p
-    let pressureGrad = vec2<f32>(
-        (rightP - leftP) * 0.5,
-        (upP - downP) * 0.5
-    );
-    velocity = velocity - pressureGrad;
-
-    // Apply dissipation for stability
-    velocity = velocity * DISSIPATION;
-
-    // Clamp velocity to prevent explosion
-    velocity = clamp(velocity, vec2<f32>(-5.0), vec2<f32>(5.0));
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 7. STORE UPDATED VELOCITY/PRESSURE FIELD
-    // ═════════════════════════════════════════════════════════════════════════
-    let encodedVel = (velocity * 0.5 + 0.5);  // Encode to [0,1]
-    textureStore(dataTextureA, coord, vec4<f32>(encodedVel, pressure, 1.0));
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 8. STORE MOUSE POSITION for next frame (at pixel 0,0)
-    // ═════════════════════════════════════════════════════════════════════════
-    if (coord.x == 0 && coord.y == 0) {
-        textureStore(dataTextureA, coord, vec4<f32>(encodedVel, mouse.x, mouse.y));
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 9. APPLY VELOCITY TO DISTORT IMAGE with ALPHA PHYSICS
-    // ═════════════════════════════════════════════════════════════════════════
-    // Scale displacement for visual effect
-    let displacementStrength = 0.02 + u.zoom_params.x * 0.03;
-    let displacedUV = uv - velocity * displacementStrength;
-    
-    // Clamp UV to prevent sampling outside texture
-    let clampedUV = clamp(displacedUV, vec2<f32>(0.001), vec2<f32>(0.999));
-    
-    // Sample color with slight chromatic aberration based on velocity magnitude
-    let velMag = length(velocity);
-    let chromaticOffset = velMag * 0.002 * u.zoom_params.z;
-    
-    let baseSample = textureSampleLevel(readTexture, u_sampler, clampedUV, 0.0);
-    let r = textureSampleLevel(readTexture, u_sampler, clampedUV + vec2<f32>(chromaticOffset, 0.0), 0.0).r;
-    let g = baseSample.g;
-    let b = textureSampleLevel(readTexture, u_sampler, clampedUV - vec2<f32>(chromaticOffset, 0.0), 0.0).b;
-    let baseColor = vec3<f32>(r, g, b);
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // 10. ALPHA CALCULATION based on flow physics
-    // ═════════════════════════════════════════════════════════════════════════
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampedUV, 0.0).r;
-    
-    // Calculate approximate normal from velocity gradient
-    let velNormal = normalize(vec3<f32>(-velocity.x, -velocity.y, 0.5));
-    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-    let viewDotNormal = dot(viewDir, velNormal);
-    
-    // Calculate flow color with absorption
-    let flowColor = calculateFlowColor(baseColor, velocity, pressure, turbidity);
-    
-    // Input-aware alpha blending
-    let effectIntensity = velMag;
-    let finalAlpha = mix(baseSample.a, 1.0, effectIntensity * 0.7);
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // OUTPUT with ALPHA
-    // ═════════════════════════════════════════════════════════════════════════
-    textureStore(writeTexture, coord, vec4<f32>(flowColor, finalAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
+  let normal = normalize(vec3<f32>((vec2<f32>(hL - hR, hD - hU) - velocity * 0.05) * (4.0 + turbulence * 5.0), 0.28));
+  let refraction = (velocity * 0.014 + normal.xy * height * 0.04) / aspectVec;
+  let sourceUV = clamp(uv - refraction, vec2<f32>(0.001), vec2<f32>(0.999));
+  let source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
+  let fresnel = schlick(max(normal.z, 0.0), 0.025);
+  let caustic = pow(clamp(abs(lapH) * 18.0 + clickHeight * 0.4, 0.0, 1.0), 2.0);
+  let absorption = exp(-height * vec3<f32>(0.32, 0.16, 0.08) * (1.0 + turbulence));
+  let color = source.rgb * absorption + vec3<f32>(0.08, 0.42, 0.72) * (fresnel * (0.25 + mids * 0.18))
+    + vec3<f32>(0.55, 0.9, 1.15) * caustic * (0.18 + treble * 0.22);
+  let alpha = clamp(source.a + (1.0 - source.a) * activity * (0.2 + height * 0.65) + fresnel * 0.08, 0.0, 1.0);
+  textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
+  let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(max(sourceDepth * 0.9, height * 0.32 + caustic * 0.025), 0.0, 0.0, 0.0));
 }

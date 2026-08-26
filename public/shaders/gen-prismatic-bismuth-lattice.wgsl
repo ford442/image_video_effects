@@ -1,9 +1,13 @@
-// ═══════════════════════════════════════════════════════════════
-//  Prismatic Bismuth Lattice - Physical Light Transmission
-//  Category: generative
-//  Features: raymarch, recursive boxes, thin-film interference
-//  Hyper-geometric bismuth lattice with metallic transmission
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+//  gen-prismatic-bismuth-lattice.wgsl - 3D Bismuth Crystal Growth
+//  
+//  Upgraded: 2026-08-21 (Batch 42)
+//  Techniques:
+//    - Hopper growth simulation (Crystallographic preferred growth)
+//    - Audio-reactive iridescence and growth rate via plasmaBuffer
+//    - Temporal accumulation trails via dataTextureC
+//    - Distance-based alpha for depth composition
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -20,237 +24,141 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 const PI: f32 = 3.14159265359;
-const IOR_BISMUTH: f32 = 1.8;
 
-fn hash(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-}
-
-fn noise(p: vec2<f32>) -> f32 {
-    var i = floor(p);
-    let f = fract(p);
-    let u = f * f * (vec2<f32>(3.0) - vec2<f32>(2.0) * f);
-
-    return mix(mix(hash(i + vec2<f32>(0.0, 0.0)),
-                   hash(i + vec2<f32>(1.0, 0.0)), u.x),
-               mix(hash(i + vec2<f32>(0.0, 1.0)),
-                   hash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
-}
-
-fn fbm(p: vec2<f32>) -> f32 {
-    var v = 0.0;
-    var a = 0.5;
-    var shift = vec2<f32>(100.0);
-    var pos = p;
-    let rot = mat2x2<f32>(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
-    for (var i = 0; i < 4; i++) {
-        v += a * noise(pos);
-        pos = rot * pos * 2.0 + shift;
-        a *= 0.5;
-    }
-    return v;
-}
-
-fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
-    let q = abs(p) - b;
-    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
-}
-
-fn mat2(a: f32) -> mat2x2<f32> {
-    let c = cos(a);
-    let s = sin(a);
-    return mat2x2<f32>(c, -s, s, c);
-}
-
-fn map(pos: vec3<f32>) -> vec2<f32> {
+// Bismuth hopper crystal distance estimator
+fn bismuthDE(pos: vec3<f32>, time: f32, audioReact: f32) -> vec2<f32> {
     var p = pos;
-    let time = u.config.x;
-    let audio = u.config.y;
-
-    // Mouse-driven localized spatial twist
-    let mouse = u.zoom_config.yz;
-    let camZ = time * 2.0;
-    let mouseX = (mouse.x - 0.5) * 20.0;
-    let mouseY = -(mouse.y - 0.5) * 20.0;
-    let warpCenter = vec3<f32>(mouseX, mouseY, camZ + 10.0);
-
-    let distToMouse = length(p - warpCenter);
-    let warpRadius = 8.0;
-    if (distToMouse < warpRadius) {
-        let twistFactor = (1.0 - distToMouse / warpRadius) * 2.0;
-        let r = mat2(twistFactor * sin(time));
-        let xz = r * p.xz;
-        p.x = xz.x;
-        p.z = xz.y;
-    }
-
-    // Domain Repetition
-    let scale = u.zoom_params.z;
-    let c = vec3<f32>(4.0 * scale);
-    var q = p;
-    q = (fract(q / c + vec3<f32>(0.5)) - vec3<f32>(0.5)) * c;
-
-    // Recursive Box for Hopper Crystal
-    let complexity = i32(u.zoom_params.x);
-    var d = 1000.0;
-
-    let fold = 1.0 + audio * 0.1 * sin(time * 2.0);
-
-    let id = floor(p / c + vec3<f32>(0.5));
-    let h = hash(id.xz + vec2<f32>(id.y));
-
-    var size = vec3<f32>(1.5 * scale);
-    var current_d = sdBox(q, size);
-
-    for (var i = 0; i < complexity; i++) {
-        let fi = f32(i);
-        size -= vec3<f32>(0.2 * scale * fold);
-        var inner_box = sdBox(q + vec3<f32>(0.0, 0.1 * fi * scale, 0.0), size);
-
-        if (i % 2 == 1) {
-            current_d = max(current_d, -inner_box);
-        } else {
-            current_d = min(current_d, inner_box);
+    let scale = 1.5 + audioReact * 0.2;
+    var d = 1e10;
+    var id = 0.0;
+    
+    // Fractal folding for hopper growth patterns
+    for (var i = 0; i < 4; i = i + 1) {
+        p = abs(p) - vec3<f32>(0.5, 0.5, 0.5) * scale;
+        
+        // Rotate
+        let c = cos(time * 0.1);
+        let s = sin(time * 0.1);
+        p = vec3<f32>(c*p.x - s*p.z, p.y, s*p.x + c*p.z);
+        
+        // Hopper stepping (staircase structure)
+        let stepSize = 0.2;
+        p -= round(p / stepSize) * stepSize * 0.1;
+        
+        // Box distance
+        let q = abs(p) - vec3<f32>(0.4);
+        let boxD = length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
+        
+        if (boxD < d) {
+            d = boxD;
+            id = f32(i);
         }
     }
-
-    current_d += fbm(p.xz * 2.0) * 0.1 * scale;
-    d = current_d;
-
-    return vec2<f32>(d, h);
-}
-
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
-    let e = vec2<f32>(0.001, 0.0);
-    return normalize(vec3<f32>(
-        map(p + e.xyy).x - map(p - e.xyy).x,
-        map(p + e.yxy).x - map(p - e.yxy).x,
-        map(p + e.yyx).x - map(p - e.yyx).x
-    ));
-}
-
-fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
-    var t = 0.0;
-    var mat = 0.0;
-    for(var i=0; i<100; i++) {
-        var p = ro + rd * t;
-        var res = map(p);
-        var d = res.x;
-        mat = res.y;
-        if(d < 0.001 || t > 50.0) { break; }
-        t += d;
-    }
-    return vec2<f32>(t, mat);
+    
+    return vec2<f32>(d * 0.5, id);
 }
 
 // Thin-film interference iridescence
-fn pal(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
-    return a + b * cos(vec3<f32>(2.0 * PI) * (c * t + d));
+fn iridescence(thickness: f32, normal: vec3<f32>, viewDir: vec3<f32>) -> vec3<f32> {
+    let cosTheta = abs(dot(normal, viewDir));
+    let pathLength = thickness / max(cosTheta, 0.1);
+    
+    // Phase shift colors
+    return vec3<f32>(
+        0.5 + 0.5 * cos(pathLength * 3.0 + 0.0),
+        0.5 + 0.5 * cos(pathLength * 3.0 + 2.0),
+        0.5 + 0.5 * cos(pathLength * 3.0 + 4.0)
+    );
 }
 
-// Fresnel for metals
-fn fresnelMetal(cosTheta: f32, F0: vec3<f32>) -> vec3<f32> {
-    return F0 + (vec3<f32>(1.0) - F0) * pow(1.0 - cosTheta, 5.0);
+fn calcNormal(pos: vec3<f32>, time: f32, audioReact: f32) -> vec3<f32> {
+    let eps = 0.001;
+    let e = vec2<f32>(eps, 0.0);
+    return normalize(vec3<f32>(
+        bismuthDE(pos + e.xyy, time, audioReact).x - bismuthDE(pos - e.xyy, time, audioReact).x,
+        bismuthDE(pos + e.yxy, time, audioReact).x - bismuthDE(pos - e.yxy, time, audioReact).x,
+        bismuthDE(pos + e.yyx, time, audioReact).x - bismuthDE(pos - e.yyx, time, audioReact).x
+    ));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-
-    var uv = (vec2<f32>(global_id.xy) - resolution * vec2<f32>(0.5)) / vec2<f32>(resolution.y);
+    let coord = vec2<u32>(global_id.xy);
+    if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) { return; }
+    
+    let uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / resolution.y;
+    let uvFull = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-
-    // Parameters
-    let complexity = u.zoom_params.x;
-    let irid_strength = u.zoom_params.y;
-    let crystalScale = u.zoom_params.z;
-    let fogDensity = u.zoom_params.w;
-    let metallic = 0.7 + irid_strength * 0.3;
-    let oxidePurity = 0.6 + complexity * 0.1;
-
-    // Camera setup
-    let camZ = time * 2.0;
-    let ro = vec3<f32>(0.0, 0.0, camZ);
-    let targetPos = vec3<f32>(0.0, 0.0, camZ + 1.0);
-
-    let forward = normalize(targetPos - ro);
-    let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
-    let up = cross(forward, right);
-    let rd = normalize(forward + right * vec3<f32>(uv.x) + up * vec3<f32>(uv.y));
-
-    var res = raymarch(ro, rd);
-    var t = res.x;
-    var mat = res.y;
-
-    var color = vec3<f32>(0.0);
-    let fogColor = vec3<f32>(0.05, 0.0, 0.1);
-    var alpha = 0.95; // Background slightly transparent
-
-    if (t < 50.0) {
-        var p = ro + rd * t;
-        let n = calcNormal(p);
-
-        let viewDir = normalize(ro - p);
-        let ndotv = max(dot(n, viewDir), 0.0);
-
-        // Lighting
-        let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));
-        let diff = max(dot(n, lightDir), 0.0);
-        let spec = pow(max(dot(reflect(-lightDir, n), viewDir), 0.0), 32.0);
-
-        // Iridescence / Thin-film interference
-        let thickness = mat + u.config.y * 0.1;
-
-        let a = vec3<f32>(0.5, 0.5, 0.5);
-        let b = vec3<f32>(0.5, 0.5, 0.5);
-        let c = vec3<f32>(1.0, 1.0, 1.0);
-        let d = vec3<f32>(0.0, 0.33, 0.67);
-
-        let irid_color = pal(ndotv * 2.0 + thickness, a, b, c, d);
-
-        // Base metallic color
-        let base_color = vec3<f32>(0.2, 0.2, 0.2);
-
-        // Metallic Fresnel
-        let F0_bismuth = vec3<f32>(0.7, 0.75, 0.8);
-        let fresnel = fresnelMetal(ndotv, F0_bismuth * metallic);
+    
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    
+    let zoom = 3.0 + u.zoom_params.y * 2.0; 
+    let theta = time * 0.2;
+    let phi = sin(time * 0.1) * 0.5;
+    let camPos = vec3<f32>(cos(theta) * cos(phi) * zoom, sin(phi) * zoom, sin(theta) * cos(phi) * zoom);
+    
+    let targetPos = vec3<f32>(0.0);
+    let camForward = normalize(targetPos - camPos);
+    let camRight = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), camForward));
+    let camUp = cross(camForward, camRight);
+    let rd = normalize(uv.x * camRight + uv.y * camUp + 1.5 * camForward);
+    
+    var t = 0.0;
+    var hit = false;
+    var id = 0.0;
+    
+    for (var i: i32 = 0; i < 80; i = i + 1) {
+        let pos = camPos + rd * t;
+        let de = bismuthDE(pos, time, bass);
         
-        // Mix base and iridescence
-        var mat_color = mix(base_color, irid_color, vec3<f32>(irid_strength));
-
-        color = mat_color * vec3<f32>(diff * 0.5 + 0.5) + vec3<f32>(spec);
-
-        // Audio reactive glow on edges
-        let edge = smoothstep(0.4, 0.0, ndotv);
-        color += irid_color * vec3<f32>(edge * u.config.y * 2.0);
-
-        // Volumetric Prismatic Fog
-        let fogAmount = 1.0 - exp(-t * fogDensity * 0.1);
-        color = mix(color, fogColor, vec3<f32>(fogAmount));
+        if (de.x < 0.001) {
+            hit = true;
+            id = de.y;
+            break;
+        }
         
-        // ═══════════════════════════════════════════════════════════════
-        // Metallic Transmission Alpha
-        // ═══════════════════════════════════════════════════════════════
-        
-        // Bismuth is mostly reflective, but oxide layers transmit
-        let oxideTransmission = (1.0 - metallic * 0.7) * oxidePurity;
-        let transmission = oxideTransmission * (1.0 - length(fresnel) * 0.3);
-        alpha = mix(0.4, 1.0, metallic * 0.8 + length(fresnel) * 0.2);
-        
-    } else {
-        color = fogColor;
+        t += de.x;
+        if (t > 10.0) { break; }
     }
-
-    textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, vec2<u32>(global_id.xy), vec4<f32>(t / 50.0, 0.0, 0.0, 0.0));
+    
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uvFull, 0.0);
+    var finalRGB = inputColor.rgb;
+    var finalAlpha = inputColor.a;
+    
+    if (hit) {
+        let pos = camPos + rd * t;
+        let normal = calcNormal(pos, time, bass);
+        
+        let lightDir = normalize(vec3<f32>(0.5, 1.0, 0.3));
+        let diffuse = max(dot(normal, lightDir), 0.0);
+        let specular = pow(max(dot(normal, normalize(lightDir - rd)), 0.0), 64.0);
+        
+        let thickness = 5.0 + id * 2.0 + mids * 5.0; // Audio-reactive iridescent thickness
+        let iridColor = iridescence(thickness, normal, -rd);
+        
+        let shadedColor = iridColor * (diffuse + 0.2) + vec3<f32>(1.0) * specular;
+        let hitAlpha = 1.0 - smoothstep(5.0, 10.0, t);
+        
+        finalRGB = mix(inputColor.rgb, shadedColor, hitAlpha);
+        finalAlpha = max(inputColor.a, hitAlpha);
+    }
+    
+    // Temporal Trails
+    let prevColor = textureSampleLevel(dataTextureC, u_sampler, uvFull, 0.0).rgb;
+    finalRGB = mix(finalRGB, prevColor, 0.6);
+    
+    finalRGB = finalRGB / (1.0 + finalRGB * 0.5); // ACES approx
+    
+    textureStore(writeTexture, coord, vec4<f32>(finalRGB, finalAlpha));
+    textureStore(dataTextureA, coord, vec4<f32>(finalRGB, finalAlpha));
 }

@@ -76,7 +76,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sparkDensity = u.zoom_params.w;
 
   // ── Read previous shatter state ──
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   var disp = prev.rg;
   var seed = prev.b;
   var reform = prev.a;
@@ -187,10 +187,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spark = f32(sparkNoise < sparkThreshold) * boundaryGlow;
   col = col + EMBER_CORE * spark * 3.0;
 
-  // ── Temporal ember persistence ──
-  let prevGlow = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-  let persist = mix(col, prevGlow, 0.92);
-  col = col + persist * 0.25;
+  // The A/C channel stores rigid-shard state, so persistence is derived from
+  // the current ember field rather than misreading state values as RGB.
+  col *= 1.12 + shatterAmt * 0.13;
 
   // ── Depth + compositing ──
   let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -12,10 +12,10 @@ Before the production renderer starts, `runWebGpuBootProbe()` walks the adapter 
 |---------|------------|----------|---------|
 | `float32-filterable` | Requested when adapter supports | Requested when adapter supports | rgba32float texture sampling on bindings 1/9/13 |
 | `timestamp-query` | Requested when adapter supports (always-on) | Requested when available | GPU frame timing via `WebGPUTiming.ts` / `timing.cpp` |
-| `subgroups` | Requested when available | N/A | WGSL `enable subgroups` shaders (when used) |
-| `chromium-experimental-subgroups` | Fallback when `subgroups` absent | N/A | Chromium pre-standard subgroup path |
+| `subgroups` | Requested when available | Requested when adapter + emdawn headers support | WGSL `enable subgroups` shaders |
+| `chromium-experimental-subgroups` | Fallback when `subgroups` absent | Fallback when headers define the enum | Chromium pre-standard subgroup path |
 
-Feature collection lives in `collectOptionalDeviceFeatures()` — order is `float32-filterable` → `timestamp-query` → subgroup variant.
+Feature collection lives in `collectOptionalDeviceFeatures()` — order is `float32-filterable` → `timestamp-query` → subgroup variant. C++ `requiredFeatures[3]` uses the same order (`src/contracts/webgpu_optional_features.json`, enforced by `verify:device-policy`).
 
 ### Timestamp honesty (#1007 / #1030)
 
@@ -35,6 +35,8 @@ context.configure({
 ```
 
 WASM equivalent: `JS_CreateSurfaceFromCanvas` in `device.cpp` (same `alphaMode`, `usage`, and `getPreferredCanvasFormat()`).
+
+That JS `ctx.configure` is **not** the only configure. Immediately after `importJsSurface`, C++ `ConfigureSurface()` runs a second configure with `presentMode = Fifo` and the canvas width/height. Both are required: the JS pass matches TypeScript and lets emdawn import the surface; the C++ pass sizes the swapchain. Do not delete the C++ call as a “simplification” — present can stay black.
 
 ### Present pipeline
 

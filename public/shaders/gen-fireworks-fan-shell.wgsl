@@ -214,8 +214,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let alpha = clamp(length(col) * 1.2 + 0.1, 0.12, 0.96);
   // generated depth: bright burst cores are near, empty sky is far
   let depth = clamp(1.0 - exp(-heat * 1.5), 0.0, 1.0) * 0.85;
-  let persistent = col * 0.55 + prev * 0.38;
-  textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -110,7 +110,7 @@ fn map(p: vec3<f32>, time: f32, glitch: f32) -> MapResult {
     }
 
     // Core (Audio reactive blooming heart)
-    let core_pulse = sin(time * 2.0) * 0.1 + u.config.y * 0.5;
+    let core_pulse = sin(time * 2.0) * 0.1 + plasmaBuffer[0].x * 0.5;
     let d_core = sdSphere(tp - vec3<f32>(0.0, 0.0, 0.5), 0.8 + core_pulse);
 
     // Main spine
@@ -176,22 +176,33 @@ fn calcNormal(p: vec3<f32>, time: f32, glitch: f32) -> vec3<f32> {
     return normalize(n);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let size = vec2<f32>(u.config.z, u.config.w);
     if (gid.x >= u32(size.x) || gid.y >= u32(size.y)) { return; }
 
     let uv = (vec2<f32>(gid.xy) - 0.5 * size) / size.y;
+    let uv01 = (vec2<f32>(gid.xy) + 0.5) / size;
+    let coord = vec2<i32>(gid.xy);
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let plasmaDensity = u.zoom_params.x;
-    let temporalGlitch = u.zoom_params.y;
+    let temporalGlitch = u.zoom_params.y * (1.0 + treble * 0.25);
     let refractionIndex = u.zoom_params.z;
     let coreBloom = u.zoom_params.w;
 
     // Camera setup
-    let mx = (u.zoom_config.y - 0.5) * 6.28;
-    let my = (u.zoom_config.z - 0.5) * 3.14;
+    let heldGain = select(1.0, 1.35, u.zoom_config.w > 0.5);
+    let mx = (u.zoom_config.y - 0.5) * 6.28 * heldGain;
+    let my = (u.zoom_config.z - 0.5) * 3.14 * heldGain;
 
     var ro = vec3<f32>(0.0, 0.0, -8.0);
     // Orbit camera based on mouse
@@ -224,7 +235,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         // Volumetric accumulation for plasma ocean
         let ocean_density = fbm(p * 0.5 + vec3<f32>(time * 0.1));
-        vol_plasma += ocean_density * plasmaDensity * 0.02;
+        vol_plasma += ocean_density * plasmaDensity * (0.02 + bass * 0.008);
 
         if (m.dist < 0.01) {
             hit = true;
@@ -257,7 +268,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             // Core
             var core_col = vec3<f32>(1.0, 0.2, 0.8); // Neon purple/pink
             core_col += vec3<f32>(1.0, 1.0, 1.0) * pow(diff, 8.0);
-            core_col *= coreBloom * 2.0;
+            core_col *= coreBloom * (2.0 + bass * 0.8);
             col = mix(col, core_col, 0.9);
 
             // Bloom glow effect around core (distance based)
@@ -278,26 +289,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
-    // Ripple effect
-    for (var i=0; i<20; i++) {
-        let r = u.ripples[i];
-        if (r.w > 0.0) {
-            let r_uv = uv * size.y + 0.5 * size;
-            let d = length(r_uv / size - r.xy);
-            if (d < 0.1) {
-                col += vec3<f32>(0.2, 0.5, 1.0) * (0.1 - d) * 10.0 * r.z;
-            }
-        }
+    // Timestamp-bounded click fronts refract the plasma ocean.
+    var clickEnergy = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let aspect = size.x / max(size.y, 1.0);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 2.6) { continue; }
+        let rippleDistance = length((uv01 - ripple.xy) * vec2<f32>(aspect, 1.0));
+        clickEnergy += exp(-abs(rippleDistance - age * 0.2) * 78.0) * exp(-age * 1.2);
     }
+    clickEnergy = clamp(clickEnergy, 0.0, 1.0);
+    col += vec3<f32>(0.2, 0.65, 1.0) * clickEnergy * (0.35 + treble * 0.55);
 
     // Fog fading into background
     col = mix(col, vec3<f32>(0.01, 0.03, 0.1), smoothstep(10.0, 20.0, t));
 
-    // Tone mapping
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
-
-    let finalColor = vec4<f32>(col, 1.0);
-    textureStore(writeTexture, gid.xy, finalColor);
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    let previous = textureLoad(dataTextureC, coord, 0);
+    col = mix(col, previous.rgb * 0.94, 0.04 + mids * 0.025);
+    let hitSignal = select(0.0, 1.0, hit);
+    let alpha = clamp(hitSignal * 0.72 + vol_plasma * 0.18 + length(col) * 0.08 + clickEnergy * 0.15, 0.0, 1.0);
+    let inputDepth = textureLoad(readDepthTexture, coord, 0).r;
+    let rayDepth = select(inputDepth, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
+    let finalColor = vec4<f32>(acesToneMap(col * (1.05 + bass * 0.2)), alpha);
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(rayDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, finalColor);
 }

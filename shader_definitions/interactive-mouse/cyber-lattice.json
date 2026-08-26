@@ -5,9 +5,15 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "exact-history",
+    "aces-tone-map",
+    "three-band-audio",
+    "held-pointer",
+    "click-reactive",
+    "thin-film-traffic"
   ],
-  "description": "A dynamic holographic grid that reacts to mouse movement and clicks.",
+  "description": "Layered perspective lattice rails carry thin-film cell traffic through spring-followed held deformation and expanding click waves.",
   "params": [
     {
       "name": "Grid Scale",
@@ -38,6 +44,14 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Grid Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Distortion", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Glow", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Radius", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact lattice-trail loads; B is unused",
+  "persistentState": "extraBuffer[133..138] = spring position.xy, velocity.xy, previous time, initialized; single writer at pixel 0,0",
   "tags": [
     "filter",
     "image-processing"

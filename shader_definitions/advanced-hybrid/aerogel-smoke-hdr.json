@@ -52,5 +52,13 @@
       "step": 0.01
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Blue Scatter", "default": 0.8, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Light Intensity", "default": 1, "min": 0, "max": 2, "step": 0.01 },
+    { "index": 3, "name": "HDR Bloom", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = aerogel density, scatter energy, horizontal and vertical velocity",
+  "updated": true,
   "target_rating": 4.8
 }

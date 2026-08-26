@@ -1,58 +1,91 @@
 {
   "id": "prismatic-mosaic",
   "name": "Prismatic Mosaic",
+  "category": "distortion",
   "url": "shaders/prismatic-mosaic.wgsl",
-  "description": "Color tiles break apart and reassemble into shifting prisms, turning strong colors into a kaleidoscopic mosaic that ripples across the image.",
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal"
+  ],
+  "description": "Multi-layer prismatic facet tiles with volumetric fog, chromatic dispersion, vortex distortion, and depth-gradient edge glows.",
   "params": [
     {
       "id": "min_speed",
       "name": "Min Speed",
+      "type": "float",
       "default": 0.3,
       "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Minimum layer animation speed"
+      "max": 1
     },
     {
       "id": "max_speed",
       "name": "Max Speed",
+      "type": "float",
       "default": 0.7,
       "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Maximum layer animation speed"
+      "max": 1
     },
     {
       "id": "saturation_boost",
       "name": "Saturation Boost",
+      "type": "float",
       "default": 0.2,
       "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Saturation boost amount"
+      "max": 1
     },
     {
       "id": "fog_density",
       "name": "Fog Density",
+      "type": "float",
       "default": 0.3,
       "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Volumetric fog density"
+      "max": 1
     }
   ],
-  "features": [
-    "depth-aware",
-    "temporal-persistence",
-    "colour-masking",
-    "mouse-driven"
-  ],
   "tags": [
-    "filter",
-    "image-processing"
+    "mosaic",
+    "prism",
+    "distortion",
+    "zoom",
+    "chromatic",
+    "fog"
+  ],
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Min Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Max Speed",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Saturation Boost",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Fog Density",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
   ]
 }

@@ -134,8 +134,9 @@ dataTextureA / C:  .r = U,  .g = V,  .b = age,  .a = seed-mask
 ### Optical flow dream (`optical-flow-dream`)
 
 ```
-dataTextureA / C:  .rgb = dream color,  .a = pack2x16float(flow.xy)
-historyTexture (binding 13) + extraBuffer[4] history head (read-only)
+dataTextureA / C:  .rgb = HDR dream color,  .a = semantic trail coverage
+Canonical single pass: temporal luma gradients and advection use exact C loads;
+no binding 13 or history-head buffer is required.
 ```
 
 ---

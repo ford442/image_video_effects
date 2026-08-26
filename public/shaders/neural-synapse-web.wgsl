@@ -33,17 +33,13 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// extraBuffer[0..4] is reserved by the engine and [5..132] carries FFT bins,
-// so persistent interactivity state lives at [133..141] (buffer is 256 floats).
+// Persistent spring state is restricted to guarded [133..138].
 const ATTR_POS_X: u32 = 133u;
 const ATTR_POS_Y: u32 = 134u;
 const ATTR_VEL_X: u32 = 135u;
 const ATTR_VEL_Y: u32 = 136u;
-const CLICK_ORG_X: u32 = 137u;
-const CLICK_ORG_Y: u32 = 138u;
-const CLICK_TIME: u32 = 139u;
-const PREV_DOWN: u32 = 140u;
-const STATE_INIT: u32 = 141u;
+const LAST_TIME: u32 = 137u;
+const STATE_INIT: u32 = 138u;
 
 fn sat(x: f32) -> f32 {
   return clamp(x, 0.0, 1.0);
@@ -74,7 +70,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = (vec2<f32>(gid.xy) + 0.5) / vec2<f32>(dims);
   let coord = vec2<i32>(gid.xy);
   let time = u.config.x;
-  let dt = clamp(u.config.y, 0.001, 0.05);
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
@@ -92,18 +87,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let signalGain = mix(0.3, 2.0, u.zoom_params.w);
 
   // ── Spring-damper mouse attractor (state in extraBuffer) ─────────
-  var attrPos = vec2<f32>(extraBuffer[ATTR_POS_X], extraBuffer[ATTR_POS_Y]);
-  var attrVel = vec2<f32>(extraBuffer[ATTR_VEL_X], extraBuffer[ATTR_VEL_Y]);
-  var clickOrigin = vec2<f32>(extraBuffer[CLICK_ORG_X], extraBuffer[CLICK_ORG_Y]);
-  var clickBirth = extraBuffer[CLICK_TIME];
-  let prevDown = extraBuffer[PREV_DOWN] > 0.5;
-  let initialized = extraBuffer[STATE_INIT] > 0.5;
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var attrPos = mouseP;
+  var attrVel = vec2<f32>(0.0);
+  var lastTime = time;
+  var initialized = false;
+  if (hasSpring) {
+    attrPos = vec2<f32>(extraBuffer[ATTR_POS_X], extraBuffer[ATTR_POS_Y]);
+    attrVel = vec2<f32>(extraBuffer[ATTR_VEL_X], extraBuffer[ATTR_VEL_Y]);
+    lastTime = extraBuffer[LAST_TIME];
+    initialized = extraBuffer[STATE_INIT] > 0.5;
+  }
   if (!initialized) {
     attrPos = mouseP;
     attrVel = vec2<f32>(0.0, 0.0);
-    clickOrigin = mouseP;
-    clickBirth = -1000.0;
   }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
 
   // Damped spring toward the mouse: fast moves overshoot, then settle.
   let springK = 18.0;
@@ -111,34 +110,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let accel = (mouseP - attrPos) * springK - attrVel * damping;
   let newVel = attrVel + accel * dt;
   let newPos = attrPos + newVel * dt;
-  // Rising edge of mouse-down spawns a fresh pulse wave.
-  if (mouseDown && !prevDown) {
-    clickOrigin = mouseP;
-    clickBirth = time;
-  }
-
   // One thread persists state; every thread uses the integrated values.
-  if (gid.x == 0u && gid.y == 0u) {
+  if (hasSpring && gid.x == 0u && gid.y == 0u) {
     extraBuffer[ATTR_POS_X] = newPos.x;
     extraBuffer[ATTR_POS_Y] = newPos.y;
     extraBuffer[ATTR_VEL_X] = newVel.x;
     extraBuffer[ATTR_VEL_Y] = newVel.y;
-    extraBuffer[CLICK_ORG_X] = clickOrigin.x;
-    extraBuffer[CLICK_ORG_Y] = clickOrigin.y;
-    extraBuffer[CLICK_TIME] = clickBirth;
-    extraBuffer[PREV_DOWN] = select(0.0, 1.0, mouseDown);
+    extraBuffer[LAST_TIME] = time;
     extraBuffer[STATE_INIT] = 1.0;
   }
 
-  // ── Click pulse wave: expanding ring from the click origin ───────
+  // ── Bounded click pulse waves from the uniform ripple queue ──────
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
   p = p + newPos * 0.15;
-  let ringAge = time - clickBirth;
-  let ringAlive = step(0.0, ringAge) * step(ringAge, 3.0);
-  let ringRadius = ringAge * 1.4;
-  let ringDelta = length(p - clickOrigin) - ringRadius;
-  let ringBoost = exp(-ringDelta * ringDelta * 90.0) * exp(-ringAge * 1.1) * ringAlive;
+  var ringBoost = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var rippleIndex = 0u; rippleIndex < rippleCount; rippleIndex++) {
+    let ripple = u.ripples[rippleIndex]; let ringAge = time - ripple.z;
+    if (ringAge < 0.0 || ringAge > 3.0) { continue; }
+    var rippleP = ripple.xy * 2.0 - 1.0; rippleP.x *= aspect;
+    let ringDelta = length(p - rippleP) - ringAge * 0.75;
+    ringBoost += exp(-ringDelta * ringDelta * 90.0) * exp(-ringAge * 1.1);
+  }
 
   // Web "lunges": nodes lean toward the attractor while it moves fast.
   let lunge = sat(length(newVel) * 0.35);
@@ -191,15 +185,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color + vec3<f32>(1.0, 1.0, 1.0) * sparkleField * 1.6;
   color = color + vec3<f32>(0.45, 0.8, 1.0) * ringBoost * 0.25;
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  color = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let historyDims = vec2<i32>(textureDimensions(dataTextureC));
+  let prev = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), historyDims - vec2<i32>(1)), 0);
+  color = mix(source.rgb * 0.12 + color, prev.rgb * 0.94, 0.04 + bass * 0.015);
 
   let presence = sat(nodeField * 0.8 + synapseField * 0.6 + signalField * 0.9 + sparkleField * 0.7 + ringBoost * 0.5);
-  let alpha = sat(0.1 + presence * 0.9);
-  let depth = sat(0.92 - nodeField * 0.5 - synapseField * 0.35 - ringBoost * 0.2);
+  let alpha = sat(source.a + (1.0 - source.a) * presence);
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
 
   color = acesToneMap(color * 1.1);
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(nodeField, synapseField, signalField + sparkleField, alpha));
+  let display = vec4<f32>(color, alpha);
+  textureStore(writeTexture, coord, display);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, display);
 }

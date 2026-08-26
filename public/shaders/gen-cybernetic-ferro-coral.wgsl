@@ -5,7 +5,7 @@
 //  Complexity: High
 //  Created: 2026-05-31
 //  Updated: 2026-08-05 (Batch 36 — Algorithmist: domain-warped FBM spikes,
-//           ridged micro-detail, Gray-Scott Turing banding, guarded FFT bins,
+//           ridged micro-detail, Gray-Scott Turing banding, three-band audio,
 //           click-ripple spike bursts, dataTextureA temporal state)
 //  By: Kimi Agent (Bright batch)
 // ═══════════════════════════════════════════════════════════════════
@@ -150,7 +150,7 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: vec3<f32>, density: f32, spikeIntensity: f32, coreGlow: f32, iridescence: f32, mousePos: vec3<f32>, depth: f32, spikeBoost: f32, fftEnv: f32) -> vec4<f32> {
+fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: vec3<f32>, density: f32, spikeIntensity: f32, coreGlow: f32, iridescence: f32, mousePos: vec3<f32>, depth: f32, spikeBoost: f32, spectralEnv: f32) -> vec4<f32> {
     var col = vec3<f32>(0.0);
     var t = 0.0;
     var glow = vec3<f32>(0.0);
@@ -162,7 +162,7 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: vec3<f32>, density: 
         if (d < 0.01) {
             let n = calcNormal(p, time, audio, density, spikeIntensity, spikeBoost, mousePos);
             let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
-            let iriColor = pal(fresnel * iridescence + time * 0.1 + audio.y + fftEnv * 0.4,
+            let iriColor = pal(fresnel * iridescence + time * 0.1 + audio.y + spectralEnv * 0.4,
                                vec3<f32>(0.5, 0.5, 0.5),
                                vec3<f32>(0.5, 0.5, 0.5),
                                vec3<f32>(1.0, 1.0, 1.0),
@@ -208,14 +208,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audio = plasmaBuffer[0].xyz;      // bass / mids / treble
     let time = u.config.x;
 
-    // Guarded engine FFT bins 1–8 (indices 6..13) — shimmer envelope
-    var fftEnv = 0.0;
-    if (arrayLength(&extraBuffer) >= 14u) {
-        for (var b: u32 = 6u; b <= 13u; b = b + 1u) {
-            fftEnv += clamp(extraBuffer[b], 0.0, 2.0);
-        }
-        fftEnv /= 8.0;
-    }
+    // Regional three-band shimmer; no engine-reserved extraBuffer slots.
+    let spectralEnv = dot(clamp(audio, vec3<f32>(0.0), vec3<f32>(2.0)), vec3<f32>(0.2, 0.35, 0.45));
 
     // Click ripples: bounded, spatially local spike bursts (screen-space)
     var rippleBoost = 0.0;
@@ -256,9 +250,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let temp_rdB_xz = rot(time * 0.1) * rdB.xz;
     rdB.x = temp_rdB_xz.x; rdB.z = temp_rdB_xz.y;
 
-    let rRes = marchRay(ro, rdR, time, audio, density, spikeIntensity, coreGlow, iridescence, mousePos, depth, spikeBoost, fftEnv);
-    let gRes = marchRay(ro, rd, time, audio, density, spikeIntensity, coreGlow, iridescence, mousePos, depth, spikeBoost, fftEnv);
-    let bRes = marchRay(ro, rdB, time, audio, density, spikeIntensity, coreGlow, iridescence, mousePos, depth, spikeBoost, fftEnv);
+    let rRes = marchRay(ro, rdR, time, audio, density, spikeIntensity, coreGlow, iridescence, mousePos, depth, spikeBoost, spectralEnv);
+    let gRes = marchRay(ro, rd, time, audio, density, spikeIntensity, coreGlow, iridescence, mousePos, depth, spikeBoost, spectralEnv);
+    let bRes = marchRay(ro, rdB, time, audio, density, spikeIntensity, coreGlow, iridescence, mousePos, depth, spikeBoost, spectralEnv);
 
     var color = vec3<f32>(rRes.r, gRes.g, bRes.b);
 

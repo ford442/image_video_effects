@@ -24,7 +24,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "separation",
       "name": "Separation",
       "default": 0.5,
       "min": 0,
@@ -33,7 +33,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "alignment",
       "name": "Alignment",
       "default": 0.5,
       "min": 0,
@@ -42,7 +42,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "cohesion",
       "name": "Cohesion",
       "default": 0.5,
       "min": 0,
@@ -51,7 +51,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "max_speed",
       "name": "Max Speed",
       "default": 0.4,
       "min": 0,

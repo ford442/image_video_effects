@@ -144,14 +144,18 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let time = u.config.x;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
+    let time = u.config.x * 5.0; // Fast motion upgrade
     let uv = vec2<f32>(global_id.xy) / resolution;
     let coord = vec2<i32>(global_id.xy);
 
     // Audio
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let audioBands = plasmaBuffer[0].xyz;
+    let bass = audioBands.x;
+    let mids = audioBands.y;
+    let treble = audioBands.z;
 
     // Domain-specific params
     let warpParam = u.zoom_params.x;       // Warp Amount
@@ -278,7 +282,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     generatedColor = generatedColor * clamp(vignette, 0.0, 1.0);
 
     // Temporal feedback: blend with previous frame for motion blur
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
     let motionBlur = clamp(warpAmount * 0.35, 0.0, 0.55);
     generatedColor = mix(generatedColor, prev, motionBlur);
 

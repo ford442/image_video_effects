@@ -81,14 +81,14 @@ describe('multipassGraph', () => {
     expect(expanded[6].entry).toBe('ripple-tank-pass3');
     expect(expanded[1].copiesBefore[0]?.from).toBe('dataA');
     expect(expanded[4].copiesBefore[0]?.from).toBe('dataA');
-    expect(expanded[5].copiesBefore[0]?.from).toBe('dataB');
+    expect(expanded[5].copiesBefore[0]?.from).toBe('dataA');
   });
 
   it('analyzes ripple-tank graph binding usage', () => {
     const graph = resolveGraphForShader('ripple-tank');
     const usage = analyzeGraphBindingUsage(graph!);
     expect(usage.writesDataA).toBe(true);
-    expect(usage.writesDataB).toBe(true);
+    expect(usage.writesDataB).toBe(false);
     expect(usage.readsDataC).toBe(true);
   });
 
@@ -101,16 +101,15 @@ describe('multipassGraph', () => {
     expect(countGraphPasses(photonic!)).toBe(4);
   });
 
-  it('validates the three new Physics Lab graphs', () => {
+  it('validates the two remaining Physics Lab graphs and excludes canonical optical flow', () => {
     const chroma = resolveGraphForShader('chromatographic-fluid');
     const rd = resolveGraphForShader('gray-scott-tank');
     const dream = resolveGraphForShader('optical-flow-dream');
     expect(validateGraph(chroma!)).toEqual([]);
     expect(validateGraph(rd!)).toEqual([]);
-    expect(validateGraph(dream!)).toEqual([]);
     expect(countGraphPasses(chroma!)).toBe(7);
     expect(countGraphPasses(rd!)).toBe(6);
-    expect(countGraphPasses(dream!)).toBe(4);
+    expect(dream).toBeNull();
   });
 
   it('prefers dataA→dataC copy after a sibling dataB write (fabric handoff)', () => {

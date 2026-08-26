@@ -2,7 +2,7 @@
   {
     "id": "alpha-depth-fog-volumetric",
     "name": "Alpha Depth Fog Volumetric",
-    "url": "shaders/alpha-depth-fog-volumetric.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-depth-fog-volumetric.wgsl",
     "description": "Physically-motivated volumetric fog using depth texture. Alpha stores optical depth / transmittance via Beer-Lambert law. Fog density varies with 3D noise, depth, and height. Mouse clears local fog; ripples create swirling disturbances.",
     "tags": [
       "volumetric",
@@ -60,7 +60,7 @@
   {
     "id": "alpha-hdr-bloom-chain",
     "name": "Alpha HDR Bloom Chain",
-    "url": "shaders/alpha-hdr-bloom-chain.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-hdr-bloom-chain.wgsl",
     "description": "HDR bloom effect where alpha stores exposure/overexposure value. Identifies pixels above white point, radially blurs the excess brightness, and composites with ACES tone mapping. Mouse and ripples trigger localized flashes.",
     "tags": [
       "hdr",
@@ -117,7 +117,7 @@
   {
     "id": "alpha-luminance-history",
     "name": "Alpha Luminance History",
-    "url": "shaders/alpha-luminance-history.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-luminance-history.wgsl",
     "description": "Temporal luminance history with RGB plus rolling luminance in alpha. Slider-controlled diffusion, directional history advection, traveling click rings, and mouse painting create bounded light trails and warm afterimages.",
     "tags": [
       "temporal",
@@ -213,8 +213,8 @@
   {
     "id": "alpha-multi-layer-glass",
     "name": "Alpha Multi-Layer Glass",
-    "url": "shaders/alpha-multi-layer-glass.wgsl",
-    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, and per-layer tinting. Alpha stores accumulated transmittance.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-multi-layer-glass.wgsl",
+    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, GGX roughness, and per-layer tinting. Alpha stores accumulated transmittance.",
     "tags": [
       "glass",
       "refraction",
@@ -222,11 +222,17 @@
       "interactive",
       "mouse-driven",
       "rgba-state-machine",
-      "fresnel"
+      "fresnel",
+      "audio-reactive",
+      "roughness"
     ],
     "features": [
       "mouse-driven",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -265,12 +271,47 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Index of Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glass Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Surface Roughness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "alpha-spectral-decompose",
     "name": "Alpha Spectral Decompose",
-    "url": "shaders/alpha-spectral-decompose.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-spectral-decompose.wgsl",
     "description": "Decomposes the image into 4 spectral frequency bands stored in RGBA. Low freq (R), mid-low (G), mid-high (B), high freq/detail (A). Recomposes with user-controlled per-band gain for frequency-equalizer style image manipulation.",
     "tags": [
       "spectral",
@@ -328,7 +369,7 @@
     "id": "anaglyph-3d",
     "name": "Anaglyph 3D",
     "category": "visual-effects",
-    "url": "shaders/anaglyph-3d.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/anaglyph-3d.wgsl",
     "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, bass-pulsed split width, and cinematic post-processing: film grain with temporal coherence, radial chromatic aberration, vignette darkening, CRT barrel distortion, color grading with lift/gamma/gain, anamorphic light streaks from bright points, and lens dirt overlay.",
     "features": [
       "mouse-driven",
@@ -393,7 +434,7 @@
   {
     "id": "anamorphic-caustic-flare",
     "name": "Anamorphic Caustic Flare",
-    "url": "shaders/anamorphic-caustic-flare.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/anamorphic-caustic-flare.wgsl",
     "description": "Premium cinematic anamorphic lens flares combined with living, refracting water caustics that distort and project the source footage. Bass stretches the flares dramatically while treble animates the caustic ripples. Mouse tilts the virtual lens.",
     "tags": [
       "anamorphic",
@@ -487,16 +528,56 @@
   {
     "id": "ascii-shockwave",
     "name": "ASCII Shockwave",
-    "url": "shaders/ascii-shockwave.wgsl",
-    "description": "A matrix-style digital shockwave that quantizes the image into procedural characters.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ascii-shockwave.wgsl",
+    "description": "Matrix glyph cells with traveling shock packets, held-pointer ASCII density, bounded click rings, and oil-slick phosphor color. Display RGBA is packed in A.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "glyph-cells"
     ],
     "tags": [
       "filter",
       "image-processing"
     ],
     "params": [
+      {
+        "id": "glyph_density",
+        "name": "Glyph Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "wave_speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "source_tint",
+        "name": "Source Tint",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "phosphor_persistence",
+        "name": "Phosphor Persistence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
       {
         "id": "param1",
         "name": "Intensity",
@@ -535,7 +616,7 @@
     "id": "breathing-kaleidoscope",
     "name": "Breathing Kaleidoscope",
     "category": "visual-effects",
-    "url": "shaders/breathing-kaleidoscope.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/breathing-kaleidoscope.wgsl",
     "description": "Organic breathing kaleidoscope driven by domain-warped FBM, fractional symmetry, jewel-tone palette cycling, film grain, and depth-aware sector fading.",
     "params": [
       {
@@ -587,7 +668,7 @@
   },
   {
     "id": "chroma-vortex",
-    "url": "shaders/chroma-vortex.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-vortex.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -641,10 +722,20 @@
   {
     "id": "chromatic-focus-interactive",
     "name": "Chromatic Focus",
-    "url": "shaders/chromatic-focus-interactive.wgsl",
-    "description": "Strong chromatic aberration that increases with distance from mouse focus.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-focus-interactive.wgsl",
+    "description": "Chromatic DOF with six-blade iris geometry, multi-tap blur, zone-plate caustics, oil-slick runners/packets, held focus squeeze/pinch, click iris shells, and light display history in A.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "continuous-motion",
+      "click-reactive",
+      "held-pointer",
+      "held-drag",
+      "bounded-click-ripples",
+      "bounded-blur",
+      "psychedelic-color",
+      "upgraded-rgba",
+      "aperture-blades"
     ],
     "params": [
       {
@@ -680,12 +771,47 @@
       "vfx",
       "particles",
       "glow"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Abberation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Blur",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Focus Rad",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.8,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Falloff",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "cross-spec-alpha-spectral-bloom",
     "name": "Spectral Bloom HDR",
-    "url": "shaders/cross-spec-alpha-spectral-bloom.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cross-spec-alpha-spectral-bloom.wgsl",
     "description": "Crossover shader combining spectral dispersion with HDR bloom using RGBA as independent spectral bands. Decomposes the image into wavelength channels and applies per-band bloom with exposure control in alpha.",
     "tags": [
       "crossover",
@@ -741,7 +867,7 @@
   {
     "id": "crt-clear-zone",
     "name": "CRT Clear Zone",
-    "url": "shaders/crt-clear-zone.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/crt-clear-zone.wgsl",
     "description": "Accurate CRT electron beam simulation with Gaussian spot spread, inline shadow mask, phosphor decay via temporal feedback, barrel distortion with corner darkening, per-RGB chromatic aberration, and ACES tone mapping.",
     "params": [
       {
@@ -798,7 +924,7 @@
   },
   {
     "id": "cyber-grid-pulse",
-    "url": "shaders/cyber-grid-pulse.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-grid-pulse.wgsl",
     "icon": "grid_on",
     "features": [
       "mouse-driven",
@@ -808,28 +934,28 @@
     ],
     "params": [
       {
-        "id": "param1",
+        "id": "grid_density",
         "name": "Grid Density",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param2",
+        "id": "pulse_speed",
         "name": "Pulse Speed",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param3",
+        "id": "distortion",
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "param4",
+        "id": "glow_intensity",
         "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
@@ -882,7 +1008,7 @@
     "id": "cyber-physical-portal",
     "name": "Cyber Physical Portal",
     "category": "visual-effects",
-    "url": "shaders/cyber-physical-portal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-physical-portal.wgsl",
     "description": "Upgraded cyber portal with event-horizon frame dragging, gravitational lensing, accretion disk bands, cyan-magenta holographic rim, chromatic aberration, and HDR bloom. Bass drives spin, mouse positions portal, depth controls lensing.",
     "features": [
       "mouse-driven",
@@ -936,7 +1062,7 @@
     "id": "cyber-scan",
     "name": "Cyber Scan",
     "category": "visual-effects",
-    "url": "shaders/cyber-scan.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-scan.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -947,7 +1073,9 @@
       "holographic-scanlines",
       "data-visualization",
       "hex-grid",
-      "interference-patterns"
+      "interference-patterns",
+      "click-ripples",
+      "aces-tone-map"
     ],
     "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
     "params": [
@@ -1002,7 +1130,7 @@
   },
   {
     "id": "data-scanner",
-    "url": "shaders/data-scanner.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-scanner.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1010,32 +1138,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "scan_speed",
+        "name": "Scan Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Audio Reactivity",
+        "id": "audio_pulse",
+        "name": "Audio Pulse",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "scan_width",
+        "name": "Scan Width",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "warp_intensity",
+        "name": "Warp Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1052,7 +1180,7 @@
   {
     "id": "elastic-chromatic",
     "name": "Elastic Chromatic",
-    "url": "shaders/elastic-chromatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/elastic-chromatic.wgsl",
     "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping, IGN dither and advanced layered alpha compositing.",
     "features": [
       "mouse-driven",
@@ -1165,7 +1293,7 @@
     "id": "electric-contours",
     "name": "Electric Contours",
     "category": "visual-effects",
-    "url": "shaders/electric-contours.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/electric-contours.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1235,40 +1363,35 @@
   {
     "id": "glitch-pixel-sort",
     "name": "Glitch Pixel Sort",
-    "url": "shaders/glitch-pixel-sort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glitch-pixel-sort.wgsl",
     "description": "Luminance-based pixel stretching controlled by mouse position.",
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "threshold",
+        "name": "Threshold",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "id": "mode",
+        "name": "Sort Mode",
+        "default": 0,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 2,
+        "step": 1,
+        "mapping": "zoom_params.y"
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "glitch",
+        "name": "Glitch Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       }
     ],
     "features": [
@@ -1282,7 +1405,7 @@
   {
     "id": "hex-circuit",
     "name": "Hex Circuit",
-    "url": "shaders/hex-circuit.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hex-circuit.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -1327,7 +1450,7 @@
     "id": "holographic-flicker",
     "name": "Holographic Flicker",
     "category": "visual-effects",
-    "url": "shaders/holographic-flicker.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-flicker.wgsl",
     "description": "Holographic flicker with temporal ghosting and depth-rainbow colorization. Bass drives blackout probability, treble adds micro-glitch. Chromatic ghosting separates RGB channels across frames.",
     "params": [
       {
@@ -1364,7 +1487,10 @@
       "depth-aware",
       "upgraded-rgba",
       "temporal-flicker",
-      "chromatic-ghosting"
+      "chromatic-ghosting",
+      "mouse-driven",
+      "temporal",
+      "click-reactive"
     ],
     "tags": [
       "hologram",
@@ -1375,19 +1501,57 @@
       "depth-aware",
       "chromatic",
       "temporal"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flicker Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Hologram Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ghost Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "holographic-projection-gpt52",
     "name": "Holo Projection Prism gpt52",
-    "url": "shaders/holographic-projection-gpt52.wgsl",
-    "description": "Prismatic hologram with stabilized focus, scan interference, and spectral tinting.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-projection-gpt52.wgsl",
+    "description": "Prismatic volume hologram with Bragg diffraction physics, stabilized focus, scan interference, and spectral tinting.",
     "features": [
       "mouse-driven",
       "glitch",
       "animated",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -1424,18 +1588,58 @@
       "particles",
       "glow",
       "audio",
-      "music"
+      "music",
+      "hologram",
+      "bragg",
+      "diffraction"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 1.2,
+        "min": 0,
+        "max": 5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Holo Tint",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Focus Strength",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "holographic-projection",
     "name": "Holo Projector",
-    "url": "shaders/holographic-projection.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-projection.wgsl",
     "description": "Transforms the image into a flickering hologram. Move mouse to focus and stabilize the projection.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -1474,12 +1678,47 @@
       "audio",
       "music",
       "reactive"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Holo Tint",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Focus Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "holographic-sticker",
     "name": "Holographic Sticker",
-    "url": "shaders/holographic-sticker.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-sticker.wgsl",
     "description": "Mouse-centered iridescent sticker with chromatic view-angle dispersion, temporal foil shimmer persistence, audio-driven sticker pulse, depth-layered alpha, and rainbow phase shift.",
     "features": [
       "mouse-driven",
@@ -1575,7 +1814,7 @@
   {
     "id": "hyper-space-jump",
     "name": "Hyper Space Jump",
-    "url": "shaders/hyper-space-jump.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hyper-space-jump.wgsl",
     "description": "Streaks the image radially from the mouse position, simulating a hyperspace jump.",
     "features": [
       "mouse-driven"
@@ -1586,32 +1825,32 @@
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "jump_strength",
+        "name": "Jump Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "streak_decay",
+        "name": "Streak Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "vignette_size",
+        "name": "Vignette Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1622,15 +1861,19 @@
   {
     "id": "interactive-fresnel",
     "name": "Interactive Fresnel",
-    "url": "shaders/interactive-fresnel.wgsl",
-    "description": "Gravitational and optical Fresnel lensing with 2.5D heightfield normals, concentric annular curvature, Cauchy chromatic dispersion, and exact-load temporal shimmer.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-fresnel.wgsl",
+    "description": "2.5D Fresnel lens curvature with Cauchy dispersion, held ring squeeze, oil-slick grout, radial packets, and bounded click shells. Display RGBA in A.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "chromatic-aberration",
       "depth-mass",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color"
     ],
     "updated": true,
     "params": [
@@ -1665,32 +1908,40 @@
     ],
     "updatedParams": [
       {
+        "index": 0,
         "id": "effectStrength",
         "name": "Lensing Power",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 1,
         "id": "ringCount",
         "name": "Ring Count",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 2,
         "id": "ringThickness",
         "name": "Ring Thickness",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
+        "index": 3,
         "id": "dispersion",
         "name": "Dispersion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -1708,7 +1959,7 @@
   {
     "id": "interactive-pcb-traces",
     "name": "Interactive PCB Traces",
-    "url": "shaders/interactive-pcb-traces.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-pcb-traces.wgsl",
     "description": "Simulates a circuit board where traces light up with data pulses driven by the mouse.",
     "params": [
       {
@@ -1756,7 +2007,7 @@
     "id": "luma-smear-interactive",
     "name": "Kinetic Echo",
     "category": "visual-effects",
-    "url": "shaders/luma-smear-interactive.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-smear-interactive.wgsl",
     "description": "Creates a motion trail with chromatic smear (R lags, B leads). Bright objects leave decaying trails. Curl turbulence and audio gusts add organic chaos. Depth controls viscosity.",
     "features": [
       "mouse-driven",
@@ -1810,7 +2061,7 @@
   {
     "id": "neon-edge-glow",
     "name": "Neon Edge Glow",
-    "url": "shaders/neon-edge-glow.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neon-edge-glow.wgsl",
     "category": "visual-effects",
     "description": "Gas discharge tube simulation with accurate neon emission spectrum, AC rectification flicker, mercury vapor secondary lines, electrode sputtering, and atmospheric haze. Bass drives flicker frequency, mouse bends the tube, depth controls atmospheric scatter.",
     "tags": [
@@ -1875,7 +2126,7 @@
   {
     "id": "neon-edge-pulse",
     "name": "Neon Edge Pulse",
-    "url": "shaders/neon-edge-pulse.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neon-edge-pulse.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1927,11 +2178,11 @@
   {
     "id": "neon-edge-reveal",
     "name": "Neon Edge Reveal",
-    "url": "shaders/neon-edge-reveal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neon-edge-reveal.wgsl",
     "description": "Neon edge detection with interactive flashlight reveal.",
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -1939,7 +2190,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
@@ -1947,7 +2198,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
@@ -1955,7 +2206,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -2014,7 +2265,7 @@
   },
   {
     "id": "neon-topology",
-    "url": "shaders/neon-topology.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neon-topology.wgsl",
     "description": "Renders the image as a glowing 3D topographic map.",
     "params": [
       {
@@ -2103,7 +2354,7 @@
   {
     "id": "phantom-lag",
     "name": "Phantom Lag",
-    "url": "shaders/phantom-lag.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/phantom-lag.wgsl",
     "features": [
       "audio-reactive",
       "upgraded-rgba",
@@ -2150,7 +2401,7 @@
   {
     "id": "pixel-sorter",
     "name": "Pixel Sorter",
-    "url": "shaders/pixel-sorter.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-sorter.wgsl",
     "description": "Glitch art pixel sorting with alpha translucency blending. Single sort pass with spectral tinting, depth-aware compositing, and audio-reactive shimmer.",
     "params": [
       {
@@ -2200,7 +2451,7 @@
   {
     "id": "quantum-field-visualizer",
     "name": "Quantum Field Visualizer",
-    "url": "shaders/quantum-field-visualizer.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-field-visualizer.wgsl",
     "category": "visual-effects",
     "description": "Complex wavefunction visualization with real/imaginary parts mapped to hue, probability density to brightness, and phase to saturation. Features two-slit interference, Gaussian packet spreading, and mouse-driven quantum measurement collapse.",
     "params": [
@@ -2252,7 +2503,7 @@
     "id": "quantum-ghost",
     "name": "Quantum Ghost",
     "category": "visual-effects",
-    "url": "shaders/quantum-ghost.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-ghost.wgsl",
     "description": "Quantum uncertainty visualization with Gaussian wave packet spreading, interference patterns from partial measurement, and entanglement correlation lines between ghost copies. Ghostly translucent copies with phase-dependent opacity, neon quantum numbers, HDR bloom on measurement events, ACES tone mapping, and chromatic separation by momentum uncertainty.",
     "features": [
       "mouse-driven",
@@ -2318,7 +2569,7 @@
       "audio-reactive",
       "upgraded-rgba"
     ],
-    "url": "shaders/rgb-distance-split.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/rgb-distance-split.wgsl",
     "description": "Chromatic aberration that intensifies with distance from the mouse.",
     "params": [
       {
@@ -2361,13 +2612,17 @@
     "id": "rgb-topology",
     "name": "RGB Topology",
     "category": "visual-effects",
-    "url": "shaders/rgb-topology.wgsl",
-    "description": "Topographic contour extraction per RGB channel with 3D terrain visualization. Each channel is a heightfield with independent contour intervals, hypsometric tinting, HDR specular peaks, and chromatic blending at crossings.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/rgb-topology.wgsl",
+    "description": "Topographic contour extraction per RGB channel with index isolines, ridge ticks, traveling iso-runners, psychedelic hypsometric ramps, held shear, and bounded click fronts. Feedback A stays [lineR, lineG, lineB, alpha].",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "isoline-runners",
+      "psychedelic-hypsometry"
     ],
     "tags": [
       "topology",
@@ -2408,16 +2663,58 @@
         "min": 0,
         "max": 1
       }
+    ],
+    "updatedParams": [
+      {
+        "id": "contour_density",
+        "name": "Contour Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "line_thickness",
+        "name": "Line Thickness",
+        "default": 0.22,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "channel_separation",
+        "name": "Channel Separation",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "source_blend",
+        "name": "Source Blend",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
     "id": "signal-modulation",
     "name": "Signal Modulation",
-    "url": "shaders/signal-modulation.wgsl",
-    "description": "Simulates AM/FM signal distortion with mouse-controlled frequency and amplitude.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/signal-modulation.wgsl",
+    "description": "AM/FM carrier wave with sprung origin, held widen, capped click carrier bursts, honest regional FFT spectral bands, ACES composite.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
-      "visual-effect"
+      "audio-reactive",
+      "visual-effect",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba",
+      "spectral-bands"
     ],
     "params": [
       {
@@ -2426,7 +2723,8 @@
         "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "amp",
@@ -2434,7 +2732,8 @@
         "type": "float",
         "default": 0.1,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "speed",
@@ -2442,7 +2741,8 @@
         "type": "float",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "shift",
@@ -2450,12 +2750,16 @@
         "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "signal",
+      "carrier",
+      "fft"
     ],
     "updatedParams": [
       {
@@ -2495,7 +2799,7 @@
   },
   {
     "id": "spectral-rain",
-    "url": "shaders/spectral-rain.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spectral-rain.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2592,7 +2896,7 @@
   {
     "id": "temporal-rgb-smear",
     "name": "Temporal RGB Smear",
-    "url": "shaders/temporal-rgb-smear.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-rgb-smear.wgsl",
     "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and advanced layered alpha compositing (luminance key, edge preserve, effect intensity, depth layer, accumulative trails).",
     "params": [
       {
@@ -2706,7 +3010,7 @@
   {
     "id": "time-slit-scan",
     "name": "Time Slit Scan",
-    "url": "shaders/time-slit-scan.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/time-slit-scan.wgsl",
     "description": "Multi-slit temporal scan with curved parametric slits, polar drift, and time-warp color tinting.",
     "features": [
       "mouse-driven",
@@ -2760,7 +3064,7 @@
   {
     "id": "voxel-grid",
     "name": "Voxel Grid",
-    "url": "shaders/voxel-grid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/voxel-grid.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2820,13 +3124,15 @@
     "id": "warp-drive",
     "name": "Warp Drive",
     "category": "visual-effects",
-    "url": "shaders/warp_drive.wgsl",
-    "description": "Alcubierre warp metric approximation with radial compression ahead and expansion behind. Star streaks with relativistic Doppler shift, HDR bloom on contracted stars, chromatic aberration on high-velocity regions, and ACES tone mapping.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/warp_drive.wgsl",
+    "description": "Alcubierre warp streaks with Doppler aurora packets, held warp aim, analytic stars, click fronts. Diagnostic A packing preserved.",
     "features": [
       "audio-reactive",
       "upgraded-rgba",
       "radial-blur",
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples"
     ],
     "tags": [
       "warp",
@@ -2867,13 +3173,43 @@
         "min": 0,
         "max": 1
       }
+    ],
+    "updatedParams": [
+      {
+        "id": "warp_speed",
+        "name": "Warp Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "prism_split",
+        "name": "Prism Split",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "core_glow",
+        "name": "Core Glow",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "blur_quality",
+        "name": "Blur Quality",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
     "id": "zipper-reveal",
     "name": "Zipper Reveal",
     "category": "visual-effects",
-    "url": "shaders/zipper-reveal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/zipper-reveal.wgsl",
     "description": "Mechanical zipper with interlocking tooth simulation, fabric physics, metallic specular highlights, and chromatic aberration on fast-moving teeth. Bass drives zipper speed and mouse controls pull position.",
     "params": [
       {

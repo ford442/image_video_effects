@@ -2,56 +2,103 @@
   "id": "digital-moss-rgba",
   "name": "Digital Moss Rgba",
   "url": "shaders/digital-moss-rgba.wgsl",
-  "description": "Catalog entry for Digital Moss Rgba.",
+  "description": "RD-driven digital moss with iridescent palette: held plants spores, click cleans, capped ripple bursts, exact C Laplacian, and audio growth rate.",
   "tags": [
     "mouse-driven",
     "temporal",
     "rgba-state-machine",
-    "organic"
+    "organic",
+    "audio-reactive"
   ],
   "features": [
     "mouse-driven",
     "temporal",
     "rgba-state-machine",
-    "organic"
+    "organic",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "aces-tone-map"
+  ],
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "moss_density",
+      "name": "Moss Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.x"
+      "mapping": "zoom_params.x",
+      "description": "RD feed rate"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "growth_rate",
+      "name": "Growth Rate",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.y"
+      "mapping": "zoom_params.y",
+      "description": "RD kill rate"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "color_shift",
+      "name": "Color Shift",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.z"
+      "mapping": "zoom_params.z",
+      "description": "Cross-inhibition mix"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "moisture",
+      "name": "Moisture",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.w"
+      "mapping": "zoom_params.w",
+      "description": "Moss growth speed"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Moss Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Growth Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Moisture",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

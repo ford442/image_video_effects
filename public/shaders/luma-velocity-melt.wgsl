@@ -1,13 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Luma Velocity Melt
-//  Category: liquid-effects
-//  Features: mouse-driven, audio-reactive, chromatic-drip, curl-turbulence, depth-viscosity, upgraded-rgba
-//  Complexity: High
-//  Chunks From: luma-velocity-melt, curl2D, fbm, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-05-31
-// ═══════════════════════════════════════════════════════════════════
-
+// Luma Velocity Melt — exact-load HDR display-history advection.
+// A owns untonemapped RGB and semantic alpha; B is intentionally unwritten.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -21,115 +13,62 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
-
-fn hash21(p: vec2<f32>) -> f32 {
-  let h = dot(p, vec2<f32>(127.1, 311.7));
-  return fract(sin(h) * 43758.5453123);
+fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123); }
+fn noise2(p: vec2<f32>) -> f32 {
+  let i = floor(p); let f = fract(p); let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), w.x), mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
 }
-
-fn valueNoise(p: vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  let a = hash21(i);
-  let b = hash21(i + vec2<f32>(1.0, 0.0));
-  let c = hash21(i + vec2<f32>(0.0, 1.0));
-  let d = hash21(i + vec2<f32>(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
-
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-  var sum = 0.0;
-  var amp = 0.5;
-  var freq = 1.0;
-  for (var i = 0; i < octaves; i = i + 1) {
-    sum = sum + amp * valueNoise(p * freq);
-    freq = freq * 2.0;
-    amp = amp * 0.5;
-  }
-  return sum;
-}
-
-fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
-  let eps = 0.01;
-  let n1 = fbm(p + vec2<f32>(eps, 0.0) + t * 0.1, 3);
-  let n2 = fbm(p - vec2<f32>(eps, 0.0) + t * 0.1, 3);
-  let n3 = fbm(p + vec2<f32>(0.0, eps) + t * 0.1, 3);
-  let n4 = fbm(p - vec2<f32>(0.0, eps) + t * 0.1, 3);
-  let dy = (n1 - n2) / (2.0 * eps);
-  let dx = (n3 - n4) / (2.0 * eps);
-  return vec2<f32>(dx, -dy);
-}
-
-fn bass_env(bass: f32, mids: f32) -> f32 {
-  return 1.0 + bass * 0.5 + mids * 0.2;
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> { return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1)); }
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw; if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
+  let pixel = vec2<i32>(gid.xy); let dims = vec2<i32>(res);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res; let time = u.config.x;
+  let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
+  // These saved controls have non-normalized ranges and are used directly.
+  let meltSpeed = max(u.zoom_params.x, 0.0); let heat = max(u.zoom_params.y, 0.0);
+  let persistence = clamp(u.zoom_params.z, 0.5, 0.999); let threshold = u.zoom_params.w;
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let sourceLuma = dot(source.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  let hot = smoothstep(threshold - 0.12, threshold + 0.12, sourceLuma) * (1.0 + heat * 0.18 + bass * 0.45);
+  let nX = noise2(uv * vec2<f32>(8.0, 14.0) + vec2<f32>(time * 0.12, -time * 0.08));
+  let nY = noise2(uv.yx * vec2<f32>(11.0, 7.0) + vec2<f32>(4.2, time * 0.1));
+  var flow = vec2<f32>((nX - 0.5) * meltSpeed * (1.8 + mids), meltSpeed * hot * (1.0 + (1.0 - depth) * 0.5));
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
-
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let luma = dot(inputColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let viscosity = mix(1.5, 0.5, depth);
-
-    let meltSpeed = u.zoom_params.x * bass_env(bass, mids);
-    let heatIntensity = u.zoom_params.y * (1.0 + bass * 0.4);
-    let persistence = u.zoom_params.z;
-    let lumaThreshold = u.zoom_params.w;
-
-    let meltFactor = max(0.0, luma - lumaThreshold) * 2.0;
-    var velocity = vec2<f32>(0.0, meltSpeed * (0.5 + meltFactor) * viscosity);
-
-    let mousePos = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
-    let aspect_uv = vec2<f32>(uv.x * aspect, uv.y);
-    let aspect_mouse = vec2<f32>(mousePos.x * aspect, mousePos.y);
-    let dist = distance(aspect_uv, aspect_mouse);
-
-    let heatRadius = 0.2;
-    let heat = smoothstep(heatRadius, 0.0, dist) * heatIntensity;
-    let spread = normalize(aspect_uv - aspect_mouse) * 0.01 * heat;
-    velocity = velocity + vec2<f32>(spread.x, meltSpeed * heat * 5.0);
-
-    // Curl turbulence on melt flow
-    let curl = curl2D(uv * 4.0 + u.config.x * 0.1, u.config.x * 0.2) * 0.005 * mids;
-    velocity = velocity + curl;
-
-    let prevUV = clamp(uv - velocity, vec2<f32>(0.0), vec2<f32>(1.0));
-    let prevColor = textureSampleLevel(dataTextureC, non_filtering_sampler, prevUV, 0.0);
-
-    // Chromatic drip: R drips slower, B drips faster
-    let rUV = clamp(uv - velocity * 0.9, vec2<f32>(0.0), vec2<f32>(1.0));
-    let bUV = clamp(uv - velocity * 1.1, vec2<f32>(0.0), vec2<f32>(1.0));
-    let r = textureSampleLevel(dataTextureC, non_filtering_sampler, rUV, 0.0).r;
-    let b = textureSampleLevel(dataTextureC, non_filtering_sampler, bUV, 0.0).b;
-    let g = prevColor.g;
-
-    let chromaPrev = vec4<f32>(r, g, b, prevColor.a);
-    let result = mix(inputColor, chromaPrev, persistence);
-
-    // Audio heat pulse: bass creates bright flash on hot pixels
-    let heatPulse = bass * 0.15 * heat * (1.0 + treble * 0.5);
-    let finalRGB = result.rgb + vec3<f32>(heatPulse, heatPulse * 0.5, 0.0);
-    let alpha = clamp(result.a + heat * 0.2 + bass * 0.05, 0.0, 1.0);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalRGB, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let mouseDelta = (uv - u.zoom_config.yz) * aspectVec; let mouseDist = length(mouseDelta);
+  let mouseMask = exp(-mouseDist * mouseDist * 75.0); let held = select(0.16, 1.0, u.zoom_config.w > 0.5);
+  let tangent = select(vec2<f32>(0.0), vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDist, mouseDist > 0.001);
+  flow += tangent / aspectVec * mouseMask * held * (meltSpeed * 4.0 + 0.004);
+  var clickEnergy = 0.0; let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i += 1u) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.4) {
+      let delta = (uv - ripple.xy) * aspectVec; let dist = length(delta);
+      let ring = exp(-pow((dist - age * 0.2) * 42.0, 2.0)) * exp(-age * 1.2);
+      let dir = select(vec2<f32>(0.0), delta / dist, dist > 0.001);
+      flow += dir / aspectVec * ring * (0.008 + meltSpeed * 2.2); clickEnergy += ring;
+    }
+  }
+  let historyUV = clamp(uv - flow, vec2<f32>(0.001), vec2<f32>(0.999));
+  let history = textureLoad(dataTextureC, historyCoord(historyUV, dims), 0);
+  let chroma = (0.001 + meltSpeed * 0.7 + treble * 0.002) * normalize(vec2<f32>(flow.x + 0.0001, flow.y + 0.0001));
+  let sourceR = textureSampleLevel(readTexture, u_sampler, clamp(uv + chroma, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
+  let sourceB = textureSampleLevel(readTexture, u_sampler, clamp(uv - chroma, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
+  let injected = vec4<f32>(sourceR.r, source.g, sourceB.b, max(source.a, max(sourceR.a, sourceB.a)));
+  let historyWeight = persistence * history.a * smoothstep(0.001, 0.02, length(flow));
+  var hdr = mix(injected.rgb, history.rgb * (0.992 + bass * 0.004), historyWeight);
+  hdr += vec3<f32>(1.0, 0.24, 0.04) * hot * heat * 0.045 + vec3<f32>(0.18, 0.4, 1.0) * clickEnergy * mids * 0.08;
+  let alpha = clamp(max(injected.a, history.a * persistence) + hot * 0.04 + clickEnergy * 0.05, 0.0, 1.0);
+  textureStore(dataTextureA, pixel, vec4<f32>(min(hdr, vec3<f32>(8.0)), alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(hdr), alpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(depth + length(flow) * 0.8 + hot * 0.02, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

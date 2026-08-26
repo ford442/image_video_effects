@@ -56,6 +56,11 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     return fract((p3.xx + p3.yz) * p3.zy);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Continuous Conway-like rules, parameterized
 // state: 0=dead, 1=alive; birthRange and survivalRange are evolving
 fn cellularState(uv: vec2<f32>, cellScale: f32, t: f32,
@@ -196,21 +201,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         clickT = extraBuffer[138];
     }
 
-    // ── Guarded FFT bands (engine bins 1-8 at extraBuffer[6..13], read-only) ──
-    var fftLo = 0.0;
-    var fftHi = 0.0;
-    if (sbLen > 13u) {
-        fftLo = (extraBuffer[6] + extraBuffer[7] + extraBuffer[8]) * 0.3333;
-        fftHi = (extraBuffer[11] + extraBuffer[12] + extraBuffer[13]) * 0.3333;
-    }
-
     // Mouse nutrient attractor (gravity well: lagged, not 1:1)
     let mousePos = sm;
     let mouseDist = length(uvA - mousePos);
 
     // Click colony-burst: bounded expanding growth front
     let clickAge = max(t - clickT, 0.0);
-    let clickEnergy = select(0.0, exp(-clickAge * 1.2), clickT > 0.0);
+    let clickEnergy = select(0.0, exp(-clickAge * 1.2), clickT > 0.0 && clickAge < 3.0);
     let burstRing = exp(-pow((mouseDist - clickAge * 0.5) * 12.0, 2.0)) * clickEnergy;
 
     // Mouse interaction: within radius, plant invasive species or protected zone
@@ -224,7 +221,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var i = 0u; i < rippleCount; i++) {
         let rp = u.ripples[i];
         let age = t - rp.z;
-        if (age > 0.0) {
+        if (age > 0.0 && age < 3.0) {
             let d2 = distance(uv, rp.xy);
             nutrientBump += exp(-d2 * d2 * 60.0) * exp(-age * 2.0) * 1.2;
         }
@@ -233,8 +230,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let localMidsBoost = mids + inMouseZone * invasiveForce * 0.5 + burstRing * 0.4;
     let localTreble = treble * (1.0 - inMouseZone * invasiveForce * 0.3);
 
-    // FFT low bands subtly accelerate local evolution (genetic pressure)
-    let localEvolution = evolutionSpd * (1.0 + fftLo * 0.35 + inMouseZone * invasiveForce * 0.5);
+    let localEvolution = evolutionSpd * (1.0 + bass * 0.35 + inMouseZone * invasiveForce * 0.5);
 
     // Compute multi-scale garden
     let garden = cellularGarden(uvA, t, localBassBoost, localMidsBoost,
@@ -277,9 +273,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Click colony-burst bloom along the growth front
     color += vec3<f32>(0.4, 0.9, 0.5) * burstRing * invasiveForce * 0.9;
 
-    // Temporal evolution shimmer (FFT high bands drive the sparkle rate)
+    // Temporal evolution shimmer: high-band plasma energy drives sparkle.
     let shimmer = hash13(vec3<f32>(uvA * 50.0, floor(t * localEvolution * 4.0)));
-    color += vec3<f32>(0.2, 0.5, 0.3) * shimmer * (treble + fftHi) * 0.1;
+    color += vec3<f32>(0.2, 0.5, 0.3) * shimmer * treble * 0.2;
 
     // Vignette
     let v = 1.0 - smoothstep(0.3, 0.8, length(uv - 0.5) * 1.3);
@@ -291,7 +287,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(dataTextureA, px, vec4<f32>(trail, colonyAge));
     color += trail * 0.12 * (0.5 + treble * 0.5);
 
-    let outColor = clamp(color * glow, vec3<f32>(0.0), vec3<f32>(1.0));
+    let outColor = acesToneMap(max(color * glow, vec3<f32>(0.0)));
 
     // Generated depth: structural relief (coarse skeleton highest, age adds)
     let depth = clamp(coarse * 0.5 + mid * 0.3 + fine * 0.15 + colonyAge * 0.2, 0.0, 1.0);

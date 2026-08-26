@@ -104,6 +104,17 @@ test('WASM canvas has non-zero dimensions', async ({ page }) => {
   await page.goto(buildAppUrl('wasm'), { waitUntil: 'networkidle' });
   await waitForTestApi(page);
 
+
+  let probeOk = false;
+  try {
+    probeOk = await page.evaluate(() => (window as any).webgpuProbe?.ok ?? false);
+  } catch {}
+
+  if (!probeOk && !isStrictGpuMode()) {
+    test.skip(true, 'No WebGPU adapter (soft mode)');
+    return;
+  }
+
   const stats = await captureCanvasStats(page);
   expect(stats.width).toBeGreaterThan(0);
   expect(stats.height).toBeGreaterThan(0);
@@ -124,11 +135,17 @@ for (const shaderCase of PARITY_MATRIX) {
       return;
     }
 
-    const { fps, stats, criticalErrors: exerciseErrors } = await exerciseShaderOnWasm(
+    const { loaded, fps, stats, criticalErrors: exerciseErrors } = await exerciseShaderOnWasm(
       page,
-      shaderCase,
-      3000
+      shaderCase
     );
+    if (!loaded) {
+      if (isStrictGpuMode()) {
+        throw new Error(`loadShader failed for ${shaderCase.id}`);
+      }
+      test.skip(true, `WASM loadShader soft-failed for ${shaderCase.id} (no GPU)`);
+      return;
+    }
 
     expect([...criticalErrors, ...exerciseErrors]).toEqual([]);
     expect(stats.width).toBeGreaterThan(0);
@@ -171,16 +188,24 @@ test('WASM multi-slot stack (fluid + generative)', async ({ page }) => {
   ];
 
   for (const shader of stack) {
-    await page.evaluate(
+    const loaded = await page.evaluate(
       async (s) => {
         const api = (window as any).__pixelocity__;
         api.setInputSource('generative');
         const ok = await api.loadShader(s.id, s.url);
-        if (!ok) throw new Error(`loadShader failed: ${s.id}`);
+        if (!ok) return false;
         api.setSlotShader(s.slot ?? 0, s.id);
+        return true;
       },
       shader
     );
+    if (!loaded) {
+      if (isStrictGpuMode()) {
+        throw new Error(`loadShader failed: ${shader.id}`);
+      }
+      test.skip(true, `WASM loadShader soft-failed for ${shader.id} (no GPU)`);
+      return;
+    }
     await page.waitForTimeout(400);
   }
 

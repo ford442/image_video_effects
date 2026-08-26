@@ -1,22 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Sim: Sand Dunes RGBA
-//  Category: simulation
-//  Features: simulation, rgba-state-machine, temporal, mouse-driven
-//  Complexity: High
-//  Chunks From: sim-sand-dunes.wgsl, alpha-fluid-simulation-paint.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-2 - RGBA Simulation Upgrader
-// ═══════════════════════════════════════════════════════════════════
-//  Four-grain-type physics with distinct falling, sliding, and wind
-//  behaviors. Each grain type competes for space.
-//  RGBA Channels:
-//    R = Fine sand (light, easily wind-blown, falls slow)
-//    G = Coarse sand (heavy, stable, high angle of repose)
-//    B = Moist sand (clumpy, intermediate, sticks together)
-//    A = Dust/salt (very light, rises on wind, settles slowly)
-//  Why f32: Grain fractions require sub-unit precision for stable
-//  accumulation and smooth slope transitions.
-// ═══════════════════════════════════════════════════════════════════
+// Sim Sand Dunes RGBA — four interacting grain populations.
+// A/C: fine sand, coarse sand, moist clumps, airborne dust.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -31,199 +14,35 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-}
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+fn grainAt(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> { return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0); }
+fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(171.7, 319.3))) * 43758.5453); }
+fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0)); }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let res = u.config.zw;
-    if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
-
-    let uv = vec2<f32>(gid.xy) / res;
-    let time = u.config.x;
-
-    // Parameters
-    let gravity = mix(0.5, 2.0, u.zoom_params.x);
-    let wind = mix(-0.2, 0.2, u.zoom_params.y);
-    let moisture = mix(0.0, 1.0, u.zoom_params.z);
-    let dustiness = mix(0.0, 1.0, u.zoom_params.w);
-
-    // Read current cell (4 grain types)
-    let state = textureLoad(dataTextureC, gid.xy, 0);
-    var fine = state.r;
-    var coarse = state.g;
-    var moist = state.b;
-    var dust = state.a;
-
-    // Total material at this cell
-    let totalHere = fine + coarse + moist + dust;
-
-    // Read neighbors
-    let below = textureLoad(dataTextureC, gid.xy - vec2<u32>(0u, 1u), 0);
-    let belowLeft = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 1u), 0);
-    let belowRight = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 1u), 0);
-    let left = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 0u), 0);
-    let right = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 0u), 0);
-    let above = textureLoad(dataTextureC, gid.xy + vec2<u32>(0u, 1u), 0);
-
-    var newFine = fine;
-    var newCoarse = coarse;
-    var newMoist = moist;
-    var newDust = dust;
-
-    // === FALLING PHYSICS (gravity) ===
-    // Fine sand: falls if below has < 0.3 capacity
-    if (fine > 0.01 && (below.r + below.g + below.b + below.a) < 0.3) {
-        newFine *= 0.7;
-    }
-    // Coarse sand: falls if below has < 0.5 capacity (needs support)
-    if (coarse > 0.01 && (below.r + below.g + below.b + below.a) < 0.5) {
-        newCoarse *= 0.8;
-    }
-    // Moist sand: falls if below has < 0.4 capacity, but clumps
-    if (moist > 0.01 && (below.r + below.g + below.b + below.a) < 0.4) {
-        let clumpChance = 0.5 + moisture * 0.3;
-        newMoist *= mix(1.0, 0.75, clumpChance);
-    }
-    // Dust: rises on updrafts, falls very slowly
-    if (dust > 0.01) {
-        let riseChance = smoothstep(0.0, 0.1, wind) * 0.3;
-        newDust *= 1.0 - riseChance;
-    }
-
-    // === SLIDING PHYSICS (angle of repose) ===
-    let totalBelowLeft = belowLeft.r + belowLeft.g + belowLeft.b + belowLeft.a;
-    let totalBelowRight = belowRight.r + belowRight.g + belowRight.b + belowRight.a;
-    let totalLeft = left.r + left.g + left.b + left.a;
-    let totalRight = right.r + right.g + right.b + right.a;
-
-    // Fine sand slides easily
-    if (newFine > 0.05 && totalBelowLeft < totalBelowRight - 0.2) {
-        newFine *= 0.85;
-    } else if (newFine > 0.05 && totalBelowRight < totalBelowLeft - 0.2) {
-        newFine *= 0.85;
-    }
-
-    // Coarse sand has high angle of repose
-    if (newCoarse > 0.05 && totalBelowLeft < totalBelowRight - 0.4) {
-        newCoarse *= 0.9;
-    } else if (newCoarse > 0.05 && totalBelowRight < totalBelowLeft - 0.4) {
-        newCoarse *= 0.9;
-    }
-
-    // Moist sand slides least
-    if (newMoist > 0.05 && totalBelowLeft < totalBelowRight - 0.6) {
-        newMoist *= 0.95;
-    } else if (newMoist > 0.05 && totalBelowRight < totalBelowLeft - 0.6) {
-        newMoist *= 0.95;
-    }
-
-    // === WIND EROSION ===
-    let windStrength = abs(wind) * 5.0;
-    let h = hash12(uv + time * 0.1);
-
-    // Fine sand blown by wind
-    if (h < windStrength && newFine > 0.01) {
-        if (wind > 0.0 && totalRight < 0.2) { newFine *= 0.85; }
-        else if (wind < 0.0 && totalLeft < 0.2) { newFine *= 0.85; }
-    }
-
-    // Dust very easily blown
-    if (h < windStrength * 2.0 && newDust > 0.01) {
-        if (wind > 0.0 && totalRight < 0.3) { newDust *= 0.7; }
-        else if (wind < 0.0 && totalLeft < 0.3) { newDust *= 0.7; }
-    }
-
-    // Moist sand resists wind
-    let moistResistance = moisture * 0.5;
-    if (h < windStrength * (1.0 - moistResistance) && newMoist > 0.01) {
-        if (wind > 0.0 && totalRight < 0.15) { newMoist *= 0.95; }
-        else if (wind < 0.0 && totalLeft < 0.15) { newMoist *= 0.95; }
-    }
-
-    // === RECEIVING FROM ABOVE ===
-    let totalAbove = above.r + above.g + above.b + above.a;
-    if (totalAbove > 0.3) {
-        // Some material falls in from above
-        newFine += above.r * 0.15 * gravity;
-        newCoarse += above.g * 0.1 * gravity;
-        newMoist += above.b * 0.12 * gravity;
-        newDust += above.a * 0.08;
-    }
-
-    // Dust settles from above even without much material
-    if (above.a > 0.01) {
-        newDust += above.a * 0.1 * (1.0 - dustiness * 0.5);
-    }
-
-    // === MOUSE INJECTION ===
-    let mousePos = u.zoom_config.yz;
-    let mouseDist = length(uv - mousePos);
-    if (mouseDist < 0.03) {
-        let drop = 1.0 - mouseDist / 0.03;
-        let grainType = hash12(vec2<f32>(time * 0.5, 0.0));
-        if (grainType < 0.25) { newFine += drop; }
-        else if (grainType < 0.5) { newCoarse += drop; }
-        else if (grainType < 0.75) { newMoist += drop; }
-        else { newDust += drop * 0.5; }
-    }
-
-    // === INITIALIZATION ===
-    if (time < 1.0 && uv.y < 0.15) {
-        let h = hash12(uv * 20.0);
-        if (h > 0.3) {
-            if (h < 0.5) { newFine = 0.8; }
-            else if (h < 0.7) { newCoarse = 0.7; }
-            else if (h < 0.85) { newMoist = 0.6; }
-            else { newDust = 0.4; }
-        }
-    }
-
-    // Clamp
-    newFine = clamp(newFine, 0.0, 1.0);
-    newCoarse = clamp(newCoarse, 0.0, 1.0);
-    newMoist = clamp(newMoist, 0.0, 1.0);
-    newDust = clamp(newDust, 0.0, 1.0);
-
-    // === STORE STATE ===
-    textureStore(dataTextureA, gid.xy, vec4<f32>(newFine, newCoarse, newMoist, newDust));
-
-    // === STATE -> VISUAL COLOR MAPPING ===
-    let fineColor = vec3<f32>(0.94, 0.85, 0.60);   // Light gold
-    let coarseColor = vec3<f32>(0.82, 0.68, 0.45);  // Darker tan
-    let moistColor = vec3<f32>(0.65, 0.55, 0.40);   // Dark wet sand
-    let dustColor = vec3<f32>(0.92, 0.88, 0.78);    // Pale dust
-
-    let totalNew = newFine + newCoarse + newMoist + newDust;
-    var sandColor = vec3<f32>(0.0);
-    if (totalNew > 0.01) {
-        sandColor = (fineColor * newFine + coarseColor * newCoarse + moistColor * newMoist + dustColor * newDust) / totalNew;
-    }
-
-    // Shading based on height differences
-    let totalAboveVal = above.r + above.g + above.b + above.a;
-    let totalBelowVal = below.r + below.g + below.b + below.a;
-    let heightDiff = totalAboveVal - totalBelowVal;
-    sandColor *= (0.85 + heightDiff * 0.15);
-
-    // Blend with background
-    let bgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let finalColor = mix(bgColor * 0.4, sandColor, smoothstep(0.0, 0.1, totalNew));
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = mix(0.8, 1.0, smoothstep(0.0, 0.2, totalNew));
-
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - totalNew * 0.15), 0.0, 0.0, 0.0));
+  let size = vec2<u32>(u32(u.config.z), u32(u.config.w)); if (gid.x >= size.x || gid.y >= size.y) { return; }
+  let p = vec2<i32>(gid.xy); let hi = vec2<i32>(size) - vec2<i32>(1); let res = vec2<f32>(size); let uv = (vec2<f32>(p) + 0.5) / res;
+  let aspect = res.x / max(res.y, 1.0); let time = u.config.x; let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0)); var s = grainAt(p, hi);
+  if (time < 0.12 || dot(s, s) < 0.000001) { let h = hash21(floor(uv * 140.0)); let bed = smoothstep(0.25, 1.0, uv.y); s = vec4<f32>(bed * (0.28 + h * 0.15), bed * (0.18 + (1.0 - h) * 0.12), bed * 0.08, 0.01); }
+  let l = grainAt(p + vec2<i32>(-1, 0), hi); let r = grainAt(p + vec2<i32>(1, 0), hi); let t = grainAt(p + vec2<i32>(0, -1), hi); let b = grainAt(p + vec2<i32>(0, 1), hi);
+  let lap = l + r + t + b - 4.0 * s; let gravity = mix(0.01, 0.12, u.zoom_params.x) * (1.0 + audio.x * 0.25);
+  let wind = (u.zoom_params.y * 2.0 - 1.0) * (0.05 + audio.y * 0.08); let moisture = u.zoom_params.z; let dustiness = u.zoom_params.w;
+  let fineGradient = l.r - r.r; let coarseGradient = t.g - b.g; var next = s;
+  next.r += lap.r * (0.05 + abs(wind) * 0.05) + fineGradient * wind * 0.08 + (t.r - s.r) * gravity * 0.04;
+  next.g += lap.g * 0.018 + coarseGradient * gravity * 0.025;
+  let clump = min(next.r, 0.02 + moisture * 0.04); next.r -= clump * moisture * 0.12; next.b += clump * moisture * 0.12 + lap.b * 0.012;
+  next.a += (abs(wind) * next.r * dustiness * 0.035 + audio.z * dustiness * 0.012) - next.a * (0.025 + moisture * 0.03) + (b.a - t.a) * 0.03;
+  let q = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0); let md = length(q); let hover = exp(-md * 15.0); let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  next.r += hover * held * 0.06; next.g += hover * held * 0.035; next.a += hover * (0.004 + held * 0.045);
+  var impacts = 0.0; let count = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 1.6) { let d = length((uv - e.xy) * vec2<f32>(aspect, 1.0)); impacts += exp(-age * 2.0) * exp(-abs(d - age * 0.31) * 72.0); } }
+  next.a += impacts * (0.16 + dustiness * 0.24); next.r -= impacts * 0.035; next.g += impacts * 0.02; next = clamp(next, vec4<f32>(0.0), vec4<f32>(1.0)); textureStore(dataTextureA, p, next);
+  let total = clamp(next.r + next.g + next.b, 0.0, 1.0); let ridges = abs((l.r + l.g) - (r.r + r.g)) + abs((t.r + t.g) - (b.r + b.g));
+  let fineColor = vec3<f32>(1.45, 0.75, 0.18); let coarseColor = vec3<f32>(0.80, 0.31, 0.08); let moistColor = vec3<f32>(0.25, 0.12, 0.07); let dustColor = vec3<f32>(1.35, 1.05, 0.62);
+  var hdr = next.r * fineColor + next.g * coarseColor + next.b * moistColor + next.a * dustColor * (0.8 + audio.z);
+  hdr *= 0.45 + 0.75 * clamp(1.0 - ridges * 2.0, 0.0, 1.0); hdr += impacts * vec3<f32>(1.8, 0.8, 0.2);
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0); hdr = mix(src.rgb, hdr, clamp(total + next.a * 0.6, 0.0, 0.94));
+  let alpha = clamp(src.a * 0.18 + total * 0.78 + next.a * 0.45, 0.0, 1.0); let mapped = aces(max(hdr, vec3<f32>(0.0)));
+  textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, p, vec4<f32>(clamp(1.0 - total * 0.72 + next.a * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

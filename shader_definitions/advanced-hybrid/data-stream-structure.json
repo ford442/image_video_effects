@@ -2,56 +2,105 @@
   "id": "data-stream-structure",
   "name": "Data Stream Structure",
   "url": "shaders/data-stream-structure.wgsl",
-  "description": "Data Stream Structure",
+  "description": "Structure-tensor LIC data streams with hex packet geometry, spring cursor vortex, capped click ripples, cyber spectral palette, and three-band audio.",
   "tags": [
     "mouse-driven",
     "structure-tensor",
     "LIC",
-    "glitch"
+    "glitch",
+    "audio-reactive",
+    "click-ripples"
   ],
   "features": [
     "mouse-driven",
     "structure-tensor",
     "LIC",
-    "glitch"
+    "glitch",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "aces-tone-map",
+    "temporal-feedback"
+  ],
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "stream_density",
+      "name": "Stream Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.x"
+      "mapping": "zoom_params.x",
+      "description": "Flow speed along dominant orientation"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "corruption_rate",
+      "name": "Corruption Rate",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.y"
+      "mapping": "zoom_params.y",
+      "description": "Stream strip density"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "trail_fade",
+      "name": "Trail Fade",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.z"
+      "mapping": "zoom_params.z",
+      "description": "Mouse vortex turbulence"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "chromatic_spread",
+      "name": "Chromatic Spread",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.w"
+      "mapping": "zoom_params.w",
+      "description": "Digital glow and spectral mix"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Stream Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Corruption Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Trail Fade",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Chromatic Spread",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

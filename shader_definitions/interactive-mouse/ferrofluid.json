@@ -2,7 +2,7 @@
   "id": "ferrofluid",
   "name": "Magnetic Ferrofluid",
   "url": "shaders/ferrofluid.wgsl",
-  "description": "Stylized magnetic ferrofluid with rotating domain spikes, fast droplet runners, live viscosity, held-pointer attraction, and click-launched magnetic fronts.",
+  "description": "Viscous image-warping ferrofluid with rotating magnetic domains, droplet runners, gradient-derived metallic normals, held attraction, click fronts, chromatic reflection, and advected HDR trails.",
   "params": [
     {
       "id": "spikeScale",
@@ -44,7 +44,10 @@
     "audio-reactive",
     "click-reactive",
     "fast-motion",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal",
+    "depth-aware",
+    "pbr-metal"
   ],
   "tags": [
     "filter",

@@ -65,10 +65,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let damping = mix(0.3, 2.5, u.zoom_params.w);
   let waterDepth = mix(0.2, 3.0, depth);
   let rippleCount = min(u32(u.config.y), 50u);
+  let mouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
   var totalOffset = vec2<f32>(0.0);
   var rippleHeight = 0.0;
   var dispersionIntensity = 0.0;
+
+  let pointerDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let pointerDist = max(length(pointerDelta), 1e-4);
+  let pointerPacket = sin(pointerDist * waveCount * 10.0 - time * waveSpeedBase * 8.0) * exp(-pointerDist * 8.0) * held;
+  totalOffset += pointerDelta / pointerDist * pointerPacket * waveHeight * 2.0;
+  rippleHeight += abs(pointerPacket);
 
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
@@ -92,6 +100,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let boundReflect = vec2<f32>(1.0) - smoothstep(vec2<f32>(0.92), vec2<f32>(1.0), abs(uv - 0.5) * 2.0);
+  let lattice = sin((uv.x + uv.y) * waveCount * 6.0 - time * waveSpeedBase) *
+    sin((uv.x - uv.y) * waveCount * 5.0 + time * waveSpeedBase * 1.3);
+  let packet = sin(uv.x * waveCount * 7.0 - time * waveSpeedBase * 4.0) *
+    exp(-abs(fract(uv.y - time * 0.08 * waveSpeedBase) - 0.5) * 12.0);
+  totalOffset += vec2<f32>(lattice, packet) * waveHeight * (0.18 + mids * 0.2);
+  rippleHeight += abs(lattice) * 0.12 + abs(packet) * 0.18;
   totalOffset = totalOffset * boundReflect;
 
   let sampleUV = clamp(uv + totalOffset, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -110,6 +124,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bloom = pow(max(0.0, rippleHeight - 0.5), 2.0) * (0.2 + bass * 0.25);
   let bloomTint = mix(vec3<f32>(0.1, 0.5, 0.9), vec3<f32>(0.95, 0.75, 1.0), 0.5 + 0.5 * sin(time * 0.8));
   finalColor = finalColor + bloomTint * bloom;
+  let film = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + rippleHeight * 8.0 - time * vec3<f32>(0.7, 0.9, 1.1));
+  finalColor += film * smoothstep(0.18, 0.9, rippleHeight) * (0.08 + treble * 0.12);
 
   let sss = smoothstep(0.0, 0.4, rippleHeight) * depth * 0.15;
   let sssTint = vec3<f32>(0.08, 0.35, 0.55);

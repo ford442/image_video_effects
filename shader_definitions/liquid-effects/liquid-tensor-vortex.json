@@ -2,9 +2,9 @@
   "id": "liquid-tensor-vortex",
   "name": "Liquid Tensor Vortex",
   "url": "shaders/liquid-tensor-vortex.wgsl",
-  "description": "A 3D tensor field that melts and reforms like liquid metal under mouse vorticity, with bass-driven surface tension and transmission alpha that lets the background breathe through the folds.",
-  "tags": ["liquid", "metal", "tensor", "audio-reactive", "mouse-driven", "depth-aware", "vorticity"],
-  "features": ["mouse-driven", "audio-reactive", "depth-aware", "tensor-field"],
+  "description": "Source-luma structure-tensor eigenflow advects liquid metal through curl vortices, coherent folds, held-pointer torque, and click-launched metallic fronts.",
+  "tags": ["liquid", "metal", "tensor", "audio-reactive", "mouse-driven", "depth-aware", "vorticity", "structure-tensor"],
+  "features": ["mouse-driven", "audio-reactive", "depth-aware", "tensor-field", "temporal", "click-reactive", "bounded-history", "upgraded-rgba"],
   "params": [
     {
       "id": "flowScale",
@@ -38,5 +38,13 @@
       "max": 1,
       "step": 0.05
     }
-  ]
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Flow Scale", "default": 0.5, "min": 0, "max": 2, "step": 0.05 },
+    { "index": 1, "name": "Surface Tension", "default": 0.5, "min": 0, "max": 2, "step": 0.05 },
+    { "index": 2, "name": "Specular", "default": 1.0, "min": 0, "max": 3, "step": 0.1 },
+    { "index": 3, "name": "Transmission", "default": 0.5, "min": 0, "max": 1, "step": 0.05 }
+  ],
+  "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded tensor-flow loads",
+  "updated": true
 }

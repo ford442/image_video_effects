@@ -2,7 +2,7 @@
   "id": "steamy-glass-volumetric",
   "name": "Steamy Glass Volumetric",
   "url": "shaders/steamy-glass-volumetric.wgsl",
-  "description": "Steamy Glass Volumetric",
+  "description": "Layered steam extinction, droplet scattering, and vertical condensation flow with interactive clearing and chromatic refraction.",
   "tags": [
     "steamy-glass",
     "depth-fog",
@@ -17,8 +17,8 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "steam_density",
+      "name": "Steam Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,8 +26,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "fog_height",
+      "name": "Fog Height",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -35,8 +35,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "turbulence",
+      "name": "Turbulence",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -44,8 +44,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "wipe_radius",
+      "name": "Wipe Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -53,5 +53,13 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Steam Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Fog Depth", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Droplet Scatter", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Turbulence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = steam density, optical depth, droplets, vertical flow",
+  "updated": true,
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }
