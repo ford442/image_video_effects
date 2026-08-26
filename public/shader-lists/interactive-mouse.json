@@ -2046,13 +2046,19 @@
   {
     "id": "cyber-lattice",
     "name": "Cyber Lattice",
-    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-lattice.wgsl",
+    "url": "shaders/cyber-lattice.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "thin-film-traffic"
     ],
-    "description": "A dynamic holographic grid that reacts to mouse movement and clicks.",
+    "description": "Layered perspective lattice rails carry thin-film cell traffic through spring-followed held deformation and expanding click waves.",
     "params": [
       {
         "name": "Grid Scale",
@@ -2083,6 +2089,42 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact lattice-trail loads; B is unused",
+    "persistentState": "extraBuffer[133..138] = spring position.xy, velocity.xy, previous time, initialized; single writer at pixel 0,0",
     "tags": [
       "filter",
       "image-processing"
@@ -3305,8 +3347,8 @@
   {
     "id": "dynamic-halftone",
     "name": "Dynamic Halftone",
-    "url": "https://test.1ink.us/image_video_effects/shaders/dynamic-halftone.wgsl",
-    "description": "Halftone pattern that reacts to mouse proximity with size and contrast changes. Audio-reactive radius expansion via bass input.",
+    "url": "shaders/dynamic-halftone.wgsl",
+    "description": "Variable-angle CMYK print rosettes morph between expressive dot shapes, with held magnification, click-driven ink waves, and three-band plate motion.",
     "params": [
       {
         "id": "density",
@@ -3340,10 +3382,51 @@
         "description": "Halftone dot edge sharpness (wired to zoom_params.w)"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dot Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mouse Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Edge Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = premultiplied tone-mapped display RGBA with bounded exact print persistence; B is unused",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "cmyk-rosette"
     ],
     "tags": [
       "halftone",
@@ -7550,13 +7633,19 @@
   },
   {
     "id": "magnetic-edge",
-    "url": "https://test.1ink.us/image_video_effects/shaders/magnetic-edge.wgsl",
+    "url": "shaders/magnetic-edge.wgsl",
     "icon": "edgesensor_high",
+    "description": "Anisotropic image-edge attraction follows a spring-damped magnetic pointer, with spectral flux lines, held-field amplification, and expanding click shock rings.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive"
     ],
     "params": [
       {
@@ -7588,6 +7677,42 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Pull Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Low",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glow Amount",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact flux-trail loads; B is unused",
+    "persistentState": "extraBuffer[133..138] = spring position.xy, velocity.xy, previous time, initialized; single writer at pixel 0,0",
     "tags": [
       "mouse-driven",
       "interactive",
