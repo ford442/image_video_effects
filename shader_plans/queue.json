@@ -444,11 +444,6 @@
       "filename": "2026-08-20_luminescent-silica-diatom-swarm.md",
       "title": "Luminescent Silica Diatom Swarm",
       "added": "2026-08-20T15:11:37.996029"
-    },
-    {
-      "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
-      "title": "Ethereal Quantum-Glass Nautilus",
-      "added": "2026-08-21T15:28:56.185053"
     }
   ],
   "current": null,
@@ -658,6 +653,13 @@
       "added": "2026-08-23T15:16:43.844592",
       "status": "completed",
       "completed_at": "2026-08-25T07:52:21.029053+00:00"
+    },
+    {
+      "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
+      "title": "Ethereal Quantum-Glass Nautilus",
+      "added": "2026-08-21T15:28:56.185053",
+      "status": "completed",
+      "completed_at": "2026-08-26T08:14:45.326604+00:00"
     }
   ],
   "completed": [

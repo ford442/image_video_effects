@@ -13777,6 +13777,50 @@
     "feedbackPacking": "A/C = final ACES display RGBA; exact glass-flora persistence history"
   },
   {
+    "id": "gen-ethereal-quantum-glass-nautilus",
+    "name": "Ethereal Quantum-Glass Nautilus",
+    "url": "/shaders/gen-ethereal-quantum-glass-nautilus.wgsl",
+    "category": "generative",
+    "params": [
+      {
+        "id": "refractionIndex",
+        "name": "Refraction Index",
+        "mapping": "zoom_params.x",
+        "default": 1.5,
+        "min": 1,
+        "max": 2.5,
+        "step": 0.01
+      },
+      {
+        "id": "spiralTightness",
+        "name": "Spiral Tightness",
+        "mapping": "zoom_params.y",
+        "default": 0.2,
+        "min": 0.05,
+        "max": 0.8,
+        "step": 0.01
+      },
+      {
+        "id": "iridescenceShift",
+        "name": "Iridescence Shift",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "name": "Ethereal Quantum-Hologram Bonsai",
     "category": "generative",
     "tags": [
