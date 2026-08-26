@@ -161,10 +161,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = audio.z;
 
   let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-  let scale = mix(8.0, 38.0, zp.x);
-  let zoomAmount = mix(1.0, 4.5, zp.y);
-  let rotation = zp.z * TAU + time * 0.25 * (0.2 + mids);
-  let mouseInfluence = zp.w;
+  let scale = mix(8.0, 38.0, u.zoom_params.x);
+  let zoomAmount = mix(1.0, 4.5, u.zoom_params.y);
+  let rotation = u.zoom_params.z * TAU + time * 0.25 * (0.2 + mids);
+  let mouseInfluence = u.zoom_params.w;
 
   let axial = vec2<f32>(1.7320508, 1.0);
   let uvAspect = vec2<f32>(uv.x * aspect, uv.y);

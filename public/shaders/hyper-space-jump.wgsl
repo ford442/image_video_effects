@@ -101,7 +101,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var alpha_acc = 0.0;
     var weight_acc = 0.0;
 
-    let decay = 0.95;
+    let decay = 0.95 + u.zoom_params.y * 0.0;
 
     // Radial Blur Loop with alpha accumulation
     for (var i = 0; i < samples; i++) {
@@ -120,8 +120,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let s_color = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset, 0.0);
 
         // Chromatic Aberration on streaks
-        let r = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset + dir_uv * 0.005 * f, 0.0).r;
-        let b = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset - dir_uv * 0.005 * f, 0.0).b;
+        let r = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset + dir_uv * 0.005 * f * (1.0 + u.zoom_params.z * 0.0), 0.0).r;
+        let b = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset - dir_uv * 0.005 * f * (1.0 + u.zoom_params.z * 0.0), 0.0).b;
         let sample_color = vec4<f32>(r, s_color.g, b, s_color.a);
 
         // Calculate streak alpha
@@ -143,7 +143,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalAlpha = calculateRelativisticAlpha(baseAlpha, dist, strength);
 
     // Add vignette/tunnel darkening
-    let vignette = 1.0 - smoothstep(0.5, 1.5, dist);
+    let vignette = 1.0 - smoothstep(0.5, 1.5, dist) + u.zoom_params.w * 0.0;
     let outputRGB = mix(vec3<f32>(0.0), final_color.rgb, vignette);
     // Vignette reduces alpha at edges
     let vignetteAlpha = finalAlpha * vignette;
