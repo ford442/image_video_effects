@@ -429,8 +429,6 @@
       "filename": "2026-08-16_cybernetic-aether-moth-chrysalis.md",
       "title": "Cybernetic Aether-Moth Chrysalis",
       "added": "2026-08-16T15:24:54.147548"
-<<<<<<< HEAD
-=======
     },
     {
       "filename": "2026-08-17_chrono-kinetic-fractal-engine.md",
@@ -461,7 +459,11 @@
       "filename": "2026-08-24_synthetic-bismuth-geode-matrix.md",
       "title": "Synthetic Bismuth Geode Matrix",
       "added": "2026-08-24T15:08:24.613588"
->>>>>>> origin/main
+    },
+    {
+      "filename": "2026-08-26_fractal-neuro-mycelium-lattice.md",
+      "title": "Fractal Neuro-Mycelium Lattice",
+      "added": "2026-08-26T15:35:00.703434"
     }
   ],
   "current": null,
@@ -840,9 +842,6 @@
       "title": "Chrono-Kinetic Fractal Engine",
       "added": "2026-08-17T15:12:31.089564",
       "status": "completed",
-<<<<<<< HEAD
-      "completed_at": "2026-08-26T10:26:24.867685+00:00"
-=======
       "completed_at": "2026-08-18T08:03:46.946672+00:00"
     },
     {
@@ -851,7 +850,6 @@
       "added": "2026-08-20T15:11:37.996029",
       "status": "completed",
       "completed_at": "2026-08-22T08:11:13.109883+00:00"
->>>>>>> origin/main
     }
   ],
   "rejected": [],
