@@ -1,4 +1,7 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// Cyber Hex Armor — articulated plates, beveled seams, and audio-routed circuit traffic.
+// A/C stores tone-mapped display RGBA. B and extraBuffer are unused.
+// Premium mixed-eight upgrade: 2026-08-27.
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,132 +15,121 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=HexSize, y=GlowIntensity, z=RevealRadius, w=Generic
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Hexagon SDF (Distance from center to edge)
-fn hexDist(p: vec2<f32>) -> f32 {
-    var p2 = abs(p);
-    // dot product with (1, sqrt(3)) normalized
-    let c = dot(p2, normalize(vec2<f32>(1.0, 1.7320508)));
-    return max(c, p2.x);
-}
-
-// Hexagon Grid Logic
-// Returns: vec4(local_uv.x, local_uv.y, id.x, id.y)
-fn hexCoords(uv: vec2<f32>) -> vec4<f32> {
-    let r = vec2<f32>(1.0, 1.7320508);
-    let h = r * 0.5;
-
-    let a = uv - (floor(uv / r + 0.5) * r);
-    let b = uv - (floor((uv - h) / r + 0.5) * r + h);
-
-    let gv = select(b, a, dot(a, a) < dot(b, b));
-    var id = uv - gv;
-
-    return vec4<f32>(gv.x, gv.y, id.x, id.y);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn hash12(p: vec2<f32>) -> f32 {
-    var p3  = fract(vec3<f32>(p.xyx) * .1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn hexCoords(p: vec2<f32>) -> vec4<f32> {
+  let r = vec2<f32>(1.0, 1.7320508);
+  let h = r * 0.5;
+  let a = p - floor(p / r + 0.5) * r;
+  let b = p - (floor((p - h) / r + 0.5) * r + h);
+  let local = select(b, a, dot(a, a) < dot(b, b));
+  return vec4<f32>(local, p - local);
+}
+
+fn hexDistance(p: vec2<f32>) -> f32 {
+  let q = abs(p);
+  return max(q.x * 0.8660254 + q.y * 0.5, q.y);
+}
+
+fn safeCoord(uv: vec2<f32>, resolution: vec2<f32>) -> vec2<i32> {
+  return clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution),
+               vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+}
+
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, safeCoord(uv, resolution), 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+  let p = (uv - 0.5) * aspectVec;
+  let time = u.config.x;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 2.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 2.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 2.0);
+
+  let scale = mix(10.0, 58.0, u.zoom_params.x);
+  let glowIntensity = mix(0.2, 2.8, u.zoom_params.y) * (1.0 + treble * 0.38);
+  let revealRadius = mix(0.06, 0.58, u.zoom_params.z);
+  let border = mix(0.018, 0.15, u.zoom_params.w);
+  let mouseP = (mouse - 0.5) * aspectVec;
+
+  var clickWave = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.8) {
+      let rd = length((uv - ripple.xy) * aspectVec);
+      let front = age * (0.3 + bass * 0.1);
+      clickWave += sin((rd - front) * 52.0) * exp(-abs(rd - front) * 28.0) * exp(-age * 1.05);
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+  }
 
-    // Correct aspect ratio for grid
-    let aspect = resolution.x / resolution.y;
-    let gridUV = vec2<f32>(uv.x * aspect, uv.y);
-    var mousePos = u.zoom_config.yz;
-    let mouseGridPos = vec2<f32>(mousePos.x * aspect, mousePos.y);
+  let pointerDist = length(p - mouseP);
+  let hover = smoothstep(revealRadius, 0.0, pointerDist);
+  let heldRetract = hover * select(0.38, 1.0, held);
+  let warpedP = p + normalize(p - mouseP + vec2<f32>(0.0001, 0.0)) * (heldRetract * 0.055 + clickWave * 0.018);
+  let hc = hexCoords(warpedP * scale);
+  let local = hc.xy;
+  let id = hc.zw;
+  let cellJitter = hash12(id);
+  let platePhase = clamp(heldRetract + abs(clickWave) * 0.35 + bass * 0.04, 0.0, 1.0);
+  let plateRadius = 0.49 * (1.0 - platePhase * (0.62 + cellJitter * 0.2));
+  let distanceToEdge = hexDistance(local);
+  let plate = 1.0 - smoothstep(plateRadius - 0.018, plateRadius + 0.018, distanceToEdge);
+  let seam = exp(-abs(distanceToEdge - plateRadius) / max(border, 0.003)) * (1.0 - platePhase * 0.45);
+  let bevel = smoothstep(plateRadius - border * 2.2, plateRadius - border * 0.3, distanceToEdge) * plate;
 
-    // Params
-    let hexSize = 20.0 + u.zoom_params.x * 50.0;
-    let glowIntensity = u.zoom_params.y * 2.0;
-    let revealRadius = 0.1 + u.zoom_params.z * 0.5;
+  let circuitA = 1.0 - smoothstep(0.025, 0.075, abs(local.x + local.y * 0.58));
+  let circuitB = 1.0 - smoothstep(0.02, 0.06, abs(local.y - local.x * 0.58));
+  let circuitMask = max(circuitA, circuitB) * plate * step(0.37, cellJitter);
+  let trafficPhase = id.x * 0.83 + id.y * 1.17 - time * (3.0 + mids * 4.0) + local.x * 8.0;
+  let traffic = pow(0.5 + 0.5 * sin(trafficPhase), 14.0) * circuitMask;
+  let scan = pow(0.5 + 0.5 * cos(local.y * 22.0 - time * (2.0 + treble * 4.0) + pointerDist * 10.0), 12.0) * plate;
 
-    // Scale UV for hex grid
-    let scaledUV = gridUV * hexSize;
-    let hc = hexCoords(scaledUV);
-    let localUV = hc.xy;
-    var id = hc.zw;
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let history = historyAt(uv - normalize(p - mouseP + vec2<f32>(0.0001, 0.0)) / aspectVec * clickWave * 0.003, resolution);
+  let alloy = mix(vec3<f32>(0.025, 0.045, 0.07), vec3<f32>(0.13, 0.19, 0.25), bevel + cellJitter * 0.18);
+  let trafficColor = mix(vec3<f32>(0.05, 1.25, 1.8), vec3<f32>(1.5, 0.15, 0.92), 0.5 + 0.5 * sin(cellJitter * 9.0 + time * 0.2));
+  var hdr = mix(source.rgb, alloy, plate * (0.72 - heldRetract * 0.18));
+  hdr += vec3<f32>(0.03, 0.78, 1.3) * seam * glowIntensity * (0.35 + bass * 0.28);
+  hdr += trafficColor * traffic * glowIntensity * (0.45 + mids * 0.4);
+  hdr += vec3<f32>(0.45, 0.78, 1.4) * scan * glowIntensity * (0.08 + treble * 0.18);
+  hdr = mix(hdr, history.rgb, clamp(0.025 + seam * 0.07 + traffic * 0.05, 0.0, 0.12));
+  let display = aces(max(hdr, vec3<f32>(0.0)));
+  let armorAlpha = clamp(plate * 0.68 + seam * 0.28 + traffic * 0.25, 0.0, 1.0);
+  let alpha = clamp(source.a + (1.0 - source.a) * armorAlpha, 0.0, 1.0);
+  let result = vec4<f32>(display, alpha);
 
-    // Calculate hex center in world space (approx)
-    let hexCenter = id / hexSize;
-
-    // Distance from mouse to hex center
-    let distToMouse = length(hexCenter - mouseGridPos);
-
-    // Calculate "Openness" of the armor
-    // Near mouse = Open (scale 0), Far = Closed (scale 1)
-    // Add some noise/randomness to the opening
-    let noise = hash12(id);
-    let opening = smoothstep(revealRadius, revealRadius + 0.2 + noise * 0.1, distToMouse);
-
-    // If mouse is offscreen, everything is closed
-    let effectiveOpen = select(opening, 1.0, mousePos.x < 0.0);
-
-    // Scale the hex visually based on openness
-    // We want the hex to shrink as it opens
-    let hexScale = effectiveOpen; // 0.0 to 1.0
-
-    // SDF of hexagon
-    // Radius of standard hex in this grid system is roughly 0.5 (h.y is 0.866)
-    // Let's normalize it roughly
-    let dist = hexDist(localUV);
-
-    // Edge thickness
-    let border = mix(0.01, 0.15, u.zoom_params.w);
-    let radius = 0.5 * hexScale - border;
-
-    var finalColor = vec4<f32>(0.0);
-
-    if (radius < 0.0) {
-        // Hex is completely vanished
-        finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    } else {
-        // Smoothstep for anti-aliasing edge
-        let edge = smoothstep(radius, radius + 0.05, dist);
-
-        if (edge < 0.5) {
-            // Inside Hex Armor
-            // Create a tech texture
-            let techColor = vec3<f32>(0.1, 0.12, 0.15); // Dark blue-grey
-            let highlight = smoothstep(0.4, 0.5, dist) * glowIntensity; // Glow at edge
-
-            // Add some "circuit" details inside
-            let detail = step(0.9, fract(localUV.x * 10.0 + localUV.y * 10.0));
-
-            let armorColor = techColor + vec3<f32>(0.0, 0.8, 1.0) * highlight + vec3<f32>(detail * 0.05);
-
-            finalColor = vec4<f32>(armorColor, 1.0);
-
-        } else {
-            // Outside Hex (Gap) -> Show Image
-            // Add a glow from the hex border onto the image
-            let glow = exp(-20.0 * (dist - radius)) * glowIntensity;
-            let imgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-            finalColor = imgColor + vec4<f32>(0.0, 0.5, 1.0, 0.0) * glow;
-        }
-    }
-
-    // Pass-through depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+  textureStore(dataTextureA, coord, result);
+  textureStore(writeTexture, coord, result);
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

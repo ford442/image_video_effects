@@ -2,7 +2,7 @@
   "id": "pp-chromatic",
   "name": "PP Chromatic",
   "url": "shaders/pp-chromatic.wgsl",
-  "description": "Chromatic aberration with RGB channel separation, barrel/pincushion distortion, and vignette",
+  "description": "Five-wavelength Cauchy lens dispersion with pointer-centered curvature, audio-lit caustics, temporal fringe persistence, vignette control, and expanding click refraction fronts.",
   "tags": [
     "post-process",
     "chromatic",
@@ -38,5 +38,23 @@
       "min": 0,
       "max": 1
     }
-  ]
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "exact-history",
+    "aces-tone-map",
+    "three-band-audio",
+    "held-pointer",
+    "click-reactive",
+    "cauchy-dispersion"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Chromatic Amount", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Distortion", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Vignette", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Mode", "default": 0, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = final ACES display RGBA with bounded exact chromatic fringe persistence loads; B is unused"
 }

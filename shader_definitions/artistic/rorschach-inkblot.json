@@ -2,7 +2,7 @@
   "id": "rorschach-inkblot",
   "name": "Rorschach Inkblot",
   "url": "shaders/rorschach-inkblot.wgsl",
-  "description": "Symmetrical inkblot visualization with audio-driven ink flow, chromatic ink tints, temporal ink diffusion memory, mouse-controlled symmetry axis, and depth-aware ink density.",
+  "description": "Mirrored ink advects through curl-noise flow with chromatic diffusion memory, pointer-controlled symmetry, held vortices, depth density, and expanding click blooms.",
   "params": [
     {
       "name": "Threshold",
@@ -43,8 +43,21 @@
     "temporal",
     "chromatic",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "exact-history",
+    "aces-tone-map",
+    "three-band-audio",
+    "held-pointer",
+    "click-reactive",
+    "mirrored-advection"
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Threshold", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Distortion", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Smoothness", "default": 0.1, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Invert Mode", "default": 0, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = final ACES display RGBA with semantic ink alpha via bounded exact mirrored-advection loads; B is unused",
   "tags": [
     "filter",
     "image-processing",

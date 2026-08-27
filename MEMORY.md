@@ -1,6 +1,21 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-26 (progress audit + issues #1179–#1185)
+**Last updated:** 2026-08-27 (Balanced Mixed Eight)
+
+## 2026-08-27 — Balanced Mixed Eight complete
+
+- Upgraded Alpha HDR Bloom Chain, Magma Fissure, Paper Burn, Cyber Hex Armor,
+  PP Chromatic, Sequin Flip, Rorschach Inkblot, and Alpha Depth Fog Volumetric
+  with eight distinct premium techniques while preserving saved params and
+  existing feedback meanings.
+- All eight now satisfy bindings 0–12, 16x16x1, exact bounded C, A-only writes,
+  ACES, semantic alpha, three-band audio, four live controls, hover/held/click
+  interaction, and no B/extraBuffer writes. Bloom/Magma/Paper/Rorschach/Fog
+  retain their prior A packing; Armor/Chromatic/Sequin gain display history.
+- Naga/schema/audit/catalog/uniform/TypeScript/Jest/build gates pass. Unrelated
+  generated drift and the pre-existing dirty WGSL report were restored. Real-GPU
+  visual, temporal, interaction, alpha/depth-chain, and performance QA is still
+  external.
 
 ## 2026-08-26 — Balanced premium eight-shader upgrade complete
 

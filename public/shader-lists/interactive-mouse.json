@@ -1991,7 +1991,7 @@
     "id": "cyber-hex-armor",
     "name": "Cyber Hex Armor",
     "url": "https://test.1ink.us/image_video_effects/shaders/cyber-hex-armor.wgsl",
-    "description": "A hexagonal tech armor overlay that retracts when the mouse approaches.",
+    "description": "Articulated hex armor retracts around the pointer while beveled seams and audio-routed circuit traffic carry expanding click waves.",
     "params": [
       {
         "id": "hex_size",
@@ -2036,8 +2036,51 @@
     ],
     "features": [
       "mouse-driven",
-      "overlay"
+      "overlay",
+      "audio-reactive",
+      "temporal",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "articulated-hex-armor"
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Hex Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reveal Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Border Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA with bounded exact circuit persistence loads; B is unused",
     "tags": [
       "filter",
       "image-processing"
@@ -7592,7 +7635,7 @@
     "id": "magma-fissure",
     "name": "Magma Fissure",
     "url": "https://test.1ink.us/image_video_effects/shaders/magma-fissure.wgsl",
-    "description": "Burn glowing fissures into the image with the mouse.",
+    "description": "Branching magma fissures diffuse through a cooling heat field with fibrous crust, audio-driven molten emission, held-pointer ignition, and expanding click fractures.",
     "params": [
       {
         "id": "decay",
@@ -7624,8 +7667,51 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "stateful-simulation",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "branching-thermal-field"
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cooling Rate",
+        "default": 0.96,
+        "min": 0.9,
+        "max": 0.999,
+        "step": 0.001
+      },
+      {
+        "index": 1,
+        "name": "Fissure Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Heat Haze",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = heat in R with G/B zero and A one via bounded exact neighbor loads; writeTexture is ACES presentation; B is unused",
     "tags": [
       "filter",
       "image-processing"
@@ -10621,10 +10707,18 @@
     "id": "paper-burn",
     "name": "Paper Burn",
     "url": "https://test.1ink.us/image_video_effects/shaders/paper-burn.wgsl",
-    "description": "Interactive paper burn effect that spreads from mouse cursor with realistic charring and ash.",
+    "description": "Fibrous paper combustion diffuses along anisotropic grain with audio-lit ember fronts, adjustable char width, held-pointer ignition, and expanding click burns.",
     "features": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "stateful-simulation",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "fibrous-burn-diffusion"
     ],
     "tags": [
       "mouse-driven",
@@ -10663,7 +10757,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Burn Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spread Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Char Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Reset",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = burn state in R with G/B zero and A one via bounded exact eight-neighbor diffusion; writeTexture is ACES presentation; B is unused"
   },
   {
     "id": "paper-cutout",
@@ -14104,7 +14233,7 @@
     "id": "sequin-flip",
     "name": "Sequin Flip",
     "url": "https://test.1ink.us/image_video_effects/shaders/sequin-flip.wgsl",
-    "description": "Simulates reversible sequins that flip to reveal a metallic back when brushed by the mouse.",
+    "description": "Articulated sequins flip under hover, held brush, and click fronts, revealing GGX microfacet gold or silver backs with three-band sparkle motion.",
     "params": [
       {
         "id": "grid_size",
@@ -14136,8 +14265,51 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "microfacet-sequins"
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Shine",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Gold/Silver",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA with bounded exact flip-persistence loads; B is unused",
     "tags": [
       "filter",
       "image-processing"

@@ -2,7 +2,7 @@
   "id": "sequin-flip",
   "name": "Sequin Flip",
   "url": "shaders/sequin-flip.wgsl",
-  "description": "Simulates reversible sequins that flip to reveal a metallic back when brushed by the mouse.",
+  "description": "Articulated sequins flip under hover, held brush, and click fronts, revealing GGX microfacet gold or silver backs with three-band sparkle motion.",
   "params": [
     {
       "id": "grid_size",
@@ -34,8 +34,23 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "exact-history",
+    "aces-tone-map",
+    "three-band-audio",
+    "held-pointer",
+    "click-reactive",
+    "microfacet-sequins"
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Grid Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Brush Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Shine", "default": 0.7, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Gold/Silver", "default": 0, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = final ACES display RGBA with bounded exact flip-persistence loads; B is unused",
   "tags": [
     "filter",
     "image-processing"

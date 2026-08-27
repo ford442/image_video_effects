@@ -3,7 +3,7 @@
     "id": "alpha-depth-fog-volumetric",
     "name": "Alpha Depth Fog Volumetric",
     "url": "https://test.1ink.us/image_video_effects/shaders/alpha-depth-fog-volumetric.wgsl",
-    "description": "Physically-motivated volumetric fog using depth texture. Alpha stores optical depth / transmittance via Beer-Lambert law. Fog density varies with 3D noise, depth, and height. Mouse clears local fog; ripples create swirling disturbances.",
+    "description": "Seven depth layers accumulate turbulent Beer-Lambert fog with a live warm-to-cool temperature range, audio-lit scattering, held-pointer clearing, and click-driven vortices.",
     "tags": [
       "volumetric",
       "fog",
@@ -16,7 +16,15 @@
     "features": [
       "mouse-driven",
       "depth-aware",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "temporal",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "layered-volumetric-fog"
     ],
     "params": [
       {
@@ -55,13 +63,48 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fog Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fog Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Temperature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final ACES fogged display RGB and Beer-Lambert transmittance in alpha via bounded exact temporal loads; B is unused"
   },
   {
     "id": "alpha-hdr-bloom-chain",
     "name": "Alpha HDR Bloom Chain",
     "url": "https://test.1ink.us/image_video_effects/shaders/alpha-hdr-bloom-chain.wgsl",
-    "description": "HDR bloom effect where alpha stores exposure/overexposure value. Identifies pixels above white point, radially blurs the excess brightness, and composites with ACES tone mapping. Mouse and ripples trigger localized flashes.",
+    "description": "Temporal spectral HDR bloom with multi-ring dispersion, exposure-preserving feedback, audio-shaped radiance, held-pointer halos, and expanding click flashes.",
     "tags": [
       "hdr",
       "bloom",
@@ -73,7 +116,14 @@
     ],
     "features": [
       "mouse-driven",
-      "rgba-state-machine"
+      "audio-reactive",
+      "rgba-state-machine",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "temporal-spectral-bloom"
     ],
     "params": [
       {
@@ -112,7 +162,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bloom Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bloom Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Exposure",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = raw HDR RGB and overexposure in alpha via bounded exact temporal loads; writeTexture alone is ACES tone-mapped; B is unused"
   },
   {
     "id": "alpha-luminance-history",

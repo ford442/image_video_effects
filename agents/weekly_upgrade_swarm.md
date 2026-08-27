@@ -9,6 +9,19 @@
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
 
+### Balanced Mixed Eight (8 shaders) — 2026-08-27
+
+Upgraded `alpha-hdr-bloom-chain`, `magma-fissure`, `paper-burn`,
+`cyber-hex-armor`, `pp-chromatic`, `sequin-flip`, `rorschach-inkblot`, and
+`alpha-depth-fog-volumetric` with distinct spectral bloom, branching thermal,
+fibrous combustion, articulated armor, Cauchy lens, microfacet sequin, mirrored
+ink-advection, and layered fog treatments. All preserve saved params, bindings,
+depth, and A/C ownership while adding exact bounded C loads, A-only writes,
+ACES, semantic alpha, three-band audio, four live controls, and full bounded
+interaction. Naga/schema/slider/extraBuffer/catalog/TypeScript/Jest/build gates
+are green; real-GPU visual and performance QA remains external. Notes:
+`swarm-outputs/codex-2026-08-27-balanced-mixed-eight/`.
+
 ### Reaction / Flow / Sand / Optical-Fluid cohort (10 shaders) — 2026-08-23
 
 Upgraded `alpha-reaction-diffusion-rgba`,

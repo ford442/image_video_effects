@@ -17,6 +17,11 @@ _Learn about the person you're helping. Update this as you go._
   intentionally separate raw HDR history from tone-mapped display; only
   Magnetic and Lattice own `[133..138]` springs. Structural/Jest/build gates
   are green; real-GPU visual and performance QA remains external.
+- **Balanced Mixed Eight (2026-08-27):** Alpha HDR Bloom Chain, Magma Fissure,
+  Paper Burn, Cyber Hex Armor, PP Chromatic, Sequin Flip, Rorschach Inkblot,
+  and Alpha Depth Fog Volumetric are complete under exact-C/A-only/ACES/audio/
+  interaction contracts with exact saved params and preserved state packing.
+  Structural/Jest/build gates are green; real-GPU QA remains external.
 - **Optical / Glass / Holographic / Iridescence Batch (2026-08-23):** Upgraded
   spec-iridescence-engine, spec-prismatic-dispersion, frost-reveal-crystal,
   fractal-glass-distort-bilateral, bubble-lens-coupled,
