@@ -299,14 +299,15 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
           "dataC"
         ],
         "writes": [
-          "dataB",
           "dataA"
         ]
       },
       {
         "id": "trace",
         "entry": "photonic-trace",
-        "reads": [],
+        "reads": [
+          "dataA"
+        ],
         "writes": [
           "dataA"
         ],
@@ -316,8 +317,7 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         "id": "accumulate",
         "entry": "photonic-accumulate",
         "reads": [
-          "dataA",
-          "dataC"
+          "dataA"
         ],
         "writes": [
           "color",

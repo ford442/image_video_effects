@@ -1,5 +1,5 @@
 // Photonic Caustics — surface normal + light seed (graph node 1)
-// dataTextureB: .rgb = surface normal, .a = light height factor
+// dataTextureA: .rgb = surface normal, .a = light height factor
 // zoom_params: .x ior (normal steepness), .y lightSize, .z dispersion hint, .w intensity
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,13 +30,13 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 
 fn noise2D(p: vec2<f32>) -> f32 {
-  var i = floor(p);
+  let i = floor(p);
   let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
+  let u_val = f * f * (3.0 - 2.0 * f);
   return mix(
-    mix(hash21(i + vec2<f32>(0.0, 0.0)), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
-    mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x),
-    u.y
+    mix(hash21(i + vec2<f32>(0.0, 0.0)), hash21(i + vec2<f32>(1.0, 0.0)), u_val.x),
+    mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u_val.x),
+    u_val.y
   );
 }
 
@@ -45,7 +45,7 @@ fn fbm(p: vec2<f32>, time: f32) -> f32 {
   var amplitude = 0.5;
   var freq = 1.0;
   for (var i = 0; i < 4; i = i + 1) {
-    value = value + amplitude * noise2D(p * freq + vec2<f32>(time * 0.2, time * 0.15));
+    value += amplitude * noise2D(p * freq + vec2<f32>(time * 0.2, time * 0.15));
     freq = freq * 2.0;
     amplitude = amplitude * 0.5;
   }
@@ -53,7 +53,6 @@ fn fbm(p: vec2<f32>, time: f32) -> f32 {
 }
 
 fn getSurfaceNormal(uv: vec2<f32>, texelSize: vec2<f32>, time: f32, noiseAmp: f32) -> vec3<f32> {
-  let h = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let hL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(-texelSize.x, 0.0), 0.0).r;
   let hR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
   let hU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, -texelSize.y), 0.0).r;
@@ -66,7 +65,6 @@ fn getSurfaceNormal(uv: vec2<f32>, texelSize: vec2<f32>, time: f32, noiseAmp: f3
   let nD = fbm(uv * noiseScale + vec2<f32>(0.0, texelSize.y * noiseScale), time) * noiseAmp * (1.0 + treble * 0.3);
   let dx = ((hR + nR) - (hL + nL)) * 2.0;
   let dy = ((hD + nD) - (hU + nU)) * 2.0;
-  // IOR slider steadies the microfacet Z — higher IOR → flatter pool, tighter caustics
   let nz = mix(0.35, 0.12, u.zoom_params.x);
   return normalize(vec3<f32>(-dx, -dy, nz));
 }
@@ -81,9 +79,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
 
-  // All four params live here so the primary URL isn't a dead-slider trap
-  let lightSize = mix(0.05, 0.3, u.zoom_params.y);
-  let intensity = mix(0.5, 3.0, u.zoom_params.w);
   let dispersionHint = u.zoom_params.z;
   let noiseAmp = mix(0.06, 0.18, 0.5 + dispersionHint * 0.5);
 
@@ -91,10 +86,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lightHeight = mix(0.5, 2.0, mouseDown) * mix(0.85, 1.25, u.zoom_params.y);
 
   let normal = getSurfaceNormal(uv, texelSize, time, noiseAmp);
-  // Pack lightSize + intensity into unused channels via a/encoding for trace
-  // .a = light height; trace still reads zoom_params directly for ior/size/disp/intensity
-  textureStore(dataTextureB, vec2<i32>(coord), vec4<f32>(normal, lightHeight));
-  // Clear accumulator seed — intensity scales the zero so first trace isn't crushed
-  let seed = 0.002 * intensity * lightSize;
-  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(seed, seed * 0.9, seed * 1.1, 0.0));
+  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(normal, lightHeight));
 }

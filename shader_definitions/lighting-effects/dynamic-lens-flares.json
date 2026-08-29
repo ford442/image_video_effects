@@ -2,7 +2,15 @@
   "id": "dynamic-lens-flares",
   "name": "Dynamic Lens Flares",
   "url": "shaders/dynamic-lens-flares.wgsl",
-  "description": "Cinematic lens flare following cursor. Generates ghost elements and chromatic artifacts.",
+  "description": "Cinematic optical train lens flare following cursor, featuring distributed ghost elements with Cauchy chromatic dispersion, internal reflection halos, starburst diffraction, ACES tone mapping, and temporal phosphor persistence.",
+  "features": [
+    "mouse-driven",
+    "optical",
+    "cinematic",
+    "audio-reactive",
+    "temporal-feedback",
+    "click-reactive"
+  ],
   "params": [
     {
       "id": "intensity",
@@ -33,13 +41,46 @@
       "max": 1
     }
   ],
-  "features": [
-    "mouse-driven",
-    "optical",
-    "cinematic"
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Flare Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Brightness Filter",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Ghost Spread",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Ghost Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ],
+  "feedbackPacking": "A/C = ACES display RGBA for continuous phosphor persistence; B is unused; depth passes through source depth.",
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "lens-flare",
+    "optical",
+    "ghosts"
   ]
 }

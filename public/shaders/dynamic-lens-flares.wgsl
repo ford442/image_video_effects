@@ -1,12 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Dynamic Lens Flares
-//  Category: lighting-effects
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Chunks From: dynamic-lens-flares
-//  Created: 2026-05-30
-//  By: Copilot CLI
-// ═══════════════════════════════════════════════════════════════════
+// Dynamic Lens Flares — optical train ghost elements, internal reflection halo, diffraction rays, and chromatic dispersion.
+// A/C stores ACES display RGBA for continuous phosphor persistence; B is unused; depth passes through source depth.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -35,130 +28,144 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  let coord = clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), hi);
+  return textureLoad(dataTextureC, coord, 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-      return;
-  }
-  let aspect = resolution.x / resolution.y;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
+  let time = u.config.x;
+
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
   let bass = audio.x;
   let mids = audio.y;
   let treble = audio.z;
 
-  // Params
-  let intensity = mix(0.1, 1.5, u.zoom_params.x) * (1.0 + bass * 0.5);
-  let threshold = mix(0.0, 0.9, u.zoom_params.y);
-  let spread = mix(0.1, 2.0, u.zoom_params.z) * (1.0 + mids * 0.25);
-  let ghostCount = mix(2.0, 8.0, u.zoom_params.w);
+  let intensity = (0.2 + u.zoom_params.x * 2.2) * (1.0 + bass * 0.45);
+  let threshold = 0.1 + u.zoom_params.y * 0.75;
+  let spread = 0.2 + u.zoom_params.z * 1.8;
+  let ghostCount = 3.0 + u.zoom_params.w * 5.0;
 
-  var mouse = clamp(u.zoom_config.yz, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  // Base Image
-  var finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let rawMouse = u.zoom_config.yz;
+  let hasMouse = rawMouse.x >= 0.0 && rawMouse.x <= 1.0 && rawMouse.y >= 0.0 && rawMouse.y <= 1.0;
+  let mouse = select(vec2<f32>(0.5, 0.5), rawMouse, hasMouse);
+  let held = u.zoom_config.w > 0.5;
 
-  // Lens Flare Generation
-  // Light Source is the mouse position
-  // We compute the vector from Screen Center (0.5, 0.5) to Mouse.
-  // Actually, standard flares happen along the line passing through the light source and the screen center.
-  // So if Mouse is Light Source, and we are looking at Pixel UV.
-  // We want to draw ghosts at positions along the axis defined by (0.5, 0.5) and Mouse.
-
-  var center = vec2<f32>(0.5, 0.5);
-  let axis = center - mouse; // Vector from light to center
-
-  // We need to determine if the current pixel UV is part of a "ghost".
-  // A ghost is a blob at some position along the axis.
-
-  // Sample the color AT the mouse position to tint the flare
-  let lightColorFull = textureSampleLevel(readTexture, u_sampler, mouse, 0.0).rgb;
-
-  // Apply threshold
-  let maxRGB = max(lightColorFull.r, max(lightColorFull.g, lightColorFull.b));
-  var lightColor = vec3<f32>(0.0);
-  if (maxRGB > threshold) {
-      lightColor = lightColorFull * intensity;
+  // Click ripple interaction
+  var rippleOffset = vec2<f32>(0.0);
+  var rippleBurst = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var r = 0u; r < rippleCount; r = r + 1u) {
+    let ripple = u.ripples[r];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.5) {
+      let rDelta = (uv - ripple.xy) * aspectVec;
+      let rd = length(rDelta);
+      let front = age * (0.32 + bass * 0.12);
+      let wave = sin((rd - front) * 60.0) * exp(-abs(rd - front) * 26.0) * exp(-age * 1.1);
+      rippleOffset += rDelta / max(rd, 0.0001) * wave * 0.02;
+      rippleBurst += abs(wave) * 0.25;
+    }
   }
 
-  // If the light source (mouse) is dark, no flares.
-  // But maybe the user wants to play with it even if dark.
-  // Let's ensure a minimum visibility or use a "fake" white light if image is dark?
-  // User request: "responsive". If I point at a dark spot, maybe no flare.
-  // Let's add a small base value so it's always visible for demo.
-  lightColor = max(lightColor, vec3<f32>(0.05));
+  // Optical axis from light source (mouse) through image center
+  let center = vec2<f32>(0.5, 0.5);
+  let axis = center - mouse;
 
-  // Render Ghosts
+  // Sample light source color at mouse position
+  let lightColorFull = textureSampleLevel(readTexture, u_sampler, mouse, 0.0).rgb;
+  let maxRGB = max(lightColorFull.r, max(lightColorFull.g, lightColorFull.b));
+  let lumaHot = smoothstep(threshold, threshold + 0.25, maxRGB);
+  let baseLightColor = mix(vec3<f32>(1.0, 0.92, 0.78), lightColorFull, 0.65);
+  let lightColor = baseLightColor * (0.2 + lumaHot * 0.8) * intensity;
+
   var flareAccum = vec3<f32>(0.0);
 
-  // Ghost vector
-  // The ghosts appear at: pos = center + (mouse - center) * scale
-  // We iterate scales.
+  // Render optical ghosts along the axis
+  let maxGhosts = 8;
+  for (var i = 0; i < maxGhosts; i = i + 1) {
+    if (f32(i) >= ghostCount) { break; }
+    let fi = f32(i);
+    let scale = -0.8 + fi * (0.35 * spread);
+    let ghostPos = center + axis * scale + rippleOffset;
+    let clampedGhostPos = clamp(ghostPos, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let ghostStep = 1.0 / ghostCount;
+    let d = length((uv - clampedGhostPos) * aspectVec);
+    let size = (0.04 + 0.06 * sin(fi * 1.8 + time * 0.3)) * (1.0 + mids * 0.25);
+    let softness = 0.02 + 0.015 * fi;
+    let weight = smoothstep(size + softness, size * 0.2, d);
 
-  for (var i = 0.0; i < 8.0; i = i + 1.0) {
-      if (i >= ghostCount) { break; }
+    // Multi-spectral chromatic dispersion on ghost elements
+    let hue = fi * 0.75 + time * 0.1;
+    let ghostSpectral = vec3<f32>(
+      cos(hue) * 0.5 + 0.5,
+      cos(hue + 2.094) * 0.5 + 0.5,
+      cos(hue + 4.188) * 0.5 + 0.5
+    );
 
-      // Calculate ghost position
-      // Distribute ghosts along the axis
-      // Some are behind center, some in front.
-      let scale = -1.0 + (i * 0.5); // Range -1.0 to ...
-      // Let's use a non-linear distribution
-      let offset = axis * (scale * spread);
-      let ghostPos = clamp(center + offset, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    let ringD = abs(d - size * 0.75);
+    let ringGlow = exp(-ringD * 80.0) * 0.4;
 
-      // Distance from current pixel to ghost center
-      // Correct aspect for circular shapes
-      let uv_aspect = vec2<f32>((uv.x - 0.5) * aspect + 0.5, uv.y);
-      let ghostPos_aspect = vec2<f32>((ghostPos.x - 0.5) * aspect + 0.5, ghostPos.y);
-
-      let d = distance(uv_aspect, ghostPos_aspect);
-
-      // Ghost shape: simple soft circle + slight ring
-      let size = 0.05 + 0.1 * sin(i * 123.4 + treble * 2.0); // Randomize sizes
-      let softness = 0.02;
-
-      let weight = smoothstep(size + softness, size, d);
-
-      // Chromatic aberration for ghosts (color shift based on index)
-      let hueShift = i * 0.5;
-      let r = cos(hueShift) * 0.5 + 0.5;
-      let g = cos(hueShift + 2.0) * 0.5 + 0.5;
-      let b = cos(hueShift + 4.0) * 0.5 + 0.5;
-      let ghostColor = vec3<f32>(r, g, b) * lightColor;
-
-      flareAccum = flareAccum + ghostColor * weight * (0.3 + bass * 0.1);
+    flareAccum += (ghostSpectral * 0.7 + baseLightColor * 0.3) * lightColor * (weight + ringGlow) * 0.45;
   }
 
-  // Add a "Halo" / Ring
-  let haloRadius = length(axis) * 0.5; // Radius depends on distance from center?
-  // Standard halo is fixed radius relative to light source?
-  // Let's make a ring centered at center? No, centered at light?
-  // Usually centered at midpoint?
-  // Let's do a ring around the mouse.
-  let distToMouse = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
-  let ringRadius = 0.3 * spread;
-  let ringWidth = 0.02;
-  let ring = smoothstep(ringRadius + ringWidth, ringRadius, distToMouse) - smoothstep(ringRadius, ringRadius - ringWidth, distToMouse);
-  flareAccum = flareAccum + lightColor * ring * 0.2;
+  // Internal reflection halo ring
+  let distToLight = length((uv - mouse) * aspectVec);
+  let haloRadius = (0.22 + length(axis) * 0.25) * spread * select(1.0, 1.3, held);
+  let haloWidth = 0.018 + 0.008 * sin(time * 2.0);
+  let haloRing = smoothstep(haloRadius + haloWidth, haloRadius, distToLight) -
+                 smoothstep(haloRadius, haloRadius - haloWidth, distToLight);
+  let haloDispersion = vec3<f32>(
+    smoothstep(haloRadius + haloWidth * 1.3, haloRadius, distToLight),
+    haloRing,
+    smoothstep(haloRadius, haloRadius - haloWidth * 1.3, distToLight)
+  );
+  flareAccum += lightColor * haloDispersion * 0.35;
 
-  // Starburst / Rays
-  let toMouse = uv - mouse;
+  // Starburst diffraction rays from aperture blades
+  let toMouse = (uv - mouse) * aspectVec;
   let safeMouseLen = max(length(toMouse), 0.0001);
   let dirToMouse = toMouse / safeMouseLen;
   let angle = atan2(dirToMouse.y, dirToMouse.x);
-  let ray = max(0.0, sin(angle * 12.0 + u.config.x * (1.0 + treble * 0.5)) * sin(angle * 5.0 - u.config.x * 0.5));
-  let rayFalloff = 1.0 / (distToMouse * 10.0 + 0.1);
-  flareAccum = flareAccum + lightColor * ray * rayFalloff * 0.2;
+  let rayBlades = max(0.0, sin(angle * 8.0 + time * (1.0 + treble * 0.8)) * sin(angle * 6.0 - time * 0.5));
+  let rayFalloff = 1.0 / (distToLight * 12.0 + 0.12);
+  let rayLight = pow(rayBlades, 2.0) * rayFalloff * (0.35 + treble * 0.35);
+  flareAccum += lightColor * rayLight * 0.3;
 
-  let composed = finalColor + flareAccum;
-  let flareEnergy = max(flareAccum.r, max(flareAccum.g, flareAccum.b));
-  let finalAlpha = clamp(0.18 + flareEnergy * 0.45 + ring * 0.12 + ray * 0.08, 0.08, 1.0);
-  let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + flareEnergy * 0.04, 0.0, 1.0);
+  // Center core glow
+  let coreGlow = exp(-distToLight * distToLight * 35.0) * intensity * (0.6 + bass * 0.4);
+  flareAccum += baseLightColor * coreGlow * 0.8;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(composed, finalAlpha));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(maxRGB, ring, ray, finalAlpha));
+  // Exact previous frame history load for phosphor decay
+  let history = historyAt(uv - rippleOffset * 0.5, resolution);
+
+  var hdr = sourceColor.rgb + flareAccum + vec3<f32>(rippleBurst);
+  hdr += history.rgb * 0.055;
+
+  let flareLuma = dot(flareAccum, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let finalAlpha = clamp(sourceColor.a * 0.5 + flareLuma * 0.5 + rippleBurst * 0.1, 0.0, 1.0);
+
+  let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), finalAlpha);
+
+  textureStore(writeTexture, coord, result);
+  textureStore(dataTextureA, coord, result);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

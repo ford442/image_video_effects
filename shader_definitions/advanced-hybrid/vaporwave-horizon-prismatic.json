@@ -2,18 +2,23 @@
   "id": "vaporwave-horizon-prismatic",
   "name": "Vaporwave Horizon Prismatic",
   "url": "shaders/vaporwave-horizon-prismatic.wgsl",
-  "description": "Vaporwave Horizon Prismatic",
+  "description": "Retro-futuristic vaporwave perspective grid with 4-band Cauchy spectral reflection, glowing striped sunset sun, CRT scanlines, ACES tone mapping, and phosphor glow persistence.",
   "tags": [
     "vaporwave-horizon",
     "spectral-dispersion",
     "physical-dispersion",
-    "mouse-driven"
+    "mouse-driven",
+    "synthwave",
+    "retro"
   ],
   "features": [
     "vaporwave-horizon",
     "spectral-dispersion",
     "physical-dispersion",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-feedback",
+    "click-reactive"
   ],
   "params": [
     {
@@ -53,5 +58,39 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Grid Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Grid Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Warp Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA for CRT phosphor glow persistence; B is unused; depth passes through source depth."
 }

@@ -2288,14 +2288,15 @@
               "dataC"
             ],
             "writes": [
-              "dataB",
               "dataA"
             ]
           },
           {
             "id": "trace",
             "entry": "photonic-trace",
-            "reads": [],
+            "reads": [
+              "dataA"
+            ],
             "writes": [
               "dataA"
             ],
@@ -2305,8 +2306,7 @@
             "id": "accumulate",
             "entry": "photonic-accumulate",
             "reads": [
-              "dataA",
-              "dataC"
+              "dataA"
             ],
             "writes": [
               "color",
@@ -2358,13 +2358,50 @@
         "description": "Caustic brightness and accumulator display gain"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "IOR",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Light Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Dispersion",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Intensity",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "Graph pipeline: emit writes normal to dataA; trace reads via dataC and accumulates into dataA (2 passes); accumulate presents ACES color with persistent caustic field.",
     "features": [
       "simulation",
       "multi-pass",
       "graph-runner",
       "mouse-driven",
       "audio-reactive",
-      "physics"
+      "physics",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "tags": [
       "caustics",
@@ -2378,7 +2415,7 @@
     "id": "photonic-caustics",
     "name": "Photonic Caustics",
     "url": "shaders/photonic-caustics.wgsl",
-    "description": "Exact-history refractive height-field caustics with chromatic convergence bands, Fresnel response, three-band illumination, held light focus, bounded click wavefronts, HDR A-only accumulation, ACES display, and semantic caustic alpha.",
+    "description": "Exact-history refractive height-field caustics with chromatic convergence bands, Fresnel response, three-band illumination, held light focus, bounded click wavefronts, ACES display, and semantic caustic alpha.",
     "params": [
       {
         "id": "ior",
@@ -2409,10 +2446,9 @@
         "max": 1
       }
     ],
-    "updated": true,
     "updatedParams": [
       {
-        "id": "param1",
+        "index": 0,
         "name": "Index of Refraction",
         "default": 0.5,
         "min": 0,
@@ -2420,7 +2456,7 @@
         "step": 0.01
       },
       {
-        "id": "param2",
+        "index": 1,
         "name": "Light Size",
         "default": 0.3,
         "min": 0,
@@ -2428,7 +2464,7 @@
         "step": 0.01
       },
       {
-        "id": "param3",
+        "index": 2,
         "name": "Chromatic Dispersion",
         "default": 0.3,
         "min": 0,
@@ -2436,7 +2472,7 @@
         "step": 0.01
       },
       {
-        "id": "param4",
+        "index": 3,
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
@@ -2444,19 +2480,22 @@
         "step": 0.01
       }
     ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous caustic irradiance persistence; B is unused; depth passes through refracted depth.",
     "features": [
       "depth-aware",
-      "temporal-persistence",
+      "temporal-feedback",
       "interactive",
       "chromatic-aberration",
       "mouse-driven",
-      "advanced-alpha"
+      "audio-reactive",
+      "click-reactive"
     ],
     "tags": [
       "filter",
       "image-processing",
-      "alpha",
-      "luminance-key"
+      "caustics",
+      "refraction",
+      "simulation"
     ]
   },
   {

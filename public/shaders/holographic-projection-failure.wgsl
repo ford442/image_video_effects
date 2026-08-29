@@ -1,11 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Holographic Projection Failure v2
-//  Category: retro-glitch
-//  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
-//  Complexity: Very High
-//  Chunks From: holographic-projection-failure
-//  Upgraded: 2026-05-30
-// ═══════════════════════════════════════════════════════════════════
+// Holographic Projection Failure v2 — faulty holo-emitter with CRT V-hold rolling, chromatic RGB beam desync, and phase tearing.
+// A/C stores ACES display RGBA for phosphor beam decay persistence; B is unused; depth passes through source depth.
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -27,8 +22,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265358979323846;
-const TAU: f32 = 6.28318530717958647692;
+const TAU: f32 = 6.283185307179586;
 
 fn rand(co: vec2<f32>) -> f32 {
   return fract(sin(dot(co, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -39,115 +33,124 @@ fn bitTruncate(v: f32, bits: f32) -> f32 {
   return floor(v * levels) / levels;
 }
 
-fn acesTone(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  let coord = clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), hi);
+  return textureLoad(dataTextureC, coord, 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
 
-  let baseInstability = u.zoom_params.x;
-  let chromaticSplit = u.zoom_params.y;
-  let scanDrift = u.zoom_params.z;
-  let staticNoise = u.zoom_params.w;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+  let bass = audio.x;
+  let mids = audio.y;
+  let treble = audio.z;
+
+  let instability = (0.2 + u.zoom_params.x * 1.8) * (1.0 + bass * 0.45);
+  let chromaticSplit = (0.2 + u.zoom_params.y * 1.8) * (1.0 + mids * 0.35);
+  let vHoldDrift = (0.2 + u.zoom_params.z * 1.8) * (1.0 + bass * 0.25);
+  let staticAmount = (0.15 + u.zoom_params.w * 1.85) * (1.0 + treble * 0.4);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  // Bass triggers cascading failure modes: desync, corruption, drift
-  let desyncTrigger = step(0.65, bass) * baseInstability;
-  let corruptionTrigger = step(0.55, bass * (0.5 + rand(vec2<f32>(time * 0.1, 0.0)))) * baseInstability;
-  let driftTrigger = step(0.45, bass * mids) * baseInstability;
+  let rawMouse = u.zoom_config.yz;
+  let hasMouse = rawMouse.x >= 0.0 && rawMouse.x <= 1.0 && rawMouse.y >= 0.0 && rawMouse.y <= 1.0;
+  let mousePos = select(vec2<f32>(0.5, 0.5), rawMouse, hasMouse);
+  let held = u.zoom_config.w > 0.5;
 
-  // Scanline desync with horizontal jitter per scanline band
-  let scanlineID = floor(uv.y * resolution.y / 3.0);
-  let scanJitter = sin(scanlineID * 17.0 + time * 4.0) * desyncTrigger * 0.04;
-  let vHoldJitter = sin(scanlineID * 7.0 + time * 2.0) * scanDrift * 0.02;
-  let driftOffset = vec2<f32>(scanJitter + sin(time * 0.7) * driftTrigger * 0.02, vHoldJitter);
+  // Click ripple interactions = severe desynchronization fault lines
+  var rippleJitter = vec2<f32>(0.0);
+  var rippleFlash = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var r = 0u; r < rippleCount; r = r + 1u) {
+    let ripple = u.ripples[r];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.5) {
+      let rDelta = (uv - ripple.xy) * aspectVec;
+      let rd = length(rDelta);
+      let front = age * (0.4 + bass * 0.15);
+      let tear = sin((rd - front) * 65.0) * exp(-abs(rd - front) * 24.0) * exp(-age * 1.2);
+      rippleJitter.x += tear * 0.05;
+      rippleFlash += abs(tear) * 0.3;
+    }
+  }
 
-  // Phase wrapping errors in holographic interference pattern
-  let phase = time * 0.8 + uv.x * 8.0 + uv.y * 5.0 + depth * TAU + scanlineID * 0.1;
-  let wrappedPhase = fract(phase / TAU) * TAU;
-  let wrapError = smoothstep(0.85 * TAU, TAU, phase) * corruptionTrigger * 0.5;
+  // Scanline V-Hold rolling desync
+  let scanlineBand = floor(uv.y * resolution.y / 4.0);
+  let bandNoise = rand(vec2<f32>(scanlineBand, floor(time * 8.0)));
+  let scanGlitch = step(0.92 - instability * 0.15, bandNoise) * (bandNoise - 0.5) * 0.08 * instability;
 
-  // Cyan/magenta holographic color separation with temporal drift
-  let holoBase = vec3<f32>(
-    0.25 + 0.35 * sin(wrappedPhase),
-    0.55 + 0.25 * sin(wrappedPhase + 2.094),
-    0.75 + 0.25 * sin(wrappedPhase + 4.188)
-  );
-  let holoCyan = vec3<f32>(0.0, 0.9, 1.0);
-  let holoMagenta = vec3<f32>(1.0, 0.0, 0.85);
-  let driftColor = sin(uv.y * 6.0 + time * 0.5) * 0.5 + 0.5;
-  let holoColor = mix(holoBase, mix(holoCyan, holoMagenta, driftColor), 0.3 + driftTrigger * 0.2);
+  let rollPhase = fract(time * (0.2 + vHoldDrift * 0.6));
+  let rollDisplace = sin(uv.y * 3.0 + rollPhase * TAU) * 0.03 * vHoldDrift;
 
-  // Block corruption with variable block sizes
-  let blockSize = vec2<f32>(mix(20.0, 4.0, corruptionTrigger), mix(5.0, 2.0, corruptionTrigger));
-  let block = floor((uv + driftOffset) * resolution / blockSize);
-  let blockNoise = rand(block + time * 0.5);
-  let corruptionMask = step(1.0 - corruptionTrigger * 0.7, blockNoise);
+  var driftUV = uv + vec2<f32>(scanGlitch + rippleJitter.x, rollDisplace);
 
-  // Bit-depth truncation artifacts (posterization)
-  let bitDepth = mix(8.0, 3.0, corruptionTrigger * staticNoise);
-  let sampleUV = clamp(uv + driftOffset, vec2<f32>(0.0), vec2<f32>(1.0));
-  let src = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+  // Mouse stabilizes the projection in a local repair field
+  var repairMask = 0.0;
+  if (hasMouse) {
+    let mDist = length((uv - mousePos) * aspectVec);
+    let repairRadius = select(0.22, 0.38, held);
+    repairMask = smoothstep(repairRadius, 0.0, mDist);
+    driftUV = mix(driftUV, uv, repairMask * 0.85);
+  }
+
+  // Multi-band chromatic aberration
+  let shift = chromaticSplit * 0.03 * (1.0 - repairMask * 0.7) * (0.8 + depth * 0.4);
+  let rSample = textureSampleLevel(readTexture, u_sampler, clamp(driftUV + vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let gSample = textureSampleLevel(readTexture, u_sampler, clamp(driftUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+  let bSample = textureSampleLevel(readTexture, u_sampler, clamp(driftUV - vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  var chromatic = vec3<f32>(rSample, gSample, bSample);
+
+  // Holographic carrier interference fringes
+  let holoPhase = uv.y * resolution.y * 0.8 + time * 14.0 + depth * TAU;
+  let interference = 0.85 + 0.15 * sin(holoPhase);
+  chromatic *= interference;
+
+  // Block quantization & DAC bit-depth truncation failure
+  let blockSize = mix(32.0, 6.0, instability);
+  let blockCoord = floor(driftUV * resolution / blockSize);
+  let blockRand = rand(blockCoord + floor(time * 6.0));
+  let isBlockFault = step(1.0 - instability * 0.3, blockRand);
+
+  let bitDepth = mix(8.0, 3.0, instability * staticAmount);
   let truncated = vec3<f32>(
-    bitTruncate(src.r, bitDepth),
-    bitTruncate(src.g, bitDepth),
-    bitTruncate(src.b, bitDepth)
+    bitTruncate(chromatic.r, bitDepth),
+    bitTruncate(chromatic.g, bitDepth),
+    bitTruncate(chromatic.b, bitDepth)
   );
+  var outRGB = mix(chromatic, truncated, isBlockFault * 0.7 * (1.0 - repairMask));
 
-  // Chromatic aberration from drift and depth parallax
-  let shift = chromaticSplit * 0.025 * (1.0 + driftTrigger) * (0.8 + depth * 0.4);
-  let rSample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let bSample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-  let chromatic = vec3<f32>(rSample, src.g, bSample);
+  // High-frequency holographic static and noise bursts
+  let noiseStatic = (rand(uv * resolution + time * 120.0) - 0.5) * staticAmount * 0.35 * (1.0 - repairMask * 0.8);
+  outRGB += vec3<f32>(noiseStatic) + vec3<f32>(rippleFlash);
 
-  // Flicker from desync failures
-  let flicker = step(rand(vec2<f32>(time * 15.0, scanlineID)), 0.92 - desyncTrigger * 0.4);
+  // CRT flicker
+  let flicker = 0.94 + 0.06 * sin(time * 60.0);
+  outRGB *= flicker;
 
-  // Ghost image from previous frame offset
-  let ghost = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(0.01 * sin(time), 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.15 * driftTrigger;
+  // Exact previous frame history load for holographic beam persistence
+  let history = historyAt(uv - rippleJitter * 0.5, resolution);
+  var hdr = outRGB + history.rgb * 0.065;
 
-  // Combine corrupted source with holographic overlay
-  let glitched = mix(chromatic, truncated, corruptionMask * 0.6);
-  let hologram = mix(glitched * flicker + ghost, holoColor, 0.35 + treble * 0.2);
+  let alpha = clamp(0.75 + interference * 0.2 + repairMask * 0.15, 0.0, 1.0);
+  let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
 
-  // Mouse repairs the projection in a local radius
-  let mousePos = u.zoom_config.yz;
-  let mouseDown = u.zoom_config.w;
-  let mouseDist = length(uv - mousePos);
-  let repairRadius = smoothstep(0.22, 0.0, mouseDist) * mouseDown;
-  let repaired = mix(hologram, src.rgb, repairRadius * 0.8);
-
-  // Depth controls projection plane distance
-  let planeDist = mix(0.5, 1.0, depth);
-  let projected = mix(repaired, repaired * planeDist + vec3<f32>(0.02, 0.05, 0.08) * (1.0 - planeDist), 0.3);
-
-  let finalColor = acesTone(max(projected, vec3<f32>(0.0)));
-
-  // Static noise overlay
-  let staticOverlay = rand(uv * resolution + time * 100.0) * staticNoise * 0.25;
-  let withStatic = finalColor + vec3<f32>(staticOverlay * (0.5 + desyncTrigger));
-
-  // Alpha: projection stability × (1.0 - failure_intensity) × depth
-  let failureIntensity = max(desyncTrigger, max(corruptionTrigger, driftTrigger));
-  let stability = 1.0 - failureIntensity * 0.6 + repairRadius * 0.4;
-  let alpha = clamp(stability * (1.0 - failureIntensity * 0.5) * depth + staticOverlay * 0.3, 0.12, 0.9);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(withStatic, alpha));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(failureIntensity, flicker, wrapError, alpha));
+  textureStore(writeTexture, coord, result);
+  textureStore(dataTextureA, coord, result);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
