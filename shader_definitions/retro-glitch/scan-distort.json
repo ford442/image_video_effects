@@ -2,12 +2,17 @@
   "id": "scan-distort",
   "name": "Scan Distort",
   "url": "shaders/scan-distort.wgsl",
-  "description": "CRT-style scanline distortion with unified displacement fields and alpha translucency blending. Features temporal feedback accumulation, bass-driven audio envelope, mouse-reactive glitch bursts, and block-edge quantization artifacts.",
+  "description": "CRT scanline tear with block quantization, spring cursor, held glitch bursts, exact C smear, capped ripples, three-band audio, and ACES output.",
+  "workgroup_size": [16, 16, 1],
   "features": [
     "mouse-driven",
     "audio-reactive",
     "temporal-feedback",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-ripples",
+    "held-drag",
+    "spring-cursor",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",
@@ -57,5 +62,12 @@
       "mapping": "zoom_params.w",
       "description": "Frequency of glitch pulses"
     }
-  ]
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Block Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Quantization Levels", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "MV Visibility", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Glitch Frequency", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "updated": true
 }

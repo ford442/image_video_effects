@@ -1,6 +1,20 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-29 (Balanced Premium Ten)
+**Last updated:** 2026-08-29 (Composer cyber/digital/glitch ten — cohort 2)
+
+## 2026-08-29 — Composer batch cyber/digital/glitch ten — cohort 2 complete
+
+- Upgraded `scanline-drift`, `spectrum-bleed`, `waveform-glitch`, `xerox-degrade`, `pixel-rain`, `pixelation-drift`, `crt-tv`, `crt-phosphor-decay`, `cyber-rain-em`, and `cyber-trace-structure` under the canonical exact-C/A-only/ACES/three-band/spring/interaction contract with byte-exact saved params.
+- Major rewrites: waveform-glitch, xerox-degrade, pixel-rain, pixelation-drift, crt-tv, crt-phosphor-decay, cyber-trace-structure. Polish: scanline-drift, spectrum-bleed (plasma bin FFT), cyber-rain-em.
+- `cyber-trace-structure` stores trace history in A (RGB + coherency alpha); the other nine own ACES display RGBA in A.
+- Structural/Jest/build gates green (Naga 10/10, Jest 84/84, build with `SKIP_WASM_BUILD=1`); real-GPU QA remains external.
+
+## 2026-08-29 — Composer batch cyber/digital/glitch ten complete
+
+- Upgraded `digital-glitch`, `digital-glitch-explosion`, `digital-decay-rgba`, `datamosh-brush`, `datamosh-brush-diffusion`, `byte-mosh`, `signal-noise`, `scan-distort`, `cyber-lattice-bilateral`, and `data-stream-structure` under the canonical exact-C/A-only/ACES/three-band/spring/interaction contract with byte-exact saved params.
+- Major rewrites: `digital-glitch-explosion`, `cyber-lattice-bilateral`, `scan-distort`. Polish: spring on `digital-glitch`; naga fix on `byte-mosh` (`mix` mask uses f32 then u32 cast).
+- `digital-decay-rgba` alone owns raw 4-species RD A/C; the other nine own ACES display RGBA (or trail/energy alpha where noted).
+- Structural/Jest/build gates green (Naga 10/10, Jest 84/84, build with `SKIP_WASM_BUILD=1`); real-GPU QA remains external.
 
 ## 2026-08-29 — Balanced Premium Ten complete
 

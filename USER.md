@@ -22,6 +22,8 @@ _Learn about the person you're helping. Update this as you go._
   and Alpha Depth Fog Volumetric are complete under exact-C/A-only/ACES/audio/
   interaction contracts with exact saved params and preserved state packing.
   Structural/Jest/build gates are green; real-GPU QA remains external.
+- **Composer Cyber/Digital/Glitch Ten — Cohort 2 (2026-08-29):** Scanline Drift, Spectrum Bleed, Waveform Glitch, Xerox Degrade, Pixel Rain, Pixelation Drift, CRT TV, CRT Phosphor Decay, Cyber Rain EM, and Cyber Trace Structure are complete under exact-C/A-only/ACES/audio/interaction contracts with byte-exact saved params. Cyber Trace Structure alone stores trace history in A; the other nine own ACES display RGBA. Structural/Jest/build gates green; real-GPU QA remains external.
+- **Composer Cyber/Digital/Glitch Ten (2026-08-29):** Digital Glitch, Digital Glitch Explosion, Digital Decay RGBA, Datamosh Brush, Datamosh Brush Diffusion, Byte-Mosh, Signal Noise, Scan Distort, Cyber Lattice Bilateral, and Data Stream Structure are complete under exact-C/A-only/ACES/audio/interaction contracts with byte-exact saved params. Digital Decay RGBA alone owns raw RD A/C; the other nine own ACES display RGBA. Structural/Jest/build gates green; real-GPU QA remains external.
 - **Balanced Premium Ten (2026-08-29):** Aerogel Smoke, Graphic Novel,
   Hyper Space Jump, Aurora Rift V2, Julia Warp, Flip Matrix, Interactive PCB
   Traces, Stipple Engraving, Underwater Caustics, and Hybrid Voronoi Glass are

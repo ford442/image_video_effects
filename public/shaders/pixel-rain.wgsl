@@ -1,14 +1,7 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Pixel Rain
-//  Category: retro-glitch
-//  Features: matrix-rain, parallax-depth, mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Created: 2026-05-10
-//  By: Claude Opus 4.8 (visual-idea pass 2026-05-31)
-//  upgraded-rgba
-//  Unique idea: multi-layer parallax depth — rain falls through 3D space with
-//  depth-of-field dimming, far layers small/slow/dim, near layer large/fast/bright.
-// ═══════════════════════════════════════════════════════════════════
+// Pixel Rain — Composer batch cyber/digital/glitch
+// Multi-layer parallax matrix rain: spring cursor, held repulsion,
+// capped ripples, exact C trail fade, three-band audio, ACES + semantic alpha.
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,143 +9,142 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ UNIQUE VISUAL IDEA: a single parallax rain layer ═══
-// Returns RGB glow contribution for one depth plane. Far planes (small depthT)
-// have tighter columns, slower fall, and dimmer glyph heads; the near plane
-// (depthT→1) is sparse, fast and bright. Together they build genuine 3D depth.
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn rainLayer(uv: vec2<f32>, time: f32, density: f32, speed: f32, depthT: f32, seed: f32) -> vec3<f32> {
-    let colIndex = floor(uv.x * density + seed * 31.0);
-    let colRand = fract(sin(colIndex * 12.9898 + seed * 78.233) * 43758.5453);
-    let dropSpeed = (colRand * 0.6 + 0.4) * speed;
-    // Falling phase down the column; glyph cells quantise the streak.
-    let cell = floor(uv.y * density * 1.6);
-    let phase = fract(uv.y * 1.0 + time * dropSpeed + colRand);
-    // Bright head with an exponential tail trailing behind it.
-    let head = smoothstep(0.0, 0.04, phase) * exp(-phase * 5.0);
-    // Per-cell flicker so glyphs blink like Matrix code.
-    let flick = step(0.35, fract(sin(cell * 1.7 + colIndex * 4.1 + floor(time * 6.0) * 0.13) * 9999.0));
-    // Depth shading: near layers brighter & warmer-green, far layers dim cyan-green.
-    let bright = mix(0.18, 1.0, depthT) * head * flick;
-    let tint = mix(vec3<f32>(0.0, 0.5, 0.45), vec3<f32>(0.3, 1.0, 0.4), depthT);
-    return tint * bright;
+  let colIndex = floor(uv.x * density + seed * 31.0);
+  let colRand = fract(sin(colIndex * 12.9898 + seed * 78.233) * 43758.5453);
+  let dropSpeed = (colRand * 0.6 + 0.4) * speed;
+  let cell = floor(uv.y * density * 1.6);
+  let phase = fract(uv.y + time * dropSpeed + colRand);
+  let head = smoothstep(0.0, 0.04, phase) * exp(-phase * 5.0);
+  let flick = step(0.35, fract(sin(cell * 1.7 + colIndex * 4.1 + floor(time * 6.0) * 0.13) * 9999.0));
+  let bright = mix(0.18, 1.0, depthT) * head * flick;
+  let tint = mix(vec3<f32>(0.0, 0.5, 0.45), vec3<f32>(0.3, 1.0, 0.4), depthT);
+  return tint * bright;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(global_id.xy);
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let held = u.zoom_config.w > 0.5;
+  let mouse = u.zoom_config.yz;
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  var smoothMouse = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = mouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 9.0;
+      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
+  }
 
-    // Audio: bass speeds the fall, mids feeds glitch, treble thickens columns
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let speed = (u.zoom_params.x * 2.0 + 0.1) * (1.0 + bass * 0.6);
+  let glitchIntensity = clamp(u.zoom_params.y * (1.0 + mids * 0.5), 0.0, 1.0);
+  let density = u.zoom_params.z * 50.0 + 10.0 + treble * 20.0;
+  let trailFade = u.zoom_params.w;
 
-    // Parameters
-    let speed = (u.zoom_params.x * 2.0 + 0.1) * (1.0 + bass * 0.6); // Range 0.1 to 2.1
-    let glitchIntensity = clamp(u.zoom_params.y * (1.0 + mids * 0.5), 0.0, 1.0);   // Range 0.0 to 1.0
-    let density = u.zoom_params.z * 50.0 + 10.0 + treble * 20.0; // Range 10.0 to 60.0
+  let colIndex = floor(uv.x * density);
+  let colRandom = fract(sin(colIndex * 12.9898) * 43758.5453);
+  let dropSpeed = (colRandom * 0.5 + 0.5) * speed;
+  let scrollY = time * dropSpeed;
 
-    // Mouse
-    var mouse = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
+  let mouseDist = length((uv - smoothMouse) * vec2<f32>(aspect, 1.0));
+  let mouseForce = smoothstep(0.2, 0.0, mouseDist) * select(1.0, 1.5, held);
 
-    // Create grid for rain columns
-    // We only grid-ify X to create columns. Y is continuous.
-    let colIndex = floor(uv.x * density);
+  var sampleUV = vec2<f32>(uv.x, fract(uv.y + scrollY));
+  if (fract(uv.y * density * 0.5 + time) < glitchIntensity * 0.2) {
+    sampleUV.x += (hash21(vec2<f32>(uv.y * 100.0, time)) - 0.5) * 0.05 * glitchIntensity;
+  }
+  if (mouseForce > 0.0) {
+    let dir = normalize(uv - smoothMouse);
+    sampleUV -= dir * mouseForce * 0.1 * glitchIntensity;
+  }
 
-    // Random offset per column based on index
-    let colRandom = fract(sin(colIndex * 12.9898) * 43758.5453);
-
-    // Drop speed varies by column
-    let dropSpeed = (colRandom * 0.5 + 0.5) * speed;
-
-    // Calculate scroll offset
-    let scrollY = time * dropSpeed;
-
-    // Mouse interaction: repulsive force
-    // Correct aspect for circular interaction
-    let mouseDist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
-    // Interaction radius 0.2
-    let mouseForce = smoothstep(0.2, 0.0, mouseDist);
-
-    // Basic texture sampling coordinates
-    var sampleUV = vec2<f32>(uv.x, fract(uv.y + scrollY));
-
-    // Apply horizontal jitter (glitch) based on intensity
-    // Only apply if we are "in" a glitchy segment
-    if (fract(uv.y * density * 0.5 + time) < glitchIntensity * 0.2) {
-        sampleUV.x += (fract(sin(uv.y * 100.0) * 43758.5) - 0.5) * 0.05 * glitchIntensity;
+  var rippleSplash = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.0) {
+      rippleSplash += smoothstep(0.1, 0.0, length((uv - rp.xy) * vec2<f32>(aspect, 1.0))) * (1.0 - age);
     }
+  }
 
-    // Apply mouse distortion (push pixels away from mouse)
-    if (mouseForce > 0.0) {
-        var dir = normalize(uv - mouse); // Direction from mouse to pixel
-        // Distort sample UV slightly away from mouse
-        sampleUV -= dir * mouseForce * 0.1 * glitchIntensity;
-    }
+  let baseSample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  var color = baseSample.rgb;
+  color = mix(color, color * vec3<f32>(0.0, 1.0, 0.4) * 1.5, glitchIntensity * 0.6);
 
-    // Sample the texture
-    var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+  let rainPhase = fract(uv.y + scrollY + colRandom);
+  if (rainPhase < 0.05) {
+    color += vec3<f32>(0.4, 1.0, 0.4) * glitchIntensity;
+  }
 
-    // Aesthetic: Matrix Green Tint
-    let matrixGreen = vec4<f32>(0.0, 1.0, 0.4, 1.0);
-    // Mix based on glitch intensity
-    color = mix(color, color * matrixGreen * 1.5, glitchIntensity * 0.6);
+  let fallBoost = 1.0 + bass * 0.6;
+  color += rainLayer(uv, time, density * 1.8, speed * 0.45 * fallBoost, 0.25, 1.0);
+  color += rainLayer(uv, time, density * 1.1, speed * 0.8 * fallBoost, 0.55, 2.0);
+  color += rainLayer(uv, time, density * 0.6, speed * 1.4 * fallBoost, 1.0, 3.0);
+  color += vec3<f32>(0.2, 0.2, 0.5) * mouseForce * 0.35;
+  color += vec3<f32>(0.15, 0.9, 0.35) * rippleSplash * 0.4;
 
-    // Add "rain drop head" highlight
-    // The "phase" of the rain cycle at this pixel
-    let rainPhase = fract(uv.y + scrollY + colRandom);
-    // If phase is near start bottom of screen visually because Y increases down? No, UV 0 is top usually in WebGPU... wait.
-    // Standard UV: 0,0 top-left. +Y is down.
-    // So +scrollY moves texture UP (sample lower).
-    // To make rain fall DOWN, we should subtract scrollY from UV.y or add to sample?
-    // If we want the image to "fall", we decrease UV.y (sample higher up over time).
-    // Wait, let's just stick to "scrolling texture".
+  let prev = textureLoad(dataTextureC, coord, 0).rgb;
+  color = mix(color, prev, mix(0.08, 0.55, trailFade));
 
-    // Brighten the leading edge
-    if (rainPhase < 0.05) {
-       color += vec4<f32>(0.4, 1.0, 0.4, 0.0) * glitchIntensity;
-    }
+  color = acesToneMap(color * (0.95 + bass * 0.05));
 
-    // ═══ Composite three parallax depth planes (back → front) ═══
-    // Each plane falls at its own rate; nearer planes overlay brighter so the
-    // rain visibly recedes into the distance. Bass accelerates all planes together.
-    let fallBoost = 1.0 + bass * 0.6;
-    let far  = rainLayer(uv, time, density * 1.8, speed * 0.45 * fallBoost, 0.25, 1.0);
-    let mid  = rainLayer(uv, time, density * 1.1, speed * 0.8  * fallBoost, 0.55, 2.0);
-    let near = rainLayer(uv, time, density * 0.6, speed * 1.4  * fallBoost, 1.0,  3.0);
-    let parallax = far + mid + near;
-    color += vec4<f32>(parallax, 0.0);
+  let alpha = clamp(baseSample.a * 0.85 + dot(color, vec3<f32>(0.299, 0.587, 0.114)) * 0.35 + mouseForce * 0.2 + rippleSplash * 0.15, 0.0, 1.0);
 
-    // Mouse hover highlight
-    if (mouseForce > 0.0) {
-        color += vec4<f32>(0.2, 0.2, 0.5, 0.0) * mouseForce;
-    }
+  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 
-    // Luminance-key alpha: bright rain heads opaque, dark gaps transparent
-    color.a = clamp(dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114)) + mouseForce * 0.4, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

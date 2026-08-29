@@ -435,22 +435,30 @@
         "step": 0.01
       }
     ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "updated": true
   },
   {
     "id": "crt-tv",
     "name": "CRT TV - Phosphor Physics",
     "url": "shaders/crt-tv.wgsl",
-    "description": "Authentic CRT phosphor physics simulation with aperture grille shadow mask, per-channel phosphor decay (R>G>B persistence rates), halation glow from glass scattering, barrel distortion, and realistic scanlines",
+    "description": "Authentic CRT phosphor physics with aperture grille, halation, barrel distortion, spring focus, held bulge, capped ripples, exact C persistence, and three-band audio.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "tags": [
       "crt",
       "retro",
       "phosphor",
       "scanlines",
       "vintage",
-      "monitor",
-      "arcade",
-      "gaming"
+      "monitor"
     ],
     "params": [
       {
@@ -459,7 +467,8 @@
         "default": 0.7,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "phosphor_glow",
@@ -467,7 +476,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "halation",
@@ -475,10 +485,46 @@
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "barrel_distortion",
+        "name": "Barrel Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scanline Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Phosphor Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Halation Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Barrel Distortion",
         "default": 0.3,
         "min": 0,
@@ -487,8 +533,16 @@
       }
     ],
     "features": [
-      "mouse-driven"
-    ]
+      "mouse-driven",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
+    ],
+    "updated": true
   },
   {
     "id": "cyber-rain-interactive",
@@ -923,7 +977,8 @@
         "min": 0,
         "max": 1
       }
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "digital-decay",
@@ -1196,8 +1251,45 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "glitch",
+      "digital"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Corruption Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bit Manipulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Error Propagation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "digital-waves",
@@ -1710,34 +1802,50 @@
     "id": "pixel-rain",
     "name": "Pixel Rain",
     "url": "shaders/pixel-rain.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback"
     ],
-    "description": "Matrix-style digital rain. Mouse repels and highlights drops.",
+    "description": "Multi-layer parallax matrix rain with spring repulsion, held burst, capped ripples, exact C trail fade, and three-band audio.",
     "params": [
       {
         "id": "speed",
         "name": "Rain Speed",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "glitch",
         "name": "Glitch / Tint",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "density",
         "name": "Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "trail_fade",
@@ -1746,14 +1854,50 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Trail persistence/fade rate"
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rain Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch / Tint",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Fade",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "matrix",
+      "rain"
+    ],
+    "updated": true
   },
   {
     "id": "pixelation-drift",
@@ -1848,6 +1992,11 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "updated": true
   },
@@ -1952,12 +2101,21 @@
     "id": "scan-distort",
     "name": "Scan Distort",
     "url": "shaders/scan-distort.wgsl",
-    "description": "CRT-style scanline distortion with unified displacement fields and alpha translucency blending. Features temporal feedback accumulation, bass-driven audio envelope, mouse-reactive glitch bursts, and block-edge quantization artifacts.",
+    "description": "CRT scanline tear with block quantization, spring cursor, held glitch bursts, exact C smear, capped ripples, three-band audio, and ACES output.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal-feedback",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -2007,7 +2165,42 @@
         "mapping": "zoom_params.w",
         "description": "Frequency of glitch pulses"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Quantization Levels",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "MV Visibility",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glitch Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "scanline-drift",
@@ -2295,6 +2488,11 @@
     "name": "Spectrum Bleed",
     "url": "shaders/spectrum-bleed.wgsl",
     "description": "Sprung spectrum-ink diffusion with bounded click splatters, read-only FFT shimmer, exact-C persistence, semantic display RGBA in authoritative A, and ACES output.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "tags": [
       "filter",
       "image-processing"
@@ -2313,7 +2511,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "speed",
@@ -2321,7 +2520,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "scale",
@@ -2329,7 +2529,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "detail",
@@ -2337,7 +2538,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w"
       }
     ],
     "updatedParams": [
@@ -2539,21 +2741,21 @@
     "id": "waveform-glitch",
     "name": "Waveform Glitch",
     "url": "shaders/waveform-glitch.wgsl",
-    "description": "VHS waveform glitch driven by a Clifford strange attractor, domain-warped FBM, divergence-free curl flow, Voronoi F2-F1 ridge corruption, YUV chroma noise, CRT shadow mask, temporal feedback persistence, SDF glitch masks, audio-driven cosine palette, and bass-envelope smoothing. Alpha encodes waveform displacement magnitude * block corruption intensity * SDF-mask proximity.",
+    "description": "Oscilloscope Lissajous waveform glitch with signal aliasing, spring cursor, held burst, capped ripples, exact C phosphor trails, and three-band audio.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
-      "temporal",
+      "mouse-driven",
       "audio-reactive",
-      "depth-aware",
-      "upgraded-rgba",
-      "clifford-attractor",
-      "domain-warped-fbm",
-      "curl-flow",
-      "voronoi-ridge-corruption",
-      "yuv-chroma-noise",
-      "sdf-mask",
-      "audio-palette",
-      "bass-env",
-      "advanced-hybrid"
+      "temporal-feedback",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2563,8 +2765,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Base wave intensity, spiked by bass"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "vhs_intensity",
@@ -2573,8 +2774,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "VHS tracking jitter and block corruption intensity"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "block_glitch_size",
@@ -2583,8 +2783,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Size of block corruption cells"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "shadow_mask",
@@ -2593,70 +2792,150 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "CRT shadow mask intensity"
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wave Intensity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "VHS Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Block Glitch Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Shadow Mask",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
       "glitch",
       "retro",
       "vhs",
-      "datamosh",
-      "noise",
-      "fractal",
-      "crt",
-      "attractor",
-      "chroma",
-      "sdf",
-      "audio-palette",
-      "hybrid"
-    ]
+      "oscilloscope",
+      "waveform"
+    ],
+    "updated": true
   },
   {
     "id": "xerox-degrade",
     "name": "Xerox Degrade",
     "url": "shaders/xerox-degrade.wgsl",
-    "description": "Simulates the degradation of repeated photocopying with grain, high contrast, and smear.",
+    "description": "Repeated photocopy degradation with halftone dots, ordered dither, spring smear, held burst, capped ripples, exact C memory, and three-band audio.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "contrast",
         "name": "Contrast",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "grain",
         "name": "Grain",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "smear",
         "name": "Smear",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "threshold",
         "name": "Threshold",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Grain",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Smear",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
       "glitch",
-      "branchless",
-      "texture",
+      "mouse-driven",
       "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
       "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "photocopy",
+      "xerox"
+    ],
+    "updated": true
   }
 ]
