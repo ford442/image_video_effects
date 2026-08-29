@@ -231,14 +231,16 @@
     "name": "Cinematic Flare",
     "category": "lighting-effects",
     "url": "shaders/cinematic-flare.wgsl",
-    "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, rainbow chromatic aberration, ACES tone mapping, and film grain. Mouse positions light source.",
+    "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, Cauchy chromatic dispersion, ACES tone mapping, and temporal persistence.",
     "features": [
       "audio-reactive",
       "depth-aware",
       "mouse-driven",
       "upgraded-rgba",
       "chromatic-streak",
-      "bloom-based"
+      "bloom-based",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -270,6 +272,41 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flare Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Streak Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bloom Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous persistence of vision; B is unused; depth passes through source depth.",
     "tags": [
       "lens-flare",
       "anamorphic",
@@ -337,7 +374,16 @@
     "id": "divine-light",
     "name": "Divine Light",
     "url": "shaders/divine-light.wgsl",
-    "description": "Volumetric god rays emanating from cursor position. Creates cinematic light beam effects.",
+    "description": "Volumetric god rays emanating from cursor position with radial ray-marching, atmospheric dust motes, ACES tone mapping, and temporal beam persistence.",
+    "features": [
+      "mouse-driven",
+      "volumetric",
+      "atmospheric",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal-feedback",
+      "click-reactive"
+    ],
     "params": [
       {
         "id": "intensity",
@@ -368,23 +414,62 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "volumetric",
-      "atmospheric",
-      "audio-reactive",
-      "upgraded-rgba"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ray Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ray Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ray Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Brightness Filter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
+    "feedbackPacking": "A/C = ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "god-rays",
+      "volumetric",
+      "lighting"
     ]
   },
   {
     "id": "dynamic-lens-flares",
     "name": "Dynamic Lens Flares",
     "url": "shaders/dynamic-lens-flares.wgsl",
-    "description": "Cinematic lens flare following cursor. Generates ghost elements and chromatic artifacts.",
+    "description": "Cinematic optical train lens flare following cursor, featuring distributed ghost elements with Cauchy chromatic dispersion, internal reflection halos, starburst diffraction, ACES tone mapping, and temporal phosphor persistence.",
+    "features": [
+      "mouse-driven",
+      "optical",
+      "cinematic",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
+    ],
     "params": [
       {
         "id": "intensity",
@@ -415,21 +500,61 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "optical",
-      "cinematic"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flare Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Brightness Filter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ghost Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ghost Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous phosphor persistence; B is unused; depth passes through source depth.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "lens-flare",
+      "optical",
+      "ghosts"
     ]
   },
   {
     "id": "lens-flare-brush",
     "name": "Lens Flare Brush",
     "url": "shaders/lens-flare-brush.wgsl",
-    "description": "Generates anamorphic lens flares from bright pixels near the mouse.",
+    "description": "Generates anamorphic lens flares from bright pixels near the mouse with rainbow chromatic shift, ghost elements, ACES tone mapping, and brush trail persistence.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal-feedback",
+      "click-reactive"
+    ],
     "params": [
       {
         "name": "Threshold",
@@ -464,14 +589,47 @@
         "id": "color_shift"
       }
     ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Threshold",
+        "default": 0.8,
+        "min": 0.5,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Stretch",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous brush trail persistence; B is unused; depth passes through source depth.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "lens-flare",
+      "brush",
+      "interactive"
     ]
   },
   {

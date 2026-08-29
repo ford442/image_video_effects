@@ -863,7 +863,7 @@
     "id": "aurora-borealis-iridescence",
     "name": "Aurora Borealis Iridescence",
     "url": "shaders/aurora-borealis-iridescence.wgsl",
-    "description": "Northern lights with flowing ribbon curves enhanced by thin-film iridescence. Each aurora ribbon shimmers with soap-bubble and oil-slick interference colors driven by ribbon intensity and animated turbulence.",
+    "description": "Northern lights with flowing ribbon curves enhanced by thin-film iridescence, curl-noise turbulence, ACES tone mapping, and atmospheric luminescence persistence.",
     "tags": [
       "aurora",
       "iridescence",
@@ -878,7 +878,9 @@
       "curl-noise",
       "mouse-driven",
       "audio-reactive",
-      "atmospheric"
+      "atmospheric",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -914,6 +916,41 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ribbon Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ribbon Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through source depth.",
     "target_rating": 4.9
   },
   {
@@ -995,7 +1032,7 @@
     "id": "aurora-rift-iridescence",
     "name": "Aurora Rift Iridescence",
     "url": "shaders/aurora-rift-iridescence.wgsl",
-    "description": "Atmospheric curl-flow aurora blended with thin-film interference. Pattern density drives soap-bubble and oil-slick film thickness, producing flowing iridescence that rides the aurora's organic motion.",
+    "description": "Atmospheric curl-flow aurora blended with thin-film interference. Pattern density drives soap-bubble and oil-slick film thickness, producing flowing iridescence with ACES tone mapping and continuous plasma persistence.",
     "tags": [
       "iridescence",
       "thin-film",
@@ -1011,7 +1048,10 @@
       "curl-noise",
       "mouse-driven",
       "depth-aware",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -1047,6 +1087,41 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Pattern Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Film IOR",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous plasma trail persistence; B is unused; depth passes through source depth.",
     "target_rating": 4.8
   },
   {
@@ -1314,7 +1389,7 @@
     "id": "black-hole-iridescence",
     "name": "Black Hole Iridescence",
     "url": "shaders/black-hole-iridescence.wgsl",
-    "description": "Gravitational lensing black hole with iridescent accretion disk. The warped background and glowing disk receive thin-film interference coloring based on viewing angle, producing soap-bubble chromatic effects around the event horizon.",
+    "description": "Schwarzschild gravitational lensing with relativistic Doppler-boosted accretion disk, thin-film interference, gravitational wave strain, ACES tone mapping, and photon persistence.",
     "tags": [
       "black-hole",
       "iridescence",
@@ -1328,7 +1403,10 @@
       "thin-film-interference",
       "accretion-disk",
       "mouse-driven",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -1364,6 +1442,41 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Lens Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Event Horizon",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Disk Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for relativistic photon persistence; B is unused; depth passes through source depth.",
     "target_rating": 4.9
   },
   {
@@ -4826,18 +4939,23 @@
     "id": "divine-light-iridescence",
     "name": "Divine Light Iridescence",
     "url": "shaders/divine-light-iridescence.wgsl",
-    "description": "Divine Light Iridescence",
+    "description": "Volumetric god rays emanating from cursor position with multi-order thin-film iridescence, radial ray-marching, ACES tone mapping, and temporal beam persistence.",
     "tags": [
       "god-rays",
       "thin-film-interference",
       "volumetric-light",
-      "mouse-driven"
+      "mouse-driven",
+      "iridescence",
+      "spectral"
     ],
     "features": [
       "god-rays",
       "thin-film-interference",
       "volumetric-light",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -4877,7 +4995,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ray Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Luma Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ray Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth."
   },
   {
     "id": "double-exposure-hdr",
@@ -12109,18 +12261,23 @@
     "id": "vaporwave-horizon-prismatic",
     "name": "Vaporwave Horizon Prismatic",
     "url": "shaders/vaporwave-horizon-prismatic.wgsl",
-    "description": "Vaporwave Horizon Prismatic",
+    "description": "Retro-futuristic vaporwave perspective grid with 4-band Cauchy spectral reflection, glowing striped sunset sun, CRT scanlines, ACES tone mapping, and phosphor glow persistence.",
     "tags": [
       "vaporwave-horizon",
       "spectral-dispersion",
       "physical-dispersion",
-      "mouse-driven"
+      "mouse-driven",
+      "synthwave",
+      "retro"
     ],
     "features": [
       "vaporwave-horizon",
       "spectral-dispersion",
       "physical-dispersion",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -12160,7 +12317,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Grid Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Warp Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for CRT phosphor glow persistence; B is unused; depth passes through source depth."
   },
   {
     "id": "vhs-tracking-bilateral",

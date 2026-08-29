@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-29 (Composer cyber/digital/glitch ten — cohort 2)
+**Last updated:** 2026-08-29 (Optical / Glass / Holographic / Lighting-Optics Batch)
 
 ## 2026-08-29 — Composer batch cyber/digital/glitch ten — cohort 2 complete
 
@@ -15,6 +15,41 @@
 - Major rewrites: `digital-glitch-explosion`, `cyber-lattice-bilateral`, `scan-distort`. Polish: spring on `digital-glitch`; naga fix on `byte-mosh` (`mix` mask uses f32 then u32 cast).
 - `digital-decay-rgba` alone owns raw 4-species RD A/C; the other nine own ACES display RGBA (or trail/energy alpha where noted).
 - Structural/Jest/build gates green (Naga 10/10, Jest 84/84, build with `SKIP_WASM_BUILD=1`); real-GPU QA remains external.
+
+## 2026-08-29 — Optical / Glass / Holographic / Lighting-Optics Batch (10 shaders) complete
+
+- Upgraded the 10-shader optical, glass, holographic, and lighting-optics cohort:
+  1. `cinematic-flare` (lighting-effects): Cooke triplet ghost reflections, 6-blade diffraction starburst, Mie scatter halo, anamorphic streak, Cauchy chromatic dispersion, ACES tonemapping, and exact C temporal persistence.
+  2. `dynamic-lens-flares` (lighting-effects): Multi-element optical train with distributed ghosts along optical axis, internal reflection halo, aperture diffraction starburst, Cauchy dispersion, ACES tonemapping, and exact C phosphor persistence.
+  3. `lens-flare-brush` (lighting-effects): Interactive brush igniting anamorphic streaks and multi-element flares from image highlights, rainbow chromatic shift, preserved underlying image blending, ACES tonemapping, and exact C brush trail persistence.
+  4. `underwater_caustics` (lighting-effects): Analytic Gerstner surface derivatives, Jacobian light focusing caustics, god rays, ACES tonemapping, and exact C temporal feedback.
+  5. `divine-light` (lighting-effects): Physically-based volumetric Crepuscular god rays with radial ray-marching, atmospheric dust motes, ACES tonemapping, and exact C temporal beam persistence.
+  6. `divine-light-iridescence` (advanced-hybrid): Volumetric god rays with multi-order thin-film interference, radial ray-marching, ACES tonemapping, and exact C persistence.
+  7. `aurora-borealis-iridescence` (advanced-hybrid): Flowing geomagnetic aurora curtains with curl-noise advection, thin-film interference, atmospheric oxygen/nitrogen color gradients, ACES tonemapping, and exact C luminescence persistence.
+  8. `aurora-rift-iridescence` (advanced-hybrid): Multi-layer parallax depth warp with curl advection, Voronoi cellular foam, thin-film interference, ACES tonemapping, and exact C plasma persistence.
+  9. `black-hole-iridescence` (advanced-hybrid): Schwarzschild gravitational lensing, relativistic Doppler-boosted Keplerian accretion disk, thin-film interference, quadrupole gravitational wave ripples, ACES tonemapping, and exact C photon persistence.
+  10. `vaporwave-horizon-prismatic` (advanced-hybrid): Retro-futuristic perspective grid, 4-band Cauchy spectral reflection, glowing striped sunset sun, CRT scanlines, sky writeback fix to dataTextureA, ACES tonemapping, and exact C phosphor persistence.
+- Architectural rigor:
+  - Canonical 13-binding WGSL compute header `@workgroup_size(16, 16, 1)` with out-of-bounds guards.
+  - ACES tone mapping on output RGB across all 10 shaders.
+  - Semantic alpha (transmission, coverage, or specular glow).
+  - A-only writeback to `dataTextureA` and `writeTexture`; B and extraBuffer remain untouched (0 extraBuffer violations).
+  - Exact `textureLoad(dataTextureC, coord, 0)` previous frame feedback without filtering.
+  - Three-band audio from `plasmaBuffer[0].x` (bass), `.y` (mids), `.z` (treble).
+  - Capped click-ripple shockwave interaction with age guards `time - r.z`.
+  - Full mouse/held drag interaction.
+  - Naga-clean WGSL (10/10 passed).
+  - Saved parameters preserved byte-exact in all 10 JSON definition files; added aligned `updatedParams`, features, tags, and feedback packing.
+  - All 4 sliders live across all 10 shaders (0 dead sliders).
+  - Multipass registry, category shader lists, and unified manifest regenerated (1,350 shaders cataloged with relative paths).
+- Validation:
+  - WGSL precommit gate: 10/10 passed.
+  - `typecheck`: green with 0 errors.
+  - `audit:extrabuffer`: 0 new violations.
+  - `audit:dead-sliders`: 0 new dead sliders across entire repo.
+  - `verify:shader-list-urls` and `verify:uniforms`: green.
+  - Jest test suite: 84/84 passed (561 passed, 1 skipped).
+  - Production build (`SKIP_WASM_BUILD=1 npm run build`): compiled successfully.
 
 ## 2026-08-29 — Balanced Premium Ten complete
 
@@ -235,7 +270,6 @@
   QA remains external.
 - Nine unrelated optical/holographic shader edits appeared concurrently during
   this batch and were preserved untouched; do not attribute them to Codex (e).
-**Last updated:** 2026-08-23 (Holographic / Hyper + Optical / Glass / Iridescence cohorts synced)
 
 ## 2026-08-23 — Holographic / Hyper generative cohort
 
@@ -413,7 +447,6 @@
   writes, 16x16. datamosh-brush 8x8→16x16. Params exact; updatedParams added.
 - Gate 10/10; Jest 84/84 (559 pass); build green. Real-GPU QA external.
   Branch: `cursor/cyber-digital-shader-upgrades-e675`.
-**Last updated:** 2026-08-23 (Batch 58D spectral/datamosh upgrade)
 
 ## 2026-08-23 — Batch 58D spectral and datamosh upgrade
 
@@ -441,7 +474,6 @@
   + prior optical/feedback polish; CMYK A coverage preserved.
 - Proof: focused gate **17/17**, cohort dead-slider + extraBuffer PASS,
   catalogs regenerated. Real-GPU visual QA remains external.
-**Last updated:** 2026-08-23 (Batch 59)
 
 ## 2026-08-23 — Shader upgrade Batch 59 — CYBER & DIGITAL
 
@@ -538,7 +570,6 @@
   audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
   green. Real-GPU visual QA remains external.
 
-**Last updated:** 2026-08-23 (Codex liquid complexity batch)
 
 ## 2026-08-23 — Codex Liquid Shader Complexity Batch requested
 
