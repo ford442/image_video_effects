@@ -8678,6 +8678,52 @@
     "category": "generative"
   },
   {
+    "id": "gen-chronos-crystal-labyrinth",
+    "name": "Chronos Crystal Labyrinth",
+    "category": "generative",
+    "url": "/shaders/gen-chronos-crystal-labyrinth.wgsl",
+    "description": "A mind-bending journey through an infinite, self-folding tesseract of crystalline structures where time distortion ripples visualize as chromatic refraction patterns.",
+    "author": "Jules",
+    "params": [
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "mapping": "zoom_params.x",
+        "default": 1.2,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "gravity_strength",
+        "name": "Gravity Strength",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "fractal_fold",
+        "name": "Fractal Fold",
+        "mapping": "zoom_params.z",
+        "default": 2,
+        "min": 1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "name": "Chronos Labyrinth",
     "category": "generative",
     "tags": [

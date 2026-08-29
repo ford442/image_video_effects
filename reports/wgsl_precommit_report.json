@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-08-27T01:35:04.715597",
-  "naga_bin": "/root/.cargo/bin/naga",
+  "timestamp": "2026-08-29T08:20:22.198394",
+  "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
   "passed": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/alpha-depth-fog-volumetric.wgsl",
+      "file": "public/shaders/gen-chronos-crystal-labyrinth.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
