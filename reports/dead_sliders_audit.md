@@ -1,7 +1,7 @@
 # Dead Slider Audit
 
-- Definitions scanned: 9
+- Definitions scanned: 1192
 - **New dead sliders: 0**
-- Known (triaged baseline) dead sliders: 0
+- Known (triaged baseline) dead sliders: 28
 - Def errors (missing WGSL / parse): 0
 

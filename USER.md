@@ -22,6 +22,12 @@ _Learn about the person you're helping. Update this as you go._
   and Alpha Depth Fog Volumetric are complete under exact-C/A-only/ACES/audio/
   interaction contracts with exact saved params and preserved state packing.
   Structural/Jest/build gates are green; real-GPU QA remains external.
+- **Balanced Premium Ten (2026-08-29):** Aerogel Smoke, Graphic Novel,
+  Hyper Space Jump, Aurora Rift V2, Julia Warp, Flip Matrix, Interactive PCB
+  Traces, Stipple Engraving, Underwater Caustics, and Hybrid Voronoi Glass are
+  complete. Aerogel alone owns raw transport A/C; the other nine own ACES
+  display RGBA. Saved params and the Graphic Novel underscore alias are exact;
+  structural/Jest/build gates are green and real-GPU QA remains external.
 - **Optical / Glass / Holographic / Iridescence Batch (2026-08-23):** Upgraded
   spec-iridescence-engine, spec-prismatic-dispersion, frost-reveal-crystal,
   fractal-glass-distort-bilateral, bubble-lens-coupled,

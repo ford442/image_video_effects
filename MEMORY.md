@@ -1,6 +1,27 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-27 (Balanced Mixed Eight)
+**Last updated:** 2026-08-29 (Balanced Premium Ten)
+
+## 2026-08-29 — Balanced Premium Ten complete
+
+- Upgraded the literal ten-ID cohort: `aerogel-smoke`, `graphic-novel`,
+  `hyper-space-jump`, `aurora-rift-2`, `julia-warp`, `flip-matrix`,
+  `interactive-pcb-traces`, `stipple-engraving`, `underwater_caustics`, and
+  `hybrid-voronoi-glass`; preserve `graphic-novel` -> `graphic_novel.wgsl`.
+- Aerogel owns raw A/C `[density, scattering energy, velocity.xy]`; the other
+  nine own ACES display RGBA. All ten use exact bounded C loads, A-only writes,
+  semantic alpha and effect-specific depth, plasma XYZ audio, all four saved
+  controls, pointer/held/finite click response, and zero extraBuffer writes.
+- Hero treatments are Aerogel dual-scattering transport and Underwater analytic
+  Gerstner/Jacobian caustics. The remaining eight retain distinct medium-cost
+  ink, relativistic, auroral, fractal, split-flap, PCB, engraving, and glass
+  identities. Saved params are exact; only indexed updatedParams and truthful
+  metadata were added.
+- Proof: Naga 10/10, schema-aware contract 10/10 and controls 40/40, only ten
+  catalog entries changed, 1,350-entry relative manifest, no duplicate IDs,
+  TypeScript/uniform/full audits green, Jest 84/84 (561 pass, one skip), and
+  `SKIP_WASM_BUILD=1` production build green. Real-GPU interaction, temporal,
+  alpha/depth, stability, visual, and comparative timing QA remains external.
 
 ## 2026-08-27 — Balanced Mixed Eight complete
 

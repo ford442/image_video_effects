@@ -535,13 +535,21 @@
     "id": "aurora-rift-2",
     "name": "Aurora Rift V2",
     "url": "shaders/aurora-rift-2.wgsl",
-    "description": "Enhanced aurora effects with improved color gradients.",
+    "description": "Layered magnetic curtains emit oxygen green/red and nitrogen blue/violet through volumetric transmittance, with cursor field bending, held ionization, and click fronts.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "magnetic-curtains",
+      "oxygen-nitrogen-emission",
+      "volumetric-transmittance",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "aurora",
+      "atmospheric",
+      "spectral-emission",
+      "interactive"
     ],
     "params": [
       {
@@ -576,7 +584,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Depth Weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for restrained curtain persistence; B is unused; source depth passes through."
   },
   {
     "id": "aurora-rift-gemini",

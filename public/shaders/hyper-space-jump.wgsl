@@ -1,13 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Hyper-Space Jump with Alpha Physics
-//  Scientific: High-velocity radial streaking with relativistic light effects
-//  
-//  ALPHA PHYSICS:
-//  - Velocity streaks accumulate alpha along motion path
-//  - Brightness-weighted streaking affects opacity
-//  - Blue-shift at edges due to relativistic motion
-//  - Vignetting creates tunnel transparency
-// ═══════════════════════════════════════════════════════════════════════════════
+// Hyper-Space Jump — continuous relativistic streak integration and helical flight.
+// A/C stores ACES display RGBA. B is unused. Depth remains cleared for the tunnel.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -24,134 +16,106 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-fn getLuma(c: vec3<f32>) -> f32 {
-    return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+const TAU: f32 = 6.28318530718;
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Calculate velocity-based alpha for streaks
-fn calculateStreakAlpha(
-    sampleAlpha: f32,
-    luma: f32,
-    sampleIndex: f32,
-    totalSamples: f32,
-    decay: f32
-) -> f32 {
-    // Bright features streak more prominently
-    let brightWeight = smoothstep(0.5, 1.0, luma);
-    
-    // Distance along streak affects opacity
-    let streakFactor = 1.0 - (sampleIndex / totalSamples);
-    
-    // Decay reduces contribution
-    let decayFactor = pow(decay, sampleIndex);
-    
-    return sampleAlpha * (0.1 + brightWeight * 2.0) * streakFactor * decayFactor;
+fn dopplerPalette(shift: f32) -> vec3<f32> {
+  let cold = vec3<f32>(0.12, 0.5, 1.65);
+  let neutral = vec3<f32>(0.9, 0.95, 1.0);
+  let hot = vec3<f32>(1.55, 0.22, 0.06);
+  return mix(mix(hot, neutral, smoothstep(-1.0, 0.0, shift)), cold, smoothstep(0.0, 1.0, shift));
 }
 
-// Calculate relativistic Doppler alpha shift
-fn calculateRelativisticAlpha(
-    baseAlpha: f32,
-    dist: f32,
-    strength: f32
-) -> f32 {
-    // Higher velocity = more time dilation = light accumulation
-    let timeDilation = 1.0 + strength * (1.0 - smoothstep(0.0, 1.5, dist));
-    
-    // But also more scattering
-    let scattering = strength * dist * 0.2;
-    
-    return clamp(baseAlpha * timeDilation - scattering, 0.3, 1.0);
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  let coord = clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), hi);
+  return textureLoad(dataTextureC, coord, 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+  let time = u.config.x;
+  let jumpStrength = 0.2 + u.zoom_params.x * 2.8;
+  let decay = 0.58 + u.zoom_params.y * 0.38;
+  let chromaticSpread = 0.002 + u.zoom_params.z * 0.035;
+  let vignetteSize = 0.18 + u.zoom_params.w * 0.95;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+  let vanishingPoint = clamp(u.zoom_config.yz, vec2<f32>(0.02), vec2<f32>(0.98));
+  let held = u.zoom_config.w > 0.5;
+  let heldAcceleration = select(1.0, 1.75 + audio.x * 0.35, held);
+
+  let ray = (uv - vanishingPoint) * aspectVec;
+  let radius = length(ray);
+  let directionAspect = ray / max(radius, 0.0001);
+  let directionUV = directionAspect / aspectVec;
+  var shock = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.4) {
+      let rd = length((uv - ripple.xy) * aspectVec);
+      let front = age * (0.42 + audio.x * 0.09);
+      shock += sin((rd - front) * 72.0) * exp(-abs(rd - front) * 31.0) * exp(-age * 1.15);
     }
+  }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
+  let beta = clamp((0.25 + jumpStrength * 0.2 + audio.x * 0.12) * heldAcceleration + abs(shock) * 0.08, 0.0, 0.985);
+  let gamma = inverseSqrt(max(1.0 - beta * beta, 0.03));
+  let helixPhase = time * (1.1 + beta * 4.0 + audio.y) + radius * (9.0 + audio.z * 3.0);
+  let tangent = vec2<f32>(-directionUV.y, directionUV.x);
+  let helix = tangent * sin(helixPhase) * (0.0025 + beta * 0.008) * smoothstep(0.0, 0.55, radius);
 
-    // Parameters
-    let strength = u.zoom_params.x * 0.1;
-    let samples = 30;
-    var center = u.zoom_config.yz;
+  var accumulated = vec3<f32>(0.0);
+  var alphaAccum = 0.0;
+  var weightAccum = 0.0;
+  let sampleCount = 14;
+  for (var i = 0; i < sampleCount; i = i + 1) {
+    let t = f32(i) / f32(sampleCount - 1);
+    let relativisticDistance = (exp2(t * (1.0 + gamma * 0.45)) - 1.0) * 0.025 * jumpStrength * heldAcceleration;
+    let spiral = helix * (0.25 + t * t * 2.5);
+    let shockOffset = directionUV * shock * 0.006 * (1.0 - t);
+    let sampleUV = clamp(uv - directionUV * relativisticDistance - spiral - shockOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sampleColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let longitudinal = dot(directionAspect, normalize(ray + vec2<f32>(0.0001)));
+    let doppler = clamp((beta * longitudinal + chromaticSpread * (t - 0.5) * 10.0), -1.0, 1.0);
+    let palette = dopplerPalette(doppler);
+    let bright = dot(sampleColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let weight = pow(decay, f32(i)) * (0.25 + bright * (1.0 + audio.z));
+    accumulated += sampleColor.rgb * palette * weight * (0.65 + gamma * 0.12);
+    alphaAccum += sampleColor.a * weight * (0.5 + bright);
+    weightAccum += weight;
+  }
 
-    // Aspect ratio correction
-    let aspect = resolution.x / resolution.y;
-    let center_aspect = vec2<f32>(center.x * aspect, center.y);
-    let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
-
-    var dir = uv_aspect - center_aspect;
-    let dist = length(dir);
-    let dir_norm = normalize(dir);
-    let dir_uv = (uv - center);
-
-    // Random jitter for "speed" effect
-    let noise = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233)) + time) * 43758.5453);
-
-    var color_acc = vec4<f32>(0.0);
-    var alpha_acc = 0.0;
-    var weight_acc = 0.0;
-
-    let decay = mix(0.8, 0.99, u.zoom_params.y);
-
-    // Radial Blur Loop with alpha accumulation
-    for (var i = 0; i < samples; i++) {
-        let f = f32(i);
-        let offset = dir_uv * (f / f32(samples)) * strength * dist * 10.0;
-        let sample_uv = uv - offset;
-
-        // Jitter sampling
-        let jitter_offset = offset * (noise - 0.5) * 0.1;
-
-        // Check bounds
-        if (sample_uv.x < 0.0 || sample_uv.x > 1.0 || sample_uv.y < 0.0 || sample_uv.y > 1.0) {
-            continue;
-        }
-
-        let s_color = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset, 0.0);
-
-        // Chromatic Aberration on streaks
-        let chromaSpread = mix(0.001, 0.02, u.zoom_params.z);
-        let r = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset + dir_uv * chromaSpread * f, 0.0).r;
-        let b = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset - dir_uv * chromaSpread * f, 0.0).b;
-        let sample_color = vec4<f32>(r, s_color.g, b, s_color.a);
-
-        // Calculate streak alpha
-        let luma = getLuma(sample_color.rgb);
-        let weight = pow(decay, f) * (0.1 + smoothstep(0.5, 1.0, luma) * 2.0);
-        
-        // Accumulate with alpha
-        let streakAlpha = calculateStreakAlpha(s_color.a, luma, f, f32(samples), decay);
-
-        color_acc = color_acc + sample_color * weight;
-        alpha_acc = alpha_acc + streakAlpha * weight;
-        weight_acc = weight_acc + weight;
-    }
-
-    let final_color = color_acc / weight_acc;
-    let baseAlpha = alpha_acc / weight_acc;
-    
-    // Apply relativistic alpha effects
-    let finalAlpha = calculateRelativisticAlpha(baseAlpha, dist, strength);
-
-    // Add vignette/tunnel darkening
-    let vigSize = mix(0.1, 1.0, u.zoom_params.w);
-    let vignette = 1.0 - smoothstep(vigSize * 0.5, vigSize * 2.0, dist);
-    let outputRGB = mix(vec3<f32>(0.0), final_color.rgb, vignette);
-    // Vignette reduces alpha at edges
-    let vignetteAlpha = finalAlpha * vignette;
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outputRGB, vignetteAlpha));
-    
-    // Clear depth for hyper-space effect
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+  let integrated = accumulated / max(weightAccum, 0.0001);
+  let starBands = pow(0.5 + 0.5 * sin(log2(1.0 + radius * 42.0) * 28.0 - time * (8.0 + audio.x * 5.0)), 12.0);
+  let streakEmission = dopplerPalette(sin(helixPhase)) * starBands * smoothstep(0.02, 0.8, radius) * (0.35 + gamma * 0.16);
+  let historyUV = uv - directionUV * (0.006 + beta * 0.018) - helix * 0.7;
+  let history = historyAt(historyUV, resolution);
+  var hdr = integrated + streakEmission * (0.45 + audio.z * 0.8);
+  hdr += history.rgb * clamp(0.035 + beta * 0.09 + abs(shock) * 0.025, 0.0, 0.18);
+  let vignette = 1.0 - smoothstep(vignetteSize * 0.55, vignetteSize * 1.55, radius);
+  hdr *= 0.18 + vignette * 0.82;
+  let alpha = clamp((alphaAccum / max(weightAccum, 0.0001)) * vignette + starBands * 0.25 + abs(shock) * 0.18, 0.0, 1.0);
+  let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
+  textureStore(writeTexture, coord, result);
+  textureStore(dataTextureA, coord, result);
+  textureStore(writeDepthTexture, coord, vec4<f32>(0.0));
 }

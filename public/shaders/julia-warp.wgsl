@@ -1,9 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Julia Warp - Advanced Alpha
-//  Category: distortion
-//  Alpha Mode: Effect Intensity Alpha
-//  Features: advanced-alpha, fractal-distortion, edge-fade
-// ═══════════════════════════════════════════════════════════════════════════════
+// Julia Warp — derivative-aware orbit traps and refractive complex dynamics.
+// A/C stores ACES display RGBA. B is unused.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,145 +22,118 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ ADVANCED ALPHA FUNCTIONS ═══
+const TAU: f32 = 6.28318530718;
 
-// Mode 5: Effect Intensity Alpha
-fn effectIntensityAlpha(
-    originalUV: vec2<f32>,
-    displacedUV: vec2<f32>,
-    baseAlpha: f32,
-    intensity: f32
-) -> f32 {
-    let displacement = length(displacedUV - originalUV);
-    let displacementAlpha = smoothstep(0.0, 0.15, displacement);
-    
-    // Edge fade to prevent artifacts
-    let edgeDist = min(min(originalUV.x, 1.0 - originalUV.x),
-                       min(originalUV.y, 1.0 - originalUV.y));
-    let edgeFade = smoothstep(0.0, 0.08, edgeDist);
-    
-    return baseAlpha * mix(0.4, 1.0, displacementAlpha * intensity) * edgeFade;
+fn complexMultiply(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+  return vec2<f32>(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
 }
 
-// Mode 1: Depth-Layered Alpha
-fn depthLayeredAlpha(color: vec3<f32>, uv: vec2<f32>, depthWeight: f32) -> f32 {
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    
-    let depthAlpha = mix(0.4, 1.0, depth);
-    let lumaAlpha = mix(0.5, 1.0, luma);
-    
-    return mix(lumaAlpha, depthAlpha, depthWeight);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Combined advanced alpha
-fn calculateAdvancedAlpha(
-    color: vec3<f32>,
-    originalUV: vec2<f32>,
-    displacedUV: vec2<f32>,
-    baseAlpha: f32,
-    params: vec4<f32>
-) -> f32 {
-    // params.x = intensity
-    // params.z = depth weight
-    
-    let effectAlpha = effectIntensityAlpha(originalUV, displacedUV, baseAlpha, params.x);
-    let depthAlpha = depthLayeredAlpha(color, displacedUV, params.z);
-    
-    return clamp(effectAlpha * mix(0.85, 1.0, depthAlpha * params.z), 0.0, 1.0);
+fn spectrum(t: f32) -> vec3<f32> {
+  return 0.52 + 0.48 * cos(TAU * (vec3<f32>(0.02, 0.35, 0.68) + t));
 }
 
-// Complex number operations for Julia set
-fn complexMul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-    return vec2<f32>(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
-}
-
-fn complexSqr(z: vec2<f32>) -> vec2<f32> {
-    return vec2<f32>(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y);
-}
-
-// Julia set iteration
-fn juliaDist(z: vec2<f32>, c: vec2<f32>, maxIter: i32) -> f32 {
-    var p = z;
-    for (var i: i32 = 0; i < maxIter; i++) {
-        p = complexSqr(p) + c;
-        if (dot(p, p) > 4.0) {
-            return f32(i) / f32(maxIter);
-        }
-    }
-    return 1.0;
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  let coord = clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), hi);
+  return textureLoad(dataTextureC, coord, 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+  let time = u.config.x;
+  let intensity = 0.02 + u.zoom_params.x * 0.16;
+  let juliaScale = 0.8 + u.zoom_params.y * 2.5;
+  let depthWeight = u.zoom_params.z;
+  let maxIterations = 18 + i32(u.zoom_params.w * 46.0);
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+
+  let mouseComplex = (mouse - 0.5) * vec2<f32>(1.35, -1.05);
+  let animatedC = vec2<f32>(
+    -0.72 + cos(time * (0.17 + audio.y * 0.04)) * 0.16,
+    0.19 + sin(time * (0.23 + audio.z * 0.035)) * 0.18
+  );
+  let c = mix(animatedC, mouseComplex, select(0.18, 0.62, held));
+  let heldZoom = select(1.0, 0.58 + 0.08 * sin(time * 1.7), held);
+  let centered = (uv - mouse * 0.18 - vec2<f32>(0.41)) * aspectVec * juliaScale * heldZoom;
+
+  var z = centered;
+  var derivative = vec2<f32>(1.0, 0.0);
+  var orbitTrap = 10.0;
+  var axisTrap = 10.0;
+  var escapedAt = f32(maxIterations);
+  var lastRadius = length(z);
+  for (var i = 0; i < 64; i = i + 1) {
+    if (i >= maxIterations) { break; }
+    derivative = complexMultiply(2.0 * z, derivative);
+    z = complexMultiply(z, z) + c;
+    let radius = length(z);
+    orbitTrap = min(orbitTrap, abs(radius - (0.52 + audio.y * 0.08)));
+    axisTrap = min(axisTrap, min(abs(z.x), abs(z.y)));
+    lastRadius = radius;
+    if (dot(z, z) > 64.0) {
+      escapedAt = f32(i);
+      break;
     }
-    
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
-    
-    // Parameters
-    let intensity = u.zoom_params.x;        // Warp intensity
-    let juliaScale = u.zoom_params.y * 2.0 + 1.0;  // Julia scale
-    let depthWeight = u.zoom_params.z;      // Depth influence
-    let maxIter = i32(u.zoom_params.w * 50.0 + 20.0);
-    
-    // Center UV for Julia calculation
-    let centered = (uv - 0.5) * juliaScale;
-    
-    // Animated Julia constant
-    let c = vec2<f32>(
-        cos(time * 0.3 * audioReactivity) * 0.7,
-        sin(time * 0.5 * audioReactivity) * 0.3
-    );
-    
-    // Calculate Julia distortion
-    var p = centered;
-    var totalDist = 0.0;
-    
-    for (var i: i32 = 0; i < maxIter; i++) {
-        let dist = dot(p, p);
-        if (dist > 4.0) {
-            break;
-        }
-        p = complexSqr(p) + c;
-        totalDist += 1.0;
+    derivative = clamp(derivative, vec2<f32>(-10000.0), vec2<f32>(10000.0));
+  }
+
+  let smoothIteration = escapedAt - log2(max(log2(max(lastRadius, 1.0001)), 0.0001));
+  let iterationPhase = clamp(smoothIteration / f32(maxIterations), 0.0, 1.0);
+  let derivativeMagnitude = max(length(derivative), 0.001);
+  let distanceEstimate = clamp(0.5 * log(max(lastRadius, 1.0001)) * lastRadius / derivativeMagnitude, 0.0, 1.0);
+  let derivativeDirection = derivative / derivativeMagnitude;
+  let trapRidge = exp(-orbitTrap * (32.0 + audio.z * 14.0));
+  let axisEngraving = exp(-axisTrap * 45.0);
+
+  var shock = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.5) {
+      let rd = length((uv - ripple.xy) * aspectVec);
+      let front = age * (0.24 + audio.x * 0.04);
+      shock += sin((rd - front) * 64.0) * exp(-abs(rd - front) * 38.0) * exp(-age * 1.05);
     }
-    
-    // Calculate displacement based on Julia iteration
-    let escapeVal = totalDist / f32(maxIter);
-    let distortion = vec2<f32>(
-        sin(p.y * 3.0) * intensity * 0.1,
-        cos(p.x * 3.0) * intensity * 0.1
-    );
-    
-    let warpedUV = clamp(uv + distortion * escapeVal, vec2<f32>(0.0), vec2<f32>(1.0));
-    
-    // Sample with distortion
-    let sample = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
-    
-    // Apply Julia coloring effect
-    let juliaColor = vec3<f32>(
-        escapeVal * (0.5 + 0.5 * sin(time + escapeVal * 6.28)),
-        escapeVal * (0.5 + 0.5 * sin(time * 0.7 * audioReactivity + escapeVal * 6.28 + 2.0)),
-        escapeVal * (0.5 + 0.5 * sin(time * 0.5 * audioReactivity + escapeVal * 6.28 + 4.0))
-    );
-    
-    let finalColor = mix(sample.rgb, juliaColor, escapeVal * 0.3);
-    
-    // ═══ ADVANCED ALPHA CALCULATION ═══
-    let alpha = calculateAdvancedAlpha(finalColor, uv, warpedUV, sample.a, u.zoom_params);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    
-    // Pass through depth with distortion modulation
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, warpedUV, 0.0).r;
-    let depthMod = 1.0 + escapeVal * 0.1;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth * depthMod, 0.0, 0.0, 0.0));
+  }
+
+  let pointerDelta = (uv - mouse) * aspectVec;
+  let pointerLens = exp(-dot(pointerDelta, pointerDelta) * 16.0);
+  let refractiveDirection = normalize(vec2<f32>(derivativeDirection.x - derivativeDirection.y, derivativeDirection.x + derivativeDirection.y) + vec2<f32>(0.0001));
+  let displacement = refractiveDirection * intensity * (trapRidge * 0.65 + distanceEstimate * 0.35) * (1.0 + audio.x * 0.3)
+                   + (pointerDelta / max(length(pointerDelta), 0.0001)) * pointerLens * select(0.006, 0.022, held)
+                   + normalize(pointerDelta + vec2<f32>(0.0001)) * shock * 0.012;
+  let warpedUV = clamp(uv + displacement / aspectVec, vec2<f32>(0.0), vec2<f32>(1.0));
+  let source = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
+  let chroma = refractiveDirection / aspectVec * (0.001 + u.zoom_params.x * 0.004 + audio.z * 0.0015);
+  let red = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + chroma, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let blue = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV - chroma, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let history = historyAt(uv - displacement * 0.35, resolution);
+
+  let orbitColor = spectrum(iterationPhase + trapRidge * 0.23 + time * 0.025 + audio.y * 0.08);
+  var hdr = vec3<f32>(red, source.g, blue);
+  hdr += orbitColor * (trapRidge * 0.85 + axisEngraving * 0.25) * (0.55 + audio.z * 0.5);
+  hdr += history.rgb * clamp(0.025 + trapRidge * 0.055, 0.0, 0.095);
+  let edgeDistance = min(min(warpedUV.x, 1.0 - warpedUV.x), min(warpedUV.y, 1.0 - warpedUV.y));
+  let edgeFade = smoothstep(0.0, 0.055, edgeDistance);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, warpedUV, 0.0).r;
+  let alpha = clamp(source.a * edgeFade * (0.45 + distanceEstimate * 0.35) + trapRidge * 0.38 + abs(shock) * 0.12, 0.0, 1.0);
+  let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
+  textureStore(writeTexture, coord, result);
+  textureStore(dataTextureA, coord, result);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth * (1.0 + iterationPhase * depthWeight * 0.1), 0.0, 0.0, 0.0));
 }

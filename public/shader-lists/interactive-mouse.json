@@ -15336,9 +15336,15 @@
     "id": "stipple-engraving",
     "name": "Stipple Engraving",
     "url": "shaders/stipple-engraving.wgsl",
-    "description": "Converts the image into a vintage stipple engraving. Mouse proximity acts as a spotlight, revealing details by increasing luminance.",
+    "description": "Tone-aware low-discrepancy stippling combines directional hatching, paper absorption, cursor burnishing, held ink pooling, and click-driven engraving rings.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "low-discrepancy-stipple",
+      "directional-hatching",
+      "paper-absorption",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -15370,9 +15376,43 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Spot Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Spot Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for restrained ink persistence; B is unused; depth stores engraved ink density.",
     "tags": [
-      "filter",
-      "image-processing"
+      "stipple",
+      "engraving",
+      "hatching",
+      "printmaking",
+      "interactive"
     ]
   },
   {
