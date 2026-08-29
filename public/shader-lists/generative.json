@@ -8678,12 +8678,30 @@
     "category": "generative"
   },
   {
-    "id": "gen-chronos-crystal-labyrinth",
     "name": "Chronos Crystal Labyrinth",
     "category": "generative",
-    "url": "/shaders/gen-chronos-crystal-labyrinth.wgsl",
-    "description": "A mind-bending journey through an infinite, self-folding tesseract of crystalline structures where time distortion ripples visualize as chromatic refraction patterns.",
-    "author": "Jules",
+    "tags": [
+      "crystal",
+      "tesseract",
+      "fractal",
+      "refraction",
+      "raymarching",
+      "time-distortion"
+    ],
+    "description": "A mind-bending journey through an infinite, self-folding tesseract of crystalline structures where time distortion ripples visualize as chromatic refraction patterns. This shader creates a sensation of navigating a multidimensional clockwork maze built of light, bridging organic growth algorithms with rigid geometric precision.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "id": "gen-chronos-crystal-labyrinth",
+    "url": "shaders/gen-chronos-crystal-labyrinth.wgsl",
+    "features": [
+      "raymarching",
+      "refraction",
+      "audio-reactive",
+      "mouse-interaction"
+    ],
     "params": [
       {
         "id": "dispersion",

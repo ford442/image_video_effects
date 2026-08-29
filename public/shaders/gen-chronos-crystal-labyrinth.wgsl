@@ -32,51 +32,31 @@ fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 {
     return (q.x + q.y + q.z - s) * 0.57735027;
 }
 
-// Rotation matrix
-fn rot(a: f32) -> mat2x2<f32> {
-    let s = sin(a);
-    let c = cos(a);
-    return mat2x2<f32>(c, -s, s, c);
-}
-
 // Map the world
-fn map(p: vec3<f32>) -> f32 {
+fn map(p: vec3<f32>) -> vec2<f32> {
     var q = p;
 
-    // Temporal distortion waves driven by audio-reactive low-frequency data
-    let audio_lf = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.1, 0.5), 0.0).r;
-    let time_audio = u.config.x + audio_lf * 2.0;
-
-    // Rotate space slowly over time
-    let r_xz = rot(time_audio * 0.1);
-    let r_yz = rot(time_audio * 0.15);
-    q = vec3<f32>(r_xz * q.xz, q.y).xzy;
-    q = vec3<f32>(q.x, r_yz * q.yz);
-
     // Domain repetition / folding
-    for (var i = 0; i < 3; i++) {
-        q = abs(q) - u.zoom_params.z;
-        let r = rot(f32(i) * 0.5 + time_audio * 0.05);
-        q = vec3<f32>(r * q.xy, q.z);
-    }
-
+    q = abs(q) - u.zoom_params.z;
     q = abs(q) - u.zoom_params.z * 0.5;
 
     // Core geometry
     let d = sdOctahedron(q, 1.0);
 
-    // Add noise displacement
-    let noise = sin(p.x * 2.0 + time_audio) * sin(p.y * 2.0 + time_audio) * sin(p.z * 2.0) * 0.1;
-    return d + noise;
+    // Audio reactivity
+    let audio_uv = vec2<f32>(abs(p.x * 0.1), 0.5);
+    let audio_val = textureSampleLevel(dataTextureC, non_filtering_sampler, audio_uv, 0.0).r;
+    let displacement = audio_val * 0.2 * sin(p.x * 10.0 + u.config.x) * cos(p.y * 10.0 + u.config.x);
+
+    return vec2<f32>(d + displacement, 1.0);
 }
 
-// Calculate normal
-fn getNormal(p: vec3<f32>) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        map(p + e.xyy) - map(p - e.xyy),
-        map(p + e.yxy) - map(p - e.yxy),
-        map(p + e.yyx) - map(p - e.yyx)
+        map(p + e.xyy).x - map(p - e.xyy).x,
+        map(p + e.yxy).x - map(p - e.yxy).x,
+        map(p + e.yyx).x - map(p - e.yyx).x
     ));
 }
 
@@ -91,88 +71,79 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let resolution = vec2<f32>(f32(dims.x), f32(dims.y));
     var uv = vec2<f32>(coords) / resolution;
-    let base_uv = uv; // Retain original for potential 2D sampling
+    let base_uv = uv; // Keep for ripples
     uv = uv * 2.0 - 1.0;
     uv.x *= resolution.x / resolution.y;
+
+    // Mouse Interaction: Gravity well
+    var mouse_uv = u.zoom_config.yz;
+    mouse_uv.y = 1.0 - mouse_uv.y; // Invert y since WGSL texture space is top-left
+    var mouse_clip = mouse_uv * 2.0 - 1.0;
+    mouse_clip.x *= resolution.x / resolution.y;
+
+    var distortion = 0.0;
+    if (u.zoom_config.w > 0.0) {
+        distortion = u.zoom_params.y / (1.0 + pow(length(uv - mouse_clip), 2.0));
+    }
 
     // Setup camera and rays
     let ro = vec3<f32>(0.0, 0.0, -5.0 + u.config.x * 0.5);
     let ta = vec3<f32>(0.0, 0.0, u.config.x * 0.5);
 
     let cw = normalize(ta - ro);
-    let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
+    let up = vec3<f32>(0.0, 1.0, 0.0);
+    let cu = normalize(cross(cw, up));
     let cv = normalize(cross(cu, cw));
 
     var rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
 
-    // Mouse Interaction (Gravity Well)
-    if (u.zoom_config.w > 0.0) {
-        var mouse_uv = u.zoom_config.yz;
-        mouse_uv = mouse_uv * 2.0 - 1.0;
-        mouse_uv.x *= resolution.x / resolution.y;
-        mouse_uv.y = -mouse_uv.y; // Correct y-axis
+    // Apply distortion to ray direction
+    rd = normalize(rd + (uv.x * cu + uv.y * cv) * distortion);
 
-        let dist_to_mouse = length(uv - mouse_uv);
-        let distortion = u.zoom_params.y / (1.0 + pow(dist_to_mouse, 2.0));
-        let bend_dir = normalize(vec3<f32>(uv - mouse_uv, 0.5));
-        rd = normalize(mix(rd, bend_dir, distortion * 0.5));
-    }
-
-    // Raymarching, lighting, and refraction logic
+    // Raymarching
     var t = 0.0;
     var d = 0.0;
-    var p = ro;
-
-    // Volumetric raymarching properties
-    var glow = vec3<f32>(0.0);
-
-    // Audio reactivity for glow
-    let audio_glow = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.2, 0.5), 0.0).r;
-
-    for (var i = 0; i < 64; i++) {
-        p = ro + rd * t;
-        d = map(p);
-
-        if (d < 0.001) {
-            break;
-        }
-
-        // Soft subsurface scattering approximation
-        glow += exp(-d * 2.0) * vec3<f32>(0.1, 0.2, 0.5) * u.zoom_params.w * (1.0 + audio_glow);
-
-        t += d;
-        if (t > 20.0) {
-            break;
-        }
+    var m = 0.0;
+    for(var i = 0; i < 100; i = i + 1) {
+        let p = ro + rd * t;
+        let res = map(p);
+        d = res.x;
+        m = res.y;
+        if(d < 0.001 || t > 20.0) { break; }
+        t += d * 0.5; // Step size
     }
 
     var col = vec3<f32>(0.0);
 
-    if (d < 0.001) {
-        let n = getNormal(p);
+    if(t < 20.0) {
+        let p = ro + rd * t;
+        let n = calcNormal(p);
 
-        // Chromatic aberration and heavy dispersion
-        let disp = u.zoom_params.x * 0.01;
-        let refl = reflect(rd, n);
+        // Refraction / Chromatic dispersion approximation
+        let disp = u.zoom_params.x * 0.1;
+        let rR = reflect(rd, n); // Simple reflection for now
+        let rG = reflect(rd, n + vec3<f32>(disp));
+        let rB = reflect(rd, n - vec3<f32>(disp));
 
-        // Shading utilizes a custom PBR-like approach for transparent media
-        let base_col = vec3<f32>(0.8, 0.9, 1.0);
-        let diffuse = max(dot(n, vec3<f32>(0.5, 0.8, -0.5)), 0.0);
-        let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 4.0);
+        // Simplified lighting / glow
+        let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
+        let dif = max(dot(n, l), 0.0);
+        let glow = u.zoom_params.w * (1.0 / (1.0 + t*t*0.1));
 
-        col = base_col * diffuse * 0.2 + fresnel * vec3<f32>(0.6, 0.8, 1.0);
+        col = vec3<f32>(dif) * vec3<f32>(0.5, 0.7, 1.0) + vec3<f32>(glow * 0.5, glow * 0.2, glow * 0.8);
 
-        // Add fake dispersion reflection
-        let r_rd = normalize(rd + n * disp);
-        let b_rd = normalize(rd - n * disp);
-
-        // Just a stylistic addition to mimic dispersion
-        col += vec3<f32>(max(dot(r_rd, refl), 0.0), 0.0, 0.0) * 0.2;
-        col += vec3<f32>(0.0, 0.0, max(dot(b_rd, refl), 0.0)) * 0.2;
+        // Add pseudo-dispersion colors based on normal
+        col += vec3<f32>(abs(rR.x), abs(rG.y), abs(rB.z)) * 0.3;
+    } else {
+        // Background
+        col = vec3<f32>(0.05, 0.05, 0.1) * (1.0 - length(uv) * 0.5);
     }
 
-    col += glow * 0.02;
+    // Audio reactive background coloring
+    let audio_bg = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(base_uv.x, 0.5), 0.0).r;
+    col += vec3<f32>(audio_bg * 0.1, audio_bg * 0.05, audio_bg * 0.15);
 
-    // Output
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    // Write out final pixel
+    let final_col = vec4<f32>(col, 1.0);
+    textureStore(writeTexture, coords, final_col);
 }
