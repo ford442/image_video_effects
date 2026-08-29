@@ -1,7 +1,7 @@
 {
-  "generated": "2026-08-26T21:33:38.927459+00:00",
-  "defs_scanned": 1189,
-  "defs_with_params": 1189,
+  "generated": "2026-08-29T12:06:07.540077+00:00",
+  "defs_scanned": 1191,
+  "defs_with_params": 1191,
   "new_dead_sliders": [],
   "known_dead_sliders": [
     {
@@ -198,20 +198,6 @@
       "category": "simulation",
       "param_id": "glow",
       "name": "Glow Intensity",
-      "field": "w"
-    },
-    {
-      "id": "alpha-depth-fog-volumetric",
-      "category": "visual-effects",
-      "param_id": "colorTemp",
-      "name": "Color Temperature",
-      "field": "w"
-    },
-    {
-      "id": "alpha-hdr-bloom-chain",
-      "category": "visual-effects",
-      "param_id": "saturation",
-      "name": "Saturation",
       "field": "w"
     }
   ],
