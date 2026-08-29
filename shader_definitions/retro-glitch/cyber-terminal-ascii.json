@@ -2,53 +2,30 @@
   "id": "cyber-terminal-ascii",
   "name": "Cyber Terminal ASCII",
   "url": "shaders/cyber-terminal-ascii.wgsl",
+  "description": "Scrolling hex-dump terminal with phosphor-green mono vs color blend, spring decoder lens, held decode widen, click packet bursts, exact C phosphor persistence, and ACES display.",
+  "workgroup_size": [16, 16, 1],
+  "updated": true,
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "spring-cursor",
+    "aces-tone-map",
+    "temporal-feedback",
+    "upgraded-rgba"
   ],
   "params": [
-    {
-      "id": "density",
-      "name": "Grid Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Density of the ASCII character grid"
-    },
-    {
-      "id": "color_mode",
-      "name": "Color Mode",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Blend between monochrome and full color"
-    },
-    {
-      "id": "glow_strength",
-      "name": "Glow",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Glow strength of the ASCII characters"
-    },
-    {
-      "id": "decoder_radius",
-      "name": "Decoder Radius",
-      "default": 0.3,
-      "min": 0.05,
-      "max": 0.4,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Radius of the binary decoder lens around the mouse"
-    }
+    { "id": "density", "name": "Grid Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "color_mode", "name": "Color Mode", "default": 0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "glow_strength", "name": "Glow", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "decoder_radius", "name": "Decoder Radius", "default": 0.3, "min": 0.05, "max": 0.4, "step": 0.01, "mapping": "zoom_params.w" }
   ],
-  "tags": [
-    "filter",
-    "image-processing"
-  ]
+  "updatedParams": [
+    { "index": 0, "name": "Grid Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Color Mode", "default": 0, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Glow", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Decoder Radius", "default": 0.3, "min": 0.05, "max": 0.4, "step": 0.01 }
+  ],
+  "tags": ["filter", "image-processing", "terminal", "ascii", "cyber", "glitch"]
 }

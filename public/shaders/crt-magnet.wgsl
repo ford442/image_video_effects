@@ -64,12 +64,6 @@ fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
   return mix(prev, bass, k);
 }
 
-fn spring(current: vec2<f32>, targetPos: vec2<f32>, velocity: ptr<function, vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
-  let force = (targetPos - current) * k - *velocity * damping;
-  *velocity = *velocity + force * dt;
-  return current + *velocity * dt;
-}
-
 fn barrel(uv: vec2<f32>, k: f32) -> vec2<f32> {
   let d = uv - 0.5;
   let r2 = dot(d, d);
@@ -116,16 +110,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let colorShift = u.zoom_params.z;
   let distortionRadius = u.zoom_params.w;
 
-  let prevState = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
-  let env = bass_env(prevState.r, bass, 0.8, 0.15);
-  let smoothMouse = prevState.gb;
-
-  if (global_id.x == 0u && global_id.y == 0u) {
-    var prevVel = textureLoad(dataTextureC, vec2<i32>(1, 0), 0).rg;
-    var vel = prevVel;
-    let newPos = spring(smoothMouse, mousePos, &vel, 8.0, 0.85, 0.016);
-    textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(env, newPos.x, newPos.y, 0.0));
-    textureStore(dataTextureA, vec2<i32>(1, 0), vec4<f32>(vel.x, vel.y, 0.0, 0.0));
+  var env = bass;
+  let hasSpring = arrayLength(&extraBuffer) > 139u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    env = bass_env(extraBuffer[139], bass, 0.8, 0.15);
+  }
+  var smoothMouse = mousePos;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = mousePos;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 8.0;
+      let accel = (mousePos - springPos) * (omega * omega) - springVel * (2.0 * omega * 0.85);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[139] = env;
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
   }
 
   let uv = barrel(uv01, 0.15);
@@ -168,9 +182,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let curl = curl2(uv * 6.0 + smoothMouse * 3.0, time * 0.2);
   let displacement = dVec * field * 4.0 + curl * field * 0.4;
 
-  let beamR = clamp(uv - displacement * 1.35, vec2<f32>(0.0), vec2<f32>(1.0));
-  let beamG = clamp(uv - displacement * 1.00, vec2<f32>(0.0), vec2<f32>(1.0));
-  let beamB = clamp(uv - displacement * 0.70, vec2<f32>(0.0), vec2<f32>(1.0));
+  let purityErr = field * (0.25 + clickWave * 0.55 + degauss * 0.35);
+  let beamR = clamp(uv - displacement * (1.35 + purityErr * 0.4), vec2<f32>(0.0), vec2<f32>(1.0));
+  let beamG = clamp(uv - displacement * (1.00 + purityErr * 0.1), vec2<f32>(0.0), vec2<f32>(1.0));
+  let beamB = clamp(uv - displacement * (0.70 - purityErr * 0.25), vec2<f32>(0.0), vec2<f32>(1.0));
   var color = vec3<f32>(
     textureSampleLevel(readTexture, u_sampler, beamR, 0.0).r,
     textureSampleLevel(readTexture, u_sampler, beamG, 0.0).g,
@@ -197,6 +212,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloomThreshold = smoothstep(0.6, 1.0, luma(color));
   color += bloom * bloomThreshold * bloomIntensity * (2.0 + mids * 1.5) + vec3<f32>(treble * 0.05);
   color += vec3<f32>(0.18, 0.55, 1.0) * beamSweep * (0.08 + bloomIntensity * 0.22);
+  color += bloom * clickWave * (0.35 + bloomIntensity * 0.5) * vec3<f32>(0.9, 0.95, 1.1);
   color += palette(time * 0.12 + screenRadius * 1.8,
                    vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67))
          * (degauss * 0.18 + clickWave * 0.3);
@@ -228,7 +244,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-  if (global_id.x != 0u || global_id.y != 0u) {
-    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
-  }
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 }

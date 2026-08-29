@@ -1,6 +1,13 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-29 (Composer cyber/digital/glitch ten — cohort 2)
+**Last updated:** 2026-08-29 (Composer cyber/digital/glitch ten — cohort 3)
+
+## 2026-08-29 — Composer batch cyber/digital/glitch ten — cohort 3 complete
+
+- Upgraded `crt-magnet`, `crt-tv-stipple`, `phosphor-decay`, `vhs-tracking-bilateral`, `film-gate-weave`, `vinyl-scratch`, `ascii-flow`, `ascii-flow-structure`, `cyber-terminal-ascii`, and `cyber-rain-interactive` under the canonical exact-C/A-only/ACES/three-band/spring/interaction contract with byte-exact saved params.
+- Audit/polish: crt-magnet (extraBuffer spring + env at [139]), ascii-flow (ACES + A + C smear). Major rewrites: crt-tv-stipple, vhs-tracking-bilateral, cyber-terminal-ascii.
+- `phosphor-decay` owns linear radiance + energy alpha in A (OkLab); `film-gate-weave` A packs scratch in G; `ascii-flow-structure` A packs eigenvec/coherency/LIC; `cyber-rain-interactive` is spring-free (distinct from cyber-rain-em); others ACES display RGBA in A.
+- Structural/Jest/build gates green (Naga 10/10, Jest 84/84, build with `SKIP_WASM_BUILD=1`); real-GPU QA remains external.
 
 ## 2026-08-29 — Composer batch cyber/digital/glitch ten — cohort 2 complete
 

@@ -9,7 +9,9 @@
       "held-pointer",
       "click-reactive",
       "psychedelic-color",
-      "procedural-glyphs"
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -86,7 +88,12 @@
         "step": 0.01
       }
     ],
-    "updated": true
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ]
   },
   {
     "id": "bayer-dither-interactive",
@@ -315,6 +322,11 @@
         "max": 1
       }
     ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -325,7 +337,9 @@
       "audio-palette",
       "sdf-mask",
       "continuous-motion",
-      "bounded-click-ripples"
+      "bounded-click-ripples",
+      "spring-cursor",
+      "held-drag"
     ],
     "tags": [
       "filter",
@@ -548,7 +562,13 @@
     "id": "cyber-rain-interactive",
     "name": "Cyber Rain",
     "url": "shaders/cyber-rain-interactive.wgsl",
-    "description": "Layered glyph downpour: three parallax rain sheets are composited by scene depth, each with two drops per column rendered from a packed 4x6 glyph ROM that re-rolls as the drop falls. Every column owns one FFT bin that sets its fall rate and head brightness. The pointer bends drops aside, clicks emit bounded EMP rings, and image luminance acts as wetness that makes glyphs cling and pale.",
+    "description": "Layered glyph downpour with three parallax rain sheets, per-column FFT bins, spring-free pointer bending (distinct from cyber-rain-em), bounded EMP rings, luminance wetness cling, exact C trails, and ACES display.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "features": [
       "mouse-driven",
       "held-drag",
@@ -642,8 +662,22 @@
     "id": "cyber-terminal-ascii",
     "name": "Cyber Terminal ASCII",
     "url": "shaders/cyber-terminal-ascii.wgsl",
+    "description": "Scrolling hex-dump terminal with phosphor-green mono vs color blend, spring decoder lens, held decode widen, click packet bursts, exact C phosphor persistence, and ACES display.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -653,8 +687,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Density of the ASCII character grid"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "color_mode",
@@ -663,8 +696,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Blend between monochrome and full color"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "glow_strength",
@@ -673,8 +705,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Glow strength of the ASCII characters"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "decoder_radius",
@@ -683,13 +714,50 @@
         "min": 0.05,
         "max": 0.4,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Radius of the binary decoder lens around the mouse"
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Color Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Decoder Radius",
+        "default": 0.3,
+        "min": 0.05,
+        "max": 0.4,
+        "step": 0.01
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "terminal",
+      "ascii",
+      "cyber",
+      "glitch"
     ]
   },
   {
@@ -1397,7 +1465,13 @@
     "name": "Film Gate Weave",
     "category": "retro-glitch",
     "url": "shaders/film-gate-weave.wgsl",
-    "description": "Accurate 35mm film gate weave simulation with perforation hole registration jitter, gate flutter from intermittent motion, and film scratch generation with temporal persistence. Film grain with dye cloud structure, gate hair accumulation, splice tape artifacts, ACES tone mapping, and chromatic aberration from lens breathing.",
+    "description": "35mm gate weave with exact C scratch persistence (A packs rgb.r + scratch.g), spring registration anchor, held gate flutter, click splice flashes, and ACES tone mapping.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "features": [
       "temporal-frame-jitter",
       "upgraded-rgba",
@@ -1407,7 +1481,12 @@
       "registration-jitter",
       "scratch-persistence",
       "splice-tape",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "spring-cursor",
+      "held-drag",
+      "click-ripples",
+      "aces-tone-map",
+      "temporal-feedback"
     ],
     "params": [
       {
@@ -1433,6 +1512,36 @@
       },
       {
         "id": "flicker",
+        "name": "Color Flicker",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Gate Weave",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Dust Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Scratches",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
         "name": "Color Flicker",
         "default": 0.4,
         "min": 0,
@@ -1745,7 +1854,13 @@
     "id": "phosphor-decay",
     "name": "Phosphor Decay",
     "url": "shaders/phosphor-decay.wgsl",
-    "description": "CRT phosphor persistence with per-channel linear-feedback decay, OkLab-blended trails, audio-reactive bloom, branchless shadow mask, scan-line blanking, depth haze, blackbody temperature grading, and IGN-dithered premultiplied output.",
+    "description": "Per-channel linear-feedback phosphor persistence with OkLab trail blending, blackbody grading, spring cursor, held static-charge, capped click blooms, row-voice FFT bins, and energy-carrying semantic alpha.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "params": [
       {
         "id": "decay_rate",
@@ -1776,11 +1891,49 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Bloom Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Shadow Mask Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Scan Blanking",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "aces-tone-map",
+      "spring-cursor",
+      "held-drag",
+      "click-ripples",
+      "temporal-feedback",
+      "linear-feedback",
+      "oklab-mixed",
+      "blackbody-graded"
     ],
     "tags": [
       "vfx",
@@ -2680,7 +2833,13 @@
     "name": "Vinyl Scratch",
     "category": "retro-glitch",
     "url": "shaders/vinyl-scratch.wgsl",
-    "description": "Vintage vinyl record scratch with chromatic wobble, animated dust particles, groove lighting with directional reflections, groove sparkle highlights, analog warmth, saturation roll-off, film grain with temporal coherence, radial chromatic aberration, vignette, and lens dirt. Bass drives rotation speed, mids warp the record, treble adds groove sparkle and dust. Depth scales groove intensity.",
+    "description": "Vintage vinyl with spring stylus, held drag warp, click scratch bursts, groove sparkle exact-C coherence, ACES display, and semantic alpha from depth and groove mask.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "params": [
       {
         "id": "scratch_density",
@@ -2711,6 +2870,36 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scratch Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Dust Particles",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Record Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Vintage Tone",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
     "features": [
       "retro",
       "texture",
@@ -2724,7 +2913,12 @@
       "analog-warmth",
       "film-grain",
       "vignette",
-      "lens-dirt"
+      "lens-dirt",
+      "spring-cursor",
+      "held-drag",
+      "click-ripples",
+      "aces-tone-map",
+      "temporal-feedback"
     ],
     "tags": [
       "filter",

@@ -1,12 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  ASCII Flow
-//  Category: retro-glitch
-//  Features: mouse-driven, retro-stylize
-//  Complexity: Medium
-//  Chunks From: ascii-flow
-//  Created: 2026-05-31
-//  By: Copilot CLI (tactical swarm)
-// ═══════════════════════════════════════════════════════════════════
+// ASCII Flow — Composer batch cyber/digital/glitch cohort 3
+// Eight procedural glyphs, held vortices, click fronts, light exact-C smear,
+// ACES display, three-band audio, semantic alpha.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -79,12 +73,17 @@ fn draw_glyph(uv: vec2<f32>, index: i32) -> f32 {
     return 1.0 - smoothstep(0.0, 0.05, d);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
         return;
     }
+    let coord = vec2<i32>(gid.xy);
     var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
     let intensity = u.zoom_params.x;
@@ -138,18 +137,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Green phosphor look or keep original color?
     // Let's do a mix: Tint green but keep some hue.
     let tint = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + gray * 5.0 + time * (0.3 + audio.z));
-    let final_color = mix(color, tint, 0.45 + intensity * 0.4) * shape * (1.0 + audio.x * 0.35) + tint * clickFront * 0.3;
+    var final_color = mix(color, tint, 0.45 + intensity * 0.4) * shape * (1.0 + audio.x * 0.35) + tint * clickFront * 0.3;
 
-    // Sample depth for alpha calculation
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
-    // Calculate luminance-based alpha
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
+    final_color = mix(final_color, prev, 0.06 * shape);
+
+    final_color = acesToneMap(final_color * (0.95 + audio.y * 0.05));
+
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(0.7, 1.0, luma);
-    let finalAlpha = mix(alpha * 0.8, alpha, depth);
-    
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(final_color, finalAlpha));
-    
-    // Pass depth
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let alpha = clamp(mix(0.7, 1.0, luma) * mix(0.8, 1.0, depth) + clickFront * 0.15, 0.0, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(final_color, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(final_color, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

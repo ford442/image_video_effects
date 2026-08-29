@@ -449,7 +449,13 @@
     "id": "ascii-flow-structure",
     "name": "ASCII Flow + Structure Tensor",
     "url": "shaders/ascii-flow-structure.wgsl",
-    "description": "ASCII glyph rendering driven by structure tensor flow field. Glyphs align with image edges and orientations instead of random noise. Line Integral Convolution modulates brightness.",
+    "description": "Edge-aligned ASCII glyphs driven by structure-tensor flow and LIC brightness, with spring flow bias, held coherence lock, click shockfront, exact C coherency blend, and ACES display.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "tags": [
       "ascii",
       "structure-tensor",
@@ -463,7 +469,12 @@
       "advanced-convolution",
       "upgraded-rgba",
       "mouse-driven",
-      "randomization-safe"
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback"
     ],
     "params": [
       {
@@ -499,7 +510,40 @@
         "step": 0.01
       }
     ],
-    "target_rating": 4.5
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Coherence Boost",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "LIC Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "astral-kaleidoscope-julia",
@@ -2941,17 +2985,27 @@
     "id": "crt-tv-stipple",
     "name": "CRT TV Stipple",
     "url": "shaders/crt-tv-stipple.wgsl",
-    "description": "Authentic CRT TV simulation with blue-noise stippled phosphor dots. Combines barrel distortion, chromatic aberration, scanlines, and phosphor decay with perceptually optimal blue-noise dot placement for each RGB subpixel triad.",
+    "description": "CRT phosphor physics with blue-noise stipple aperture grille, spring focus, held bulge, capped ripples, exact C persistence, and three-band audio.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "features": [
       "advanced-hybrid",
       "crt-simulation",
       "blue-noise",
       "stippling",
       "barrel-distortion",
-      "randomization-safe",
-      "upgraded-rgba",
+      "mouse-driven",
       "audio-reactive",
-      "depth-aware"
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2961,8 +3015,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "CRT scanline darkness"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "phosphor_glow",
@@ -2971,8 +3024,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Phosphor bloom around bright areas"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "stipple_density",
@@ -2981,8 +3033,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Density of blue-noise stipple dots"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "barrel",
@@ -2991,17 +3042,43 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "CRT screen curvature amount"
+        "mapping": "zoom_params.w"
       }
     ],
-    "chunks_used": [
-      "Barrel distortion, scanlines, phosphor decay (crt-tv.wgsl)",
-      "Blue-noise offset, stipple placement (spec-blue-noise-stipple.wgsl)"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scanline Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Phosphor Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Stipple Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Barrel Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "crt",
       "retro",
@@ -12166,14 +12243,27 @@
     "id": "vhs-tracking-bilateral",
     "name": "VHS Tracking Bilateral",
     "url": "shaders/vhs-tracking-bilateral.wgsl",
-    "description": "Full VHS signal chain physics with edge-preserving bilateral smoothing. Timebase jitter, chroma noise, and control track dropouts are filtered through a bilateral dream, creating a soft analog degradation while preserving edges.",
+    "description": "VHS signal chain with AR(1) capstan jitter, chroma phase noise, control-track dropouts, tracking-band bilateral smoothing, spring bar, held freeze, click dropout pulses, and exact C smear.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "features": [
       "advanced-hybrid",
       "vhs-simulation",
       "bilateral-filter",
       "chroma-noise",
       "temporal",
-      "randomization-safe"
+      "mouse-driven",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -12183,8 +12273,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "VHS tracking error intensity"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "chroma_noise",
@@ -12193,8 +12282,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Chroma channel noise amount"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "spatial_sigma",
@@ -12203,8 +12291,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Bilateral spatial spread"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "color_sigma",
@@ -12213,17 +12300,43 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Bilateral color range sensitivity"
+        "mapping": "zoom_params.w"
       }
     ],
-    "chunks_used": [
-      "VHS jitter, chroma noise, dropouts, quantization (vhs-tracking.wgsl)",
-      "Bilateral filter core (conv-bilateral-dream.wgsl)"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tracking Error",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Chroma Noise",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spatial Sigma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Sigma",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
-    "performance_target": "45 FPS (GTX 1060)",
-    "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "vhs",
       "retro",
