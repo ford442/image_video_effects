@@ -3483,7 +3483,7 @@
     "id": "echo-ripple",
     "name": "Echo Ripple",
     "url": "shaders/echo-ripple.wgsl",
-    "description": "Oil-slick thin-film rings with bioluminescent caustic wakes, spectral echo harmonics, held gravity deformation, bounded click history, and exact-load feedback advection preserving [displayRGB, bassEnvelope] A packing.",
+    "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing.",
     "updated": true,
     "params": [
       {
@@ -3557,6 +3557,8 @@
       "lod-noise",
       "cached-displacement",
       "thin-film-interference",
+      "bioluminescent-harmonics",
+      "held-gravity-bowl",
       "caustic-wakes",
       "exact-history-advection",
       "bounded-click-ripples"
@@ -3575,8 +3577,38 @@
     "name": "Edge Glow Mouse",
     "category": "interactive-mouse",
     "url": "shaders/edge-glow-mouse.wgsl",
-    "description": "Unsharp-masked edges bloom into neon HDR halos with anisotropic diffusion, chromatic aberration, ACES tone mapping, and film grain. Bass drives glow radius, mouse creates local edge emphasis, depth controls falloff.",
+    "description": "Unsharp-masked edges bloom into oil-slick magenta/teal neon with anisotropic bloom packets racing along tangents, richer click ring bursts, held tighten+intensify, C-persisted halo trail, ACES, and FFT band shimmer. Distinct psychedelic film — not plain cyan.",
     "params": [
+      {
+        "id": "threshold",
+        "name": "Edge Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorCycle",
+        "name": "Color Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "threshold",
         "name": "Edge Threshold",
@@ -3610,7 +3642,12 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "thin-film",
+      "oil-slick",
+      "anisotropic-bloom"
     ],
     "tags": [
       "edges",
@@ -3620,18 +3657,59 @@
       "audio-reactive",
       "bloom",
       "chromatic",
-      "HDR"
+      "HDR",
+      "iridescent",
+      "oil-slick"
     ]
   },
   {
     "id": "energy-shield",
     "name": "Energy Shield",
     "url": "shaders/energy-shield.wgsl",
+    "description": "A sci-fi hexagonal force field that lights up under the cursor, trails activation history, and detonates expanding impact rings on click. Hex edges shimmer with oil-slick iridescence instead of flat cyan; a stronger Fresnel rim reads as a curved shield surface. Held press tightens the hex grid and sharpens cell edges. Bass pulses the standing wave and overall glow; treble crackles along the hex rims. Exact textureLoad trail state, ACES on the display path, semantic alpha from shield activation.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-interaction",
+      "click-shockwaves",
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "fresnel-rim",
+      "oil-slick",
+      "hex-grid"
     ],
-    "description": "A hexagonal energy grid that lights up and ripples upon mouse interaction.",
     "params": [
+      {
+        "id": "hexScale",
+        "name": "Hex Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rippleSpeed",
+        "name": "Ripple Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "impactStrength",
+        "name": "Impact Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.95,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "hexScale",
         "name": "Hex Size",
@@ -3663,8 +3741,13 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
-    ]
+      "interactive",
+      "hex-grid",
+      "sci-fi",
+      "audio-reactive",
+      "force-field"
+    ],
+    "updated": true
   },
   {
     "id": "entropy-grid",
@@ -7071,11 +7154,13 @@
       "semantic-alpha",
       "aces",
       "curl-advection",
+      "midpoint-advection",
+      "bounded-antidiffusion",
       "wipe-fronts",
       "chromatic-aberration",
       "temporal-feedback"
     ],
-    "description": "Temporal feedback advected by a divergence-free curl-noise field whose three octaves are driven by their own FFT bins — the previous field used raw noise directly as a velocity, which has non-zero divergence and blooms the feedback out. Clicks emit bounded wipe fronts that punch fresh video through the accumulation. History uses exact textureLoad.",
+    "description": "Temporal feedback follows a second-order midpoint trace through three FFT-banded divergence-free curl octaves. Bounded anti-diffusion restores transported detail without inventing new extrema, while click wipe fronts reveal fresh video.",
     "params": [
       {
         "name": "Distortion",
@@ -7162,8 +7247,20 @@
     "id": "liquid-touch",
     "name": "Liquid Touch",
     "url": "shaders/liquid-touch.wgsl",
+    "description": "An exact-load height-field solver with a 13-point biharmonic capillary stencil, nonlinear mean-curvature pressure, Marangoni flow, dispersive droplet waves, touch coalescence, and curvature-driven microfoam.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "depth-aware",
+      "fluid-simulation",
+      "biharmonic-dispersion",
+      "mean-curvature-pressure",
+      "marangoni-flow",
+      "microfoam",
+      "semantic-alpha",
+      "aces"
     ],
     "params": [
       {
@@ -7193,6 +7290,40 @@
         "default": 0.3,
         "min": 0,
         "max": 1
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "viscosity",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Young-Laplace tension and capillary dispersion strength."
+      },
+      {
+        "id": "brush",
+        "name": "Droplet Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Radius of held-pointer droplet displacement and heating."
+      },
+      {
+        "id": "refract",
+        "name": "Optical Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Height-gradient refraction and surface-normal strength."
+      },
+      {
+        "id": "tint",
+        "name": "Marangoni Flow",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Thermal surface-tension-gradient flow and capillary tint."
       }
     ],
     "tags": [
@@ -7264,10 +7395,13 @@
       "aces",
       "rk4-advection",
       "strain-tensor",
+      "cauchy-green-deformation",
+      "principal-stretch",
+      "fold-caustics",
       "chromatic-aberration",
       "fluid-simulation"
     ],
-    "description": "RK4 semi-Lagrangian warp whose strain tensor now comes from the flow field's ANALYTIC Jacobian instead of four extra finite-difference field evaluations (each of which ran three curl-noise octaves). Fixes an alpha bug that multiplied a UV-space magnitude by the pixel width, pinning alpha at 1.0 at every real resolution. Clicks emit bounded vortex rings; state reads use exact textureLoad.",
+    "description": "RK4 semi-Lagrangian flow combines exact-load state with an analytic pointer Jacobian. A finite-time Cauchy-Green tensor now yields rotation-invariant principal stretch, anisotropic chromatic spread, and near-singular fold caustics; bounded click rings inject vorticity.",
     "params": [
       {
         "id": "radius",
@@ -7325,11 +7459,11 @@
       },
       {
         "id": "decay",
-        "name": "Shear Stretch",
+        "name": "Principal Stretch",
         "default": 0.9,
         "min": 0,
         "max": 1,
-        "description": "How much the strain tensor's shear stretches the velocity (maps to zoom_params.z)."
+        "description": "Blend toward the Cauchy-Green tensor's dominant principal stretch (maps to zoom_params.z)."
       },
       {
         "id": "swirl",

@@ -1386,10 +1386,57 @@
       "field-line-tracing",
       "equipotential-surfaces",
       "dielectric-polarization",
-      "corona-discharge"
+      "corona-discharge",
+      "click-spark-charges",
+      "held-charge",
+      "fft-band-arcs",
+      "treble-sparkle",
+      "aces-tone-mapping"
     ],
-    "description": "Electric field line tracing from charge distributions with equipotential surfaces and field line density. Dielectric boundary conditions with plasma-like glow, polarization colors, HDR bloom on high-field regions, ACES tone mapping, and corona discharge approximation.",
+    "description": "Electric field line tracing with equipotential surfaces, capped click spark charges from ripples, held mouse charge boost, corona bloom packets, FFT band arcs, and treble sparkle. Display is ACES-tonemapped; A stores raw field diagnostics (potential, |E|, edge/spark, dielectric energy).",
     "params": [
+      {
+        "id": "edge_threshold",
+        "name": "Edge Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base threshold for edge detection"
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Intensity multiplier for the electric glow"
+      },
+      {
+        "id": "field_density",
+        "name": "Field Line Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Density of field and equipotential lines"
+      },
+      {
+        "id": "spark_speed",
+        "name": "Spark Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Speed of electric spark animation"
+      }
+    ],
+    "updatedParams": [
       {
         "id": "edge_threshold",
         "name": "Edge Threshold",
@@ -1442,7 +1489,8 @@
       "hdr-bloom",
       "aces-tone-mapping",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "spark-charges"
     ]
   },
   {

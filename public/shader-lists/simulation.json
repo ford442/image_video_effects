@@ -1479,6 +1479,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
+        "audio": "overall",
         "description": "Spring constraint strength (soft-capped for stable 4-iter Jacobi)"
       },
       {
@@ -1489,6 +1490,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
+        "audio": "mid",
         "description": "How far springs stretch before they tear — lower tears easier"
       },
       {
@@ -1499,6 +1501,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
+        "audio": "bass",
         "description": "Downward drape bias (soft curve — no explode at max)"
       },
       {
@@ -1509,6 +1512,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
+        "audio": "treble",
         "description": "Broken springs slowly reconnect when elevated; full heal above ~0.7"
       }
     ],
@@ -1882,6 +1886,114 @@
     "tags": [
       "reaction-diffusion",
       "gray-scott",
+      "simulation",
+      "physics",
+      "showcase"
+    ]
+  },
+  {
+    "id": "jfa-aurora-voronoi",
+    "name": "JFA Aurora Voronoi",
+    "url": "shaders/jfa-aurora-seed.wgsl",
+    "description": "Phase C stretch — Jump-Flood aurora Voronoi from mouse seeds. graph · seed + flood×8 + render.",
+    "multipass": {
+      "graph": {
+        "maxPassesPerFrame": 10,
+        "nodes": [
+          {
+            "id": "seed",
+            "entry": "jfa-aurora-seed",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "dataA"
+            ]
+          },
+          {
+            "id": "flood",
+            "entry": "jfa-aurora-flood",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "dataA"
+            ],
+            "repeat": 8
+          },
+          {
+            "id": "render",
+            "entry": "jfa-aurora-render",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
+    },
+    "params": [
+      {
+        "id": "jumpScale",
+        "name": "Jump Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "audio": "mid",
+        "description": "JFA jump radius scale per flood pass"
+      },
+      {
+        "id": "auroraHue",
+        "name": "Aurora Hue",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "audio": "treble",
+        "description": "Aurora palette scroll and distance tint"
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "audio": "bass",
+        "description": "Cell glow intensity and random seed density"
+      },
+      {
+        "id": "seedStrength",
+        "name": "Seed Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "audio": "overall",
+        "description": "Mouse and click seed radius"
+      }
+    ],
+    "features": [
+      "simulation",
+      "multi-pass",
+      "graph-runner",
+      "physics",
+      "mouse-driven",
+      "audio-reactive",
+      "interactive"
+    ],
+    "tags": [
+      "jfa",
+      "voronoi",
+      "aurora",
       "simulation",
       "physics",
       "showcase"
@@ -2605,6 +2717,197 @@
         "max": 1,
         "step": 0.01
       }
+    ]
+  },
+  {
+    "id": "poincare-tiling",
+    "name": "Poincaré Tiling",
+    "url": "shaders/poincare-tiling-map.wgsl",
+    "description": "Physics Lab — hyperbolic disk tiling with Möbius layer composite. graph · 2 passes.",
+    "multipass": {
+      "graph": {
+        "maxPassesPerFrame": 8,
+        "nodes": [
+          {
+            "id": "map",
+            "entry": "poincare-tiling-map",
+            "reads": [],
+            "writes": [
+              "dataA"
+            ]
+          },
+          {
+            "id": "layer",
+            "entry": "poincare-tiling-layer",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
+    },
+    "params": [
+      {
+        "id": "curvature",
+        "name": "Curvature",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "audio": "bass",
+        "description": "Poincaré disk scale / curvature"
+      },
+      {
+        "id": "symmetry",
+        "name": "Symmetry",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "audio": "mid",
+        "description": "Hyperbolic sector count"
+      },
+      {
+        "id": "animSpeed",
+        "name": "Animation Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "audio": "treble",
+        "description": "Möbius layer rotation speed"
+      },
+      {
+        "id": "tileScale",
+        "name": "Tile Scale",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "audio": "overall",
+        "description": "Secondary layer scale and blend"
+      }
+    ],
+    "features": [
+      "simulation",
+      "multi-pass",
+      "graph-runner",
+      "physics",
+      "mouse-driven",
+      "audio-reactive",
+      "interactive"
+    ],
+    "tags": [
+      "poincare",
+      "hyperbolic",
+      "simulation",
+      "physics",
+      "showcase"
+    ]
+  },
+  {
+    "id": "predator-prey-ecology",
+    "name": "Predator-Prey Ecology",
+    "url": "shaders/predator-prey-ecology-step.wgsl",
+    "description": "Physics Lab — packed Lotka–Volterra pixels: prey flora vs predator fauna waves. Hold to seed, clicks bloom prey. graph · 2 passes · rgba32float.",
+    "requiresRgba32Float": true,
+    "multipass": {
+      "graph": {
+        "maxPassesPerFrame": 8,
+        "nodes": [
+          {
+            "id": "step",
+            "entry": "predator-prey-ecology-step",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "dataA"
+            ]
+          },
+          {
+            "id": "render",
+            "entry": "predator-prey-ecology-render",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
+    },
+    "params": [
+      {
+        "id": "eatRate",
+        "name": "Eat Rate",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "audio": "mid",
+        "description": "Predator consumption of prey density"
+      },
+      {
+        "id": "deathRate",
+        "name": "Death Rate",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "audio": "treble",
+        "description": "Predator decay without prey"
+      },
+      {
+        "id": "mutation",
+        "name": "Mutation",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "audio": "bass",
+        "description": "Nutrient-driven prey mutation / bloom"
+      },
+      {
+        "id": "breed",
+        "name": "Breed Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "audio": "overall",
+        "description": "Mouse hold and click seed strength"
+      }
+    ],
+    "features": [
+      "simulation",
+      "multi-pass",
+      "graph-runner",
+      "physics",
+      "mouse-driven",
+      "audio-reactive",
+      "interactive"
+    ],
+    "tags": [
+      "predator-prey",
+      "ecology",
+      "simulation",
+      "physics",
+      "showcase"
     ]
   },
   {

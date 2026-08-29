@@ -1,6 +1,12 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-29 (Reconciled main: cohort 3 cyber/glitch + lighting-optics)
+**Last updated:** 2026-08-29 (Selective leftover upgrade-branch union)
+
+## 2026-08-29 — Leftover upgrade branches selectively unioned into main
+
+- `new-shader-upgrades` and `gen-math-upgrades-cb96` already matched main for shader WGSL; skipped.
+- From stale `upgrade/batch-60`/`batch-61` (108 behind): landed unique Physics Lab set-2 graph WGSL/JSON and uncontested upgrades; kept main on overlapping cyber/heat shaders; left WASM-bridge TS (#1179) unmerged.
+- Existing kuwahara/byte-mosh/dla/droste defs gained multipass graphs with saved params preserved; new IDs: jfa-aurora-voronoi, poincare-tiling, predator-prey-ecology. Naga 32/32 on taken WGSL. Catalog 1,353; graphs 14. Real-GPU QA external.
 
 ## 2026-08-29 — Reconciled local main with origin/main
 

@@ -1,42 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Heat Haze Mirage
+//  Heat Haze Mirage — Batch 60
 //  Category: image
-//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
-//  Complexity: Medium
-//  Created: 2026-05-30
-//  Upgraded: 2026-08-23 (Batch 60)
+//  Inferior mirage from a refractive-index gradient: ray curvature
+//  follows dn/dy through the hot layer; past critical gradient a
+//  vertically mirrored sample folds in (false water / doubled horizon).
+//  Depth preserves scene geometry (no heat-column clobber). ACES +
+//  semantic alpha. Spring heat source in extraBuffer[133..137].
 //
-//  FIXED IN THIS PASS — depth clobber. `writeDepthTexture` was fed
-//  `clamp(heatFactor * 0.5, 0, 1)`, discarding scene geometry entirely: every
-//  depth-aware shader chained after this one read the heat column instead of
-//  the depth map, and the engine's depth swap fed that back in. Scene depth is
-//  preserved and only perturbed by the mirage relief.
-//
-//  Also added: ACES (the output was hard-clamped to 1.3, clipping the shimmer
-//  highlights) and a semantic alpha derived from haze density rather than the
-//  source alpha passed straight through.
-//
-//  TWO NEW STRUCTURES
-//
-//    1. Refractive-index gradient ray bending — a mirage is not a noise offset;
-//       it is light bending through a vertical temperature gradient, where the
-//       air's refractive index falls as it heats. The displacement is now
-//       integrated from the local dn/dy gradient (hot air near the ground bends
-//       rays upward, producing the inverted-image inferior mirage), so the
-//       distortion grows with the square of the path through the hot layer
-//       instead of scaling linearly with a noise sample.
-//
-//    2. Inversion-layer image doubling — where the gradient is strong enough to
-//       reach total internal reflection, a second, vertically flipped sample is
-//       mixed in. That is the actual mechanism behind the shimmering "water"
-//       and the doubled horizon in real road mirages.
-// ═══════════════════════════════════════════════════════════════════
-//  Vertical heat shimmer driven by a rising hot-air column. A
-//  time-varying noise field is advected upward, displacing the UV
-//  sample. Temporal feedback (dataTextureC) stores the accumulated
-//  heat state and slowly cools. Bass (plasmaBuffer[0].x) injects
-//  fresh heat bursts; the mouse is a spring-damped heat source and
-//  clicks pop decaying heat blooms via the ripple queue.
+//  A packing: dataTextureA stores temporal haze accumulation RGBA
+//  (col.rgb + source a), resurfaced via dataTextureC next frame.
+//  B writes diagnostics (heatDisp.xy, heatFactor, bass). Heat spring
+//  owns [133..137] from pixel (0,0) only. Depth = scene + mirage relief.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -115,15 +89,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let chromaShift   = mix(0.0, 0.008, u.zoom_params.w) * (1.0 + treble * 0.5);
 
     // ── Spring-damped heat source (persistent state in extraBuffer) ──
-    // Critically-damped spring toward the raw mouse: the hot spot lags
-    // and drifts like a real thermal instead of snapping to the cursor.
     let dt       = 1.0 / 60.0;
     let omega    = 3.0;
     let rawMouse = u.zoom_config.yz;
+    let held     = u.zoom_config.w > 0.5;
     var heatPos  = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     var heatVel  = vec2<f32>(extraBuffer[135], extraBuffer[136]);
     let springInitialized = extraBuffer[137] > 0.5;
-    if (!springInitialized) { // cold start: begin at the cursor, including (0,0)
+    if (!springInitialized) {
         heatPos = rawMouse;
         heatVel = vec2<f32>(0.0, 0.0);
     }
@@ -138,26 +111,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         extraBuffer[137] = 1.0;
     }
 
-    // Thermal sway: a whisper of advected noise makes the hot spot
-    // wander like a real pocket of hot air instead of a pinned disc.
+    // Thermal sway
     let sway      = fbm2(vec2<f32>(time * 0.7, time * 0.53)) * 0.015;
 
-    // Heat column: stronger at bottom of screen (y~0), rises upward
-    let heatBase  = smoothstep(1.0, 0.0, uv.y) * 0.5 + 0.5; // more heat at bottom
-    // Also mouse can be a heat source (aspect-corrected: circular column)
+    // Heat column stronger at bottom; held press widens + intensifies gradient
+    let heatBase  = smoothstep(1.0, 0.0, uv.y) * 0.5 + 0.5;
     let mDist     = length((uv - (heatPos + sway)) * vec2<f32>(aspect, 1.0));
-    let mouseHeat = smoothstep(0.25, 0.0, mDist) * u.zoom_config.w;
+    let holdRadius = select(0.25, 0.34, held);
+    let holdGain   = select(1.0, 1.55 + bass * 0.35, held);
+    let mouseHeat = smoothstep(holdRadius, 0.0, mDist) * select(0.0, holdGain, held);
 
     var heatFactor = heatBase + mouseHeat;
 
-    // ── Click heat bursts ─────────────────────────────────────────
-    // Each live ripple pops a mirage at its click point: a decaying
-    // heat bloom (~2s life, exp falloff), no mouseDown required. The
-    // bloom distance is aspect-corrected so bursts stay circular.
+    // ── Click heat bursts (≤50) ───────────────────────────────────
     var clickHeat = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let rp  = u.ripples[i];          // xy = click pos, z = click time
+        let rp  = u.ripples[i];
         let age = time - rp.z;
         if (age >= 0.0 && age < 3.0) {
             let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
@@ -167,74 +137,73 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     heatFactor = min(heatFactor + clickHeat, 2.5);
 
     // ── Per-band FFT shimmer ──────────────────────────────────────
-    // The screen is sliced into 8 vertical bands; each band's FFT bin
-    // (plasmaBuffer[1..8]) locally boosts the shimmer amplitude, so the
-    // haze dances differently from the floor to the top of the frame.
     let band      = u32(clamp(uv.y * 8.0, 0.0, 7.999));
-    let bandBoost = plasmaBuffer[(band % 8u) + 1u].x * 0.3;
+    let bandBoost = plasmaBuffer[(band % 8u) + 1u].x * 0.35;
 
     // Rising displacement field
     let risingUV  = vec2<f32>(uv.x * wavyScale, uv.y * wavyScale - time * riseSpeed);
     let disp      = fbm2(risingUV) * heatIntensity * heatFactor * (1.0 + bandBoost);
 
-    // ── Structure 1: refractive-index gradient ray bending ────────────
-    // n falls as air heats, so dn/dy is negative in the hot layer near the
-    // ground. Ray curvature is proportional to that gradient, and the lateral
-    // deflection accumulates as the SQUARE of the path length through it.
+    // ── Refractive-index gradient ray bending ─────────────────────
+    // Held press intensifies dn/dy so the inversion fold arrives sooner.
+    let gradScale = select(25.0, 34.0, held);
     let heatAbove = smoothstep(1.0, 0.0, uv.y + 0.04) * 0.5 + 0.5 + mouseHeat;
-    let dn_dy     = (heatAbove - heatBase - mouseHeat) * 25.0;   // index gradient
-    let pathLen   = smoothstep(0.9, 0.0, uv.y);                  // path in hot layer
-    let bend      = -dn_dy * pathLen * pathLen * heatIntensity * 0.35;
+    let dn_dy     = (heatAbove - heatBase - mouseHeat) * gradScale;
+    let pathLen   = smoothstep(0.9, 0.0, uv.y);
+    let bend      = -dn_dy * pathLen * pathLen * heatIntensity * 0.42;
 
-    // Vertical bias: haze mostly shifts horizontally (shimmer), slight vertical
     let heatDisp  = vec2<f32>(disp.x, disp.y * 0.3 + bend);
 
-    // Chromatic shift: red slightly ahead, blue slightly behind (mirage)
-    let rUV = clamp(uv + heatDisp + vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-    let gUV = clamp(uv + heatDisp,                                vec2<f32>(0.0), vec2<f32>(1.0));
-    let bUV = clamp(uv + heatDisp - vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    // Caustic runners — bright amber streaks racing through the hot layer
+    let causticPhase = uv.x * 48.0 + uv.y * 14.0 - time * 7.5;
+    let caustic = pow(max(0.0, sin(causticPhase + disp.x * 18.0)), 18.0)
+                * heatFactor * smoothstep(0.75, 0.0, uv.y);
+    let causticWarp = vec2<f32>(caustic * 0.004 * (1.0 + treble), -caustic * 0.002);
+    let totalDisp = heatDisp + causticWarp;
+
+    // Chromatic shift across the mirage
+    let rUV = clamp(uv + totalDisp + vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let gUV = clamp(uv + totalDisp,                                vec2<f32>(0.0), vec2<f32>(1.0));
+    let bUV = clamp(uv + totalDisp - vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
     let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
     let a = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).a;
 
-    // ── Structure 2: inversion-layer image doubling ───────────────────
-    // Past the critical gradient the hot layer reflects: a vertically mirrored
-    // sample folds in, which is what produces the false "water" and the
-    // doubled horizon of a real inferior mirage.
-    let criticalGrad = 0.55;
-    let tirMix = smoothstep(criticalGrad, criticalGrad + 0.5, abs(bend) * 40.0)
-               * smoothstep(0.55, 0.0, uv.y);
-    let mirrorUV = clamp(vec2<f32>(gUV.x, 2.0 * uv.y - gUV.y + bend * 2.0),
+    // ── Stronger inversion-layer false-water fold ─────────────────
+    let criticalGrad = select(0.55, 0.42, held);
+    let tirMix = smoothstep(criticalGrad, criticalGrad + 0.42, abs(bend) * 48.0)
+               * smoothstep(0.58, 0.0, uv.y);
+    let mirrorUV = clamp(vec2<f32>(gUV.x, 2.0 * uv.y - gUV.y + bend * 2.4),
                          vec2<f32>(0.0), vec2<f32>(1.0));
     let mirrored = textureSampleLevel(readTexture, u_sampler, mirrorUV, 0.0).rgb;
 
-    // Atmospheric haze: slight brightness boost + warm tint at heat zones
-    let warmTint   = vec3<f32>(1.04, 1.01, 0.97) * (1.0 + heatFactor * 0.1);
-    var col        = mix(vec3<f32>(r, g, b), mirrored, tirMix * 0.75) * warmTint;
+    // Warm amber atmospheric tint (not neon cyan)
+    let warmTint   = vec3<f32>(1.06, 1.01, 0.94) * (1.0 + heatFactor * 0.12);
+    var col        = mix(vec3<f32>(r, g, b), mirrored, tirMix * 0.88) * warmTint;
 
-    // Heat shimmer glow (subtle)
-    let glowMask   = heatFactor * heatIntensity * 50.0;
-    col += vec3<f32>(0.05, 0.03, 0.01) * glowMask * (1.0 + mid);
+    // Heat shimmer glow + caustic highlights
+    let glowMask   = heatFactor * heatIntensity * 55.0;
+    col += vec3<f32>(0.07, 0.035, 0.01) * glowMask * (1.0 + mid);
+    col += vec3<f32>(1.0, 0.55, 0.18) * caustic * 0.22 * (1.0 + bandBoost);
 
-    // Temporal accumulate haze state (A write / C read contract)
+    // Temporal accumulate haze state — exact textureLoad on C
     let prev     = textureLoad(dataTextureC, coord, 0);
     let hazeAcc  = mix(vec4<f32>(col, a), prev, 0.85);
 
     col = acesFilm(col);
 
-    // Semantic alpha: haze density and the mirage fold are the content.
-    let hazeDensity = clamp((heatFactor - 0.5) * 0.8 + tirMix * 0.6, 0.0, 1.0);
-    let outAlpha = clamp(mix(a, 1.0, hazeDensity * 0.7), 0.0, 1.0);
+    // Semantic alpha: haze density + mirage fold + caustic
+    let hazeDensity = clamp((heatFactor - 0.5) * 0.85 + tirMix * 0.7 + caustic * 0.25, 0.0, 1.0);
+    let outAlpha = clamp(mix(a, 1.0, hazeDensity * 0.75), 0.0, 1.0);
     let outColor = vec4<f32>(col, outAlpha);
     textureStore(writeTexture, coord, outColor);
 
-    // Depth: scene geometry preserved (was overwritten with the heat column),
-    // pushed slightly by the mirage relief.
-    let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, gUV, 0.0).r;
-    let reliefDepth = clamp(sceneDepth - heatFactor * 0.04 - tirMix * 0.06, 0.0, 1.0);
+    // Depth: scene geometry preserved, pushed by mirage relief
+    let sceneDepth = textureLoad(readDepthTexture, coord, 0).r;
+    let reliefDepth = clamp(sceneDepth - heatFactor * 0.04 - tirMix * 0.07 - caustic * 0.02, 0.0, 1.0);
     textureStore(writeDepthTexture, coord, vec4<f32>(reliefDepth, 0.0, 0.0, 1.0));
     textureStore(dataTextureA, coord, hazeAcc);
-    textureStore(dataTextureB, coord, vec4<f32>(heatDisp, heatFactor, bass));
+    textureStore(dataTextureB, coord, vec4<f32>(totalDisp, heatFactor, bass));
 }

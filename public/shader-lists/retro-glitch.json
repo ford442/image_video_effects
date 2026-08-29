@@ -161,7 +161,7 @@
   {
     "id": "byte-mosh",
     "name": "Byte-Mosh Glitch",
-    "url": "shaders/byte-mosh.wgsl",
+    "url": "shaders/byte-mosh-mangle.wgsl",
     "description": "LFSR/GF(2) datamosh corruption with spring cursor, held burst, capped ripple packets, wired zoom_params, regional FFT edges, and ACES output.",
     "workgroup_size": [
       16,
@@ -237,24 +237,59 @@
       }
     ],
     "features": [
-      "interactive",
-      "chromatic-aberration",
-      "glitch",
-      "mouse-driven",
-      "audio-reactive",
-      "click-reactive",
-      "held-drag",
-      "spring-cursor",
       "aces-tone-map",
+      "audio-reactive",
+      "chromatic-aberration",
+      "click-reactive",
+      "glitch",
+      "graph-runner",
+      "held-drag",
+      "interactive",
+      "mouse-driven",
+      "multi-pass",
+      "physics",
+      "simulation",
+      "spring-cursor",
       "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing",
       "bitwise",
-      "datamosh"
+      "byte-mosh",
+      "datamosh",
+      "filter",
+      "glitch",
+      "image-processing",
+      "physics",
+      "showcase",
+      "simulation"
     ],
-    "updated": true
+    "updated": true,
+    "multipass": {
+      "graph": {
+        "maxPassesPerFrame": 8,
+        "nodes": [
+          {
+            "id": "mangle",
+            "entry": "byte-mosh-mangle",
+            "reads": [],
+            "writes": [
+              "dataA"
+            ]
+          },
+          {
+            "id": "render",
+            "entry": "byte-mosh-render",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "crt-magnet",

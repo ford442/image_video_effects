@@ -1,17 +1,24 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Ember Drift Dissolve
+//  Ember Drift Dissolve — Batch 60
 //  Category: image
-//  Features: ember, dissolve, advection, heat, audio-sparks, semantic-alpha, temporal
+//  Features: ember, dissolve, advection, heat, audio-sparks, held-furnace,
+//            semantic-alpha, temporal, aces-tone-mapping, depth-aware
 //  Complexity: High
 //  Chunks From: _hash_library.wgsl (hash21)
 //  Created: 2026-06-01
-//  By: Grok (new image/video effect — bright regions lift as glowing embers carried by rising heat, beautiful disintegration on video)
+//  By: Grok (new image/video effect — bright regions lift as glowing embers
+//       carried by rising heat, beautiful disintegration on video)
 //  Upgraded: 2026-07-31 by Kimi (swarm b22)
-//    - Click ignition: live ripples burst embers at the click point (~0.2 radius, ~1.5s decay)
-//    - Mouse heat plume: pointer bends the thermal field upward + faint glow lift
-//    - Per-region FFT crackle: 8 vertical bands ride their own spectrum bins
-//  State contract (SACRED): dataTextureA = (age, lateral, intensity, glow);
-//    dataTextureC is read as previous state + advection source. Never tonemap the A write.
+//    - Click ignition: live ripples burst embers at the click point
+//    - Mouse heat plume + per-region FFT crackle
+//  Upgraded: 2026-08-23 Batch 60
+//    - Exact textureLoad for dataTextureC (pixel + advected sample)
+//    - Held furnace: stronger rise + birth under cursor
+//    - Richer white-hot → amber → ash palette; deeper crackle / ash wisps
+//    - ACES on writeTexture only; A packing never tonemapped
+//  A packing (SACRED — do not tonemap):
+//    dataTextureA = (age, lateral, intensity, glow)
+//    dataTextureC is previous A (engine copy). Exact texel loads only.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -40,14 +47,20 @@ fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(h) * 43758.5453123);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
-    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
+    let pixel = vec2<i32>(global_id.xy);
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / res;
+    let uv = vec2<f32>(pixel) / res;
     let time = u.config.x;
     let aspect = res.x / res.y;
+    let held = u.zoom_config.w > 0.5;
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -58,12 +71,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let heat = u.zoom_params.z;
     let decay = u.zoom_params.w * 0.9 + 0.1;
 
-    // Previous ember state (age, intensity, lateral drift)
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Exact previous ember state (age, lateral, intensity, glow)
+    let prev = textureLoad(dataTextureC, pixel, 0);
 
     let input = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let luma = dot(input.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
     // Only bright areas produce embers
     let emberMask = smoothstep(0.35, 0.82, luma);
@@ -77,35 +90,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse heat plume — the pointer stirs the thermals (aspect-corrected ~0.3 radius)
     let mousePos = u.zoom_config.yz;
     let mouseDelta = vec2<f32>((uv.x - mousePos.x) * aspect, uv.y - mousePos.y);
-    let mouseMask = smoothstep(0.3, 0.0, length(mouseDelta));
+    let mouseDist = length(mouseDelta);
+    let mouseMask = smoothstep(0.3, 0.0, mouseDist);
+    // Held furnace: tighter, hotter core under the cursor
+    let furnaceMask = select(0.0, smoothstep(0.22, 0.0, mouseDist), held);
     var heatFlow = heatField;
-    heatFlow.y *= 1.0 + mouseMask * 0.8;
+    heatFlow.y *= 1.0 + mouseMask * 0.8 + furnaceMask * 1.4;
     heatFlow.x += mouseMask * sin(time * 3.1 + uv.y * 9.0) * 0.006;
+    heatFlow.x += furnaceMask * sin(time * 7.0 + uv.y * 14.0) * 0.01;
 
-    // Sample previous location (advection)
+    // Sample previous location (advection) via exact texel load
     let prevUV = clamp(uv - heatFlow * 1.6, vec2<f32>(0.0), vec2<f32>(1.0));
-    let carried = textureSampleLevel(dataTextureC, u_sampler, prevUV, 0.0);
+    let advectPixel = vec2<i32>(clamp(round(prevUV * res), vec2<f32>(0.0), res - 1.0));
+    let carried = textureLoad(dataTextureC, advectPixel, 0);
 
     // New ember birth from bright pixels + audio sparks
-    let birth = emberMask * (0.4 + sparkDensity * 0.7) * step(0.82, hash21(uv * 140.0 + floor(time * 7.0)));
+    let birthBoost = select(1.0, 1.0 + furnaceMask * 2.2, held);
+    let birth = emberMask * (0.4 + sparkDensity * 0.7) * birthBoost
+              * step(0.82 - furnaceMask * 0.12, hash21(uv * 140.0 + floor(time * 7.0)));
     let spark = step(0.91, hash21(uv * 290.0 + time * 19.0)) * treble * 0.9 * emberMask;
 
-    // Per-region FFT crackle — 8 vertical bands each ride their own spectrum bin,
-    // so the crackle dances across the spectrum instead of global treble only
+    // Per-region FFT crackle — 8 vertical bands each ride their own spectrum bin
     let band = min(u32(uv.x * 8.0), 7u);
     let bandBin = plasmaBuffer[(band % 8u) + 1u].x;
     let crackleSeed = hash21(uv * 340.0 + vec2<f32>(time * 23.0, f32(band) * 17.0));
     let crackle = step(0.94 - bandBin * 0.05, crackleSeed) * bandBin * 0.7 * emberMask;
+    // Secondary ash-wisp crackle: finer, cooler sparks that linger
+    let wispSeed = hash21(uv * 520.0 + vec2<f32>(time * 31.0, f32(band) * 9.0));
+    let ashWisp = step(0.965 - treble * 0.04, wispSeed) * (0.35 + bandBin * 0.5) * emberMask;
 
     var age = carried.r * decay + birth * 0.9 + spark * 0.6;
     age = clamp(age, 0.0, 1.0);
 
-    // Band crackle feeds the ember age like a localized spark shower
-    age = clamp(age + crackle * 0.6, 0.0, 1.0);
+    // Band crackle + ash wisps feed the ember age
+    age = clamp(age + crackle * 0.6 + ashWisp * 0.35, 0.0, 1.0);
+    // Furnace birth under held cursor
+    age = clamp(age + furnaceMask * emberMask * 0.55, 0.0, 1.0);
 
     // Click ignition — each live ripple sets a fire at its click point
-    // (birth burst in a ~0.2 radius, decaying over ~1.5s) that the heat
-    // field then carries upward through the normal advection/state loop
     let rippleCount = min(u32(u.config.y), 50u);
     var ignite = 0.0;
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -124,43 +146,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Lateral turbulence increases with age and treble
     let turb = (hash21(uv * 17.0 + time * 2.3) - 0.5) * 0.008 * (age * 0.7 + treble * 0.4);
-    let lateral = carried.g * 0.92 + turb;
+    let lateral = carried.g * 0.92 + turb + furnaceMask * (hash21(uv * 41.0 + time) - 0.5) * 0.01;
 
     let intensity = age * (0.7 + mids * 0.3) * smoothstep(1.0, 0.2, age);
 
-    // Ignition flash — fresh click fires burn white-hot before cooling to embers
-    let flash = ignite * ignite * smoothstep(0.9, 0.2, age);
+    // Ignition flash — fresh click / furnace fires burn white-hot before cooling
+    let flash = (ignite * ignite + furnaceMask * furnaceMask * 0.6) * smoothstep(0.9, 0.2, age);
 
-    // Ember color (warm core → cooler ash)
-    let emberCol = mix(vec3<f32>(1.0, 0.45, 0.08), vec3<f32>(0.2, 0.05, 0.01), smoothstep(0.3, 1.0, age));
-    let glow = pow(intensity, 1.6) * (0.9 + bass * 0.4);
+    // Ember color: white-hot → amber → ash (richer than flat orange)
+    let hotCore = vec3<f32>(1.0, 0.95, 0.75);
+    let amber = vec3<f32>(1.0, 0.42, 0.08);
+    let coolAsh = vec3<f32>(0.22, 0.08, 0.04);
+    let emberCol = mix(mix(hotCore, amber, smoothstep(0.0, 0.35, age)), coolAsh, smoothstep(0.35, 1.0, age));
+    let glow = pow(intensity, 1.6) * (0.9 + bass * 0.4 + furnaceMask * 0.35);
 
     // Composite: original darkens as embers lift, bright embers added on top
     var col = input.rgb * (1.0 - intensity * 0.65);
     col += emberCol * glow * 1.6;
 
-    // White-hot ignition core on fresh click fires
-    col += vec3<f32>(1.0, 0.85, 0.6) * flash * 0.9;
+    // White-hot ignition core on fresh click / furnace fires
+    col += hotCore * flash * 0.95;
 
     // Faint cursor glow lift — the pointer's heat plume shimmers
     col += emberCol * (mouseMask * 0.08 * emberMask) * 1.6;
+    col += hotCore * furnaceMask * 0.22 * emberMask;
 
-    // Band crackle flashes ride the ember palette
-    col += emberCol * crackle * 0.35;
+    // Band crackle flashes + cooler ash wisps
+    col += emberCol * crackle * 0.4;
+    col += coolAsh * ashWisp * 0.55;
 
     // Heat haze on rising areas
     let haze = intensity * 0.12 * (1.0 - depth);
     col = mix(col, col + vec3<f32>(0.15, 0.08, 0.02), haze);
 
+    // ACES on display path only
+    col = acesToneMap(col * (1.05 + bass * 0.15));
+
     // Semantic alpha — embers are ethereal and glow
-    let semantic_alpha = clamp(0.55 + glow * 0.65 + intensity * 0.3, 0.4, 1.0);
+    let semantic_alpha = clamp(0.55 + glow * 0.65 + intensity * 0.3 + furnaceMask * 0.1, 0.4, 1.0);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(col, semantic_alpha));
+    textureStore(writeTexture, pixel, vec4<f32>(col, semantic_alpha));
 
-    // Write new ember state for next frame
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(age, lateral, intensity, glow));
+    // Write new ember state for next frame — NEVER tonemap A
+    textureStore(dataTextureA, pixel, vec4<f32>(age, lateral, intensity, glow));
 
     // Depth from ember height in scene
     let d = clamp(0.2 + intensity * 0.55, 0.0, 0.96);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(d, 0.0, 0.0, 0.0));
 }
