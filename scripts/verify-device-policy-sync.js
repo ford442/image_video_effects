@@ -4,7 +4,8 @@
  *
  * CI check: webgpu_limits.json ↔ TS policy ↔ device.cpp CheckLimit/requiredLimits;
  * optional feature order ↔ device.ts / device.cpp; wasm_exports.json ↔ KEEPALIVE /
- * build.sh / CMakeLists (no hardcoded export lists).
+ * build.sh / CMakeLists (no hardcoded export lists);
+ * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize.
  */
 
 const fs = require('fs');
@@ -220,13 +221,75 @@ function verifyWasmExports() {
   }
 }
 
+function verifyWorkgroupDispatch() {
+  const wgContract = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'src/contracts/workgroup_dispatch.json'), 'utf8'),
+  );
+  const fallback = wgContract.unparsedFallback;
+  if (!fallback || fallback.x !== 16 || fallback.y !== 16) {
+    fail('workgroup_dispatch.json unparsedFallback must be { x: 16, y: 16 }');
+  }
+
+  const tsShader = fs.readFileSync(
+    path.join(ROOT, 'src/renderer/ShaderCompilation.ts'),
+    'utf8',
+  );
+  if (!tsShader.includes("from '../contracts/workgroup_dispatch.json'")) {
+    fail('ShaderCompilation.ts must import workgroup_dispatch.json');
+  }
+  if (!tsShader.includes('workgroupDispatchContract.unparsedFallback.x')) {
+    fail('ShaderCompilation.ts unparsed fallback must use workgroupDispatchContract.unparsedFallback.x');
+  }
+  if (!tsShader.includes('workgroupDispatchContract.unparsedFallback.y')) {
+    fail('ShaderCompilation.ts unparsed fallback must use workgroupDispatchContract.unparsedFallback.y');
+  }
+  if (/\breturn\s*\{\s*x:\s*8\s*,\s*y:\s*8\s*\}/.test(tsShader)) {
+    fail('ShaderCompilation.ts must not return hardcoded 8x8 unparsed fallback');
+  }
+
+  const cppInternal = fs.readFileSync(
+    path.join(ROOT, wgContract.cppReferences.file),
+    'utf8',
+  );
+  const fnBlock = cppInternal.match(
+    /void ParseWorkgroupSize\([\s\S]*?\n\}/,
+  );
+  if (!fnBlock) {
+    fail('ParseWorkgroupSize not found in wasm_internal.cpp');
+    return;
+  }
+  const init = fnBlock[0].match(/x\s*=\s*(\d+);\s*\n\s*y\s*=\s*(\d+);/);
+  if (!init) {
+    fail('ParseWorkgroupSize default x/y assignment not found in wasm_internal.cpp');
+  } else {
+    const cppX = parseInt(init[1], 10);
+    const cppY = parseInt(init[2], 10);
+    if (cppX !== fallback.x || cppY !== fallback.y) {
+      fail(
+        `wasm_internal.cpp ParseWorkgroupSize default: expected ${fallback.x}x${fallback.y}, got ${cppX}x${cppY}`,
+      );
+    }
+  }
+
+  const shadersDir = path.join(ROOT, 'public/shaders');
+  const forbidden = /@compute\s+@workgroup_size\(\s*8\s*,\s*8/;
+  for (const name of fs.readdirSync(shadersDir)) {
+    if (!name.endsWith('.wgsl')) continue;
+    const content = fs.readFileSync(path.join(shadersDir, name), 'utf8');
+    if (forbidden.test(content)) {
+      fail(`public/shaders/${name} still declares @workgroup_size(8, 8, …); use canonical 16x16`);
+    }
+  }
+}
+
 verifyOptionalFeatures();
 verifyWasmExports();
+verifyWorkgroupDispatch();
 
 if (failed) {
   process.exit(1);
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + wasm_exports.json ↔ KEEPALIVE / build.sh / CMake)',
+  '✅ Device policy sync OK (limits + optional features + wasm_exports + workgroup_dispatch ↔ TS/C++/shaders)',
 );

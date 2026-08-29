@@ -87,4 +87,26 @@ describe('WebGPUResourcePool', () => {
     expect(usage & TU.RENDER_ATTACHMENT).toBe(TU.RENDER_ATTACHMENT);
     expect(usage & TU.STORAGE_BINDING).toBe(TU.STORAGE_BINDING);
   });
+
+  it('createTextures uses r32float emptyTex with single-float upload', () => {
+    const device = makeMockDevice();
+    createTextures(device, 800, 600, 400, 300);
+
+    const createTexture = device.createTexture as unknown as {
+      mock: { calls: Array<[{ label?: string; format: string }]> };
+    };
+    const emptyCall = createTexture.mock.calls.find(
+      (call) => call[0]?.label === 'emptyTex',
+    );
+    expect(emptyCall?.[0].format).toBe('r32float');
+
+    const writeTexture = device.queue.writeTexture as jest.Mock;
+    expect(writeTexture).toHaveBeenCalled();
+    const [dest, data, layout] = writeTexture.mock.calls[0];
+    expect(dest).toEqual({ texture: expect.anything() });
+    expect(data).toBeInstanceOf(Float32Array);
+    expect((data as Float32Array).length).toBe(1);
+    expect((data as Float32Array)[0]).toBe(0);
+    expect(layout).toEqual({ bytesPerRow: 4 });
+  });
 });

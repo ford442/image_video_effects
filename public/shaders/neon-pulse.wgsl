@@ -13,7 +13,7 @@
 //  toward arc breakdown, and clicks inject bounded thermal shock fronts.
 //
 //  Also fixed:
-//    - `@workgroup_size(8, 8, 1)` -> `(16, 16, 1)` (house convention).
+//    - canonical `@workgroup_size(16, 16, 1)` (house convention).
 //    - Depth clobber: `writeDepthTexture` was fed the emission luma, so chained
 //      depth-aware shaders read glow instead of geometry. Scene depth preserved.
 //    - Unbounded additive HDR: `bg + emitted` was written straight out with

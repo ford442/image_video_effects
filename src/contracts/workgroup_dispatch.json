@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "description": "Canonical 2D compute dispatch when @workgroup_size cannot be parsed. Keep in sync with ShaderCompilation.ts and wasm_internal.cpp ParseWorkgroupSize.",
+  "canonicalDefault": { "x": 16, "y": 16, "z": 1 },
+  "unparsedFallback": { "x": 16, "y": 16 },
+  "oneDHelperExceptions": [
+    {
+      "x": 64,
+      "y": 1,
+      "z": 1,
+      "note": "1D helper entry points (e.g. update_boids) before main"
+    },
+    {
+      "x": 256,
+      "y": 1,
+      "z": 1,
+      "note": "1D atomics template (_template_workgroup_atomics.wgsl)"
+    }
+  ],
+  "deepWorkgroupExceptions": [
+    {
+      "x": 16,
+      "y": 16,
+      "z": 4,
+      "note": "requiresDeepWorkgroup catalog shaders (e.g. deep-workgroup-multi-effect-blend.wgsl)"
+    }
+  ],
+  "exemptPaths": [
+    "src/gpuChores/**"
+  ],
+  "tsReferences": {
+    "file": "src/renderer/ShaderCompilation.ts",
+    "function": "parseWorkgroupSize"
+  },
+  "cppReferences": {
+    "file": "wasm_renderer/wasm_internal.cpp",
+    "function": "ParseWorkgroupSize"
+  }
+}
