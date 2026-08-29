@@ -1,20 +1,42 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-29 (Optical / Glass / Holographic / Lighting-Optics Batch)
+**Last updated:** 2026-08-29 (Optical / Glass / Holographic / Lighting-Optics Cohort 2)
 
-## 2026-08-29 — Composer batch cyber/digital/glitch ten — cohort 2 complete
+## 2026-08-29 — Optical / Glass / Holographic / Lighting-Optics Cohort 2 (10 shaders) complete
 
-- Upgraded `scanline-drift`, `spectrum-bleed`, `waveform-glitch`, `xerox-degrade`, `pixel-rain`, `pixelation-drift`, `crt-tv`, `crt-phosphor-decay`, `cyber-rain-em`, and `cyber-trace-structure` under the canonical exact-C/A-only/ACES/three-band/spring/interaction contract with byte-exact saved params.
-- Major rewrites: waveform-glitch, xerox-degrade, pixel-rain, pixelation-drift, crt-tv, crt-phosphor-decay, cyber-trace-structure. Polish: scanline-drift, spectrum-bleed (plasma bin FFT), cyber-rain-em.
-- `cyber-trace-structure` stores trace history in A (RGB + coherency alpha); the other nine own ACES display RGBA in A.
-- Structural/Jest/build gates green (Naga 10/10, Jest 84/84, build with `SKIP_WASM_BUILD=1`); real-GPU QA remains external.
-
-## 2026-08-29 — Composer batch cyber/digital/glitch ten complete
-
-- Upgraded `digital-glitch`, `digital-glitch-explosion`, `digital-decay-rgba`, `datamosh-brush`, `datamosh-brush-diffusion`, `byte-mosh`, `signal-noise`, `scan-distort`, `cyber-lattice-bilateral`, and `data-stream-structure` under the canonical exact-C/A-only/ACES/three-band/spring/interaction contract with byte-exact saved params.
-- Major rewrites: `digital-glitch-explosion`, `cyber-lattice-bilateral`, `scan-distort`. Polish: spring on `digital-glitch`; naga fix on `byte-mosh` (`mix` mask uses f32 then u32 cast).
-- `digital-decay-rgba` alone owns raw 4-species RD A/C; the other nine own ACES display RGBA (or trail/energy alpha where noted).
-- Structural/Jest/build gates green (Naga 10/10, Jest 84/84, build with `SKIP_WASM_BUILD=1`); real-GPU QA remains external.
+- Upgraded the second 10-shader optical, glass, holographic, and lighting-optics cohort:
+  1. `aurora-rift-2-iridescence` (advanced-hybrid): 5-layer volumetric aurora curtains with multi-order thin-film interference, Beer's Law physical transmittance, geomagnetic turbulence, ACES tonemapping, and atmospheric luminescence persistence.
+  2. `glass-wipes-coupled` (advanced-hybrid): Rain on glass combined with Navier-Stokes viscous fluid coupling, wiper sweeps, vortex street generation, ACES tone mapping, and raw fluid state [vel.xy, vorticity, density] feedback.
+  3. `holographic-glitch` (retro-glitch): Continuous holographic scan and phase corruption with chromatic peel interaction, click desync fronts, and channel-separated exact-history trails (verified clean contract).
+  4. `holographic-projection-failure` (retro-glitch): Faulty holographic emitter simulation with CRT V-hold rolling, chromatic RGB beam desync, DAC bit-depth truncation, ACES tone mapping, and phosphor beam persistence.
+  5. `photonic-caustics-graph` (simulation): 3-pass Tier C compute graph (`photonic-emitter` -> `photonic-trace` x2 -> `photonic-accumulate`) with same-frame copy barriers, refractive height field caustics, and ACES presentation.
+  6. `photonic-caustics` (simulation): Exact-history refractive height-field caustics with chromatic convergence bands, Fresnel response, three-band illumination, held light focus, bounded click wavefronts, ACES display, and semantic caustic alpha.
+  7. `alpha-aurora-bands` (lighting-effects): Multi-layer geomagnetic curtains with discrete spectral emission bands (oxygen green 557.7nm, oxygen red 630nm, nitrogen blue 427.8nm), solar wind cursor deflection, ACES tone mapping, and atmospheric persistence.
+  8. `aurora_borealis` (lighting-effects): Flowing atmospheric ribbons with curl noise advection, altitude-based oxygen and nitrogen emission spectra, starfield composite, ACES tone mapping, and atmospheric persistence.
+  9. `gen-holographic-fracture` (generative): Iridescent cracked planes with SDF fracture lines, thin-film holographic shards, single-writer spring state in extraBuffer[133..137], and ACES tone mapping.
+  10. `gen-holographic-membrane` (generative): Thin-film interference membrane undulating with depth-based alpha translucency, raw membrane height/normal A/C state, and ACES display presentation.
+- Architectural rigor:
+  - Canonical 13-binding WGSL compute header `@workgroup_size(16, 16, 1)` with out-of-bounds guards.
+  - ACES tone mapping on output RGB across all shaders.
+  - Semantic alpha (transmission, coverage, or specular glow).
+  - Preserved raw state feedback ownership in `glass-wipes-coupled` [vel.xy, vorticity, density] and `gen-holographic-membrane` [depth, normal.xy, alpha]. Other shaders store ACES display RGBA.
+  - Single-writer spring in `gen-holographic-fracture` preserved at `extraBuffer[133..137]`; zero new extraBuffer violations.
+  - Exact `textureLoad(dataTextureC, coord, 0)` previous frame feedback without filtering.
+  - Three-band audio from `plasmaBuffer[0].x` (bass), `.y` (mids), `.z` (treble).
+  - Capped click-ripple shockwave interaction with age guards `time - r.z`.
+  - Full mouse/held drag interaction.
+  - Naga-clean WGSL (12/12 passed).
+  - Saved parameters preserved byte-exact in all 10 JSON definition files; added aligned `updatedParams`, features, tags, and feedback packing.
+  - All sliders live across all 10 shaders (0 dead sliders).
+  - Multipass registry, category shader lists, and unified manifest regenerated (1,350 shaders cataloged with relative paths).
+- Validation:
+  - WGSL precommit gate: 12/12 passed.
+  - `typecheck`: green with 0 errors.
+  - `audit:extrabuffer`: 0 new violations.
+  - `audit:dead-sliders`: 0 new dead sliders across entire repo.
+  - `verify:shader-list-urls` and `verify:uniforms`: green.
+  - Jest test suite: 84/84 passed (561 passed, 1 skipped).
+  - Production build (`SKIP_WASM_BUILD=1 npm run build`): compiled successfully.
 
 ## 2026-08-29 — Optical / Glass / Holographic / Lighting-Optics Batch (10 shaders) complete
 
