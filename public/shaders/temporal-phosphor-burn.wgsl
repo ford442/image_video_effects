@@ -129,7 +129,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
 
   // Clamp params
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
 
   // Per-channel CRT decay rates — bass extends phosphor persistence
   let decayR = clamp(0.85 + zp.x * 0.14 + bass * 0.04, 0.0, 0.999);

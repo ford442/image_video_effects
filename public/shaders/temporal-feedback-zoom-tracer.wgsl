@@ -104,11 +104,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Clamp and normalize params
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-  let zoomFactor  = 1.0 + u.zoom_params.x * 0.012 * (1.0 + bass * 0.5);
-  let rotAngle    = (u.zoom_params.y - 0.5) * 0.006 + mids * 0.001;
-  let persistence = 0.92 + u.zoom_params.z * 0.07;
-  let blendAmt    = 0.05 + u.zoom_params.w * 0.35;
+  let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
+  let zoomFactor  = 1.0 + zp.x * 0.012 * (1.0 + bass * 0.5);
+  let rotAngle    = (zp.y - 0.5) * 0.006 + mids * 0.001;
+  let persistence = 0.92 + zp.z * 0.07;
+  let blendAmt    = 0.05 + zp.w * 0.35;
 
   // Mouse-driven zoom focus (defaults to centre when mouse at 0.5)
   let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));

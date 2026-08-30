@@ -354,6 +354,12 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
+    // Evaluate unused parameters
+    let unused_x = u.zoom_params.x;
+    let unused_y = u.zoom_params.y;
+    let unused_z = u.zoom_params.z;
+    let unused_w = u.zoom_params.w;
+
     // 1. Guard check removed, assuming dispatch covers canvas.
     // Ensure we don't access garbage.
 
