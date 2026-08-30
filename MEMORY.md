@@ -1,6 +1,21 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-29 (Selective leftover upgrade-branch union)
+**Last updated:** 2026-08-30 (Fast-Motion Shader Upgrade Ten)
+
+## 2026-08-30 — Fast-Motion Shader Upgrade Ten
+
+- Cohort: `voronoi-zoom-turbulence`, `solarize-warp`, `luma-smear-interactive`, `neon-fluid-warp`, `optical-illusion-spin`, `vortex-drag`, `zoom-burst`, `temporal-slit-paint`, `neon-warp`, `mouse-mandelbrot-zoom-portal`.
+- Contract: 13 bindings, 16×16, exact `textureLoad` C, A-only writes, ACES display, semantic alpha, three-band + bin plasma, springs `[133..138]` at (0,0), held + capped click fronts, byte-exact saved params + `updatedParams`.
+- A packing: Temporal Slit Paint owns raw canvas RGBA in A (ACES on writeTexture). The other nine store ACES display RGBA in A. Neon Warp heat remains analytic from pointer/ripples — not a second raw sim.
+- Fast-motion pairs: cell zoom + shear conveyors; warp conveyor + threshold wavefront; chroma streaks + curl trails; curl jets + neon runners; ring packets + Fraser whip; sprung vortex + helical ribbons; radial speed lines + rotational shear; velocity brush + slit-head runners; heat packets + refraction whip; nested zoom burst + orbital spin.
+- Gates: Naga 10/10; extraBuffer 0 new writes in [0..132]; dead sliders 0; lists + unified manifest 1,353; URL/uniforms green; `SKIP_WASM_BUILD=1` production build green. Jest 79/84 in this VM (5 suites fail resolving `src/wasm/bridge/api.js` — emit lives in `wasm_renderer/` + `public/wasm/`, not a shader regression). Real-GPU visual QA external.
+
+## 2026-08-29 — WASM bridge TypeScript SoT (#1125 / #1179)
+
+## 2026-08-29 — WASM bridge TypeScript SoT (#1125 / #1179)
+
+- SoT is `src/wasm/bridge/*.ts`. Generated ESM lives in `wasm_renderer/` + `public/wasm/`. `verify:wasm-bridge-sync` is wired into toolchain-foundation and the CI wasm job.
+- Removed unused `react-app-rewired` / `customize-cra` / `webpack-cli`. CRA+CRACO unchanged. `getGPUTimings` still uses out-params via `_malloc` / `ccall` / `getValue` / `_free`.
 
 ## 2026-08-29 — Leftover upgrade branches selectively unioned into main
 
@@ -795,8 +810,9 @@
 
 - Shared pre-FX kit in `src/gpuChores/`: BT.709 histogram, reduce_f32, lut_u8_map,
   downsample_2d. Adopts the renderer `GPUDevice` — never `requestDevice()`.
-- Live path: auto-exposure from the histogram **normalizes the 64×64 preview**,
-  not catalog FX. Kill switch `?no_gpu_compute`. Breadcrumbs in Dev Tools.
+- Live path: opt-in **source** auto-exposure (`apply_gain_2d` onto `readTex`,
+  default off). Preview hist still runs. Kill switch `?no_gpu_compute`.
+  Physics-pinned graphs skip source gain. EV is host-only (not extraBuffer).
 - CPU goldens are the Chromashift-shaped parity SoT on the headless VM.
 - Docs: `docs/GPU_CHORES.md` (Tier 4a = domain FX, Tier 4b = chores).
 - Device-init policy and feedback B→C / A→C copy order untouched.
@@ -1483,12 +1499,14 @@
 
 - Confirmed the app engine is the full-catalog/multipass path and constrained the
   minimal engine/package command to generative-only captures.
-- Added `thumbs:check-regression`, a PR check that compares healthy coverage with
-  the base git ref and fails new shader definitions without healthy PNGs.
+- Added `thumbs:check-regression`, a PR check that fails newly eligible shaders
+  without a healthy PNG or unexpired deferral (no global %/count gate). Sticky
+  coverage comments stay reporting-only until healthy eligible ≥ 50%.
 - `thumbs:status` now reports curated attract + Physics Lab priority coverage and
   accepts `--require-priority` for GPU-workstation enforcement.
-- Current VM proof: nominal 349/1,324 (26.4%), healthy 272/1,323 (20.6%),
-  priority 20/21 (95.2%); capture remains blocked until discrete-GPU access.
+- 2026-08-30 #1185: 1,069 deferrals (`expires` 2026-09-29), attract-first generate,
+  `hasHealthyThumbnail` + `public/thumbnails/unhealthy.json`. Nominal 360/1,353
+  (26.6%); integrity audit is stale (349 scanned). Capture remains discrete-GPU.
 
 ## Shader upgrade Batches 53–54 (2026-08-21)
 

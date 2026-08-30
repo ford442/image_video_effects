@@ -1,15 +1,16 @@
-// src/wasm/bridge/init.js
-// WASM module load and renderer lifecycle.
-
 import { formatCppInitFailure, readCppInitDiagnostics } from './diagnostics.js';
 import { state, wasmRef } from './state.js';
 
-/**
- * Initialize the WASM renderer
- * @param {HTMLCanvasElement} canvasElement - The canvas to render to
- * @returns {Promise<boolean>} Success status
- */
-export async function initWasmRenderer(canvasElement) {
+const SOURCE_MAP: Record<string, number> = {
+  none: 0,
+  image: 1,
+  video: 2,
+  webcam: 3,
+  generative: 4,
+  live: 5,
+};
+
+export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promise<boolean> {
   if (state.initialized) {
     console.warn('[WASM] Renderer already initialized');
     return true;
@@ -54,29 +55,39 @@ export async function initWasmRenderer(canvasElement) {
       }).then((mod) => {
         wasmRef.module = mod;
 
-        let canvasId = wasmRef.canvas.id;
+        const canvas = wasmRef.canvas;
+        if (!canvas) {
+          state.lastLoadError = 'Canvas missing after module load';
+          state.loadErrorCount++;
+          state.initEndTime = performance.now();
+          resolve(false);
+          return;
+        }
+
+        let canvasId = canvas.id;
         if (!canvasId) {
           wasmRef.canvasIdCounter++;
           canvasId = 'pixelocity-wasm-canvas-' + wasmRef.canvasIdCounter;
-          wasmRef.canvas.id = canvasId;
+          canvas.id = canvasId;
         }
 
         const selector = '#' + canvasId;
         console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} )`);
 
-        let ok = 0;
+        let ok: unknown = 0;
         try {
           ok = wasmRef.module.ccall(
             'initWasmRenderer',
             'number',
             ['string', 'number', 'number'],
-            [selector, state.canvasWidth, state.canvasHeight]
+            [selector, state.canvasWidth, state.canvasHeight],
           );
-        } catch (callErr) {
+        } catch (callErr: unknown) {
           console.error('[WASM] ccall initWasmRenderer threw:', callErr);
           const cppDiag = readCppInitDiagnostics();
           const detail = formatCppInitFailure(cppDiag);
-          state.lastLoadError = `ccall exception: ${callErr.message || callErr} (${detail})`;
+          const message = callErr instanceof Error ? callErr.message : String(callErr);
+          state.lastLoadError = `ccall exception: ${message} (${detail})`;
           state.loadErrorCount++;
           state.initEndTime = performance.now();
           resolve(false);
@@ -92,10 +103,7 @@ export async function initWasmRenderer(canvasElement) {
           if (state.pendingInputSource !== null) {
             const src = state.pendingInputSource;
             state.pendingInputSource = null;
-            const sourceMap = { none: 0, image: 1, video: 2, webcam: 3, generative: 4, live: 5 };
-            const sourceInt = typeof src === 'string'
-              ? (sourceMap[src] ?? 0)
-              : src;
+            const sourceInt = typeof src === 'string' ? (SOURCE_MAP[src] ?? 0) : src;
             wasmRef.module.ccall('setInputSource', null, ['number'], [sourceInt]);
             state.inputSource = sourceInt;
           }
@@ -113,9 +121,9 @@ export async function initWasmRenderer(canvasElement) {
           state.initEndTime = performance.now();
           resolve(false);
         }
-      }).catch((err) => {
+      }).catch((err: unknown) => {
         console.error('[WASM] Module instantiation failed:', err);
-        state.lastLoadError = err.message || String(err);
+        state.lastLoadError = err instanceof Error ? err.message : String(err);
         state.loadErrorCount++;
         state.initEndTime = performance.now();
         resolve(false);
@@ -137,18 +145,13 @@ export async function initWasmRenderer(canvasElement) {
 
     document.head.appendChild(script);
 
-    // In mock environments (e.g. Jest/JSDOM tests) where PixelocityWASM is pre-attached to window,
-    // trigger handler via microtask to prevent jsdom async script queue delays.
     if (typeof window.PixelocityWASM === 'function') {
       queueMicrotask(handleLoad);
     }
   });
 }
 
-/**
- * Shutdown the WASM renderer and free GPU resources
- */
-export function shutdownWasmRenderer() {
+export function shutdownWasmRenderer(): void {
   if (!state.initialized || !wasmRef.module) {
     return;
   }
@@ -166,10 +169,6 @@ export function shutdownWasmRenderer() {
   console.log('[WASM] Shutdown complete');
 }
 
-/**
- * Check if the renderer is initialized
- * @returns {boolean} Initialized status
- */
-export function isInitialized() {
+export function isInitialized(): boolean {
   return state.initialized;
 }

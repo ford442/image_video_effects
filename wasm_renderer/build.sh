@@ -7,7 +7,7 @@ echo "=== Building Pixelocity WASM Renderer (2026 version) ==="
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "Source directory: $SCRIPT_DIR"
 
-# Always sync JS bridge from src/wasm/bridge/*.js (no emcc required).
+# Always sync JS bridge from src/wasm/bridge/*.ts (no emcc required).
 bash "$SCRIPT_DIR/concat_bridge.sh"
 
 # Source Emscripten from wherever emsdk lives
@@ -31,7 +31,7 @@ if ! command -v emcc &> /dev/null; then
     if [ "${SKIP_WASM_BUILD:-}" = "1" ]; then
         echo "[INFO] SKIP_WASM_BUILD=1 — skipping WASM build (emcc not found)."
         echo "       Use committed artifacts in public/wasm/ or run on a machine with emsdk."
-        echo "       Bridge was still synced from src/wasm/bridge/*.js."
+        echo "       Bridge was still synced from src/wasm/bridge/*.ts."
         exit 0
     fi
     echo "❌ Error: emcc not found. Install the Emscripten SDK to build the WASM renderer."

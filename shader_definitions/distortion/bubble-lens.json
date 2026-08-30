@@ -3,7 +3,7 @@
   "name": "Bubble Lens",
   "category": "distortion",
   "url": "shaders/bubble-lens.wgsl",
-  "description": "Soap bubble lens with Marangoni convection \u2014 surface-tension gradients drive tangential flow along the film, which is why real bubble bands swirl rather than merely sagging \u2014 and per-band membrane resonance: eight drum modes of the film, one per FFT bin, perturbing the thickness so the bubble rings at the frequencies present in the audio. Retains the spring-damped pointer, satellite bubbles and film shockwaves; adds ACES, dataTextureC iridescent trails and a corrected A/B packing.",
+  "description": "Soap bubble lens with Marangoni convection — surface-tension gradients drive tangential flow along the film, which is why real bubble bands swirl rather than merely sagging — and per-band membrane resonance: eight drum modes of the film, one per FFT bin, perturbing the thickness so the bubble rings at the frequencies present in the audio. Retains the spring-damped pointer, satellite bubbles and film shockwaves; adds ACES, dataTextureC iridescent trails and a corrected A/B packing. Optical, good Gemini-style check.",
   "features": [
     "mouse-driven",
     "audio-reactive",

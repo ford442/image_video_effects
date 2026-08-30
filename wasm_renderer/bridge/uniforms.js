@@ -1,334 +1,235 @@
-// src/wasm/bridge/uniforms.js
-// Uniforms, slot params, input source, audio, depth, and render triggers.
+// GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
-import { state, wasmRef } from './state.js';
-
+import { state, wasmRef } from "./state.js";
 const SOURCE_MAP = {
   none: 0,
   image: 1,
   video: 2,
   webcam: 3,
   generative: 4,
-  live: 5,
+  live: 5
 };
-
-/**
- * Set the four zoom parameters for a specific slot.
- * @param {number} slotIndex - Slot index (0, 1, or 2)
- * @param {number} p1
- * @param {number} p2
- * @param {number} p3
- * @param {number} p4
- */
-export function setSlotParams(slotIndex, p1, p2, p3, p4) {
+function setSlotParams(slotIndex, p1, p2, p3, p4) {
   if (!state.initialized || !wasmRef.module) return;
   if (slotIndex >= 0 && slotIndex < state.slotParams.length) {
     state.slotParams[slotIndex] = [p1, p2, p3, p4];
   }
   wasmRef.module.ccall(
-    'setSlotParams',
+    "setSlotParams",
     null,
-    ['number', 'number', 'number', 'number', 'number'],
+    ["number", "number", "number", "number", "number"],
     [slotIndex, p1, p2, p3, p4]
   );
 }
-
-/**
- * Partial update for slot parameters — merges non-undefined entries into slotParams cache.
- * @param {number} slotIndex
- * @param {Partial<Record<'p1'|'p2'|'p3'|'p4', number>>} params
- */
-export function updateSlotParams(slotIndex, params) {
-  if (!params || typeof params !== 'object') return;
+function updateSlotParams(slotIndex, params) {
+  if (!params || typeof params !== "object") return;
   const current = state.slotParams[slotIndex] ?? [0.5, 0.5, 0.5, 0.5];
-  const p1 = params.p1 ?? current[0];
-  const p2 = params.p2 ?? current[1];
-  const p3 = params.p3 ?? current[2];
-  const p4 = params.p4 ?? current[3];
+  const p1 = params.p1 ?? params.zoomParam1 ?? current[0];
+  const p2 = params.p2 ?? params.zoomParam2 ?? current[1];
+  const p3 = params.p3 ?? params.zoomParam3 ?? current[2];
+  const p4 = params.p4 ?? params.zoomParam4 ?? current[3];
   setSlotParams(slotIndex, p1, p2, p3, p4);
 }
-
-/**
- * Update global uniforms and trigger a multi-slot render.
- * @param {number} time - Animation time in seconds
- * @param {number} [mouseX=0.5] - Mouse X (0..1)
- * @param {number} [mouseY=0.5] - Mouse Y (0..1)
- * @param {boolean} [mouseDown=false] - Mouse button pressed state
- * @param {number} [zoomP1=0.5] - Backward-compatible global zoom param 1
- * @param {number} [zoomP2=0.5] - Backward-compatible global zoom param 2
- * @param {number} [zoomP3=0.5] - Backward-compatible global zoom param 3
- * @param {number} [zoomP4=0.5] - Backward-compatible global zoom param 4
- * @returns {boolean} Success status
- */
-export function updateUniforms(
-  time,
-  mouseX    = 0.5,
-  mouseY    = 0.5,
-  mouseDown = false,
-  zoomP1    = 0.5,
-  zoomP2    = 0.5,
-  zoomP3    = 0.5,
-  zoomP4    = 0.5
-) {
+function applyUniformState(time, mouseX, mouseY, mouseDown, zoomP1, zoomP2, zoomP3, zoomP4) {
   if (!state.initialized || !wasmRef.module) {
     return false;
   }
-
   state.time = time;
   state.mouseX = mouseX;
   state.mouseY = mouseY;
   state.mouseDown = mouseDown;
   state.zoomParams = [zoomP1, zoomP2, zoomP3, zoomP4];
-
-  const result = wasmRef.module.ccall(
-    'updateUniforms',
-    'number',
-    ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number'],
-    [time, mouseX, mouseY, mouseDown ? 1 : 0, zoomP1, zoomP2, zoomP3, zoomP4]
+  wasmRef.module.ccall("setTime", null, ["number"], [time]);
+  wasmRef.module.ccall("updateMousePos", null, ["number", "number"], [mouseX, mouseY]);
+  wasmRef.module.ccall("setMouseDown", null, ["number"], [mouseDown ? 1 : 0]);
+  wasmRef.module.ccall(
+    "setZoomParams",
+    null,
+    ["number", "number", "number", "number"],
+    [zoomP1, zoomP2, zoomP3, zoomP4]
   );
-
-  return Boolean(result);
+  wasmRef.module.ccall("updateUniforms", null, [], []);
+  return true;
 }
-
-/**
- * Update mouse position
- * @param {number} x - Normalized X coordinate (0..1)
- * @param {number} y - Normalized Y coordinate (0..1)
- * @param {boolean} down - Mouse button state
- */
-export function updateMousePos(x, y, down = false) {
+function updateUniforms(timeOrUniforms, mouseX = 0.5, mouseY = 0.5, mouseDown = false, zoomP1 = 0.5, zoomP2 = 0.5, zoomP3 = 0.5, zoomP4 = 0.5) {
+  if (typeof timeOrUniforms === "object" && timeOrUniforms !== null) {
+    const u = timeOrUniforms;
+    const zp = u.zoom_params ?? state.zoomParams;
+    return applyUniformState(
+      u.time ?? state.time,
+      u.mouseX ?? state.mouseX,
+      u.mouseY ?? state.mouseY,
+      u.mouseDown ?? state.mouseDown,
+      zp[0],
+      zp[1],
+      zp[2],
+      zp[3]
+    );
+  }
+  return applyUniformState(timeOrUniforms, mouseX, mouseY, mouseDown, zoomP1, zoomP2, zoomP3, zoomP4);
+}
+function updateMousePos(x, y, down) {
   if (!state.initialized || !wasmRef.module) return;
   state.mouseX = x;
   state.mouseY = y;
-  state.mouseDown = down;
-  wasmRef.module.ccall(
-    'updateMousePos',
-    null,
-    ['number', 'number', 'number'],
-    [x, y, down ? 1 : 0]
-  );
-}
-
-/**
- * Upload audio frequency data to C++ audio texture
- * @param {Uint8Array|Float32Array|number[]} audioData - Audio samples (256 bytes)
- */
-export function updateAudioData(audioData) {
-  if (!state.initialized || !wasmRef.module) return;
-
-  const len = 256;
-  const ptr = wasmRef.module._malloc(len);
-  const heap = wasmRef.module.HEAPU8;
-
-  if (audioData instanceof Uint8Array) {
-    heap.set(audioData.subarray(0, len), ptr);
-  } else if (Array.isArray(audioData) || audioData instanceof Float32Array) {
-    for (let i = 0; i < len; i++) {
-      const val = audioData[i] ?? 0;
-      heap[ptr + i] = typeof val === 'number'
-        ? Math.min(255, Math.max(0, Math.floor(val <= 1.0 ? val * 255 : val)))
-        : 0;
-    }
+  wasmRef.module.ccall("updateMousePos", null, ["number", "number"], [x, y]);
+  if (down !== void 0) {
+    state.mouseDown = down;
+    wasmRef.module.ccall("setMouseDown", null, ["number"], [down ? 1 : 0]);
   }
-
-  wasmRef.module.ccall('updateAudioData', null, ['number', 'number'], [ptr, len]);
-  wasmRef.module._free(ptr);
 }
-
-/**
- * Upload 4-bin audio energy (bass, mid, treble, energy).
- * @param {number} bass
- * @param {number} mid
- * @param {number} treble
- * @param {number} energy
- */
-export function updateAudioFrequencyBins(bass, mid, treble, energy) {
+function updateAudioData(bassOrData, mid, treble) {
   if (!state.initialized || !wasmRef.module) return;
+  if (typeof bassOrData === "number") {
+    wasmRef.module.ccall(
+      "updateAudioData",
+      null,
+      ["number", "number", "number"],
+      [bassOrData, mid ?? 0, treble ?? 0]
+    );
+    return;
+  }
+  const bass = Number(bassOrData[0] ?? 0);
+  const midVal = Number(bassOrData[1] ?? 0);
+  const trebleVal = Number(bassOrData[2] ?? 0);
   wasmRef.module.ccall(
-    'updateAudioFrequencyBins',
+    "updateAudioData",
     null,
-    ['number', 'number', 'number', 'number'],
-    [bass, mid, treble, energy]
+    ["number", "number", "number"],
+    [bass, midVal, trebleVal]
   );
 }
-
-/**
- * Upload depth map texture data to C++ (256x256 R8 or R32F).
- * @param {Uint8Array|Float32Array} depthData - Depth values
- * @param {number} width - Depth map width (default 256)
- * @param {number} height - Depth map height (default 256)
- */
-export function updateDepthMap(depthData, width = 256, height = 256) {
+function updateAudioFrequencyBins(binsOrBass, mid, treble, energy) {
   if (!state.initialized || !wasmRef.module) return;
-
-  const bytes = depthData.byteLength;
+  if (typeof binsOrBass === "number") {
+    updateAudioFrequencyBins(new Float32Array([binsOrBass, mid ?? 0, treble ?? 0, energy ?? 0]));
+    return;
+  }
+  const count = binsOrBass.length;
+  const bytes = count * 4;
   const ptr = wasmRef.module._malloc(bytes);
-  const heap = wasmRef.module.HEAPU8;
-  heap.set(new Uint8Array(depthData.buffer, depthData.byteOffset, bytes), ptr);
-
+  wasmRef.module.HEAPF32.set(binsOrBass, ptr / 4);
+  wasmRef.module.ccall("updateAudioFrequencyBins", null, ["number", "number"], [ptr, count]);
+  wasmRef.module._free(ptr);
+}
+function updateDepthMap(depthData, width = 256, height = 256) {
+  if (!state.initialized || !wasmRef.module) return;
+  const floats = depthData instanceof Float32Array ? depthData : new Float32Array(depthData.buffer, depthData.byteOffset, depthData.byteLength / 4);
+  const ptr = wasmRef.module._malloc(floats.byteLength);
+  wasmRef.module.HEAPF32.set(floats, ptr / 4);
   wasmRef.module.ccall(
-    'updateDepthMap',
+    "updateDepthMap",
     null,
-    ['number', 'number', 'number', 'number'],
-    [ptr, bytes, width, height]
+    ["number", "number", "number"],
+    [ptr, width, height]
   );
   wasmRef.module._free(ptr);
 }
-
-/**
- * Set the primary input texture mode for slot 0/1 binding.
- * Accepts string identifiers ('none', 'image', 'video', 'webcam', 'generative', 'live') or integer codes.
- * @param {number|string} source
- */
-export function setInputSource(source) {
-  const sourceInt = typeof source === 'string'
-    ? (SOURCE_MAP[source.toLowerCase()] ?? 0)
-    : (typeof source === 'number' ? source : 0);
-
+function setInputSource(source) {
+  const sourceInt = typeof source === "string" ? SOURCE_MAP[source.toLowerCase()] ?? 0 : typeof source === "number" ? source : 0;
   if (!state.initialized || !wasmRef.module) {
     state.pendingInputSource = source;
     state.inputSource = sourceInt;
     return;
   }
   state.inputSource = sourceInt;
-  wasmRef.module.ccall('setInputSource', null, ['number'], [sourceInt]);
+  wasmRef.module.ccall("setInputSource", null, ["number"], [sourceInt]);
 }
-
-/**
- * Add an interactive ripple to the GPU ripple buffer
- * @param {number} x - Normalized X (0..1)
- * @param {number} y - Normalized Y (0..1)
- * @param {number} [amplitude=1.0] - Initial wave amplitude
- * @param {number} [wavelength=0.05] - Wave width
- */
-export function addRipple(x, y, amplitude = 1.0, wavelength = 0.05) {
+function addRipple(x, y, _amplitude = 1, _wavelength = 0.05) {
   if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall(
-    'addRipple',
-    null,
-    ['number', 'number', 'number', 'number'],
-    [x, y, amplitude, wavelength]
-  );
+  wasmRef.module.ccall("addRipple", null, ["number", "number"], [x, y]);
 }
-
-/**
- * Clear all active ripples
- */
-export function clearRipples() {
+function clearRipples() {
   if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall('clearRipples', null, [], []);
+  wasmRef.module.ccall("clearRipples", null, [], []);
 }
-
-/**
- * Get current frame rate measured by C++ renderer
- * @returns {number} Frames per second
- */
-export function getFPS() {
+function getFPS() {
   if (!state.initialized || !wasmRef.module) return 0;
-  return wasmRef.module.ccall('getFPS', 'number', [], []) ?? 0;
+  return Number(wasmRef.module.ccall("getFPS", "number", [], []) ?? 0);
 }
-
-/**
- * Query whether C++ device supports @workgroup_size(16,16) or deep compute caps.
- * @returns {boolean}
- */
-export function getSupportsDeepWorkgroup() {
+function getSupportsDeepWorkgroup() {
   if (!state.initialized || !wasmRef.module) return true;
-  return Boolean(
-    wasmRef.module.ccall('getSupportsDeepWorkgroup', 'number', [], [])
-  );
+  return Boolean(wasmRef.module.ccall("getSupportsDeepWorkgroup", "number", [], []));
 }
-
-/**
- * Get configured WASM color format tier (0=rgba32float, 1=rgba16float).
- * @returns {number}
- */
-export function getColorFormat() {
+function getColorFormat() {
   return state.colorFormat;
 }
-
-/**
- * Set WASM color format tier (0=rgba32float, 1=rgba16float).
- * @param {number} format
- */
-export function setColorFormat(format) {
+function setColorFormat(format) {
   state.colorFormat = format === 1 ? 1 : 0;
+  if (state.initialized && wasmRef.module) {
+    wasmRef.module.ccall("setColorFormat", null, ["number"], [state.colorFormat]);
+  }
 }
-
 function unavailableGPUTimings() {
   return {
     parallelTime: 0,
     chainedTime: 0,
     totalTime: 0,
     available: false,
-    timingSource: 'unavailable',
+    timingSource: "unavailable"
   };
 }
-
-/**
- * Get GPU pass timing measurements from C++ out-params.
- * C++ signature: void getGPUTimings(float* parallelMs, float* chainedMs, float* totalMs, int* available).
- * Always returns the GPUTimings shape (never {}).
- * @returns {{ parallelTime: number, chainedTime: number, totalTime: number, available: boolean, timingSource: 'gpu-timestamp'|'wall-clock'|'unavailable' }}
- */
-export function getGPUTimings() {
+function getGPUTimings() {
   if (!state.initialized || !wasmRef.module) return unavailableGPUTimings();
   const m = wasmRef.module;
-  if (typeof m._malloc !== 'function' || typeof m.getValue !== 'function' || typeof m.ccall !== 'function') {
+  if (typeof m._malloc !== "function" || typeof m.getValue !== "function" || typeof m.ccall !== "function") {
     return unavailableGPUTimings();
   }
-
   const ptr = m._malloc(16);
   if (!ptr) return unavailableGPUTimings();
-
   try {
     m.ccall(
-      'getGPUTimings',
+      "getGPUTimings",
       null,
-      ['number', 'number', 'number', 'number'],
+      ["number", "number", "number", "number"],
       [ptr, ptr + 4, ptr + 8, ptr + 12]
     );
-    const parallelTime = m.getValue(ptr, 'float');
-    const chainedTime = m.getValue(ptr + 4, 'float');
-    const totalTime = m.getValue(ptr + 8, 'float');
-    const available = m.getValue(ptr + 12, 'i32') !== 0;
+    const parallelTime = m.getValue(ptr, "float");
+    const chainedTime = m.getValue(ptr + 4, "float");
+    const totalTime = m.getValue(ptr + 8, "float");
+    const available = m.getValue(ptr + 12, "i32") !== 0;
     return {
       parallelTime,
       chainedTime,
       totalTime,
       available,
-      timingSource: available ? 'gpu-timestamp' : 'wall-clock',
+      timingSource: available ? "gpu-timestamp" : "wall-clock"
     };
   } catch {
     return unavailableGPUTimings();
   } finally {
-    if (typeof m._free === 'function') m._free(ptr);
+    if (typeof m._free === "function") m._free(ptr);
   }
 }
-
-/**
- * Query adapter summary string from C++ (device.cpp).
- * @returns {string}
- */
-export function getAdapterSummary() {
-  if (!wasmRef.module || typeof wasmRef.module.ccall !== 'function') return '';
-  return wasmRef.module.ccall('getAdapterSummary', 'string', [], []) ?? '';
+function getAdapterSummary() {
+  if (!wasmRef.module || typeof wasmRef.module.ccall !== "function") return "";
+  return String(wasmRef.module.ccall("getAdapterSummary", "string", [], []) ?? "");
 }
-
-/**
- * Query last init error stage code (0..8) from C++.
- * @returns {number}
- */
-export function getLastInitErrorStage() {
-  if (!wasmRef.module || typeof wasmRef.module.ccall !== 'function') return 0;
-  return wasmRef.module.ccall('getLastInitErrorStage', 'number', [], []) ?? 0;
+function getLastInitErrorStage() {
+  if (!wasmRef.module || typeof wasmRef.module.ccall !== "function") return 0;
+  return Number(wasmRef.module.ccall("getLastInitErrorStage", "number", [], []) ?? 0);
 }
-
-/**
- * Query last init error message string from C++.
- * @returns {string}
- */
-export function getLastInitErrorMessage() {
-  if (!wasmRef.module || typeof wasmRef.module.ccall !== 'function') return '';
-  return wasmRef.module.ccall('getLastInitErrorMessage', 'string', [], []) ?? '';
+function getLastInitErrorMessage() {
+  if (!wasmRef.module || typeof wasmRef.module.ccall !== "function") return "";
+  return String(wasmRef.module.ccall("getLastInitErrorMessage", "string", [], []) ?? "");
 }
+export {
+  addRipple,
+  clearRipples,
+  getAdapterSummary,
+  getColorFormat,
+  getFPS,
+  getGPUTimings,
+  getLastInitErrorMessage,
+  getLastInitErrorStage,
+  getSupportsDeepWorkgroup,
+  setColorFormat,
+  setInputSource,
+  setSlotParams,
+  updateAudioData,
+  updateAudioFrequencyBins,
+  updateDepthMap,
+  updateMousePos,
+  updateSlotParams,
+  updateUniforms
+};

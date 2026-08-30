@@ -2,7 +2,7 @@
   "id": "neon-warp",
   "name": "Neon Warp",
   "url": "shaders/neon-warp.wgsl",
-  "description": "Thermal mirage refraction driven by diffusing heat sources, ripples, and blackbody plasma glow.",
+  "description": "Closed-form thermal packets and a refraction whip. Heat is analytic from pointer and ripples \u2014 A stores ACES display, not a second sim. Exact-C glow advection, ACES, heat-energy alpha.",
   "params": [
     {
       "id": "refraction_strength",
@@ -37,13 +37,62 @@
     "mouse-driven",
     "temporal-persistence",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "fast-motion",
+    "spring-cursor",
+    "semantic-alpha",
+    "exact-c-history"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
     "thermal",
-    "mirage"
-  ]
+    "mirage",
+    "fast-motion",
+    "audio-reactive",
+    "aces"
+  ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Refraction Strength",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Diffusion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Emission Gain",
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Cooling",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "category": "interactive-mouse"
 }

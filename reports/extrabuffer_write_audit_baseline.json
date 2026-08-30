@@ -1,352 +1,409 @@
 {
   "generated": "2026-07-26T05:04:27.564674+00:00",
   "reason": "Triaged legacy extraBuffer[0..132] writes present at audit introduction (2026-07-26). Do NOT add new entries; fix the shader or remap state to extraBuffer[133..255] instead.",
-  "entries": [
-    {
-      "file": "public/shaders/cyber-rain.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7
-      ]
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8
-      ]
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        8
-      ]
-    },
-    {
-      "file": "public/shaders/electric-eel-storm.wgsl",
-      "indices": [
-        3
-      ]
-    },
-    {
-      "file": "public/shaders/gen-alpha-aurora.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-bioreactor-bloom.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-celestial-weave.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-chrono-mycelial-tapestry.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ]
-    },
-    {
-      "file": "public/shaders/gen-echo-dunes.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-feedback-echo-chamber.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-fireworks-audio-symphony.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-ghost-flame.wgsl",
-      "indices": [
-        3,
-        4
-      ]
-    },
-    {
-      "file": "public/shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-ifs-fractal-flame.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-luminous-cauldron.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-magnetic-ferrofluid-sculpture.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-magnetic-kelp.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-neon-snowfall.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-neural-bioluminescence-matrix.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ]
-    },
-    {
-      "file": "public/shaders/gen-neuro-fluid-plasma-lotus.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-opal-circuit.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-prismatic-crystal-growth.wgsl",
-      "indices": [
-        2
-      ]
-    },
-    {
-      "file": "public/shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-sentient-ferro-silicate-swarm.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-showcase-nebula-core.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ]
-    },
-    {
-      "file": "public/shaders/gen-sierpinski-tetrahedron.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5
-      ]
-    },
-    {
-      "file": "public/shaders/gen-topological-phase-weave.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-translucent-nebula.wgsl",
-      "indices": [
-        1
-      ]
-    },
-    {
-      "file": "public/shaders/gen-von-karman-vortex.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-vortex-cathedral.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/gen-worley-cellular-noise.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ]
-    },
-    {
-      "file": "public/shaders/hyperbolic-crystal-symbiosis.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/interactive-voronoi-lens.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7
-      ]
-    },
-    {
-      "file": "public/shaders/mouse-ink-bleed.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7
-      ]
-    },
-    {
-      "file": "public/shaders/oscilloscope-overlay.wgsl",
-      "indices": [
-        0
-      ]
-    },
-    {
-      "file": "public/shaders/phantom-lag.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3
-      ]
-    },
-    {
-      "file": "public/shaders/pixel-stretch-cross.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3
-      ]
-    },
-    {
-      "file": "public/shaders/symbiotic-light-propagation-networks.wgsl",
-      "indices": [
-        5,
-        6,
-        7,
-        8,
-        9
-      ]
-    },
-    {
-      "file": "public/shaders/temporal-rgb-smear.wgsl",
-      "indices": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ]
-    },
-    {
-      "file": "public/shaders/waveform-glitch.wgsl",
-      "indices": [
-        0
-      ]
-    }
-  ]
+  "sections": {
+    "engine_owned": "FFT-zone writes used as documented engine/audio coupling. Safe to keep baselined; do not add new entries.",
+    "shader_bug": "Persistent simulation state incorrectly mapped to reserved/FFT zone. Remap to extraBuffer[133..255] when the shader is next upgraded."
+  },
+  "dynamic_index_triage": "reports/extrabuffer_dynamic_index_baseline.json (32 sites) — see reports/extrabuffer_dynamic_index_triage.md",
+  "engine_owned": {
+    "description": "FFT-zone writes used as documented engine/audio coupling. Do not add new entries.",
+    "entries": [
+      {
+        "file": "public/shaders/symbiotic-light-propagation-networks.wgsl",
+        "indices": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "reason": "documented FFT-zone audio coupling; engine stomps [5..132] each frame"
+      }
+    ]
+  },
+  "shader_bug": {
+    "description": "Persistent state incorrectly mapped to reserved/FFT zone. Remap to [133..255].",
+    "entries": [
+      {
+        "file": "public/shaders/cyber-rain.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/echo-trace.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/elastic-chromatic.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/electric-eel-storm.wgsl",
+        "indices": [
+          3
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-alpha-aurora.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-bioreactor-bloom.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-celestial-weave.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-chrono-mycelial-tapestry.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-echo-dunes.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-feedback-echo-chamber.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-fireworks-audio-symphony.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-ghost-flame.wgsl",
+        "indices": [
+          3,
+          4
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-ifs-fractal-flame.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-luminous-cauldron.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-magnetic-ferrofluid-sculpture.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-magnetic-kelp.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-neon-snowfall.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-neural-bioluminescence-matrix.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-neuro-fluid-plasma-lotus.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-opal-circuit.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-prismatic-crystal-growth.wgsl",
+        "indices": [
+          2
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-sentient-ferro-silicate-swarm.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-showcase-nebula-core.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-sierpinski-tetrahedron.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-topological-phase-weave.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-translucent-nebula.wgsl",
+        "indices": [
+          1
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-von-karman-vortex.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-vortex-cathedral.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/gen-worley-cellular-noise.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/hyperbolic-crystal-symbiosis.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/interactive-voronoi-lens.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/mouse-ink-bleed.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/oscilloscope-overlay.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/phantom-lag.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/pixel-stretch-cross.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/temporal-rgb-smear.wgsl",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      },
+      {
+        "file": "public/shaders/waveform-glitch.wgsl",
+        "indices": [
+          0
+        ],
+        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
+      }
+    ]
+  }
 }

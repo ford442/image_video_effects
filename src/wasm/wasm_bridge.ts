@@ -1,9 +1,8 @@
-// CANONICAL WASM bridge barrel.
 /**
  * Pixelocity WASM Renderer Bridge
  *
- * This module provides a JavaScript interface to the C++ WebGPU renderer.
- * It re-exports modular ES bridge units for drop-in compatibility.
+ * Hand-edited TypeScript barrel. Generated ESM copies live in
+ * wasm_renderer/ and public/wasm/. Do not edit those copies.
  */
 
 import wasmBridge from './bridge/api.js';

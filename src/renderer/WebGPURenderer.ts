@@ -43,7 +43,7 @@ import {
 } from './webgpu/WebGPUMediaInput';
 import { ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
 import type { InternalColorFormat } from '../config/formatPolicy';
-import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities } from '../config/formatPolicy';
+import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, inferRequiresRgba32Float } from '../config/formatPolicy';
 import { graphRunner } from './GraphRunner';
 import { GpuChoresHost } from '../gpuChores';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
@@ -148,7 +148,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
     this.updateScaledDimensions();
     this.setupGpuResources(outcome.hasF32Filterable, this.colorFormat);
-    this.gpuChores.attach(outcome.device);
+    this.gpuChores.attach(outcome.device, 'no GPUDevice adopted', this.colorFormat);
 
     this.frameState = createFrameState(createRendererFrameHost(this as unknown as RendererFrameDeps));
     this.initialized = true;
@@ -225,7 +225,30 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   encodePreFxChores(encoder: GPUCommandEncoder): void {
-    this.gpuChores.encodePreFx(encoder, this.resources.readTex, this.scaledW, this.scaledH);
+    this.gpuChores.setPhysicsPinned(this.hasPhysicsPinnedSlot());
+    this.gpuChores.encodePreFx(
+      encoder,
+      this.resources.readTex,
+      this.scaledW,
+      this.scaledH,
+      this.resources.writeTex,
+    );
+  }
+
+  setSourceAutoExposure(enabled: boolean): void {
+    this.gpuChores.setSourceNormalizeEnabled(enabled);
+  }
+
+  async captureChoresThumbnailPng(outSize: number): Promise<string | null> {
+    const src = this.resources.blitReadTex ?? this.resources.readTex;
+    if (!src) return null;
+    return this.gpuChores.captureDownsampledPng(src, this.scaledW, this.scaledH, outSize);
+  }
+
+  private hasPhysicsPinnedSlot(): boolean {
+    return this.slots.some(
+      (slot) => slot.enabled && !!slot.shaderId && inferRequiresRgba32Float({ id: slot.shaderId }),
+    );
   }
 
   afterFrameSubmitChores(): void {
@@ -350,6 +373,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   setColorFormat(format: InternalColorFormat): void {
     if (this.colorFormat === format) return;
     this.colorFormat = format;
+    this.gpuChores.setColorFormat(format);
     if (!this.device || !this.initialized) return;
 
     this.pipeline.setColorFormat(this.device, format);

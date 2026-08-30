@@ -2,7 +2,7 @@
   "id": "vortex-drag",
   "name": "Vortex Drag",
   "url": "shaders/vortex-drag.wgsl",
-  "description": "Twisting vortex distortion that follows the mouse cursor.",
+  "description": "Sprung vortex core with helical streak ribbons. Twist, radius, pinch, and hardness stay exact. Held shear, click whirl fronts, exact-C smear, ACES display.",
   "params": [
     {
       "id": "twist",
@@ -38,12 +38,60 @@
     "audio-reactive",
     "audio-driven",
     "upgraded-rgba",
-    "depth-aware"
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "fast-motion",
+    "spring-cursor",
+    "semantic-alpha",
+    "exact-c-history"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
-    "music"
-  ]
+    "music",
+    "fast-motion",
+    "audio-reactive",
+    "aces"
+  ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Twist Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Vortex Radius",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Pinch/Bulge",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Edge Hardness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "category": "interactive-mouse"
 }

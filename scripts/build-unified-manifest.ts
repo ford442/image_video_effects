@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -207,6 +208,13 @@ function buildUnifiedManifest(): void {
 
   if (duplicates.length > 0) {
     console.log(`   (${duplicates.length} duplicate IDs skipped)`);
+  }
+
+  try {
+    execSync('node scripts/sync-readme-catalog-counts.mjs', { stdio: 'inherit' });
+  } catch {
+    console.error('❌ Failed to sync README catalog counts');
+    process.exit(1);
   }
 }
 

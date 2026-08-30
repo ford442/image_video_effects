@@ -58,6 +58,51 @@ def test_id_filename_mismatch_detected():
         assert "id-filename-mismatch" in types
 
 
+def test_graph_parent_skips_id_filename_mismatch():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        defs = root / "shader_definitions" / "simulation"
+        shaders = root / "public" / "shaders"
+        lists = root / "public" / "shader-lists"
+        defs.mkdir(parents=True)
+        shaders.mkdir(parents=True)
+        lists.mkdir(parents=True)
+        (defs / "ripple-tank.json").write_text(
+            json.dumps({
+                "id": "ripple-tank",
+                "url": "shaders/ripple-tank-step.wgsl",
+                "multipass": {
+                    "graph": {
+                        "nodes": [{"id": "step", "entry": "ripple-tank-step"}],
+                    },
+                },
+            }),
+            encoding="utf-8",
+        )
+        (shaders / "ripple-tank-step.wgsl").write_text("@compute @workgroup_size(8,8,1) fn main() {}\n")
+        (lists / "simulation.json").write_text(
+            json.dumps([{"id": "ripple-tank", "url": "shaders/ripple-tank-step.wgsl"}]),
+            encoding="utf-8",
+        )
+
+        import audit_catalog_consistency as mod
+
+        old = mod.DEFINITIONS_DIR, mod.SHADERS_DIR, mod.SHADER_LISTS_DIR, mod.MULTIPASS_REGISTRY_TS
+        mod.DEFINITIONS_DIR = root / "shader_definitions"
+        mod.SHADERS_DIR = shaders
+        mod.SHADER_LISTS_DIR = lists
+        mod.MULTIPASS_REGISTRY_TS = root / "nonexistent.ts"
+        try:
+            paths = mod.discover_definition_paths()
+            defs_loaded = mod.load_definitions_parallel(paths)
+            report = mod.audit_catalog(defs_loaded, lists_regenerated=False)
+        finally:
+            mod.DEFINITIONS_DIR, mod.SHADERS_DIR, mod.SHADER_LISTS_DIR, mod.MULTIPASS_REGISTRY_TS = old
+
+        mismatches = [v for v in report["violations"] if v["type"] == "id-filename-mismatch"]
+        assert mismatches == []
+
+
 def test_gate_baseline_accepts_known():
     report = {
         "violation_count": 1,
@@ -91,6 +136,7 @@ def main() -> int:
     tests = [
         test_violation_key_stable,
         test_id_filename_mismatch_detected,
+        test_graph_parent_skips_id_filename_mismatch,
         test_gate_baseline_accepts_known,
         test_gate_fails_new_violation,
     ]
