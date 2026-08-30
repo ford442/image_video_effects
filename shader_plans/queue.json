@@ -449,11 +449,6 @@
       "filename": "2026-08-27_chronos-crystal-labyrinth.md",
       "title": "Chronos Crystal Labyrinth",
       "added": "2026-08-27T15:26:12.803741"
-    },
-    {
-      "filename": "2026-08-28_luminescent-nebula-silk-weaver.md",
-      "title": "Luminescent Nebula-Silk Weaver",
-      "added": "2026-08-28T15:33:58.681057"
     }
   ],
   "current": null,
@@ -861,6 +856,13 @@
       "added": "2026-08-27T15:26:12.803741",
       "status": "completed",
       "completed_at": "2026-08-28T08:16:28.299795+00:00"
+    },
+    {
+      "filename": "2026-08-28_luminescent-nebula-silk-weaver.md",
+      "title": "Luminescent Nebula-Silk Weaver",
+      "added": "2026-08-28T15:33:58.681057",
+      "status": "completed",
+      "completed_at": "2026-08-30T07:55:56.079687+00:00"
     }
   ],
   "rejected": [],
