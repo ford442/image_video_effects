@@ -152,7 +152,7 @@ em++ -std=c++20 -O2 \
     "${SOURCES[@]}" \
     "-I$SCRIPT_DIR" \
     -sEXPORTED_FUNCTIONS="${EXPORTED}" \
-    -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8,HEAPF32 \
+    -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,lengthBytesUTF8,HEAPU8,HEAPF32 \
     -sALLOW_MEMORY_GROWTH=1 \
     -sGROWABLE_ARRAYBUFFERS=0 \
     -sNO_EXIT_RUNTIME=1 \

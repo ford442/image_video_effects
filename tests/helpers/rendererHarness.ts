@@ -228,7 +228,9 @@ export async function loadShaderOnSlot(
       api.setInputSource(source);
       const ok = await api.loadShader(s.id, s.url);
       if (!ok) {
-        throw new Error(`loadShader failed for ${s.id}`);
+        const diags = api.renderer?.getDiagnostics?.();
+        const lastErr = diags?.wasm?.lastLoadError || 'Unknown (check console)';
+        throw new Error(`loadShader failed for ${s.id}: ${lastErr}`);
       }
       api.setSlotShader(s.slot ?? 0, s.id);
     },
