@@ -122,6 +122,8 @@ export interface AppShellProps {
     wasmFps: number;
     renderQualityMode: RenderQualityMode;
     onRenderQualityChange: (mode: RenderQualityMode) => void;
+    sourceAutoExposure: boolean;
+    onSourceAutoExposureChange: (enabled: boolean) => void;
     performanceHud: {
         internalWidth: number;
         internalHeight: number;
@@ -247,6 +249,8 @@ export function AppShell(props: AppShellProps) {
         wasmFps,
         renderQualityMode,
         onRenderQualityChange,
+        sourceAutoExposure,
+        onSourceAutoExposureChange,
         performanceHud,
         rendererDiagnostics,
     } = props;
@@ -380,6 +384,8 @@ export function AppShell(props: AppShellProps) {
                         getCurrentChain={getCurrentChain}
                         renderQualityMode={renderQualityMode}
                         onRenderQualityChange={onRenderQualityChange}
+                        sourceAutoExposure={sourceAutoExposure}
+                        onSourceAutoExposureChange={onSourceAutoExposureChange}
                         performanceHud={performanceHud}
                         rendererDiagnostics={rendererDiagnostics}
                         maxActiveSlots={performanceHud.maxActiveSlots}

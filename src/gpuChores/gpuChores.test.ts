@@ -1,7 +1,9 @@
 import {
   autoExposureFromHistogram,
   autoExposureFromMean,
+  applyGain2d,
   buildLumaClassifyLut,
+  classifyBandsToRgba,
   downsample2d,
   GpuChoresHost,
   HISTOGRAM_BINS,
@@ -14,7 +16,10 @@ import {
   PREVIEW_SIZE,
   reduceF32FromHistogram,
   reduceF32Luma,
+  shouldEncodeSourceGain,
   shrinkCpuSource,
+  sourceGainStatus,
+  unpackClassifyRgba8,
 } from './index';
 
 function solidRgba(w: number, h: number, r: number, g: number, b: number, a = 1): Float32Array {
@@ -26,6 +31,86 @@ function solidRgba(w: number, h: number, r: number, g: number, b: number, a = 1)
     out[i * 4 + 3] = a;
   }
   return out;
+}
+
+function probeOk(): void {
+  window.webgpuProbe = {
+    ok: true,
+    finishedAt: new Date().toISOString(),
+    userAgent: 'test',
+    userAgentBrands: [],
+    attempts: [],
+  };
+}
+
+function stubTexture(): GPUTexture {
+  return {
+    createView: () => ({}),
+    destroy: () => {},
+  } as unknown as GPUTexture;
+}
+
+function stubBuffer(): GPUBuffer {
+  return {
+    destroy: () => {},
+    mapAsync: async () => {},
+    getMappedRange: () => new ArrayBuffer(4),
+    unmap: () => {},
+  } as unknown as GPUBuffer;
+}
+
+/** Minimal adopted device so GpuChoresHost.createGpu succeeds in Jest. */
+function stubAdoptedGpuDevice(): GPUDevice {
+  const g = globalThis as Record<string, unknown>;
+  if (!g.GPUShaderStage) g.GPUShaderStage = { COMPUTE: 4 };
+  if (!g.GPUBufferUsage) {
+    g.GPUBufferUsage = {
+      MAP_READ: 1,
+      COPY_SRC: 4,
+      COPY_DST: 8,
+      UNIFORM: 64,
+      STORAGE: 128,
+    };
+  }
+  if (!g.GPUTextureUsage) {
+    g.GPUTextureUsage = {
+      COPY_SRC: 1,
+      COPY_DST: 2,
+      TEXTURE_BINDING: 4,
+      STORAGE_BINDING: 8,
+    };
+  }
+  return {
+    createShaderModule: () => ({}),
+    createComputePipeline: () => ({}),
+    createPipelineLayout: () => ({}),
+    createBindGroupLayout: () => ({}),
+    createBindGroup: () => ({}),
+    createBuffer: () => stubBuffer(),
+    createTexture: () => stubTexture(),
+    createCommandEncoder: () => ({
+      copyBufferToBuffer() {},
+      copyTextureToBuffer() {},
+      finish() { return {}; },
+    }),
+    queue: {
+      writeBuffer() {},
+      submit() {},
+    },
+  } as unknown as GPUDevice;
+}
+
+function spyEncoder(labels: string[]) {
+  return {
+    beginComputePass: (desc?: { label?: string }) => {
+      labels.push(desc?.label ?? '');
+      return { setPipeline() {}, setBindGroup() {}, dispatchWorkgroups() {}, end() {} };
+    },
+    copyBufferToBuffer() {},
+    clearBuffer() {},
+    copyTextureToTexture() {},
+    copyTextureToBuffer() {},
+  } as unknown as GPUCommandEncoder;
 }
 
 describe('gpu-chores CPU goldens (Chromashift-shaped BT.709)', () => {
@@ -94,6 +179,39 @@ describe('gpu-chores CPU goldens (Chromashift-shaped BT.709)', () => {
     expect(dest[8]).toBeCloseTo(1, 5);
     const boosted = downsample2d(src, 4, 4, 2, 2, 2);
     expect(boosted[8]).toBeCloseTo(2, 5);
+  });
+
+  it('downsample_2d supports dest sizes other than 64', () => {
+    const src = solidRgba(8, 8, 0.5, 0.25, 0.125, 1);
+    const dest = downsample2d(src, 8, 8, 2, 2, 1);
+    expect(dest.length).toBe(16);
+    expect(dest[0]).toBeCloseTo(0.5, 5);
+    expect(dest[3]).toBeCloseTo(1, 5);
+  });
+
+  it('applyGain2d moves dark luma toward middle grey and keeps alpha', () => {
+    const dark = 0.045;
+    const src = solidRgba(2, 2, dark, dark, dark, 0.8);
+    const gained = applyGain2d(src, 2, 2, MIDDLE_GREY / dark);
+    expect(gained[0]).toBeCloseTo(MIDDLE_GREY, 5);
+    expect(gained[3]).toBeCloseTo(0.8, 5);
+    const nanSafe = applyGain2d(src, 2, 2, Number.NaN);
+    expect(nanSafe[0]).toBeCloseTo(dark, 5);
+  });
+
+  it('classifyBandsToRgba paints 8-band false color', () => {
+    const rgba = classifyBandsToRgba(new Uint8Array([0, 7]), 2, 1);
+    expect(rgba[0]).toBe(20);
+    expect(rgba[4]).toBe(200);
+    expect(rgba[7]).toBe(255);
+  });
+
+  it('unpackClassifyRgba8 reads band indices from packed R', () => {
+    const packed = new Uint8Array(256 * 2);
+    packed[0] = 3;
+    packed[256] = 7;
+    const bands = unpackClassifyRgba8(packed, 1, 2, 256);
+    expect(Array.from(bands)).toEqual([3, 7]);
   });
 
   it('auto-exposure targets middle grey without NaNs', () => {
@@ -218,7 +336,117 @@ describe('GpuChoresHost', () => {
     expect(Math.max(shrunk.width, shrunk.height)).toBe(16);
   });
 
+  it('ingestRgba copies the snapshot and does not rewrite the caller buffer', () => {
+    window.webgpuProbe = {
+      ok: true,
+      finishedAt: new Date().toISOString(),
+      userAgent: 'test',
+      userAgentBrands: [],
+      attempts: [],
+    };
+    const original = window.location;
+    Object.defineProperty(window, 'location', {
+      value: { ...original, search: '?no_gpu_compute' },
+      configurable: true,
+    });
+    const src = solidRgba(4, 4, 0.05, 0.05, 0.05);
+    const before = src[0];
+    const host = new GpuChoresHost();
+    host.attach(null, 'cpu analysis');
+    host.ingestRgba(src, 4, 4);
+    expect(src[0]).toBe(before);
+    expect(host.getAutoUniforms().exposureGain).toBeGreaterThan(1);
+    host.destroy();
+    Object.defineProperty(window, 'location', { value: original, configurable: true });
+    delete window.webgpuProbe;
+  });
+
   it('keeps histogram bin count at 256', () => {
     expect(HISTOGRAM_BINS).toBe(256);
+  });
+
+  it('skips apply-gain when the source toggle is off', () => {
+    probeOk();
+    const labels: string[] = [];
+    const host = new GpuChoresHost();
+    host.attach(stubAdoptedGpuDevice());
+    expect(host.getBreadcrumbs().gpuComputeAvailable).toBe(true);
+    host.setSourceNormalizeEnabled(false);
+    const encoded = host.encodeSourceGainForTest(
+      spyEncoder(labels),
+      stubTexture(),
+      stubTexture(),
+      8,
+      8,
+    );
+    expect(encoded).toBe(false);
+    expect(labels.some((label) => label.includes('apply-gain'))).toBe(false);
+    expect(host.getBreadcrumbs().sourceGain).toBe('off');
+    host.destroy();
+    delete window.webgpuProbe;
+  });
+
+  it('encodes apply-gain when the source toggle is on', () => {
+    probeOk();
+    const labels: string[] = [];
+    const host = new GpuChoresHost();
+    host.attach(stubAdoptedGpuDevice());
+    host.setSourceNormalizeEnabled(true);
+    const encoded = host.encodeSourceGainForTest(
+      spyEncoder(labels),
+      stubTexture(),
+      stubTexture(),
+      8,
+      8,
+    );
+    expect(encoded).toBe(true);
+    expect(labels).toContain('gpu-chores-apply-gain');
+    expect(host.getBreadcrumbs().sourceGain).toBe('on');
+    host.destroy();
+    delete window.webgpuProbe;
+  });
+
+  it('skips apply-gain when a physics-pinned graph is active', () => {
+    probeOk();
+    const labels: string[] = [];
+    const host = new GpuChoresHost();
+    host.attach(stubAdoptedGpuDevice());
+    host.setSourceNormalizeEnabled(true);
+    host.setPhysicsPinned(true);
+    const encoded = host.encodeSourceGainForTest(
+      spyEncoder(labels),
+      stubTexture(),
+      stubTexture(),
+      8,
+      8,
+    );
+    expect(encoded).toBe(false);
+    expect(labels.some((label) => label.includes('apply-gain'))).toBe(false);
+    expect(host.getBreadcrumbs().sourceGain).toBe('skipped-physics');
+    host.destroy();
+    delete window.webgpuProbe;
+  });
+});
+
+describe('shouldEncodeSourceGain', () => {
+  const base = {
+    toggleOn: true,
+    gpuComputeAvailable: true,
+    physicsPinned: false,
+    killSwitch: false,
+  };
+
+  it('encodes only when toggle is on and GPU chores are live', () => {
+    expect(shouldEncodeSourceGain(base)).toBe(true);
+    expect(shouldEncodeSourceGain({ ...base, toggleOn: false })).toBe(false);
+    expect(shouldEncodeSourceGain({ ...base, killSwitch: true })).toBe(false);
+    expect(shouldEncodeSourceGain({ ...base, gpuComputeAvailable: false })).toBe(false);
+    expect(shouldEncodeSourceGain({ ...base, physicsPinned: true })).toBe(false);
+  });
+
+  it('reports skipped-physics when the toggle is on but a pinned graph is active', () => {
+    expect(sourceGainStatus({ ...base, physicsPinned: true })).toBe('skipped-physics');
+    expect(sourceGainStatus({ ...base, toggleOn: false })).toBe('off');
+    expect(sourceGainStatus(base)).toBe('on');
   });
 });

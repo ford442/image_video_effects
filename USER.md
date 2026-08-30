@@ -285,7 +285,8 @@ Format specification:
   Closed #1123–#1129 over-claimed; do not treat them as done.
 - WASM stays Tier B until #1080 real-GPU evidence; no GraphRunner C++ port
   (#1183 is gated on that decision). CRA→Vite stays deferred.
-- Product next: thumbs 26% → 50%+ with deferrals (#1185), then all-slot audio
+- Product next: thumbs campaign is deferral+CI+attract-first scripts (#1185 headless);
+  GPU host still needed for ≥50% healthy PNGs. Then all-slot audio
   + OSC/WebMIDI (#1182). Physics Lab set 2 graphs live in #1183, not another
   10-wide generative swarm. Attract mode already exists.
 - Thumbnail healthy coverage is still the discoverability bottleneck (26.2%,

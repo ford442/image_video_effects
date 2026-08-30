@@ -453,21 +453,42 @@ jobs:
 
     - name: Report to job summary
       if: always()
-      run: cat /tmp/thumbs-check.txt >> "$GITHUB_STEP_SUMMARY"
+      run: |
+        cat /tmp/thumbs-check.txt >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/thumbnail_coverage.md ]; then
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat reports/thumbnail_coverage.md >> "$GITHUB_STEP_SUMMARY"
+        fi
 
-    - name: Comment on PR if check failed
-      if: failure() && steps.thumbs.outcome == 'failure'
+    - name: Sticky thumbnail coverage comment
+      if: always()
       continue-on-error: true
       run: |
+        MARKER="<!-- thumbnail-coverage-sticky -->"
         {
-          echo "## ⚠️ Thumbnail Coverage Check"
+          echo "$MARKER"
+          echo "## Thumbnail coverage"
           echo ""
           cat /tmp/thumbs-check.txt
           echo ""
-          echo "💡 **Tip:** Add a deferral entry to `reports/thumbnail_deferrals.json` for newly added shaders without thumbnails."
-          echo "See: [Thumbnail Deferrals](docs/THUMBNAIL_PIPELINE.md) for details."
+          if [ -f reports/thumbnail_coverage.md ]; then
+            cat reports/thumbnail_coverage.md
+            echo ""
+          fi
+          echo "Check is reporting-only until healthy eligible coverage is ≥ 50%, then newly eligible missing thumbs become blocking."
+          echo ""
+          echo "Tip: add a deferral in \`reports/thumbnail_deferrals.json\` (\`expires\` or \`until\`) for new shaders without a GPU capture."
+          echo "See [Thumbnail Pipeline](docs/THUMBNAIL_PIPELINE.md)."
         } > /tmp/thumbs-comment.md
-        
-        gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/thumbs-comment.md || true
+
+        PR="${{ github.event.pull_request.number }}"
+        EXISTING=$(gh api "repos/${{ github.repository }}/issues/${PR}/comments" \
+          --jq '.[] | select(.body | contains("thumbnail-coverage-sticky")) | .id' | head -n 1)
+        if [ -n "$EXISTING" ]; then
+          gh api --method PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+            -f body="$(cat /tmp/thumbs-comment.md)"
+        else
+          gh pr comment "$PR" --body-file /tmp/thumbs-comment.md
+        fi
       env:
         GH_TOKEN: ${{ github.token }}

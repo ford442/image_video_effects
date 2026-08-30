@@ -1,0 +1,845 @@
+{
+  "timestamp": "2026-08-30T03:57:29.646309+00:00",
+  "source_of_truth": "shader_definitions/** (id + url path)",
+  "lists_regenerated": true,
+  "definitions_scanned": 1366,
+  "definitions_valid": 1366,
+  "wgsl_files": 1401,
+  "shader_list_ids": 1353,
+  "multipass_registry_entries": 25,
+  "graph_registry_entries": 14,
+  "violation_count": 118,
+  "violations_by_type": {
+    "id-filename-mismatch": 51,
+    "wgsl-without-definition": 28,
+    "orphan-graph-entry": 39
+  },
+  "violations": [
+    {
+      "type": "id-filename-mismatch",
+      "id": "anisotropic-kuwahara",
+      "def_path": "shader_definitions/artistic/anisotropic-kuwahara.json",
+      "detail": "definition id 'anisotropic-kuwahara' vs url stem 'anisotropic-kuwahara-tensor'",
+      "key": "id-filename-mismatch|anisotropic-kuwahara|anisotropic-kuwahara-tensor"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "dla-crystals",
+      "def_path": "shader_definitions/artistic/dla-crystals.json",
+      "detail": "definition id 'dla-crystals' vs url stem 'dla-walkers'",
+      "key": "id-filename-mismatch|dla-crystals|dla-walkers"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "galaxy-sim",
+      "def_path": "shader_definitions/artistic/galaxy.json",
+      "detail": "definition id 'galaxy-sim' vs url stem 'galaxy'",
+      "key": "id-filename-mismatch|galaxy-sim|galaxy"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "log-polar-droste",
+      "def_path": "shader_definitions/distortion/log-polar-droste.json",
+      "detail": "definition id 'log-polar-droste' vs url stem 'log-polar-droste-remap'",
+      "key": "id-filename-mismatch|log-polar-droste|log-polar-droste-remap"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-lorenz-attractor-flow",
+      "def_path": "shader_definitions/generative/gen-lorenz-attractor-flow.json",
+      "detail": "definition id 'gen-lorenz-attractor-flow' vs url stem 'lorenz-attractor-flow'",
+      "key": "id-filename-mismatch|gen-lorenz-attractor-flow|lorenz-attractor-flow"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-capabilities",
+      "def_path": "shader_definitions/generative/gen_capabilities.json",
+      "detail": "definition id 'gen-capabilities' vs url stem 'gen_capabilities'",
+      "key": "id-filename-mismatch|gen-capabilities|gen_capabilities"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-cyclic-automaton",
+      "def_path": "shader_definitions/generative/gen_cyclic_automaton.json",
+      "detail": "definition id 'gen-cyclic-automaton' vs url stem 'gen_cyclic_automaton'",
+      "key": "id-filename-mismatch|gen-cyclic-automaton|gen_cyclic_automaton"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-fluffy-raincloud",
+      "def_path": "shader_definitions/generative/gen_fluffy_raincloud.json",
+      "detail": "definition id 'gen-fluffy-raincloud' vs url stem 'gen_fluffy_raincloud'",
+      "key": "id-filename-mismatch|gen-fluffy-raincloud|gen_fluffy_raincloud"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-grid",
+      "def_path": "shader_definitions/generative/gen_grid.json",
+      "detail": "definition id 'gen-grid' vs url stem 'gen_grid'",
+      "key": "id-filename-mismatch|gen-grid|gen_grid"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-grok41-mandelbrot",
+      "def_path": "shader_definitions/generative/gen_grok41_mandelbrot.json",
+      "detail": "definition id 'gen-grok41-mandelbrot' vs url stem 'gen_grok41_mandelbrot'",
+      "key": "id-filename-mismatch|gen-grok41-mandelbrot|gen_grok41_mandelbrot"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-grok41-plasma",
+      "def_path": "shader_definitions/generative/gen_grok41_plasma.json",
+      "detail": "definition id 'gen-grok41-plasma' vs url stem 'gen_grok41_plasma'",
+      "key": "id-filename-mismatch|gen-grok41-plasma|gen_grok41_plasma"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-grok4-life",
+      "def_path": "shader_definitions/generative/gen_grok4_life.json",
+      "detail": "definition id 'gen-grok4-life' vs url stem 'gen_grok4_life'",
+      "key": "id-filename-mismatch|gen-grok4-life|gen_grok4_life"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-grok4-perlin",
+      "def_path": "shader_definitions/generative/gen_grok4_perlin.json",
+      "detail": "definition id 'gen-grok4-perlin' vs url stem 'gen_grok4_perlin'",
+      "key": "id-filename-mismatch|gen-grok4-perlin|gen_grok4_perlin"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-grokcf-interference",
+      "def_path": "shader_definitions/generative/gen_grokcf_interference.json",
+      "detail": "definition id 'gen-grokcf-interference' vs url stem 'gen_grokcf_interference'",
+      "key": "id-filename-mismatch|gen-grokcf-interference|gen_grokcf_interference"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-grokcf-voronoi",
+      "def_path": "shader_definitions/generative/gen_grokcf_voronoi.json",
+      "detail": "definition id 'gen-grokcf-voronoi' vs url stem 'gen_grokcf_voronoi'",
+      "key": "id-filename-mismatch|gen-grokcf-voronoi|gen_grokcf_voronoi"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-hyper-warp",
+      "def_path": "shader_definitions/generative/gen_hyper_warp.json",
+      "detail": "definition id 'gen-hyper-warp' vs url stem 'gen_hyper_warp'",
+      "key": "id-filename-mismatch|gen-hyper-warp|gen_hyper_warp"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-julia-set",
+      "def_path": "shader_definitions/generative/gen_julia_set.json",
+      "detail": "definition id 'gen-julia-set' vs url stem 'gen_julia_set'",
+      "key": "id-filename-mismatch|gen-julia-set|gen_julia_set"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-kimi-crystal",
+      "def_path": "shader_definitions/generative/gen_kimi_crystal.json",
+      "detail": "definition id 'gen-kimi-crystal' vs url stem 'gen_kimi_crystal'",
+      "key": "id-filename-mismatch|gen-kimi-crystal|gen_kimi_crystal"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-kimi-nebula",
+      "def_path": "shader_definitions/generative/gen_kimi_nebula.json",
+      "detail": "definition id 'gen-kimi-nebula' vs url stem 'gen_kimi_nebula'",
+      "key": "id-filename-mismatch|gen-kimi-nebula|gen_kimi_nebula"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-orb",
+      "def_path": "shader_definitions/generative/gen_orb.json",
+      "detail": "definition id 'gen-orb' vs url stem 'gen_orb'",
+      "key": "id-filename-mismatch|gen-orb|gen_orb"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-psychedelic-spiral",
+      "def_path": "shader_definitions/generative/gen_psychedelic_spiral.json",
+      "detail": "definition id 'gen-psychedelic-spiral' vs url stem 'gen_psychedelic_spiral'",
+      "key": "id-filename-mismatch|gen-psychedelic-spiral|gen_psychedelic_spiral"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-rainbow-smoke",
+      "def_path": "shader_definitions/generative/gen_rainbow_smoke.json",
+      "detail": "definition id 'gen-rainbow-smoke' vs url stem 'gen_rainbow_smoke'",
+      "key": "id-filename-mismatch|gen-rainbow-smoke|gen_rainbow_smoke"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-reaction-diffusion",
+      "def_path": "shader_definitions/generative/gen_reaction_diffusion.json",
+      "detail": "definition id 'gen-reaction-diffusion' vs url stem 'gen_reaction_diffusion'",
+      "key": "id-filename-mismatch|gen-reaction-diffusion|gen_reaction_diffusion"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-trails",
+      "def_path": "shader_definitions/generative/gen_trails.json",
+      "detail": "definition id 'gen-trails' vs url stem 'gen_trails'",
+      "key": "id-filename-mismatch|gen-trails|gen_trails"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gen-wave-equation",
+      "def_path": "shader_definitions/generative/gen_wave_equation.json",
+      "detail": "definition id 'gen-wave-equation' vs url stem 'gen_wave_equation'",
+      "key": "id-filename-mismatch|gen-wave-equation|gen_wave_equation"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "kimi-fractal-dreams",
+      "def_path": "shader_definitions/generative/kimi_fractal_dreams.json",
+      "detail": "definition id 'kimi-fractal-dreams' vs url stem 'kimi_fractal_dreams'",
+      "key": "id-filename-mismatch|kimi-fractal-dreams|kimi_fractal_dreams"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "kimi-nebula-depth",
+      "def_path": "shader_definitions/generative/kimi_nebula_depth.json",
+      "detail": "definition id 'kimi-nebula-depth' vs url stem 'kimi_nebula_depth'",
+      "key": "id-filename-mismatch|kimi-nebula-depth|kimi_nebula_depth"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "kimi-quantum-field",
+      "def_path": "shader_definitions/generative/kimi_quantum_field.json",
+      "detail": "definition id 'kimi-quantum-field' vs url stem 'kimi_quantum_field'",
+      "key": "id-filename-mismatch|kimi-quantum-field|kimi_quantum_field"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "psy-swirls",
+      "def_path": "shader_definitions/generative/psy-swirls.json",
+      "detail": "definition id 'psy-swirls' vs url stem 'generative-psy-swirls'",
+      "key": "id-filename-mismatch|psy-swirls|generative-psy-swirls"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "turing-veins",
+      "def_path": "shader_definitions/generative/turing-veins.json",
+      "detail": "definition id 'turing-veins' vs url stem 'generative-turing-veins'",
+      "key": "id-filename-mismatch|turing-veins|generative-turing-veins"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "kinetic-tiles",
+      "def_path": "shader_definitions/geometric/kinetic_tiles.json",
+      "detail": "definition id 'kinetic-tiles' vs url stem 'kinetic_tiles'",
+      "key": "id-filename-mismatch|kinetic-tiles|kinetic_tiles"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "graphic-novel",
+      "def_path": "shader_definitions/image/graphic_novel.json",
+      "detail": "definition id 'graphic-novel' vs url stem 'graphic_novel'",
+      "key": "id-filename-mismatch|graphic-novel|graphic_novel"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "ring-slicer",
+      "def_path": "shader_definitions/image/ring_slicer.json",
+      "detail": "definition id 'ring-slicer' vs url stem 'ring_slicer'",
+      "key": "id-filename-mismatch|ring-slicer|ring_slicer"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "interactive-frost",
+      "def_path": "shader_definitions/interactive-mouse/interactive-frost.json",
+      "detail": "definition id 'interactive-frost' vs url stem 'frost-reveal'",
+      "key": "id-filename-mismatch|interactive-frost|frost-reveal"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "kimi-chromatic-warp",
+      "def_path": "shader_definitions/interactive-mouse/kimi_chromatic_warp.json",
+      "detail": "definition id 'kimi-chromatic-warp' vs url stem 'kimi_chromatic_warp'",
+      "key": "id-filename-mismatch|kimi-chromatic-warp|kimi_chromatic_warp"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "kimi-ripple-touch",
+      "def_path": "shader_definitions/interactive-mouse/kimi_ripple_touch.json",
+      "detail": "definition id 'kimi-ripple-touch' vs url stem 'kimi_ripple_touch'",
+      "key": "id-filename-mismatch|kimi-ripple-touch|kimi_ripple_touch"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "kimi-spotlight",
+      "def_path": "shader_definitions/interactive-mouse/kimi_spotlight.json",
+      "detail": "definition id 'kimi-spotlight' vs url stem 'kimi_spotlight'",
+      "key": "id-filename-mismatch|kimi-spotlight|kimi_spotlight"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "kimi-liquid-glass",
+      "def_path": "shader_definitions/liquid-effects/kimi_liquid_glass.json",
+      "detail": "definition id 'kimi-liquid-glass' vs url stem 'kimi_liquid_glass'",
+      "key": "id-filename-mismatch|kimi-liquid-glass|kimi_liquid_glass"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "byte-mosh",
+      "def_path": "shader_definitions/retro-glitch/byte-mosh.json",
+      "detail": "definition id 'byte-mosh' vs url stem 'byte-mosh-mangle'",
+      "key": "id-filename-mismatch|byte-mosh|byte-mosh-mangle"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "chromatographic-fluid",
+      "def_path": "shader_definitions/simulation/chromatographic-fluid.json",
+      "detail": "definition id 'chromatographic-fluid' vs url stem 'chromatographic-force'",
+      "key": "id-filename-mismatch|chromatographic-fluid|chromatographic-force"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "fabric-of-reality",
+      "def_path": "shader_definitions/simulation/fabric-of-reality.json",
+      "detail": "definition id 'fabric-of-reality' vs url stem 'fabric-verlet'",
+      "key": "id-filename-mismatch|fabric-of-reality|fabric-verlet"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "gray-scott-tank",
+      "def_path": "shader_definitions/simulation/gray-scott-tank.json",
+      "detail": "definition id 'gray-scott-tank' vs url stem 'gray-scott-step'",
+      "key": "id-filename-mismatch|gray-scott-tank|gray-scott-step"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "jfa-aurora-voronoi",
+      "def_path": "shader_definitions/simulation/jfa-aurora-voronoi.json",
+      "detail": "definition id 'jfa-aurora-voronoi' vs url stem 'jfa-aurora-seed'",
+      "key": "id-filename-mismatch|jfa-aurora-voronoi|jfa-aurora-seed"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "optical-flow-dream",
+      "def_path": "shader_definitions/simulation/optical-flow-dream.json",
+      "detail": "definition id 'optical-flow-dream' vs url stem 'optical-flow-estimate'",
+      "key": "id-filename-mismatch|optical-flow-dream|optical-flow-estimate"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "photonic-caustics-graph",
+      "def_path": "shader_definitions/simulation/photonic-caustics-graph.json",
+      "detail": "definition id 'photonic-caustics-graph' vs url stem 'photonic-emitter'",
+      "key": "id-filename-mismatch|photonic-caustics-graph|photonic-emitter"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "poincare-tiling",
+      "def_path": "shader_definitions/simulation/poincare-tiling.json",
+      "detail": "definition id 'poincare-tiling' vs url stem 'poincare-tiling-map'",
+      "key": "id-filename-mismatch|poincare-tiling|poincare-tiling-map"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "predator-prey-ecology",
+      "def_path": "shader_definitions/simulation/predator-prey-ecology.json",
+      "detail": "definition id 'predator-prey-ecology' vs url stem 'predator-prey-ecology-step'",
+      "key": "id-filename-mismatch|predator-prey-ecology|predator-prey-ecology-step"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "ripple-tank",
+      "def_path": "shader_definitions/simulation/ripple-tank.json",
+      "detail": "definition id 'ripple-tank' vs url stem 'ripple-tank-step'",
+      "key": "id-filename-mismatch|ripple-tank|ripple-tank-step"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "sim-fluid-feedback-field",
+      "def_path": "shader_definitions/simulation/sim-fluid-feedback-field.json",
+      "detail": "definition id 'sim-fluid-feedback-field' vs url stem 'sim-fluid-feedback-field-pass1'",
+      "key": "id-filename-mismatch|sim-fluid-feedback-field|sim-fluid-feedback-field-pass1"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "wave-tank",
+      "def_path": "shader_definitions/simulation/wave-tank.json",
+      "detail": "definition id 'wave-tank' vs url stem 'wave-step'",
+      "key": "id-filename-mismatch|wave-tank|wave-step"
+    },
+    {
+      "type": "id-filename-mismatch",
+      "id": "warp-drive",
+      "def_path": "shader_definitions/visual-effects/warp_drive.json",
+      "detail": "definition id 'warp-drive' vs url stem 'warp_drive'",
+      "key": "id-filename-mismatch|warp-drive|warp_drive"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "anisotropic-kuwahara-filter",
+      "def_path": "",
+      "detail": "public/shaders/anisotropic-kuwahara-filter.wgsl",
+      "key": "wgsl-without-definition|anisotropic-kuwahara-filter|anisotropic-kuwahara-filter.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "anisotropic-kuwahara-render",
+      "def_path": "",
+      "detail": "public/shaders/anisotropic-kuwahara-render.wgsl",
+      "key": "wgsl-without-definition|anisotropic-kuwahara-render|anisotropic-kuwahara-render.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "byte-mosh-render",
+      "def_path": "",
+      "detail": "public/shaders/byte-mosh-render.wgsl",
+      "key": "wgsl-without-definition|byte-mosh-render|byte-mosh-render.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "chromatographic-advect",
+      "def_path": "",
+      "detail": "public/shaders/chromatographic-advect.wgsl",
+      "key": "wgsl-without-definition|chromatographic-advect|chromatographic-advect.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "chromatographic-diffuse",
+      "def_path": "",
+      "detail": "public/shaders/chromatographic-diffuse.wgsl",
+      "key": "wgsl-without-definition|chromatographic-diffuse|chromatographic-diffuse.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "chromatographic-interact",
+      "def_path": "",
+      "detail": "public/shaders/chromatographic-interact.wgsl",
+      "key": "wgsl-without-definition|chromatographic-interact|chromatographic-interact.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "chromatographic-phase",
+      "def_path": "",
+      "detail": "public/shaders/chromatographic-phase.wgsl",
+      "key": "wgsl-without-definition|chromatographic-phase|chromatographic-phase.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "chromatographic-render",
+      "def_path": "",
+      "detail": "public/shaders/chromatographic-render.wgsl",
+      "key": "wgsl-without-definition|chromatographic-render|chromatographic-render.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "dla-render",
+      "def_path": "",
+      "detail": "public/shaders/dla-render.wgsl",
+      "key": "wgsl-without-definition|dla-render|dla-render.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "fabric-constraint",
+      "def_path": "",
+      "detail": "public/shaders/fabric-constraint.wgsl",
+      "key": "wgsl-without-definition|fabric-constraint|fabric-constraint.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "fabric-render",
+      "def_path": "",
+      "detail": "public/shaders/fabric-render.wgsl",
+      "key": "wgsl-without-definition|fabric-render|fabric-render.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "fabric-tear",
+      "def_path": "",
+      "detail": "public/shaders/fabric-tear.wgsl",
+      "key": "wgsl-without-definition|fabric-tear|fabric-tear.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "gray-scott-inject",
+      "def_path": "",
+      "detail": "public/shaders/gray-scott-inject.wgsl",
+      "key": "wgsl-without-definition|gray-scott-inject|gray-scott-inject.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "gray-scott-render",
+      "def_path": "",
+      "detail": "public/shaders/gray-scott-render.wgsl",
+      "key": "wgsl-without-definition|gray-scott-render|gray-scott-render.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "jfa-aurora-flood",
+      "def_path": "",
+      "detail": "public/shaders/jfa-aurora-flood.wgsl",
+      "key": "wgsl-without-definition|jfa-aurora-flood|jfa-aurora-flood.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "jfa-aurora-render",
+      "def_path": "",
+      "detail": "public/shaders/jfa-aurora-render.wgsl",
+      "key": "wgsl-without-definition|jfa-aurora-render|jfa-aurora-render.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "log-polar-droste-grade",
+      "def_path": "",
+      "detail": "public/shaders/log-polar-droste-grade.wgsl",
+      "key": "wgsl-without-definition|log-polar-droste-grade|log-polar-droste-grade.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "optical-flow-advect",
+      "def_path": "",
+      "detail": "public/shaders/optical-flow-advect.wgsl",
+      "key": "wgsl-without-definition|optical-flow-advect|optical-flow-advect.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "optical-flow-grade",
+      "def_path": "",
+      "detail": "public/shaders/optical-flow-grade.wgsl",
+      "key": "wgsl-without-definition|optical-flow-grade|optical-flow-grade.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "photonic-accumulate",
+      "def_path": "",
+      "detail": "public/shaders/photonic-accumulate.wgsl",
+      "key": "wgsl-without-definition|photonic-accumulate|photonic-accumulate.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "photonic-trace",
+      "def_path": "",
+      "detail": "public/shaders/photonic-trace.wgsl",
+      "key": "wgsl-without-definition|photonic-trace|photonic-trace.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "poincare-tiling-layer",
+      "def_path": "",
+      "detail": "public/shaders/poincare-tiling-layer.wgsl",
+      "key": "wgsl-without-definition|poincare-tiling-layer|poincare-tiling-layer.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "predator-prey-ecology-render",
+      "def_path": "",
+      "detail": "public/shaders/predator-prey-ecology-render.wgsl",
+      "key": "wgsl-without-definition|predator-prey-ecology-render|predator-prey-ecology-render.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "ripple-tank-inject",
+      "def_path": "",
+      "detail": "public/shaders/ripple-tank-inject.wgsl",
+      "key": "wgsl-without-definition|ripple-tank-inject|ripple-tank-inject.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "ripple-tank-pass2",
+      "def_path": "",
+      "detail": "public/shaders/ripple-tank-pass2.wgsl",
+      "key": "wgsl-without-definition|ripple-tank-pass2|ripple-tank-pass2.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "ripple-tank-pass3",
+      "def_path": "",
+      "detail": "public/shaders/ripple-tank-pass3.wgsl",
+      "key": "wgsl-without-definition|ripple-tank-pass3|ripple-tank-pass3.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "wave-inject",
+      "def_path": "",
+      "detail": "public/shaders/wave-inject.wgsl",
+      "key": "wgsl-without-definition|wave-inject|wave-inject.wgsl"
+    },
+    {
+      "type": "wgsl-without-definition",
+      "id": "wave-render",
+      "def_path": "",
+      "detail": "public/shaders/wave-render.wgsl",
+      "key": "wgsl-without-definition|wave-render|wave-render.wgsl"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "anisotropic-kuwahara-tensor",
+      "def_path": "shader_definitions/artistic/anisotropic-kuwahara.json",
+      "detail": "graph node entry referenced by 'anisotropic-kuwahara'",
+      "key": "orphan-graph-entry|anisotropic-kuwahara-tensor|from-graph:anisotropic-kuwahara"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "anisotropic-kuwahara-filter",
+      "def_path": "shader_definitions/artistic/anisotropic-kuwahara.json",
+      "detail": "graph node entry referenced by 'anisotropic-kuwahara'",
+      "key": "orphan-graph-entry|anisotropic-kuwahara-filter|from-graph:anisotropic-kuwahara"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "anisotropic-kuwahara-render",
+      "def_path": "shader_definitions/artistic/anisotropic-kuwahara.json",
+      "detail": "graph node entry referenced by 'anisotropic-kuwahara'",
+      "key": "orphan-graph-entry|anisotropic-kuwahara-render|from-graph:anisotropic-kuwahara"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "dla-walkers",
+      "def_path": "shader_definitions/artistic/dla-crystals.json",
+      "detail": "graph node entry referenced by 'dla-crystals'",
+      "key": "orphan-graph-entry|dla-walkers|from-graph:dla-crystals"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "dla-render",
+      "def_path": "shader_definitions/artistic/dla-crystals.json",
+      "detail": "graph node entry referenced by 'dla-crystals'",
+      "key": "orphan-graph-entry|dla-render|from-graph:dla-crystals"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "log-polar-droste-remap",
+      "def_path": "shader_definitions/distortion/log-polar-droste.json",
+      "detail": "graph node entry referenced by 'log-polar-droste'",
+      "key": "orphan-graph-entry|log-polar-droste-remap|from-graph:log-polar-droste"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "log-polar-droste-grade",
+      "def_path": "shader_definitions/distortion/log-polar-droste.json",
+      "detail": "graph node entry referenced by 'log-polar-droste'",
+      "key": "orphan-graph-entry|log-polar-droste-grade|from-graph:log-polar-droste"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "byte-mosh-mangle",
+      "def_path": "shader_definitions/retro-glitch/byte-mosh.json",
+      "detail": "graph node entry referenced by 'byte-mosh'",
+      "key": "orphan-graph-entry|byte-mosh-mangle|from-graph:byte-mosh"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "byte-mosh-render",
+      "def_path": "shader_definitions/retro-glitch/byte-mosh.json",
+      "detail": "graph node entry referenced by 'byte-mosh'",
+      "key": "orphan-graph-entry|byte-mosh-render|from-graph:byte-mosh"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "chromatographic-force",
+      "def_path": "shader_definitions/simulation/chromatographic-fluid.json",
+      "detail": "graph node entry referenced by 'chromatographic-fluid'",
+      "key": "orphan-graph-entry|chromatographic-force|from-graph:chromatographic-fluid"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "chromatographic-advect",
+      "def_path": "shader_definitions/simulation/chromatographic-fluid.json",
+      "detail": "graph node entry referenced by 'chromatographic-fluid'",
+      "key": "orphan-graph-entry|chromatographic-advect|from-graph:chromatographic-fluid"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "chromatographic-diffuse",
+      "def_path": "shader_definitions/simulation/chromatographic-fluid.json",
+      "detail": "graph node entry referenced by 'chromatographic-fluid'",
+      "key": "orphan-graph-entry|chromatographic-diffuse|from-graph:chromatographic-fluid"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "chromatographic-interact",
+      "def_path": "shader_definitions/simulation/chromatographic-fluid.json",
+      "detail": "graph node entry referenced by 'chromatographic-fluid'",
+      "key": "orphan-graph-entry|chromatographic-interact|from-graph:chromatographic-fluid"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "chromatographic-phase",
+      "def_path": "shader_definitions/simulation/chromatographic-fluid.json",
+      "detail": "graph node entry referenced by 'chromatographic-fluid'",
+      "key": "orphan-graph-entry|chromatographic-phase|from-graph:chromatographic-fluid"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "chromatographic-render",
+      "def_path": "shader_definitions/simulation/chromatographic-fluid.json",
+      "detail": "graph node entry referenced by 'chromatographic-fluid'",
+      "key": "orphan-graph-entry|chromatographic-render|from-graph:chromatographic-fluid"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "fabric-verlet",
+      "def_path": "shader_definitions/simulation/fabric-of-reality.json",
+      "detail": "graph node entry referenced by 'fabric-of-reality'",
+      "key": "orphan-graph-entry|fabric-verlet|from-graph:fabric-of-reality"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "fabric-constraint",
+      "def_path": "shader_definitions/simulation/fabric-of-reality.json",
+      "detail": "graph node entry referenced by 'fabric-of-reality'",
+      "key": "orphan-graph-entry|fabric-constraint|from-graph:fabric-of-reality"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "fabric-tear",
+      "def_path": "shader_definitions/simulation/fabric-of-reality.json",
+      "detail": "graph node entry referenced by 'fabric-of-reality'",
+      "key": "orphan-graph-entry|fabric-tear|from-graph:fabric-of-reality"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "fabric-render",
+      "def_path": "shader_definitions/simulation/fabric-of-reality.json",
+      "detail": "graph node entry referenced by 'fabric-of-reality'",
+      "key": "orphan-graph-entry|fabric-render|from-graph:fabric-of-reality"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "gray-scott-step",
+      "def_path": "shader_definitions/simulation/gray-scott-tank.json",
+      "detail": "graph node entry referenced by 'gray-scott-tank'",
+      "key": "orphan-graph-entry|gray-scott-step|from-graph:gray-scott-tank"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "gray-scott-inject",
+      "def_path": "shader_definitions/simulation/gray-scott-tank.json",
+      "detail": "graph node entry referenced by 'gray-scott-tank'",
+      "key": "orphan-graph-entry|gray-scott-inject|from-graph:gray-scott-tank"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "gray-scott-render",
+      "def_path": "shader_definitions/simulation/gray-scott-tank.json",
+      "detail": "graph node entry referenced by 'gray-scott-tank'",
+      "key": "orphan-graph-entry|gray-scott-render|from-graph:gray-scott-tank"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "jfa-aurora-seed",
+      "def_path": "shader_definitions/simulation/jfa-aurora-voronoi.json",
+      "detail": "graph node entry referenced by 'jfa-aurora-voronoi'",
+      "key": "orphan-graph-entry|jfa-aurora-seed|from-graph:jfa-aurora-voronoi"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "jfa-aurora-flood",
+      "def_path": "shader_definitions/simulation/jfa-aurora-voronoi.json",
+      "detail": "graph node entry referenced by 'jfa-aurora-voronoi'",
+      "key": "orphan-graph-entry|jfa-aurora-flood|from-graph:jfa-aurora-voronoi"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "jfa-aurora-render",
+      "def_path": "shader_definitions/simulation/jfa-aurora-voronoi.json",
+      "detail": "graph node entry referenced by 'jfa-aurora-voronoi'",
+      "key": "orphan-graph-entry|jfa-aurora-render|from-graph:jfa-aurora-voronoi"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "photonic-emitter",
+      "def_path": "shader_definitions/simulation/photonic-caustics-graph.json",
+      "detail": "graph node entry referenced by 'photonic-caustics-graph'",
+      "key": "orphan-graph-entry|photonic-emitter|from-graph:photonic-caustics-graph"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "photonic-trace",
+      "def_path": "shader_definitions/simulation/photonic-caustics-graph.json",
+      "detail": "graph node entry referenced by 'photonic-caustics-graph'",
+      "key": "orphan-graph-entry|photonic-trace|from-graph:photonic-caustics-graph"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "photonic-accumulate",
+      "def_path": "shader_definitions/simulation/photonic-caustics-graph.json",
+      "detail": "graph node entry referenced by 'photonic-caustics-graph'",
+      "key": "orphan-graph-entry|photonic-accumulate|from-graph:photonic-caustics-graph"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "poincare-tiling-map",
+      "def_path": "shader_definitions/simulation/poincare-tiling.json",
+      "detail": "graph node entry referenced by 'poincare-tiling'",
+      "key": "orphan-graph-entry|poincare-tiling-map|from-graph:poincare-tiling"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "poincare-tiling-layer",
+      "def_path": "shader_definitions/simulation/poincare-tiling.json",
+      "detail": "graph node entry referenced by 'poincare-tiling'",
+      "key": "orphan-graph-entry|poincare-tiling-layer|from-graph:poincare-tiling"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "predator-prey-ecology-step",
+      "def_path": "shader_definitions/simulation/predator-prey-ecology.json",
+      "detail": "graph node entry referenced by 'predator-prey-ecology'",
+      "key": "orphan-graph-entry|predator-prey-ecology-step|from-graph:predator-prey-ecology"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "predator-prey-ecology-render",
+      "def_path": "shader_definitions/simulation/predator-prey-ecology.json",
+      "detail": "graph node entry referenced by 'predator-prey-ecology'",
+      "key": "orphan-graph-entry|predator-prey-ecology-render|from-graph:predator-prey-ecology"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "ripple-tank-step",
+      "def_path": "shader_definitions/simulation/ripple-tank.json",
+      "detail": "graph node entry referenced by 'ripple-tank'",
+      "key": "orphan-graph-entry|ripple-tank-step|from-graph:ripple-tank"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "ripple-tank-inject",
+      "def_path": "shader_definitions/simulation/ripple-tank.json",
+      "detail": "graph node entry referenced by 'ripple-tank'",
+      "key": "orphan-graph-entry|ripple-tank-inject|from-graph:ripple-tank"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "ripple-tank-pass2",
+      "def_path": "shader_definitions/simulation/ripple-tank.json",
+      "detail": "graph node entry referenced by 'ripple-tank'",
+      "key": "orphan-graph-entry|ripple-tank-pass2|from-graph:ripple-tank"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "ripple-tank-pass3",
+      "def_path": "shader_definitions/simulation/ripple-tank.json",
+      "detail": "graph node entry referenced by 'ripple-tank'",
+      "key": "orphan-graph-entry|ripple-tank-pass3|from-graph:ripple-tank"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "wave-step",
+      "def_path": "shader_definitions/simulation/wave-tank.json",
+      "detail": "graph node entry referenced by 'wave-tank'",
+      "key": "orphan-graph-entry|wave-step|from-graph:wave-tank"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "wave-inject",
+      "def_path": "shader_definitions/simulation/wave-tank.json",
+      "detail": "graph node entry referenced by 'wave-tank'",
+      "key": "orphan-graph-entry|wave-inject|from-graph:wave-tank"
+    },
+    {
+      "type": "orphan-graph-entry",
+      "id": "wave-render",
+      "def_path": "shader_definitions/simulation/wave-tank.json",
+      "detail": "graph node entry referenced by 'wave-tank'",
+      "key": "orphan-graph-entry|wave-render|from-graph:wave-tank"
+    }
+  ]
+}

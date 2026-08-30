@@ -98,6 +98,8 @@ export interface ControlsProps {
     onSetSlotParam?: (slot: number, param: string, value: number) => void;
     renderQualityMode?: RenderQualityMode;
     onRenderQualityChange?: (mode: RenderQualityMode) => void;
+    sourceAutoExposure?: boolean;
+    onSourceAutoExposureChange?: (enabled: boolean) => void;
     maxActiveSlots?: number;
     performanceHud?: {
         internalWidth: number;

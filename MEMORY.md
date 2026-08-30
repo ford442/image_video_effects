@@ -810,8 +810,9 @@
 
 - Shared pre-FX kit in `src/gpuChores/`: BT.709 histogram, reduce_f32, lut_u8_map,
   downsample_2d. Adopts the renderer `GPUDevice` — never `requestDevice()`.
-- Live path: auto-exposure from the histogram **normalizes the 64×64 preview**,
-  not catalog FX. Kill switch `?no_gpu_compute`. Breadcrumbs in Dev Tools.
+- Live path: opt-in **source** auto-exposure (`apply_gain_2d` onto `readTex`,
+  default off). Preview hist still runs. Kill switch `?no_gpu_compute`.
+  Physics-pinned graphs skip source gain. EV is host-only (not extraBuffer).
 - CPU goldens are the Chromashift-shaped parity SoT on the headless VM.
 - Docs: `docs/GPU_CHORES.md` (Tier 4a = domain FX, Tier 4b = chores).
 - Device-init policy and feedback B→C / A→C copy order untouched.
@@ -1498,12 +1499,14 @@
 
 - Confirmed the app engine is the full-catalog/multipass path and constrained the
   minimal engine/package command to generative-only captures.
-- Added `thumbs:check-regression`, a PR check that compares healthy coverage with
-  the base git ref and fails new shader definitions without healthy PNGs.
+- Added `thumbs:check-regression`, a PR check that fails newly eligible shaders
+  without a healthy PNG or unexpired deferral (no global %/count gate). Sticky
+  coverage comments stay reporting-only until healthy eligible ≥ 50%.
 - `thumbs:status` now reports curated attract + Physics Lab priority coverage and
   accepts `--require-priority` for GPU-workstation enforcement.
-- Current VM proof: nominal 349/1,324 (26.4%), healthy 272/1,323 (20.6%),
-  priority 20/21 (95.2%); capture remains blocked until discrete-GPU access.
+- 2026-08-30 #1185: 1,069 deferrals (`expires` 2026-09-29), attract-first generate,
+  `hasHealthyThumbnail` + `public/thumbnails/unhealthy.json`. Nominal 360/1,353
+  (26.6%); integrity audit is stale (349 scanned). Capture remains discrete-GPU.
 
 ## Shader upgrade Batches 53–54 (2026-08-21)
 
