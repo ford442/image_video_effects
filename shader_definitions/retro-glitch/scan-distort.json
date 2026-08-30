@@ -2,7 +2,7 @@
   "id": "scan-distort",
   "name": "Scan Distort",
   "url": "shaders/scan-distort.wgsl",
-  "description": "CRT scanline tear with block quantization, spring cursor, held glitch bursts, exact C smear, capped ripples, three-band audio, and ACES output.",
+  "description": "CRT scanline tear with block quantization, spring cursor, held glitch bursts, exact C smear, capped ripples, three-band audio, and ACES output. Medium complexity, clear structure.",
   "workgroup_size": [16, 16, 1],
   "features": [
     "mouse-driven",
