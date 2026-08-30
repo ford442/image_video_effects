@@ -108,5 +108,24 @@
     "wgsl-without-definition|ripple-tank-pass3|ripple-tank-pass3.wgsl",
     "wgsl-without-definition|wave-inject|wave-inject.wgsl",
     "wgsl-without-definition|wave-render|wave-render.wgsl"
-  ]
+  ],
+  "id_filename_oddities": {
+    "description": "Genuine ID/filename mismatches that are intentionally kept as-is (not cosmetic underscore->hyphen). These are documented quirks, not bugs.",
+    "entries": [
+      {
+        "file": "shader_definitions/generative/bioluminescent-abyss.json",
+        "id": "gen-bioluminescent-abyss",
+        "filename_stem": "bioluminescent-abyss",
+        "verdict": "intentional",
+        "note": "Shader was authored without the gen- prefix in the filename. The id is canonical; renaming the file would break VPS storage keys. Left as-is per issue #1195 (scope: no file renames)."
+      },
+      {
+        "file": "shader_definitions/artistic/galaxy.json",
+        "id": "galaxy-sim",
+        "filename_stem": "galaxy",
+        "verdict": "intentional",
+        "note": "Shader was renamed from galaxy to galaxy-sim (added -sim suffix to the id) but the filename was not updated. The id is canonical; renaming the file would break VPS storage keys. Left as-is per issue #1195 (scope: no file renames)."
+      }
+    ]
+  }
 }

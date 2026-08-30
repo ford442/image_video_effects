@@ -167,15 +167,34 @@ def load_baseline() -> dict[str, list[int]]:
 
 
 def load_dynamic_baseline() -> set[tuple[str, int, str]]:
-    """Triaged dynamic writes: (file, line, expr)."""
-    if not DYNAMIC_BASELINE_JSON.exists():
-        return set()
-    data = json.loads(DYNAMIC_BASELINE_JSON.read_text())
+    """Triaged dynamic writes: (file, line, expr).
+
+    Reads from the ``triaged_dynamic`` section of the main baseline file when
+    present; falls back to the legacy separate file for backward compatibility.
+    """
     out: set[tuple[str, int, str]] = set()
-    for entry in data.get("entries", []):
-        if not entry.get("file") or entry.get("line") is None:
-            continue
-        out.add((entry["file"], int(entry["line"]), str(entry.get("expr", "")).strip()))
+
+    # Primary: triaged_dynamic section inside the main baseline
+    main_has_triaged_dynamic = False
+    if BASELINE_JSON.exists():
+        data = json.loads(BASELINE_JSON.read_text())
+        block = data.get("triaged_dynamic")
+        if isinstance(block, dict):
+            main_has_triaged_dynamic = True
+            for entry in block.get("entries") or []:
+                if not entry.get("file") or entry.get("line") is None:
+                    continue
+                out.add((entry["file"], int(entry["line"]), str(entry.get("expr", "")).strip()))
+
+    # Fallback: legacy separate file — only when the main baseline has no
+    # triaged_dynamic block at all (not just an empty one).
+    if not main_has_triaged_dynamic and DYNAMIC_BASELINE_JSON.exists():
+        data = json.loads(DYNAMIC_BASELINE_JSON.read_text())
+        for entry in data.get("entries", []):
+            if not entry.get("file") or entry.get("line") is None:
+                continue
+            out.add((entry["file"], int(entry["line"]), str(entry.get("expr", "")).strip()))
+
     return out
 
 
