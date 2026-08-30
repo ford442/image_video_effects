@@ -40,6 +40,9 @@ jobs:
     
     - name: Validate WASM artifacts
       run: npm run wasm:validate
+
+    - name: Verify WASM bridge copies match TypeScript SoT
+      run: npm run verify:wasm-bridge-sync
     
     - name: Run WASM unit smoke tests
       run: npm test -- --watchAll=false --ci --testPathPattern='WASM'
@@ -88,7 +91,9 @@ jobs:
           public/wasm/pixelocity_wasm.js
           public/wasm/pixelocity_wasm.wasm
           public/wasm/wasm_bridge.js
-          src/wasm/wasm_bridge.js
+          public/wasm/wasm_bridge.d.ts
+          public/wasm/bridge
+          src/wasm/wasm_bridge.ts
           src/wasm/wasm_bridge.d.ts
         retention-days: 7
 

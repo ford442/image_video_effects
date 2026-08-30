@@ -266,11 +266,11 @@ metadata mismatch is one reason the optional Vite migration remains a separate f
 | `npm run test:wasm` | Unit + e2e smoke |
 | `npm run test:wasm:full` | Unit + e2e + GPU parity/bench |
 
-`public/wasm/` is the **only deployable WASM artifact source of truth**. C++ sources and the
-canonical bridge fragments live under `wasm_renderer/`; `npm run wasm:build` compiles and copies
-`pixelocity_wasm.{js,wasm}` into `public/wasm/`, while `wasm_renderer/concat_bridge.sh` assembles
-`wasm_renderer/bridge/*.js` and synchronizes the generated compatibility copies. Do not hand-edit
-`build/wasm/`, `src/wasm/wasm_bridge.js`, or the concatenated bridge outputs.
+`public/wasm/` is the **only deployable WASM artifact source of truth**. C++ sources live under
+`wasm_renderer/`; the hand-edited bridge is `src/wasm/bridge/*.ts`. `npm run wasm:build` compiles
+C++ into `public/wasm/pixelocity_wasm.{js,wasm}` and emits ESM bridge copies into
+`wasm_renderer/` and `public/wasm/`. Do not hand-edit generated `*/bridge/*.js` or
+`public/wasm/wasm_bridge.js`.
 
 ### Thumbnails (GPU workstation)
 

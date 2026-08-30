@@ -1,9 +1,9 @@
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { DEFAULT_CONFIG } from '../renderer/Renderer';
 
-import * as WasmBridge from '../wasm/wasm_bridge.js';
+import * as WasmBridge from '../wasm/wasm_bridge';
 
-jest.mock('../wasm/wasm_bridge.js', () => ({
+jest.mock('../wasm/wasm_bridge', () => ({
   initWasmRenderer: jest.fn().mockResolvedValue(true),
   shutdownWasmRenderer: jest.fn(),
   setInputSource: jest.fn(),

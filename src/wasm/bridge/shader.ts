@@ -1,8 +1,13 @@
-// GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
+import { state, utf8ByteLength, wasmRef } from './state.js';
+import { rewriteWgslStorageFormats } from './wgslFormat.js';
 
-import { state, utf8ByteLength, wasmRef } from "./state.js";
-import { rewriteWgslStorageFormats } from "./wgslFormat.js";
-function writeUtf8(id) {
+export interface SlotState {
+  shaderId: string | null;
+  enabled: boolean;
+  mode: 'chained' | 'parallel';
+}
+
+function writeUtf8(id: string): { ptr: number; free: () => void } | null {
   const module = wasmRef.module;
   if (!module) return null;
   const len = utf8ByteLength(module, id);
@@ -10,20 +15,25 @@ function writeUtf8(id) {
   module.stringToUTF8(id, ptr, len);
   return { ptr, free: () => module._free(ptr) };
 }
-function loadShader(id, wgslCode) {
+
+export function loadShader(id: string, wgslCode: string): boolean {
   if (!state.initialized || !wasmRef.module) {
-    console.error("[WASM] Renderer not initialized");
+    console.error('[WASM] Renderer not initialized');
     return false;
   }
+
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
   if (!idBuf || !codeBuf) return false;
+
   const result = Number(
-    wasmRef.module.ccall("loadShader", "number", ["number", "number"], [idBuf.ptr, codeBuf.ptr])
+    wasmRef.module.ccall('loadShader', 'number', ['number', 'number'], [idBuf.ptr, codeBuf.ptr]),
   );
+
   idBuf.free();
   codeBuf.free();
+
   if (result) {
     state.activeShader = id;
     console.log(`[WASM] Loaded shader: ${id}`);
@@ -34,20 +44,25 @@ function loadShader(id, wgslCode) {
   state.loadErrorCount++;
   return false;
 }
-function reloadShader(id, wgslCode) {
+
+export function reloadShader(id: string, wgslCode: string): boolean {
   if (!state.initialized || !wasmRef.module) {
-    console.error("[WASM] Renderer not initialized");
+    console.error('[WASM] Renderer not initialized');
     return false;
   }
+
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
   if (!idBuf || !codeBuf) return false;
+
   const result = Number(
-    wasmRef.module.ccall("reloadShader", "number", ["number", "number"], [idBuf.ptr, codeBuf.ptr])
+    wasmRef.module.ccall('reloadShader', 'number', ['number', 'number'], [idBuf.ptr, codeBuf.ptr]),
   );
+
   idBuf.free();
   codeBuf.free();
+
   if (result) {
     console.log(`[WASM] Hot-reloaded shader: ${id}`);
     return true;
@@ -57,7 +72,8 @@ function reloadShader(id, wgslCode) {
   state.loadErrorCount++;
   return false;
 }
-async function loadShaderFromURL(id, url) {
+
+export async function loadShaderFromURL(id: string, url: string): Promise<boolean> {
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -65,7 +81,7 @@ async function loadShaderFromURL(id, url) {
     }
     const wgslCode = await response.text();
     return loadShader(id, wgslCode);
-  } catch (err) {
+  } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[WASM] Failed to fetch shader from ${url}:`, err);
     state.lastLoadError = `Fetch failed (${url}): ${message}`;
@@ -73,7 +89,8 @@ async function loadShaderFromURL(id, url) {
     return false;
   }
 }
-async function reloadShaderFromURL(id, url) {
+
+export async function reloadShaderFromURL(id: string, url: string): Promise<boolean> {
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -81,7 +98,7 @@ async function reloadShaderFromURL(id, url) {
     }
     const wgslCode = await response.text();
     return reloadShader(id, wgslCode);
-  } catch (err) {
+  } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[WASM] Failed to fetch shader for reload from ${url}:`, err);
     state.lastLoadError = `Reload fetch failed (${url}): ${message}`;
@@ -89,55 +106,50 @@ async function reloadShaderFromURL(id, url) {
     return false;
   }
 }
-function setActiveShader(id) {
+
+export function setActiveShader(id: string): void {
   if (!state.initialized || !wasmRef.module) {
     return;
   }
-  const result = Number(wasmRef.module.ccall("setActiveShader", "number", ["string"], [id]));
+
+  const result = Number(wasmRef.module.ccall('setActiveShader', 'number', ['string'], [id]));
   if (result) {
     state.activeShader = id;
   }
 }
-function setSlotShader(slotIndex, shaderId) {
+
+export function setSlotShader(slotIndex: number, shaderId: string): void {
   if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall("setSlotShader", "number", ["number", "string"], [slotIndex, shaderId]);
+  wasmRef.module.ccall('setSlotShader', 'number', ['number', 'string'], [slotIndex, shaderId]);
 }
-function setSlotMode(slotIndex, mode) {
+
+export function setSlotMode(slotIndex: number, mode: 0 | 1 | 'chained' | 'parallel'): void {
   if (!state.initialized || !wasmRef.module) return;
-  const modeInt = mode === "parallel" || mode === 1 ? 1 : 0;
-  wasmRef.module.ccall("setSlotMode", null, ["number", "number"], [slotIndex, modeInt]);
+  const modeInt = mode === 'parallel' || mode === 1 ? 1 : 0;
+  wasmRef.module.ccall('setSlotMode', null, ['number', 'number'], [slotIndex, modeInt]);
 }
-function getSlotShaderId(slotIndex) {
-  if (!state.initialized || !wasmRef.module) return "";
-  return String(wasmRef.module.ccall("getSlotShaderId", "string", ["number"], [slotIndex]) ?? "");
+
+export function getSlotShaderId(slotIndex: number): string {
+  if (!state.initialized || !wasmRef.module) return '';
+  return String(wasmRef.module.ccall('getSlotShaderId', 'string', ['number'], [slotIndex]) ?? '');
 }
-function getSlotEnabled(slotIndex) {
+
+export function getSlotEnabled(slotIndex: number): boolean {
   if (!state.initialized || !wasmRef.module) return false;
-  return Boolean(wasmRef.module.ccall("getSlotEnabled", "number", ["number"], [slotIndex]));
+  return Boolean(wasmRef.module.ccall('getSlotEnabled', 'number', ['number'], [slotIndex]));
 }
-function getSlotMode(slotIndex) {
+
+export function getSlotMode(slotIndex: number): number {
   if (!state.initialized || !wasmRef.module) return 0;
-  return Number(wasmRef.module.ccall("getSlotMode", "number", ["number"], [slotIndex]) ?? 0);
+  return Number(wasmRef.module.ccall('getSlotMode', 'number', ['number'], [slotIndex]) ?? 0);
 }
-function getSlotState(slotIndex) {
+
+export function getSlotState(slotIndex: number): SlotState {
   const shaderId = getSlotShaderId(slotIndex);
   const modeInt = getSlotMode(slotIndex);
   return {
     shaderId: shaderId.length > 0 ? shaderId : null,
     enabled: getSlotEnabled(slotIndex),
-    mode: modeInt === 1 ? "parallel" : "chained"
+    mode: modeInt === 1 ? 'parallel' : 'chained',
   };
 }
-export {
-  getSlotEnabled,
-  getSlotMode,
-  getSlotShaderId,
-  getSlotState,
-  loadShader,
-  loadShaderFromURL,
-  reloadShader,
-  reloadShaderFromURL,
-  setActiveShader,
-  setSlotMode,
-  setSlotShader
-};

@@ -1,6 +1,11 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-29 (Selective leftover upgrade-branch union)
+**Last updated:** 2026-08-29 (WASM bridge TS SoT)
+
+## 2026-08-29 — WASM bridge TypeScript SoT (#1125 / #1179)
+
+- SoT is `src/wasm/bridge/*.ts`. Generated ESM lives in `wasm_renderer/` + `public/wasm/`. `verify:wasm-bridge-sync` is wired into toolchain-foundation and the CI wasm job.
+- Removed unused `react-app-rewired` / `customize-cra` / `webpack-cli`. CRA+CRACO unchanged. `getGPUTimings` still uses out-params via `_malloc` / `ccall` / `getValue` / `_free`.
 
 ## 2026-08-29 — Leftover upgrade branches selectively unioned into main
 
