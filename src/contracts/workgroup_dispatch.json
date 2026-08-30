@@ -35,5 +35,12 @@
   "cppReferences": {
     "file": "wasm_renderer/wasm_internal.cpp",
     "function": "ParseWorkgroupSize"
+  },
+  "emptyPlaceholder": {
+    "format": "r32float",
+    "bytesPerRow": 4,
+    "note": "1×1 unused-slot texture. C++ emptyTexture_ must reset format/usage after depth r32float and upload one float — not four RGBA floats.",
+    "tsFile": "src/renderer/webgpu/resources.ts",
+    "cppFile": "wasm_renderer/resources.cpp"
   }
 }
