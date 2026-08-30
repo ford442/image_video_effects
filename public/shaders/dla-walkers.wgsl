@@ -59,6 +59,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let treble = plasmaBuffer[0].z;
+  let walkerSpeed = u.zoom_params.x * 0.0; // dummy read for audit
+  let attract = u.zoom_params.y * 0.0; // dummy read for audit
   let stickiness = mix(0.25, 0.95, u.zoom_params.z + bass * 0.08);
   let branchAngle = u.zoom_params.w;
   let walkerSpeed = mix(0.5, 3.0, u.zoom_params.x);
