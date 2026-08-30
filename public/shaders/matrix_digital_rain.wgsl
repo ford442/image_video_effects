@@ -250,7 +250,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e250 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (_e244 + vec2<f32>(0.0, ps.y)), 0.0);
     let depthY = _e250.x;
     let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
-    let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
+    let edgeGlowParam = u.zoom_params.z;
+    let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0) * mix(0.5, 2.0, edgeGlowParam);
     let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
     let fogDensity_1 = u.zoom_params.w;
     let _e273 = uv;

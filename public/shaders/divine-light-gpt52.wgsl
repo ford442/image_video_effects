@@ -92,7 +92,7 @@ fn hgPhase(cosTheta: f32, g: f32) -> f32 {
     return (1.0 - gg) / max(pow(1.0 + gg - 2.0 * g * cosTheta, 1.5), 1e-6);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }

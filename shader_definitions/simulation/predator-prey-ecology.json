@@ -1,0 +1,78 @@
+{
+  "id": "predator-prey-ecology",
+  "name": "Predator-Prey Ecology",
+  "url": "shaders/predator-prey-ecology-step.wgsl",
+  "description": "Physics Lab — packed Lotka–Volterra pixels: prey flora vs predator fauna waves. Hold to seed, clicks bloom prey. graph · 2 passes · rgba32float.",
+  "requiresRgba32Float": true,
+  "multipass": {
+    "graph": {
+      "maxPassesPerFrame": 8,
+      "nodes": [
+        { "id": "step", "entry": "predator-prey-ecology-step", "reads": ["dataC"], "writes": ["dataA"] },
+        { "id": "render", "entry": "predator-prey-ecology-render", "reads": ["dataC"], "writes": ["color", "dataA"] }
+      ]
+    }
+  },
+  "params": [
+    {
+      "id": "eatRate",
+      "name": "Eat Rate",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "audio": "mid",
+      "description": "Predator consumption of prey density"
+    },
+    {
+      "id": "deathRate",
+      "name": "Death Rate",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "audio": "treble",
+      "description": "Predator decay without prey"
+    },
+    {
+      "id": "mutation",
+      "name": "Mutation",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "audio": "bass",
+      "description": "Nutrient-driven prey mutation / bloom"
+    },
+    {
+      "id": "breed",
+      "name": "Breed Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "audio": "overall",
+      "description": "Mouse hold and click seed strength"
+    }
+  ],
+  "features": [
+    "simulation",
+    "multi-pass",
+    "graph-runner",
+    "physics",
+    "mouse-driven",
+    "audio-reactive",
+    "interactive"
+  ],
+  "tags": [
+    "predator-prey",
+    "ecology",
+    "simulation",
+    "physics",
+    "showcase"
+  ]
+}

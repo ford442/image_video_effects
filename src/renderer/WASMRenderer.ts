@@ -1,5 +1,5 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
-import * as WasmBridge from '../wasm/wasm_bridge.js';
+import * as WasmBridge from '../wasm/wasm_bridge';
 import { reportError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { InputSource } from './types';
@@ -33,7 +33,7 @@ export interface WASMDiagnostics {
   lastInitError: string;
   /** InitStage name from C++ (e.g. 'Device', 'Surface'). */
   failedStageName: string;
-  /** Bridge-layer load/init failures (from wasm_bridge.js getDiagnostics). */
+  /** Bridge-layer load/init failures (from wasm_bridge getDiagnostics). */
   loadErrorCount: number;
   lastLoadError: string | null;
   initTime: string;

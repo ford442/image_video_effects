@@ -11,6 +11,7 @@ import { Renderer } from './Renderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
 import { getGraphEntryIds, hasGraph } from './multipassRegistry';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
+import { resolveShaderId } from '../utils/resolveShaderId';
 
 export const SLOT_COUNT = 3;
 
@@ -206,7 +207,7 @@ export async function resyncShaderStack(
       continue;
     }
 
-    const entry = options.resolveShader(mode);
+    const entry = options.resolveShader(resolveShaderId(mode));
     if (!entry) {
       console.warn(`[RendererManager] resyncShaderStack: no entry for "${mode}" on slot ${i}`);
       continue;

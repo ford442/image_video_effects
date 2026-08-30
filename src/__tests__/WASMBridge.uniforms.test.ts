@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  *
  * Tests WASM bridge input-source mapping and pending-source flush on init.
- * Uses the real wasm_bridge.js (not the mock in WASMBridge.test.ts).
+ * Uses the real wasm_bridge module (not the mock in WASMBridge.test.ts).
  */
 
 describe('WASM bridge uniforms (setInputSource)', () => {
@@ -24,6 +24,7 @@ describe('WASM bridge uniforms (setInputSource)', () => {
       _free: free,
       getValue,
       HEAPU8: { set: jest.fn() },
+      HEAPF32: { set: jest.fn() },
     };
   }
 
@@ -47,7 +48,7 @@ describe('WASM bridge uniforms (setInputSource)', () => {
   });
 
   async function initBridge() {
-    const bridge = await import('../wasm/wasm_bridge.js');
+    const bridge = await import('../wasm/wasm_bridge');
     ccall.mockImplementation((name: string) => {
       if (name === 'initWasmRenderer') return Promise.resolve(1);
       return undefined;
@@ -86,7 +87,7 @@ describe('WASM bridge uniforms (setInputSource)', () => {
   });
 
   it('queues pending input source before init and flushes on init', async () => {
-    const bridge = await import('../wasm/wasm_bridge.js');
+    const bridge = await import('../wasm/wasm_bridge');
 
     bridge.setInputSource('generative');
     expect(ccall).not.toHaveBeenCalled();
@@ -125,7 +126,7 @@ describe('WASM bridge uniforms (setInputSource)', () => {
   });
 
   it('getGPUTimings returns typed zeros before init', async () => {
-    const bridge = await import('../wasm/wasm_bridge.js');
+    const bridge = await import('../wasm/wasm_bridge');
     expect(bridge.getGPUTimings()).toEqual({
       parallelTime: 0,
       chainedTime: 0,

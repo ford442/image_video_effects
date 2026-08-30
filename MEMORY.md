@@ -1,6 +1,148 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-26 (progress audit + issues #1179–#1185)
+**Last updated:** 2026-08-30 (Fast-Motion Shader Upgrade Ten)
+
+## 2026-08-30 — Fast-Motion Shader Upgrade Ten
+
+- Cohort: `voronoi-zoom-turbulence`, `solarize-warp`, `luma-smear-interactive`, `neon-fluid-warp`, `optical-illusion-spin`, `vortex-drag`, `zoom-burst`, `temporal-slit-paint`, `neon-warp`, `mouse-mandelbrot-zoom-portal`.
+- Contract: 13 bindings, 16×16, exact `textureLoad` C, A-only writes, ACES display, semantic alpha, three-band + bin plasma, springs `[133..138]` at (0,0), held + capped click fronts, byte-exact saved params + `updatedParams`.
+- A packing: Temporal Slit Paint owns raw canvas RGBA in A (ACES on writeTexture). The other nine store ACES display RGBA in A. Neon Warp heat remains analytic from pointer/ripples — not a second raw sim.
+- Fast-motion pairs: cell zoom + shear conveyors; warp conveyor + threshold wavefront; chroma streaks + curl trails; curl jets + neon runners; ring packets + Fraser whip; sprung vortex + helical ribbons; radial speed lines + rotational shear; velocity brush + slit-head runners; heat packets + refraction whip; nested zoom burst + orbital spin.
+- Gates: Naga 10/10; extraBuffer 0 new writes in [0..132]; dead sliders 0; lists + unified manifest 1,353; URL/uniforms green; `SKIP_WASM_BUILD=1` production build green. Jest 79/84 in this VM (5 suites fail resolving `src/wasm/bridge/api.js` — emit lives in `wasm_renderer/` + `public/wasm/`, not a shader regression). Real-GPU visual QA external.
+
+## 2026-08-29 — WASM bridge TypeScript SoT (#1125 / #1179)
+
+## 2026-08-29 — WASM bridge TypeScript SoT (#1125 / #1179)
+
+- SoT is `src/wasm/bridge/*.ts`. Generated ESM lives in `wasm_renderer/` + `public/wasm/`. `verify:wasm-bridge-sync` is wired into toolchain-foundation and the CI wasm job.
+- Removed unused `react-app-rewired` / `customize-cra` / `webpack-cli`. CRA+CRACO unchanged. `getGPUTimings` still uses out-params via `_malloc` / `ccall` / `getValue` / `_free`.
+
+## 2026-08-29 — Leftover upgrade branches selectively unioned into main
+
+- `new-shader-upgrades` and `gen-math-upgrades-cb96` already matched main for shader WGSL; skipped.
+- From stale `upgrade/batch-60`/`batch-61` (108 behind): landed unique Physics Lab set-2 graph WGSL/JSON and uncontested upgrades; kept main on overlapping cyber/heat shaders; left WASM-bridge TS (#1179) unmerged.
+- Existing kuwahara/byte-mosh/dla/droste defs gained multipass graphs with saved params preserved; new IDs: jfa-aurora-voronoi, poincare-tiling, predator-prey-ecology. Naga 32/32 on taken WGSL. Catalog 1,353; graphs 14. Real-GPU QA external.
+
+## 2026-08-29 — Reconciled local main with origin/main
+
+- Merged local Composer cyber/digital/glitch cohort 3 (`de4f2786`) with origin
+  lighting-optics batch + cohort 2 (`6d6681d5`, `67c14c7d`). No WGSL overlaps;
+  only `MEMORY.md` conflicted. Category lists auto-merged; both upgrade sets
+  present on disk. Real-GPU QA remains external.
+
+## 2026-08-29 — Composer batch cyber/digital/glitch ten — cohort 3 complete
+
+- Upgraded `crt-magnet`, `crt-tv-stipple`, `phosphor-decay`, `vhs-tracking-bilateral`, `film-gate-weave`, `vinyl-scratch`, `ascii-flow`, `ascii-flow-structure`, `cyber-terminal-ascii`, and `cyber-rain-interactive` under the canonical exact-C/A-only/ACES/three-band/spring/interaction contract with byte-exact saved params.
+- Audit/polish: crt-magnet (extraBuffer spring + env at [139]), ascii-flow (ACES + A + C smear). Major rewrites: crt-tv-stipple, vhs-tracking-bilateral, cyber-terminal-ascii.
+- `phosphor-decay` owns linear radiance + energy alpha in A (OkLab); `film-gate-weave` A packs scratch in G; `ascii-flow-structure` A packs eigenvec/coherency/LIC; `cyber-rain-interactive` is spring-free (distinct from cyber-rain-em); others ACES display RGBA in A.
+- Structural/Jest/build gates green (Naga 10/10, Jest 84/84, build with `SKIP_WASM_BUILD=1`); real-GPU QA remains external.
+
+## 2026-08-29 — Optical / Glass / Holographic / Lighting-Optics Cohort 2 (10 shaders) complete
+
+- Upgraded the second 10-shader optical, glass, holographic, and lighting-optics cohort:
+  1. `aurora-rift-2-iridescence` (advanced-hybrid): 5-layer volumetric aurora curtains with multi-order thin-film interference, Beer's Law physical transmittance, geomagnetic turbulence, ACES tonemapping, and atmospheric luminescence persistence.
+  2. `glass-wipes-coupled` (advanced-hybrid): Rain on glass combined with Navier-Stokes viscous fluid coupling, wiper sweeps, vortex street generation, ACES tone mapping, and raw fluid state [vel.xy, vorticity, density] feedback.
+  3. `holographic-glitch` (retro-glitch): Continuous holographic scan and phase corruption with chromatic peel interaction, click desync fronts, and channel-separated exact-history trails (verified clean contract).
+  4. `holographic-projection-failure` (retro-glitch): Faulty holographic emitter simulation with CRT V-hold rolling, chromatic RGB beam desync, DAC bit-depth truncation, ACES tone mapping, and phosphor beam persistence.
+  5. `photonic-caustics-graph` (simulation): 3-pass Tier C compute graph (`photonic-emitter` -> `photonic-trace` x2 -> `photonic-accumulate`) with same-frame copy barriers, refractive height field caustics, and ACES presentation.
+  6. `photonic-caustics` (simulation): Exact-history refractive height-field caustics with chromatic convergence bands, Fresnel response, three-band illumination, held light focus, bounded click wavefronts, ACES display, and semantic caustic alpha.
+  7. `alpha-aurora-bands` (lighting-effects): Multi-layer geomagnetic curtains with discrete spectral emission bands (oxygen green 557.7nm, oxygen red 630nm, nitrogen blue 427.8nm), solar wind cursor deflection, ACES tone mapping, and atmospheric persistence.
+  8. `aurora_borealis` (lighting-effects): Flowing atmospheric ribbons with curl noise advection, altitude-based oxygen and nitrogen emission spectra, starfield composite, ACES tone mapping, and atmospheric persistence.
+  9. `gen-holographic-fracture` (generative): Iridescent cracked planes with SDF fracture lines, thin-film holographic shards, single-writer spring state in extraBuffer[133..137], and ACES tone mapping.
+  10. `gen-holographic-membrane` (generative): Thin-film interference membrane undulating with depth-based alpha translucency, raw membrane height/normal A/C state, and ACES display presentation.
+- Architectural rigor:
+  - Canonical 13-binding WGSL compute header `@workgroup_size(16, 16, 1)` with out-of-bounds guards.
+  - ACES tone mapping on output RGB across all shaders.
+  - Semantic alpha (transmission, coverage, or specular glow).
+  - Preserved raw state feedback ownership in `glass-wipes-coupled` [vel.xy, vorticity, density] and `gen-holographic-membrane` [depth, normal.xy, alpha]. Other shaders store ACES display RGBA.
+  - Single-writer spring in `gen-holographic-fracture` preserved at `extraBuffer[133..137]`; zero new extraBuffer violations.
+  - Exact `textureLoad(dataTextureC, coord, 0)` previous frame feedback without filtering.
+  - Three-band audio from `plasmaBuffer[0].x` (bass), `.y` (mids), `.z` (treble).
+  - Capped click-ripple shockwave interaction with age guards `time - r.z`.
+  - Full mouse/held drag interaction.
+  - Naga-clean WGSL (12/12 passed).
+  - Saved parameters preserved byte-exact in all 10 JSON definition files; added aligned `updatedParams`, features, tags, and feedback packing.
+  - All sliders live across all 10 shaders (0 dead sliders).
+  - Multipass registry, category shader lists, and unified manifest regenerated (1,350 shaders cataloged with relative paths).
+- Validation:
+  - WGSL precommit gate: 12/12 passed.
+  - `typecheck`: green with 0 errors.
+  - `audit:extrabuffer`: 0 new violations.
+  - `audit:dead-sliders`: 0 new dead sliders across entire repo.
+  - `verify:shader-list-urls` and `verify:uniforms`: green.
+  - Jest test suite: 84/84 passed (561 passed, 1 skipped).
+  - Production build (`SKIP_WASM_BUILD=1 npm run build`): compiled successfully.
+
+## 2026-08-29 — Optical / Glass / Holographic / Lighting-Optics Batch (10 shaders) complete
+
+- Upgraded the 10-shader optical, glass, holographic, and lighting-optics cohort:
+  1. `cinematic-flare` (lighting-effects): Cooke triplet ghost reflections, 6-blade diffraction starburst, Mie scatter halo, anamorphic streak, Cauchy chromatic dispersion, ACES tonemapping, and exact C temporal persistence.
+  2. `dynamic-lens-flares` (lighting-effects): Multi-element optical train with distributed ghosts along optical axis, internal reflection halo, aperture diffraction starburst, Cauchy dispersion, ACES tonemapping, and exact C phosphor persistence.
+  3. `lens-flare-brush` (lighting-effects): Interactive brush igniting anamorphic streaks and multi-element flares from image highlights, rainbow chromatic shift, preserved underlying image blending, ACES tonemapping, and exact C brush trail persistence.
+  4. `underwater_caustics` (lighting-effects): Analytic Gerstner surface derivatives, Jacobian light focusing caustics, god rays, ACES tonemapping, and exact C temporal feedback.
+  5. `divine-light` (lighting-effects): Physically-based volumetric Crepuscular god rays with radial ray-marching, atmospheric dust motes, ACES tonemapping, and exact C temporal beam persistence.
+  6. `divine-light-iridescence` (advanced-hybrid): Volumetric god rays with multi-order thin-film interference, radial ray-marching, ACES tonemapping, and exact C persistence.
+  7. `aurora-borealis-iridescence` (advanced-hybrid): Flowing geomagnetic aurora curtains with curl-noise advection, thin-film interference, atmospheric oxygen/nitrogen color gradients, ACES tonemapping, and exact C luminescence persistence.
+  8. `aurora-rift-iridescence` (advanced-hybrid): Multi-layer parallax depth warp with curl advection, Voronoi cellular foam, thin-film interference, ACES tonemapping, and exact C plasma persistence.
+  9. `black-hole-iridescence` (advanced-hybrid): Schwarzschild gravitational lensing, relativistic Doppler-boosted Keplerian accretion disk, thin-film interference, quadrupole gravitational wave ripples, ACES tonemapping, and exact C photon persistence.
+  10. `vaporwave-horizon-prismatic` (advanced-hybrid): Retro-futuristic perspective grid, 4-band Cauchy spectral reflection, glowing striped sunset sun, CRT scanlines, sky writeback fix to dataTextureA, ACES tonemapping, and exact C phosphor persistence.
+- Architectural rigor:
+  - Canonical 13-binding WGSL compute header `@workgroup_size(16, 16, 1)` with out-of-bounds guards.
+  - ACES tone mapping on output RGB across all 10 shaders.
+  - Semantic alpha (transmission, coverage, or specular glow).
+  - A-only writeback to `dataTextureA` and `writeTexture`; B and extraBuffer remain untouched (0 extraBuffer violations).
+  - Exact `textureLoad(dataTextureC, coord, 0)` previous frame feedback without filtering.
+  - Three-band audio from `plasmaBuffer[0].x` (bass), `.y` (mids), `.z` (treble).
+  - Capped click-ripple shockwave interaction with age guards `time - r.z`.
+  - Full mouse/held drag interaction.
+  - Naga-clean WGSL (10/10 passed).
+  - Saved parameters preserved byte-exact in all 10 JSON definition files; added aligned `updatedParams`, features, tags, and feedback packing.
+  - All 4 sliders live across all 10 shaders (0 dead sliders).
+  - Multipass registry, category shader lists, and unified manifest regenerated (1,350 shaders cataloged with relative paths).
+- Validation:
+  - WGSL precommit gate: 10/10 passed.
+  - `typecheck`: green with 0 errors.
+  - `audit:extrabuffer`: 0 new violations.
+  - `audit:dead-sliders`: 0 new dead sliders across entire repo.
+  - `verify:shader-list-urls` and `verify:uniforms`: green.
+  - Jest test suite: 84/84 passed (561 passed, 1 skipped).
+  - Production build (`SKIP_WASM_BUILD=1 npm run build`): compiled successfully.
+
+## 2026-08-29 — Balanced Premium Ten complete
+
+- Upgraded the literal ten-ID cohort: `aerogel-smoke`, `graphic-novel`,
+  `hyper-space-jump`, `aurora-rift-2`, `julia-warp`, `flip-matrix`,
+  `interactive-pcb-traces`, `stipple-engraving`, `underwater_caustics`, and
+  `hybrid-voronoi-glass`; preserve `graphic-novel` -> `graphic_novel.wgsl`.
+- Aerogel owns raw A/C `[density, scattering energy, velocity.xy]`; the other
+  nine own ACES display RGBA. All ten use exact bounded C loads, A-only writes,
+  semantic alpha and effect-specific depth, plasma XYZ audio, all four saved
+  controls, pointer/held/finite click response, and zero extraBuffer writes.
+- Hero treatments are Aerogel dual-scattering transport and Underwater analytic
+  Gerstner/Jacobian caustics. The remaining eight retain distinct medium-cost
+  ink, relativistic, auroral, fractal, split-flap, PCB, engraving, and glass
+  identities. Saved params are exact; only indexed updatedParams and truthful
+  metadata were added.
+- Proof: Naga 10/10, schema-aware contract 10/10 and controls 40/40, only ten
+  catalog entries changed, 1,350-entry relative manifest, no duplicate IDs,
+  TypeScript/uniform/full audits green, Jest 84/84 (561 pass, one skip), and
+  `SKIP_WASM_BUILD=1` production build green. Real-GPU interaction, temporal,
+  alpha/depth, stability, visual, and comparative timing QA remains external.
+
+## 2026-08-27 — Balanced Mixed Eight complete
+
+- Upgraded Alpha HDR Bloom Chain, Magma Fissure, Paper Burn, Cyber Hex Armor,
+  PP Chromatic, Sequin Flip, Rorschach Inkblot, and Alpha Depth Fog Volumetric
+  with eight distinct premium techniques while preserving saved params and
+  existing feedback meanings.
+- All eight now satisfy bindings 0–12, 16x16x1, exact bounded C, A-only writes,
+  ACES, semantic alpha, three-band audio, four live controls, hover/held/click
+  interaction, and no B/extraBuffer writes. Bloom/Magma/Paper/Rorschach/Fog
+  retain their prior A packing; Armor/Chromatic/Sequin gain display history.
+- Naga/schema/audit/catalog/uniform/TypeScript/Jest/build gates pass. Unrelated
+  generated drift and the pre-existing dirty WGSL report were restored. Real-GPU
+  visual, temporal, interaction, alpha/depth-chain, and performance QA is still
+  external.
 
 ## 2026-08-26 — Balanced premium eight-shader upgrade complete
 
@@ -185,7 +327,6 @@
   QA remains external.
 - Nine unrelated optical/holographic shader edits appeared concurrently during
   this batch and were preserved untouched; do not attribute them to Codex (e).
-**Last updated:** 2026-08-23 (Holographic / Hyper + Optical / Glass / Iridescence cohorts synced)
 
 ## 2026-08-23 — Holographic / Hyper generative cohort
 
@@ -363,7 +504,6 @@
   writes, 16x16. datamosh-brush 8x8→16x16. Params exact; updatedParams added.
 - Gate 10/10; Jest 84/84 (559 pass); build green. Real-GPU QA external.
   Branch: `cursor/cyber-digital-shader-upgrades-e675`.
-**Last updated:** 2026-08-23 (Batch 58D spectral/datamosh upgrade)
 
 ## 2026-08-23 — Batch 58D spectral and datamosh upgrade
 
@@ -391,7 +531,6 @@
   + prior optical/feedback polish; CMYK A coverage preserved.
 - Proof: focused gate **17/17**, cohort dead-slider + extraBuffer PASS,
   catalogs regenerated. Real-GPU visual QA remains external.
-**Last updated:** 2026-08-23 (Batch 59)
 
 ## 2026-08-23 — Shader upgrade Batch 59 — CYBER & DIGITAL
 
@@ -488,7 +627,6 @@
   audits clean, TypeScript clean, Jest 81/81 (545 pass, 1 skip), production build
   green. Real-GPU visual QA remains external.
 
-**Last updated:** 2026-08-23 (Codex liquid complexity batch)
 
 ## 2026-08-23 — Codex Liquid Shader Complexity Batch requested
 
@@ -672,8 +810,9 @@
 
 - Shared pre-FX kit in `src/gpuChores/`: BT.709 histogram, reduce_f32, lut_u8_map,
   downsample_2d. Adopts the renderer `GPUDevice` — never `requestDevice()`.
-- Live path: auto-exposure from the histogram **normalizes the 64×64 preview**,
-  not catalog FX. Kill switch `?no_gpu_compute`. Breadcrumbs in Dev Tools.
+- Live path: opt-in **source** auto-exposure (`apply_gain_2d` onto `readTex`,
+  default off). Preview hist still runs. Kill switch `?no_gpu_compute`.
+  Physics-pinned graphs skip source gain. EV is host-only (not extraBuffer).
 - CPU goldens are the Chromashift-shaped parity SoT on the headless VM.
 - Docs: `docs/GPU_CHORES.md` (Tier 4a = domain FX, Tier 4b = chores).
 - Device-init policy and feedback B→C / A→C copy order untouched.
@@ -1360,12 +1499,14 @@
 
 - Confirmed the app engine is the full-catalog/multipass path and constrained the
   minimal engine/package command to generative-only captures.
-- Added `thumbs:check-regression`, a PR check that compares healthy coverage with
-  the base git ref and fails new shader definitions without healthy PNGs.
+- Added `thumbs:check-regression`, a PR check that fails newly eligible shaders
+  without a healthy PNG or unexpired deferral (no global %/count gate). Sticky
+  coverage comments stay reporting-only until healthy eligible ≥ 50%.
 - `thumbs:status` now reports curated attract + Physics Lab priority coverage and
   accepts `--require-priority` for GPU-workstation enforcement.
-- Current VM proof: nominal 349/1,324 (26.4%), healthy 272/1,323 (20.6%),
-  priority 20/21 (95.2%); capture remains blocked until discrete-GPU access.
+- 2026-08-30 #1185: 1,069 deferrals (`expires` 2026-09-29), attract-first generate,
+  `hasHealthyThumbnail` + `public/thumbnails/unhealthy.json`. Nominal 360/1,353
+  (26.6%); integrity audit is stale (349 scanned). Capture remains discrete-GPU.
 
 ## Shader upgrade Batches 53–54 (2026-08-21)
 

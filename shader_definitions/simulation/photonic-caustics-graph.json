@@ -2,7 +2,7 @@
   "id": "photonic-caustics-graph",
   "name": "Photonic Caustics",
   "url": "shaders/photonic-emitter.wgsl",
-  "description": "Temporal caustic pool — move the light, watch chromatic ribbons accumulate. 4 graph passes fit battery; trace×2 under balanced. Tier C flagship.",
+  "description": "Temporal caustic pool \u2014 move the light, watch chromatic ribbons accumulate. 4 graph passes fit battery; trace\u00d72 under balanced. Tier C flagship.",
   "requiresRgba32Float": true,
   "multipass": {
     "graph": {
@@ -11,21 +11,34 @@
         {
           "id": "emit",
           "entry": "photonic-emitter",
-          "reads": ["dataC"],
-          "writes": ["dataB", "dataA"]
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ]
         },
         {
           "id": "trace",
           "entry": "photonic-trace",
-          "reads": [],
-          "writes": ["dataA"],
+          "reads": [
+            "dataA"
+          ],
+          "writes": [
+            "dataA"
+          ],
           "repeat": 2
         },
         {
           "id": "accumulate",
           "entry": "photonic-accumulate",
-          "reads": ["dataA", "dataC"],
-          "writes": ["color", "dataA"]
+          "reads": [
+            "dataA"
+          ],
+          "writes": [
+            "color",
+            "dataA"
+          ]
         }
       ]
     }
@@ -39,7 +52,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
-      "description": "Index of refraction — steeper pool normals at low values"
+      "description": "Index of refraction \u2014 steeper pool normals at low values"
     },
     {
       "id": "lightSize",
@@ -72,13 +85,50 @@
       "description": "Caustic brightness and accumulator display gain"
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "IOR",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Light Size",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Dispersion",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Intensity",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "feedbackPacking": "Graph pipeline: emit writes normal to dataA; trace reads via dataC and accumulates into dataA (2 passes); accumulate presents ACES color with persistent caustic field.",
   "features": [
     "simulation",
     "multi-pass",
     "graph-runner",
     "mouse-driven",
     "audio-reactive",
-    "physics"
+    "physics",
+    "temporal-feedback",
+    "click-reactive"
   ],
   "tags": [
     "caustics",

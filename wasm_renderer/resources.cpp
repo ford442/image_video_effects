@@ -160,13 +160,15 @@ bool WebGPURenderer::CreateResources() {
     texDesc.label = MakeStringView("Depth Texture Write");
     depthTextureWrite_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
-    // Empty texture (1x1) used as placeholder for generative shaders
+    // Empty texture (1x1 r32float) — deliberate match to TS emptyTex placeholder
     texDesc.size = {1, 1, 1};
+    texDesc.format = WGPUTextureFormat_R32Float;
+    texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
     texDesc.label = MakeStringView("Empty Texture");
     emptyTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
-    // Initialize empty texture to black
-    float black[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    // Initialize empty texture to black (one r32float pixel)
+    float black = 0.0f;
 
     WGPUTexelCopyTextureInfo emptyDest = {};
     emptyDest.texture = emptyTexture_.get();
@@ -176,10 +178,10 @@ bool WebGPURenderer::CreateResources() {
 
     WGPUTexelCopyBufferLayout emptyDataLayout = {};
     emptyDataLayout.offset = 0;
-    emptyDataLayout.bytesPerRow = sizeof(float) * 4;  // 1 pixel × 4 floats × 4 bytes
+    emptyDataLayout.bytesPerRow = sizeof(float);  // 4 bytes — one r32float pixel
     emptyDataLayout.rowsPerImage = 1;
 
-    wgpuQueueWriteTexture(queue_.get(), &emptyDest, black, sizeof(black), &emptyDataLayout, &texDesc.size);
+    wgpuQueueWriteTexture(queue_.get(), &emptyDest, &black, sizeof(black), &emptyDataLayout, &texDesc.size);
 
     // Initialize data texture C and readTexture_ to zeros (avoids uninitialised GPU memory).
     // bytesPerRow must match the allocated colorFormat_ (rgba16float is 8 B/px, not 16).

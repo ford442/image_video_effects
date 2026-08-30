@@ -7,6 +7,7 @@ import type { InternalColorFormat } from './config/formatPolicy';
 import type { RendererDiagnosticsSummary } from './components/controls/panels/AdvancedDebugPanel';
 import type { ImageRecord } from './types/aiVj';
 import { isRenderQualityMode, loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
+import { loadSourceAutoExposure, saveSourceAutoExposure } from './services/sourceAutoExposure';
 import { RendererManager } from './renderer/RendererManager';
 import { VideoRecord } from './syncTypes';
 import { VideoSegment } from './services/videoSegmentManager';
@@ -83,6 +84,7 @@ function MainApp() {
         }
         return loadRenderQualityMode();
     });
+    const [sourceAutoExposure, setSourceAutoExposure] = useState(() => loadSourceAutoExposure());
     const [performanceHud, setPerformanceHud] = useState<{
         internalWidth: number;
         internalHeight: number;
@@ -332,7 +334,7 @@ function MainApp() {
         setSelectedVideo,
     });
 
-    const { hasThumbnail } = useThumbnailManifest();
+    const { hasHealthyThumbnail } = useThumbnailManifest();
 
     const {
         isRouletteActive,
@@ -350,7 +352,7 @@ function MainApp() {
         setMode,
         updateSlotParam,
         setStatus,
-        hasThumbnail,
+        hasThumbnail: hasHealthyThumbnail,
     });
 
     const {
@@ -367,7 +369,7 @@ function MainApp() {
         syncInputSourceToRenderer,
         setActiveGenerativeShader,
         setStatus,
-        hasThumbnail,
+        hasThumbnail: hasHealthyThumbnail,
         isMouseDown,
         mousePosition,
         midiEngageSignal,
@@ -467,6 +469,11 @@ function MainApp() {
         });
     }, [rendererReady, renderQualityMode]);
 
+    useEffect(() => {
+        if (!rendererReady) return;
+        rendererRef.current?.setSourceAutoExposure(sourceAutoExposure);
+    }, [rendererReady, sourceAutoExposure]);
+
     const handleSaveVjSet = useCallback(async (name: string) => {
         const encoded = await buildVjChainString();
         if (!encoded) {
@@ -487,6 +494,12 @@ function MainApp() {
                 formatCaps: manager.getFormatCapabilities(),
             });
         }
+    }, []);
+
+    const handleSourceAutoExposureChange = useCallback((enabled: boolean) => {
+        setSourceAutoExposure(enabled);
+        saveSourceAutoExposure(enabled);
+        rendererRef.current?.setSourceAutoExposure(enabled);
     }, []);
 
     const handleSetSlotParam = useCallback((slot: number, param: string, value: number) => {
@@ -576,6 +589,8 @@ function MainApp() {
                 gpuChoresLastOp: diags.webgpu?.gpuChores?.lastOp ?? null,
                 gpuChoresBackend: diags.webgpu?.gpuChores?.backend,
                 gpuChoresEv: diags.webgpu?.gpuChores?.autoUniforms.exposureEv,
+                gpuChoresSourceGain: diags.webgpu?.gpuChores?.sourceGain,
+                gpuChoresClassify: diags.webgpu?.gpuChores?.classifyPreview,
             };
             setRendererDiagnostics((prev) => {
                 const errEq = (a?: string[], b?: string[]) =>
@@ -600,7 +615,9 @@ function MainApp() {
                     prev.gpuChoresReason === nextDiags.gpuChoresReason &&
                     prev.gpuChoresLastOp === nextDiags.gpuChoresLastOp &&
                     prev.gpuChoresBackend === nextDiags.gpuChoresBackend &&
-                    prev.gpuChoresEv === nextDiags.gpuChoresEv
+                    prev.gpuChoresEv === nextDiags.gpuChoresEv &&
+                    prev.gpuChoresSourceGain === nextDiags.gpuChoresSourceGain &&
+                    (prev.gpuChoresClassify?.bands.length ?? 0) === (nextDiags.gpuChoresClassify?.bands.length ?? 0)
                 ) {
                     return prev;
                 }
@@ -722,6 +739,8 @@ function MainApp() {
                 wasmFps={wasmFps}
                 renderQualityMode={renderQualityMode}
                 onRenderQualityChange={handleRenderQualityChange}
+                sourceAutoExposure={sourceAutoExposure}
+                onSourceAutoExposureChange={handleSourceAutoExposureChange}
                 performanceHud={performanceHud}
             />
 

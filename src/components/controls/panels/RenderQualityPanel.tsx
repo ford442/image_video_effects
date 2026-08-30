@@ -12,12 +12,13 @@ export interface RenderQualityPanelProps {
   targetFps: number;
   colorFormat?: InternalColorFormat;
   estimatedTextureMiB?: number;
-  /** Format the tier asked for, before any FP32 pin. */
   requestedColorFormat?: InternalColorFormat;
-  /** True when an FP32-required shader is holding storage at rgba32float. */
   fp32Pinned?: boolean;
   fp32PinnedBy?: string[];
   maxPassesPerFrame?: number;
+  sourceAutoExposure?: boolean;
+  onSourceAutoExposureChange?: (enabled: boolean) => void;
+  sourceAutoExposureDisabled?: boolean;
 }
 
 const MODES: Array<{ id: RenderQualityMode; label: string; hint: string }> = [
@@ -41,6 +42,9 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
   fp32Pinned = false,
   fp32PinnedBy = [],
   maxPassesPerFrame,
+  sourceAutoExposure = false,
+  onSourceAutoExposureChange,
+  sourceAutoExposureDisabled = false,
 }) => (
   <div className="control-group glass-panel" style={{ padding: '12px' }}>
     <div className="gold-section-header" style={{ fontSize: '12px', marginTop: 0 }}>
@@ -79,6 +83,28 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
       {maxPassesPerFrame !== undefined && ` · ≤${maxPassesPerFrame} passes/frame`}
       {adaptive && ` · Auto ${targetFps} FPS`}
     </div>
+    {onSourceAutoExposureChange && (
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginTop: '10px',
+          fontSize: '11px',
+          color: sourceAutoExposureDisabled ? '#707088' : '#c0c0d0',
+          cursor: sourceAutoExposureDisabled ? 'not-allowed' : 'pointer',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={sourceAutoExposure}
+          disabled={sourceAutoExposureDisabled}
+          onChange={(e) => onSourceAutoExposureChange(e.target.checked)}
+          data-testid="source-auto-exposure-toggle"
+        />
+        Auto exposure (source)
+      </label>
+    )}
     {maxPassesPerFrame !== undefined && (
       <div style={{ fontSize: '10px', color: '#808098', marginTop: '4px', lineHeight: 1.4 }}>
         Pass budget caps Tier C graph dispatches per frame (battery 4 / balanced 8 / ultra 16).

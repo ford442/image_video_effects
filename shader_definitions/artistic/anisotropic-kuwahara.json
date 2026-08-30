@@ -1,8 +1,8 @@
 {
   "id": "anisotropic-kuwahara",
   "name": "Van Gogh Flow",
-  "url": "shaders/anisotropic-kuwahara.wgsl",
-  "description": "Anisotropic Kuwahara filter creating painterly Van Gogh-style brushstroke effects.",
+  "url": "shaders/anisotropic-kuwahara-tensor.wgsl",
+  "description": "Physics Lab \u2014 structure tensor \u2192 oriented Kuwahara brushstrokes. graph \u00b7 3 passes \u00b7 mouse vortex.",
   "params": [
     {
       "id": "windowSize",
@@ -34,13 +34,59 @@
     }
   ],
   "features": [
+    "audio-reactive",
     "depth-aware",
+    "graph-runner",
     "interactive",
+    "mouse-driven",
+    "multi-pass",
     "painterly",
-    "mouse-driven"
+    "physics",
+    "simulation"
   ],
   "tags": [
-    "stylized",
-    "artistic"
-  ]
+    "artistic",
+    "kuwahara",
+    "painterly",
+    "physics",
+    "showcase",
+    "simulation",
+    "stylized"
+  ],
+  "multipass": {
+    "graph": {
+      "maxPassesPerFrame": 8,
+      "nodes": [
+        {
+          "id": "tensor",
+          "entry": "anisotropic-kuwahara-tensor",
+          "reads": [],
+          "writes": [
+            "dataA"
+          ]
+        },
+        {
+          "id": "filter",
+          "entry": "anisotropic-kuwahara-filter",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ]
+        },
+        {
+          "id": "render",
+          "entry": "anisotropic-kuwahara-render",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "color",
+            "dataA"
+          ]
+        }
+      ]
+    }
+  }
 }

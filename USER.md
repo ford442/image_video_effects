@@ -6,6 +6,7 @@ _Learn about the person you're helping. Update this as you go._
 - **What to call them:**
 - **Pronouns:** _(optional)_
 - **Timezone:**
+- **Fast-Motion Ten (2026-08-30):** Voronoi Zoom Turbulence, Solarize Warp, Luma Smear Interactive, Neon Fluid Warp, Optical Illusion Spin, Vortex Drag, Zoom Burst, Temporal Slit Paint, Neon Warp, and Mandelbrot Zoom Portal are complete under exact-C/A-only/ACES/audio/interaction with byte-exact saved params. Temporal Slit Paint alone owns raw canvas A; the other nine own ACES display RGBA. Neon Warp heat stays closed-form (no invented raw sim). Structural Naga 10/10, extraBuffer/dead-slider focused audits 10/10, catalog 1,353, SKIP_WASM_BUILD=1 build green. Jest 79/84 here — five WASM `bridge/api.js` resolve failures are pre-existing and unrelated. Real-GPU QA remains external.
 - **Notes:** Deploy to test.1ink.us should not prompt for FTP/SFTP user/pass — use gitignored `.env.deploy` or the authorized SSH key. Prefers phased, reviewable foundation work before more multipass content; preserve WebGPU device-init policy, frame semantics, and lazy AI boundaries during toolchain migrations. Treat CRA→Vite as an optional spike, not a big-bang rewrite. gpu-chores (Tier 4b histogram/reduce/LUT/downsample) must adopt the renderer’s GPUDevice — no second requestDevice, no dual-hot GL+WebGPU; Chrome/Edge mismatch degrades with a reason string. For shader upgrade batches, preserve saved-preset parameter contracts and raw feedback-state ownership, keep new persistent state out of engine FFT slots, separate Cloud-VM structural proof from real-GPU visual handoff, and keep rolling directly into the next clean cohort when they ask for “another batch.” For new generative content, prefers colorful psychedelic-inspired variety with four live sliders and direct mouse-position, click, and held-drag response. Likes follow-up polish that deepens those new shaders while also upgrading already-complex generative work, with each effect retaining a distinct identity. Prefers balanced generative hardening and accepts a deliberate feedback-ownership correction when it is necessary to make an advertised simulation real and the new contract is documented explicitly.
 - **Handoff preference:** When another model stops mid-upgrade, first reconstruct
   its exact committed/dirty state and quality risks before editing or declaring
@@ -17,6 +18,40 @@ _Learn about the person you're helping. Update this as you go._
   intentionally separate raw HDR history from tone-mapped display; only
   Magnetic and Lattice own `[133..138]` springs. Structural/Jest/build gates
   are green; real-GPU visual and performance QA remains external.
+- **Balanced Mixed Eight (2026-08-27):** Alpha HDR Bloom Chain, Magma Fissure,
+  Paper Burn, Cyber Hex Armor, PP Chromatic, Sequin Flip, Rorschach Inkblot,
+  and Alpha Depth Fog Volumetric are complete under exact-C/A-only/ACES/audio/
+  interaction contracts with exact saved params and preserved state packing.
+  Structural/Jest/build gates are green; real-GPU QA remains external.
+- **Leftover upgrade-branch union (2026-08-29):** `new-shader-upgrades` / `gen-math-upgrades-cb96` already matched main for WGSL. Selective batch-60/61 union landed Physics Lab set-2 graphs (jfa-aurora-voronoi, poincare-tiling, predator-prey-ecology) and multipass wiring for kuwahara/byte-mosh/dla/droste with saved params preserved; WASM-bridge TS left for #1179. Catalog 1,353; graphs 14.
+- **Composer Cyber/Digital/Glitch Ten — Cohort 3 (2026-08-29):** CRT Magnet, CRT TV Stipple, Phosphor Decay, VHS Tracking Bilateral, Film Gate Weave, Vinyl Scratch, ASCII Flow, ASCII Flow Structure, Cyber Terminal ASCII, and Cyber Rain Interactive are complete under exact-C/A-only/ACES/audio/interaction contracts with byte-exact saved params. Phosphor Decay owns linear radiance A; Film Gate Weave A packs scratch; ASCII Flow Structure A packs tensor state; Cyber Rain Interactive is spring-free (vs Cyber Rain EM). Structural/Jest/build gates green; real-GPU QA remains external.
+- **Composer Cyber/Digital/Glitch Ten — Cohort 2 (2026-08-29):** Scanline Drift, Spectrum Bleed, Waveform Glitch, Xerox Degrade, Pixel Rain, Pixelation Drift, CRT TV, CRT Phosphor Decay, Cyber Rain EM, and Cyber Trace Structure are complete under exact-C/A-only/ACES/audio/interaction contracts with byte-exact saved params. Cyber Trace Structure alone stores trace history in A; the other nine own ACES display RGBA. Structural/Jest/build gates green; real-GPU QA remains external.
+- **Composer Cyber/Digital/Glitch Ten (2026-08-29):** Digital Glitch, Digital Glitch Explosion, Digital Decay RGBA, Datamosh Brush, Datamosh Brush Diffusion, Byte-Mosh, Signal Noise, Scan Distort, Cyber Lattice Bilateral, and Data Stream Structure are complete under exact-C/A-only/ACES/audio/interaction contracts with byte-exact saved params. Digital Decay RGBA alone owns raw RD A/C; the other nine own ACES display RGBA. Structural/Jest/build gates green; real-GPU QA remains external.
+- **Optical / Glass / Holographic / Lighting-Optics Cohort 2 (2026-08-29):**
+  Upgraded aurora-rift-2-iridescence, glass-wipes-coupled, holographic-glitch,
+  holographic-projection-failure, photonic-caustics-graph, photonic-caustics,
+  alpha-aurora-bands, aurora_borealis, gen-holographic-fracture, and
+  gen-holographic-membrane under the full 13-binding / ACES / semantic alpha /
+  A-authoritative / exact C loads / three-band plasmaBuffer / zero extraBuffer
+  contract with byte-exact saved params. Naga 12/12, workgroups 16x16, all 4
+  sliders live across all 10, TypeScript clean, Jest 84/84 (561 pass, 1 skip),
+  and SKIP_WASM_BUILD=1 production build green; real-GPU visual QA remains external.
+- **Optical / Glass / Holographic / Lighting-Optics Batch (2026-08-29):**
+  Upgraded cinematic-flare, dynamic-lens-flares, lens-flare-brush,
+  underwater_caustics, divine-light, divine-light-iridescence,
+  aurora-borealis-iridescence, aurora-rift-iridescence,
+  black-hole-iridescence, and vaporwave-horizon-prismatic under the full
+  13-binding / ACES / semantic alpha / A-authoritative / exact C loads /
+  three-band plasmaBuffer / zero extraBuffer contract with byte-exact saved
+  params. Naga 10/10, workgroups 16x16, all 4 sliders live across all 10,
+  TypeScript clean, Jest 84/84 (561 pass, 1 skip), and SKIP_WASM_BUILD=1
+  production build green; real-GPU visual QA remains external.
+- **Balanced Premium Ten (2026-08-29):** Aerogel Smoke, Graphic Novel,
+  Hyper Space Jump, Aurora Rift V2, Julia Warp, Flip Matrix, Interactive PCB
+  Traces, Stipple Engraving, Underwater Caustics, and Hybrid Voronoi Glass are
+  complete. Aerogel alone owns raw transport A/C; the other nine own ACES
+  display RGBA. Saved params and the Graphic Novel underscore alias are exact;
+  structural/Jest/build gates are green and real-GPU QA remains external.
 - **Optical / Glass / Holographic / Iridescence Batch (2026-08-23):** Upgraded
   spec-iridescence-engine, spec-prismatic-dispersion, frost-reveal-crystal,
   fractal-glass-distort-bilateral, bubble-lens-coupled,
@@ -250,7 +285,8 @@ Format specification:
   Closed #1123–#1129 over-claimed; do not treat them as done.
 - WASM stays Tier B until #1080 real-GPU evidence; no GraphRunner C++ port
   (#1183 is gated on that decision). CRA→Vite stays deferred.
-- Product next: thumbs 26% → 50%+ with deferrals (#1185), then all-slot audio
+- Product next: thumbs campaign is deferral+CI+attract-first scripts (#1185 headless);
+  GPU host still needed for ≥50% healthy PNGs. Then all-slot audio
   + OSC/WebMIDI (#1182). Physics Lab set 2 graphs live in #1183, not another
   10-wide generative swarm. Attract mode already exists.
 - Thumbnail healthy coverage is still the discoverability bottleneck (26.2%,

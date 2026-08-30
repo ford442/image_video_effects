@@ -1,42 +1,9 @@
 {
   "id": "gen-chrono-kinetic-fractal-engine",
-  "url": "shaders/gen-chrono-kinetic-fractal-engine.wgsl",
   "name": "Chrono-Kinetic Fractal Engine",
   "category": "generative",
-  "author": "Jules",
+  "url": "shaders/gen-chrono-kinetic-fractal-engine.wgsl",
   "description": "A highly dynamic, continuously unfolding 4D mechanism where temporal gears and non-euclidean clockwork structures weave together into an infinite, hypnotic mandala of light and motion.",
-  "uniforms": {
-    "zoom_params": {
-      "x": {
-        "name": "Complexity",
-        "value": 1.0,
-        "min": 0.1,
-        "max": 5.0,
-        "step": 0.1
-      },
-      "y": {
-        "name": "Warp Strength",
-        "value": 0.5,
-        "min": 0.0,
-        "max": 2.0,
-        "step": 0.01
-      },
-      "z": {
-        "name": "Iridescence",
-        "value": 1.0,
-        "min": 0.0,
-        "max": 3.0,
-        "step": 0.1
-      },
-      "w": {
-        "name": "Kinetic Speed",
-        "value": 1.0,
-        "min": 0.1,
-        "max": 3.0,
-        "step": 0.1
-      }
-    }
-  },
   "params": [
     {
       "id": "complexity",
@@ -73,40 +40,6 @@
       "max": 3.0,
       "step": 0.1,
       "mapping": "zoom_params.w"
-    }
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Complexity",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Warp Strength",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Iridescence",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 3.0,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Kinetic Speed",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 3.0,
-      "step": 0.1
     }
   ]
 }

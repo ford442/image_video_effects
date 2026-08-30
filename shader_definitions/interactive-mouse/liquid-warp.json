@@ -14,10 +14,13 @@
     "aces",
     "rk4-advection",
     "strain-tensor",
+    "cauchy-green-deformation",
+    "principal-stretch",
+    "fold-caustics",
     "chromatic-aberration",
     "fluid-simulation"
   ],
-  "description": "RK4 semi-Lagrangian warp whose strain tensor now comes from the flow field's ANALYTIC Jacobian instead of four extra finite-difference field evaluations (each of which ran three curl-noise octaves). Fixes an alpha bug that multiplied a UV-space magnitude by the pixel width, pinning alpha at 1.0 at every real resolution. Clicks emit bounded vortex rings; state reads use exact textureLoad.",
+  "description": "RK4 semi-Lagrangian flow combines exact-load state with an analytic pointer Jacobian. A finite-time Cauchy-Green tensor now yields rotation-invariant principal stretch, anisotropic chromatic spread, and near-singular fold caustics; bounded click rings inject vorticity.",
   "params": [
     {
       "id": "radius",
@@ -75,11 +78,11 @@
     },
     {
       "id": "decay",
-      "name": "Shear Stretch",
+      "name": "Principal Stretch",
       "default": 0.9,
       "min": 0,
       "max": 1,
-      "description": "How much the strain tensor's shear stretches the velocity (maps to zoom_params.z)."
+      "description": "Blend toward the Cauchy-Green tensor's dominant principal stretch (maps to zoom_params.z)."
     },
     {
       "id": "swirl",

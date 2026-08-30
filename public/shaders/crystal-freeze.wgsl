@@ -8,7 +8,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Upgraded: 2026-08-23 (Batch 67 — fast motion / psychedelic / high energy)
 //
-//  Contract: `@workgroup_size(8, 8, 1)` -> `(16, 16, 1)` (house convention); the
+//  Contract: canonical `@workgroup_size(16, 16, 1)` (house convention); the
 //  freeze state is now read with exact `textureLoad` rather than through a
 //  sampler; bounded click response and ACES added.
 //

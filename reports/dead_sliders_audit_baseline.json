@@ -373,13 +373,6 @@
       ]
     },
     {
-      "id": "hyper-space-jump-blackbody",
-      "category": "advanced-hybrid",
-      "dead_param_ids": [
-        "param4"
-      ]
-    },
-    {
       "id": "interactive-kuwahara",
       "category": "interactive-mouse",
       "dead_param_ids": [

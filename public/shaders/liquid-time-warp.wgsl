@@ -2,7 +2,8 @@
 //  Liquid Time Warp — Curl-Advected Temporal Feedback
 //  Category: interactive-mouse
 //  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
-//            per-band-fft, curl-advection, wipe-fronts, chromatic-aberration,
+//            per-band-fft, midpoint-curl-advection, bounded-antidiffusion,
+//            wipe-fronts, chromatic-aberration,
 //            depth-aware, upgraded-rgba, semantic-alpha, aces
 //  Upgraded: 2026-08-23 (Batch 58B — Liquid)
 // ────────────────────────────────────────────────────────────────────────────────
@@ -105,6 +106,19 @@ fn historyBilinear(p: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
     return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
 }
 
+fn spectralFlow(uv: vec2<f32>, time: f32, flowSpeed: f32, scale: f32) -> vec2<f32> {
+    let lowBand  = (plasmaBuffer[1u].x + plasmaBuffer[2u].x) * 0.5;
+    let midBand  = (plasmaBuffer[4u].x + plasmaBuffer[5u].x) * 0.5;
+    let highBand = (plasmaBuffer[7u].x + plasmaBuffer[8u].x) * 0.5;
+    var flow = curl(uv * scale + vec2<f32>(time * flowSpeed * 0.10, time * flowSpeed * 0.17))
+             * (0.6 + lowBand * 1.6);
+    flow += curl(uv * scale * 2.3 - vec2<f32>(time * flowSpeed * 0.21, time * flowSpeed * 0.13))
+          * (0.3 + midBand * 1.1);
+    flow += curl(uv * scale * 5.1 + vec2<f32>(time * flowSpeed * 0.33, -time * flowSpeed * 0.27))
+          * (0.12 + highBand * 0.8);
+    return flow;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dimsI = vec2<i32>(textureDimensions(writeTexture));
@@ -129,19 +143,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let isMouseDown = step(0.5, u.zoom_config.w);
 
-    // ── Structure 1: FFT-banded curl advection ───────────────────────────────
-    // Three octaves, each amplified by its own spectrum bins: low bins sweep,
-    // high bins stir the filigree.
-    let lowBand  = (plasmaBuffer[1u].x + plasmaBuffer[2u].x) * 0.5;
-    let midBand  = (plasmaBuffer[4u].x + plasmaBuffer[5u].x) * 0.5;
-    let highBand = (plasmaBuffer[7u].x + plasmaBuffer[8u].x) * 0.5;
-
-    var flow = curl(uv * scale + vec2<f32>(time * flowSpeed * 0.10, time * flowSpeed * 0.17))
-             * (0.6 + lowBand * 1.6);
-    flow += curl(uv * scale * 2.3 - vec2<f32>(time * flowSpeed * 0.21, time * flowSpeed * 0.13))
-          * (0.3 + midBand * 1.1);
-    flow += curl(uv * scale * 5.1 + vec2<f32>(time * flowSpeed * 0.33, -time * flowSpeed * 0.27))
-          * (0.12 + highBand * 0.8);
+    // ── Structure 1: second-order FFT-banded curl advection ──────────────────
+    // Trace to a midpoint and re-evaluate there. This prevents tight vortices
+    // from flattening into Euler spirals over long feedback runs.
+    let flow0 = spectralFlow(uv, time, flowSpeed, scale);
+    let midpoint = clamp(uv - flow0 * distortAmt * 0.5, vec2<f32>(0.001), vec2<f32>(0.999));
+    var flow = spectralFlow(midpoint, time, flowSpeed, scale);
 
     // ── Pointer: swirl on hover, push on hold ────────────────────────────────
     let mVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
@@ -178,7 +185,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Advect history (exact load, manual bilinear) ─────────────────────────
     let historyPx = (uv - flow * distortAmt) * dims;
-    let historySample = historyBilinear(historyPx, dimsI);
+    var historySample = historyBilinear(historyPx, dimsI);
+    // Bounded anti-diffusion restores one fraction of the detail lost by
+    // bilinear semi-Lagrangian transport, then clamps to the local extrema so
+    // no new negative or over-range colour can be invented.
+    let maxC = dimsI - vec2<i32>(1);
+    let historyCoord = clamp(vec2<i32>(round(historyPx)), vec2<i32>(0), maxC);
+    let hC = textureLoad(dataTextureC, historyCoord, 0);
+    let hE = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>( 1,  0), vec2<i32>(0), maxC), 0);
+    let hW = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>(-1,  0), vec2<i32>(0), maxC), 0);
+    let hN = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>( 0,  1), vec2<i32>(0), maxC), 0);
+    let hS = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>( 0, -1), vec2<i32>(0), maxC), 0);
+    let localLow = min(hC, min(min(hE, hW), min(hN, hS)));
+    let localHigh = max(hC, max(max(hE, hW), max(hN, hS)));
+    let laplacian = hE + hW + hN + hS - 4.0 * hC;
+    historySample = clamp(historySample - laplacian * (0.035 + treble * 0.025), localLow, localHigh);
     let historyColor = historySample.rgb;
     let historyAlpha = historySample.a;
 
@@ -210,6 +231,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let outColor = vec4<f32>(finalColor, alpha);
     textureStore(dataTextureA, coord, outColor);
+    textureStore(dataTextureB, coord, vec4<f32>(flow * 0.08 + 0.5,
+                                                clamp(flowMag * 0.035, 0.0, 1.0), wipeFronts));
     textureStore(writeTexture, coord, outColor);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

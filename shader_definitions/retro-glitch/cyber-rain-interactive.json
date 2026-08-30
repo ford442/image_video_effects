@@ -2,7 +2,9 @@
   "id": "cyber-rain-interactive",
   "name": "Cyber Rain",
   "url": "shaders/cyber-rain-interactive.wgsl",
-  "description": "Layered glyph downpour: three parallax rain sheets are composited by scene depth, each with two drops per column rendered from a packed 4x6 glyph ROM that re-rolls as the drop falls. Every column owns one FFT bin that sets its fall rate and head brightness. The pointer bends drops aside, clicks emit bounded EMP rings, and image luminance acts as wetness that makes glyphs cling and pale.",
+  "description": "Layered glyph downpour with three parallax rain sheets, per-column FFT bins, spring-free pointer bending (distinct from cyber-rain-em), bounded EMP rings, luminance wetness cling, exact C trails, and ACES display.",
+  "workgroup_size": [16, 16, 1],
+  "updated": true,
   "features": [
     "mouse-driven",
     "held-drag",

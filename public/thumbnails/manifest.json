@@ -3533,5 +3533,40 @@
       0.5,
       0.5
     ]
+  },
+  "dla-crystals": {
+    "thumbnail_url": "thumbnails/dla-crystals.png",
+    "generated_at": "2026-08-23T00:00:00.000Z",
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "predator-prey-ecology": {
+    "thumbnail_url": "thumbnails/predator-prey-ecology.png",
+    "generated_at": "2026-08-23T00:00:00.000Z",
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "anisotropic-kuwahara": {
+    "thumbnail_url": "thumbnails/anisotropic-kuwahara.png",
+    "generated_at": "2026-08-23T00:00:00.000Z",
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "log-polar-droste": {
+    "thumbnail_url": "thumbnails/log-polar-droste.png",
+    "generated_at": "2026-08-23T00:00:00.000Z",
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "poincare-tiling": {
+    "thumbnail_url": "thumbnails/poincare-tiling.png",
+    "generated_at": "2026-08-23T00:00:00.000Z",
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "byte-mosh": {
+    "thumbnail_url": "thumbnails/byte-mosh.png",
+    "generated_at": "2026-08-23T00:00:00.000Z",
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "jfa-aurora-voronoi": {
+    "thumbnail_url": "thumbnails/jfa-aurora-voronoi.png",
+    "generated_at": "2026-08-23T00:00:00.000Z",
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
   }
 }

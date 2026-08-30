@@ -1,9 +1,23 @@
 {
   "id": "holographic-projection-failure",
   "name": "Holo-Projection Failure v2",
-  "category": "retro-glitch",
   "url": "shaders/holographic-projection-failure.wgsl",
-  "description": "Holographic projection failure simulation with phase wrapping errors, bit-depth truncation, scanline desync, and block corruption. Bass triggers cascading failure modes; mouse repairs the signal locally. Depth controls projection plane distance.",
+  "description": "Faulty holographic emitter simulation with CRT V-hold rolling, chromatic RGB beam desync, DAC bit-depth truncation, ACES tone mapping, and phosphor beam persistence.",
+  "tags": [
+    "glitch",
+    "holographic",
+    "projection",
+    "cyberpunk",
+    "failure",
+    "retro"
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "temporal-feedback",
+    "click-reactive"
+  ],
   "params": [
     {
       "id": "instability",
@@ -34,23 +48,39 @@
       "max": 1
     }
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven",
-    "depth-aware",
-    "upgraded-rgba"
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Instability",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "RGB Split",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "V-Hold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Static",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ],
-  "tags": [
-    "glitch",
-    "retro",
-    "vintage",
-    "audio",
-    "music",
-    "holographic",
-    "failure",
-    "corruption",
-    "scanline",
-    "depth-aware"
-  ]
+  "feedbackPacking": "A/C = ACES display RGBA for continuous phosphor beam decay persistence; B is unused; depth passes through source depth."
 }

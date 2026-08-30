@@ -2,21 +2,21 @@
   {
     "id": "alpha-aurora-bands",
     "name": "Alpha Aurora Bands",
-    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-aurora-bands.wgsl",
-    "description": "Physically-motivated aurora borealis simulation with emission-line spectral decomposition. RGB stores oxygen green, oxygen red, and nitrogen blue emission intensities. Alpha tracks altitude layer index. Mouse controls solar wind direction; ripples trigger magnetic reconnection substorms.",
-    "tags": [
-      "aurora",
-      "borealis",
-      "lighting",
-      "spectral",
-      "interactive",
-      "mouse-driven",
-      "rgba-state-machine",
-      "atmospheric"
-    ],
+    "url": "shaders/alpha-aurora-bands.wgsl",
+    "description": "Multi-layer geomagnetic curtains with discrete spectral emission bands (oxygen green 557.7nm, oxygen red 630nm, nitrogen blue 427.8nm), solar wind cursor deflection, ACES tone mapping, and atmospheric persistence.",
     "features": [
       "mouse-driven",
-      "rgba-state-machine"
+      "temporal-feedback",
+      "audio-reactive",
+      "click-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "aurora",
+      "spectral",
+      "atmospheric",
+      "lighting",
+      "night-sky"
     ],
     "params": [
       {
@@ -55,12 +55,47 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Aurora Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Curtain Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Wind Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous atmospheric luminescence persistence; B is unused; depth passes through source depth."
   },
   {
     "id": "aurora-rift-2-pass1",
     "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
-    "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-2-pass1.wgsl",
+    "url": "shaders/aurora-rift-2-pass1.wgsl",
     "description": "Enhanced volumetric aurora with improved flow dynamics. First pass of 2-pass system.",
     "features": [
       "multi-pass-1",
@@ -117,7 +152,7 @@
   {
     "id": "aurora-rift-pass1",
     "name": "Aurora Rift (Pass 1: Volumetric)",
-    "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-pass1.wgsl",
+    "url": "shaders/aurora-rift-pass1.wgsl",
     "description": "Raymarches volumetric aurora with curl-driven flow. First pass of 2-pass system.",
     "features": [
       "multi-pass-1",
@@ -174,21 +209,22 @@
   {
     "id": "aurora_borealis",
     "name": "Aurora Borealis",
-    "url": "https://test.1ink.us/image_video_effects/shaders/aurora_borealis.wgsl",
-    "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
+    "url": "shaders/aurora_borealis.wgsl",
+    "description": "Flowing atmospheric ribbons with curl noise advection, altitude-based oxygen and nitrogen emission spectra, starfield composite, ACES tone mapping, and atmospheric persistence.",
+    "category": "lighting-effects",
     "tags": [
       "aurora",
-      "northern-lights",
       "atmospheric",
-      "nature",
-      "sky"
+      "lighting",
+      "night-sky",
+      "nature"
     ],
     "features": [
-      "rgba",
-      "aurora",
-      "curl-noise",
-      "ribbons",
-      "atmospheric"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -224,21 +260,57 @@
         "step": 0.1
       }
     ],
-    "target_rating": 4.8
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Num Ribbons",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ribbon Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous atmospheric luminescence persistence; B is unused; depth passes through source depth."
   },
   {
     "id": "cinematic-flare",
     "name": "Cinematic Flare",
     "category": "lighting-effects",
-    "url": "https://test.1ink.us/image_video_effects/shaders/cinematic-flare.wgsl",
-    "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, rainbow chromatic aberration, ACES tone mapping, and film grain. Mouse positions light source.",
+    "url": "shaders/cinematic-flare.wgsl",
+    "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, Cauchy chromatic dispersion, ACES tone mapping, and temporal persistence.",
     "features": [
       "audio-reactive",
       "depth-aware",
       "mouse-driven",
       "upgraded-rgba",
       "chromatic-streak",
-      "bloom-based"
+      "bloom-based",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -270,6 +342,41 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flare Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Streak Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bloom Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous persistence of vision; B is unused; depth passes through source depth.",
     "tags": [
       "lens-flare",
       "anamorphic",
@@ -286,7 +393,7 @@
   {
     "id": "divine-light-gpt52",
     "name": "Divine Light Cathedral gpt52",
-    "url": "https://test.1ink.us/image_video_effects/shaders/divine-light-gpt52.wgsl",
+    "url": "shaders/divine-light-gpt52.wgsl",
     "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
     "params": [
       {
@@ -336,8 +443,17 @@
   {
     "id": "divine-light",
     "name": "Divine Light",
-    "url": "https://test.1ink.us/image_video_effects/shaders/divine-light.wgsl",
-    "description": "Volumetric god rays emanating from cursor position. Creates cinematic light beam effects.",
+    "url": "shaders/divine-light.wgsl",
+    "description": "Volumetric god rays emanating from cursor position with radial ray-marching, atmospheric dust motes, ACES tone mapping, and temporal beam persistence.",
+    "features": [
+      "mouse-driven",
+      "volumetric",
+      "atmospheric",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal-feedback",
+      "click-reactive"
+    ],
     "params": [
       {
         "id": "intensity",
@@ -368,23 +484,62 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "volumetric",
-      "atmospheric",
-      "audio-reactive",
-      "upgraded-rgba"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ray Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ray Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ray Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Brightness Filter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
+    "feedbackPacking": "A/C = ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "god-rays",
+      "volumetric",
+      "lighting"
     ]
   },
   {
     "id": "dynamic-lens-flares",
     "name": "Dynamic Lens Flares",
-    "url": "https://test.1ink.us/image_video_effects/shaders/dynamic-lens-flares.wgsl",
-    "description": "Cinematic lens flare following cursor. Generates ghost elements and chromatic artifacts.",
+    "url": "shaders/dynamic-lens-flares.wgsl",
+    "description": "Cinematic optical train lens flare following cursor, featuring distributed ghost elements with Cauchy chromatic dispersion, internal reflection halos, starburst diffraction, ACES tone mapping, and temporal phosphor persistence.",
+    "features": [
+      "mouse-driven",
+      "optical",
+      "cinematic",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
+    ],
     "params": [
       {
         "id": "intensity",
@@ -415,21 +570,61 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "optical",
-      "cinematic"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flare Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Brightness Filter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ghost Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ghost Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous phosphor persistence; B is unused; depth passes through source depth.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "lens-flare",
+      "optical",
+      "ghosts"
     ]
   },
   {
     "id": "lens-flare-brush",
     "name": "Lens Flare Brush",
-    "url": "https://test.1ink.us/image_video_effects/shaders/lens-flare-brush.wgsl",
-    "description": "Generates anamorphic lens flares from bright pixels near the mouse.",
+    "url": "shaders/lens-flare-brush.wgsl",
+    "description": "Generates anamorphic lens flares from bright pixels near the mouse with rainbow chromatic shift, ghost elements, ACES tone mapping, and brush trail persistence.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal-feedback",
+      "click-reactive"
+    ],
     "params": [
       {
         "name": "Threshold",
@@ -464,20 +659,53 @@
         "id": "color_shift"
       }
     ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Threshold",
+        "default": 0.8,
+        "min": 0.5,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Stretch",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous brush trail persistence; B is unused; depth passes through source depth.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "lens-flare",
+      "brush",
+      "interactive"
     ]
   },
   {
     "id": "matrix_digital_rain",
     "name": "Matrix Digital Rain",
-    "url": "https://test.1ink.us/image_video_effects/shaders/matrix_digital_rain.wgsl",
+    "url": "shaders/matrix_digital_rain.wgsl",
     "description": "Matrix digital rain with cascading characters, decoding effect, trail fades, and glow. Alpha tracks character brightness.",
     "tags": [
       "matrix",
@@ -533,7 +761,7 @@
   {
     "id": "neon-light",
     "name": "Neon Light",
-    "url": "https://test.1ink.us/image_video_effects/shaders/neon-light.wgsl",
+    "url": "shaders/neon-light.wgsl",
     "description": "Blackbody edge emission with Fresnel-bright depth normals, thermal fog, and mouse-heated hotspots.",
     "params": [
       {
@@ -584,7 +812,7 @@
   {
     "id": "neon-pulse-edge",
     "name": "Neon Pulse Edge",
-    "url": "https://test.1ink.us/image_video_effects/shaders/neon-pulse-edge.wgsl",
+    "url": "shaders/neon-pulse-edge.wgsl",
     "description": "3×3 Sobel edge detection with multi-layer bloom (tight core + wide halo + diffuse), direction-based hue cycling, depth-aware glow intensity, and audio-reactive pulsing.",
     "features": [
       "mouse-driven",
@@ -639,7 +867,7 @@
   {
     "id": "sim-volumetric-fake-em",
     "name": "Volumetric Fake + EM Field",
-    "url": "https://test.1ink.us/image_video_effects/shaders/sim-volumetric-fake-em.wgsl",
+    "url": "shaders/sim-volumetric-fake-em.wgsl",
     "description": "God rays with mouse electromagnetic field distortion. Electric field bends light rays; magnetic field causes chromatic RGB separation. Click ripples spawn secondary light charges.",
     "features": [
       "simulation",
@@ -809,21 +1037,28 @@
   {
     "id": "underwater_caustics",
     "name": "Underwater Caustics",
-    "url": "https://test.1ink.us/image_video_effects/shaders/underwater_caustics.wgsl",
-    "description": "Realistic underwater caustics with Gerstner wave surface simulation, refracted light patterns, god rays, and depth-based alpha",
+    "url": "shaders/underwater_caustics.wgsl",
+    "description": "Five-scale analytic Gerstner derivatives drive Jacobian caustic focusing, spectral depth absorption, bounded god rays, cursor sun control, held swells, and click ripples.",
     "tags": [
       "water",
       "caustics",
       "underwater",
       "gerstner",
-      "ocean"
+      "ocean",
+      "jacobian",
+      "interactive"
     ],
     "features": [
       "rgba",
       "gerstner-waves",
       "caustics",
       "god-rays",
-      "underwater"
+      "underwater",
+      "audio-reactive",
+      "jacobian-focusing",
+      "depth-absorption",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -859,6 +1094,41 @@
         "step": 0.1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wave Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Caustic Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Depth",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Clarity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for caustic persistence; B is unused; effect depth stores caustic and volume coverage.",
     "target_rating": 4.7
   }
 ]

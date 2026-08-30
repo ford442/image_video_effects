@@ -1,8 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Scanline Drift — Batch 62
-//  Spring tracking band [133..138], held jitter boost, capped click tears,
-//  regional FFT flicker, exact C drift memory, ACES + semantic alpha.
-// ═══════════════════════════════════════════════════════════════════
+// Scanline Drift — Composer batch cyber/digital/glitch
+// Horizontal strip drift with spring tracking band, held jitter boost,
+// capped click tears, regional FFT flicker, exact C drift memory, ACES.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;

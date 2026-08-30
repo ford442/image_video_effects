@@ -2,8 +2,20 @@
   "id": "liquid-touch",
   "name": "Liquid Touch",
   "url": "shaders/liquid-touch.wgsl",
+  "description": "An exact-load height-field solver with a 13-point biharmonic capillary stencil, nonlinear mean-curvature pressure, Marangoni flow, dispersive droplet waves, touch coalescence, and curvature-driven microfoam.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "depth-aware",
+    "fluid-simulation",
+    "biharmonic-dispersion",
+    "mean-curvature-pressure",
+    "marangoni-flow",
+    "microfoam",
+    "semantic-alpha",
+    "aces"
   ],
   "params": [
     {
@@ -33,6 +45,40 @@
       "default": 0.3,
       "min": 0,
       "max": 1
+    }
+  ],
+  "updatedParams": [
+    {
+      "id": "viscosity",
+      "name": "Surface Tension",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Young-Laplace tension and capillary dispersion strength."
+    },
+    {
+      "id": "brush",
+      "name": "Droplet Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Radius of held-pointer droplet displacement and heating."
+    },
+    {
+      "id": "refract",
+      "name": "Optical Refraction",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Height-gradient refraction and surface-normal strength."
+    },
+    {
+      "id": "tint",
+      "name": "Marangoni Flow",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Thermal surface-tension-gradient flow and capillary tint."
     }
   ],
   "tags": [

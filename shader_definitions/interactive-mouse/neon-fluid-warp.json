@@ -2,7 +2,7 @@
   "id": "neon-fluid-warp",
   "name": "Neon Fluid Warp",
   "url": "shaders/neon-fluid-warp.wgsl",
-  "description": "Distorts the image like a fluid around the mouse, adding neon edges.",
+  "description": "Viscous curl jets and neon edge runners around a sprung pointer. Held drag thickens the fluid, clicks kick refraction rings, exact-C glow persist, ACES display, emissive semantic alpha.",
   "params": [
     {
       "id": "warpStrength",
@@ -36,13 +36,63 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba",
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "fast-motion",
+    "spring-cursor",
+    "semantic-alpha",
+    "exact-c-history"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
     "music",
-    "reactive"
-  ]
+    "reactive",
+    "fast-motion",
+    "audio-reactive",
+    "aces"
+  ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Glow Intensity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Liquidity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "category": "interactive-mouse"
 }

@@ -2,7 +2,9 @@
   "id": "phosphor-decay",
   "name": "Phosphor Decay",
   "url": "shaders/phosphor-decay.wgsl",
-  "description": "CRT phosphor persistence with per-channel linear-feedback decay, OkLab-blended trails, audio-reactive bloom, branchless shadow mask, scan-line blanking, depth haze, blackbody temperature grading, and IGN-dithered premultiplied output.",
+  "description": "Per-channel linear-feedback phosphor persistence with OkLab trail blending, blackbody grading, spring cursor, held static-charge, capped click blooms, row-voice FFT bins, and energy-carrying semantic alpha.",
+  "workgroup_size": [16, 16, 1],
+  "updated": true,
   "params": [
     {
       "id": "decay_rate",
@@ -33,11 +35,25 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Decay Rate", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 1, "name": "Bloom Spread", "default": 0.4, "min": 0, "max": 1 },
+    { "index": 2, "name": "Shadow Mask Strength", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 3, "name": "Scan Blanking", "default": 0.3, "min": 0, "max": 1 }
+  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "aces-tone-map",
+    "spring-cursor",
+    "held-drag",
+    "click-ripples",
+    "temporal-feedback",
+    "linear-feedback",
+    "oklab-mixed",
+    "blackbody-graded"
   ],
   "tags": [
     "vfx",

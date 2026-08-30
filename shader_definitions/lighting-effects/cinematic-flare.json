@@ -3,14 +3,16 @@
   "name": "Cinematic Flare",
   "category": "lighting-effects",
   "url": "shaders/cinematic-flare.wgsl",
-  "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, rainbow chromatic aberration, ACES tone mapping, and film grain. Mouse positions light source.",
+  "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, Cauchy chromatic dispersion, ACES tone mapping, and temporal persistence.",
   "features": [
     "audio-reactive",
     "depth-aware",
     "mouse-driven",
     "upgraded-rgba",
     "chromatic-streak",
-    "bloom-based"
+    "bloom-based",
+    "temporal-feedback",
+    "click-reactive"
   ],
   "params": [
     {
@@ -42,6 +44,41 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Flare Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Streak Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Chromatic Shift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Bloom Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA for continuous persistence of vision; B is unused; depth passes through source depth.",
   "tags": [
     "lens-flare",
     "anamorphic",

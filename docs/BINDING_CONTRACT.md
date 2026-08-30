@@ -147,6 +147,16 @@ Both backends validate adapter limits before device creation and request explici
 | `maxComputeWorkgroupSizeY` | 16 | Standard workgroup |
 | `maxComputeInvocationsPerWorkgroup` | 256 | Deep-workgroup shaders need ≥ 1024 at runtime |
 
+### Canonical dispatch
+
+The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, both TypeScript (`parseWorkgroupSize`) and C++ WASM (`ParseWorkgroupSize`) fall back to **16×16** — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
+
+Documented exceptions in that contract:
+
+- **1D helper kernels** — `@workgroup_size(64, 1, 1)` or `(256, 1, 1)` on non-`main` entry points (e.g. `update_boids` before `main`)
+- **Deep-workgroup shaders** — `(16, 16, 4)` with `requiresDeepWorkgroup: true`
+- **`src/gpuChores/`** — 8×8 downsample kernels are exempt (not catalog FX)
+
 ### Symbol cross-reference
 
 | Concern | TypeScript | C++ WASM |

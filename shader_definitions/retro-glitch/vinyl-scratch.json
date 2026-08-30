@@ -3,60 +3,29 @@
   "name": "Vinyl Scratch",
   "category": "retro-glitch",
   "url": "shaders/vinyl-scratch.wgsl",
-  "description": "Vintage vinyl record scratch with chromatic wobble, animated dust particles, groove lighting with directional reflections, groove sparkle highlights, analog warmth, saturation roll-off, film grain with temporal coherence, radial chromatic aberration, vignette, and lens dirt. Bass drives rotation speed, mids warp the record, treble adds groove sparkle and dust. Depth scales groove intensity.",
+  "description": "Vintage vinyl with spring stylus, held drag warp, click scratch bursts, groove sparkle exact-C coherence, ACES display, and semantic alpha from depth and groove mask.",
+  "workgroup_size": [16, 16, 1],
+  "updated": true,
   "params": [
-    {
-      "id": "scratch_density",
-      "name": "Scratch Amount",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "dust",
-      "name": "Dust Particles",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "warping",
-      "name": "Record Warp",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "sepia",
-      "name": "Vintage Tone",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
+    { "id": "scratch_density", "name": "Scratch Amount", "default": 0.5, "min": 0, "max": 1 },
+    { "id": "dust", "name": "Dust Particles", "default": 0.5, "min": 0, "max": 1 },
+    { "id": "warping", "name": "Record Warp", "default": 0.5, "min": 0, "max": 1 },
+    { "id": "sepia", "name": "Vintage Tone", "default": 0.5, "min": 0, "max": 1 }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Scratch Amount", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 1, "name": "Dust Particles", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 2, "name": "Record Warp", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 3, "name": "Vintage Tone", "default": 0.5, "min": 0, "max": 1 }
   ],
   "features": [
-    "retro",
-    "texture",
-    "mouse-driven",
-    "upgraded-rgba",
-    "audio-reactive",
-    "depth-aware",
-    "chromatic-wobble",
-    "dust-particles",
-    "groove-lighting",
-    "analog-warmth",
-    "film-grain",
-    "vignette",
-    "lens-dirt"
+    "retro", "texture", "mouse-driven", "upgraded-rgba", "audio-reactive", "depth-aware",
+    "chromatic-wobble", "dust-particles", "groove-lighting", "analog-warmth", "film-grain",
+    "vignette", "lens-dirt", "spring-cursor", "held-drag", "click-ripples",
+    "aces-tone-map", "temporal-feedback"
   ],
   "tags": [
-    "filter",
-    "image-processing",
-    "vinyl",
-    "scratch",
-    "retro",
-    "audio-reactive",
-    "depth-aware",
-    "chromatic"
+    "filter", "image-processing", "vinyl", "scratch", "retro", "audio-reactive",
+    "depth-aware", "chromatic"
   ]
 }

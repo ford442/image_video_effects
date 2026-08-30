@@ -446,9 +446,9 @@
       "added": "2026-08-20T15:11:37.996029"
     },
     {
-      "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
-      "title": "Ethereal Quantum-Glass Nautilus",
-      "added": "2026-08-21T15:28:56.185053"
+      "filename": "2026-08-27_chronos-crystal-labyrinth.md",
+      "title": "Chronos Crystal Labyrinth",
+      "added": "2026-08-27T15:26:12.803741"
     },
     {
       "filename": "2026-08-25_bismuth-hypercrystal-labyrinth.md",
@@ -461,14 +461,14 @@
       "added": "2026-08-23T15:16:43.844592"
     },
     {
-      "filename": "2026-08-24_synthetic-bismuth-geode-matrix.md",
-      "title": "Synthetic Bismuth Geode Matrix",
-      "added": "2026-08-24T15:08:24.613588"
+      "filename": "2026-08-28_luminescent-nebula-silk-weaver.md",
+      "title": "Luminescent Nebula-Silk Weaver",
+      "added": "2026-08-28T15:33:58.681057"
     },
     {
-      "filename": "2026-08-26_fractal-neuro-mycelium-lattice.md",
-      "title": "Fractal Neuro-Mycelium Lattice",
-      "added": "2026-08-26T15:35:00.703434"
+      "filename": "2026-08-29_aetherial-plasma-loom.md",
+      "title": "Aetherial Plasma Loom",
+      "added": "2026-08-29T15:26:45.550822"
     }
   ],
   "current": null,
@@ -678,6 +678,13 @@
       "added": "2026-08-23T15:16:43.844592",
       "status": "completed",
       "completed_at": "2026-08-25T07:52:21.029053+00:00"
+    },
+    {
+      "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
+      "title": "Ethereal Quantum-Glass Nautilus",
+      "added": "2026-08-21T15:28:56.185053",
+      "status": "completed",
+      "completed_at": "2026-08-26T08:14:45.326604+00:00"
     }
   ],
   "completed": [
@@ -855,6 +862,20 @@
       "added": "2026-08-20T15:11:37.996029",
       "status": "completed",
       "completed_at": "2026-08-22T08:11:13.109883+00:00"
+    },
+    {
+      "filename": "2026-08-26_fractal-neuro-mycelium-lattice.md",
+      "title": "Fractal Neuro-Mycelium Lattice",
+      "added": "2026-08-27T08:29:54.022445+00:00",
+      "status": "completed",
+      "completed_at": "2026-08-27T08:29:54.022461+00:00"
+    },
+    {
+      "filename": "2026-08-27_chronos-crystal-labyrinth.md",
+      "title": "Chronos Crystal Labyrinth",
+      "added": "2026-08-27T15:26:12.803741",
+      "status": "completed",
+      "completed_at": "2026-08-28T08:16:28.299795+00:00"
     }
   ],
   "rejected": [],

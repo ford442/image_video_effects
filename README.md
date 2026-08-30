@@ -1,6 +1,8 @@
 # WebGPU Shader Effects & Visual Library
 
-A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,291** compute shaders across 14 categories.
+<!-- catalog-counts:intro:begin -->
+A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,353** compute shaders across 14 categories.
+<!-- catalog-counts:intro:end -->
 
 ## Documentation map
 
@@ -55,7 +57,9 @@ More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts
 
 ## Features
 
-- **1,291 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`)
+<!-- catalog-counts:features:begin -->
+- **1,353 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
+<!-- catalog-counts:features:end -->
 - **Dual renderer** — TypeScript WebGPU (default) + experimental C++/WASM backend
 - **Multipass & slot stacks** — chained/parallel layers, ping-pong feedback (`docs/PARALLEL_SLOTS.md`)
 - **AI depth estimation** — DPT-Hybrid-MIDAS via `@xenova/transformers`
@@ -117,32 +121,40 @@ Env vars in `src/config/appConfig.ts` · Contract: [`docs/STORAGE_API.md`](docs/
 
 Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 
+<!-- catalog-counts:table:begin -->
 | Category | Count | Description |
 |----------|------:|-------------|
-| **generative** | 393 | Procedural art, fractals, generative patterns |
+| **generative** | 458 | Procedural art, fractals, generative patterns |
 | **interactive-mouse** | 239 | Mouse and touch-driven interactions |
 | **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
-| **artistic** | 99 | Creative and artistic visual effects |
-| **image** | 93 | Image processing and filtering |
-| **distortion** | 63 | Spatial warping and distortion |
-| **simulation** | 47 | Physics simulations, cellular automata |
+| **artistic** | 98 | Creative and artistic visual effects |
+| **image** | 91 | Image processing and filtering |
+| **distortion** | 62 | Spatial warping and distortion |
+| **simulation** | 53 | Physics simulations, cellular automata |
 | **visual-effects** | 46 | Post-processing and visual enhancements |
-| **retro-glitch** | 35 | Retro aesthetics and glitch art |
-| **liquid-effects** | 31 | Fluid and liquid simulations |
+| **retro-glitch** | 34 | Retro aesthetics and glitch art |
+| **liquid-effects** | 29 | Fluid and liquid simulations |
 | **post-processing** | 28 | Color grading, bloom, composite passes |
 | **hybrid** | 18 | Combined technique shaders |
-| **lighting-effects** | 17 | Volumetric lighting and glow |
 | **geometric** | 16 | Geometric patterns and tessellations |
-| **Total** | **1,291** | 14 canonical categories |
+| **lighting-effects** | 15 | Volumetric lighting and glow |
+| **Total** | **1,353** | 14 canonical categories |
+<!-- catalog-counts:table:end -->
 
 Legacy list files (`interactive.json`, `liquid.json`) were removed — use `interactive-mouse.json` and `liquid-effects.json`.
+
+<!-- catalog-counts:legacy-ids:begin -->
+**Legacy underscore ids:** 22 catalog ids use underscores (`aurora_borealis`, `kimi_flock_symphony`, …). New shaders must use hyphens. Share URLs with hyphens resolve via `public/shader-id-aliases.json` (`resolveShaderId` in the app).
+<!-- catalog-counts:legacy-ids:end -->
 
 ## Project structure
 
 ```
 image_video_effects/
 ├── public/
-│   ├── shaders/                    # WGSL compute shaders (1,291 registered)
+<!-- catalog-counts:structure:begin -->
+│   ├── shaders/                    # WGSL compute shaders (1,353 catalog ids; more pass files on disk)
+<!-- catalog-counts:structure:end -->
 │   ├── shader-lists/               # Generated category JSON (14 files)
 │   ├── shader-manifest-unified.json
 │   └── wasm/                       # Committed WASM artifacts (emcc output)
@@ -202,7 +214,7 @@ See [`docs/TOOLCHAIN_DECISION.md`](docs/TOOLCHAIN_DECISION.md) for CRA + CRACO r
 | `npm start` | Dev server (prestart: shader lists + manifest, relative URLs) |
 | `npm run build` | Production build (`prebuild`: wasm → lists → manifest → craco; relative URLs unless `SHADER_LIST_BASE_URL` is set) |
 | `npm run build:manifest` | Regenerate `shader-manifest-unified.json` from category lists |
-| `npm run verify:toolchain-foundation` | Bundle budget, dependency boundaries, shader-list URL policy |
+| `npm run verify:toolchain-foundation` | Bundle budget, dependency boundaries, shader-list URL policy, catalog count SoT |
 | `npm test` | Jest unit tests (~250) |
 | `bash scripts/jules-setup.sh` | Agent/headless setup (`npm ci`, skip WASM compile) |
 
@@ -266,11 +278,11 @@ metadata mismatch is one reason the optional Vite migration remains a separate f
 | `npm run test:wasm` | Unit + e2e smoke |
 | `npm run test:wasm:full` | Unit + e2e + GPU parity/bench |
 
-`public/wasm/` is the **only deployable WASM artifact source of truth**. C++ sources and the
-canonical bridge fragments live under `wasm_renderer/`; `npm run wasm:build` compiles and copies
-`pixelocity_wasm.{js,wasm}` into `public/wasm/`, while `wasm_renderer/concat_bridge.sh` assembles
-`wasm_renderer/bridge/*.js` and synchronizes the generated compatibility copies. Do not hand-edit
-`build/wasm/`, `src/wasm/wasm_bridge.js`, or the concatenated bridge outputs.
+`public/wasm/` is the **only deployable WASM artifact source of truth**. C++ sources live under
+`wasm_renderer/`; the hand-edited bridge is `src/wasm/bridge/*.ts`. `npm run wasm:build` compiles
+C++ into `public/wasm/pixelocity_wasm.{js,wasm}` and emits ESM bridge copies into
+`wasm_renderer/` and `public/wasm/`. Do not hand-edit generated `*/bridge/*.js` or
+`public/wasm/wasm_bridge.js`.
 
 ### Thumbnails (GPU workstation)
 
@@ -279,7 +291,7 @@ canonical bridge fragments live under `wasm_renderer/`; `npm run wasm:build` com
 | `npm run thumbs:status` | Coverage vs catalog (+ eligible % excl. skip list) |
 | `npm run thumbs:generate -- --missing` | Batch capture via production renderer (needs GPU + build) |
 | `npm run thumbs:generate:minimal` | Fast generative-only inline WebGPU path |
-| `npm run thumbs:check-regression` | Fail definition PRs that lower healthy thumbnail coverage |
+| `npm run thumbs:check-regression` | Fail newly eligible shaders that lack a healthy thumb or deferral |
 | `bash scripts/run-thumbnail-waves.sh` | W1→W3 category waves (after `npm run build`) |
 | `python3 scripts/audit_thumbnail_integrity.py` | Flag near-black/magenta committed PNGs |
 
@@ -302,7 +314,7 @@ See [`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md). CI: **Generate T
 - **Depth Integration**: AI-generated depth maps enable parallax and depth-aware effects
 - **Uniform Interface**: All compute shaders share a standardized `Uniforms` structure
 - **Default renderer**: TypeScript WebGPU (Tier A production path)
-- **gpu-chores (Tier 4b)**: shared histogram / reduce / LUT / downsample on the renderer device (`docs/GPU_CHORES.md`); kill switch `?no_gpu_compute`
+- **gpu-chores (Tier 4b)**: histogram / reduce / LUT / downsample / opt-in source auto-exposure on the renderer device (`docs/GPU_CHORES.md`); kill switch `?no_gpu_compute`
 
 ## Experimental C++ WASM Renderer (Tier B)
 

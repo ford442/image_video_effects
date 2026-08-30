@@ -1,5 +1,6 @@
-// Spectrum Bleed — Batch 58D canonical ink-history upgrade
-// A owns exact display RGBA history; B is intentionally unwritten.
+// Spectrum Bleed — Composer batch cyber/digital/glitch
+// Sprung spectrum-ink diffusion with bounded click splatters, plasma bin
+// shimmer, exact-C persistence, display RGBA in A, ACES output.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -104,8 +105,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     clickInk += ink; hsv.y = min(hsv.y + ink * 0.4, 1.0);
   }
 
-  let band = u32(clamp(uv.x * 128.0, 0.0, 127.0));
-  let fftVoice = extraBuffer[5u + band];
+  let band = min(u32(clamp(uv.x * 128.0, 0.0, 127.0)), 7u);
+  let fftVoice = plasmaBuffer[band + 1u].x;
   hsv.x = fract(hsv.x + hueSpeed * time * 0.1 + fftVoice * 0.2 + mids * 0.04);
   hsv.y = min(hsv.y + saturationBoost + treble * 0.08, 1.0);
   var hdr = mix(source.rgb, hsv2rgb(hsv), blendFactor);

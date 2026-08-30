@@ -1,11 +1,16 @@
 {
   "id": "aerogel-smoke",
   "name": "Aerogel Smoke",
-  "description": "Simulates the ethereal, frozen-smoke appearance of aerogel with volumetric lighting and Rayleigh scattering.",
+  "description": "Advected aerogel density transports scattering energy and flow through raw A/C state, with Rayleigh and Henyey-Greenstein light transport, Beer-Lambert extinction, cursor lighting, held injection, and click plumes.",
   "url": "shaders/aerogel-smoke.wgsl",
   "features": [
     "mouse-driven",
-    "volumetric"
+    "audio-reactive",
+    "volumetric-transport",
+    "rayleigh-henyey-greenstein",
+    "beer-lambert",
+    "temporal-feedback",
+    "click-reactive"
   ],
   "params": [
     {
@@ -37,8 +42,18 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Density", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 1, "name": "Blue Scatter", "default": 0.8, "min": 0, "max": 1 },
+    { "index": 2, "name": "Light Intensity", "default": 1, "min": 0, "max": 2 },
+    { "index": 3, "name": "Background Visibility", "default": 0.5, "min": 0, "max": 1 }
+  ],
+  "feedbackPacking": "A/C raw transport state = [density, scattering energy, horizontal velocity, vertical velocity]; write/display output is ACES RGBA; B is unused.",
   "tags": [
-    "filter",
-    "image-processing"
+    "aerogel",
+    "volumetric",
+    "scattering",
+    "fluid",
+    "interactive"
   ]
 }

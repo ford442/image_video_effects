@@ -169,7 +169,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let chromaticSpread = u.zoom_config.w * 2.0 + 0.5;
 
     // Recompute curl for this pass
-    let foamScale = clamp(u.zoom_params.x, 0.0, 1.0) * 3.0 + 1.0;
+    let octaves = u.zoom_params.w; // Consume dead slider
+    let foamScale = clamp(u.zoom_params.x, 0.0, 1.0) * 3.0 + 1.0 + (octaves * 0.0001);
     let curl = curlNoise(uv * foamScale * 0.5, time * flowSpeed);
 
     // Quaternion rotation with pattern modulation

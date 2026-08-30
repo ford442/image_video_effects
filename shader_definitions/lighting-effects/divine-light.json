@@ -2,7 +2,16 @@
   "id": "divine-light",
   "name": "Divine Light",
   "url": "shaders/divine-light.wgsl",
-  "description": "Volumetric god rays emanating from cursor position. Creates cinematic light beam effects.",
+  "description": "Volumetric god rays emanating from cursor position with radial ray-marching, atmospheric dust motes, ACES tone mapping, and temporal beam persistence.",
+  "features": [
+    "mouse-driven",
+    "volumetric",
+    "atmospheric",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal-feedback",
+    "click-reactive"
+  ],
   "params": [
     {
       "id": "intensity",
@@ -33,15 +42,46 @@
       "max": 1
     }
   ],
-  "features": [
-    "mouse-driven",
-    "volumetric",
-    "atmospheric",
-    "audio-reactive",
-    "upgraded-rgba"
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Ray Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ray Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Ray Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Brightness Filter",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ],
+  "feedbackPacking": "A/C = ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth.",
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "god-rays",
+    "volumetric",
+    "lighting"
   ]
 }

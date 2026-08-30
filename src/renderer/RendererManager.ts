@@ -318,6 +318,19 @@ export class RendererManager {
   setRenderQuality(mode: RenderQualityMode, hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities }): void {
     this.applyQualityPolicy(mode, hints);
   }
+  setSourceAutoExposure(enabled: boolean): void {
+    const r = this.shaderRenderer();
+    if (r && 'setSourceAutoExposure' in r) {
+      (r as WebGPURenderer).setSourceAutoExposure(enabled);
+    }
+  }
+  async captureThumbnailPng(outSize: number): Promise<string | null> {
+    const r = this.shaderRenderer();
+    if (r && 'captureChoresThumbnailPng' in r) {
+      return (r as WebGPURenderer).captureChoresThumbnailPng(outSize);
+    }
+    return null;
+  }
   private applyQualityPolicy(mode: RenderQualityMode, hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities }): void {
     applyQualityPolicy(this.perfState, mode, hints, () => this.getSupportsDeepWorkgroup());
     applyPerformancePolicyToRenderer(this.perfState, this.shaderRenderer(), this.adaptiveController);
