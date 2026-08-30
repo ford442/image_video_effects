@@ -45,7 +45,7 @@ describe('useRemoteSync commands', () => {
     triggerRandomizeAllSlots?: () => void;
     triggerRoulette?: () => void;
     updateSlotParam?: (index: number, updates: Record<string, number>) => void;
-    handleNewRandomImage?: () => void;
+    handleNewRandomImage?: () => Promise<void>;
   }) {
     return renderHook(() =>
       useRemoteSync({
@@ -68,8 +68,8 @@ describe('useRemoteSync commands', () => {
         syncInputSourceToRenderer: jest.fn(),
         setAutoChangeEnabled: jest.fn(),
         setAutoChangeDelay: jest.fn(),
-        handleNewRandomImage: jest.fn(),
-        loadDepthModel: jest.fn(),
+        handleNewRandomImage: jest.fn(async () => {}),
+        loadDepthModel: jest.fn(async () => {}),
         setSelectedVideo: jest.fn(),
         setIsMuted: jest.fn(),
         ...handlers,
@@ -151,7 +151,7 @@ describe('useRemoteSync commands', () => {
   });
 
   it('dispatches CMD_LOAD_RANDOM_IMAGE to handleNewRandomImage', () => {
-    const handleNewRandomImage = jest.fn();
+    const handleNewRandomImage = jest.fn(async () => {});
     mountMain({ handleNewRandomImage });
 
     const main = MockBroadcastChannel.instances[0];
