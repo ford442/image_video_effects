@@ -30,11 +30,16 @@ interface ShaderEntry {
   [key: string]: unknown;
 }
 
+interface AliasMap {
+  [alias: string]: string;
+}
+
 interface UnifiedManifest {
   _meta: {
     generated_at: string;
     total_count: number;
     categories: string[];
+    aliases: AliasMap;
   };
   shaders: ShaderEntry[];
 }
@@ -49,6 +54,22 @@ const ALLOW_ABSOLUTE_URLS =
   Boolean(process.env.SHADER_LIST_BASE_URL) ||
   Boolean(process.env.REACT_APP_SHADER_BASE_URL) ||
   Boolean(process.env.SHADER_BASE_URL);
+
+const ALIASES_FILE = path.join(PROJECT_ROOT, 'public', 'shader-id-aliases.json');
+
+function loadAliases(): AliasMap {
+  if (!fs.existsSync(ALIASES_FILE)) {
+    console.warn(`⚠️  Alias file missing: ${ALIASES_FILE} — run: node scripts/generate-shader-id-aliases.mjs`);
+    return {};
+  }
+  try {
+    const raw = JSON.parse(fs.readFileSync(ALIASES_FILE, 'utf-8'));
+    return (raw.aliases ?? {}) as AliasMap;
+  } catch (err) {
+    console.error(`❌ Failed to parse ${ALIASES_FILE}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+}
 
 function isAbsoluteShaderUrl(url: unknown): boolean {
   return typeof url === 'string' && /^https?:\/\//.test(url);
@@ -82,14 +103,23 @@ function buildUnifiedManifest(): void {
     process.exit(1);
   }
 
+  const missingCanonical: string[] = [];
   const jsonFiles = CANONICAL_LIST_FILES.filter((f) => {
     const filePath = path.join(LISTS_DIR, f);
     if (!fs.existsSync(filePath)) {
-      console.warn(`⚠️  Canonical list missing (skipped): ${f}`);
+      missingCanonical.push(f);
       return false;
     }
     return true;
   });
+
+  if (missingCanonical.length > 0) {
+    console.error(
+      `❌ Missing canonical list file(s) — regenerate with: node scripts/generate_shader_lists.js\n` +
+      missingCanonical.map((f) => `   • ${f}`).join('\n'),
+    );
+    process.exit(1);
+  }
 
   if (jsonFiles.length === 0) {
     console.error(`❌ No JSON files found in ${LISTS_DIR}`);
@@ -192,11 +222,14 @@ function buildUnifiedManifest(): void {
     duplicates.forEach((d) => console.warn(`   - ${d}`));
   }
 
+  const aliases = loadAliases();
+
   const manifest: UnifiedManifest = {
     _meta: {
       generated_at: new Date().toISOString(),
       total_count: allShaders.length,
       categories: categories.sort(),
+      aliases,
     },
     shaders: allShaders,
   };
