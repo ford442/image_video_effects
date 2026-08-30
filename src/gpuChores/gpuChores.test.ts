@@ -100,11 +100,26 @@ function stubAdoptedGpuDevice(): GPUDevice {
   } as unknown as GPUDevice;
 }
 
-function spyEncoder(labels: string[]) {
+interface DispatchRecord {
+  label: string;
+  x: number;
+  y: number;
+  z?: number;
+}
+
+function spyEncoder(labels: string[], dispatches?: DispatchRecord[]) {
   return {
     beginComputePass: (desc?: { label?: string }) => {
-      labels.push(desc?.label ?? '');
-      return { setPipeline() {}, setBindGroup() {}, dispatchWorkgroups() {}, end() {} };
+      const label = desc?.label ?? '';
+      labels.push(label);
+      return {
+        setPipeline() {},
+        setBindGroup() {},
+        dispatchWorkgroups(x: number, y = 1, z?: number) {
+          dispatches?.push({ label, x, y, z });
+        },
+        end() {},
+      };
     },
     copyBufferToBuffer() {},
     clearBuffer() {},
@@ -363,6 +378,25 @@ describe('GpuChoresHost', () => {
 
   it('keeps histogram bin count at 256', () => {
     expect(HISTOGRAM_BINS).toBe(256);
+  });
+
+  it('dispatches reduce in 2D at 4K without exceeding workgroup limits', () => {
+    probeOk();
+    const labels: string[] = [];
+    const dispatches: DispatchRecord[] = [];
+    const host = new GpuChoresHost();
+    host.attach(stubAdoptedGpuDevice());
+    expect(host.getBreadcrumbs().gpuComputeAvailable).toBe(true);
+    host.encodePreFx(spyEncoder(labels, dispatches), stubTexture(), 3840, 2160);
+    expect(labels).toContain('gpu-chores-reduce');
+    const reduce = dispatches.find((d) => d.label === 'gpu-chores-reduce');
+    expect(reduce).toBeDefined();
+    expect(reduce!.x).toBe(480);
+    expect(reduce!.y).toBe(270);
+    expect(reduce!.x).toBeLessThanOrEqual(65535);
+    expect(reduce!.y).toBeLessThanOrEqual(65535);
+    host.destroy();
+    delete window.webgpuProbe;
   });
 
   it('skips apply-gain when the source toggle is off', () => {

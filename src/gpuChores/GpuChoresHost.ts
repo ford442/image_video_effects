@@ -304,7 +304,7 @@ export class GpuChoresHost {
     const reducePass = encoder.beginComputePass({ label: 'gpu-chores-reduce' });
     reducePass.setPipeline(gpu.reducePipeline);
     reducePass.setBindGroup(0, reduceBg);
-    reducePass.dispatchWorkgroups(Math.ceil((srcW * srcH) / 64));
+    reducePass.dispatchWorkgroups(Math.ceil(srcW / 8), Math.ceil(srcH / 8));
     reducePass.end();
 
     this.encodeDownsampleAndLut(encoder, gpu, device, source, srcW, srcH);

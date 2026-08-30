@@ -24,7 +24,7 @@ Parent rollout: Pixelocity is Tier A of a cross-app chores layer (siblings: Chro
 
 WGSL for chores is **inline** in [`src/gpuChores/shaders.ts`](../src/gpuChores/shaders.ts). Do **not** register these in `shader_definitions/` or they will appear in the picker.
 
-Workgroups: `@workgroup_size(64)` 1D reduce; `@workgroup_size(8, 8)` 2D image.
+Workgroups: `@workgroup_size(8, 8)` 2D reduce (same as histogram); `@workgroup_size(8, 8)` 2D image.
 
 ## Device policy
 

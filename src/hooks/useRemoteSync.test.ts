@@ -45,6 +45,7 @@ describe('useRemoteSync commands', () => {
     triggerRandomizeAllSlots?: () => void;
     triggerRoulette?: () => void;
     updateSlotParam?: (index: number, updates: Record<string, number>) => void;
+    handleNewRandomImage?: () => void;
   }) {
     return renderHook(() =>
       useRemoteSync({
@@ -147,5 +148,19 @@ describe('useRemoteSync commands', () => {
     });
 
     expect(updateSlotParam).not.toHaveBeenCalled();
+  });
+
+  it('dispatches CMD_LOAD_RANDOM_IMAGE to handleNewRandomImage', () => {
+    const handleNewRandomImage = jest.fn();
+    mountMain({ handleNewRandomImage });
+
+    const main = MockBroadcastChannel.instances[0];
+    act(() => {
+      main.onmessage?.({
+        data: { type: 'CMD_LOAD_RANDOM_IMAGE' },
+      } as MessageEvent);
+    });
+
+    expect(handleNewRandomImage).toHaveBeenCalled();
   });
 });

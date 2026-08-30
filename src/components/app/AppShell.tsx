@@ -9,6 +9,7 @@ import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
 import { STORAGE_API_URL } from '../../config/appConfig';
 import { RenderQualityMode } from '../../config/performancePolicy';
+import { isPublicPixelocityHost } from '../../utils/publicHost';
 
 const LiveStudioTab = lazy(() => import(/* webpackChunkName: "live-studio" */ '../LiveStudioTab'));
 
@@ -255,8 +256,12 @@ export function AppShell(props: AppShellProps) {
         rendererDiagnostics,
     } = props;
 
+    const chromeHidden = !showSidebar && activeTab === 'main';
+    const showRemoteButton = !isPublicPixelocityHost();
+
     return (
         <>
+            {!chromeHidden && (
             <header className="header">
                 <div className="logo-section">
                     <div style={{ height: '80px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -303,14 +308,18 @@ export function AppShell(props: AppShellProps) {
                     >
                         🎥 Live Studio
                     </button>
-                    <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.2)', margin: '0 8px' }} />
-                    <button 
-                        className="toggle-sidebar-btn" 
-                        onClick={() => window.open('?mode=remote', '_blank', 'width=420,height=900')}
-                        title="Open Remote Control in new window"
-                    >
-                        Open Remote
-                    </button>
+                    {showRemoteButton && (
+                        <>
+                            <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.2)', margin: '0 8px' }} />
+                            <button
+                                className="toggle-sidebar-btn"
+                                onClick={() => window.open('?mode=remote', '_blank', 'width=420,height=900')}
+                                title="Open Remote Control in new window"
+                            >
+                                Open Remote
+                            </button>
+                        </>
+                    )}
                     {activeTab === 'main' && (
                         <button className="toggle-sidebar-btn" onClick={() => setShowSidebar(!showSidebar)}>
                             {showSidebar ? 'Hide Controls' : 'Show Controls'}
@@ -318,12 +327,13 @@ export function AppShell(props: AppShellProps) {
                     )}
                 </div>
             </header>
+            )}
             {activeTab === 'live-studio' ? (
                 <Suspense fallback={<div className="main-container" style={{ padding: '2rem', color: '#aaa' }}>Loading Live Studio…</div>}>
                     <LiveStudioTab />
                 </Suspense>
             ) : (
-            <div className="main-container">
+            <div className={`main-container${chromeHidden ? ' fullscreen' : ''}`}>
                 <aside className={`sidebar ${!showSidebar ? 'hidden' : ''}`}>
                     <Controls
                         modes={modes} setMode={setMode} activeSlot={activeSlot} setActiveSlot={setActiveSlot}
@@ -400,6 +410,15 @@ export function AppShell(props: AppShellProps) {
                     />
                 </aside>
                 <main className="canvas-container">
+                    {chromeHidden && (
+                        <button
+                            type="button"
+                            className="toggle-sidebar-btn show-controls-overlay"
+                            onClick={() => setShowSidebar(true)}
+                        >
+                            Show Controls
+                        </button>
+                    )}
                     <WebGPUCanvas
                         modes={modes} slotParams={slotParams}
                         rendererRef={rendererRef} farthestPoint={{x:0.5, y:0.5}}

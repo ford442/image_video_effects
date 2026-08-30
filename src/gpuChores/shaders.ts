@@ -28,14 +28,11 @@ struct ReduceAcc {
 @group(0) @binding(0) var src: texture_2d<f32>;
 @group(0) @binding(1) var<storage, read_write> acc: ReduceAcc;
 
-@compute @workgroup_size(64)
+@compute @workgroup_size(8, 8)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = textureDimensions(src);
-  let n = dims.x * dims.y;
-  if (gid.x >= n) { return; }
-  let x = gid.x % dims.x;
-  let y = gid.x / dims.x;
-  let c = textureLoad(src, vec2<i32>(i32(x), i32(y)), 0);
+  if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+  let c = textureLoad(src, vec2<i32>(gid.xy), 0);
   let luma = clamp(dot(c.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
   let q = u32(luma * 65535.0 + 0.5);
   atomicMin(&acc.min_q, q);
