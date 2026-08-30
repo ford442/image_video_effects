@@ -1,7 +1,7 @@
 {
-  "generated": "2026-08-29T14:55:44.313093+00:00",
-  "defs_scanned": 1192,
-  "defs_with_params": 1192,
+  "generated": "2026-08-29T15:53:25.652030+00:00",
+  "defs_scanned": 1195,
+  "defs_with_params": 1195,
   "new_dead_sliders": [],
   "known_dead_sliders": [
     {
@@ -65,13 +65,6 @@
       "category": "artistic",
       "param_id": "flowStrength",
       "name": "Flow Strength",
-      "field": "w"
-    },
-    {
-      "id": "echo-trace",
-      "category": "artistic",
-      "param_id": "velocity_threshold",
-      "name": "Velocity Threshold",
       "field": "w"
     },
     {
