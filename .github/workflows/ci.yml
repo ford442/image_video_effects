@@ -153,6 +153,9 @@ jobs:
       env:
         SKIP_WASM_BUILD: '1'
 
+    - name: Verify catalog count SoT
+      run: npm run verify:catalog-counts
+
     - name: Enforce bundle and dependency boundaries
       run: npm run verify:toolchain-foundation
 

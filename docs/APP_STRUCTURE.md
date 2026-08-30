@@ -93,12 +93,14 @@ Directory: `src/components/controls/panels/` — see prior doc; `ControlsContain
 |----------|-----------|
 | `public/shader-lists/*.json` | `scripts/generate_shader_lists.js` (from `shader_definitions/`) |
 | `public/shader-manifest-unified.json` | `npm run build:manifest` (`scripts/build-unified-manifest.ts`) |
+| `public/shader-id-aliases.json` | `scripts/generate-shader-id-aliases.mjs` (runs after list generation) |
+| `README.md` catalog totals | `scripts/sync-readme-catalog-counts.mjs` (runs after `build:manifest`) |
 
 **URL policy:** committed lists use relative `shaders/...` paths for local dev and CI.
 Set `SHADER_LIST_BASE_URL` (or legacy `SHADER_BASE_URL`) only when building a deploy artifact
 that should reference CDN-hosted WGSL. `npm start` / `prebuild` do **not** inject `--base-url`.
 
-Verify: `npm run verify:shader-list-urls` (also runs inside `verify:toolchain-foundation`).
+Verify: `npm run verify:shader-list-urls` and `npm run verify:catalog-counts` (both run inside `verify:toolchain-foundation` after build).
 
 ---
 

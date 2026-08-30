@@ -1,6 +1,6 @@
 # Catalog drift audit
 
-Generated: 2026-08-30T03:57:29.646309+00:00
+Generated: 2026-08-30T16:31:41.736162+00:00
 
 Source of truth: `shader_definitions/** (id + url path)`
 Lists regenerated this run: True
@@ -11,20 +11,17 @@ Lists regenerated this run: True
 - Valid definitions: 1366
 - WGSL files on disk: 1401
 - Shader list ids: 1353
-- Violations: **118**
+- Violations: **105**
 
 | Type | Count |
 |------|------:|
-| `id-filename-mismatch` | 51 |
+| `id-filename-mismatch` | 38 |
 | `orphan-graph-entry` | 39 |
 | `wgsl-without-definition` | 28 |
 
 ## Violations (first 100)
 
-- `id-filename-mismatch` **anisotropic-kuwahara** — definition id 'anisotropic-kuwahara' vs url stem 'anisotropic-kuwahara-tensor' (`shader_definitions/artistic/anisotropic-kuwahara.json`)
-- `id-filename-mismatch` **dla-crystals** — definition id 'dla-crystals' vs url stem 'dla-walkers' (`shader_definitions/artistic/dla-crystals.json`)
 - `id-filename-mismatch` **galaxy-sim** — definition id 'galaxy-sim' vs url stem 'galaxy' (`shader_definitions/artistic/galaxy.json`)
-- `id-filename-mismatch` **log-polar-droste** — definition id 'log-polar-droste' vs url stem 'log-polar-droste-remap' (`shader_definitions/distortion/log-polar-droste.json`)
 - `id-filename-mismatch` **gen-lorenz-attractor-flow** — definition id 'gen-lorenz-attractor-flow' vs url stem 'lorenz-attractor-flow' (`shader_definitions/generative/gen-lorenz-attractor-flow.json`)
 - `id-filename-mismatch` **gen-capabilities** — definition id 'gen-capabilities' vs url stem 'gen_capabilities' (`shader_definitions/generative/gen_capabilities.json`)
 - `id-filename-mismatch` **gen-cyclic-automaton** — definition id 'gen-cyclic-automaton' vs url stem 'gen_cyclic_automaton' (`shader_definitions/generative/gen_cyclic_automaton.json`)
@@ -59,18 +56,8 @@ Lists regenerated this run: True
 - `id-filename-mismatch` **kimi-ripple-touch** — definition id 'kimi-ripple-touch' vs url stem 'kimi_ripple_touch' (`shader_definitions/interactive-mouse/kimi_ripple_touch.json`)
 - `id-filename-mismatch` **kimi-spotlight** — definition id 'kimi-spotlight' vs url stem 'kimi_spotlight' (`shader_definitions/interactive-mouse/kimi_spotlight.json`)
 - `id-filename-mismatch` **kimi-liquid-glass** — definition id 'kimi-liquid-glass' vs url stem 'kimi_liquid_glass' (`shader_definitions/liquid-effects/kimi_liquid_glass.json`)
-- `id-filename-mismatch` **byte-mosh** — definition id 'byte-mosh' vs url stem 'byte-mosh-mangle' (`shader_definitions/retro-glitch/byte-mosh.json`)
-- `id-filename-mismatch` **chromatographic-fluid** — definition id 'chromatographic-fluid' vs url stem 'chromatographic-force' (`shader_definitions/simulation/chromatographic-fluid.json`)
-- `id-filename-mismatch` **fabric-of-reality** — definition id 'fabric-of-reality' vs url stem 'fabric-verlet' (`shader_definitions/simulation/fabric-of-reality.json`)
-- `id-filename-mismatch` **gray-scott-tank** — definition id 'gray-scott-tank' vs url stem 'gray-scott-step' (`shader_definitions/simulation/gray-scott-tank.json`)
-- `id-filename-mismatch` **jfa-aurora-voronoi** — definition id 'jfa-aurora-voronoi' vs url stem 'jfa-aurora-seed' (`shader_definitions/simulation/jfa-aurora-voronoi.json`)
 - `id-filename-mismatch` **optical-flow-dream** — definition id 'optical-flow-dream' vs url stem 'optical-flow-estimate' (`shader_definitions/simulation/optical-flow-dream.json`)
-- `id-filename-mismatch` **photonic-caustics-graph** — definition id 'photonic-caustics-graph' vs url stem 'photonic-emitter' (`shader_definitions/simulation/photonic-caustics-graph.json`)
-- `id-filename-mismatch` **poincare-tiling** — definition id 'poincare-tiling' vs url stem 'poincare-tiling-map' (`shader_definitions/simulation/poincare-tiling.json`)
-- `id-filename-mismatch` **predator-prey-ecology** — definition id 'predator-prey-ecology' vs url stem 'predator-prey-ecology-step' (`shader_definitions/simulation/predator-prey-ecology.json`)
-- `id-filename-mismatch` **ripple-tank** — definition id 'ripple-tank' vs url stem 'ripple-tank-step' (`shader_definitions/simulation/ripple-tank.json`)
 - `id-filename-mismatch` **sim-fluid-feedback-field** — definition id 'sim-fluid-feedback-field' vs url stem 'sim-fluid-feedback-field-pass1' (`shader_definitions/simulation/sim-fluid-feedback-field.json`)
-- `id-filename-mismatch` **wave-tank** — definition id 'wave-tank' vs url stem 'wave-step' (`shader_definitions/simulation/wave-tank.json`)
 - `id-filename-mismatch` **warp-drive** — definition id 'warp-drive' vs url stem 'warp_drive' (`shader_definitions/visual-effects/warp_drive.json`)
 - `wgsl-without-definition` **anisotropic-kuwahara-filter** — public/shaders/anisotropic-kuwahara-filter.wgsl
 - `wgsl-without-definition` **anisotropic-kuwahara-render** — public/shaders/anisotropic-kuwahara-render.wgsl
@@ -121,4 +108,17 @@ Lists regenerated this run: True
 - `orphan-graph-entry` **fabric-render** — graph node entry referenced by 'fabric-of-reality' (`shader_definitions/simulation/fabric-of-reality.json`)
 - `orphan-graph-entry` **gray-scott-step** — graph node entry referenced by 'gray-scott-tank' (`shader_definitions/simulation/gray-scott-tank.json`)
 - `orphan-graph-entry` **gray-scott-inject** — graph node entry referenced by 'gray-scott-tank' (`shader_definitions/simulation/gray-scott-tank.json`)
-- … and 18 more (see JSON)
+- `orphan-graph-entry` **gray-scott-render** — graph node entry referenced by 'gray-scott-tank' (`shader_definitions/simulation/gray-scott-tank.json`)
+- `orphan-graph-entry` **jfa-aurora-seed** — graph node entry referenced by 'jfa-aurora-voronoi' (`shader_definitions/simulation/jfa-aurora-voronoi.json`)
+- `orphan-graph-entry` **jfa-aurora-flood** — graph node entry referenced by 'jfa-aurora-voronoi' (`shader_definitions/simulation/jfa-aurora-voronoi.json`)
+- `orphan-graph-entry` **jfa-aurora-render** — graph node entry referenced by 'jfa-aurora-voronoi' (`shader_definitions/simulation/jfa-aurora-voronoi.json`)
+- `orphan-graph-entry` **photonic-emitter** — graph node entry referenced by 'photonic-caustics-graph' (`shader_definitions/simulation/photonic-caustics-graph.json`)
+- `orphan-graph-entry` **photonic-trace** — graph node entry referenced by 'photonic-caustics-graph' (`shader_definitions/simulation/photonic-caustics-graph.json`)
+- `orphan-graph-entry` **photonic-accumulate** — graph node entry referenced by 'photonic-caustics-graph' (`shader_definitions/simulation/photonic-caustics-graph.json`)
+- `orphan-graph-entry` **poincare-tiling-map** — graph node entry referenced by 'poincare-tiling' (`shader_definitions/simulation/poincare-tiling.json`)
+- `orphan-graph-entry` **poincare-tiling-layer** — graph node entry referenced by 'poincare-tiling' (`shader_definitions/simulation/poincare-tiling.json`)
+- `orphan-graph-entry` **predator-prey-ecology-step** — graph node entry referenced by 'predator-prey-ecology' (`shader_definitions/simulation/predator-prey-ecology.json`)
+- `orphan-graph-entry` **predator-prey-ecology-render** — graph node entry referenced by 'predator-prey-ecology' (`shader_definitions/simulation/predator-prey-ecology.json`)
+- `orphan-graph-entry` **ripple-tank-step** — graph node entry referenced by 'ripple-tank' (`shader_definitions/simulation/ripple-tank.json`)
+- `orphan-graph-entry` **ripple-tank-inject** — graph node entry referenced by 'ripple-tank' (`shader_definitions/simulation/ripple-tank.json`)
+- … and 5 more (see JSON)

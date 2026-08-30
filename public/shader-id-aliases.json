@@ -1,8 +1,21 @@
 {
   "_meta": {
-    "description": "Hyphen URL aliases for 22 legacy underscore catalog ids. Canonical ids stay underscore; new ids use hyphens.",
+    "description": "Hyphen URL aliases for legacy underscore catalog ids. Canonical ids stay underscore; new ids use hyphens.",
     "canonical_rule": "hyphen-alias -> underscore-id",
-    "generated_at": "2026-08-30"
+    "generated_at": "2026-08-30",
+    "count": 20,
+    "skipped_collisions": [
+      {
+        "canonical": "gen_quantum_foam",
+        "alias": "gen-quantum-foam",
+        "reason": "hyphen form is already a distinct catalog id"
+      },
+      {
+        "canonical": "temporal_echo",
+        "alias": "temporal-echo",
+        "reason": "hyphen form is already a distinct catalog id"
+      }
+    ]
   },
   "aliases": {
     "artistic-painterly-oil": "artistic_painterly_oil",
@@ -13,7 +26,6 @@
     "distortion-gravitational-lens": "distortion_gravitational_lens",
     "fire-smoke-volumetric": "fire_smoke_volumetric",
     "gen-mandelbulb-3d": "gen_mandelbulb_3d",
-    "gen-quantum-foam": "gen_quantum_foam",
     "glass-refraction-alpha": "glass_refraction_alpha",
     "holographic-interference": "holographic_interference",
     "ink-dispersion-alpha": "ink_dispersion_alpha",
@@ -25,7 +37,6 @@
     "parallax-depth-layers": "parallax_depth_layers",
     "particle-dreams-alpha": "particle_dreams_alpha",
     "retro-phosphor-dream": "retro_phosphor_dream",
-    "temporal-echo": "temporal_echo",
     "underwater-caustics": "underwater_caustics"
   }
 }

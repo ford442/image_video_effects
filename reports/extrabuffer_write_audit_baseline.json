@@ -1,6 +1,11 @@
 {
   "generated": "2026-07-26T05:04:27.564674+00:00",
   "reason": "Triaged legacy extraBuffer[0..132] writes present at audit introduction (2026-07-26). Do NOT add new entries; fix the shader or remap state to extraBuffer[133..255] instead.",
+  "sections": {
+    "engine_owned": "FFT-zone writes used as documented engine/audio coupling. Safe to keep baselined; do not add new entries.",
+    "shader_bug": "Persistent simulation state incorrectly mapped to reserved/FFT zone. Remap to extraBuffer[133..255] when the shader is next upgraded."
+  },
+  "dynamic_index_triage": "reports/extrabuffer_dynamic_index_baseline.json (32 sites) — see reports/extrabuffer_dynamic_index_triage.md",
   "engine_owned": {
     "description": "FFT-zone writes used as documented engine/audio coupling. Do not add new entries.",
     "entries": [

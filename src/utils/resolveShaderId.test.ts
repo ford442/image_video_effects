@@ -11,7 +11,10 @@ describe('resolveShaderId', () => {
     expect(resolveShaderId('plasma-storm')).toBe('plasma-storm');
   });
 
-  it('documents 22 legacy aliases', () => {
-    expect(Object.keys(getShaderIdAliases())).toHaveLength(22);
+  it('documents legacy aliases for underscore catalog ids without hyphen collisions', () => {
+    const aliases = getShaderIdAliases();
+    expect(Object.keys(aliases)).toHaveLength(20);
+    expect(resolveShaderId('gen-quantum-foam')).toBe('gen-quantum-foam');
+    expect(resolveShaderId('temporal-echo')).toBe('temporal-echo');
   });
 });

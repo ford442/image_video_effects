@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-30T03:57:29.646309+00:00",
+  "timestamp": "2026-08-30T16:31:41.736162+00:00",
   "source_of_truth": "shader_definitions/** (id + url path)",
   "lists_regenerated": true,
   "definitions_scanned": 1366,
@@ -8,40 +8,19 @@
   "shader_list_ids": 1353,
   "multipass_registry_entries": 25,
   "graph_registry_entries": 14,
-  "violation_count": 118,
+  "violation_count": 105,
   "violations_by_type": {
-    "id-filename-mismatch": 51,
+    "id-filename-mismatch": 38,
     "wgsl-without-definition": 28,
     "orphan-graph-entry": 39
   },
   "violations": [
     {
       "type": "id-filename-mismatch",
-      "id": "anisotropic-kuwahara",
-      "def_path": "shader_definitions/artistic/anisotropic-kuwahara.json",
-      "detail": "definition id 'anisotropic-kuwahara' vs url stem 'anisotropic-kuwahara-tensor'",
-      "key": "id-filename-mismatch|anisotropic-kuwahara|anisotropic-kuwahara-tensor"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "dla-crystals",
-      "def_path": "shader_definitions/artistic/dla-crystals.json",
-      "detail": "definition id 'dla-crystals' vs url stem 'dla-walkers'",
-      "key": "id-filename-mismatch|dla-crystals|dla-walkers"
-    },
-    {
-      "type": "id-filename-mismatch",
       "id": "galaxy-sim",
       "def_path": "shader_definitions/artistic/galaxy.json",
       "detail": "definition id 'galaxy-sim' vs url stem 'galaxy'",
       "key": "id-filename-mismatch|galaxy-sim|galaxy"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "log-polar-droste",
-      "def_path": "shader_definitions/distortion/log-polar-droste.json",
-      "detail": "definition id 'log-polar-droste' vs url stem 'log-polar-droste-remap'",
-      "key": "id-filename-mismatch|log-polar-droste|log-polar-droste-remap"
     },
     {
       "type": "id-filename-mismatch",
@@ -283,41 +262,6 @@
     },
     {
       "type": "id-filename-mismatch",
-      "id": "byte-mosh",
-      "def_path": "shader_definitions/retro-glitch/byte-mosh.json",
-      "detail": "definition id 'byte-mosh' vs url stem 'byte-mosh-mangle'",
-      "key": "id-filename-mismatch|byte-mosh|byte-mosh-mangle"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "chromatographic-fluid",
-      "def_path": "shader_definitions/simulation/chromatographic-fluid.json",
-      "detail": "definition id 'chromatographic-fluid' vs url stem 'chromatographic-force'",
-      "key": "id-filename-mismatch|chromatographic-fluid|chromatographic-force"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "fabric-of-reality",
-      "def_path": "shader_definitions/simulation/fabric-of-reality.json",
-      "detail": "definition id 'fabric-of-reality' vs url stem 'fabric-verlet'",
-      "key": "id-filename-mismatch|fabric-of-reality|fabric-verlet"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "gray-scott-tank",
-      "def_path": "shader_definitions/simulation/gray-scott-tank.json",
-      "detail": "definition id 'gray-scott-tank' vs url stem 'gray-scott-step'",
-      "key": "id-filename-mismatch|gray-scott-tank|gray-scott-step"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "jfa-aurora-voronoi",
-      "def_path": "shader_definitions/simulation/jfa-aurora-voronoi.json",
-      "detail": "definition id 'jfa-aurora-voronoi' vs url stem 'jfa-aurora-seed'",
-      "key": "id-filename-mismatch|jfa-aurora-voronoi|jfa-aurora-seed"
-    },
-    {
-      "type": "id-filename-mismatch",
       "id": "optical-flow-dream",
       "def_path": "shader_definitions/simulation/optical-flow-dream.json",
       "detail": "definition id 'optical-flow-dream' vs url stem 'optical-flow-estimate'",
@@ -325,45 +269,10 @@
     },
     {
       "type": "id-filename-mismatch",
-      "id": "photonic-caustics-graph",
-      "def_path": "shader_definitions/simulation/photonic-caustics-graph.json",
-      "detail": "definition id 'photonic-caustics-graph' vs url stem 'photonic-emitter'",
-      "key": "id-filename-mismatch|photonic-caustics-graph|photonic-emitter"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "poincare-tiling",
-      "def_path": "shader_definitions/simulation/poincare-tiling.json",
-      "detail": "definition id 'poincare-tiling' vs url stem 'poincare-tiling-map'",
-      "key": "id-filename-mismatch|poincare-tiling|poincare-tiling-map"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "predator-prey-ecology",
-      "def_path": "shader_definitions/simulation/predator-prey-ecology.json",
-      "detail": "definition id 'predator-prey-ecology' vs url stem 'predator-prey-ecology-step'",
-      "key": "id-filename-mismatch|predator-prey-ecology|predator-prey-ecology-step"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "ripple-tank",
-      "def_path": "shader_definitions/simulation/ripple-tank.json",
-      "detail": "definition id 'ripple-tank' vs url stem 'ripple-tank-step'",
-      "key": "id-filename-mismatch|ripple-tank|ripple-tank-step"
-    },
-    {
-      "type": "id-filename-mismatch",
       "id": "sim-fluid-feedback-field",
       "def_path": "shader_definitions/simulation/sim-fluid-feedback-field.json",
       "detail": "definition id 'sim-fluid-feedback-field' vs url stem 'sim-fluid-feedback-field-pass1'",
       "key": "id-filename-mismatch|sim-fluid-feedback-field|sim-fluid-feedback-field-pass1"
-    },
-    {
-      "type": "id-filename-mismatch",
-      "id": "wave-tank",
-      "def_path": "shader_definitions/simulation/wave-tank.json",
-      "detail": "definition id 'wave-tank' vs url stem 'wave-step'",
-      "key": "id-filename-mismatch|wave-tank|wave-step"
     },
     {
       "type": "id-filename-mismatch",
