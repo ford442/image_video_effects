@@ -2010,7 +2010,7 @@
     "id": "liquid-zoom",
     "name": "Liquid Zoom",
     "url": "shaders/liquid-zoom.wgsl",
-    "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses.",
+    "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses. Simple liquid warp, not full ferro.",
     "features": [
       "mouse-driven",
       "held-drag",

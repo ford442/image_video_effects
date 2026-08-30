@@ -1,6 +1,16 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-29 (WASM bridge TS SoT)
+**Last updated:** 2026-08-30 (Fast-Motion Shader Upgrade Ten)
+
+## 2026-08-30 — Fast-Motion Shader Upgrade Ten
+
+- Cohort: `voronoi-zoom-turbulence`, `solarize-warp`, `luma-smear-interactive`, `neon-fluid-warp`, `optical-illusion-spin`, `vortex-drag`, `zoom-burst`, `temporal-slit-paint`, `neon-warp`, `mouse-mandelbrot-zoom-portal`.
+- Contract: 13 bindings, 16×16, exact `textureLoad` C, A-only writes, ACES display, semantic alpha, three-band + bin plasma, springs `[133..138]` at (0,0), held + capped click fronts, byte-exact saved params + `updatedParams`.
+- A packing: Temporal Slit Paint owns raw canvas RGBA in A (ACES on writeTexture). The other nine store ACES display RGBA in A. Neon Warp heat remains analytic from pointer/ripples — not a second raw sim.
+- Fast-motion pairs: cell zoom + shear conveyors; warp conveyor + threshold wavefront; chroma streaks + curl trails; curl jets + neon runners; ring packets + Fraser whip; sprung vortex + helical ribbons; radial speed lines + rotational shear; velocity brush + slit-head runners; heat packets + refraction whip; nested zoom burst + orbital spin.
+- Gates: Naga 10/10; extraBuffer 0 new writes in [0..132]; dead sliders 0; lists + unified manifest 1,353; URL/uniforms green; `SKIP_WASM_BUILD=1` production build green. Jest 79/84 in this VM (5 suites fail resolving `src/wasm/bridge/api.js` — emit lives in `wasm_renderer/` + `public/wasm/`, not a shader regression). Real-GPU visual QA external.
+
+## 2026-08-29 — WASM bridge TypeScript SoT (#1125 / #1179)
 
 ## 2026-08-29 — WASM bridge TypeScript SoT (#1125 / #1179)
 

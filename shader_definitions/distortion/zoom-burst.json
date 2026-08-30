@@ -3,14 +3,23 @@
   "name": "Zoom Burst",
   "category": "distortion",
   "url": "shaders/zoom-burst.wgsl",
-  "description": "Exponential zoom burst with radial motion blur, angular streak sampling, starburst light rays, chromatic radial dispersion, HDR bloom, film grain, and ACES tone mapping. Bass accelerates the burst; mouse positions the center; depth controls streak perspective.",
+  "description": "Radial speed lines with rotational shear streaks and chromatic burst sampling. Sprung epicenter, click zoom packets, exact-C persist, ACES display, burst-energy alpha.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
     "radial-blur",
     "starburst",
-    "film-grain"
+    "film-grain",
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "fast-motion",
+    "spring-cursor",
+    "semantic-alpha",
+    "exact-c-history"
   ],
   "tags": [
     "zoom",
@@ -20,7 +29,9 @@
     "audio-reactive",
     "starburst",
     "bloom",
-    "film-grain"
+    "film-grain",
+    "fast-motion",
+    "aces"
   ],
   "params": [
     {
@@ -46,6 +57,42 @@
     },
     {
       "id": "chroma",
+      "name": "Chroma",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Burst Length",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Sample Quality",
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Spin",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
       "name": "Chroma",
       "default": 0.3,
       "min": 0,

@@ -4434,7 +4434,7 @@
     "name": "Optical Illusion Spin",
     "category": "image",
     "url": "shaders/optical-illusion-spin.wgsl",
-    "description": "Op-art illusion generator with Rotating Snakes, Fraser spiral, and moiré interference between counter-rotating patterns. Chromatic afterimage, HDR edges, ACES tone mapping, and dithering. Bass drives rotation, mouse distorts locally, depth controls scale perspective.",
+    "description": "Counter-rotating snake-ring packets plus a Fraser-spiral whip. Bass drives spin, sprung pointer centers the illusion, capped click shells, exact-C afterimage, ACES display.",
     "params": [
       {
         "name": "Ring Count",
@@ -4473,14 +4473,60 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "tags": [
       "hypnotic",
       "rings",
       "spin",
       "audio-reactive",
-      "illusion"
+      "illusion",
+      "fast-motion",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ring Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Twist Force",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Alternating",
+        "default": 1,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
