@@ -64,6 +64,82 @@ void QueueWriteRgba(
 }
 }  // namespace
 
+bool WebGPURenderer::TryCreateHistoryTexture(uint32_t width, uint32_t height, uint32_t layers) {
+    if (!device_.get() || deviceLost_ || !instance_.get()) return false;
+
+    wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_OutOfMemory);
+
+    WGPUTextureDescriptor texDesc = {};
+    texDesc.nextInChain = nullptr;
+    texDesc.dimension = WGPUTextureDimension_2D;
+    texDesc.size = {width, height, layers};
+    texDesc.mipLevelCount = 1;
+    texDesc.sampleCount = 1;
+    texDesc.format = RgbaStorageFormat(colorFormat_);
+    texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst
+                  | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopySrc;
+    texDesc.label = MakeStringView("History Texture");
+    historyTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
+
+    struct PopResult { bool hadError = false; };
+    PopResult pop;
+    auto popCb = [](WGPUPopErrorScopeStatus status, WGPUErrorType type,
+                    WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+        auto* out = static_cast<PopResult*>(userdata1);
+        if (status != WGPUPopErrorScopeStatus_Success || type == WGPUErrorType_OutOfMemory
+            || type == WGPUErrorType_Internal) {
+            out->hadError = true;
+            if (message.data && message.length > 0) {
+                printf("[WASM] historyTex OOM: %.*s\n", (int)message.length, message.data);
+            }
+        }
+    };
+    WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
+        nullptr, WGPUCallbackMode_WaitAnyOnly, popCb, &pop, nullptr
+    });
+    WGPUFutureWaitInfo popWait = {};
+    popWait.future = popFuture;
+    wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+
+    if (!historyTexture_.get() || pop.hadError || deviceLost_) {
+        historyTexture_.reset();
+        return false;
+    }
+    historyLayerCount_ = layers;
+    historyHead_ = 0;
+    return true;
+}
+
+bool WebGPURenderer::CreateHistoryTextureFailSoft() {
+    const uint32_t current = static_cast<uint32_t>(std::max(canvasWidth_, canvasHeight_));
+    struct Rung { uint32_t size; uint32_t layers; };
+    const Rung rungs[] = {
+        { current, HISTORY_DEPTH },
+        { 1024u, HISTORY_DEPTH },
+        { 1024u, 4u },
+        { 1024u, 1u },
+    };
+    for (const auto& rung : rungs) {
+        if (rung.size > current) continue;
+        historyTexture_.reset();
+        if (TryCreateHistoryTexture(rung.size, rung.size, rung.layers)) {
+            if (rung.size < current) {
+                printf("[WASM] historyTex fail-soft: canvas %u → %u, layers %u (do not retry 2048)\n",
+                       current, rung.size, rung.layers);
+                canvasWidth_ = static_cast<int>(rung.size);
+                canvasHeight_ = static_cast<int>(rung.size);
+            } else if (rung.layers < HISTORY_DEPTH) {
+                printf("[WASM] historyTex fail-soft: layers %u (size %u)\n", rung.layers, rung.size);
+            }
+            return true;
+        }
+        printf("[WASM] historyTex create failed at %ux%u × %u layers — dropping (do not retry 2048)\n",
+               rung.size, rung.size, rung.layers);
+    }
+    lastError_ = "historyTex CreateCommittedResource OOM (all rungs failed)";
+    return false;
+}
+
 bool WebGPURenderer::CreateResources() {
     // canvasWidth_/canvasHeight_ are set at init; defaults align with policy::kInternalRenderResolution.
     (void)policy::kInternalRenderResolution;
@@ -118,7 +194,13 @@ bool WebGPURenderer::CreateResources() {
     bufferDesc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
     plasmaBuffer_.reset(wgpuDeviceCreateBuffer(device_.get(), &bufferDesc));
 
-    // Create textures
+    // Largest committed resource first (#1204). May shrink canvasWidth_/Height_.
+    if (!CreateHistoryTextureFailSoft()) {
+        printf("❌ historyTex allocation failed (GPUOutOfMemory)\n");
+        return false;
+    }
+
+    // Create remaining textures at (possibly fail-soft) canvas size
     WGPUTextureDescriptor texDesc = {};
     texDesc.nextInChain = nullptr;
     texDesc.dimension = WGPUTextureDimension_2D;
@@ -146,17 +228,9 @@ bool WebGPURenderer::CreateResources() {
     texDesc.label = MakeStringView("Data Texture C");
     dataTextureC_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
-    texDesc.format = RgbaStorageFormat(colorFormat_);
-    texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst
-                  | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopySrc;
-    texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), HISTORY_DEPTH};
-    texDesc.label = MakeStringView("History Texture");
-    historyTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
-    historyHead_ = 0;
-
-    // Depth textures (r32float)
     texDesc.format = WGPUTextureFormat_R32Float;
     texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding;
+    texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), 1};
     texDesc.label = MakeStringView("Depth Texture Read");
     depthTextureRead_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
     texDesc.label = MakeStringView("Depth Texture Write");
@@ -216,6 +290,11 @@ void WebGPURenderer::RecreateTextures() {
     // Release old bind group — it holds views into the old textures.
     computeBindGroup_.reset();
 
+    if (!CreateHistoryTextureFailSoft()) {
+        printf("❌ RecreateTextures: historyTex allocation failed\n");
+        return;
+    }
+
     // Create new textures at the current canvas dimensions.
     WGPUTextureDescriptor texDesc = {};
     texDesc.nextInChain = nullptr;
@@ -245,17 +324,9 @@ void WebGPURenderer::RecreateTextures() {
     texDesc.label = MakeStringView("Data Texture C");
     dataTextureC_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
-    texDesc.format = RgbaStorageFormat(colorFormat_);
-    texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst
-                  | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopySrc;
-    texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), HISTORY_DEPTH};
-    texDesc.label = MakeStringView("History Texture");
-    historyTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
-    historyHead_ = 0;
-
-    // Depth textures (r32float)
     texDesc.format = WGPUTextureFormat_R32Float;
     texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding;
+    texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), 1};
     texDesc.label = MakeStringView("Depth Texture Read");
     depthTextureRead_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
     texDesc.label = MakeStringView("Depth Texture Write");

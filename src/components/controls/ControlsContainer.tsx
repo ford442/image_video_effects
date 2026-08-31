@@ -230,6 +230,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     fp32Pinned={performanceHud.fp32Pinned}
                     fp32PinnedBy={performanceHud.fp32PinnedBy}
                     maxPassesPerFrame={performanceHud.maxPassesPerFrame}
+                    historyLayers={performanceHud.historyLayers}
+                    workingSizeCap={performanceHud.workingSizeCap}
                 />
             )}
 

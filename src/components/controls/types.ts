@@ -113,6 +113,8 @@ export interface ControlsProps {
         fp32Pinned?: boolean;
         fp32PinnedBy?: string[];
         maxPassesPerFrame?: number;
+        historyLayers?: number;
+        workingSizeCap?: number;
     };
     generativeShowcaseActive?: boolean;
     generativeShowcaseLocked?: boolean;

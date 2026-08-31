@@ -10,6 +10,7 @@ import {
   snapRenderScale,
 } from '../config/performancePolicy';
 import type { InternalColorFormat } from '../config/formatPolicy';
+import { getHistoryWorkingSizeCap } from '../config/vramBudget';
 
 type SlotMode = 'chained' | 'parallel';
 
@@ -80,7 +81,12 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.initAttempts++;
     try {
       console.log(`[WASM] Init attempt ${this.initAttempts}/${this.maxInitAttempts}...`);
-      
+
+      const cap = getHistoryWorkingSizeCap();
+      const dim = Math.min(canvas.width || INTERNAL_RENDER_RESOLUTION, cap);
+      canvas.width = dim;
+      canvas.height = dim;
+
       const ok = await WasmBridge.initWasmRenderer(canvas);
       if (!ok) {
         // Name the stage reached: "no adapter" and "surface came up but pipeline did not"
@@ -252,7 +258,11 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.resolutionScale = snapped;
     if (!this.initialized) return;
 
-    const { width, height } = computeInternalDimensions(INTERNAL_RENDER_RESOLUTION, snapped);
+    const cap = getHistoryWorkingSizeCap();
+    const { width, height } = computeInternalDimensions(
+      Math.min(INTERNAL_RENDER_RESOLUTION, cap),
+      snapped,
+    );
     this.resizeCanvas(width, height);
   }
 
@@ -262,7 +272,8 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     scaled: { w: number; h: number };
     pixelReduction: string;
   } {
-    const full = INTERNAL_RENDER_RESOLUTION;
+    const cap = getHistoryWorkingSizeCap();
+    const full = Math.min(INTERNAL_RENDER_RESOLUTION, cap);
     const dims = computeInternalDimensions(full, this.resolutionScale);
     const fullPixels = full * full;
     const scaledPixels = dims.width * dims.height;
@@ -520,6 +531,17 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.initialized = false;
     this.offscreenCanvas = null;
     this.offscreenCtx = null;
+  }
+
+  async releaseExclusiveGpu(): Promise<void> {
+    this.destroy();
+    await new Promise<void>((resolve) => {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => resolve());
+      } else {
+        setTimeout(resolve, 0);
+      }
+    });
   }
 
   // ── Internal ──────────────────────────────────────────────────────────────

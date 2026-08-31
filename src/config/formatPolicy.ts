@@ -26,8 +26,11 @@ export const ULTRA_COLOR_FORMAT: InternalColorFormat = 'rgba32float';
 export const BALANCED_COLOR_FORMAT: InternalColorFormat = 'rgba16float';
 export const BATTERY_COLOR_FORMAT: InternalColorFormat = 'rgba16float';
 
-/** rgba targets at sim resolution (read, write, dataA/B/C, history) + full-res source. */
-export const RGBA_INTERNAL_TARGET_COUNT = 7;
+/**
+ * 2D rgba targets at sim resolution: source, read, write, dataA, dataB, dataC.
+ * History is a 2D-array and is counted separately via `historyLayers`.
+ */
+export const RGBA_INTERNAL_TARGET_COUNT = 6;
 
 export function hasFloat16Array(): boolean {
   return typeof (globalThis as unknown as { Float16Array?: unknown }).Float16Array === 'function';
@@ -101,8 +104,10 @@ export function estimateInternalTextureMiB(
   height: number,
   format: InternalColorFormat,
   targetCount = RGBA_INTERNAL_TARGET_COUNT,
+  historyLayers = 8,
 ): number {
-  const bytes = width * height * bytesPerPixel(format) * targetCount;
+  const bpp = bytesPerPixel(format);
+  const bytes = width * height * bpp * (targetCount + historyLayers);
   return Math.round((bytes / (1024 * 1024)) * 10) / 10;
 }
 

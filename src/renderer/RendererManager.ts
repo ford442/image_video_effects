@@ -342,11 +342,15 @@ export class RendererManager {
   getRenderQualityMode(): RenderQualityMode { return this.perfState.qualityMode; }
   getMaxActiveSlots(): number { return this.perfState.performancePolicy.maxActiveSlots; }
   getPerformanceStatus(): RendererPerformanceStatus {
+    const shader = this.shaderRenderer();
+    const historyLayers =
+      shader instanceof WebGPURenderer ? shader.getHistoryLayers() : undefined;
     return buildPerformanceStatus(
       this.perfState,
       this.getActiveRendererType(),
       () => this.getCurrentFPS(),
-      readResolutionScale(this.perfState, this.config, this.shaderRenderer()),
+      readResolutionScale(this.perfState, this.config, shader),
+      { historyLayers },
     );
   }
   getAudioData() {

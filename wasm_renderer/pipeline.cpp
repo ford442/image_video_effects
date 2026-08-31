@@ -320,7 +320,7 @@ bool WebGPURenderer::CreateBindGroups() {
     historyView.baseMipLevel = 0;
     historyView.mipLevelCount = 1;
     historyView.baseArrayLayer = 0;
-    historyView.arrayLayerCount = HISTORY_DEPTH;
+    historyView.arrayLayerCount = historyLayerCount_;
     historyView.aspect = WGPUTextureAspect_All;
     entries[13].textureView = wgpuTextureCreateView(historyTexture_.get(), &historyView);
 
@@ -467,7 +467,7 @@ WGPUBindGroup WebGPURenderer::CreateComputeBindGroup(WGPUTexture readTex, WGPUTe
     entries[13].binding = 13;
     WGPUTextureViewDescriptor historyView = rgbaView;
     historyView.dimension = WGPUTextureViewDimension_2DArray;
-    historyView.arrayLayerCount = HISTORY_DEPTH;
+    historyView.arrayLayerCount = historyLayerCount_;
     entries[13].textureView = wgpuTextureCreateView(historyTexture_.get(), &historyView);
 
     WGPUBindGroupDescriptor bgDesc = {};

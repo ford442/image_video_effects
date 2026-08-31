@@ -109,4 +109,15 @@ describe('WebGPUResourcePool', () => {
     expect((data as Float32Array)[0]).toBe(0);
     expect(layout).toEqual({ bytesPerRow: 4 });
   });
+
+  it('createTextures uses requested history layer count', () => {
+    const device = makeMockDevice();
+    const set = createTextures(device, 1024, 1024, 1024, 1024, 'rgba16float', 4);
+    expect(set.historyLayers).toBe(4);
+    const createTexture = device.createTexture as unknown as {
+      mock: { calls: Array<[{ label?: string; size?: { depthOrArrayLayers?: number } }]> };
+    };
+    const hist = createTexture.mock.calls.find((call) => call[0]?.label === 'historyTex');
+    expect(hist?.[0].size?.depthOrArrayLayers).toBe(4);
+  });
 });

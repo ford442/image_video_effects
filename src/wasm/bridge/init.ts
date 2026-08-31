@@ -17,8 +17,17 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
   }
 
   wasmRef.canvas = canvasElement;
-  state.canvasWidth = wasmRef.canvas.width || 2048;
-  state.canvasHeight = wasmRef.canvas.height || 2048;
+  // Keep key in sync with src/config/vramBudget.ts HISTORY_OOM_CAP_KEY (#1204).
+  let sizeFallback = 2048;
+  try {
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('px_history_oom_cap') === '1024') {
+      sizeFallback = 1024;
+    }
+  } catch {
+    /* private mode */
+  }
+  state.canvasWidth = wasmRef.canvas.width || sizeFallback;
+  state.canvasHeight = wasmRef.canvas.height || sizeFallback;
   state.initStartTime = performance.now();
 
   return new Promise((resolve) => {

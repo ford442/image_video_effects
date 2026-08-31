@@ -69,6 +69,9 @@ describe('backendLifecycle', () => {
       const webgpu = {
         init: jest.fn().mockResolvedValue(true),
         destroy: jest.fn(() => order.push('webgpu.destroy')),
+        releaseExclusiveGpu: jest.fn(async () => {
+          order.push('webgpu.lost');
+        }),
         setVideo: jest.fn(),
       };
       const wasm = {
@@ -91,8 +94,25 @@ describe('backendLifecycle', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(order.indexOf('webgpu.destroy')).toBeGreaterThanOrEqual(0);
-      expect(order.indexOf('wasm.init')).toBeGreaterThan(order.indexOf('webgpu.destroy'));
+      expect(webgpu.releaseExclusiveGpu).toHaveBeenCalled();
+      expect(webgpu.destroy).not.toHaveBeenCalled();
+      expect(order.indexOf('wasm.init')).toBeGreaterThan(order.indexOf('webgpu.lost'));
+    });
+
+    it('blocks wasm after a historyTex OOM this tab', async () => {
+      sessionStorage.setItem('px_webgpu_oom_block_wasm', '1');
+      const canvas = document.createElement('canvas');
+      const webgpu = { init: jest.fn(), destroy: jest.fn(), setVideo: jest.fn() };
+      const result = await performBackendSwitch({
+        targetType: 'wasm',
+        canvas,
+        config: DEFAULT_CONFIG,
+        previousType: 'webgpu',
+        previousRenderer: webgpu as never,
+      });
+      expect(result.success).toBe(false);
+      expect(result.restoreType).toBeNull();
+      sessionStorage.removeItem('px_webgpu_oom_block_wasm');
     });
 
     it('requests restore type when wasm fails after exclusive release', async () => {

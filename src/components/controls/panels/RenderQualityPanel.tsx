@@ -16,6 +16,8 @@ export interface RenderQualityPanelProps {
   fp32Pinned?: boolean;
   fp32PinnedBy?: string[];
   maxPassesPerFrame?: number;
+  historyLayers?: number;
+  workingSizeCap?: number;
   sourceAutoExposure?: boolean;
   onSourceAutoExposureChange?: (enabled: boolean) => void;
   sourceAutoExposureDisabled?: boolean;
@@ -42,6 +44,8 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
   fp32Pinned = false,
   fp32PinnedBy = [],
   maxPassesPerFrame,
+  historyLayers,
+  workingSizeCap,
   sourceAutoExposure = false,
   onSourceAutoExposureChange,
   sourceAutoExposureDisabled = false,
@@ -78,6 +82,8 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
       {' · '}
       {formatLabel(colorFormat)} ({colorFormat})
       {estimatedTextureMiB !== undefined && ` · ~${estimatedTextureMiB} MiB tex`}
+      {historyLayers !== undefined &&
+        ` · history ${internalResolution}²×${historyLayers}${workingSizeCap === 1024 ? ' (VRAM cap 1024)' : ''}`}
       {' · '}
       Slots: {maxActiveSlots}
       {maxPassesPerFrame !== undefined && ` · ≤${maxPassesPerFrame} passes/frame`}

@@ -138,6 +138,8 @@ export interface AppShellProps {
         fp32Pinned?: boolean;
         fp32PinnedBy?: string[];
         maxPassesPerFrame?: number;
+        historyLayers?: number;
+        workingSizeCap?: number;
     };
     rendererDiagnostics?: import('../controls/panels/AdvancedDebugPanel').RendererDiagnosticsSummary | null;
 }

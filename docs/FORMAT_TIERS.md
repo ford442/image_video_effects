@@ -8,8 +8,11 @@ Memory sketch (order of magnitude, 2048²):
 
 | Target count | rgba32float | rgba16float |
 |--------------|-------------|-------------|
-| 1× | ~64 MiB | ~32 MiB |
-| ~6 storage/sampled rgba targets | ~384 MiB | ~192 MiB |
+| 1× 2D | ~64 MiB | ~32 MiB |
+| 6× 2D (source/read/write/A/B/C) | ~384 MiB | ~192 MiB |
+| history 8-layer 2D-array | ~512 MiB | ~256 MiB |
+
+`historyTex` is the largest single `CreateCommittedResource`. After OOM, working size is capped at 1024 and history layers may drop to 4 or 1 (#1204). Do not retry 2048 in the same tab.
 
 Adaptive resolution scaling alone cannot save integrated GPUs when format bandwidth dominates.
 

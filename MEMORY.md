@@ -1,6 +1,13 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-31 (WASM samplers: maxAnisotropy=1)
+**Last updated:** 2026-08-31 (#1204 historyTex VRAM OOM)
+
+## 2026-08-31 — #1204 historyTex D3D12 committed-heap OOM
+
+- Pascal/Chrome: JS probe OK, then `CreateTexture("historyTex")` OOM at 2048²×8 float layers. WASM after a one-rAF teardown OOMs on the next committed resource.
+- Probe ladder 2048×8 → 1024×8 → 1024×4 → 1024×1. Session cap 1024; never retry 2048. WASM blocked until hard reload after OOM.
+- JS→WASM: destroy working textures, `device.destroy()`, **await** `device.lost`, then `requestDevice`.
+- C++ fail-soft history before ping-pong. WASM rebuilt emcc 6.0.3. Real-GPU Pascal confirm after deploy.
 
 ## 2026-08-31 — WASM sampler maxAnisotropy
 

@@ -98,6 +98,8 @@ function MainApp() {
         fp32Pinned: boolean;
         fp32PinnedBy: string[];
         maxPassesPerFrame: number;
+        historyLayers: number;
+        workingSizeCap: number;
     }>({
         internalWidth: 2048,
         internalHeight: 2048,
@@ -111,6 +113,8 @@ function MainApp() {
         fp32Pinned: false,
         fp32PinnedBy: [],
         maxPassesPerFrame: 12,
+        historyLayers: 8,
+        workingSizeCap: 2048,
     });
 
     const [rendererDiagnostics, setRendererDiagnostics] =
@@ -540,6 +544,8 @@ function MainApp() {
                 fp32Pinned: perf.fp32Pinned,
                 fp32PinnedBy: perf.fp32PinnedBy,
                 maxPassesPerFrame: perf.maxPassesPerFrame,
+                historyLayers: perf.historyLayers,
+                workingSizeCap: perf.workingSizeCap,
             };
             // Avoid re-rendering the full App shell every second when nothing changed.
             setPerformanceHud((prev) => {
@@ -556,6 +562,8 @@ function MainApp() {
                     prev.requestedColorFormat === nextHud.requestedColorFormat &&
                     prev.fp32Pinned === nextHud.fp32Pinned &&
                     prev.maxPassesPerFrame === nextHud.maxPassesPerFrame &&
+                    prev.historyLayers === nextHud.historyLayers &&
+                    prev.workingSizeCap === nextHud.workingSizeCap &&
                     prev.fp32PinnedBy.length === nextHud.fp32PinnedBy.length &&
                     prev.fp32PinnedBy.every((id, i) => id === nextHud.fp32PinnedBy[i])
                 ) {
