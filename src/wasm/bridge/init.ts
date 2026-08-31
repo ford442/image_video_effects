@@ -112,6 +112,21 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
           const elapsed = state.initEndTime - state.initStartTime;
           console.log(`[WASM] ✅ Initialization complete in ${elapsed} ms`);
 
+          const cppFmt = Number(
+            wasmRef.module.ccall('getColorFormat', 'number', [], []) ?? 0,
+          );
+          const pending = state.colorFormat;
+          if (pending !== 0 && pending !== cppFmt) {
+            wasmRef.module.ccall('setColorFormat', null, ['number'], [pending]);
+          }
+          const applied = Number(
+            wasmRef.module.ccall('getColorFormat', 'number', [], []) ?? cppFmt,
+          );
+          state.colorFormat = applied === 1 ? 1 : 0;
+          console.log(
+            `[WASM] colorFormat=${state.colorFormat === 1 ? 'rgba16float' : 'rgba32float'}`,
+          );
+
           if (state.pendingInputSource !== null) {
             const src = state.pendingInputSource;
             state.pendingInputSource = null;

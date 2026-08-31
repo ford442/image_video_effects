@@ -105,7 +105,9 @@ Resolved in [`src/config/formatPolicy.ts`](../src/config/formatPolicy.ts).
 
 ## C++ WASM parity
 
-[`wasm_renderer/resources.cpp`](../wasm_renderer/resources.cpp) and [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) use the same tier mapping via [`wasm_renderer/performance_policy.h`](../wasm_renderer/performance_policy.h). WGSL rewrite runs in TypeScript before `loadShader()` passes source to C++.
+[`wasm_renderer/resources.cpp`](../wasm_renderer/resources.cpp) and [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) use the same tier mapping via [`wasm_renderer/performance_policy.h`](../wasm_renderer/performance_policy.h). After the 1×1 storage probe, WASM prefers **`rgba16float`** when the probe succeeded so the bind-group layout is not left at `RGBA32Float` while rewritten WGSL is `rgba16float` (#1205). `LoadShader` rewrites write-only `rgba*` storage decls onto `colorFormat_` in C++ (JS `rewriteWgslStorageFormats` does the same before `ccall`). A Validation error on `CreateComputePipeline` is fail-soft: the slot is not stored, a banner is raised, and the frame loop does not `SetPipeline`/`Submit` that encoder.
+
+Depth feedback copies `Depth Texture Write` → `Depth Texture Read`. Those textures include **`CopySrc`** (Dawn does not infer copy-src from StorageBinding).
 
 `wgpuQueueWriteTexture` `bytesPerRow` follows `colorFormat_`: 16 B/px for rgba32float, 8 B/px for
 rgba16float. Zero-init of `dataC` / `readTexture` and `UploadRGBA8ToReadTexture` pack IEEE-754

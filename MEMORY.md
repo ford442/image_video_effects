@@ -1,6 +1,12 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-31 (#1204 historyTex VRAM OOM)
+**Last updated:** 2026-08-31 (#1205 WASM storage format + CopySrc)
+
+## 2026-08-31 — #1205 format/usage mismatch (live pipeline)
+
+- Pascal: BGL binding(2) `RGBA32Float` vs rewritten WGSL `rgba16float` → invalid `CreateComputePipeline`, then `SetPipeline`+`Submit` every frame. Feedback encoder `CopyTextureToTexture` on depth write missing `CopySrc`.
+- Fix: after rgba16float storage probe, WASM `colorFormat_` is 16 before BGL/textures. C++ `RewriteWgslStorageFormats` forces write-only rgba storage onto the allocated format (JS rewrite is bidirectional too). Validation error scope on pipeline create → skip slot, banner, no submit. Depth read/write get `CopySrc`. Artifacts rebuilt emcc 6.0.3.
+- Watch shaders on JS WebGPU until deploy; catalog WGSL stays authored `rgba32float`.
 
 ## 2026-08-31 — #1204 historyTex D3D12 committed-heap OOM
 

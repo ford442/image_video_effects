@@ -170,7 +170,15 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
    * Must be called before setActiveShader().
    */
   async loadShader(id: string, url: string): Promise<boolean> {
-    return WasmBridge.loadShaderFromURL(id, url);
+    const ok = await WasmBridge.loadShaderFromURL(id, url);
+    if (!ok) {
+      reportError({
+        type: 'shader-compile',
+        message: `Shader "${id}" failed to compile. Slot skipped — pipeline not submitted.`,
+        recoverable: true,
+      });
+    }
+    return ok;
   }
 
   /** Switch to a previously loaded shader (legacy single-shader API). */
@@ -450,7 +458,15 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   }
 
   async reloadShaderFromURL(id: string, url: string): Promise<boolean> {
-    return WasmBridge.reloadShaderFromURL(id, url);
+    const ok = await WasmBridge.reloadShaderFromURL(id, url);
+    if (!ok) {
+      reportError({
+        type: 'shader-compile',
+        message: `Shader "${id}" hot-reload failed. Slot skipped — pipeline not submitted.`,
+        recoverable: true,
+      });
+    }
+    return ok;
   }
 
   /** Test hook: pin uniforms and render one WASM frame. */

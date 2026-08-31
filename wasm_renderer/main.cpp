@@ -84,6 +84,11 @@ void setColorFormat(int formatEnum) {
     }
 }
 
+EMSCRIPTEN_KEEPALIVE
+int getColorFormat() {
+    return g_renderer ? g_renderer->GetColorFormat() : 0;
+}
+
 // ─── Input ────────────────────────────────────────────────────────────────────
 
 EMSCRIPTEN_KEEPALIVE

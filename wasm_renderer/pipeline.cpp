@@ -10,6 +10,7 @@
 #include <array>
 #include <algorithm>
 #include <vector>
+#include <string>
 
 namespace pixelocity {
 
@@ -18,6 +19,7 @@ using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
 using wasm_internal::ParseWorkgroupSize;
 using wasm_internal::AnalyzeShaderBindings;
+using wasm_internal::RewriteWgslStorageFormats;
 
 namespace {
 WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
@@ -500,6 +502,7 @@ void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
                                           int32_t timestampStartIndex,
                                           int32_t timestampEndIndexA,
                                           int32_t timestampEndIndexB) {
+    if (!pipeline || !bindGroup) return;
     WGPUComputePassDescriptor cpDesc = {};
     cpDesc.label = MakeStringView("Compute Pass");
     WGPUComputePassEncoder cp = wgpuCommandEncoderBeginComputePass(encoder, &cpDesc);
@@ -540,19 +543,25 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
         return true;
     }
 
+    const char* fmtName = colorFormat_ == policy::InternalColorFormat::Rgba16Float
+        ? "rgba16float"
+        : "rgba32float";
+    const std::string rewritten = RewriteWgslStorageFormats(wgslCode, fmtName);
+    const char* compiledWgsl = rewritten.empty() ? wgslCode : rewritten.c_str();
+
     // Create shader module
     WGPUShaderSourceWGSL wgslSource = {};
     wgslSource.chain.next = nullptr;
     wgslSource.chain.sType = WGPUSType_ShaderSourceWGSL;
-    wgslSource.code = MakeStringView(wgslCode);
+    wgslSource.code = MakeStringView(compiledWgsl);
 
     WGPUShaderModuleDescriptor shaderDesc = {};
     shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslSource);
     shaderDesc.label = MakeStringView(id);
-    // which is not currently set up.
     WGPUShaderModuleHandle module(wgpuDeviceCreateShaderModule(device_.get(), &shaderDesc));
     if (!module.get()) {
         printf("❌ Failed to create shader module for '%s'\n", id);
+        lastError_ = std::string("shader module create failed: ") + id;
         return false;
     }
 
@@ -586,7 +595,8 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
             const_cast<char*>(id), nullptr
         });
 
-    // Create compute pipeline
+    // Create compute pipeline. Dawn may return a non-null invalid object on
+    // format mismatch — catch Validation via error scope and do not store it.
     WGPUComputePipelineDescriptor pipelineDesc = {};
     pipelineDesc.nextInChain = nullptr;
     pipelineDesc.label = MakeStringView(id);
@@ -594,9 +604,44 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     pipelineDesc.compute.module = module.get();
     pipelineDesc.compute.entryPoint = MakeStringView("main");
 
+    wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_Validation);
     WGPUComputePipelineHandle pipeline(wgpuDeviceCreateComputePipeline(device_.get(), &pipelineDesc));
-    if (!pipeline.get()) {
-        printf("❌ Failed to create compute pipeline for '%s'\n", id);
+
+    struct PopResult { bool hadError = false; };
+    PopResult pop;
+    auto popCb = [](WGPUPopErrorScopeStatus status, WGPUErrorType type,
+                    WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+        auto* out = static_cast<PopResult*>(userdata1);
+        const bool okStatus = status == WGPUPopErrorScopeStatus_Success;
+        const bool isGpuError = type == WGPUErrorType_Validation
+            || type == WGPUErrorType_OutOfMemory
+            || type == WGPUErrorType_Internal;
+        if (!okStatus || isGpuError) {
+            out->hadError = true;
+            if (message.data && message.length > 0) {
+                printf("[WASM] CreateComputePipeline invalid: %.*s\n",
+                       (int)message.length, message.data);
+            }
+        }
+    };
+    if (instance_.get()) {
+        WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
+            nullptr, WGPUCallbackMode_WaitAnyOnly, popCb, &pop, nullptr
+        });
+        WGPUFutureWaitInfo popWait = {};
+        popWait.future = popFuture;
+        wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+    } else {
+        wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
+            nullptr, WGPUCallbackMode_AllowSpontaneous, popCb, &pop, nullptr
+        });
+    }
+
+    if (!pipeline.get() || pop.hadError) {
+        printf("❌ CreateComputePipeline invalid for '%s' — skip slot, do not submit\n", id);
+        lastError_ = std::string("CreateComputePipeline invalid: ") + id
+            + " (storage format vs bind-group layout). Slot skipped.";
+        pipeline.reset();
         return false;
     }
 
@@ -605,8 +650,8 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     sp.pipeline = std::move(pipeline);
     sp.id       = id;
     sp.name     = id;
-    ParseWorkgroupSize(wgslCode, sp.workgroupX, sp.workgroupY);
-    const auto usage = AnalyzeShaderBindings(wgslCode);
+    ParseWorkgroupSize(compiledWgsl, sp.workgroupX, sp.workgroupY);
+    const auto usage = AnalyzeShaderBindings(compiledWgsl);
     sp.writesDataA = usage.writesDataA;
     sp.writesDataB = usage.writesDataB;
     sp.readsDataC = usage.readsDataC;

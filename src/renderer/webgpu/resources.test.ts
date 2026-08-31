@@ -88,6 +88,20 @@ describe('WebGPUResourcePool', () => {
     expect(usage & TU.STORAGE_BINDING).toBe(TU.STORAGE_BINDING);
   });
 
+  it('createTextures gives depthWrite COPY_SRC for feedback copies', () => {
+    const device = makeMockDevice();
+    createTextures(device, 800, 600, 400, 300);
+
+    const createTexture = device.createTexture as unknown as {
+      mock: { calls: Array<[{ label?: string; usage: number }]> };
+    };
+    const depthWrite = createTexture.mock.calls.find(
+      (call) => call[0]?.label === 'depthWrite',
+    );
+    expect(depthWrite).toBeDefined();
+    expect(depthWrite![0].usage & TU.COPY_SRC).toBe(TU.COPY_SRC);
+  });
+
   it('createTextures uses r32float emptyTex with single-float upload', () => {
     const device = makeMockDevice();
     createTextures(device, 800, 600, 400, 300);

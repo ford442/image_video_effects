@@ -585,6 +585,17 @@ bool WebGPURenderer::CreateDevice() {
                supportsRgba32FloatStorage_ ? "yes" : "no",
                hasFloat32Filterable ? "yes" : "no",
                hasFloat32Blendable ? "yes" : "no");
+        // Prefer FP16 storage when the probe succeeded so BGL and rewritten WGSL
+        // agree on Pascal/balanced (do not leave BGL at 32 while shaders are 16).
+        if (supportsRgba16FloatStorage_) {
+            colorFormat_ = policy::InternalColorFormat::Rgba16Float;
+            printf("[WASM] Internal storage colorFormat=rgba16float (probe yes)\n");
+        } else if (supportsRgba32FloatStorage_) {
+            colorFormat_ = policy::InternalColorFormat::Rgba32Float;
+            printf("[WASM] Internal storage colorFormat=rgba32float (rgba16float probe no)\n");
+        } else {
+            printf("[WASM] WARNING: neither rgba16float nor rgba32float storage probed yes\n");
+        }
     }
 
     // ── Device limits ─────────────────────────────────────────────────────

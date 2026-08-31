@@ -152,6 +152,10 @@ function getSupportsDeepWorkgroup() {
   return Boolean(wasmRef.module.ccall("getSupportsDeepWorkgroup", "number", [], []));
 }
 function getColorFormat() {
+  if (state.initialized && wasmRef.module) {
+    const v = Number(wasmRef.module.ccall("getColorFormat", "number", [], []) ?? state.colorFormat);
+    state.colorFormat = v === 1 ? 1 : 0;
+  }
   return state.colorFormat;
 }
 function setColorFormat(format) {
