@@ -59,6 +59,8 @@ export class RendererManager {
   private currentRenderer: Renderer | null = null;
   private currentType: RendererType | null = null;
   private lastFailedWasmRenderer: WASMRenderer | null = null;
+  private lastImageUrl: string | null = null;
+  private lastInputSource: InputSource = 'image';
   private readonly config: RendererConfig;
   private canvas: HTMLCanvasElement | null = null;
   private webGpuHandoff: WebGpuProbeHandoff | undefined;
@@ -162,6 +164,12 @@ export class RendererManager {
       refreshFormatCapabilities(this.perfState, this.shaderRenderer());
       applyPerformancePolicyToRenderer(this.perfState, this.shaderRenderer(), this.adaptiveController);
       this.startMetricsCollection();
+      if (type === 'wasm' || type === 'webgpu') {
+        await inputBridge.rebindMediaAfterBackendSwitch(this.currentRenderer, {
+          inputSource: this.lastInputSource,
+          imageUrl: this.lastImageUrl,
+        });
+      }
       return true;
     }
 
@@ -236,12 +244,22 @@ export class RendererManager {
     );
   }
   setSlotMode(index: number, mode: 'chained' | 'parallel'): void { setSlotMode(this.backend(), index, mode); }
-  setInputSource(source: InputSource): void { inputBridge.setInputSource(this.currentRenderer, source); }
-  getInputSource(): InputSource | null { return inputBridge.getInputSource(this.currentRenderer); }
+  setInputSource(source: InputSource): void {
+    this.lastInputSource = source;
+    inputBridge.setInputSource(this.currentRenderer, source);
+  }
+  getInputSource(): InputSource | null {
+    return inputBridge.getInputSource(this.currentRenderer) ?? this.lastInputSource;
+  }
   addRipple(x: number, y: number): void { addRipple(this.backend(), x, y); }
   addRipplePoint(x: number, y: number): void { this.addRipple(x, y); }
   clearRipples(): void { clearRipples(this.backend()); }
-  async loadImage(url: string): Promise<string> { return inputBridge.loadImage(this.currentRenderer, url); }
+  async loadImage(url: string): Promise<string> {
+    this.lastImageUrl = url;
+    const resolved = await inputBridge.loadImage(this.currentRenderer, url);
+    if (resolved) this.lastImageUrl = resolved;
+    return resolved;
+  }
   async loadImageFromURL(url: string): Promise<void> { await this.loadImage(url); }
   getAvailableModes(): ShaderEntry[] { return inputBridge.getAvailableModes(this.currentRenderer); }
   setImageList(urls: string[]): void { inputBridge.setImageList(this.currentRenderer, urls); }

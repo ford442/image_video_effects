@@ -57,12 +57,7 @@ async function initWasmRenderer(canvasElement) {
           resolve(false);
           return;
         }
-        let canvasId = canvas.id;
-        if (!canvasId) {
-          wasmRef.canvasIdCounter++;
-          canvasId = "pixelocity-wasm-canvas-" + wasmRef.canvasIdCounter;
-          canvas.id = canvasId;
-        }
+        const canvasId = ensureWasmCanvasId(canvas);
         const selector = "#" + canvasId;
         console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} , ${selector} )`);
         let ok = 0;
@@ -103,6 +98,7 @@ async function initWasmRenderer(canvasElement) {
           console.log(
             `[WASM] colorFormat=${state.colorFormat === 1 ? "rgba16float" : "rgba32float"}`
           );
+          promoteWasmCanvasVisible(canvas);
           if (state.pendingInputSource !== null) {
             const src = state.pendingInputSource;
             state.pendingInputSource = null;
@@ -167,8 +163,37 @@ function shutdownWasmRenderer() {
 function isInitialized() {
   return state.initialized;
 }
+function ensureWasmCanvasId(canvas) {
+  if (canvas.id) return canvas.id;
+  wasmRef.canvasIdCounter += 1;
+  canvas.id = "pixelocity-wasm-canvas-" + wasmRef.canvasIdCounter;
+  return canvas.id;
+}
+function promoteWasmCanvasVisible(canvas) {
+  const id = ensureWasmCanvasId(canvas);
+  const tagged = document.getElementById(id) ?? canvas;
+  tagged.style.display = "block";
+  tagged.style.visibility = "visible";
+  tagged.style.opacity = "1";
+  if (!tagged.style.zIndex || tagged.style.zIndex === "auto") {
+    tagged.style.zIndex = "1";
+  }
+  wasmRef.canvas = tagged;
+  console.log(
+    `[WASM] Visible present canvas: #${tagged.id} ${tagged.width}\xD7${tagged.height}`
+  );
+  try {
+    window.dispatchEvent(
+      new CustomEvent("pixelocity-canvas-replaced", { detail: tagged })
+    );
+  } catch {
+  }
+  return tagged;
+}
 export {
+  ensureWasmCanvasId,
   initWasmRenderer,
   isInitialized,
+  promoteWasmCanvasVisible,
   shutdownWasmRenderer
 };

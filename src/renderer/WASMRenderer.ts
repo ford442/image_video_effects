@@ -52,6 +52,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private mouseDown = false;
   private initialized = false;
   private inputSource: InputSource = 'image';
+  private logNextInputUpload = false;
 
   // Offscreen canvas for extracting video/image pixel data
   private offscreenCanvas: HTMLCanvasElement | null = null;
@@ -107,13 +108,16 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       }
 
       this.initialized = true;
+      this.logNextInputUpload = true;
       this.startTime = performance.now() / 1000;
       if (this.resolutionScale !== 1.0) {
         this.setResolutionScale(this.resolutionScale);
       }
       this.startRenderLoop();
 
-      console.log('✅ WASM Renderer initialized successfully');
+      console.log(
+        `✅ WASM Renderer initialized successfully (present #${canvas.id || 'pixelocity-wasm-canvas'})`,
+      );
       return true;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -362,6 +366,10 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.video = video;
   }
 
+  getVideo(): HTMLVideoElement | null {
+    return this.video;
+  }
+
   updateVideoFrame(): void {
     if (!this.usesVideoInput()) return;
     if (!this.video || this.video.readyState < 2) return;
@@ -384,6 +392,10 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.offscreenCtx.drawImage(this.video, 0, 0, w, h);
     const imageData = this.offscreenCtx.getImageData(0, 0, w, h);
     WasmBridge.uploadVideoFrame(imageData.data, w, h);
+    if (this.logNextInputUpload) {
+      console.log(`[WASM] Input upload ran: ${w}×${h} (video)`);
+      this.logNextInputUpload = false;
+    }
   }
 
   /**
@@ -410,6 +422,8 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.offscreenCtx.drawImage(img, 0, 0, w, h);
     const imageData = this.offscreenCtx.getImageData(0, 0, w, h);
     WasmBridge.uploadImageData(imageData.data, w, h);
+    console.log(`[WASM] Input upload ran: ${w}×${h} (image)`);
+    this.logNextInputUpload = false;
   }
 
   /** Renderer interface alias — matches WebGPURenderer.loadImage signature. */

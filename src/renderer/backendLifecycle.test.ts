@@ -14,6 +14,10 @@ import { DEFAULT_CONFIG } from './Renderer';
 jest.mock('./WebGPURenderer');
 jest.mock('./WASMRenderer');
 jest.mock('./JSRenderer');
+jest.mock('../wasm/wasm_bridge', () => ({
+  initWasmRenderer: jest.fn().mockResolvedValue(true),
+  shutdownWasmRenderer: jest.fn(),
+}));
 
 describe('backendLifecycle', () => {
   beforeEach(() => {

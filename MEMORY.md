@@ -1,6 +1,12 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-31 (#1205 WASM storage format + CopySrc)
+**Last updated:** 2026-08-31 (#1206 WASM input rebind after exclusive switch)
+
+## 2026-08-31 — #1206 empty WASM input after successful boot
+
+- Successful WASM init with `Input source set to 1` still shows no photo: JS device (and `historyTex`) died on exclusive switch; WASM never got pixels.
+- Rebind after `initWasmRenderer`: upload current image/video, then `resyncShaderStack`. Tag/show `#pixelocity-wasm-canvas-N`. Log `Input upload ran: w×h`.
+- Watch on JS WebGPU until deploy. Hard-reload before WASM. No GPUValidationError ⇒ this bug, not #1205.
 
 ## 2026-08-31 — #1205 format/usage mismatch (live pipeline)
 

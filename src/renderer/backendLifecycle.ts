@@ -11,6 +11,7 @@ import { JSRenderer } from './JSRenderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
+import { readRendererVideo } from './inputSourceBridge';
 
 export type { WebGpuProbeHandoff };
 
@@ -153,7 +154,7 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
       if (replaced) nextCanvas = replaced;
     }
 
-    const video = (previousRenderer as { video?: HTMLVideoElement } | null)?.video;
+    const video = readRendererVideo(previousRenderer) ?? readRendererVideo(renderer);
     if (video) renderer.setVideo(video);
 
     return {
