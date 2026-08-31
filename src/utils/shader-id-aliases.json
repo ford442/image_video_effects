@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "description": "Hyphen URL aliases for legacy underscore catalog ids. Canonical ids stay underscore; new ids use hyphens. CRA-legal copy of public/shader-id-aliases.json.",
+    "canonical_rule": "hyphen-alias -> underscore-id",
+    "generated_at": "2026-08-31",
+    "count": 20,
+    "skipped_collisions": [
+      {
+        "canonical": "gen_quantum_foam",
+        "alias": "gen-quantum-foam",
+        "reason": "hyphen form is already a distinct catalog id"
+      },
+      {
+        "canonical": "temporal_echo",
+        "alias": "temporal-echo",
+        "reason": "hyphen form is already a distinct catalog id"
+      }
+    ]
+  },
+  "aliases": {
+    "artistic-painterly-oil": "artistic_painterly_oil",
+    "atmos-volumetric-fog": "atmos_volumetric_fog",
+    "audio-geometric-pulse": "audio_geometric_pulse",
+    "aurora-borealis": "aurora_borealis",
+    "bio-lenia-continuous": "bio_lenia_continuous",
+    "distortion-gravitational-lens": "distortion_gravitational_lens",
+    "fire-smoke-volumetric": "fire_smoke_volumetric",
+    "gen-mandelbulb-3d": "gen_mandelbulb_3d",
+    "glass-refraction-alpha": "glass_refraction_alpha",
+    "holographic-interference": "holographic_interference",
+    "ink-dispersion-alpha": "ink_dispersion_alpha",
+    "interactive-neural-swarm": "interactive_neural_swarm",
+    "kimi-flock-symphony": "kimi_flock_symphony",
+    "liquid-crystal-birefringence": "liquid_crystal_birefringence",
+    "liquid-magnetic-ferro": "liquid_magnetic_ferro",
+    "matrix-digital-rain": "matrix_digital_rain",
+    "parallax-depth-layers": "parallax_depth_layers",
+    "particle-dreams-alpha": "particle_dreams_alpha",
+    "retro-phosphor-dream": "retro_phosphor_dream",
+    "underwater-caustics": "underwater_caustics"
+  }
+}

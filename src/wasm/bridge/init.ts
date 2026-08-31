@@ -17,8 +17,17 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
   }
 
   wasmRef.canvas = canvasElement;
-  state.canvasWidth = wasmRef.canvas.width || 2048;
-  state.canvasHeight = wasmRef.canvas.height || 2048;
+  // Keep key in sync with src/config/vramBudget.ts HISTORY_OOM_CAP_KEY (#1204).
+  let sizeFallback = 2048;
+  try {
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('px_history_oom_cap') === '1024') {
+      sizeFallback = 1024;
+    }
+  } catch {
+    /* private mode */
+  }
+  state.canvasWidth = wasmRef.canvas.width || sizeFallback;
+  state.canvasHeight = wasmRef.canvas.height || sizeFallback;
   state.initStartTime = performance.now();
 
   return new Promise((resolve) => {
@@ -64,23 +73,21 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
           return;
         }
 
-        let canvasId = canvas.id;
-        if (!canvasId) {
-          wasmRef.canvasIdCounter++;
-          canvasId = 'pixelocity-wasm-canvas-' + wasmRef.canvasIdCounter;
-          canvas.id = canvasId;
-        }
+        const canvasId = ensureWasmCanvasId(canvas);
 
         const selector = '#' + canvasId;
-        console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} )`);
+        // C++ signature: initWasmRenderer(int width, int height, const char* canvasSelector)
+        // Passing selector first made the UTF-8 heap pointer the "width" (~79984) and
+        // maxTextureDimension2D CheckLimit treated that pointer as need → false INSUFFICIENT.
+        console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} , ${selector} )`);
 
         let ok: unknown = 0;
         try {
           ok = wasmRef.module.ccall(
             'initWasmRenderer',
             'number',
-            ['string', 'number', 'number'],
-            [selector, state.canvasWidth, state.canvasHeight],
+            ['number', 'number', 'string'],
+            [state.canvasWidth, state.canvasHeight, selector],
           );
         } catch (callErr: unknown) {
           console.error('[WASM] ccall initWasmRenderer threw:', callErr);
@@ -99,6 +106,23 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
           state.initEndTime = performance.now();
           const elapsed = state.initEndTime - state.initStartTime;
           console.log(`[WASM] ✅ Initialization complete in ${elapsed} ms`);
+
+          const cppFmt = Number(
+            wasmRef.module.ccall('getColorFormat', 'number', [], []) ?? 0,
+          );
+          const pending = state.colorFormat;
+          if (pending !== 0 && pending !== cppFmt) {
+            wasmRef.module.ccall('setColorFormat', null, ['number'], [pending]);
+          }
+          const applied = Number(
+            wasmRef.module.ccall('getColorFormat', 'number', [], []) ?? cppFmt,
+          );
+          state.colorFormat = applied === 1 ? 1 : 0;
+          console.log(
+            `[WASM] colorFormat=${state.colorFormat === 1 ? 'rgba16float' : 'rgba32float'}`,
+          );
+
+          promoteWasmCanvasVisible(canvas);
 
           if (state.pendingInputSource !== null) {
             const src = state.pendingInputSource;
@@ -171,4 +195,39 @@ export function shutdownWasmRenderer(): void {
 
 export function isInitialized(): boolean {
   return state.initialized;
+}
+
+/** Stable CSS id so C++ `JS_CreateSurfaceFromCanvas` and the visible node agree. */
+export function ensureWasmCanvasId(canvas: HTMLCanvasElement): string {
+  if (canvas.id) return canvas.id;
+  wasmRef.canvasIdCounter += 1;
+  canvas.id = 'pixelocity-wasm-canvas-' + wasmRef.canvasIdCounter;
+  return canvas.id;
+}
+
+/**
+ * Present target after exclusive JS→WASM device switch (#1206).
+ * Keep `#pixelocity-wasm-canvas-N` on-screen and notify React refs.
+ */
+export function promoteWasmCanvasVisible(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  const id = ensureWasmCanvasId(canvas);
+  const tagged = (document.getElementById(id) as HTMLCanvasElement | null) ?? canvas;
+  tagged.style.display = 'block';
+  tagged.style.visibility = 'visible';
+  tagged.style.opacity = '1';
+  if (!tagged.style.zIndex || tagged.style.zIndex === 'auto') {
+    tagged.style.zIndex = '1';
+  }
+  wasmRef.canvas = tagged;
+  console.log(
+    `[WASM] Visible present canvas: #${tagged.id} ${tagged.width}×${tagged.height}`,
+  );
+  try {
+    window.dispatchEvent(
+      new CustomEvent('pixelocity-canvas-replaced', { detail: tagged }),
+    );
+  } catch {
+    /* non-browser / tests */
+  }
+  return tagged;
 }

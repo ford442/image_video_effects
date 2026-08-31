@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Controls from './components/Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
+import { RemoteControlHeader } from './RemoteControlHeader';
 
 // Default State (matches App.tsx defaults roughly, but will be overwritten by sync)
 const DEFAULT_SLOT_PARAMS: SlotParams = {
@@ -228,16 +229,7 @@ const RemoteApp: React.FC = () => {
 
     return (
         <div className="remote-app">
-            <h2 style={{
-                textAlign: 'center',
-                padding: '20px 0',
-                margin: 0,
-                backgroundColor: '#2a2a2a',
-                borderBottom: '1px solid #444',
-                flexShrink: 0
-            }}>
-                Remote Control
-            </h2>
+            <RemoteControlHeader inputSource={inputSource} onLoadRandom={handleLoadRandom} />
 
             {/* Hidden Inputs */}
             <input

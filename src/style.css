@@ -101,6 +101,18 @@ body {
     height: calc(100vh - 80px); /* Full height minus header */
 }
 
+.main-container.fullscreen {
+    height: 100vh;
+}
+
+.show-controls-overlay {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 20;
+    cursor: pointer;
+}
+
 /* Sidebar - Gold & Dark Glass Theme */
 .sidebar {
     width: 380px;

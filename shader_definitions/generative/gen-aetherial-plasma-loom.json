@@ -1,0 +1,12 @@
+{
+  "id": "gen-aetherial-plasma-loom",
+  "name": "Aetherial Plasma Loom",
+  "url": "/shaders/gen-aetherial-plasma-loom.wgsl",
+  "category": "generative",
+  "params": [
+    { "id": "density", "name": "Density", "default": 1.0, "min": 0.1, "max": 3.0, "step": 0.1, "mapping": "zoom_params.x" },
+    { "id": "flowSpeed", "name": "Flow Speed", "default": 0.5, "min": 0.0, "max": 2.0, "step": 0.1, "mapping": "zoom_params.y" },
+    { "id": "twist", "name": "Twist", "default": 1.5, "min": 0.0, "max": 5.0, "step": 0.1, "mapping": "zoom_params.z" },
+    { "id": "coreBrightness", "name": "Core Brightness", "default": 1.2, "min": 0.5, "max": 3.0, "step": 0.1, "mapping": "zoom_params.w" }
+  ]
+}

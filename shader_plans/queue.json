@@ -449,6 +449,26 @@
       "filename": "2026-08-27_chronos-crystal-labyrinth.md",
       "title": "Chronos Crystal Labyrinth",
       "added": "2026-08-27T15:26:12.803741"
+    },
+    {
+      "filename": "2026-08-25_bismuth-hypercrystal-labyrinth.md",
+      "title": "Bismuth Hypercrystal Labyrinth",
+      "added": "2026-08-25T15:30:37.850566"
+    },
+    {
+      "filename": "2026-08-23_void-harmonic-cymatic-resonator.md",
+      "title": "Void Harmonic Cymatic Resonator",
+      "added": "2026-08-23T15:16:43.844592"
+    },
+    {
+      "filename": "2026-08-28_luminescent-nebula-silk-weaver.md",
+      "title": "Luminescent Nebula-Silk Weaver",
+      "added": "2026-08-28T15:33:58.681057"
+    },
+    {
+      "filename": "2026-08-30_quantum-flux-core.md",
+      "title": "Quantum Flux Core",
+      "added": "2026-08-30T15:13:01.492178"
     }
   ],
   "current": null,
@@ -863,6 +883,13 @@
       "added": "2026-08-28T15:33:58.681057",
       "status": "completed",
       "completed_at": "2026-08-30T07:55:56.079687+00:00"
+    },
+    {
+      "filename": "2026-08-29_aetherial-plasma-loom.md",
+      "title": "Aetherial Plasma Loom",
+      "added": "2026-08-29T15:26:45.550822",
+      "status": "completed",
+      "completed_at": "2026-08-31T07:58:02.324459+00:00"
     }
   ],
   "rejected": [],

@@ -1,9 +1,304 @@
 {
-  "generated": "2026-08-30T02:57:18.037297+00:00",
-  "defs_scanned": 10,
-  "defs_with_params": 10,
+  "generated": "2026-08-26T10:12:22.420983+00:00",
+  "defs_scanned": 1190,
+  "defs_with_params": 1190,
   "new_dead_sliders": [],
-  "known_dead_sliders": [],
+  "known_dead_sliders": [
+    {
+      "id": "alucinate-hdr",
+      "category": "advanced-hybrid",
+      "param_id": "glyphProminence",
+      "name": "Glyph Prominence",
+      "field": "w"
+    },
+    {
+      "id": "boids-rgba-ecosystem",
+      "category": "advanced-hybrid",
+      "param_id": "diffusion",
+      "name": "Diffusion Rate",
+      "field": "z"
+    },
+    {
+      "id": "boids-rgba-ecosystem",
+      "category": "advanced-hybrid",
+      "param_id": "toxinStrength",
+      "name": "Toxin Strength",
+      "field": "w"
+    },
+    {
+      "id": "multi-fractal-compositor",
+      "category": "advanced-hybrid",
+      "param_id": "domain_warp",
+      "name": "Domain Warp",
+      "field": "z"
+    },
+    {
+      "id": "neural-raymarcher",
+      "category": "advanced-hybrid",
+      "param_id": "glow",
+      "name": "Glow Intensity",
+      "field": "z"
+    },
+    {
+      "id": "predator-prey-rgba",
+      "category": "advanced-hybrid",
+      "param_id": "toxinStrength",
+      "name": "Toxin Strength",
+      "field": "w"
+    },
+    {
+      "id": "alpha-paint-thickness",
+      "category": "artistic",
+      "param_id": "specularPower",
+      "name": "Specular Power",
+      "field": "z"
+    },
+    {
+      "id": "alpha-paint-thickness",
+      "category": "artistic",
+      "param_id": "dryingRate",
+      "name": "Drying Rate",
+      "field": "w"
+    },
+    {
+      "id": "alpha-watercolor-wetness",
+      "category": "artistic",
+      "param_id": "flowStrength",
+      "name": "Flow Strength",
+      "field": "w"
+    },
+    {
+      "id": "echo-trace",
+      "category": "artistic",
+      "param_id": "velocity_threshold",
+      "name": "Velocity Threshold",
+      "field": "w"
+    },
+    {
+      "id": "prism-displacement",
+      "category": "distortion",
+      "param_id": "zoomAmount",
+      "name": "Zoom Amount",
+      "field": "x"
+    },
+    {
+      "id": "prism-displacement",
+      "category": "distortion",
+      "param_id": "chromatic",
+      "name": "Chromatic Amount",
+      "field": "y"
+    },
+    {
+      "id": "prism-displacement",
+      "category": "distortion",
+      "param_id": "rotationSpeed",
+      "name": "Rotation Speed",
+      "field": "z"
+    },
+    {
+      "id": "prism-displacement",
+      "category": "distortion",
+      "param_id": "depthWeight",
+      "name": "Depth Weight",
+      "field": "w"
+    },
+    {
+      "id": "color-blindness",
+      "category": "image",
+      "param_id": "unused",
+      "name": "Unused",
+      "field": "w"
+    },
+    {
+      "id": "glitch-cathedral",
+      "category": "interactive-mouse",
+      "param_id": "rgbSplit",
+      "name": "RGB Split",
+      "field": "y"
+    },
+    {
+      "id": "glitch-cathedral",
+      "category": "interactive-mouse",
+      "param_id": "sortStrength",
+      "name": "Sort Strength",
+      "field": "z"
+    },
+    {
+      "id": "glitch-cathedral",
+      "category": "interactive-mouse",
+      "param_id": "patternSpeed",
+      "name": "Pattern Speed",
+      "field": "w"
+    },
+    {
+      "id": "liquid-volumetric-zoom",
+      "category": "interactive-mouse",
+      "param_id": "parallax",
+      "name": "Parallax",
+      "field": "z"
+    },
+    {
+      "id": "parallax-glow-compositor",
+      "category": "interactive-mouse",
+      "param_id": "aberration",
+      "name": "Aberration",
+      "field": "z"
+    },
+    {
+      "id": "liquid-optimized-pass1",
+      "category": "liquid-effects",
+      "param_id": "turbidity",
+      "name": "Turbidity",
+      "field": "w"
+    },
+    {
+      "id": "liquid-optimized-pass2",
+      "category": "liquid-effects",
+      "param_id": "gravityScale",
+      "name": "Gravity Scale",
+      "field": "y"
+    },
+    {
+      "id": "liquid-optimized-pass2",
+      "category": "liquid-effects",
+      "param_id": "damping",
+      "name": "Damping",
+      "field": "z"
+    },
+    {
+      "id": "liquid-pass1",
+      "category": "liquid-effects",
+      "param_id": "color_shift",
+      "name": "Color Shift",
+      "field": "w"
+    },
+    {
+      "id": "liquid-pass2",
+      "category": "liquid-effects",
+      "param_id": "turbulence",
+      "name": "Turbulence",
+      "field": "y"
+    },
+    {
+      "id": "liquid-pass2",
+      "category": "liquid-effects",
+      "param_id": "ripple_strength",
+      "name": "Ripple Strength",
+      "field": "z"
+    },
+    {
+      "id": "digital-glitch-pass1",
+      "category": "retro-glitch",
+      "param_id": "error_propagation",
+      "name": "Error Propagation",
+      "field": "z"
+    },
+    {
+      "id": "digital-glitch-pass1",
+      "category": "retro-glitch",
+      "param_id": "decay_rate",
+      "name": "Decay Rate",
+      "field": "w"
+    },
+    {
+      "id": "digital-glitch-pass2",
+      "category": "retro-glitch",
+      "param_id": "corruption_intensity",
+      "name": "Corruption Intensity",
+      "field": "x"
+    },
+    {
+      "id": "digital-glitch-pass2",
+      "category": "retro-glitch",
+      "param_id": "bit_manipulation",
+      "name": "Bit Manipulation",
+      "field": "y"
+    },
+    {
+      "id": "pixel-rain",
+      "category": "retro-glitch",
+      "param_id": "trail_fade",
+      "name": "Trail Fade",
+      "field": "w"
+    },
+    {
+      "id": "xerox-degrade",
+      "category": "retro-glitch",
+      "param_id": "contrast",
+      "name": "Contrast",
+      "field": "x"
+    },
+    {
+      "id": "xerox-degrade",
+      "category": "retro-glitch",
+      "param_id": "grain",
+      "name": "Grain",
+      "field": "y"
+    },
+    {
+      "id": "xerox-degrade",
+      "category": "retro-glitch",
+      "param_id": "smear",
+      "name": "Smear",
+      "field": "z"
+    },
+    {
+      "id": "xerox-degrade",
+      "category": "retro-glitch",
+      "param_id": "threshold",
+      "name": "Threshold",
+      "field": "w"
+    },
+    {
+      "id": "sim-fluid-feedback-field",
+      "category": "simulation",
+      "param_id": "glow",
+      "name": "Glow Intensity",
+      "field": "w"
+    },
+    {
+      "id": "alpha-depth-fog-volumetric",
+      "category": "visual-effects",
+      "param_id": "colorTemp",
+      "name": "Color Temperature",
+      "field": "w"
+    },
+    {
+      "id": "alpha-hdr-bloom-chain",
+      "category": "visual-effects",
+      "param_id": "saturation",
+      "name": "Saturation",
+      "field": "w"
+    },
+    {
+      "id": "chroma-vortex",
+      "category": "visual-effects",
+      "param_id": "twist",
+      "name": "Vortex Twist",
+      "field": "x"
+    },
+    {
+      "id": "chroma-vortex",
+      "category": "visual-effects",
+      "param_id": "spread",
+      "name": "RGB Split",
+      "field": "y"
+    },
+    {
+      "id": "chroma-vortex",
+      "category": "visual-effects",
+      "param_id": "radius",
+      "name": "Vortex Radius",
+      "field": "z"
+    },
+    {
+      "id": "chroma-vortex",
+      "category": "visual-effects",
+      "param_id": "centerBias",
+      "name": "Center Stability",
+      "field": "w"
+    }
+  ],
   "errors": [],
   "baseline": "reports/dead_sliders_audit_baseline.json"
 }

@@ -7,6 +7,7 @@ import type { InternalColorFormat } from './config/formatPolicy';
 import type { RendererDiagnosticsSummary } from './components/controls/panels/AdvancedDebugPanel';
 import type { ImageRecord } from './types/aiVj';
 import { isRenderQualityMode, loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
+import { loadSourceAutoExposure, saveSourceAutoExposure } from './services/sourceAutoExposure';
 import { RendererManager } from './renderer/RendererManager';
 import { VideoRecord } from './syncTypes';
 import { VideoSegment } from './services/videoSegmentManager';
@@ -83,6 +84,7 @@ function MainApp() {
         }
         return loadRenderQualityMode();
     });
+    const [sourceAutoExposure, setSourceAutoExposure] = useState(() => loadSourceAutoExposure());
     const [performanceHud, setPerformanceHud] = useState<{
         internalWidth: number;
         internalHeight: number;
@@ -96,6 +98,8 @@ function MainApp() {
         fp32Pinned: boolean;
         fp32PinnedBy: string[];
         maxPassesPerFrame: number;
+        historyLayers: number;
+        workingSizeCap: number;
     }>({
         internalWidth: 2048,
         internalHeight: 2048,
@@ -109,6 +113,8 @@ function MainApp() {
         fp32Pinned: false,
         fp32PinnedBy: [],
         maxPassesPerFrame: 12,
+        historyLayers: 8,
+        workingSizeCap: 2048,
     });
 
     const [rendererDiagnostics, setRendererDiagnostics] =
@@ -332,7 +338,7 @@ function MainApp() {
         setSelectedVideo,
     });
 
-    const { hasThumbnail } = useThumbnailManifest();
+    const { hasHealthyThumbnail } = useThumbnailManifest();
 
     const {
         isRouletteActive,
@@ -350,7 +356,7 @@ function MainApp() {
         setMode,
         updateSlotParam,
         setStatus,
-        hasThumbnail,
+        hasThumbnail: hasHealthyThumbnail,
     });
 
     const {
@@ -367,7 +373,7 @@ function MainApp() {
         syncInputSourceToRenderer,
         setActiveGenerativeShader,
         setStatus,
-        hasThumbnail,
+        hasThumbnail: hasHealthyThumbnail,
         isMouseDown,
         mousePosition,
         midiEngageSignal,
@@ -467,6 +473,11 @@ function MainApp() {
         });
     }, [rendererReady, renderQualityMode]);
 
+    useEffect(() => {
+        if (!rendererReady) return;
+        rendererRef.current?.setSourceAutoExposure(sourceAutoExposure);
+    }, [rendererReady, sourceAutoExposure]);
+
     const handleSaveVjSet = useCallback(async (name: string) => {
         const encoded = await buildVjChainString();
         if (!encoded) {
@@ -487,6 +498,12 @@ function MainApp() {
                 formatCaps: manager.getFormatCapabilities(),
             });
         }
+    }, []);
+
+    const handleSourceAutoExposureChange = useCallback((enabled: boolean) => {
+        setSourceAutoExposure(enabled);
+        saveSourceAutoExposure(enabled);
+        rendererRef.current?.setSourceAutoExposure(enabled);
     }, []);
 
     const handleSetSlotParam = useCallback((slot: number, param: string, value: number) => {
@@ -527,6 +544,8 @@ function MainApp() {
                 fp32Pinned: perf.fp32Pinned,
                 fp32PinnedBy: perf.fp32PinnedBy,
                 maxPassesPerFrame: perf.maxPassesPerFrame,
+                historyLayers: perf.historyLayers,
+                workingSizeCap: perf.workingSizeCap,
             };
             // Avoid re-rendering the full App shell every second when nothing changed.
             setPerformanceHud((prev) => {
@@ -543,6 +562,8 @@ function MainApp() {
                     prev.requestedColorFormat === nextHud.requestedColorFormat &&
                     prev.fp32Pinned === nextHud.fp32Pinned &&
                     prev.maxPassesPerFrame === nextHud.maxPassesPerFrame &&
+                    prev.historyLayers === nextHud.historyLayers &&
+                    prev.workingSizeCap === nextHud.workingSizeCap &&
                     prev.fp32PinnedBy.length === nextHud.fp32PinnedBy.length &&
                     prev.fp32PinnedBy.every((id, i) => id === nextHud.fp32PinnedBy[i])
                 ) {
@@ -576,6 +597,8 @@ function MainApp() {
                 gpuChoresLastOp: diags.webgpu?.gpuChores?.lastOp ?? null,
                 gpuChoresBackend: diags.webgpu?.gpuChores?.backend,
                 gpuChoresEv: diags.webgpu?.gpuChores?.autoUniforms.exposureEv,
+                gpuChoresSourceGain: diags.webgpu?.gpuChores?.sourceGain,
+                gpuChoresClassify: diags.webgpu?.gpuChores?.classifyPreview,
             };
             setRendererDiagnostics((prev) => {
                 const errEq = (a?: string[], b?: string[]) =>
@@ -600,7 +623,9 @@ function MainApp() {
                     prev.gpuChoresReason === nextDiags.gpuChoresReason &&
                     prev.gpuChoresLastOp === nextDiags.gpuChoresLastOp &&
                     prev.gpuChoresBackend === nextDiags.gpuChoresBackend &&
-                    prev.gpuChoresEv === nextDiags.gpuChoresEv
+                    prev.gpuChoresEv === nextDiags.gpuChoresEv &&
+                    prev.gpuChoresSourceGain === nextDiags.gpuChoresSourceGain &&
+                    (prev.gpuChoresClassify?.bands.length ?? 0) === (nextDiags.gpuChoresClassify?.bands.length ?? 0)
                 ) {
                     return prev;
                 }
@@ -722,6 +747,8 @@ function MainApp() {
                 wasmFps={wasmFps}
                 renderQualityMode={renderQualityMode}
                 onRenderQualityChange={handleRenderQualityChange}
+                sourceAutoExposure={sourceAutoExposure}
+                onSourceAutoExposureChange={handleSourceAutoExposureChange}
                 performanceHud={performanceHud}
             />
 

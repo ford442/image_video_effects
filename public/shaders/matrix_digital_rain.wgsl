@@ -138,6 +138,10 @@ fn calculateVolumetricAlpha(layerDepth: f32, fogDensity: f32, viewDotNormal: f32
 
 @compute @workgroup_size(16, 16, 1) 
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let unused_x = u.zoom_params.x;
+    let unused_y = u.zoom_params.y;
+    let unused_z = u.zoom_params.z;
+    let unused_w = u.zoom_params.w;
     var resolution: vec2<f32>;
     var uv: vec2<f32>;
     var mousePos: vec2<f32>;

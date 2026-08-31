@@ -47,6 +47,7 @@ SHADERS_DIR = PROJECT_ROOT / "public" / "shaders"
 REPORT_JSON = PROJECT_ROOT / "reports" / "extrabuffer_write_audit.json"
 REPORT_MD = PROJECT_ROOT / "reports" / "extrabuffer_write_audit.md"
 BASELINE_JSON = PROJECT_ROOT / "reports" / "extrabuffer_write_audit_baseline.json"
+DYNAMIC_BASELINE_JSON = PROJECT_ROOT / "reports" / "extrabuffer_dynamic_index_baseline.json"
 
 RESERVED_MAX = 4        # [0..4] reserved
 FFT_MIN, FFT_MAX = 5, 132   # engine FFT bins
@@ -155,7 +156,46 @@ def load_baseline() -> dict[str, list[int]]:
     if not BASELINE_JSON.exists():
         return {}
     data = json.loads(BASELINE_JSON.read_text())
-    return {e["file"]: list(e["indices"]) for e in data.get("entries", [])}
+    entries: list[dict] = []
+    if isinstance(data.get("entries"), list):
+        entries.extend(data["entries"])
+    for section in ("engine_owned", "shader_bug"):
+        block = data.get(section)
+        if isinstance(block, dict) and isinstance(block.get("entries"), list):
+            entries.extend(block["entries"])
+    return {e["file"]: list(e["indices"]) for e in entries if e.get("file")}
+
+
+def load_dynamic_baseline() -> set[tuple[str, int, str]]:
+    """Triaged dynamic writes: (file, line, expr).
+
+    Reads from the ``triaged_dynamic`` section of the main baseline file when
+    present; falls back to the legacy separate file for backward compatibility.
+    """
+    out: set[tuple[str, int, str]] = set()
+
+    # Primary: triaged_dynamic section inside the main baseline
+    main_has_triaged_dynamic = False
+    if BASELINE_JSON.exists():
+        data = json.loads(BASELINE_JSON.read_text())
+        block = data.get("triaged_dynamic")
+        if isinstance(block, dict):
+            main_has_triaged_dynamic = True
+            for entry in block.get("entries") or []:
+                if not entry.get("file") or entry.get("line") is None:
+                    continue
+                out.add((entry["file"], int(entry["line"]), str(entry.get("expr", "")).strip()))
+
+    # Fallback: legacy separate file — only when the main baseline has no
+    # triaged_dynamic block at all (not just an empty one).
+    if not main_has_triaged_dynamic and DYNAMIC_BASELINE_JSON.exists():
+        data = json.loads(DYNAMIC_BASELINE_JSON.read_text())
+        for entry in data.get("entries", []):
+            if not entry.get("file") or entry.get("line") is None:
+                continue
+            out.add((entry["file"], int(entry["line"]), str(entry.get("expr", "")).strip()))
+
+    return out
 
 
 def write_baseline(results: list[dict]) -> None:
@@ -170,7 +210,14 @@ def write_baseline(results: list[dict]) -> None:
         "reason": "Triaged legacy extraBuffer[0..132] writes present at audit "
         "introduction (2026-07-26). Do NOT add new entries; fix the shader "
         "or remap state to extraBuffer[133..255] instead.",
-        "entries": sorted(entries, key=lambda e: e["file"]),
+        "engine_owned": {
+            "description": "FFT-zone writes used as documented engine/audio coupling.",
+            "entries": [],
+        },
+        "shader_bug": {
+            "description": "Persistent state in reserved/FFT zone; remap to [133..255].",
+            "entries": sorted(entries, key=lambda e: e["file"]),
+        },
     }
     BASELINE_JSON.write_text(json.dumps(payload, indent=2) + "\n")
 
@@ -206,9 +253,11 @@ def main() -> int:
         return 0
 
     baseline = load_baseline()
+    dynamic_baseline = load_dynamic_baseline()
     new_violations: list[dict] = []
     known_violations: list[dict] = []
     dynamic_total = 0
+    dynamic_untriaged = 0
     oor_total = 0
 
     for r in results:
@@ -219,7 +268,11 @@ def main() -> int:
                 known_violations.append(rec)
             else:
                 new_violations.append(rec)
-        dynamic_total += len(r["dynamic"])
+        for d in r["dynamic"]:
+            dynamic_total += 1
+            key = (r["file"], d["line"], str(d.get("expr", "")).strip())
+            if key not in dynamic_baseline:
+                dynamic_untriaged += 1
         oor_total += len(r["out_of_range"])
 
     report = {
@@ -228,6 +281,7 @@ def main() -> int:
         "new_violations": new_violations,
         "known_violations": known_violations,
         "dynamic_writes": dynamic_total,
+        "dynamic_untriaged": dynamic_untriaged,
         "out_of_range_writes": oor_total,
         "baseline": str(BASELINE_JSON.relative_to(PROJECT_ROOT)),
     }
@@ -242,6 +296,7 @@ def main() -> int:
         f"- **New violations (writes to [0..132]): {len(new_violations)}**",
         f"- Known (triaged baseline) violations: {len(known_violations)}",
         f"- Dynamic-index writes (unresolved, review): {dynamic_total}",
+        f"- Dynamic-index writes not in triage baseline: {dynamic_untriaged}",
         f"- Out-of-range writes (>255): {oor_total}",
         "",
     ]
@@ -258,10 +313,14 @@ def main() -> int:
     else:
         print("\n".join(md[:9]))
 
-    fail = bool(new_violations) or (args.strict and dynamic_total > 0)
+    fail = bool(new_violations) or dynamic_untriaged > 0 or (args.strict and dynamic_total > 0)
     if fail:
-        print("AUDIT FAIL: new extraBuffer[0..132] writes detected "
-              "(remap persistent state to [133..255])", file=sys.stderr)
+        if new_violations:
+            print("AUDIT FAIL: new extraBuffer[0..132] writes detected "
+                  "(remap persistent state to [133..255])", file=sys.stderr)
+        if dynamic_untriaged > 0:
+            print(f"AUDIT FAIL: {dynamic_untriaged} dynamic-index write(s) not in "
+                  f"{DYNAMIC_BASELINE_JSON.relative_to(PROJECT_ROOT)}", file=sys.stderr)
         return 1
     print("AUDIT PASS")
     return 0

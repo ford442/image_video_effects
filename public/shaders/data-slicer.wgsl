@@ -166,7 +166,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
   let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
   let jitterSpeed = 0.15 + zp.x * 3.5;
   let sliceThickness = mix(0.006, 0.12, zp.y);
   let chaosAmount = zp.z * 0.12 * select(1.0, 1.35, held);

@@ -101,6 +101,12 @@ export interface Renderer {
   /** Optional: Return current FPS for performance comparison (used by dual-FPS toggle). */
   getFPS?: () => number;
 
+  /**
+   * Exclusive WebGPU teardown for backend switches: destroy working textures,
+   * device.destroy(), and await device.lost before the next requestDevice.
+   */
+  releaseExclusiveGpu?: () => Promise<void>;
+
   /** Optional: Reload a single shader from a remote URL without rebuilding the entire pipeline. */
   reloadShaderFromURL?: (id: string, url: string) => Promise<boolean>;
 }

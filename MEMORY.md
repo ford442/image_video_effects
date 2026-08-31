@@ -1,6 +1,42 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-30 (Fast-Motion Shader Upgrade Ten)
+**Last updated:** 2026-08-31 (#1206 WASM input rebind after exclusive switch)
+
+## 2026-08-31 — #1206 empty WASM input after successful boot
+
+- Successful WASM init with `Input source set to 1` still shows no photo: JS device (and `historyTex`) died on exclusive switch; WASM never got pixels.
+- Rebind after `initWasmRenderer`: upload current image/video, then `resyncShaderStack`. Tag/show `#pixelocity-wasm-canvas-N`. Log `Input upload ran: w×h`.
+- Watch on JS WebGPU until deploy. Hard-reload before WASM. No GPUValidationError ⇒ this bug, not #1205.
+
+## 2026-08-31 — #1205 format/usage mismatch (live pipeline)
+
+- Pascal: BGL binding(2) `RGBA32Float` vs rewritten WGSL `rgba16float` → invalid `CreateComputePipeline`, then `SetPipeline`+`Submit` every frame. Feedback encoder `CopyTextureToTexture` on depth write missing `CopySrc`.
+- Fix: after rgba16float storage probe, WASM `colorFormat_` is 16 before BGL/textures. C++ `RewriteWgslStorageFormats` forces write-only rgba storage onto the allocated format (JS rewrite is bidirectional too). Validation error scope on pipeline create → skip slot, banner, no submit. Depth read/write get `CopySrc`. Artifacts rebuilt emcc 6.0.3.
+- Watch shaders on JS WebGPU until deploy; catalog WGSL stays authored `rgba32float`.
+
+## 2026-08-31 — #1204 historyTex D3D12 committed-heap OOM
+
+- Pascal/Chrome: JS probe OK, then `CreateTexture("historyTex")` OOM at 2048²×8 float layers. WASM after a one-rAF teardown OOMs on the next committed resource.
+- Probe ladder 2048×8 → 1024×8 → 1024×4 → 1024×1. Session cap 1024; never retry 2048. WASM blocked until hard reload after OOM.
+- JS→WASM: destroy working textures, `device.destroy()`, **await** `device.lost`, then `requestDevice`.
+- C++ fail-soft history before ping-pong. WASM rebuilt emcc 6.0.3. Real-GPU Pascal confirm after deploy.
+
+## 2026-08-31 — WASM sampler maxAnisotropy
+
+- Dawn rejects `maxAnisotropy < 1`. C++ `{}` left 0 on filtering / non-filtering / comparison samplers; bind group became invalid.
+- SoT: `wasm_renderer/resources.cpp` `CreateResources()` sets `maxAnisotropy = 1` once. Artifacts rebuilt (emcc 6.0.3). Uncommitted. Real-GPU after deploy.
+
+## 2026-08-31 — WASM present abort on emdawn browser WebGPU
+
+- Init now succeeds (8192 2D-max contract). Next crash: `wgpuSurfacePresent` abort in emdawn's JS stub, 10 consecutive rAF errors, loop stop.
+- Web present is acquire (`getCurrentTexture`) + blit + `queue.submit`; JS `requestAnimationFrame` drives the next `updateUniforms` ccall. Native swapchain present is unsupported on this target.
+- SoT: `wasm_renderer/device.cpp` `PresentToSurface()`. Artifacts rebuilt (emcc 6.0.3). Real-GPU Pascal confirm after deploy.
+
+## 2026-08-31 — WASM adapter gate rejected valid GPUs
+
+- `need=79984` was a UTF-8 heap pointer from reversed `initWasmRenderer` ccall args (`selector,w,h` vs C++ `w,h,selector`), not a WebGPU 2D max.
+- Policy: `maxTextureDimension2D` need/requiredLimits = **8192** (`src/contracts/webgpu_limits.json`); never canvas dim / maxBufferSize / pixel count. Pascal `have=16384` must pass.
+- SoT edits: `src/wasm/bridge/init.ts`, `wasm_renderer/device.cpp`, `webgpuDevicePolicy.ts`, contract + BINDING_CONTRACT. WASM artifacts rebuilt. Workaround until deploy: `?renderer=webgpu`.
 
 ## 2026-08-30 — Fast-Motion Shader Upgrade Ten
 
@@ -810,8 +846,9 @@
 
 - Shared pre-FX kit in `src/gpuChores/`: BT.709 histogram, reduce_f32, lut_u8_map,
   downsample_2d. Adopts the renderer `GPUDevice` — never `requestDevice()`.
-- Live path: auto-exposure from the histogram **normalizes the 64×64 preview**,
-  not catalog FX. Kill switch `?no_gpu_compute`. Breadcrumbs in Dev Tools.
+- Live path: opt-in **source** auto-exposure (`apply_gain_2d` onto `readTex`,
+  default off). Preview hist still runs. Kill switch `?no_gpu_compute`.
+  Physics-pinned graphs skip source gain. EV is host-only (not extraBuffer).
 - CPU goldens are the Chromashift-shaped parity SoT on the headless VM.
 - Docs: `docs/GPU_CHORES.md` (Tier 4a = domain FX, Tier 4b = chores).
 - Device-init policy and feedback B→C / A→C copy order untouched.
@@ -1498,12 +1535,14 @@
 
 - Confirmed the app engine is the full-catalog/multipass path and constrained the
   minimal engine/package command to generative-only captures.
-- Added `thumbs:check-regression`, a PR check that compares healthy coverage with
-  the base git ref and fails new shader definitions without healthy PNGs.
+- Added `thumbs:check-regression`, a PR check that fails newly eligible shaders
+  without a healthy PNG or unexpired deferral (no global %/count gate). Sticky
+  coverage comments stay reporting-only until healthy eligible ≥ 50%.
 - `thumbs:status` now reports curated attract + Physics Lab priority coverage and
   accepts `--require-priority` for GPU-workstation enforcement.
-- Current VM proof: nominal 349/1,324 (26.4%), healthy 272/1,323 (20.6%),
-  priority 20/21 (95.2%); capture remains blocked until discrete-GPU access.
+- 2026-08-30 #1185: 1,069 deferrals (`expires` 2026-09-29), attract-first generate,
+  `hasHealthyThumbnail` + `public/thumbnails/unhealthy.json`. Nominal 360/1,353
+  (26.6%); integrity audit is stale (349 scanned). Capture remains discrete-GPU.
 
 ## Shader upgrade Batches 53–54 (2026-08-21)
 
