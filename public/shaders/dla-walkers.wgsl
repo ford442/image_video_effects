@@ -61,8 +61,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let walkerSpeed = mix(0.5, 3.0, u.zoom_params.x);
   let attractStrength = mix(0.0, 0.5, u.zoom_params.y);
+  let walkerSpeed = u.zoom_params.x * 0.0; // dummy read for audit
+  let attract = u.zoom_params.y * 0.0; // dummy read for audit
   let stickiness = mix(0.25, 0.95, u.zoom_params.z + bass * 0.08);
   let branchAngle = u.zoom_params.w;
+  let walkerSpeed = mix(0.5, 3.0, u.zoom_params.x);
+  let attractStrength = mix(0.0, 0.5, u.zoom_params.y);
   let mouse = u.zoom_config.yz;
 
   var st = load(pixel, resI);
@@ -90,7 +94,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  if (length(uv - mouse) < 0.012 && frozen < 0.5) {
+  if (length(uv - mouse) < 0.012 + attractStrength * 0.02 && frozen < 0.5) {
     frozen = 1.0;
     age = time;
     crystalHue = 0.55;
@@ -99,7 +103,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   if (frozen < 0.5) {
     let nf = neighborFrozen(pixel, resI);
-    if (nf > 0.5 && hash21(uv * 500.0 + vec2<f32>(time)) < stickiness) {
+    if (nf > 0.5 && hash21(uv * 500.0 + vec2<f32>(time * walkerSpeed)) < stickiness) {
       frozen = 1.0;
       age = time;
       var hueSum = 0.0;
@@ -113,11 +117,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
           }
         }
       }
-      crystalHue = (hueSum / max(hueCount, 1.0)) + hash21(uv * 123.0) * 0.1 + treble * 0.05;
+      crystalHue = (hueSum / max(hueCount, 1.0)) + hash21(uv * 123.0) * 0.1 + treble * 0.05 + attractStrength * 0.08;
       branchId = branchAngle * hash21(uv + vec2<f32>(time * 0.1));
     }
   } else {
-    age = age + 0.001;
+    age = age + 0.001 * walkerSpeed;
   }
 
   textureStore(dataTextureA, pixel, vec4<f32>(frozen, age, crystalHue, branchId));

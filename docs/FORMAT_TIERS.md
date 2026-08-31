@@ -8,8 +8,11 @@ Memory sketch (order of magnitude, 2048²):
 
 | Target count | rgba32float | rgba16float |
 |--------------|-------------|-------------|
-| 1× | ~64 MiB | ~32 MiB |
-| ~6 storage/sampled rgba targets | ~384 MiB | ~192 MiB |
+| 1× 2D | ~64 MiB | ~32 MiB |
+| 6× 2D (source/read/write/A/B/C) | ~384 MiB | ~192 MiB |
+| history 8-layer 2D-array | ~512 MiB | ~256 MiB |
+
+`historyTex` is the largest single `CreateCommittedResource`. After OOM, working size is capped at 1024 and history layers may drop to 4 or 1 (#1204). Do not retry 2048 in the same tab.
 
 Adaptive resolution scaling alone cannot save integrated GPUs when format bandwidth dominates.
 
@@ -102,7 +105,9 @@ Resolved in [`src/config/formatPolicy.ts`](../src/config/formatPolicy.ts).
 
 ## C++ WASM parity
 
-[`wasm_renderer/resources.cpp`](../wasm_renderer/resources.cpp) and [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) use the same tier mapping via [`wasm_renderer/performance_policy.h`](../wasm_renderer/performance_policy.h). WGSL rewrite runs in TypeScript before `loadShader()` passes source to C++.
+[`wasm_renderer/resources.cpp`](../wasm_renderer/resources.cpp) and [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) use the same tier mapping via [`wasm_renderer/performance_policy.h`](../wasm_renderer/performance_policy.h). After the 1×1 storage probe, WASM prefers **`rgba16float`** when the probe succeeded so the bind-group layout is not left at `RGBA32Float` while rewritten WGSL is `rgba16float` (#1205). `LoadShader` rewrites write-only `rgba*` storage decls onto `colorFormat_` in C++ (JS `rewriteWgslStorageFormats` does the same before `ccall`). A Validation error on `CreateComputePipeline` is fail-soft: the slot is not stored, a banner is raised, and the frame loop does not `SetPipeline`/`Submit` that encoder.
+
+Depth feedback copies `Depth Texture Write` → `Depth Texture Read`. Those textures include **`CopySrc`** (Dawn does not infer copy-src from StorageBinding).
 
 `wgpuQueueWriteTexture` `bytesPerRow` follows `colorFormat_`: 16 B/px for rgba32float, 8 B/px for
 rgba16float. Zero-init of `dataC` / `readTexture` and `UploadRGBA8ToReadTexture` pack IEEE-754

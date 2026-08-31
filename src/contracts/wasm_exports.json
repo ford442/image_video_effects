@@ -11,6 +11,7 @@
     "_setSlotParams",
     "_setSlotMode",
     "_setColorFormat",
+    "_getColorFormat",
     "_updateUniforms",
     "_updateMousePos",
     "_setMouseDown",

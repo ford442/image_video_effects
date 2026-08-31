@@ -101,6 +101,7 @@ describe('WASM bridge uniforms (setInputSource)', () => {
     canvas.height = 64;
     const ok = await bridge.initWasmRenderer(canvas);
     expect(ok).toBe(true);
+    expect(canvas.id).toMatch(/^pixelocity-wasm-canvas-\d+$/);
     expect(ccall).toHaveBeenCalledWith('setInputSource', null, ['number'], [4]);
 
     bridge.shutdownWasmRenderer();

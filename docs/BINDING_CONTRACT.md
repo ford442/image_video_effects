@@ -116,7 +116,8 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 
 ## History ring (binding 13)
 
-- **Depth:** 8 layers (`HISTORY_DEPTH`)
+- **Depth:** 8 layers (`HISTORY_DEPTH`) is the **maximum**. Runtime may allocate 8, 4, or 1 after a `historyTex` VRAM probe (#1204). Bind-group `arrayLayerCount` must match the allocated texture. At 1 layer the ring copy is skipped (fail-soft graph history).
+- **VRAM:** 2048² × 8 × rgba32float is ~512 MiB — Pascal/Chrome D3D12 often OOMs. Probe-allocate; on `GPUOutOfMemoryError` drop to 1024 and **do not retry 2048** this tab. JS→WASM must `device.destroy()` and **await** `device.lost` before the next `requestDevice`.
 - **Catalog metadata:** `requiresHistoryRing: true` in shader JSON for temporal effects
 - **CPU:** `historyHead` written to `extraBuffer[4]` when any enabled shader uses binding 13
 - **GPU:** after each frame, copy presented color into `historyTexture[historyHead]`, then `historyHead = (historyHead + 1) % 8`
@@ -135,7 +136,7 @@ Both backends validate adapter limits before device creation and request explici
 
 | Limit | Required | Notes |
 |-------|----------|-------|
-| `maxTextureDimension2D` | canvas max(w, h) | Scales with canvas |
+| `maxTextureDimension2D` | **8192** | Comfortable floor (`webgpu_limits.json`). Never canvas max(w,h), maxBufferSize, pixel count, or a mis-ordered init pointer. |
 | `maxBindingsPerBindGroup` | 14 | 14-entry layout (0–13) |
 | `maxSampledTexturesPerShaderStage` | 3 | readTexture, dataTextureC, historyTexture |
 | `maxSamplersPerShaderStage` | 3 | filtering, non-filtering, comparison |

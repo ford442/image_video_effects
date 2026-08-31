@@ -95,6 +95,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onSetSlotParam,
     renderQualityMode = 'auto',
     onRenderQualityChange,
+    sourceAutoExposure = false,
+    onSourceAutoExposureChange,
     maxActiveSlots = 3,
     performanceHud,
     rendererDiagnostics,
@@ -212,6 +214,11 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 <RenderQualityPanel
                     qualityMode={renderQualityMode}
                     onQualityChange={onRenderQualityChange}
+                    sourceAutoExposure={sourceAutoExposure}
+                    onSourceAutoExposureChange={onSourceAutoExposureChange}
+                    sourceAutoExposureDisabled={
+                        activeRendererType !== 'webgpu' || rendererDiagnostics?.gpuComputeAvailable === false
+                    }
                     maxActiveSlots={maxActiveSlots}
                     internalResolution={performanceHud.internalWidth}
                     scale={performanceHud.scale}
@@ -223,6 +230,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     fp32Pinned={performanceHud.fp32Pinned}
                     fp32PinnedBy={performanceHud.fp32PinnedBy}
                     maxPassesPerFrame={performanceHud.maxPassesPerFrame}
+                    historyLayers={performanceHud.historyLayers}
+                    workingSizeCap={performanceHud.workingSizeCap}
                 />
             )}
 

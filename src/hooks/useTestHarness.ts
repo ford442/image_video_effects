@@ -92,6 +92,8 @@ export function useTestHarness({
                     return measureCanvasStats(canvas);
                 },
                 captureThumbnailPng: async (outSize = 256): Promise<string | null> => {
+                    const chores = await manager.captureThumbnailPng?.(outSize);
+                    if (chores) return chores;
                     const canvas = document.querySelector('canvas');
                     if (!canvas) return null;
                     const tmp = document.createElement('canvas');

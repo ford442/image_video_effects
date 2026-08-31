@@ -46,6 +46,8 @@ export interface SlotZoomParamsUpdate {
 export function getDiagnostics(): WasmBridgeDiagnostics;
 
 export function initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
+export function ensureWasmCanvasId(canvas: HTMLCanvasElement): string;
+export function promoteWasmCanvasVisible(canvas: HTMLCanvasElement): HTMLCanvasElement;
 export function shutdownWasmRenderer(): void;
 export function loadShader(id: string, wgslCode: string): boolean;
 export function reloadShader(id: string, wgslCode: string): boolean;

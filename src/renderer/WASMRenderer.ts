@@ -10,6 +10,7 @@ import {
   snapRenderScale,
 } from '../config/performancePolicy';
 import type { InternalColorFormat } from '../config/formatPolicy';
+import { getHistoryWorkingSizeCap } from '../config/vramBudget';
 
 type SlotMode = 'chained' | 'parallel';
 
@@ -51,6 +52,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private mouseDown = false;
   private initialized = false;
   private inputSource: InputSource = 'image';
+  private logNextInputUpload = false;
 
   // Offscreen canvas for extracting video/image pixel data
   private offscreenCanvas: HTMLCanvasElement | null = null;
@@ -80,7 +82,12 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.initAttempts++;
     try {
       console.log(`[WASM] Init attempt ${this.initAttempts}/${this.maxInitAttempts}...`);
-      
+
+      const cap = getHistoryWorkingSizeCap();
+      const dim = Math.min(canvas.width || INTERNAL_RENDER_RESOLUTION, cap);
+      canvas.width = dim;
+      canvas.height = dim;
+
       const ok = await WasmBridge.initWasmRenderer(canvas);
       if (!ok) {
         // Name the stage reached: "no adapter" and "surface came up but pipeline did not"
@@ -101,13 +108,16 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       }
 
       this.initialized = true;
+      this.logNextInputUpload = true;
       this.startTime = performance.now() / 1000;
       if (this.resolutionScale !== 1.0) {
         this.setResolutionScale(this.resolutionScale);
       }
       this.startRenderLoop();
 
-      console.log('✅ WASM Renderer initialized successfully');
+      console.log(
+        `✅ WASM Renderer initialized successfully (present #${canvas.id || 'pixelocity-wasm-canvas'})`,
+      );
       return true;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -164,7 +174,15 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
    * Must be called before setActiveShader().
    */
   async loadShader(id: string, url: string): Promise<boolean> {
-    return WasmBridge.loadShaderFromURL(id, url);
+    const ok = await WasmBridge.loadShaderFromURL(id, url);
+    if (!ok) {
+      reportError({
+        type: 'shader-compile',
+        message: `Shader "${id}" failed to compile. Slot skipped — pipeline not submitted.`,
+        recoverable: true,
+      });
+    }
+    return ok;
   }
 
   /** Switch to a previously loaded shader (legacy single-shader API). */
@@ -252,7 +270,11 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.resolutionScale = snapped;
     if (!this.initialized) return;
 
-    const { width, height } = computeInternalDimensions(INTERNAL_RENDER_RESOLUTION, snapped);
+    const cap = getHistoryWorkingSizeCap();
+    const { width, height } = computeInternalDimensions(
+      Math.min(INTERNAL_RENDER_RESOLUTION, cap),
+      snapped,
+    );
     this.resizeCanvas(width, height);
   }
 
@@ -262,7 +284,8 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     scaled: { w: number; h: number };
     pixelReduction: string;
   } {
-    const full = INTERNAL_RENDER_RESOLUTION;
+    const cap = getHistoryWorkingSizeCap();
+    const full = Math.min(INTERNAL_RENDER_RESOLUTION, cap);
     const dims = computeInternalDimensions(full, this.resolutionScale);
     const fullPixels = full * full;
     const scaledPixels = dims.width * dims.height;
@@ -343,6 +366,10 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.video = video;
   }
 
+  getVideo(): HTMLVideoElement | null {
+    return this.video;
+  }
+
   updateVideoFrame(): void {
     if (!this.usesVideoInput()) return;
     if (!this.video || this.video.readyState < 2) return;
@@ -365,6 +392,10 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.offscreenCtx.drawImage(this.video, 0, 0, w, h);
     const imageData = this.offscreenCtx.getImageData(0, 0, w, h);
     WasmBridge.uploadVideoFrame(imageData.data, w, h);
+    if (this.logNextInputUpload) {
+      console.log(`[WASM] Input upload ran: ${w}×${h} (video)`);
+      this.logNextInputUpload = false;
+    }
   }
 
   /**
@@ -391,6 +422,8 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.offscreenCtx.drawImage(img, 0, 0, w, h);
     const imageData = this.offscreenCtx.getImageData(0, 0, w, h);
     WasmBridge.uploadImageData(imageData.data, w, h);
+    console.log(`[WASM] Input upload ran: ${w}×${h} (image)`);
+    this.logNextInputUpload = false;
   }
 
   /** Renderer interface alias — matches WebGPURenderer.loadImage signature. */
@@ -439,7 +472,15 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   }
 
   async reloadShaderFromURL(id: string, url: string): Promise<boolean> {
-    return WasmBridge.reloadShaderFromURL(id, url);
+    const ok = await WasmBridge.reloadShaderFromURL(id, url);
+    if (!ok) {
+      reportError({
+        type: 'shader-compile',
+        message: `Shader "${id}" hot-reload failed. Slot skipped — pipeline not submitted.`,
+        recoverable: true,
+      });
+    }
+    return ok;
   }
 
   /** Test hook: pin uniforms and render one WASM frame. */
@@ -520,6 +561,17 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     this.initialized = false;
     this.offscreenCanvas = null;
     this.offscreenCtx = null;
+  }
+
+  async releaseExclusiveGpu(): Promise<void> {
+    this.destroy();
+    await new Promise<void>((resolve) => {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => resolve());
+      } else {
+        setTimeout(resolve, 0);
+      }
+    });
   }
 
   // ── Internal ──────────────────────────────────────────────────────────────
