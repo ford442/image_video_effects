@@ -57,14 +57,14 @@ async function initWasmRenderer(canvasElement) {
           canvas.id = canvasId;
         }
         const selector = "#" + canvasId;
-        console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} )`);
+        console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} , ${selector} )`);
         let ok = 0;
         try {
           ok = wasmRef.module.ccall(
             "initWasmRenderer",
             "number",
-            ["string", "number", "number"],
-            [selector, state.canvasWidth, state.canvasHeight]
+            ["number", "number", "string"],
+            [state.canvasWidth, state.canvasHeight, selector]
           );
         } catch (callErr) {
           console.error("[WASM] ccall initWasmRenderer threw:", callErr);

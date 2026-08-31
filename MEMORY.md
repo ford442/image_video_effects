@@ -1,6 +1,12 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-30 (Fast-Motion Shader Upgrade Ten)
+**Last updated:** 2026-08-31 (WASM maxTextureDimension2D gate)
+
+## 2026-08-31 — WASM adapter gate rejected valid GPUs
+
+- `need=79984` was a UTF-8 heap pointer from reversed `initWasmRenderer` ccall args (`selector,w,h` vs C++ `w,h,selector`), not a WebGPU 2D max.
+- Policy: `maxTextureDimension2D` need/requiredLimits = **8192** (`src/contracts/webgpu_limits.json`); never canvas dim / maxBufferSize / pixel count. Pascal `have=16384` must pass.
+- SoT edits: `src/wasm/bridge/init.ts`, `wasm_renderer/device.cpp`, `webgpuDevicePolicy.ts`, contract + BINDING_CONTRACT. WASM artifacts rebuilt. Workaround until deploy: `?renderer=webgpu`.
 
 ## 2026-08-30 — Fast-Motion Shader Upgrade Ten
 

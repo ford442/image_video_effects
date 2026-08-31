@@ -263,13 +263,17 @@ bool WebGPURenderer::CreateDevice() {
     // contract (bindings 0–13; see docs/BINDING_CONTRACT.md) so that a weak
     // adapter fails here with an actionable message instead of deep inside
     // CreateResources() with a cryptic bind-group-layout error.
+    //
+    // maxTextureDimension2D need is the named comfortable floor (8192), matching
+    // src/contracts/webgpu_limits.json — NOT canvas max(w,h), NOT maxBufferSize,
+    // NOT pixel count / width*height, and NOT a mis-ordered init heap pointer.
     WGPULimits limits = {};
     wgpuAdapterGetLimits(adapter_.get(), &limits);
 
     bool limitsOk = true;
-    const uint64_t maxCanvasDim = (uint64_t)std::max(canvasWidth_, canvasHeight_);
+    // 8192 = webgpu_limits.json minimumComputeLimits.maxTextureDimension2D (comfortable floor).
     printf("[WASM] Adapter limits (validating against 14-entry compute contract):\n");
-    CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              maxCanvasDim, limitsOk);
+    CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              8192, limitsOk);
     CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            14,  limitsOk);
     CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    3,  limitsOk);
     CheckLimit("maxSamplersPerShaderStage",          limits.maxSamplersPerShaderStage,           3,  limitsOk);
@@ -354,7 +358,7 @@ bool WebGPURenderer::CreateDevice() {
     // All other fields stay WGPU_LIMIT_*_UNDEFINED (via WGPU_LIMITS_INIT) so
     // we don't over-request anything the adapter doesn't already offer.
     WGPULimits requiredLimits = WGPU_LIMITS_INIT;
-    requiredLimits.maxTextureDimension2D             = (uint32_t)maxCanvasDim;
+    requiredLimits.maxTextureDimension2D             = 8192; // webgpu_limits.json comfortable floor
     requiredLimits.maxBindingsPerBindGroup           = 14;
     requiredLimits.maxSampledTexturesPerShaderStage  = 3;
     requiredLimits.maxSamplersPerShaderStage         = 3;
@@ -592,9 +596,8 @@ bool WebGPURenderer::CreateDevice() {
         WGPULimits deviceLimits = {};
         wgpuDeviceGetLimits(device_.get(), &deviceLimits);
         bool deviceLimitsOk = true;
-        const uint64_t maxCanvasDim = (uint64_t)std::max(canvasWidth_, canvasHeight_);
         printf("[WASM] Device limits (post-creation, catches clamping):\n");
-        CheckLimit("maxTextureDimension2D",             deviceLimits.maxTextureDimension2D,             maxCanvasDim, deviceLimitsOk);
+        CheckLimit("maxTextureDimension2D",             deviceLimits.maxTextureDimension2D,             8192, deviceLimitsOk);
         CheckLimit("maxBindingsPerBindGroup",           deviceLimits.maxBindingsPerBindGroup,           14,  deviceLimitsOk);
         CheckLimit("maxSampledTexturesPerShaderStage",  deviceLimits.maxSampledTexturesPerShaderStage,  3,   deviceLimitsOk);
         CheckLimit("maxSamplersPerShaderStage",         deviceLimits.maxSamplersPerShaderStage,         3,   deviceLimitsOk);

@@ -135,7 +135,7 @@ Both backends validate adapter limits before device creation and request explici
 
 | Limit | Required | Notes |
 |-------|----------|-------|
-| `maxTextureDimension2D` | canvas max(w, h) | Scales with canvas |
+| `maxTextureDimension2D` | **8192** | Comfortable floor (`webgpu_limits.json`). Never canvas max(w,h), maxBufferSize, pixel count, or a mis-ordered init pointer. |
 | `maxBindingsPerBindGroup` | 14 | 14-entry layout (0–13) |
 | `maxSampledTexturesPerShaderStage` | 3 | readTexture, dataTextureC, historyTexture |
 | `maxSamplersPerShaderStage` | 3 | filtering, non-filtering, comparison |

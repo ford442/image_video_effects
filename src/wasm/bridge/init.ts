@@ -72,15 +72,18 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
         }
 
         const selector = '#' + canvasId;
-        console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} )`);
+        // C++ signature: initWasmRenderer(int width, int height, const char* canvasSelector)
+        // Passing selector first made the UTF-8 heap pointer the "width" (~79984) and
+        // maxTextureDimension2D CheckLimit treated that pointer as need → false INSUFFICIENT.
+        console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} , ${selector} )`);
 
         let ok: unknown = 0;
         try {
           ok = wasmRef.module.ccall(
             'initWasmRenderer',
             'number',
-            ['string', 'number', 'number'],
-            [selector, state.canvasWidth, state.canvasHeight],
+            ['number', 'number', 'string'],
+            [state.canvasWidth, state.canvasHeight, selector],
           );
         } catch (callErr: unknown) {
           console.error('[WASM] ccall initWasmRenderer threw:', callErr);
