@@ -1,6 +1,17 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-31 (WASM maxTextureDimension2D gate)
+**Last updated:** 2026-08-31 (WASM samplers: maxAnisotropy=1)
+
+## 2026-08-31 — WASM sampler maxAnisotropy
+
+- Dawn rejects `maxAnisotropy < 1`. C++ `{}` left 0 on filtering / non-filtering / comparison samplers; bind group became invalid.
+- SoT: `wasm_renderer/resources.cpp` `CreateResources()` sets `maxAnisotropy = 1` once. Artifacts rebuilt (emcc 6.0.3). Uncommitted. Real-GPU after deploy.
+
+## 2026-08-31 — WASM present abort on emdawn browser WebGPU
+
+- Init now succeeds (8192 2D-max contract). Next crash: `wgpuSurfacePresent` abort in emdawn's JS stub, 10 consecutive rAF errors, loop stop.
+- Web present is acquire (`getCurrentTexture`) + blit + `queue.submit`; JS `requestAnimationFrame` drives the next `updateUniforms` ccall. Native swapchain present is unsupported on this target.
+- SoT: `wasm_renderer/device.cpp` `PresentToSurface()`. Artifacts rebuilt (emcc 6.0.3). Real-GPU Pascal confirm after deploy.
 
 ## 2026-08-31 — WASM adapter gate rejected valid GPUs
 

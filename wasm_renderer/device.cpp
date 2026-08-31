@@ -768,9 +768,10 @@ void WebGPURenderer::PresentToSurface() {
     wgpuTextureViewRelease(surfaceView);
     wgpuTextureRelease(surfaceTex.texture);
 
-    // In browser WebGPU, wgpuSurfacePresent is typically a no-op — the browser
-    // presents automatically at the end of the animation frame.
-    wgpuSurfacePresent(surface_.get());
+    // Do not call wgpuSurfacePresent. emdawnwebgpu's browser stub aborts:
+    // "wgpuSurfacePresent is unsupported (use requestAnimationFrame via html5.h instead)".
+    // Acquire + blit + submit is enough; JS rAF in WASMRenderer.startRenderLoop
+    // drives the next updateUniforms ccall, and the browser composites on return.
 }
 
 

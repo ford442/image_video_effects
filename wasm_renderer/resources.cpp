@@ -70,6 +70,8 @@ bool WebGPURenderer::CreateResources() {
     // Create samplers
     WGPUSamplerDescriptor samplerDesc = {};
     samplerDesc.nextInChain = nullptr;
+    // Dawn rejects maxAnisotropy < 1 (C++ {} leaves 0). Spec/JS default is 1.
+    samplerDesc.maxAnisotropy = 1;
     samplerDesc.label = MakeStringView("Filtering Sampler");
     samplerDesc.magFilter = WGPUFilterMode_Linear;
     samplerDesc.minFilter = WGPUFilterMode_Linear;
