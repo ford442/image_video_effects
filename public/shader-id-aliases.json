@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Hyphen URL aliases for legacy underscore catalog ids. Canonical ids stay underscore; new ids use hyphens.",
     "canonical_rule": "hyphen-alias -> underscore-id",
-    "generated_at": "2026-08-30",
+    "generated_at": "2026-08-31",
     "count": 20,
     "skipped_collisions": [
       {
