@@ -22607,6 +22607,67 @@
     "features": []
   },
   {
+    "id": "gen-luminescent-nebula-silk-weaver",
+    "name": "Luminescent Nebula-Silk Weaver",
+    "url": "shaders/gen-luminescent-nebula-silk-weaver.wgsl",
+    "category": "generative",
+    "description": "An expanding cosmos of silken energy ribbons that autonomously weave and untangle in zero gravity, driven by fluid dynamics and spectral analysis. This shader generates a mesmerizing, ethereal textile of starlight that breathes and flows, wrapping around unseen multidimensional objects and erupting into brilliant, audio-reactive flares.",
+    "features": [
+      "fluid",
+      "ribbon",
+      "nebula",
+      "audio-reactive",
+      "raymarching",
+      "curl-noise"
+    ],
+    "tags": [
+      "fluid",
+      "ribbon",
+      "nebula",
+      "audio-reactive",
+      "raymarching",
+      "curl-noise"
+    ],
+    "params": [
+      {
+        "id": "flow_complexity",
+        "name": "Flow Complexity",
+        "mapping": "zoom_params.x",
+        "default": 2,
+        "min": 0.5,
+        "max": 4,
+        "step": 0.1
+      },
+      {
+        "id": "ribbon_width",
+        "name": "Ribbon Width",
+        "mapping": "zoom_params.y",
+        "default": 0.05,
+        "min": 0.01,
+        "max": 0.2,
+        "step": 0.01
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "mapping": "zoom_params.z",
+        "default": 1.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "audio_pulse",
+        "name": "Audio Pulse",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-luminescent-quantum-flora-symphony",
     "name": "Luminescent Quantum-Flora Symphony",
     "category": "generative",
