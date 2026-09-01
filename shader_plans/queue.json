@@ -469,11 +469,6 @@
       "filename": "2026-08-30_quantum-flux-core.md",
       "title": "Quantum Flux Core",
       "added": "2026-08-30T15:13:01.492178"
-    },
-    {
-      "filename": "2026-08-31_liquid-metal-cymatic-resonator.md",
-      "title": "Liquid-Metal Cymatic Resonator",
-      "added": "2026-08-31T15:19:18.595499"
     }
   ],
   "current": null,
@@ -895,6 +890,13 @@
       "added": "2026-08-29T15:26:45.550822",
       "status": "completed",
       "completed_at": "2026-08-31T07:58:02.324459+00:00"
+    },
+    {
+      "filename": "2026-08-31_liquid-metal-cymatic-resonator.md",
+      "title": "Liquid-Metal Cymatic Resonator",
+      "added": "2026-08-31T15:19:18.595499",
+      "status": "completed",
+      "completed_at": "2026-09-01T08:00:25.131587+00:00"
     }
   ],
   "rejected": [],
