@@ -148,9 +148,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let centre = (mouse - 0.5) * 2.0;
     let viewPos = (uv - 0.5) * (4.0 / zoom) + centre;
 
+    var clickEnergy = 0.0;
+    let aspect = res.x / max(res.y, 1.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = u.config.x - ripple.z;
+        if (age < 0.0 || age > 2.2) { continue; }
+        let rippleDistance = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+        clickEnergy += exp(-abs(rippleDistance - age * 0.23) * 82.0) * exp(-age * 1.1);
+    }
+    clickEnergy = clamp(clickEnergy, 0.0, 1.0);
+
     // Kaleidoscope fold layer: treble blends the splat plane into wedges
     let foldAmt  = clamp(treble * 0.45, 0.0, 0.5);
-    let splatPos = mix(viewPos, kalei(viewPos, FOLD_COUNT) + centre, foldAmt);
+    let splatPos = mix(viewPos, kalei(viewPos, FOLD_COUNT) + centre, foldAmt)
+      * (1.0 + clickEnergy * 0.07);
 
     let seed   = hash22(uv * 131.7 + vec2<f32>(fract(time * 0.031), fract(time * 0.041 + 0.5)));
     var p      = seed * 4.0 - 2.0;
@@ -235,8 +248,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var col     = mix(coolCol, warmCol, chromaMix);
     col += palette(hueOff + 0.6, 0.1) * glow3d * (1.0 + bass);   // tube aura bleed
     col = mix(col, tubeCol * 1.4, select(0.0, 0.85, hit));       // branchless composite
+    col += palette(hueOff + clickEnergy * 0.35, 0.3) * clickEnergy * (0.25 + treble * 0.45);
 
-    let alpha    = clamp(density * 0.85 + bass * 0.12 + select(0.0, 0.55, hit) + glow3d * 0.5, 0.0, 1.0);
+    let alpha    = clamp(density * 0.85 + bass * 0.12 + select(0.0, 0.55, hit)
+      + glow3d * 0.5 + clickEnergy * 0.2, 0.0, 1.0);
     let finalOut = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     textureStore(dataTextureA, coord, vec4<f32>(accumulated, hueOff, tubeDepth, alpha));

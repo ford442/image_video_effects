@@ -41,6 +41,11 @@ const PI            : f32 = 3.14159265358979323846;
 const MAX_STEPS     : i32 = 80;
 const MAX_DIST      : f32 = 40.0;
 const SURF_DIST     : f32 = 0.0015;
+const AUDIO_ENV     : u32 = 133u;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  MATH HELPERS
@@ -175,26 +180,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mid = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Parameters (clamp zoom_params to normalized range)
-  let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-  let fracture = mix(0.0, 2.0, zparams.x);        // Fracture Intensity
-  let plasmaHeat = mix(0.0, 2.0, zparams.y);      // Plasma Heat
-  let iceDensity = mix(0.5, 2.0, zparams.z);      // Ice Density
-  let fogThickness = mix(0.0, 1.0, zparams.w);    // Fog Thickness
+  // Named controls use their JSON ranges directly.
+  let fracture = clamp(u.zoom_params.x, 0.0, 1.0);
+  let plasmaHeat = clamp(u.zoom_params.y, 0.0, 2.0);
+  let iceDensity = clamp(u.zoom_params.z, 0.1, 3.0);
+  let fogThickness = clamp(u.zoom_params.w, 0.0, 1.0);
 
-  // ═══ CHUNK: bass_env smoothing ═══
-  let prevBass = extraBuffer[0];
-  let bassSmooth = bass_env(prevBass, bass, 0.08, 0.02);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[0] = bassSmooth;
+  // Bass envelope state is bounded to the shared allocation at [133].
+  var bassSmooth = bass;
+  let hasAudioState = arrayLength(&extraBuffer) > AUDIO_ENV;
+  if (hasAudioState) {
+    bassSmooth = bass_env(extraBuffer[AUDIO_ENV], bass, 0.08, 0.02);
   }
+  if (hasAudioState && global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[AUDIO_ENV] = bassSmooth;
+  }
+
+  let uv01 = (fragCoord + 0.5) / res;
+  let aspect = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  var shock = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.8) {
+      let front = abs(length((uv01 - ripple.xy) * aspect) - age * 0.22);
+      shock += (1.0 - smoothstep(0.0, 0.028, front)) * (1.0 - age / 2.8);
+    }
+  }
+  shock = min(shock, 2.0);
+  let fractureReactive = fracture * (1.0 + bassSmooth * 0.65) + shock * 0.45;
+  let plasmaReactive = plasmaHeat * (1.0 + mid * 0.35) + shock * 0.3;
 
   // Camera
   let mouseUV = u.zoom_config.yz;
   let mouseY = mouseUV.y;  // Flip Y: screen top = up
   let camAng = time * 0.1 + mouseUV.x * 0.5;
-  let camDist = 8.0;
+  let camDist = 8.0 - held * 1.1 + shock * 0.25;
   let ro = vec3<f32>(
     cos(camAng) * camDist,
     2.0 + mouseY * 2.0,
@@ -215,11 +240,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   for(var i = 0; i < MAX_STEPS; i++) {
     let p = ro + rd * t;
-    let res = map(p, time, fracture, plasmaHeat, iceDensity, bassSmooth);
+    let res = map(p, time, fractureReactive, plasmaReactive, iceDensity, bassSmooth);
     d = res.d;
     mat = res.mat;
     glow = res.glow;
-    if(d < SURF_DIST || t > MAX_DIST) { break; }
+    if(d < SURF_DIST) { hit = true; break; }
+    if(t > MAX_DIST) { break; }
     t += d * 0.8;
   }
 
@@ -239,7 +265,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var col = vec3<f32>(0.0);
   if(t < MAX_DIST) {
     let p = ro + rd * t;
-    let n = calcNormal(p, time, fracture, plasmaHeat, iceDensity, bassSmooth);
+    let n = calcNormal(p, time, fractureReactive, plasmaReactive, iceDensity, bassSmooth);
 
     // Lighting
     let lightDir = normalize(vec3<f32>(1.0, 2.0, -1.0));
@@ -269,7 +295,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         glow * bassSmooth
       );
       col = plasmaCol * (diff * 0.8 + 0.5) + spec * vec3<f32>(1.0, 0.9, 0.7) * 0.8;
-      col += glow * vec3<f32>(2.0, 0.5, 1.0) * plasmaHeat;
+      col += glow * vec3<f32>(2.0, 0.5, 1.0) * plasmaReactive;
     }
 
     // Distance fade
@@ -281,13 +307,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Audio flash
   col += vec3<f32>(0.1, 0.3, 0.5) * bassSmooth * bassSmooth * 0.5;
+  col += vec3<f32>(0.2, 0.75, 1.0) * shock * (0.35 + treble * 0.8);
+  col += vec3<f32>(1.0, 0.22, 0.75) * held * exp(-length((uv01 - u.zoom_config.yz) * aspect) * 7.0) * (0.2 + mid * 0.4);
 
-  // Temporal feedback (upgraded-rgba)
+  // Exact temporal feedback in HDR, then ACES display mapping.
   let prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
   col = mix(prevCol, col, 0.3);
+  let mapped = acesToneMap(col * 1.15);
+  let fogEnergy = clamp(length(fogAccum), 0.0, 1.0);
+  let alpha = clamp(select(0.03, 0.72, hit) + fogEnergy * 0.24 + glow * 0.08 + shock * 0.22, 0.0, 1.0);
 
   // Write
   let outCoords = vec2<i32>(global_id.xy);
-  textureStore(writeTexture, outCoords, vec4<f32>(col, 1.0));
+  textureStore(writeTexture, outCoords, vec4<f32>(mapped, alpha));
   textureStore(writeDepthTexture, outCoords, vec4<f32>(1.0 - clamp(t / MAX_DIST, 0.0, 1.0), 0.0, 0.0, 1.0));
+  textureStore(dataTextureA, outCoords, vec4<f32>(col, alpha));
 }

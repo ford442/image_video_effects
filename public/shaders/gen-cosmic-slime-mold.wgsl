@@ -168,12 +168,26 @@ fn veinStructure(p: vec2<f32>, seed: f32, scale: f32, time: f32) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
     let uv01 = vec2<f32>(pixel) / resolution;
     let time = u.config.x;
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let mouseDown = u.zoom_config.w;
-    let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);
+    let mouseNorm = (mouse - 0.5) * vec2<f32>(resolution.x / resolution.y, 1.0);
+
+    var clickFeed = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 4.0) {
+            let delta = (uv01 - ripple.xy) * vec2<f32>(resolution.x / resolution.y, 1.0);
+            let front = abs(length(delta) - age * (0.08 + u.zoom_params.y * 0.11));
+            clickFeed += (1.0 - smoothstep(0.0, 0.024, front)) * (1.0 - age / 4.0);
+        }
+    }
+    clickFeed = min(clickFeed, 2.0);
 
     // Audio reactivity
     let bass = plasmaBuffer[0].x;
@@ -284,6 +298,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let organicNoise = vnoise(uv * 8.0 * scale + time * speed * 0.5);
     let organicMask = smoothstep(0.4, 0.6, organicNoise) * 0.1 * intensity;
     col += slimeColor(fract(time * 0.05 * speed + colorShift)) * organicMask;
+    col += slimeColor(fract(colorShift + time * 0.08 + 0.45)) * clickFeed * intensity * (0.45 + bass * 0.6);
 
     // Pulsing vignette
     let vigPulse = 1.0 + 0.1 * sin(time * 2.0 * speed);
@@ -297,22 +312,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    // ACES tone map
-    col = acesToneMap(col);
-    col = pow(col, vec3<f32>(0.9));
-
-    // Brightness boost
-    col = col * 2.0;
-
-    // Semantic alpha
-    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
-
-    // Temporal feedback
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    // Exact temporal feedback in HDR, followed by ACES display mapping.
+    let prev = textureLoad(dataTextureC, pixel, 0);
     let decay = 0.96;
-    let temporal = mix(prev.rgb * decay, col, 0.25);
+    let temporal = mix(prev.rgb * decay, col, 0.25 + treble * 0.03);
+    let mapped = pow(acesToneMap(temporal), vec3<f32>(0.9));
+
+    // Semantic alpha follows living trail energy and click-fed expansion.
+    let alpha = clamp(length(temporal) * 0.42 + clickFeed * 0.22 + starMask * 0.08, 0.04, 0.96);
     textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
 
-    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - alpha * 0.8, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

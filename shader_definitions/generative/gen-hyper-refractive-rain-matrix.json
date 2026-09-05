@@ -2,18 +2,29 @@
   "name": "Hyper-Refractive Rain-Matrix",
   "category": "generative",
   "tags": [
-    "generative"
+    "generative",
+    "rain",
+    "refraction",
+    "caustics",
+    "raymarch",
+    "audio-reactive"
   ],
-  "description": "",
+  "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, storm flashes, and temporal HDR trails.",
   "workgroup_size": [
     16,
     16,
     1
   ],
+  "params": [
+    {"id": "rainDensity", "name": "Rain Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
+    {"id": "dropSpeed", "name": "Drop Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
+    {"id": "fluidViscosity", "name": "Fluid Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
+    {"id": "stormIntensity", "name": "Storm Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
+  ],
   "updatedParams": [
     {
       "index": 0,
-      "name": "Intensity",
+      "name": "Rain Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -21,7 +32,7 @@
     },
     {
       "index": 1,
-      "name": "Speed",
+      "name": "Drop Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -29,7 +40,7 @@
     },
     {
       "index": 2,
-      "name": "Scale",
+      "name": "Fluid Viscosity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -37,7 +48,7 @@
     },
     {
       "index": 3,
-      "name": "Mouse Influence",
+      "name": "Storm Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -49,5 +60,6 @@
   "updated": true,
   "id": "gen-hyper-refractive-rain-matrix",
   "url": "shaders/gen-hyper-refractive-rain-matrix.wgsl",
-  "features": []
+  "features": ["raymarched", "audio-reactive", "mouse-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware", "input-depth-aware"],
+  "feedbackPacking": "A/C = raw HDR refractive rain display RGBA history"
 }

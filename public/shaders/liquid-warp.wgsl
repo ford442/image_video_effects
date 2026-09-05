@@ -2,7 +2,8 @@
 //  Liquid Warp — RK4 Advection with Analytic Strain Tensor
 //  Category: interactive-mouse
 //  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
-//            per-band-fft, rk4-advection, strain-tensor, chromatic-aberration,
+//            per-band-fft, rk4-advection, Cauchy-Green-deformation,
+//            fold-caustics, strain-tensor, chromatic-aberration,
 //            depth-aware, upgraded-rgba, semantic-alpha, aces
 //  Upgraded: 2026-08-23 (Batch 58B — Liquid)
 // ═══════════════════════════════════════════════════════════════════
@@ -305,7 +306,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dv_dy = (nN.y - nS.y) / (2.0 * texel.y) + f0.jacobian.w;
   let shear = du_dy + dv_dx;
   let vorticity = (dv_dx - du_dy) + ringVorticity;
-  let stretch = 1.0 + stretchParam * clamp(abs(shear) * 0.01, 0.0, 2.0);
+  // Finite-time deformation gradient F = I - dt*J. Its Cauchy-Green tensor
+  // C = FᵀF gives rotation-invariant principal stretches, unlike using the
+  // single off-diagonal shear component alone.
+  let f00 = 1.0 - dt * du_dx;
+  let f01 = -dt * du_dy;
+  let f10 = -dt * dv_dx;
+  let f11 = 1.0 - dt * dv_dy;
+  let c00 = f00 * f00 + f10 * f10;
+  let c01 = f00 * f01 + f10 * f11;
+  let c11 = f01 * f01 + f11 * f11;
+  let cTrace = c00 + c11;
+  let cDisc = sqrt(max((c00 - c11) * (c00 - c11) + 4.0 * c01 * c01, 0.0));
+  let lambdaMax = max(0.5 * (cTrace + cDisc), 1e-6);
+  let lambdaMin = max(0.5 * (cTrace - cDisc), 1e-6);
+  let principalStretch = clamp(sqrt(lambdaMax), 0.6, 1.8);
+  let stretchAnisotropy = clamp(log2(lambdaMax / lambdaMin) * 0.12, 0.0, 1.0);
+  let areaJacobian = f00 * f11 - f01 * f10;
+  let foldCaustic = exp(-abs(areaJacobian) * 10.0) * stretchAnisotropy;
+  let stretch = mix(1.0, principalStretch, stretchParam);
   velocity *= stretch * (0.95 + 0.05 * mids);
 
   let displaced = uv - departure;
@@ -313,7 +332,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let omegaVisual = clamp(abs(vorticity) * 0.015, 0.0, 1.0);
 
   // ── Sample the plate with velocity-aligned dispersion ────────────────────
-  let aberration = safeNormalize(displaced + velocity * 0.5) * displacementMag * chroma * (1.6 + 1.4 * treble);
+  let principalAxis = safeNormalize(vec2<f32>(lambdaMax - c11, c01));
+  let aberrationDir = safeNormalize(displaced + velocity * 0.5 + principalAxis * stretchAnisotropy * 0.01);
+  let aberration = aberrationDir * displacementMag * chroma
+                 * (1.6 + 1.4 * treble + stretchAnisotropy * 1.2);
   let sampleR = textureSampleLevel(readTexture, u_sampler, clampUV(departure - aberration), 0.0).r;
   let sampleG = textureSampleLevel(readTexture, u_sampler, departure, 0.0);
   let sampleB = textureSampleLevel(readTexture, u_sampler, clampUV(departure + aberration), 0.0).b;
@@ -323,6 +345,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var highlight = vec3<f32>(0.10, 0.18, 0.30) * omegaVisual
                 + vec3<f32>(0.06, 0.02, 0.14) * displacementMag * 3.5;
   highlight += vec3<f32>(0.45, 0.70, 1.0) * ringGlow * (0.5 + bass * 0.6);
+  let spectralFold = 0.5 + 0.5 * cos(6.28318530718 *
+                     (vec3<f32>(stretchAnisotropy * 1.7 - time * 0.04)
+                      + vec3<f32>(0.00, 0.31, 0.67)));
+  highlight += spectralFold * foldCaustic * (0.25 + 0.35 * treble);
   let finalColor = acesFilm(warpedColor + highlight);
 
   // ── Semantic alpha (resolution factor removed — see header) ──────────────
@@ -334,7 +360,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // A carries SIM STATE, not display colour.
   textureStore(dataTextureA, coord, vec4<f32>(velocity, clamp(displacementMag * 6.0, 0.0, 1.0), omegaVisual));
   textureStore(dataTextureB, coord, vec4<f32>(clamp(abs(shear) * 0.01, 0.0, 1.0),
-                                              clamp(stretch * 0.25, 0.0, 1.0),
-                                              clamp(length(velocity) * 80.0, 0.0, 1.0), 1.0));
+                                              stretchAnisotropy,
+                                              clamp(length(velocity) * 80.0, 0.0, 1.0), foldCaustic));
   textureStore(writeDepthTexture, coord, vec4<f32>(depthProxy, 0.0, 0.0, 1.0));
 }

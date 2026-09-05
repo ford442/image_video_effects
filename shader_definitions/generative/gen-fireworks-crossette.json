@@ -17,6 +17,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "shell-power", "name": "Shell Power", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "split-delay", "name": "Split Delay", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "arm-spread", "name": "Arm Spread", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "hue-shift", "name": "Hue Shift", "default": 0.0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -56,5 +62,14 @@
   "updated": true,
   "id": "gen-fireworks-crossette",
   "url": "shaders/gen-fireworks-crossette.wgsl",
-  "features": []
+  "features": [
+    "three-band-audio-reactive",
+    "mouse-crossette",
+    "four-arm-split",
+    "temporal-feedback",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map"
+  ],
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

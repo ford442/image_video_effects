@@ -1,7 +1,7 @@
 {
   "id": "circular-pixelate",
   "name": "Circular Pixelate",
-  "description": "Renders the image as a grid of circles. Mouse controls density and radius.",
+  "description": "A hexagonal compound-eye field refracts the image through deep lenslets, with chromatic aperture glints, held dilation, and age-guarded click propagation.",
   "url": "shaders/circular-pixelate.wgsl",
   "params": [
     {
@@ -37,10 +37,23 @@
       "default": 1
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Radius", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Hardness", "default": 0.8, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Bg Mix", "default": 1, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact lenslet persistence; B is unused",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "exact-history",
+    "aces-tone-map",
+    "three-band-audio",
+    "held-pointer",
+    "click-reactive",
+    "hex-lenslets"
   ],
   "tags": [
     "filter",

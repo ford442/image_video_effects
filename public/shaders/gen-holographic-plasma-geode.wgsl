@@ -99,9 +99,15 @@ fn palette(t: f32) -> vec3<f32> {
     return a + b * cos(6.28318 * (c * t + d));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(textureDimensions(writeTexture));
+    if (f32(id.x) >= dims.x || f32(id.y) >= dims.y) { return; }
+    let coord = vec2<i32>(id.xy);
     let uv = (vec2<f32>(id.xy) * 2.0 - dims) / min(dims.x, dims.y);
     let res = u.config.zw;
     let time = u.config.x;
@@ -111,6 +117,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
     let mouseY = u.zoom_config.z * 2.0 - 1.0;
+    let mouseDown = u.zoom_config.w > 0.5;
 
     // Raymarching setup
     var ro = vec3<f32>(0.0, 0.0, -3.0);
@@ -121,9 +128,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Domain distortion around center based on mouse
     let distToMouse = length(uv - m);
-    let warpFactor = exp(-distToMouse * 2.0) * 0.5;
+    let warpFactor = exp(-distToMouse * 2.0) * select(0.18, 0.58, mouseDown);
 
-    let warp_xy = vec2<f32>(rd.x, rd.y) + normalize(uv - m) * vec2<f32>(warpFactor);
+    // Finite click shocks alternately compress the shell and flare the core.
+    let rippleCount = min(u32(u.config.y), 50u);
+    var shellShock = 0.0;
+    var coreShock = 0.0;
+    var shockVector = vec2<f32>(0.0);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 3.5) { continue; }
+        let center = (ripple.xy - 0.5) * vec2<f32>(res.x / max(res.y, 1.0), 1.0) * 2.0;
+        let delta = uv - center;
+        let d = length(delta);
+        let radius = age * (0.32 + u.zoom_params.w * 0.38);
+        let front = exp(-pow((d - radius) * 18.0, 2.0)) * exp(-age * 0.82);
+        shellShock += front;
+        coreShock += exp(-d * d * 3.5) * exp(-age * 1.3);
+        shockVector += delta / max(d, 1e-4) * front;
+    }
+
+    let safeMouseDir = (uv - m) / max(distToMouse, 1e-4);
+    let warp_xy = vec2<f32>(rd.x, rd.y) + safeMouseDir * warpFactor + shockVector * 0.045;
     rd = normalize(vec3<f32>(warp_xy.x, warp_xy.y, rd.z));
 
     var col = vec3<f32>(0.0);
@@ -146,7 +173,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 let holoColor = palette(viewAngle + u.zoom_params.z + treble * 0.15);
                 // Subsurface scattering approximation
                 let sss = smoothstep(0.0, 1.0, map(p + rd * 0.1, time, audio).x);
-                col = holoColor * (0.5 + 0.5 * sss);
+                col = holoColor * (0.5 + 0.5 * sss) * (1.0 + shellShock * 0.7 + mids * 0.15);
             } else {
                 // Rocky exterior
                 let rockyColor = vec3<f32>(0.05, 0.05, 0.08);
@@ -190,21 +217,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 vec3<f32>(1.0, 0.0, 1.0), // Magenta
                 mix(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 0.8, 0.0), noiseVal), // Cyan/Gold
                 sin(time + dist * 5.0) * 0.5 + 0.5
-            ) * vec3<f32>(noiseVal * plasmaIntensity * (1.0 - dist) * (1.0 + audio));
+            ) * vec3<f32>(noiseVal * plasmaIntensity * (1.0 - dist) * (1.0 + audio + coreShock * 1.8));
 
             plasma += emission * 0.15;
         }
     }
     col += plasma;
 
-    col = pow(col, vec3<f32>(0.4545)); // Gamma correction
-
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let semantic_alpha = clamp(luma * 1.4 + length(plasma) * 0.25, 0.05, 0.98);
-    let outDepth = clamp(t / 20.0, 0.0, 1.0);
-    let outColor = vec4<f32>(col, semantic_alpha);
+    let semantic_alpha = clamp(luma * 1.1 + length(plasma) * 0.25 + shellShock * 0.3, 0.05, 0.98);
+    let outDepth = 1.0 - clamp(t / 20.0, 0.0, 1.0);
+    let currentDisplay = acesToneMap(col * (1.0 + treble * 0.08));
+    let prevDisplay = textureLoad(dataTextureC, coord, 0);
+    let display = mix(prevDisplay.rgb * 0.95, currentDisplay, 0.24 + audio * 0.04);
+    let alpha = max(semantic_alpha, prevDisplay.a * 0.92);
+    let outColor = vec4<f32>(display, alpha);
 
-    textureStore(writeTexture, id.xy, outColor);
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, id.xy, outColor);
+    textureStore(writeTexture, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

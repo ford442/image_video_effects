@@ -1,6 +1,7 @@
 #include "wasm_internal.h"
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 namespace pixelocity {
 namespace wasm_internal {
@@ -176,6 +177,67 @@ ShaderBindingUsage AnalyzeShaderBindings(const char* wgslCode) {
     usage.readsDataC = UsedBeyondDeclaration(wgslCode, 9);
     usage.usesHistory = UsedBeyondDeclaration(wgslCode, 13);
     return usage;
+}
+
+static bool IsSpace(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+
+std::string RewriteWgslStorageFormats(const char* wgsl, const char* colorFormat) {
+    if (!wgsl) return {};
+    if (!colorFormat || !*colorFormat) return wgsl;
+    std::string out;
+    out.reserve(std::strlen(wgsl) + 16);
+    const char* p = wgsl;
+    static constexpr char kKey[] = "texture_storage_2d";
+    static constexpr size_t kKeyLen = sizeof(kKey) - 1;
+    while (*p) {
+        const char* found = std::strstr(p, kKey);
+        if (!found) {
+            out.append(p);
+            break;
+        }
+        out.append(p, static_cast<size_t>(found - p));
+        const char* q = found + kKeyLen;
+        while (IsSpace(*q)) q++;
+        if (*q != '<') {
+            out.append(found, static_cast<size_t>(q - found));
+            p = q;
+            continue;
+        }
+        q++;
+        while (IsSpace(*q)) q++;
+        const char* fmtStart = q;
+        while (*q && *q != ',' && *q != '>' && !IsSpace(*q)) q++;
+        const std::string fmt(fmtStart, static_cast<size_t>(q - fmtStart));
+        while (IsSpace(*q)) q++;
+        if (*q != ',') {
+            out.append(found, static_cast<size_t>(q - found));
+            p = q;
+            continue;
+        }
+        q++;
+        while (IsSpace(*q)) q++;
+        const char* accStart = q;
+        while (*q && *q != '>' && !IsSpace(*q)) q++;
+        const std::string access(accStart, static_cast<size_t>(q - accStart));
+        while (IsSpace(*q)) q++;
+        if (*q != '>') {
+            out.append(found, static_cast<size_t>(q - found));
+            p = q;
+            continue;
+        }
+        q++;
+        if (fmt.rfind("rgba", 0) == 0 && access == "write" && fmt != colorFormat) {
+            out += "texture_storage_2d<";
+            out += colorFormat;
+            out += ", write>";
+        } else {
+            out.append(found, static_cast<size_t>(q - found));
+        }
+        p = q;
+    }
+    return out;
 }
 
 } // namespace wasm_internal

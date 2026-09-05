@@ -1,23 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Gravitational Lensing NLM
+//  Gravitational Lensing NLM — Relativistic Geodesics + Non-Local Means
 //  Category: advanced-hybrid
-//  Features: advanced-hybrid, schwarzschild-metric, non-local-means,
-//            artistic-overdrive
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
+//            schwarzschild-metric, non-local-means, semantic-alpha, ACES
 //  Complexity: Very High
-//  Chunks From: gravitational-lensing.wgsl, conv-non-local-means.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-3 — Convolution Post-Processor
-// ═══════════════════════════════════════════════════════════════════
-//  Black hole gravitational lensing with non-local means artistic
-//  overdrive. Patch-similarity filtering smooths background starfields
-//  while preserving unique features like the event horizon and
-//  Einstein ring. Alpha stores an importance map.
-//
-//  RGBA32FLOAT EXPLOITATION:
-//    RGB: NLM-filtered gravitational lensing color
-//    Alpha: Self-similarity importance map — low similarity = unique
-//           feature (ring, disk) = high alpha. High similarity =
-//           repetitive starfield = low alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -35,35 +21,26 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=BlackHoleMass, y=DiskBrightness, z=CameraOrbit, w=Redshift
   ripples: array<vec4<f32>, 50>,
 };
 
-const MAX_STEPS: i32 = 128;
-const MAX_DIST: f32 = 50.0;
-const DT: f32 = 0.05;
+const MAX_STEPS: i32 = 96;
+const MAX_DIST: f32 = 45.0;
+const DT: f32 = 0.055;
 
-// ═══ CHUNK: hash12 (from gravitational-lensing.wgsl) ═══
-fn hash12(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// ═══ CHUNK: schwarzschildFactor (from gravitational-lensing.wgsl) ═══
-fn schwarzschildFactor(r: f32, mass: f32) -> f32 {
-  let rs = 2.0 * mass;
-  return sqrt(max(0.001, 1.0 - rs / max(r, rs * 1.01)));
-}
-
-// ═══ CHUNK: renderAccretionDisk (from gravitational-lensing.wgsl) ═══
 fn renderAccretionDisk(rayPos: vec3<f32>, rayDir: vec3<f32>, blackHolePos: vec3<f32>, mass: f32) -> vec3<f32> {
   let rs = 2.0 * mass;
-  let innerRadius = rs * 3.0;
-  let outerRadius = rs * 15.0;
+  let innerRadius = rs * 2.8;
+  let outerRadius = rs * 14.0;
   let toCenter = blackHolePos - rayPos;
+  if (abs(rayDir.y) < 1e-4) { return vec3<f32>(0.0); }
   let t = toCenter.y / rayDir.y;
   if (t > 0.0) {
     let hitPos = rayPos + rayDir * t;
@@ -72,11 +49,11 @@ fn renderAccretionDisk(rayPos: vec3<f32>, rayDir: vec3<f32>, blackHolePos: vec3<
       let temp = 1.0 - (distFromCenter - innerRadius) / (outerRadius - innerRadius);
       let orbitalVel = normalize(vec3<f32>(-(hitPos.z - blackHolePos.z), 0.0, hitPos.x - blackHolePos.x));
       let doppler = dot(rayDir, orbitalVel);
-      let beaming = pow(1.0 + doppler, 3.0);
+      let beaming = pow(max(1.0 + doppler, 0.1), 3.0);
       var color = vec3<f32>(0.0);
-      if (temp > 0.8) { color = vec3<f32>(1.0, 0.9, 0.7); }
-      else if (temp > 0.5) { color = vec3<f32>(1.0, 0.5, 0.2); }
-      else { color = vec3<f32>(0.8, 0.2, 0.1); }
+      if (temp > 0.8) { color = vec3<f32>(1.0, 0.92, 0.75); }
+      else if (temp > 0.5) { color = vec3<f32>(1.0, 0.55, 0.22); }
+      else { color = vec3<f32>(0.85, 0.25, 0.12); }
       color = color * beaming * temp * temp;
       return color * smoothstep(outerRadius, innerRadius, distFromCenter);
     }
@@ -84,23 +61,21 @@ fn renderAccretionDisk(rayPos: vec3<f32>, rayDir: vec3<f32>, blackHolePos: vec3<
   return vec3<f32>(0.0);
 }
 
-// ═══ CHUNK: gravitationalRedshift (from gravitational-lensing.wgsl) ═══
 fn gravitationalRedshift(r: f32, mass: f32) -> vec3<f32> {
   let rs = 2.0 * mass;
   let factor = sqrt(max(0.001, 1.0 - rs / max(r, rs)));
   return vec3<f32>(1.0, factor, factor * 0.8);
 }
 
-// ═══ CHUNK: patchDistance (from conv-non-local-means.wgsl) ═══
-fn patchDistance(uv1: vec2<f32>, uv2: vec2<f32>, patchRadius: i32, pixelSize: vec2<f32>) -> f32 {
+fn patchDistance(uv1: vec2<f32>, uv2: vec2<f32>, pixelSize: vec2<f32>) -> f32 {
   var dist = 0.0;
-  for (var dy = -patchRadius; dy <= patchRadius; dy = dy + 1) {
-    for (var dx = -patchRadius; dx <= patchRadius; dx = dx + 1) {
+  for (var dy = -1; dy <= 1; dy = dy + 1) {
+    for (var dx = -1; dx <= 1; dx = dx + 1) {
       let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-      let p1 = textureSampleLevel(readTexture, u_sampler, uv1 + offset, 0.0).rgb;
-      let p2 = textureSampleLevel(readTexture, u_sampler, uv2 + offset, 0.0).rgb;
+      let p1 = textureSampleLevel(readTexture, u_sampler, clamp(uv1 + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+      let p2 = textureSampleLevel(readTexture, u_sampler, clamp(uv2 + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
       let diff = p1 - p2;
-      dist = dist + dot(diff, diff);
+      dist += dot(diff, diff);
     }
   }
   return dist;
@@ -109,31 +84,63 @@ fn patchDistance(uv1: vec2<f32>, uv2: vec2<f32>, patchRadius: i32, pixelSize: ve
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-  let uvRaw = (vec2<f32>(global_id.xy) / resolution - 0.5) * 2.0;
-  let aspect = resolution.x / resolution.y;
-  let time = u.config.x;
   let id = vec2<i32>(global_id.xy);
+  let uvRaw = (vec2<f32>(global_id.xy) / resolution - 0.5) * 2.0;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let time = u.config.x;
 
-  // Parameters
-  let blackHoleMass = mix(1.0, 5.0, u.zoom_params.x);
-  let diskBrightness = mix(0.5, 3.0, u.zoom_params.y);
-  let cameraOrbit = u.zoom_params.z * 6.28;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let rawMouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let isWriter = (global_id.x == 0u && global_id.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var mouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.05);
+    var sPos = mouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
+    }
+    let stiffness = 42.0;
+    let damping = 12.96; // 2 * sqrt(42)
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel += accel * dt;
+    sPos += sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
+
+  // Exact parameter contracts
+  let blackHoleMass = mix(1.0, 5.0, u.zoom_params.x) * (1.0 + bass * 0.2);
+  let diskBrightness = mix(0.5, 3.0, u.zoom_params.y) * (1.0 + mids * 0.25);
+  let cameraOrbit = u.zoom_params.z * 6.2831853;
   let redshiftIntensity = u.zoom_params.w;
 
-  let patchRadius = i32(mix(1.0, 2.0, u.zoom_config.x));
-  let searchRadius = i32(mix(2.0, 6.0, u.zoom_config.y));
-  let hParam = mix(0.001, 0.05, u.zoom_config.z);
-  let overdrive = u.zoom_config.w;
-
-  // ── Gravitational lensing core ──
   let blackHolePos = vec3<f32>(0.0, 0.0, 0.0);
   let rs = 2.0 * blackHoleMass;
   let eventHorizon = rs * 1.05;
 
   let camDist = 20.0;
-  let camAngle = time * 0.1 + cameraOrbit;
+  let camAngle = time * 0.1 + cameraOrbit + bass * 0.2;
   let ro = vec3<f32>(cos(camAngle) * camDist, sin(camAngle * 0.3) * 5.0, sin(camAngle) * camDist);
 
   let forward = normalize(blackHolePos - ro);
@@ -155,87 +162,79 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       break;
     }
     if (r > MAX_DIST) {
-      let bgUV = vec2<f32>(atan2(rayDir.z, rayDir.x) / 6.28 + 0.5, rayDir.y * 0.5 + 0.5);
+      let bgUV = vec2<f32>(atan2(rayDir.z, rayDir.x) / 6.2831853 + 0.5, rayDir.y * 0.5 + 0.5);
       color = textureSampleLevel(readTexture, u_sampler, bgUV, 0.0).rgb;
       let redshift = gravitationalRedshift(r, blackHoleMass);
       color = color * mix(vec3<f32>(1.0), redshift, redshiftIntensity);
       depth = 0.5 + r / MAX_DIST * 0.5;
       break;
     }
+
     let accel = -normalize(toCenter) * blackHoleMass / (r * r);
-    rayDir = normalize(rayDir + accel * DT);
-    rayPos = rayPos + rayDir * DT * r * 0.5;
+
+    let cursorPos3D = vec3<f32>((mouse.x - 0.5) * 6.0 * aspect, (mouse.y - 0.5) * 6.0, 0.0);
+    let toCursor = cursorPos3D - rayPos;
+    let rCursor = length(toCursor);
+    let cursorMass = blackHoleMass * 0.25 * (1.0 + held * 2.0 + mids * 0.5);
+    let cursorAccel = -normalize(toCursor) * cursorMass / (rCursor * rCursor + 0.1);
+
+    rayDir = normalize(rayDir + (accel + cursorAccel) * DT);
+    rayPos += rayDir * DT * r * 0.5;
   }
 
   let diskColor = renderAccretionDisk(ro, rd, blackHolePos, blackHoleMass) * diskBrightness;
-  color = color + diskColor;
+  color += diskColor;
 
   let closestApproach = length(ro - blackHolePos);
   let einsteinRadius = sqrt(rs * closestApproach);
+  let ringScreenR = clamp(einsteinRadius / camDist * 1.6, 0.12, 0.75);
   let toCenter2D = length(uvRaw);
-  let ringGlow = smoothstep(0.5, 0.0, abs(toCenter2D - 0.3)) * 0.5;
-  color = color + vec3<f32>(0.9, 0.8, 0.6) * ringGlow;
+  let ringGlow = smoothstep(0.35, 0.0, abs(toCenter2D - ringScreenR)) * 0.5;
+  color += vec3<f32>(0.9, 0.8, 0.6) * ringGlow * (1.0 + treble * 0.5);
 
   let lensingColor = color;
 
-  // ── Non-local means artistic overdrive ──
+  // Non-Local Means patch filtering
   let uv = vec2<f32>(global_id.xy) / resolution;
   let pixelSize = 1.0 / resolution;
+  let hParam = 0.015;
 
-  let center = lensingColor;
   var accumColor = vec3<f32>(0.0);
   var accumWeight = 0.0;
   var similaritySum = 0.0;
-  var maxSimilarity = 0.0;
 
-  let maxSearch = min(searchRadius, 5);
-
-  for (var dy = -maxSearch; dy <= maxSearch; dy = dy + 1) {
-    for (var dx = -maxSearch; dx <= maxSearch; dx = dx + 1) {
+  for (var dy = -2; dy <= 2; dy = dy + 1) {
+    for (var dx = -2; dx <= 2; dx = dx + 1) {
       if (dx == 0 && dy == 0) { continue; }
       let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-      let neighborUV = uv + offset;
-      let pd = patchDistance(uv, neighborUV, patchRadius, pixelSize);
-      let weight = exp(-pd / max(hParam, 0.0001));
+      let neighborUV = clamp(uv + offset, vec2<f32>(0.001), vec2<f32>(0.999));
+      let pd = patchDistance(uv, neighborUV, pixelSize);
+      let weight = exp(-pd / hParam);
 
-      // Sample from the raymarched result by re-mapping neighborUV to the background
-      let neighborRaw = (neighborUV - 0.5) * 2.0;
-      let nAspect = resolution.x / resolution.y;
-      let nRo = ro;
-      let nForward = normalize(blackHolePos - nRo);
-      let nRight = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), nForward));
-      let nUp = cross(nForward, nRight);
-      let nRd = normalize(nForward + nRight * neighborRaw.x * nAspect * 0.5 + nUp * neighborRaw.y * 0.5);
-
-      // Approximate neighbor color from readTexture for performance
       let neighborColor = textureSampleLevel(readTexture, u_sampler, neighborUV, 0.0).rgb;
-      accumColor = accumColor + neighborColor * weight;
-      accumWeight = accumWeight + weight;
-      similaritySum = similaritySum + weight;
-      maxSimilarity = max(maxSimilarity, weight);
+      accumColor += neighborColor * weight;
+      accumWeight += weight;
+      similaritySum += weight;
     }
   }
 
-  accumColor = accumColor + center;
-  accumWeight = accumWeight + 1.0;
-  similaritySum = similaritySum + 1.0;
-  maxSimilarity = max(maxSimilarity, 1.0);
+  accumColor += lensingColor;
+  accumWeight += 1.0;
+  similaritySum += 1.0;
 
-  var result = vec3<f32>(0.0);
-  if (accumWeight > 0.001) {
-    result = accumColor / accumWeight;
-  }
+  var result = accumColor / max(accumWeight, 0.0001);
+  let avgSimilarity = similaritySum / 25.0;
+  result = mix(result, lensingColor, 0.65 + held * 0.25);
 
-  // Artistic overdrive: blend with original based on similarity
-  let avgSimilarity = similaritySum / (f32(maxSearch * maxSearch * 4) + 1.0);
-  let overdriveBlend = overdrive * (1.0 - avgSimilarity);
-  result = mix(result, center, overdriveBlend);
+  // Exact dataTextureC persistence
+  let prevC = textureLoad(dataTextureC, id, 0).rgb;
+  result = mix(result, prevC, 0.07);
 
-  // Self-similarity importance map: low similarity = unique = high alpha
-  let importance = 1.0 - avgSimilarity;
+  let finalRGB = aces(result);
+  let importance = clamp(1.0 - avgSimilarity + ringGlow * 0.4 + held * 0.15, 0.1, 1.0);
+  let finalPixel = vec4<f32>(finalRGB, importance);
 
-  let alpha = mix(0.9, 1.0, diskBrightness * 0.3);
-
-  textureStore(writeTexture, id, vec4<f32>(result, importance));
+  textureStore(writeTexture, id, finalPixel);
+  textureStore(dataTextureA, id, finalPixel);
   textureStore(writeDepthTexture, id, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

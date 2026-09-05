@@ -3,7 +3,7 @@
     "id": "alpha-depth-fog-volumetric",
     "name": "Alpha Depth Fog Volumetric",
     "url": "shaders/alpha-depth-fog-volumetric.wgsl",
-    "description": "Physically-motivated volumetric fog using depth texture. Alpha stores optical depth / transmittance via Beer-Lambert law. Fog density varies with 3D noise, depth, and height. Mouse clears local fog; ripples create swirling disturbances.",
+    "description": "Seven depth layers accumulate turbulent Beer-Lambert fog with a live warm-to-cool temperature range, audio-lit scattering, held-pointer clearing, and click-driven vortices.",
     "tags": [
       "volumetric",
       "fog",
@@ -16,7 +16,15 @@
     "features": [
       "mouse-driven",
       "depth-aware",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "temporal",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "layered-volumetric-fog"
     ],
     "params": [
       {
@@ -55,13 +63,48 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fog Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fog Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Temperature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final ACES fogged display RGB and Beer-Lambert transmittance in alpha via bounded exact temporal loads; B is unused"
   },
   {
     "id": "alpha-hdr-bloom-chain",
     "name": "Alpha HDR Bloom Chain",
     "url": "shaders/alpha-hdr-bloom-chain.wgsl",
-    "description": "HDR bloom effect where alpha stores exposure/overexposure value. Identifies pixels above white point, radially blurs the excess brightness, and composites with ACES tone mapping. Mouse and ripples trigger localized flashes.",
+    "description": "Temporal spectral HDR bloom with multi-ring dispersion, exposure-preserving feedback, audio-shaped radiance, held-pointer halos, and expanding click flashes.",
     "tags": [
       "hdr",
       "bloom",
@@ -73,7 +116,14 @@
     ],
     "features": [
       "mouse-driven",
-      "rgba-state-machine"
+      "audio-reactive",
+      "rgba-state-machine",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "temporal-spectral-bloom"
     ],
     "params": [
       {
@@ -112,7 +162,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bloom Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bloom Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Exposure",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = raw HDR RGB and overexposure in alpha via bounded exact temporal loads; writeTexture alone is ACES tone-mapped; B is unused"
   },
   {
     "id": "alpha-luminance-history",
@@ -214,7 +299,7 @@
     "id": "alpha-multi-layer-glass",
     "name": "Alpha Multi-Layer Glass",
     "url": "shaders/alpha-multi-layer-glass.wgsl",
-    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, and per-layer tinting. Alpha stores accumulated transmittance.",
+    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, GGX roughness, and per-layer tinting. Alpha stores accumulated transmittance.",
     "tags": [
       "glass",
       "refraction",
@@ -222,11 +307,17 @@
       "interactive",
       "mouse-driven",
       "rgba-state-machine",
-      "fresnel"
+      "fresnel",
+      "audio-reactive",
+      "roughness"
     ],
     "features": [
       "mouse-driven",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -260,6 +351,41 @@
         "id": "roughness",
         "name": "Surface Roughness",
         "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Index of Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glass Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Surface Roughness",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -1260,10 +1386,57 @@
       "field-line-tracing",
       "equipotential-surfaces",
       "dielectric-polarization",
-      "corona-discharge"
+      "corona-discharge",
+      "click-spark-charges",
+      "held-charge",
+      "fft-band-arcs",
+      "treble-sparkle",
+      "aces-tone-mapping"
     ],
-    "description": "Electric field line tracing from charge distributions with equipotential surfaces and field line density. Dielectric boundary conditions with plasma-like glow, polarization colors, HDR bloom on high-field regions, ACES tone mapping, and corona discharge approximation.",
+    "description": "Electric field line tracing with equipotential surfaces, capped click spark charges from ripples, held mouse charge boost, corona bloom packets, FFT band arcs, and treble sparkle. Display is ACES-tonemapped; A stores raw field diagnostics (potential, |E|, edge/spark, dielectric energy).",
     "params": [
+      {
+        "id": "edge_threshold",
+        "name": "Edge Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base threshold for edge detection"
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Intensity multiplier for the electric glow"
+      },
+      {
+        "id": "field_density",
+        "name": "Field Line Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Density of field and equipotential lines"
+      },
+      {
+        "id": "spark_speed",
+        "name": "Spark Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Speed of electric spark animation"
+      }
+    ],
+    "updatedParams": [
       {
         "id": "edge_threshold",
         "name": "Edge Threshold",
@@ -1316,7 +1489,8 @@
       "hdr-bloom",
       "aces-tone-mapping",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "spark-charges"
     ]
   },
   {
@@ -1446,7 +1620,10 @@
       "depth-aware",
       "upgraded-rgba",
       "temporal-flicker",
-      "chromatic-ghosting"
+      "chromatic-ghosting",
+      "mouse-driven",
+      "temporal",
+      "click-reactive"
     ],
     "tags": [
       "hologram",
@@ -1457,19 +1634,57 @@
       "depth-aware",
       "chromatic",
       "temporal"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flicker Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Hologram Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ghost Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "holographic-projection-gpt52",
     "name": "Holo Projection Prism gpt52",
     "url": "shaders/holographic-projection-gpt52.wgsl",
-    "description": "Prismatic hologram with stabilized focus, scan interference, and spectral tinting.",
+    "description": "Prismatic volume hologram with Bragg diffraction physics, stabilized focus, scan interference, and spectral tinting.",
     "features": [
       "mouse-driven",
       "glitch",
       "animated",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -1506,7 +1721,45 @@
       "particles",
       "glow",
       "audio",
-      "music"
+      "music",
+      "hologram",
+      "bragg",
+      "diffraction"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 1.2,
+        "min": 0,
+        "max": 5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glitch Amount",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Holo Tint",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Focus Strength",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1695,13 +1948,21 @@
     "id": "hyper-space-jump",
     "name": "Hyper Space Jump",
     "url": "shaders/hyper-space-jump.wgsl",
-    "description": "Streaks the image radially from the mouse position, simulating a hyperspace jump.",
+    "description": "Continuous relativistic streak integration combines a Doppler palette, helical flight, a movable vanishing point, held acceleration, and age-bounded jump shocks.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "relativistic-streaks",
+      "doppler-color",
+      "helical-motion",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "hyperspace",
+      "fast-motion",
+      "relativistic",
+      "interactive"
     ],
     "params": [
       {
@@ -1736,7 +1997,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Jump Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Streak Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Vignette Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous relativistic trails; B is unused; effect depth remains cleared to zero."
   },
   {
     "id": "interactive-fresnel",
@@ -1840,7 +2136,7 @@
     "id": "interactive-pcb-traces",
     "name": "Interactive PCB Traces",
     "url": "shaders/interactive-pcb-traces.wgsl",
-    "description": "Simulates a circuit board where traces light up with data pulses driven by the mouse.",
+    "description": "Coherent Manhattan routes connect pads and vias while signal packets, persistent trace glow, pointer injection, held drive, and click propagation animate the board.",
     "params": [
       {
         "name": "Grid Scale",
@@ -1875,12 +2171,51 @@
         "id": "background"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Background",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for persistent signal glow; B is unused; source depth passes through.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "manhattan-routing",
+      "pads-and-vias",
+      "signal-packets",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "pcb",
+      "circuit",
+      "signals",
+      "interactive"
     ]
   },
   {
@@ -1888,14 +2223,22 @@
     "name": "Kinetic Echo",
     "category": "visual-effects",
     "url": "shaders/luma-smear-interactive.wgsl",
-    "description": "Creates a motion trail with chromatic smear (R lags, B leads). Bright objects leave decaying trails. Curl turbulence and audio gusts add organic chaos. Depth controls viscosity.",
+    "description": "Chromatic R-lag / B-lead streaks with curl-advected exact-C trails. Trail Decay, luma gate, color shift, and mouse eraser stay live. ACES display history with trail-energy alpha.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba",
       "chromatic-smear",
-      "curl-turbulence"
+      "curl-turbulence",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "params": [
       {
@@ -1935,7 +2278,45 @@
       "audio-reactive",
       "depth-aware",
       "chromatic",
-      "curl-noise"
+      "curl-noise",
+      "fast-motion",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Luma Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Eraser Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {

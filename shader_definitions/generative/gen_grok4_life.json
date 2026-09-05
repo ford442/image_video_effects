@@ -86,5 +86,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = prey, predator, age, activity; exact toroidal SmoothLife state"
 }

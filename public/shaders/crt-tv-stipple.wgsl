@@ -1,16 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  CRT TV Stipple
-//  Category: advanced-hybrid
-//  Features: crt-simulation, blue-noise, stippling, barrel-distortion
-//  Complexity: High
-//  Chunks From: crt-tv.wgsl, spec-blue-noise-stipple.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-13 — Retro & Glitch Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Authentic CRT phosphor physics merged with blue-noise stippled
-//  pointillism. Aperture grille shadow mask uses perceptually optimal
-//  blue-noise dot distributions instead of regular stripes.
-// ═══════════════════════════════════════════════════════════════════
+// CRT TV Stipple — Composer batch cyber/digital/glitch cohort 3
+// CRT phosphor core + blue-noise stipple grille, spring focus, held bulge,
+// capped ripples, exact C persistence, three-band audio, ACES + semantic alpha.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,174 +23,206 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash22 (from spec-blue-noise-stipple.wgsl) ═══
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.xx + p3.yz) * p3.zy);
+fn curveUv(uv: vec2<f32>, curvature: f32) -> vec2<f32> {
+  var centered = uv * 2.0 - 1.0;
+  let distSq = dot(centered, centered);
+  centered = centered * (1.0 + curvature * distSq);
+  return centered * 0.5 + 0.5;
 }
 
-// Blue-noise offset via plastic constant
+fn inverseCurveUv(uv: vec2<f32>, curvature: f32) -> vec2<f32> {
+  var centered = uv * 2.0 - 1.0;
+  let distSq = dot(centered, centered);
+  centered = centered / (1.0 + curvature * distSq * 0.8);
+  return centered * 0.5 + 0.5;
+}
+
 fn blueNoiseOffset(pixelCoord: vec2<f32>, frame: f32) -> vec2<f32> {
-    let phi2 = vec2<f32>(1.3247179572, 1.7548776662);
-    return fract(pixelCoord * phi2 + frame * phi2);
+  let phi2 = vec2<f32>(1.3247179572, 1.7548776662);
+  return fract(pixelCoord * phi2 + frame * phi2);
 }
 
-// Barrel distortion for CRT curvature
-fn curve_uv(uv: vec2<f32>, curvature: f32) -> vec2<f32> {
-    var centered = uv * 2.0 - 1.0;
-    let dist_sq = dot(centered, centered);
-    centered = centered * (1.0 + curvature * dist_sq);
-    return centered * 0.5 + 0.5;
+fn stippleGrille(uv: vec2<f32>, dotScale: f32, time: f32) -> vec3<f32> {
+  let cellId = floor(uv * dotScale);
+  let cellLocal = fract(uv * dotScale) - 0.5;
+  let sampleUV = (cellId + 0.5) / dotScale;
+  let localColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  let luma = dot(localColor, vec3<f32>(0.299, 0.587, 0.114));
+  let triadX = fract(cellId.x / 3.0) * 3.0;
+  var subpixelOffset = vec2<f32>(0.0);
+  var mask = vec3<f32>(0.0);
+  if (triadX < 1.0) { subpixelOffset = vec2<f32>(-0.25, 0.0); mask.r = 1.0; }
+  else if (triadX < 2.0) { mask.g = 1.0; }
+  else { subpixelOffset = vec2<f32>(0.25, 0.0); mask.b = 1.0; }
+  let jitter = blueNoiseOffset(cellId + subpixelOffset * 10.0, time * 0.1);
+  let dotCenter = (jitter - 0.5) * 0.6 + subpixelOffset * 0.3;
+  let dotSize = mix(0.45, 0.08, luma);
+  let dist = length(cellLocal - dotCenter);
+  let dotMask = 1.0 - smoothstep(dotSize - 0.06, dotSize + 0.06, dist);
+  return mask * dotMask;
 }
 
-// Phosphor decay simulation
-fn phosphor_decay(base_color: vec3<f32>, time: f32, flicker: f32) -> vec3<f32> {
-    let decay_rates = vec3<f32>(2.5, 5.0, 10.0);
-    let refresh_flicker = 1.0 - flicker * 0.03 * sin(time * 377.0);
-    let hum_bar = 1.0 - flicker * 0.02 * sin(time * 6.28 * 0.5);
-    var decayed = base_color;
-    decayed.r = pow(decayed.r, 1.0 / decay_rates.r) * refresh_flicker * hum_bar;
-    decayed.g = pow(decayed.g, 1.0 / decay_rates.g) * refresh_flicker * hum_bar;
-    decayed.b = pow(decayed.b, 1.0 / decay_rates.b) * refresh_flicker * hum_bar;
-    return decayed;
+fn phosphorDecay(baseColor: vec3<f32>, time: f32, flicker: f32) -> vec3<f32> {
+  let decayRates = vec3<f32>(2.5, 5.0, 10.0);
+  let refreshFlicker = 1.0 - flicker * 0.03 * sin(time * 377.0);
+  let humBar = 1.0 - flicker * 0.02 * sin(time * 6.28 * 0.5);
+  var decayed = baseColor;
+  decayed.r = pow(decayed.r, 1.0 / decayRates.r) * refreshFlicker * humBar;
+  decayed.g = pow(decayed.g, 1.0 / decayRates.g) * refreshFlicker * humBar;
+  decayed.b = pow(decayed.b, 1.0 / decayRates.b) * refreshFlicker * humBar;
+  return decayed;
 }
 
-// Blue-noise stippled aperture grille
-fn stipple_grille(uv: vec2<f32>, resolution: vec2<f32>, dotScale: f32, time: f32) -> vec3<f32> {
-    let cellSize = 1.0 / dotScale;
-    let cellId = floor(uv * dotScale);
-    let cellLocal = fract(uv * dotScale) - 0.5;
-
-    // Sample local color for luminance-driven dot size
-    let sampleUV = (cellId + 0.5) / dotScale;
-    let localColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-    let luma = dot(localColor, vec3<f32>(0.299, 0.587, 0.114));
-
-    // RGB subpixel offsets within triad
-    let triadX = fract(cellId.x / 3.0) * 3.0;
-    var subpixelOffset = vec2<f32>(0.0);
-    var mask = vec3<f32>(0.0);
-    if (triadX < 1.0) {
-        subpixelOffset = vec2<f32>(-0.25, 0.0);
-        mask.r = 1.0;
-    } else if (triadX < 2.0) {
-        subpixelOffset = vec2<f32>(0.0, 0.0);
-        mask.g = 1.0;
-    } else {
-        subpixelOffset = vec2<f32>(0.25, 0.0);
-        mask.b = 1.0;
+fn halationGlow(uv: vec2<f32>, strength: f32, curvature: f32, resolution: vec2<f32>) -> vec3<f32> {
+  if (strength < 0.01) { return vec3<f32>(0.0); }
+  let invRes = 1.0 / resolution;
+  var glow = vec3<f32>(0.0);
+  var totalWeight = 0.0;
+  let offsets = array<vec2<f32>, 5>(
+    vec2<f32>(0.0, 0.0), vec2<f32>(1.0, 0.0) * invRes * 2.0, vec2<f32>(-1.0, 0.0) * invRes * 2.0,
+    vec2<f32>(0.0, 1.0) * invRes * 2.0, vec2<f32>(0.0, -1.0) * invRes * 2.0
+  );
+  let weights = array<f32, 5>(0.4, 0.15, 0.15, 0.15, 0.15);
+  for (var i = 0; i < 5; i = i + 1) {
+    let sampleUV = uv + offsets[i];
+    let flatSampleUV = inverseCurveUv(sampleUV, curvature);
+    if (flatSampleUV.x >= 0.0 && flatSampleUV.x <= 1.0 && flatSampleUV.y >= 0.0 && flatSampleUV.y <= 1.0) {
+      let sample = textureSampleLevel(readTexture, u_sampler, flatSampleUV, 0.0).rgb;
+      let brightness = dot(sample, vec3<f32>(0.299, 0.587, 0.114));
+      glow += smoothstep(0.3, 0.8, brightness) * sample * weights[i];
+      totalWeight += weights[i];
     }
-
-    // Blue-noise jittered dot center
-    let jitter = blueNoiseOffset(cellId + subpixelOffset * 10.0, time * 0.1);
-    let dotCenter = (jitter - 0.5) * 0.6 + subpixelOffset * 0.3;
-
-    // Dot size based on luminance
-    let dotSize = mix(0.45, 0.08, luma);
-    let dist = length(cellLocal - dotCenter);
-    let edgeWidth = 0.06;
-    let dotMask = 1.0 - smoothstep(dotSize - edgeWidth, dotSize + edgeWidth, dist);
-
-    return mask * dotMask;
+  }
+  if (totalWeight > 0.0) { glow /= totalWeight; }
+  return glow * vec3<f32>(1.1, 0.95, 0.9) * strength * 2.0;
 }
 
-// Scanline simulation
-fn scanlines(uv: vec2<f32>, resolution: vec2<f32>, intensity: f32, time: f32) -> f32 {
-    let scan_freq = resolution.y * 0.5;
-    let scan_y = uv.y * scan_freq;
-    let scan_profile = 0.5 + 0.5 * cos(fract(scan_y) * 6.28318530718);
-    let phosphor_bright = smoothstep(0.0, 0.3, fract(scan_y)) * smoothstep(1.0, 0.7, fract(scan_y));
-    let jitter = sin(time * 10.0 + uv.y * 100.0) * 0.02;
-    let thickness = 0.85 + jitter;
-    let scan_darken = 1.0 - intensity * 0.4 * (1.0 - smoothstep(thickness, 1.0, scan_profile));
-    let scan_boost = 1.0 + intensity * 0.15 * phosphor_bright;
-    return scan_darken * scan_boost;
+fn scanlines(uv: vec2<f32>, resolution: vec2<f32>, intensity: f32, time: f32, audioJitter: f32) -> f32 {
+  let scanFreq = resolution.y * 0.5;
+  let scanY = uv.y * scanFreq;
+  let scanProfile = 0.5 + 0.5 * cos(fract(scanY) * 6.28318530718);
+  let phosphorBright = smoothstep(0.0, 0.3, fract(scanY)) * smoothstep(1.0, 0.7, fract(scanY));
+  let jitter = sin(time * 10.0 + uv.y * 100.0) * 0.02 * (1.0 + audioJitter * 5.0);
+  let thickness = 0.85 + jitter;
+  let scanDarken = 1.0 - intensity * 0.4 * (1.0 - smoothstep(thickness, 1.0, scanProfile));
+  return scanDarken * (1.0 + intensity * 0.15 * phosphorBright);
 }
 
-// Vignette
-fn crt_vignette(uv: vec2<f32>, strength: f32) -> f32 {
-    let centered = uv * 2.0 - 1.0;
-    let dist = length(centered);
-    let vig = 1.0 - smoothstep(0.6, 1.4, dist * (0.8 + strength * 0.4));
-    let corner = abs(centered.x * centered.y);
-    return vig * (1.0 - corner * 0.15 * strength);
+fn crtVignette(uv: vec2<f32>, strength: f32) -> f32 {
+  let centered = uv * 2.0 - 1.0;
+  let dist = length(centered);
+  let vig = 1.0 - smoothstep(0.6, 1.4, dist * (0.8 + strength * 0.4));
+  return vig * (1.0 - abs(centered.x * centered.y) * 0.15 * strength);
 }
 
-@compute @workgroup_size(8, 8, 1)
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let res = u.config.zw;
-    if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
-    let uv = vec2<f32>(gid.xy) / res;
-    let time = u.config.x;
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
-    // Audio: bass drives phosphor bloom, mids feeds scanlines, treble shimmers stipple
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let held = u.zoom_config.w > 0.5;
+  let mouse = u.zoom_config.yz;
 
-    let scanline_intensity = u.zoom_params.x * (1.0 + mids * 0.5);
-    let phosphor_glow = u.zoom_params.y * (1.0 + bass * 0.7);
-    let stipple_density = mix(20.0, 80.0, u.zoom_params.z) + treble * 20.0;
-    let barrel_amount = u.zoom_params.w;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-    let curvature = barrel_amount * 0.15;
-    let flicker_amount = 0.5 + barrel_amount * 0.5;
-    let chromatic_str = 0.002 * barrel_amount;
-
-    // Barrel distortion
-    var crt_uv = uv;
-    if (barrel_amount > 0.01) {
-        crt_uv = curve_uv(uv, curvature);
+  var smoothMouse = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (gid.x == 0u && gid.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = mouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 9.0;
+      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
     }
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
+  }
 
-    // Bounds check
-    if (crt_uv.x < 0.0 || crt_uv.x > 1.0 || crt_uv.y < 0.0 || crt_uv.y > 1.0) {
-        textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-        textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-        return;
+  let scanlineIntensity = u.zoom_params.x * (1.0 + mids * 0.5);
+  let phosphorGlow = u.zoom_params.y * (1.0 + bass * 0.7);
+  let stippleDensity = mix(20.0, 80.0, u.zoom_params.z) + treble * 20.0;
+  let barrelAmount = u.zoom_params.w;
+
+  var rippleFlash = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.0) {
+      rippleFlash += smoothstep(0.15, 0.0, length((uv - rp.xy) * vec2<f32>(aspect, 1.0))) * (1.0 - age);
     }
+  }
 
-    // Chromatic aberration
-    let r = textureSampleLevel(readTexture, u_sampler, crt_uv + vec2<f32>(chromatic_str, 0.0), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, crt_uv, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, crt_uv - vec2<f32>(chromatic_str, 0.0), 0.0).b;
-    var color = vec3<f32>(r, g, b);
+  let mouseBulge = smoothstep(0.25, 0.0, length((uv - smoothMouse) * vec2<f32>(aspect, 1.0))) * select(0.0, 0.12, held);
+  let curvature = barrelAmount * 0.15 * (1.0 + bass * 0.5 + mouseBulge + rippleFlash * 0.08);
+  let flickerAmount = 0.5 + barrelAmount * 0.5 + mids * 0.2;
+  let chromaticStr = 0.002 * barrelAmount + treble * 0.005;
 
-    // Blue-noise stipple aperture grille
-    let mask = stipple_grille(crt_uv, res, stipple_density, time);
-    color = color * (0.3 + mask * 0.7);
+  var crtUV = select(uv, curveUv(uv, curvature), barrelAmount > 0.01);
+  if (crtUV.x < 0.0 || crtUV.x > 1.0 || crtUV.y < 0.0 || crtUV.y > 1.0) {
+    textureStore(writeTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    return;
+  }
 
-    // Scanlines
-    let scan_mod = scanlines(crt_uv, res, scanline_intensity, time);
-    color = color * scan_mod;
+  let baseSample = textureSampleLevel(readTexture, u_sampler, crtUV, 0.0);
+  let r = textureSampleLevel(readTexture, u_sampler, crtUV + vec2<f32>(chromaticStr, 0.0), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, crtUV, 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, crtUV - vec2<f32>(chromaticStr, 0.0), 0.0).b;
+  var color = vec3<f32>(r, g, b);
 
-    // Phosphor glow
-    if (phosphor_glow > 0.01) {
-        let brightness = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-        let bloom = smoothstep(0.4, 0.9, brightness) * phosphor_glow * 0.4;
-        color = mix(color, pow(color, vec3<f32>(0.7)), phosphor_glow * 0.3);
-        color = color + color * bloom;
-    }
+  let stippleMask = stippleGrille(crtUV, stippleDensity, time);
+  color *= 0.3 + stippleMask * 0.7;
+  color *= scanlines(crtUV, resolution, scanlineIntensity, time, mids);
+  color += halationGlow(crtUV, phosphorGlow * 0.5, curvature, resolution);
 
-    // Phosphor decay
-    color = phosphor_decay(color, time, flicker_amount);
+  if (phosphorGlow > 0.01) {
+    let brightness = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let bloom = smoothstep(0.4, 0.9, brightness) * phosphorGlow * 0.4;
+    color = mix(color, pow(color, vec3<f32>(0.7)), phosphorGlow * 0.3);
+    color += color * bloom;
+  }
 
-    // Vignette
-    let vignette = crt_vignette(uv, 0.5 + barrel_amount * 0.5);
-    color = color * vignette;
+  color = phosphorDecay(color, time, flickerAmount);
+  color *= crtVignette(uv, 0.5 + barrelAmount * 0.5);
+  color *= vec3<f32>(1.05, 1.02, 0.98);
 
-    // Warm tint and gamma
-    color = color * vec3<f32>(1.05, 1.02, 0.98);
-    color = pow(color, vec3<f32>(1.0 / 2.2));
-    color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
+  let prev = textureLoad(dataTextureC, coord, 0).rgb;
+  color = mix(color, prev, 0.08 + phosphorGlow * 0.06);
 
-    // Luminance-key alpha modulated by aperture grille mask
-    let maskScalar = dot(mask, vec3<f32>(0.3333));
-    let alpha = clamp(dot(color, vec3<f32>(0.299, 0.587, 0.114)) * (0.5 + maskScalar * 0.5) + vignette * 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(color, alpha));
+  color = acesToneMap(color * (0.95 + bass * 0.05));
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let maskScalar = dot(stippleMask, vec3<f32>(0.3333));
+  let alpha = clamp(baseSample.a * 0.9 + rippleFlash * 0.15 + maskScalar * 0.1 + bass * 0.05, 0.0, 1.0);
+
+  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
+
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -26,6 +26,10 @@
           },
         };
         webpackConfig.resolve = webpackConfig.resolve || {};
+        webpackConfig.resolve.extensionAlias = {
+          ...webpackConfig.resolve.extensionAlias,
+          '.js': ['.ts', '.tsx', '.js'],
+        };
         webpackConfig.resolve.alias = {
           ...webpackConfig.resolve.alias,
           'sharp$': false,
@@ -36,6 +40,16 @@
           /Critical dependency: 'import.meta'/,
         ];
         return webpackConfig;
+      },
+    },
+    jest: {
+      configure: (jestConfig) => {
+        jestConfig.moduleNameMapper = {
+          ...jestConfig.moduleNameMapper,
+          // TypeScript ESM: import './foo.js' resolves to foo.ts
+          '^(\\.{1,2}/.*)\\.js$': '$1',
+        };
+        return jestConfig;
       },
     },
   };

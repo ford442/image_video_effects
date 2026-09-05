@@ -1,26 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  ASCII Flow + Structure Tensor
-//  Category: advanced-hybrid
-//  Features: advanced-convolution, upgraded-rgba, mouse-driven
-//  Complexity: High
-//  Chunks From: ascii-flow.wgsl, conv-structure-tensor-flow.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-10 — Image Processing & Artistry Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//
-//  Hybrid Approach:
-//    1. Compute structure tensor and extract dominant eigenvector (flow direction)
-//    2. Use flow coherency to determine glyph selection and orientation
-//    3. High coherency = line glyphs aligned with edge flow
-//    4. Low coherency = dot/cross glyphs
-//    5. Line Integral Convolution (LIC) value modulates glyph brightness
-//
-//  RGBA32FLOAT EXPLOITATION:
-//    RGB: Flow-aligned glyph color with phosphor tint
-//    Alpha: Structure tensor coherency — how strongly oriented the flow is.
-//           High coherency = solid glyph, low coherency = ghosted glyph.
-//
-// ═══════════════════════════════════════════════════════════════════
+// ASCII Flow Structure — Composer batch cyber/digital/glitch cohort 3
+// Structure-tensor eigenflow + LIC glyphs, spring flow bias, held coherence lock,
+// click shockfront, exact C coherency blend, ACES display.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -159,15 +139,53 @@ fn draw_glyph(uv: vec2<f32>, index: i32, rotation: f32) -> f32 {
     return 1.0 - smoothstep(0.0, 0.05, d);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
+    let coord = vec2<i32>(gid.xy);
     var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
+    let aspect = resolution.x / max(resolution.y, 1.0);
     let pixelSize = 1.0 / resolution;
-    let mousePos = u.zoom_config.yz;
+    let held = u.zoom_config.w > 0.5;
+    let mouse = u.zoom_config.yz;
+
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+
+    var smoothMouse = mouse;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[138] > 0.5) {
+        smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (gid.x == 0u && gid.y == 0u && hasSpring) {
+        var springPos = smoothMouse;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = mouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 10.0;
+            let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+        smoothMouse = springPos;
+    }
 
     // Parameters
     let gridDensity = mix(40.0, 120.0, u.zoom_params.x);
@@ -203,19 +221,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let coherency = select(0.0, (lambda1 - lambda2) / (lambda1 + lambda2 + 0.0001), lambda1 + lambda2 > 0.0001);
     let boostedCoherency = pow(coherency, 1.0 / coherencyBoost);
 
-    // Mouse vortex disturbance
-    let toMouse = cell_center_uv - mousePos;
-    let mouseDist = length(toMouse);
+    let toMouse = cell_center_uv - smoothMouse;
+    let mouseDist = length(toMouse * vec2<f32>(aspect, 1.0));
     let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * mouseInfluence;
     let mouseAngle = atan2(toMouse.y, toMouse.x);
-    let vortex = vec2<f32>(-sin(mouseAngle), cos(mouseAngle)) * mouseFactor;
+    let vortex = vec2<f32>(-sin(mouseAngle), cos(mouseAngle)) * mouseFactor * select(0.5, 1.2, held);
     eigenvec = normalize(mix(eigenvec, vortex, mouseFactor));
+
+    var clickShock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 1.2) {
+            let radius = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+            clickShock = max(clickShock, exp(-age * 2.5) * (1.0 - smoothstep(0.0, 0.1, radius)));
+        }
+    }
+    let coherencyLocked = mix(boostedCoherency, 1.0, clickShock * 0.5 + select(0.0, 0.25, held));
 
     // Flow angle for glyph rotation
     let flowAngle = atan2(eigenvec.y, eigenvec.x);
 
     // LIC along the flow
-    let licValue = lic(cell_center_uv, eigenvec, pixelSize, 8, 1.5);
+    let licSteps = i32(mix(6.0, 12.0, mids));
+    let licValue = lic(cell_center_uv, eigenvec, pixelSize, licSteps, 1.5 + treble * 0.5);
 
     // Sample texture for brightness
     let color = textureSampleLevel(readTexture, u_sampler, clamp(cell_center_uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
@@ -228,7 +258,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // If coherency is high, bias toward directional glyphs and rotate them
     var glyphRotation = 0.0;
-    if (boostedCoherency > 0.6) {
+    if (coherencyLocked > 0.6) {
         // Directional glyphs with flow alignment
         let dirGlyph = i32((flowAngle / 3.14159 + 1.0) * 2.5) % 5 + 1;
         glyph_idx = select(glyph_idx, dirGlyph, glyph_idx > 2);
@@ -245,16 +275,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         0.5 + 0.5 * cos(6.28318 * (flowHue + 0.67))
     );
     let phosphor = vec3<f32>(0.2, 1.0, 0.4);
-    let mixedColor = mix(flowColor * (0.3 + 0.7 * licValue), phosphor, 0.5);
-    let final_color = mixedColor * shape * (0.5 + 0.5 * gray);
+    let mixedColor = mix(flowColor * (0.3 + 0.7 * licValue * licBlend), phosphor, 0.5);
+    var final_color = mixedColor * shape * (0.5 + 0.5 * gray) * (1.0 + bass * 0.2 + clickShock * 0.4);
 
-    // Alpha based on coherency and shape
-    let alpha = shape * mix(0.5, 1.0, boostedCoherency);
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let prevCoherency = prev.a;
+    let coherencyBlend = mix(coherencyLocked, prevCoherency, 0.2);
+    let alpha = shape * mix(0.5, 1.0, coherencyBlend);
 
-    // Store structure tensor for downstream
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(final_color, alpha));
+    final_color = acesToneMap(final_color * (0.95 + mids * 0.05));
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(eigenvec, boostedCoherency, licValue));
+    textureStore(writeTexture, coord, vec4<f32>(final_color, alpha));
+
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(eigenvec.x, eigenvec.y, coherencyBlend, licValue));
 }

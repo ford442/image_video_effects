@@ -27,6 +27,10 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
 const PHI: f32 = 1.618033988749894;
@@ -253,17 +257,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    let uv01 = (vec2<f32>(coords) + 0.5) / vec2<f32>(res);
+    let aspect = f32(res.x) / max(f32(res.y), 1.0);
+    var shock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age >= 0.0 && age < 3.0) {
+            let delta = (uv01 - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let ring = abs(length(delta) - age * (0.14 + clockSpd * 0.12));
+            shock += (1.0 - smoothstep(0.0, 0.026, ring)) * (1.0 - age / 3.0);
+        }
+    }
+    shock = min(shock, 2.0);
 
     // Snapping Rotation (stepped time + audio kick)
     let steppedTime = floor(time) + smoothstep(0.8, 1.0, fract(time)) * 1.0;
-    let rotAngle = steppedTime * 0.5 + audio * 2.0 + bass * 0.5;
+    let rotAngle = steppedTime * 0.5 + audio * 2.0 + bass * 0.5 + shock * 0.45;
 
     // Mouse Interaction with Y-flip (screen-top = +Y/up)
     let mousePos = (u.zoom_config.yz * 2.0 - vec2<f32>(1.0, 1.0)) * 3.14;
     let mouseYFlipped = vec2<f32>(mousePos.x, mousePos.y); // Y-flip for 3D
 
     // Camera Setup
-    var ro = vec3<f32>(0.0, 0.0, 5.0);
+    var ro = vec3<f32>(0.0, 0.0, 5.0 - held * 0.75);
     ro = ro * rotX(mouseYFlipped.y) * rotY(mouseYFlipped.x + rotAngle * 0.1);
 
     let ta = vec3<f32>(0.0, 0.0, 0.0);
@@ -347,13 +366,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color += vec3<f32>(1.0, 0.8, 0.3) * bloom;
     }
 
-    // Gamma correction
-    color = pow(color, vec3<f32>(1.0 / 2.2));
+    let gearTick = pow(0.5 + 0.5 * cos(atan2(uv.y, uv.x) * (8.0 + floor(complex * 12.0)) - time * 7.0), 20.0);
+    color += vec3<f32>(1.0, 0.48, 0.08) * gearTick * shock * (0.3 + treble * 0.6);
+    color += vec3<f32>(0.25, 0.65, 1.0) * held * exp(-length(uv) * 5.0) * (0.2 + mids * 0.4);
+
+    // Exact previous-frame feedback, then ACES filmic display mapping.
+    let prev = textureLoad(dataTextureC, coords, 0);
+    color = mix(color, prev.rgb * 0.94, 0.05 + bass * 0.02);
+    color = acesToneMap(color * 1.2);
 
     let _luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2 + volAccum * 0.5, 0.0, 1.0);
+    let _alpha = clamp(_luma * 0.55 + select(0.04, 0.42, hit) + volAccum * 0.5 + shock * 0.25, 0.0, 1.0);
 
-    textureStore(writeTexture, coords, applyGenerativePrimaryControls(vec4<f32>(color, _alpha)));
+    textureStore(writeTexture, coords, vec4<f32>(color, _alpha));
     let _depth_uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
     let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
     textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));

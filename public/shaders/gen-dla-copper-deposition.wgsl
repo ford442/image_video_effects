@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Diffusion-Limited Aggregation Copper Deposition
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: persistent-state, mouse-driven, click-seeded, audio-reactive,
+//            upgraded-rgba, semantic-alpha, aces-tone-map
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-08-23 — persistent DLA state, interactive electrodes,
+//            oxidation age, tip activity, single output-only ACES pass
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,17 +28,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
-}
-
-
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   var pp = p;
   let k = vec3<f32>(0.3183099, 0.3678794, 0.4342945);
@@ -77,85 +68,113 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn clampCoord(p: vec2<i32>, size: vec2<i32>) -> vec2<i32> {
+  return clamp(p, vec2<i32>(0), size - vec2<i32>(1));
+}
+
+// dataTextureC/A packing: deposit, electrolyte depletion, oxidation age,
+// freshly-grown tip activity. Every history read is an exact texel load.
+fn loadDla(p: vec2<i32>, size: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clampCoord(p, size), 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = vec2<f32>(u.config.zw);
   let coord = vec2<i32>(global_id.xy);
   if (coord.x >= i32(res.x) || coord.y >= i32(res.y)) { return; }
+  let size = vec2<i32>(i32(res.x), i32(res.y));
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
-  let p1 = u.zoom_params.x;
-  let p2 = u.zoom_params.y;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  let bands = plasmaBuffer[0].xyz;
+  let bass = bands.x;
+  let mids = bands.y;
+  let treble = bands.z;
 
-  // Seed crystal center with ripple nucleation
-  var seedPos = vec2<f32>(0.5, 0.5);
-  let rippleCount = u32(u.config.y);
-  if (rippleCount > 0u) {
-    seedPos = u.ripples[0].xy;
-  }
+  let growthScale = mix(0.35, 1.8, u.zoom_params.x);
+  let armCount = mix(3.0, 13.0, u.zoom_params.y);
+  let oxidationAmount = mix(0.05, 1.0, u.zoom_params.z);
+  let sparkIntensity = mix(0.1, 2.2, u.zoom_params.w);
 
-  // Domain-warped fBm for walker trails
-  var p = uv * (4.0 + p1 * 4.0);
+  let previous = loadDla(coord, size);
+  let n = loadDla(coord + vec2<i32>(0, -1), size).r;
+  let s = loadDla(coord + vec2<i32>(0, 1), size).r;
+  let e = loadDla(coord + vec2<i32>(1, 0), size).r;
+  let w = loadDla(coord + vec2<i32>(-1, 0), size).r;
+  let ne = loadDla(coord + vec2<i32>(1, -1), size).r;
+  let nw = loadDla(coord + vec2<i32>(-1, -1), size).r;
+  let se = loadDla(coord + vec2<i32>(1, 1), size).r;
+  let sw = loadDla(coord + vec2<i32>(-1, 1), size).r;
+  let neighborMax = max(max(max(n, s), max(e, w)), max(max(ne, nw), max(se, sw)));
+  let neighborMean = (n + s + e + w + ne + nw + se + sw) * 0.125;
+
+  // Domain-warped electrolyte probability field.
+  var p = uv * (4.0 + growthScale * 3.0);
   let warp = vec2<f32>(fbm(p + vec2<f32>(0.0, 1.7), 4),
                        fbm(p + vec2<f32>(5.2, 1.3), 4));
   p += warp * (0.6 + mids * 0.5);
+  let centered = uv - vec2<f32>(0.5);
+  let radius = length(centered);
+  let angle = atan2(centered.y, centered.x);
+  let arms = 0.5 + 0.5 * sin(angle * armCount + fbm(p, 3) * 5.0 - radius * 34.0);
+  let walkers = fbm(p * (1.35 + bass * 1.5) + vec2<f32>(time * 0.06, -time * 0.04), 4);
+  let candidate = smoothstep(0.46 - bass * 0.08, 0.78, walkers * (0.72 + arms * 0.55));
 
-  // Polar coordinates toward seed
-  let toSeed = seedPos - uv;
-  let polar = vec2<f32>(length(toSeed), atan2(toSeed.y, toSeed.x));
+  // The central cathode, held cursor, and finite click fronts are true growth
+  // seeds. Click age is bounded so old entries cannot inject energy forever.
+  var seed = 1.0 - smoothstep(0.006, 0.024, radius);
+  let aspect = res.x / max(res.y, 1.0);
+  let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  seed = max(seed, held * (1.0 - smoothstep(0.0, 0.055, mouseDist)));
+  var clickEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 2.4) { continue; }
+    let distanceToClick = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+    let front = exp(-abs(distanceToClick - age * 0.19) * 95.0) * exp(-age * 1.25);
+    let nucleus = (1.0 - smoothstep(0.0, 0.025, distanceToClick)) * exp(-age * 2.0);
+    clickEnergy += front + nucleus;
+  }
+  seed = max(seed, clamp(clickEnergy, 0.0, 1.0));
 
-  // Dendrite arms with angular periodicity
-  let arms = 5.0 + p2 * 8.0;
-  let armMod = sin(polar.y * arms + fbm(p, 3) * 3.14159);
-  let radialNoise = fbm(vec2<f32>(polar.x * 5.0, armMod * 2.0), 6);
-  let stickProb = 0.35 + mids * 0.35;
-  var dendrite = smoothstep(0.45 - stickProb * 0.15, 0.55 + stickProb * 0.1,
-                            radialNoise * armMod);
+  let contact = smoothstep(0.03, 0.42, neighborMax + neighborMean * 0.8);
+  let electrolyte = 1.0 - clamp(previous.g, 0.0, 1.0);
+  let stochastic = hash22(vec2<f32>(coord) + floor(time * 24.0)).x;
+  let attach = candidate * contact * electrolyte
+    * smoothstep(0.82 - growthScale * 0.18 - bass * 0.12, 1.0, stochastic);
+  let growth = max(seed, attach * (0.25 + mids * 0.35));
+  let deposit = clamp(previous.r + (1.0 - previous.r) * growth * (0.12 + growthScale * 0.2), 0.0, 1.0);
+  let freshTip = clamp((deposit - previous.r) * 7.0 + clickEnergy * 0.35, 0.0, 1.0);
+  let depletion = clamp(mix(previous.g, max(previous.g, deposit * 0.78), 0.035 + growthScale * 0.02), 0.0, 1.0);
+  let oxidation = clamp(previous.b + deposit * oxidationAmount * 0.0018, 0.0, 1.0);
+  let activity = max(freshTip, previous.a * 0.91);
 
-  // Bass spawns denser walker clusters
-  let walkers = fbm(p * (1.5 + bass * 2.0) + time * 0.15, 4);
-  let cluster = smoothstep(0.55 - bass * 0.2, 0.7, walkers);
-  let deposit = max(dendrite, cluster * 0.55);
-
-  // Electrolyte depletion near growth
-  let depletion = smoothstep(0.0, 0.35, deposit) * (1.0 - smoothstep(0.2, 0.8, polar.x));
-
-  // Treble spark discharge at tips
-  let sparkHash = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-  let spark = step(0.88, deposit) * step(0.75, fract(sparkHash + time * 4.0 + treble * 3.0));
-
-  // Metallic copper palette with patina
+  // Metallic copper develops patina from stored oxidation, while the activity
+  // channel identifies conductive tips for treble-driven discharge.
   let freshCopper = vec3<f32>(0.72, 0.45, 0.2);
-  let oxidized = vec3<f32>(0.12, 0.32, 0.28);
+  let oxidized = vec3<f32>(0.07, 0.38, 0.33);
   let bronze = vec3<f32>(0.55, 0.35, 0.15);
-  let age = smoothstep(0.0, 1.0, polar.x + fbm(p * 2.0, 2) * 0.3);
-  var color = mix(freshCopper, bronze, age * 0.5);
-  color = mix(color, oxidized, depletion * (0.5 + treble * 0.3));
+  let sparkHash = hash22(vec2<f32>(coord) + floor(time * 55.0)).y;
+  let spark = activity * smoothstep(0.82 - treble * 0.18, 1.0, sparkHash) * sparkIntensity;
+  var metal = mix(freshCopper, bronze, oxidation * 0.55);
+  metal = mix(metal, oxidized, oxidation * oxidationAmount);
+  metal *= deposit * (0.65 + neighborMean * 0.7);
+  metal += vec3<f32>(1.2, 0.72, 0.28) * activity * (0.3 + bass * 0.5);
+  metal += vec3<f32>(1.0, 0.9, 0.62) * spark * (0.6 + treble * 2.0);
+  let electrolyteColor = vec3<f32>(0.008, 0.018, 0.025) + vec3<f32>(0.02, 0.08, 0.09) * depletion;
+  let input = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let effectAlpha = clamp(deposit * 0.9 + activity * 0.25 + spark * 0.2, 0.0, 1.0);
+  let hdr = mix(input.rgb, electrolyteColor + metal, clamp(0.35 + effectAlpha * 0.65, 0.0, 1.0));
+  let alpha = max(input.a, effectAlpha);
+  let depthIn = textureLoad(readDepthTexture, coord, 0).r;
+  let depth = mix(depthIn, clamp(deposit * 0.82 + activity * 0.18, 0.0, 1.0), effectAlpha);
+  let display = vec4<f32>(acesToneMap(hdr * 1.15), alpha);
 
-  // HDR specular on tips + spark
-  let highlight = pow(deposit, 4.0) * (0.6 + 0.4 * sin(time * 2.5));
-  color += vec3<f32>(0.35, 0.22, 0.08) * highlight;
-  color += vec3<f32>(1.0, 0.85, 0.5) * spark * treble * 2.5;
-
-  // Depth: deposited metal sits closer (higher) than depleted electrolyte
-  let depth = clamp(deposit * (1.0 - polar.x), 0.0, 1.0);
-
-  // Chromatic aberration
-  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
-  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
-
-  // ACES tone mapping
-  color = color * (2.51 * color + 0.03) / (color * (2.43 * color + 0.59) + 0.14);
-
-  // Alpha: density × (1.0 - depletion)
-  let alpha = clamp(deposit * (1.0 - depletion * 0.7) + spark * 0.3, 0.0, 1.0);
-  let out = vec4<f32>(color, alpha);
-
-  textureStore(writeTexture, coord, applyGenerativePrimaryControls(out));
+  textureStore(writeTexture, coord, display);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, out);
+  textureStore(dataTextureA, coord, vec4<f32>(deposit, depletion, oxidation, activity));
 }

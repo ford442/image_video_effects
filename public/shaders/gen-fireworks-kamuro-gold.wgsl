@@ -199,8 +199,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = acesToneMap(col * 1.15);
 
   let alpha = clamp(length(col) * 1.2 + 0.1, 0.12, 0.97);
-  let persistent = col * 0.7 + prev * 0.25;
-  textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

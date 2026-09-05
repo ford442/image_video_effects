@@ -1,13 +1,52 @@
-// src/wasm/bridge/api.js
-// Default export barrel — named exports live in the modules above.
+// GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
-import { captureFrame, captureFrameDataUrl, resizeCanvas, takeScreenshot, uploadImageData, uploadVideoFrame } from './capture.js';
-import { getDiagnostics } from './diagnostics.js';
-import { initWasmRenderer, isInitialized, shutdownWasmRenderer } from './init.js';
-import { isRecordingActive, recordAndDownload, setRecording, startRecording, stopRecording } from './recording.js';
-import { getSlotState, loadShader, loadShaderFromURL, reloadShader, reloadShaderFromURL, setActiveShader, setSlotMode, setSlotShader } from './shader.js';
-import { addRipple, clearRipples, getAdapterSummary, getColorFormat, getFPS, getGPUTimings, getLastInitErrorMessage, getLastInitErrorStage, getSupportsDeepWorkgroup, setColorFormat, setInputSource, setSlotParams, updateAudioData, updateAudioFrequencyBins, updateDepthMap, updateMousePos, updateSlotParams, updateUniforms } from './uniforms.js';
-
+import {
+  captureFrame,
+  captureFrameDataUrl,
+  resizeCanvas,
+  takeScreenshot,
+  uploadImageData,
+  uploadVideoFrame
+} from "./capture.js";
+import { getDiagnostics } from "./diagnostics.js";
+import { initWasmRenderer, isInitialized, shutdownWasmRenderer } from "./init.js";
+import {
+  isRecordingActive,
+  recordAndDownload,
+  setRecording,
+  startRecording,
+  stopRecording
+} from "./recording.js";
+import {
+  getSlotState,
+  loadShader,
+  loadShaderFromURL,
+  reloadShader,
+  reloadShaderFromURL,
+  setActiveShader,
+  setSlotMode,
+  setSlotShader
+} from "./shader.js";
+import {
+  addRipple,
+  clearRipples,
+  getAdapterSummary,
+  getColorFormat,
+  getFPS,
+  getGPUTimings,
+  getLastInitErrorMessage,
+  getLastInitErrorStage,
+  getSupportsDeepWorkgroup,
+  setColorFormat,
+  setInputSource,
+  setSlotParams,
+  updateAudioData,
+  updateAudioFrequencyBins,
+  updateDepthMap,
+  updateMousePos,
+  updateSlotParams,
+  updateUniforms
+} from "./uniforms.js";
 const wasmBridge = {
   getDiagnostics,
   initWasmRenderer,
@@ -49,7 +88,9 @@ const wasmBridge = {
   takeScreenshot,
   startRecording,
   stopRecording,
-  recordAndDownload,
+  recordAndDownload
 };
-
-export default wasmBridge;
+var api_default = wasmBridge;
+export {
+  api_default as default
+};

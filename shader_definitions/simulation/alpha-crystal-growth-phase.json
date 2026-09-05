@@ -55,5 +55,13 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Supercooling", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Anisotropy", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Growth Rate", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Impurity Level", "default": 0.2, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = crystal phase, temperature, orientation, impurity concentration",
+  "updated": true
 }

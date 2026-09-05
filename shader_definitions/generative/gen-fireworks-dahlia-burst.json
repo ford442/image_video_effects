@@ -15,6 +15,12 @@
   ],
   "description": "Flat dahlia-disk shells that bloom into layered rows of radial petals — warm coral cores fading to gold tips across concentric petal rings. Unlike spherical chrysanthemums, dahlia bursts spread in a wide flat disk before petals curl and fall. Bass expands disk radius, mids stagger petal-row timing, treble adds micro-petals. Mouse detonates a personal dahlia at the cursor.",
   "workgroup_size": [16, 16, 1],
+  "params": [
+    { "id": "petal-count", "name": "Petal Count", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "disk-size", "name": "Disk Size", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "petal-rows", "name": "Petal Rows", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "hue-cycle", "name": "Hue Cycle", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -58,6 +64,11 @@
     "fireworks",
     "audio-reactive",
     "mouse-driven",
-    "temporal-feedback"
-  ]
+    "temporal-feedback",
+    "flat-disk-petals",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map"
+  ],
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

@@ -5,6 +5,7 @@
  * Handles workgroup size parsing, shader hashing, and compilation with fallback support.
  */
 
+import workgroupDispatchContract from '../contracts/workgroup_dispatch.json';
 import { validateBindGroup } from './bindGroupValidator';
 import { reportError } from './ErrorHandling';
 import type { InternalColorFormat } from '../config/formatPolicy';
@@ -34,7 +35,8 @@ export function hashWgsl(code: string): string {
  * @workgroup_size belonging to that entry point — not the first one in the
  * file (a 1D helper kernel like `@workgroup_size(64, 1, 1) fn update_boids`
  * would otherwise corrupt the 2D dispatch of `main`). Falls back to the first
- * match if the requested entry point is not found, then to 8x8.
+ * match if the requested entry point is not found, then to canonical 16×16 from
+ * workgroup_dispatch.json.
  */
 export function parseWorkgroupSize(
   wgslSource: string,
@@ -65,8 +67,11 @@ export function parseWorkgroupSize(
     }
   }
 
-  console.warn('[WebGPU] Could not parse workgroup_size from shader, defaulting to 8x8');
-  return { x: 8, y: 8 };
+  console.warn('[WebGPU] Could not parse workgroup_size from shader, defaulting to 16x16');
+  return {
+    x: workgroupDispatchContract.unparsedFallback.x,
+    y: workgroupDispatchContract.unparsedFallback.y,
+  };
 }
 
 /**

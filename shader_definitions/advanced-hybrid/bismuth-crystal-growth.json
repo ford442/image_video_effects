@@ -2,16 +2,25 @@
   "id": "bismuth-crystal-growth",
   "name": "Bismuth Crystal Growth",
   "url": "shaders/bismuth-crystal-growth.wgsl",
-  "description": "Bismuth Crystal Growth",
+  "description": "Phase-field simulation of bismuth hopper crystal step-pyramid growth with 4-fold cubic anisotropy, thin-film oxide rainbow iridescence, and metallic luster.",
   "tags": [
     "phase-field-crystal",
     "hopper-crystals",
-    "iridescence"
+    "iridescence",
+    "bismuth",
+    "crystal-growth",
+    "audio-reactive",
+    "mouse-driven"
   ],
   "features": [
     "phase-field-crystal",
     "hopper-crystals",
-    "iridescence"
+    "iridescence",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal"
   ],
   "params": [
     {
@@ -51,5 +60,39 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Supercooling",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Anisotropy",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Growth Rate",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Color Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
 }

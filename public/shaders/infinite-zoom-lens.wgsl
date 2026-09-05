@@ -1,6 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Infinite Zoom Lens — Batch 56
-//  Axial zoom packets, interference runners, analytic rainbow, held aim, click rings
+//  Infinite Zoom Lens — Droste Spiral Recursion & Chromatic Dispersion
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, droste-recursion, chromatic-dispersion,
+//            temporal-feedback, semantic-alpha, ACES
+//  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -20,26 +23,25 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=ZoomStrength, y=LensRadius, z=FeedbackPersistence, w=Twist
   ripples: array<vec4<f32>, 50>,
 };
 
 const TAU: f32 = 6.28318530718;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = vec3<f32>(2.51);
-  let b = vec3<f32>(0.03);
-  let c = vec3<f32>(2.43);
-  let d = vec3<f32>(0.59);
-  let e = vec3<f32>(0.14);
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn drosteUV(uv: vec2<f32>, center: vec2<f32>, spiralZoom: f32, twist: f32) -> vec2<f32> {
   let offset = uv - center;
-  let p = offset;
-  let r = length(p);
-  let theta = atan2(p.y, p.x);
+  let r = length(offset);
+  let theta = atan2(offset.y, offset.x);
   let logR = log(max(r, 1e-5));
   let spiralAngle = logR * twist + spiralZoom;
   let newR = exp(logR * 0.72);
@@ -60,19 +62,52 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let uv = vec2<f32>(gid.xy) / dims;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
-  let held = f32(u.zoom_config.w > 0.5);
+  let rawMouse = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
-  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  let treble = plasmaBuffer[0].z;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let zoomSpeed = mix(0.3, 2.5, u.zoom_params.x + bass * 0.35);
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let isWriter = (gid.x == 0u && gid.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var mouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.05);
+    var sPos = mouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
+    }
+    let stiffness = 42.0;
+    let damping = 12.96; // 2 * sqrt(42)
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel += accel * dt;
+    sPos += sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
+
+  // Exact parameter contracts
+  let zoomSpeed = mix(0.3, 2.5, u.zoom_params.x) * (1.0 + bass * 0.35);
   let radius = mix(0.06, 0.55, u.zoom_params.y);
   let persistence = mix(0.4, 0.95, u.zoom_params.z);
   let twistAmt = (u.zoom_params.w - 0.5) * 2.2 + bass * 0.35 + held * 0.15;
   let recursionDepth = i32(mix(2.0, 7.0, depth));
 
-  let centered = (uv - mouse) * vec2<f32>(dims.x / dims.y, 1.0);
+  let centered = (uv - mouse) * vec2<f32>(dims.x / max(dims.y, 1.0), 1.0);
   let dist = length(centered);
   let lensMask = 1.0 - smoothstep(radius, radius + 0.03, dist);
 
@@ -95,20 +130,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hist = textureLoad(dataTextureC, histPixel, 0);
     let mixed = mix(src.rgb, hist.rgb, persistence * 0.55);
 
-    let armShift = (sampleUV - spiralCenter) * 0.025 * (1.0 + fi * 0.3) * lensMask;
+    let armShift = (sampleUV - spiralCenter) * 0.025 * (1.0 + fi * 0.3) * lensMask * (1.0 + treble * 0.4);
     let chromaR = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + armShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let chromaB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - armShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     let chroma = vec3<f32>(chromaR, mixed.g, chromaB);
 
-    accum = accum + chroma * w;
-    totalW = totalW + w;
-    recursionConfidence = recursionConfidence + w * (1.0 - abs(scale - 1.0));
+    accum += chroma * w;
+    totalW += w;
+    recursionConfidence += w * (1.0 - abs(scale - 1.0));
   }
 
   var finalColor = accum / max(totalW, 1e-4);
   let axial = smoothstep(0.07, 0.0, abs(fract(dist * 6.0 - time * (2.5 + mids)) - 0.5));
   let runner = smoothstep(0.05, 0.0, abs(fract(atan2(centered.y, centered.x) / TAU * 14.0 + time * 1.8) - 0.5));
-  let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(dist * 8.0 - time * 0.5) + vec3<f32>(0.0, 0.33, 0.67)));
+  let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(dist * 8.0 - time * 0.5) + vec3<f32>(0.0, 0.333, 0.667)));
   let focalBloom = pow(max(0.0, 1.0 - dist / radius), 4.0) * (0.15 + bass * 0.2);
   finalColor = finalColor + oilSlick * (axial * 0.2 + runner * 0.15) * lensMask;
   finalColor = finalColor + oilSlick * focalBloom;
@@ -118,23 +153,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let rp = u.ripples[i];
     let age = time - rp.z;
-    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
-      let d = length(uv - rp.xy);
-      clickRing = max(clickRing, exp(-abs(d - age * 0.4) * 50.0) * (1.0 - age / 1.5));
+    if (age >= 0.0 && age < 1.5) {
+      let d = length((uv - rp.xy) * vec2<f32>(dims.x / max(dims.y, 1.0), 1.0));
+      clickRing = max(clickRing, exp(-abs(d - age * 0.45) * 45.0) * (1.0 - age / 1.5));
     }
   }
   finalColor += vec3<f32>(0.4, 0.9, 1.0) * clickRing * 0.35;
 
   finalColor = acesToneMap(finalColor * 1.1);
-  finalColor = finalColor + vec3<f32>((ign(uv) - 0.5) / 255.0);
+  finalColor += vec3<f32>((ign(uv) - 0.5) / 255.0);
 
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   finalColor = mix(current.rgb, finalColor, lensMask);
   let spiralIntensity = smoothstep(0.1, 0.5, abs(twistAmt));
-  let finalAlpha = clamp(recursionConfidence * 0.08 * spiralIntensity * depth + lensMask * 0.55 + current.a * 0.2, 0.04, 0.98);
+  let finalAlpha = clamp(recursionConfidence * 0.08 * spiralIntensity * depth + lensMask * 0.55 + current.a * 0.2 + held * 0.15, 0.04, 0.98);
   let outDepth = clamp(mix(depth, 0.15 + lensMask * 0.7, 0.25), 0.0, 1.0);
 
-  textureStore(writeTexture, pixel, vec4<f32>(finalColor, finalAlpha));
+  let outPixel = vec4<f32>(finalColor, finalAlpha);
+  textureStore(writeTexture, pixel, outPixel);
+  textureStore(dataTextureA, pixel, outPixel);
   textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(lensMask, zoomSpeed * 0.3, recursionConfidence, finalAlpha));
 }

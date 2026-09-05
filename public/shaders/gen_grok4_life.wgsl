@@ -99,18 +99,31 @@ fn zoneEnergy(uv_x: f32) -> f32 {
     return clamp(e, 0.0, 1.5);
 }
 
+fn acesToneMap(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
     let uv     = vec2<f32>(global_id.xy) / resolution;
     let time   = u.config.x;
     let px     = vec2<i32>(global_id.xy);
     let mouse  = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let mDown  = u.zoom_config.w > 0.0;
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let audioBands = plasmaBuffer[0].xyz;
+    let bass   = audioBands.x;
+    let mids   = audioBands.y;
+    let treble = audioBands.z;
 
     // ─── Slider wiring (saved-preset contract: ids/defaults unchanged) ───
     // Time Step    → simulation integration step dt
@@ -172,6 +185,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         newA = max(newA, blob);
     }
 
+    // Bounded click seeding: each recent click plants a prey core and a
+    // weaker predator/activity ring without touching the raw A packing.
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let clickCount = min(u32(u.config.y), 50u);
+    var clickActivity = 0.0;
+    for (var i = 0u; i < clickCount; i++) {
+        let ripple = u.ripples[i];
+        let clickAge = time - ripple.z;
+        if (clickAge < 0.0 || clickAge > 1.8) { continue; }
+        let clickStrength = clamp(ripple.w, 0.0, 1.0) * exp(-clickAge * 1.8);
+        let clickDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+        let seedCore = exp(-clickDist * clickDist * 900.0) * clickStrength;
+        let seedRing = exp(-abs(clickDist - clickAge * 0.09) * 85.0) * clickStrength;
+        newA = max(newA, seedCore);
+        newB = max(newB, seedRing * 0.55);
+        clickActivity = max(clickActivity, max(seedCore, seedRing));
+    }
+
     // ─── Random seeding (Init Density drives rate + blob radius) ───
     let noise = fract(sin(dot(uv + time * 0.001, vec2<f32>(12.9898, 78.233))) * 43758.5453);
     let thresh = 1.0 - max(0.001, initDens * 0.01);
@@ -184,7 +215,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Age & activity (Colour Speed also sets generational tempo) ───
     var newAge  = fract(age + (0.01 + colSpeed * 0.03) * (newA - 0.1));
-    let newAct  = mix(activity, abs(newA - stateA) + abs(newB - stateB), 0.1);
+    let newAct  = mix(activity, abs(newA - stateA) + abs(newB - stateB) + clickActivity * 0.35, 0.1);
 
     // ─── Extinction-event detection (single-thread population monitor) ───
     // extraBuffer[133] = smoothed global population, [134] = bloom pulse.
@@ -243,9 +274,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let finalColor = mix(inputColor.rgb, color, 0.9);
+    let occupancy = clamp(max(newA, newB) * 0.82 + newAct * 0.65 + clickActivity * 0.2, 0.0, 1.0);
+    let finalAlpha = max(inputColor.a, occupancy * 0.94);
+    let generatedDepth = clamp(1.0 - (newA * 0.52 + newB * 0.34 + newAct * 0.22), 0.05, 1.0);
+    let finalDepth = mix(inputDepth, generatedDepth, occupancy * 0.9);
 
-    textureStore(writeTexture, vec2<u32>(px), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<u32>(px), vec4<f32>(acesToneMap(finalColor * 1.08), finalAlpha));
     // SIM STATE (prey, predator, age, activity) — never clamp/tonemap this write
     textureStore(dataTextureA, global_id.xy, vec4<f32>(newA, newB, newAge, newAct));
-    textureStore(writeDepthTexture, vec2<u32>(px), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<u32>(px), vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

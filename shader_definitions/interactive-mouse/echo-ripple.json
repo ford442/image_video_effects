@@ -2,7 +2,7 @@
   "id": "echo-ripple",
   "name": "Echo Ripple",
   "url": "shaders/echo-ripple.wgsl",
-  "description": "Oil-slick thin-film rings with bioluminescent caustic wakes, spectral echo harmonics, held gravity deformation, bounded click history, and exact-load feedback advection preserving [displayRGB, bassEnvelope] A packing.",
+  "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing.",
   "updated": true,
   "params": [
     {
@@ -76,6 +76,8 @@
     "lod-noise",
     "cached-displacement",
     "thin-film-interference",
+    "bioluminescent-harmonics",
+    "held-gravity-bowl",
     "caustic-wakes",
     "exact-history-advection",
     "bounded-click-ripples"

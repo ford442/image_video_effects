@@ -1,0 +1,26 @@
+{
+  "id": "gen-interference-moire-field",
+  "url": "shaders/gen-interference-moire-field.wgsl",
+  "name": "Interference Moire Field",
+  "category": "generative",
+  "tags": ["moire", "interference", "lines", "optical", "waves", "audio-reactive"],
+  "description": "Crossed analytic line fields form evolving moire beats through phase warping, held-pointer lenses, and click-driven circular interference pulses.",
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {"id": "lineDensity", "name": "Line Density", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
+    {"id": "crossingAngle", "name": "Crossing Angle", "default": 0.35, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
+    {"id": "warpStrength", "name": "Warp Strength", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
+    {"id": "colorPhase", "name": "Color Phase", "default": 0.15, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
+  ],
+  "updatedParams": [
+    {"index": 0, "name": "Line Density", "default": 0.6, "min": 0, "max": 1, "step": 0.01},
+    {"index": 1, "name": "Crossing Angle", "default": 0.35, "min": 0, "max": 1, "step": 0.01},
+    {"index": 2, "name": "Warp Strength", "default": 0.4, "min": 0, "max": 1, "step": 0.01},
+    {"index": 3, "name": "Color Phase", "default": 0.15, "min": 0, "max": 1, "step": 0.01}
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": ["analytic-lines", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "feedbackPacking": "A/C = raw HDR moire interference display RGBA history"
+}

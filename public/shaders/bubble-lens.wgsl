@@ -1,33 +1,10 @@
-// ================================================================
-//  Bubble Lens - Category: distortion - By: Copilot (2026-05-31)
-//  Features: mouse-driven, audio-reactive, upgraded-rgba, thin-film
-//  Upgraded 2026-08-02 (swarm b26): spring-damper buoyancy, click
-//  satellite bubbles, film shockwaves, per-octave FFT shimmer.
-// ================================================================
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Upgraded: 2026-08-23 (Batch 64)
-//
-//  This shader was already strong — spring-damped pointer in the correct
-//  extraBuffer[133..138] range, guarded ripple loop, thin-film interference,
-//  gravity drainage, satellite bubbles. This pass closes the remaining contract
-//  gaps (no ACES, `dataTextureC` never read, and `dataTextureA` held a mask
-//  tuple nothing consumed) and adds two structures the film physics was missing.
-//
-//  TWO NEW STRUCTURES
-//
-//    1. Marangoni convection — surfactant concentration gradients drive
-//       tangential flow along a soap film, which is why the interference bands
-//       in a real bubble visibly swirl and race rather than just sagging under
-//       gravity. Drainage here was a static vertical gradient plus noise; a
-//       Marangoni velocity field now advects the film thickness tangentially,
-//       with surface-tension gradients strongest where the film is thinnest.
-//
-//    2. Per-band membrane resonance modes — a soap film is a vibrating
-//       membrane with discrete drum modes. Eight radial/azimuthal modes, one
-//       per FFT bin, now perturb the film thickness, so the bubble rings like
-//       a membrane at the frequencies actually present in the audio.
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Bubble Lens — Thin-Film Marangoni Soap Bubble
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, thin-film,
+//            marangoni-convection, membrane-resonance, ACES
+//  Complexity: Very High
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -70,19 +47,37 @@ fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
   return v * inverseSqrt(lenSq);
 }
 
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 struct BubbleEval {
-  color: vec3<f32>, inside: f32, drainedThickness: f32,
-  spec: f32, alpha: f32, warpedUV: vec2<f32>,
+  color: vec3<f32>,
+  inside: f32,
+  drainedThickness: f32,
+  spec: f32,
+  alpha: f32,
+  warpedUV: vec2<f32>,
 };
 
-// Full thin-film bubble evaluation: lens displacement, drainage,
-// turbulence, 3-phase interference, Schlick fresnel, rim and spec.
-// filmShock perturbs drainedThickness (click shockwaves); satellites
-// pass 0.0. The soap physics below are hand-tuned - keep verbatim.
 fn evalBubble(
-  uv: vec2<f32>, src: vec4<f32>, center: vec2<f32>, bubbleRadius: f32,
-  magnification: f32, filmThickness: f32, ior: f32, aspect: f32,
-  time: f32, audio: vec3<f32>, broadShimmer: f32, fineShimmer: f32,
+  uv: vec2<f32>,
+  src: vec4<f32>,
+  center: vec2<f32>,
+  bubbleRadius: f32,
+  magnification: f32,
+  filmThickness: f32,
+  ior: f32,
+  aspect: f32,
+  time: f32,
+  audio: vec3<f32>,
+  broadShimmer: f32,
+  fineShimmer: f32,
   filmShock: f32
 ) -> BubbleEval {
   let delta = (uv - center) * vec2<f32>(aspect, 1.0);
@@ -98,23 +93,18 @@ fn evalBubble(
   let bubbleSample = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
 
   let drainage = clamp(0.5 + delta.y / max(bubbleRadius, 1e-4) * 0.5 + sin(time * 0.45) * 0.04, 0.0, 1.0);
-  let turbulence = noise(warpedUV * 8.0 + vec2<f32>(0.0, -time * 0.25))
-    * 0.6 * (1.0 + broadShimmer) + noise(warpedUV * 15.0 - vec2<f32>(time * 0.1, 0.0)) * 0.4 * (1.0 + fineShimmer);
+  let turbulence = noise(warpedUV * 8.0 + vec2<f32>(0.0, -time * 0.25)) * 0.6 * (1.0 + broadShimmer)
+                 + noise(warpedUV * 15.0 - vec2<f32>(time * 0.1, 0.0)) * 0.4 * (1.0 + fineShimmer);
   var drainedThickness = filmThickness * (0.14 + drainage * 1.6) * (0.75 + turbulence * 0.6);
   drainedThickness = drainedThickness * (1.0 + filmShock);
 
-  // ── Structure 1: Marangoni convection ────────────────────────────────────
-  // Surface tension rises as the film thins, so thin regions pull liquid
-  // tangentially toward themselves. That gradient-driven flow is what makes
-  // real soap-film bands swirl instead of merely sagging.
+  // Marangoni convection
   let tangent = vec2<f32>(-direction.y, direction.x);
-  let tensionGrad = (1.0 - clamp(drainedThickness * 1.4, 0.0, 1.0));
-  let marangoni = dot(tangent, vec2<f32>(cos(time * 0.6), sin(time * 0.47)))
-                * tensionGrad * (0.35 + audio.y * 0.9);
+  let tensionGrad = 1.0 - clamp(drainedThickness * 1.4, 0.0, 1.0);
+  let marangoni = dot(tangent, vec2<f32>(cos(time * 0.6), sin(time * 0.47))) * tensionGrad * (0.35 + audio.y * 0.9);
   drainedThickness = drainedThickness * (1.0 + marangoni * 0.28);
 
-  // ── Structure 2: per-band membrane resonance modes ───────────────────────
-  // Eight drum modes of the film, each driven by its own spectrum bin.
+  // Per-band membrane resonance drum modes
   var membrane = 0.0;
   for (var m = 0u; m < 8u; m = m + 1u) {
     let fm = f32(m);
@@ -141,64 +131,70 @@ fn evalBubble(
   let spec = pow(max(0.0, 1.0 - factor), 4.0) * (0.25 + audio.y * 0.6);
 
   var bubbleColor = bubbleSample.rgb;
-  bubbleColor = mix(bubbleColor, bubbleSample.rgb * interference * 1.2, 0.35 + fresnel * 0.35);
-  bubbleColor = bubbleColor + vec3<f32>(1.0, 0.95, 0.92) * spec + interference * rim * 0.18;
+  bubbleColor = mix(bubbleColor, bubbleSample.rgb * interference * 1.25, 0.35 + fresnel * 0.35);
+  bubbleColor = bubbleColor + vec3<f32>(1.0, 0.95, 0.92) * spec + interference * (rim * 0.2);
 
   let transmittance = exp(-drainedThickness * 0.35) * (0.85 + fresnel * 0.15);
   let finalColor = mix(src.rgb, bubbleColor, inside);
   let finalAlpha = clamp(mix(src.a, transmittance, inside) + inside * (0.14 + rim * 0.08), 0.08, 0.98);
 
   var out: BubbleEval;
-  out.color = finalColor;   out.inside = inside;
-  out.drainedThickness = drainedThickness;   out.spec = spec;
-  out.alpha = finalAlpha;   out.warpedUV = warpedUV;
+  out.color = finalColor;
+  out.inside = inside;
+  out.drainedThickness = drainedThickness;
+  out.spec = spec;
+  out.alpha = finalAlpha;
+  out.warpedUV = warpedUV;
   return out;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
-  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
-    return;
-  }
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
+  let coord = vec2<i32>(gid.xy);
   let uv = vec2<f32>(gid.xy) / dims;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
-  let aspect = dims.x / dims.y;
+  let rawMouse = u.zoom_config.yz;
+  let aspect = dims.x / max(dims.y, 1.0);
   let audio = plasmaBuffer[0].xyz;
 
+  // Exact parameter contracts
   let bubbleRadius = mix(0.10, 0.42, u.zoom_params.x);
   let magnification = mix(1.05, 4.0, u.zoom_params.y);
   let filmThickness = mix(0.25, 2.5, u.zoom_params.z) * (1.0 + audio.x * 0.25);
   let ior = mix(1.15, 1.65, u.zoom_params.w);
 
-  // Per-octave FFT shimmer: broad octave rides bin 2, fine octave bin 6, +-15%.
   let broadShimmer = (plasmaBuffer[2].x - 0.5) * 0.3;
   let fineShimmer = (plasmaBuffer[6].x - 0.5) * 0.3;
 
-  // Critically-damped spring (extraBuffer[133..136] = pos.xy, vel.xy;
-  // [137] = lastTime, [138] = initialized): the bubble floats after the
-  // raw mouse target without treating the valid top-left position as empty.
-  var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  let springInitialized = extraBuffer[138] > 0.5;
-  if (!springInitialized) {
-    springPos = mouse;
-    springVel = vec2<f32>(0.0);
+  // Critically-damped spring in extraBuffer[133..138]
+  let isWriter = (gid.x == 0u && gid.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+  var springPos = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
   }
-  if (gid.x == 0u && gid.y == 0u) {
+
+  if (isWriter && hasState) {
     let lastTime = extraBuffer[137];
-    let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), springInitialized);
+    let dt = clamp(time - lastTime, 0.0, 0.05);
+    var sPos = springPos;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
+    }
     let stiffness = 90.0;
-    let damping = 2.0 * sqrt(stiffness); // zeta = 1, critically damped
-    let accel = (mouse - springPos) * stiffness - springVel * damping;
-    springVel = springVel + accel * dt;
-    springPos = springPos + springVel * dt;
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
+    let damping = 18.97; // 2 * sqrt(90)
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel += accel * dt;
+    sPos += sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
     extraBuffer[137] = time;
     extraBuffer[138] = 1.0;
   }
@@ -207,8 +203,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let rippleCount = min(u32(u.config.y), 50u);
 
-  // Film shockwaves: each live click expands a drainedThickness
-  // perturbation ring across the main bubble's soap film.
+  // Film shockwaves
   var filmShock = 0.0;
   for (var i = 0u; i < rippleCount; i = i + 1u) {
     let rp = u.ripples[i];
@@ -217,17 +212,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let clickDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
     let wavefront = age * 0.55;
     let ring = exp(-pow((clickDist - wavefront) * 16.0, 2.0));
-    filmShock = filmShock + ring * (1.0 - age / 1.2) * 0.45;
+    filmShock += ring * (1.0 - age / 1.2) * 0.45;
   }
 
-  let main = evalBubble(uv, src, bubbleCenter, bubbleRadius, magnification, filmThickness, ior, aspect, time, audio, broadShimmer, fineShimmer, filmShock);
+  let mainEval = evalBubble(uv, src, bubbleCenter, bubbleRadius, magnification, filmThickness, ior, aspect, time, audio, broadShimmer, fineShimmer, filmShock);
 
-  var finalColor = main.color;
-  var finalAlpha = main.alpha;
+  var finalColor = mainEval.color;
+  var finalAlpha = mainEval.alpha;
 
-  // Satellite bubbles: every live click spawns a small bubble at the
-  // click point (~0.06 radius, grows then pops over ~1.2s), reusing
-  // the same lens + interference evaluation at reduced strength.
+  // Satellite bubbles on clicks
   for (var i = 0u; i < rippleCount; i = i + 1u) {
     let rp = u.ripples[i];
     let age = time - rp.z;
@@ -245,33 +238,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalAlpha = clamp(mix(finalAlpha, sat.alpha, blend), 0.08, 0.98);
   }
 
-  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, main.warpedUV, 0.0).r;
-  let outDepth = clamp(mix(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r, baseDepth, main.inside), 0.0, 1.0);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, mainEval.warpedUV, 0.0).r;
+  let outDepth = clamp(mix(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r, baseDepth, mainEval.inside), 0.0, 1.0);
 
-  let coord = vec2<i32>(gid.xy);
-
-  // Iridescent trail: the film's colour lingers briefly (exact load — C is
-  // rgba32float and must not go through a filtering sampler).
+  // Exact load from dataTextureC
   let prevFrame = textureLoad(dataTextureC, coord, 0);
-  finalColor = max(finalColor, prevFrame.rgb * (0.72 + main.inside * 0.14));
+  finalColor = max(finalColor, prevFrame.rgb * (0.72 + mainEval.inside * 0.14));
 
   finalColor = acesFilm(finalColor);
 
   let outColor = vec4<f32>(finalColor, finalAlpha);
   textureStore(writeTexture, coord, outColor);
-  textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  // A carries DISPLAY RGBA so the trail read above is meaningful; the mask
-  // tuple that used to live here (and that nothing read) moves to B.
   textureStore(dataTextureA, coord, outColor);
-  textureStore(dataTextureB, coord,
-               vec4<f32>(main.inside, main.drainedThickness * 0.2, main.spec, finalAlpha));
-}
-
-fn acesFilm(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
-  return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
+  textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
 }

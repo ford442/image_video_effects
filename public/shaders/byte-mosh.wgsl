@@ -1,8 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Byte Mosh — Batch 62
-//  LFSR/GF(2) datamosh: spring cursor, held burst, capped ripples,
-//  wired zoom_params, regional FFT, ACES + semantic alpha.
-// ═══════════════════════════════════════════════════════════════════
+// Byte Mosh — Composer batch cyber/digital/glitch
+// LFSR/GF(2) datamosh: spring cursor, held burst, capped ripples,
+// wired zoom_params, regional FFT, ACES + semantic alpha.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -172,7 +170,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let errorProb = select(0.0001, 0.1, badState);
   let burstMask = select(0u, lfsr ^ (prevMask << 1u), rand1 < errorProb || badState);
-  let blockTrigger = badState && (((lfsr ^ prevMask) & u32(mix(0x003fu, 0x00ffu, blockSizeParam))) == 0x002du || rand2 < bass * 0.12 + rippleBurst * 0.2);
+  let blockTrigger = badState && (((lfsr ^ prevMask) & u32(mix(63.0, 255.0, blockSizeParam))) == 0x002du || rand2 < bass * 0.12 + rippleBurst * 0.2);
   let mode = select(select(0.0, 1.0, badState), 2.0, blockTrigger);
   let corruptionAge = select(0.0, min(prevAge + 1.0, 63.0), badState);
 

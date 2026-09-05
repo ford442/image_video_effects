@@ -16,6 +16,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "fractal_density", "name": "Fractal Density", "default": 3, "min": 1, "max": 8, "step": 0.1, "mapping": "zoom_params.x" },
+    { "id": "holographic_frequency", "name": "Holographic Frequency", "default": 5, "min": 1, "max": 20, "step": 0.5, "mapping": "zoom_params.y" },
+    { "id": "bioluminescence_intensity", "name": "Bio-Luminescence Intensity", "default": 1.2, "min": 0, "max": 3, "step": 0.1, "mapping": "zoom_params.z" },
+    { "id": "audio_pulse_propagation", "name": "Audio Pulse Propagation", "default": 2, "min": 0.5, "max": 5, "step": 0.1, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -55,5 +61,6 @@
   "updated": true,
   "id": "gen-ethereal-quantum-holographic-fractal-coral",
   "url": "shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
-  "features": []
+  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha"],
+  "feedbackPacking": "A/C = final ACES display RGBA; exact fractal-coral persistence history"
 }

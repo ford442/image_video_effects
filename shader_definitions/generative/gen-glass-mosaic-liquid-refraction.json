@@ -24,6 +24,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "facet-density", "name": "Facet Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "bevel-width", "name": "Bevel Width", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "refraction-strength", "name": "Refraction Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "ripple-speed", "name": "Ripple Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -61,5 +67,13 @@
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
-  "features": []
+  "features": [
+    "liquid-voronoi-mosaic",
+    "three-band-audio-reactive",
+    "mouse-warped-refraction",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tone-map"
+  ],
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

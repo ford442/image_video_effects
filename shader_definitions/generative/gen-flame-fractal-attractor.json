@@ -1,0 +1,26 @@
+{
+  "id": "gen-flame-fractal-attractor",
+  "url": "shaders/gen-flame-fractal-attractor.wgsl",
+  "name": "Flame Fractal Attractor",
+  "category": "generative",
+  "tags": ["fractal", "flame", "attractor", "orbit-density", "audio-reactive"],
+  "description": "A curling orbit-density attractor folds luminous ember filaments through a bass-driven flame field with interactive vortex wakes.",
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {"id": "attractorStrength", "name": "Attractor Strength", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
+    {"id": "orbitSpeed", "name": "Orbit Speed", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
+    {"id": "curl", "name": "Curl", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
+    {"id": "emberBloom", "name": "Ember Bloom", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
+  ],
+  "updatedParams": [
+    {"index": 0, "name": "Attractor Strength", "default": 0.55, "min": 0, "max": 1, "step": 0.01},
+    {"index": 1, "name": "Orbit Speed", "default": 0.45, "min": 0, "max": 1, "step": 0.01},
+    {"index": 2, "name": "Curl", "default": 0.7, "min": 0, "max": 1, "step": 0.01},
+    {"index": 3, "name": "Ember Bloom", "default": 0.65, "min": 0, "max": 1, "step": 0.01}
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": ["fractal", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "feedbackPacking": "A/C = raw HDR display RGBA history"
+}

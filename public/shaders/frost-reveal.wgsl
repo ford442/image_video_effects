@@ -9,6 +9,40 @@
 //  Unique idea: dendritic ice crystals with hexagonal 6-fold symmetry that branch
 //  from nucleation points and grow inward from cold screen edges (real window frost).
 // ═══════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-08-23 (Batch 67 — fast motion / psychedelic / high energy)
+//
+//  FIXED — no bounds guard. `main` had no `global_id >= dims` early-out, so at
+//  any resolution that is not a multiple of the 16x16 workgroup the shader wrote
+//  outside the render target.
+//
+//  Also: `plasmaBuffer` was bound and never read (no audio at all), there was no
+//  click response, and the output was written untone-mapped.
+//
+//  A carries the FROST MASK state (r = mask), read back as dataTextureC next
+//  frame, so display goes to `writeTexture` — the Batch 58B convention.
+//
+//  FAST MOTION (two analytic techniques)
+//
+//    1. Crystallisation wavefronts — nucleation fronts sweep outward from the
+//       frame edges and from each click at a clamped rate, and the frost mask
+//       advances only where a front has already passed. Closed-form in
+//       `config.x`, so the growth is frame-rate independent.
+//
+//    2. Radial shatter streaks — the refraction offset is integrated along a
+//       radial direction whose length scales with how fast the mask is changing,
+//       so melting and refreezing throw visible streaks rather than sitting
+//       still.
+//
+//  PSYCHEDELIC COLOUR — ice is dispersive: the frost sample is split into an IQ
+//  cosine spectrum keyed to crystal thickness and per-band FFT energy, so the
+//  ferns glitter through the full hue range instead of a flat blue-white tint.
+//
+//  HIGH ENERGY — clicks fire crystal light-bursts that flash the ferns and blow
+//  a melt hole that refreezes with an elastic overshoot.
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -88,11 +122,33 @@ fn iceCrystal(p: vec2<f32>, t: f32) -> f32 {
     return clamp((spine * 0.7 + branches * 0.6) * falloff, 0.0, 1.0);
 }
 
+fn spectrum(tt: f32) -> vec3<f32> {
+    return 0.5 + 0.5 * cos(6.2831853 * (tt + vec3<f32>(0.0, 0.33, 0.67)));
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
+    let dimsI = vec2<i32>(textureDimensions(writeTexture));
+    if (global_id.x >= u32(dimsI.x) || global_id.y >= u32(dimsI.y)) { return; }
+
+    let coord = vec2<i32>(global_id.xy);
+    let resolution = vec2<f32>(dimsI);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+
+    // ── Audio (plasmaBuffer was bound and never read) ────────────────────────
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Parameters
     let growth_speed = u.zoom_params.x * 0.05; // speed of refreeze
@@ -107,22 +163,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(dist_vec);
 
-    // Read previous mask state (channel R)
-    let prev_mask = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+    // Read previous mask state — exact load (dataTextureC is rgba32float).
+    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prev_mask = prevState.r;
 
     var mask = prev_mask;
 
     // Melt logic: if mouse is close, reduce mask value
-    // Soft brush
     let melt = smoothstep(melt_radius, melt_radius * 0.5, dist);
     mask = mix(mask, 0.0, melt);
 
-    // Growth logic: slowly increase mask value back to 1.0
-    mask += growth_speed;
-    mask = clamp(mask, 0.0, 1.0);
+    // ── HIGH ENERGY: bounded click melt-holes + crystal light bursts ─────────
+    var burstFlash = 0.0;
+    var clickMelt = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age < 0.0 || age >= 2.6) { continue; }
+        let r = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+        // Melt hole opens instantly then refreezes with an elastic overshoot.
+        let hole = smoothstep(0.16 * (0.35 + age * 0.8), 0.0, r);
+        let refreeze = 1.0 - smoothstep(0.0, 2.6, age);
+        clickMelt = max(clickMelt, hole * refreeze);
+        // Light burst rides the expanding rim.
+        let rim = r - age * 0.42;
+        burstFlash += exp(-rim * rim * 220.0) * exp(-age * 1.4);
+    }
+    burstFlash = min(burstFlash, 1.5);
+    mask = mix(mask, 0.0, clickMelt);
 
-    // Store new mask
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(mask, 0.0, 0.0, 1.0));
+    // ── FAST MOTION 1: crystallisation wavefronts ────────────────────────────
+    // Nucleation sweeps inward from the frame edges at a clamped analytic rate;
+    // frost only advances where the front has already passed.
+    let edgeDist0 = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+    let frontPos = fract(time * clamp(0.12 + growth_speed * 3.0, 0.0, 0.6));
+    let frontPassed = smoothstep(frontPos + 0.10, frontPos - 0.10, edgeDist0);
+    let growthRate = growth_speed * (0.35 + frontPassed * 1.35) * (1.0 + bass * 0.6);
+
+    mask = clamp(mask + growthRate, 0.0, 1.0);
+
+    // Rate of change drives the shatter streaks below.
+    let maskVel = clamp(abs(mask - prev_mask) * 40.0, 0.0, 1.0);
+
+    // A carries the FROST MASK state (r = mask, g = velocity for the streaks).
+    textureStore(dataTextureA, coord, vec4<f32>(mask, maskVel, burstFlash, 1.0));
 
     // Generate Frost Visuals
     let frost_pattern = fbm(uv * 10.0 + vec2<f32>(0.0, 0.0)); // Static pattern
@@ -143,21 +228,52 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distorted_uv = uv + offset;
 
     let clear_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let frost_color_sample = textureSampleLevel(readTexture, u_sampler, distorted_uv, 0.0);
 
-    // Frost is usually whiter/brighter + blurred (simulated by noise offset)
-    let frost_tint = vec4<f32>(0.9, 0.95, 1.0, 1.0);
-    let frosted_look = mix(frost_color_sample, frost_tint, 0.4 * mask * max_opacity);
+    // ── FAST MOTION 2: radial shatter streaks ────────────────────────────────
+    // Integrate the refracted sample along a radial direction whose length
+    // scales with how fast the mask is changing, so melt/refreeze throws
+    // streaks. Clamped so it can never smear more than a few percent of frame.
+    let radial = normalize(dist_vec / vec2<f32>(aspect, 1.0) + vec2<f32>(1e-5));
+    let shatterLen = clamp(maskVel * 0.035 + burstFlash * 0.02, 0.0, 0.05);
+    var streak = vec3<f32>(0.0);
+    var sw = 0.0;
+    for (var s = 0u; s < 5u; s = s + 1u) {
+        let fs = f32(s) / 4.0;
+        let w = 1.0 - fs * 0.72;
+        let tap = clamp(distorted_uv + radial * shatterLen * fs, vec2<f32>(0.0), vec2<f32>(1.0));
+        streak += textureSampleLevel(readTexture, u_sampler, tap, 0.0).rgb * w;
+        sw += w;
+    }
+    let frost_rgb = streak / max(sw, 1e-4);
 
-    // Final mix based on mask and frost pattern
-    // If mask is 0, show clear. If mask is 1, show frost where pattern exists.
+    // ── PSYCHEDELIC: dispersive ice spectrum ────────────────────────────────
+    // Crystal thickness and the local FFT band key an IQ palette, so the ferns
+    // glitter through the hue range rather than a flat blue-white wash.
+    let bandIdx = u32(clamp(uv.x * 8.0, 0.0, 7.999));
+    let band = plasmaBuffer[bandIdx + 1u].x;
+    let iceHue = fract(crystal * 0.85 + combined_frost * 0.4 + band * 0.6
+                       + time * 0.04 + mids * 0.15);
+    let iceTint = pow(spectrum(iceHue), vec3<f32>(0.7));
+    let frost_tint_rgb = mix(vec3<f32>(0.9, 0.95, 1.0), iceTint * 1.5, 0.65);
+    var frosted_look = mix(frost_rgb, frost_tint_rgb, 0.4 * mask * max_opacity);
+    // Prismatic glitter on the fern tips, strongest with treble.
+    frosted_look += iceTint * pow(crystal, 3.0) * (0.25 + treble * 1.1);
+
+    // Final mix based on mask and frost pattern.
     let visibility = mask * combined_frost * max_opacity;
+    var final_rgb = mix(clear_color.rgb, frosted_look, visibility);
+    // Click light-bursts flash the ferns full-spectrum.
+    final_rgb += spectrum(fract(iceHue + 0.5)) * burstFlash * (0.8 + bass * 0.9);
 
-    let final_color = mix(clear_color, frosted_look, visibility);
+    final_rgb = acesFilm(final_rgb);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
+    // Semantic alpha: frost coverage is the content.
+    let alpha = clamp(mix(clear_color.a, 1.0, visibility) + burstFlash * 0.25, 0.0, 1.0);
 
-    // Pass through depth
+    textureStore(writeTexture, coord, vec4<f32>(final_rgb, alpha));
+
+    // Pass through depth, lifted slightly where the frost is thickest.
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord,
+                 vec4<f32>(clamp(depth - visibility * 0.04, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

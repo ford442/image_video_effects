@@ -2,7 +2,7 @@
   "id": "photonic-caustics",
   "name": "Photonic Caustics",
   "url": "shaders/photonic-caustics.wgsl",
-  "description": "Light caustics simulation with chromatic dispersion, Fresnel reflections, and refractive surfaces.",
+  "description": "Exact-history refractive height-field caustics with chromatic convergence bands, Fresnel response, three-band illumination, held light focus, bounded click wavefronts, ACES display, and semantic caustic alpha.",
   "params": [
     {
       "id": "ior",
@@ -33,18 +33,55 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Index of Refraction",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Light Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Chromatic Dispersion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA for continuous caustic irradiance persistence; B is unused; depth passes through refracted depth.",
   "features": [
     "depth-aware",
-    "temporal-persistence",
+    "temporal-feedback",
     "interactive",
     "chromatic-aberration",
     "mouse-driven",
-    "advanced-alpha"
+    "audio-reactive",
+    "click-reactive"
   ],
   "tags": [
     "filter",
     "image-processing",
-    "alpha",
-    "luminance-key"
+    "caustics",
+    "refraction",
+    "simulation"
   ]
 }

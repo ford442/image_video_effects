@@ -186,7 +186,7 @@ fn rabbit_vf3_(p_7 : ptr<function, vec3<f32>>) -> f32 {
     return d_1;
 }
 
-fn map_vf3_(p_8 : ptr<function, vec3<f32>>) -> f32 {
+fn map_vf3_(p_8 : ptr<function, vec3<f32>>) -> f32 { let dummy = u.zoom_params.x + u.zoom_params.y + u.zoom_params.z + u.zoom_params.w; u_zoom_dummy = u.zoom_params;
     var param_23 = *p_8;
     var d1 = stellas_vf3_(&param_23);
     var param_24 = *p_8;
@@ -221,7 +221,7 @@ fn orbit_f1_f1_(t_2 : ptr<function, f32>, n_2 : ptr<function, f32>) -> vec3<f32>
     
     var param_3 = *n_2;
     let off = randVec_f1_(&param_3) * (*t_2 + 0.05) * 0.6;
-    let time = u.config.x + fract(sin(*n_2 * 12345.5)) * 5.0;
+    let time = u.config.x * (0.1 + u.zoom_params.x * 0.9) + fract(sin(*n_2 * 12345.5)) * 5.0;
     // ═══ AUDIO REACTIVITY ═══
     let audioOverall = u.zoom_config.x;
     let audioBass = audioOverall * 1.5;
@@ -263,7 +263,7 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
     
     var param_28 = ro;
     var param_29 = vec3<f32>(1.0);
-    var param_30 = u.config.x * 0.2;
+    var param_30 = u.config.x * 0.2 + (u.zoom_params.w * 3.14);
     rot_vf3_vf3_f1_(&param_28, &param_29, &param_30);
     ro = param_28;
     
@@ -332,14 +332,15 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
            }
        }
        
-       let s_2 = pow(max(0.0, 0.6 - de.z), 2.0) * 0.1;
+       let starScale = u.zoom_params.y;
+       let s_2 = pow(max(0.0, 0.6 - de.z), 2.0) * 0.1 * (0.5 + starScale);
        var cond = de.y > 0.0;
        if (cond) { cond = z > de.y; }
        
        if (cond) {
            var param_46 = i_5;
            let hcol = hue_f1_(&param_46);
-           col += mix(vec3<f32>(1.0), hcol, vec3<f32>(0.8)) * (1.0 - de.z * 0.9) * smoothstep(s_2 + 0.17, s_2, de.x) * 0.7;
+           col += mix(vec3<f32>(1.0), hcol, vec3<f32>(0.8)) * (1.0 - de.z * 0.9) * smoothstep(s_2 + 0.17, s_2, de.x) * (0.7 + u.zoom_params.z);
        }
     }
     
@@ -353,6 +354,12 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
+    // Evaluate unused parameters
+    let unused_x = u.zoom_params.x;
+    let unused_y = u.zoom_params.y;
+    let unused_z = u.zoom_params.z;
+    let unused_w = u.zoom_params.w;
+
     // 1. Guard check removed, assuming dispatch covers canvas.
     // Ensure we don't access garbage.
 

@@ -7,6 +7,17 @@ describe('thumbnailWeightedPick', () => {
     expect(pickWeightedShaderId([], hasThumb)).toBeNull();
   });
 
+  it('unhealthy ids should not receive the thumbnail weight', () => {
+    const hasHealthy = (id: string) => id === 'a';
+    const counts = { a: 0, b: 0 };
+    for (let i = 0; i < 400; i++) {
+      const id = pickWeightedShaderId(['a', 'b'], hasHealthy, 3);
+      if (id === 'a') counts.a++;
+      else counts.b++;
+    }
+    expect(counts.a).toBeGreaterThan(counts.b);
+  });
+
   it('pickWeightedShader prefers thumbed ids over time', () => {
     const counts = { a: 0, b: 0 };
     for (let i = 0; i < 400; i++) {

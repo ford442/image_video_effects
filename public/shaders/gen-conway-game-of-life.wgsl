@@ -131,6 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let birthEvent = newState * wasDead;
   let deathEvent = (1.0 - newState) * prevState;
   let survival = newState * prevState;
+  let activity = abs(newState - prevState);
 
   let caStr = 0.004 * (1.0 + bass) * depthScale;
   let birthR = birthEvent * (1.0 + caStr);
@@ -149,7 +150,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloom = birthEvent * 0.25 * (1.0 + bass);
   color += vec3<f32>(0.6, 0.9, 1.0) * bloom;
 
-  let activity = abs(newState - prevState);
   let caShift = activity * caStr * 2.0;
   color = vec3<f32>(color.r * (1.0 + caShift), color.g, color.b * (1.0 - caShift * 0.5));
 
@@ -164,7 +164,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var outCol = acesToneMap(huePreserveClamp(color * 1.3, 2.0));
   outCol += (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
 
-  let alpha = newState * (activity + birthEvent * 0.5 + 0.1) * depth;
+  let alpha = clamp(
+    newState * (0.18 + generation * 0.35 + activity * 0.65 + birthEvent * 0.45) * mix(0.55, 1.0, depth)
+      + deathEvent * 0.12,
+    0.0,
+    1.0
+  );
 
   textureStore(writeTexture, pixel, vec4<f32>(outCol, alpha));
   // Depth: use cell age as depth proxy — older cells appear deeper

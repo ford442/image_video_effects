@@ -3,7 +3,7 @@
   "name": "Heat Haze Mirage",
   "url": "shaders/heat-haze-mirage.wgsl",
   "category": "image",
-  "description": "Inferior mirage from a real refractive-index gradient: light curvature follows dn/dy through the hot layer and the lateral deflection accumulates as the square of the path, rather than scaling linearly with a noise sample. Past the critical gradient a vertically mirrored sample folds in, reproducing the false 'water' and doubled horizon of a road mirage. Fixes a depth clobber that overwrote scene geometry with the heat column, and replaces a hard 1.3 clamp with ACES.",
+  "description": "Inferior mirage from a refractive-index gradient: dn/dy ray bending, stronger false-water inversion fold, amber caustic runners, held-press gradient boost, spring-damped heat nozzle [133..137], capped click blooms, per-band FFT shimmer, ACES, and semantic alpha. Scene depth preserved with mirage relief.",
   "tags": [
     "heat",
     "haze",
@@ -14,7 +14,9 @@
     "mouse-driven",
     "atmosphere",
     "refraction",
-    "shimmer"
+    "shimmer",
+    "amber",
+    "caustic"
   ],
   "features": [
     "mouse-driven",
@@ -32,7 +34,8 @@
     "index-gradient-refraction",
     "inversion-layer",
     "chromatic-aberration",
-    "temporal-persistence"
+    "temporal-persistence",
+    "caustic-runners"
   ],
   "supportsDepth": true,
   "params": [

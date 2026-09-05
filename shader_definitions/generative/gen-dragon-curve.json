@@ -17,6 +17,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "zoom_detail", "name": "Zoom Detail", "default": 0.2, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "neon_glow_width", "name": "Neon Glow Width", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "fold_chromatic_aberration", "name": "Fold Chromatic Aberration", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "temporal_feedback", "name": "Temporal Feedback", "default": 0.2, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -62,6 +68,10 @@
     "split-tone-grading",
     "depth-haze",
     "aces-tonemap",
-    "fft-reactive-halo"
-  ]
+    "fft-reactive-halo",
+    "mouse-driven",
+    "click-reactive",
+    "semantic-alpha"
+  ],
+  "feedbackPacking": "A/C = final ACES display RGBA; exact dragon-curve persistence history"
 }

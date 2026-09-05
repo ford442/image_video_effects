@@ -145,7 +145,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let centered = uv - vec2<f32>(0.5);
 
   let time = u.config.x;
-  let mouseNorm = u.zoom_config.yz / res;
+  // Mouse uniforms are already normalized by the engine.
+  let mouseNorm = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
   let mouseDown = u.zoom_config.w;
 
   let intensity = u.zoom_params.x;
@@ -173,10 +174,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseOffset = (mouseNorm - vec2<f32>(0.5)) * 0.5;
   let juliaC = vec2<f32>(mouseNorm.x * 2.0 - 1.0, mouseNorm.y * 2.0 - 1.0) * 0.8;
 
+  var clickWarp = vec2<f32>(0.0);
+  var clickEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 2.5) { continue; }
+    let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+    let distanceToClick = length(delta);
+    let front = exp(-abs(distanceToClick - age * 0.2) * 76.0) * exp(-age * 1.15);
+    clickEnergy += front;
+    clickWarp += delta / max(distanceToClick, 0.001) * front;
+  }
+  clickEnergy = clamp(clickEnergy, 0.0, 1.0);
+
   let c = vec2<f32>(
     centered.x * aspect * zoomFactor + (-0.745 + panX + mouseOffset.x),
     centered.y * zoomFactor + (0.13 + panY + mouseOffset.y)
-  );
+  ) + clickWarp * (0.045 + intensity * 0.055);
 
   // Wolfram: bass drives maxIter = 50 + bass * 100
   let baseIter = i32(50.0 + bass * 100.0 + intensity * 44.0);
@@ -218,6 +234,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let r = length(centered);
   let structGlow = glowFactor(r, 0.15, 8.0) + glowFactor(r, 0.3, 12.0) * 0.5;
   color += dmtRainbow(time * 0.2 + r * 3.0, colorShift) * structGlow * intensity * 0.3;
+  color += dmtRainbow(time * 0.23 + clickEnergy, colorShift + 0.2)
+    * clickEnergy * (0.35 + treble * 0.45);
 
   // Chromatic aberration — bass-reactive
   let caStr = 0.003 * (1.0 + bass);
@@ -237,15 +255,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(vec3<f32>(lum), color, 1.4 + intensity * 0.5);
 
   // Temporal feedback — trail during zoom
-  let prevUV = uv;
-  let prev = textureSampleLevel(dataTextureC, u_sampler, prevUV, 0.0);
+  let prev = textureLoad(dataTextureC, pixel, 0);
   color = mix(prev.rgb * 0.96, color, 0.25);
 
   // ACES tone mapping + semantic alpha
   color = acesToneMap(color * 1.1);
-  let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+  let alpha = clamp(length(color) * 0.72 + clickEnergy * 0.18, 0.05, 1.0);
+  let escapeDepth = clamp(1.0 - iter / max(f32(baseIter), 1.0), 0.0, 1.0);
+  let inputDepth = textureLoad(readDepthTexture, pixel, 0).r;
+  let depth = mix(inputDepth, escapeDepth, alpha);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

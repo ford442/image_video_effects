@@ -14,7 +14,9 @@
       "spring-interaction",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "fast-motion",
+      "psychedelic"
     ],
     "params": [
       {
@@ -53,35 +55,47 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "intensity",
         "name": "Rain Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Bead density on the scrolling lattice conveyor; bass adds up to +80%. The cell hash keys on position only, never on time."
       },
       {
         "index": 1,
+        "id": "wiper",
         "name": "Wiper Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Blade half-width for both the hand wiper and the autonomous sweep; also sets the sweep rate."
       },
       {
         "index": 2,
+        "id": "distortion",
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Refraction offset through the water film."
       },
       {
         "index": 3,
+        "id": "dry_speed",
         "name": "Drying Speed",
         "default": 0.2,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Evaporation rate of the water film."
       }
     ],
     "updated": true
@@ -526,7 +540,9 @@
       "subsurface-scattering",
       "temporal",
       "upgraded-rgba",
-      "volume-shading"
+      "volume-shading",
+      "fast-motion",
+      "psychedelic"
     ],
     "tags": [
       "filter",
@@ -578,35 +594,47 @@
     "updatedParams": [
       {
         "index": 0,
+        "id": "viscosity",
         "name": "Damping",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Damping of the jelly's shear oscillation; also sets the pointer-spring recovery."
       },
       {
         "index": 1,
+        "id": "turbulence",
         "name": "Elasticity",
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Shear modulus G; sets the finite wave speed c = sqrt(G/rho) at which click wobbles propagate outward."
       },
       {
         "index": 2,
+        "id": "ripple_strength",
         "name": "Wobble Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Displacement amplitude of the shear wave and the length of the jiggle overshoot streaks."
       },
       {
         "index": 3,
+        "id": "color_shift",
         "name": "Scatter Tint",
         "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Hue offset into the candy palette that replaced the warm/cool two-tone lerp."
       }
     ],
     "updated": true
@@ -1418,7 +1446,7 @@
     "id": "liquid-smear",
     "name": "Liquid Smear",
     "url": "shaders/liquid-smear.wgsl",
-    "description": "Pigment drag along the pointer's real travel direction, taken from a spring-damped cursor and its velocity in extraBuffer[133..136] — the previous version always pulled toward the cursor centre, which reads as a sink rather than a brush. A five-tap kernel bleeds pigment along the stroke normal with a width set by the local FFT bin. History is fetched with exact textureLoad, bilinear by hand.",
+    "description": "Spring-damped pigment drag follows the pointer's real velocity and bends along source-image contours. FFT-scaled anisotropic bleed gains a monotone local-extrema clamp, preserving fine fibres without feedback ringing or negative pigment.",
     "params": [
       {
         "id": "strength",
@@ -1462,7 +1490,9 @@
       "aces",
       "spring-damper-pointer",
       "velocity-smear",
-      "pigment-diffusion"
+      "pigment-diffusion",
+      "edge-guided-transport",
+      "monotone-reconstruction"
     ],
     "tags": [
       "filter",
@@ -1863,7 +1893,7 @@
     "id": "liquid-viscous",
     "name": "Liquid Viscous",
     "url": "shaders/liquid-viscous.wgsl",
-    "description": "2D incompressible Navier-Stokes with vorticity confinement. Vorticity at the centre and its four neighbours now comes from ONE shared stencil (was five separate calls, each doing four filtered samples), the pressure solve genuinely relaxes instead of recomputing one value four times, and the audio vortices drift along continuous Lissajous paths instead of teleporting every 0.7 s. Dye is injected per FFT band. dataTextureA carries simulation state.",
+    "description": "A persistent 2D fluid state with midpoint semi-Lagrangian transport, streamline-aligned viscosity, Reynolds-number turbulence transition, shared-stencil vorticity confinement, a convergent local Jacobi projection, continuously drifting audio vortices, and per-band dye injection.",
     "tags": [
       "filter",
       "image-processing",
@@ -1926,6 +1956,9 @@
       "semantic-alpha",
       "aces",
       "vorticity-confinement",
+      "midpoint-advection",
+      "anisotropic-diffusion",
+      "reynolds-transition",
       "stencil-vorticity",
       "local-jacobi-pressure",
       "fluid-simulation"
@@ -1977,7 +2010,7 @@
     "id": "liquid-zoom",
     "name": "Liquid Zoom",
     "url": "shaders/liquid-zoom.wgsl",
-    "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses.",
+    "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses. Simple liquid warp, not full ferro.",
     "features": [
       "mouse-driven",
       "held-drag",

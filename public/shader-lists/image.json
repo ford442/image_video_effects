@@ -2,11 +2,16 @@
   {
     "id": "aerogel-smoke",
     "name": "Aerogel Smoke",
-    "description": "Simulates the ethereal, frozen-smoke appearance of aerogel with volumetric lighting and Rayleigh scattering.",
+    "description": "Advected aerogel density transports scattering energy and flow through raw A/C state, with Rayleigh and Henyey-Greenstein light transport, Beer-Lambert extinction, cursor lighting, held injection, and click plumes.",
     "url": "shaders/aerogel-smoke.wgsl",
     "features": [
       "mouse-driven",
-      "volumetric"
+      "audio-reactive",
+      "volumetric-transport",
+      "rayleigh-henyey-greenstein",
+      "beer-lambert",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -38,9 +43,43 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Blue Scatter",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Light Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "index": 3,
+        "name": "Background Visibility",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C raw transport state = [density, scattering energy, horizontal velocity, vertical velocity]; write/display output is ACES RGBA; B is unused.",
     "tags": [
-      "filter",
-      "image-processing"
+      "aerogel",
+      "volumetric",
+      "scattering",
+      "fluid",
+      "interactive"
     ]
   },
   {
@@ -373,7 +412,7 @@
   {
     "id": "circular-pixelate",
     "name": "Circular Pixelate",
-    "description": "Renders the image as a grid of circles. Mouse controls density and radius.",
+    "description": "A hexagonal compound-eye field refracts the image through deep lenslets, with chromatic aperture glints, held dilation, and age-guarded click propagation.",
     "url": "shaders/circular-pixelate.wgsl",
     "params": [
       {
@@ -409,10 +448,51 @@
         "default": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Hardness",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bg Mix",
+        "default": 1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact lenslet persistence; B is unused",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "hex-lenslets"
     ],
     "tags": [
       "filter",
@@ -611,7 +691,7 @@
     "id": "contour-flow",
     "name": "Contour Flow",
     "url": "shaders/contour-flow.wgsl",
-    "description": "Per-pixel curl flow with depth advection and bass turbulence. Sobel edge detection drives flow direction, curl noise adds organic swirl, and depth controls sharpness vs advection mix. Treble sparks on edge intersections.",
+    "description": "Multiscale image gradients drive tangent advection and coherent exact-history ribbons, with held pointer vortices and traveling contour fronts from clicks.",
     "params": [
       {
         "name": "Flow Speed",
@@ -642,13 +722,53 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Curl Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Flow Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Direction",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact tangent-advection history; B is unused",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "curl-flow",
       "depth-advection",
       "edge-aligned",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive"
     ],
     "tags": [
       "image",
@@ -2140,7 +2260,7 @@
     "id": "ember-drift-dissolve",
     "name": "Ember Drift Dissolve",
     "url": "shaders/ember-drift-dissolve.wgsl",
-    "description": "Bright areas of the image lift off as glowing embers and are carried upward by a living heat field. Creates haunting, beautiful disintegration especially on video. Treble controls spark density while bass thickens the rising glow.",
+    "description": "Bright areas of the image lift off as glowing embers and are carried upward by a living heat field. Creates haunting, beautiful disintegration especially on video. Treble controls spark density while bass thickens the rising glow. Held press opens a furnace under the cursor — stronger rise, denser birth, white-hot cores cooling through amber into ash wisps. Click bursts ignite local fires that the heat field then advects. Exact textureLoad history, ACES on the display path only.",
     "tags": [
       "ember",
       "fire",
@@ -2148,14 +2268,19 @@
       "advection",
       "heat",
       "atmospheric",
-      "audio-reactive"
+      "audio-reactive",
+      "held-furnace"
     ],
     "features": [
       "audio-reactive",
       "audio-driven",
       "temporal",
       "semantic-alpha",
-      "depth-aware"
+      "depth-aware",
+      "aces-tone-mapping",
+      "mouse-driven",
+      "held-interaction",
+      "click-ignition"
     ],
     "params": [
       {
@@ -2193,7 +2318,7 @@
     ],
     "updatedParams": [
       {
-        "index": 0,
+        "id": "rise",
         "name": "Rise Speed",
         "default": 0.7,
         "min": 0,
@@ -2201,7 +2326,7 @@
         "step": 0.01
       },
       {
-        "index": 1,
+        "id": "spark",
         "name": "Spark Density",
         "default": 0.75,
         "min": 0,
@@ -2209,7 +2334,7 @@
         "step": 0.01
       },
       {
-        "index": 2,
+        "id": "heat",
         "name": "Heat Turbulence",
         "default": 0.6,
         "min": 0,
@@ -2217,7 +2342,7 @@
         "step": 0.01
       },
       {
-        "index": 3,
+        "id": "decay",
         "name": "Ember Decay",
         "default": 0.82,
         "min": 0.4,
@@ -2684,7 +2809,12 @@
     "description": "Interactive frost reveal effect with crystalline patterns that form based on mouse interaction.",
     "features": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "click-reactive",
+      "fast-motion",
+      "psychedelic",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -2722,6 +2852,52 @@
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "growth_speed",
+        "name": "Growth Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Rate the frost mask regrows over cleared glass; also sets the crystallisation wavefront speed."
+      },
+      {
+        "index": 1,
+        "id": "melt_radius",
+        "name": "Melt Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Radius of the pointer's melt footprint."
+      },
+      {
+        "index": 2,
+        "id": "frost_opacity",
+        "name": "Frost Opacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Maximum opacity of the fully frosted state."
+      },
+      {
+        "index": 3,
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Refraction offset through the frost layer; also gains the radial shatter streaks."
       }
     ]
   },
@@ -3094,7 +3270,7 @@
   {
     "id": "graphic-novel",
     "name": "Graphic Novel",
-    "description": "Transforms image into a comic book style with edge detection and halftone patterns.",
+    "description": "Adaptive ink contours and rotated print screens layer registration character, paper fibers, held ink emphasis, and click-driven engraving fronts over posterized source color.",
     "url": "shaders/graphic_novel.wgsl",
     "params": [
       {
@@ -3126,12 +3302,51 @@
         "default": 0.2
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dot Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Edge Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Color Levels",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Paper Grain",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for restrained ink persistence; B is unused; depth stores ink coverage.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "adaptive-contours",
+      "rotated-print-screens",
+      "paper-fibers",
+      "click-reactive"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "graphic-novel",
+      "halftone",
+      "ink",
+      "printmaking",
+      "interactive"
     ]
   },
   {
@@ -3139,7 +3354,7 @@
     "name": "Heat Haze Mirage",
     "url": "shaders/heat-haze-mirage.wgsl",
     "category": "image",
-    "description": "Inferior mirage from a real refractive-index gradient: light curvature follows dn/dy through the hot layer and the lateral deflection accumulates as the square of the path, rather than scaling linearly with a noise sample. Past the critical gradient a vertically mirrored sample folds in, reproducing the false 'water' and doubled horizon of a road mirage. Fixes a depth clobber that overwrote scene geometry with the heat column, and replaces a hard 1.3 clamp with ACES.",
+    "description": "Inferior mirage from a refractive-index gradient: dn/dy ray bending, stronger false-water inversion fold, amber caustic runners, held-press gradient boost, spring-damped heat nozzle [133..137], capped click blooms, per-band FFT shimmer, ACES, and semantic alpha. Scene depth preserved with mirage relief.",
     "tags": [
       "heat",
       "haze",
@@ -3150,7 +3365,9 @@
       "mouse-driven",
       "atmosphere",
       "refraction",
-      "shimmer"
+      "shimmer",
+      "amber",
+      "caustic"
     ],
     "features": [
       "mouse-driven",
@@ -3168,7 +3385,8 @@
       "index-gradient-refraction",
       "inversion-layer",
       "chromatic-aberration",
-      "temporal-persistence"
+      "temporal-persistence",
+      "caustic-runners"
     ],
     "supportsDepth": true,
     "params": [
@@ -4216,7 +4434,7 @@
     "name": "Optical Illusion Spin",
     "category": "image",
     "url": "shaders/optical-illusion-spin.wgsl",
-    "description": "Op-art illusion generator with Rotating Snakes, Fraser spiral, and moiré interference between counter-rotating patterns. Chromatic afterimage, HDR edges, ACES tone mapping, and dithering. Bass drives rotation, mouse distorts locally, depth controls scale perspective.",
+    "description": "Counter-rotating snake-ring packets plus a Fraser-spiral whip. Bass drives spin, sprung pointer centers the illusion, capped click shells, exact-C afterimage, ACES display.",
     "params": [
       {
         "name": "Ring Count",
@@ -4255,14 +4473,60 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "tags": [
       "hypnotic",
       "rings",
       "spin",
       "audio-reactive",
-      "illusion"
+      "illusion",
+      "fast-motion",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ring Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Twist Force",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Alternating",
+        "default": 1,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {

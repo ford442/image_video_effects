@@ -69,5 +69,43 @@
     "audio-driven-palette",
     "chromatic-aberration",
     "temporal-feedback"
+  ],
+  "params": [
+    {
+      "id": "fern_scale",
+      "name": "Fern Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "chromatic_aberration",
+      "name": "Chromatic Aberration",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "sunlight_brightness",
+      "name": "Sunlight Brightness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "temporal_feedback",
+      "name": "Temporal Feedback",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

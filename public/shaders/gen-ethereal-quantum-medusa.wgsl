@@ -67,8 +67,9 @@ fn map(p: vec3<f32>, time: f32, bass: f32, mids: f32) -> vec2<f32> {
     let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 5.0, (u.zoom_config.z - 0.5) * 5.0, 0.0);
 
     // Gravity well repulsion + attractor dual force
-    let repulse_strength = u.zoom_params.w * 3.0;
-    let attract_strength = u.zoom_params.w * 1.5;
+    let heldGain = mix(0.25, 1.0, clamp(u.zoom_config.w, 0.0, 1.0));
+    let repulse_strength = u.zoom_params.w * 3.0 * heldGain;
+    let attract_strength = u.zoom_params.w * 1.5 * heldGain;
     p1 = applyMouseGravity(p1, mouse_pos, repulse_strength);
     p1 = applyMouseAttractor(p1, mouse_pos, attract_strength);
 
@@ -137,7 +138,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    let time = u.config.x;
+    let time = u.config.x * clamp(u.zoom_params.x, 0.1, 5.0);
 
     let ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(uv, 1.0));
@@ -150,7 +151,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var fresnel = 0.0;
 
     // Feedback loop: read previous frame glow accumulation
-    let prevFrame = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(id.xy) / res, 0.0);
+    let coord = vec2<i32>(id.xy);
+    let prevFrame = textureLoad(dataTextureC, coord, 0);
     let prevGlow = prevFrame.a;
 
     if (d < MAX_DIST) {
@@ -190,13 +192,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Feedback loop: blend with previous frame for motion trails
     col = mix(col, prevFrame.rgb * 0.95, 0.08 + bass * 0.03);
 
+    let rippleCount = min(i32(u.config.y), 50);
+    for (var i = 0; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age > 0.0 && age < 2.5) {
+            let radius = age * 0.32;
+            let ring = exp(-abs(distance(vec2<f32>(id.xy) / res, ripple.xy) - radius) * 100.0) * exp(-age * 1.8) * ripple.w;
+            col += vec3<f32>(0.25, 0.9, 1.0) * ring * (0.5 + treble);
+        }
+    }
+
     let lumaOut = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(hit * (0.5 + fresnel * 0.4) + lumaOut * 0.2 + 0.05, 0.0, 1.0);
     col = acesToneMap(col * 1.1);
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
+    let packed = vec4<f32>(col, alpha);
+    textureStore(writeTexture, coord, packed);
 
     let depth = clamp(d / MAX_DIST, 0.0, 1.0);
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    // Store accumulated glow in alpha for feedback loop
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, alpha * (1.0 + bass * 0.5)));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, packed);
 }

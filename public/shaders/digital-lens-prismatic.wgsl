@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  digital-lens-prismatic — Batch 60
-//  Cauchy dispersion lens: spring cursor, held squeeze, hex pixel grid,
-//  iridescent rim, audio spectral spread, ACES tone map.
+//  digital-lens-prismatic — Digital Prismatic Lens & Hex Quantization
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
+//            cauchy-dispersion, hex-grid, iridescent-rim, semantic-alpha, ACES
+//  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -19,13 +21,11 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=BlockSize, y=Radius, z=GridOpacity, w=CauchyB
   ripples: array<vec4<f32>, 50>,
 };
-
-const PI: f32 = 3.14159265359;
 
 fn cauchyIOR(wavelengthNm: f32, A: f32, B: f32) -> f32 {
   let lambdaUm = wavelengthNm * 0.001;
@@ -65,12 +65,13 @@ fn hexEdge(uv: vec2<f32>, scale: f32) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
   let coord = vec2<i32>(global_id.xy);
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
-  let aspect = resolution.x / resolution.y;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let rawMouse = u.zoom_config.yz;
   let held = u.zoom_config.w > 0.5;
-  let mouse = u.zoom_config.yz;
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -81,31 +82,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let grid_opacity = u.zoom_params.z;
   let cauchyB = mix(0.01, 0.1, u.zoom_params.w) * (1.0 + treble * 0.35);
 
-  var smoothMouse = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring) {
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let isWriter = (global_id.x == 0u && global_id.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var smoothMouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
     smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
   }
-  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      springPos = mouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 9.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
+
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.05);
+    var sPos = smoothMouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
     }
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
+    let stiffness = 45.0;
+    let damping = 13.416; // 2 * sqrt(45)
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel += accel * dt;
+    sPos += sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
     extraBuffer[137] = time;
     extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
   }
 
   let dist_vec = (uv - smoothMouse) * vec2<f32>(aspect, 1.0);
@@ -164,7 +169,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     lens_color = mix(lens_color, vec4<f32>(wavelengthToRGB(520.0 + sin(time + dist * 8.0) * 80.0), 1.0), hex * 0.25);
 
     let rim = smoothstep(radius * 0.85, radius, dist) * (1.0 - mask);
-    lens_color.rgb += wavelengthToRGB(580.0 + treble * 60.0) * rim * 0.6;
+    lens_color = vec4<f32>(lens_color.rgb + wavelengthToRGB(580.0 + treble * 60.0) * rim * 0.6, lens_color.a);
 
     let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let blendMask = clamp(mask + ripplePulse * 0.4, 0.0, 1.0);
@@ -173,10 +178,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   }
 
-  color.rgb = acesToneMap(color.rgb * (0.96 + bass * 0.06));
-  let alpha = clamp(0.55 + mask * 0.35 + ripplePulse * 0.1, 0.0, 1.0);
-  textureStore(writeTexture, coord, vec4<f32>(color.rgb, alpha));
-  textureStore(dataTextureA, coord, vec4<f32>(mask, dist, cauchyB, alpha));
+  // Exact dataTextureC persistence
+  let prevC = textureLoad(dataTextureC, coord, 0).rgb;
+  let finalRGB = acesToneMap(mix(color.rgb * (0.96 + bass * 0.06), prevC, 0.07));
+  let alpha = clamp(0.55 + mask * 0.35 + ripplePulse * 0.1 + select(0.0, 0.1, held), 0.0, 1.0);
+  let finalPixel = vec4<f32>(finalRGB, alpha);
+
+  textureStore(writeTexture, coord, finalPixel);
+  textureStore(dataTextureA, coord, finalPixel);
 
   let depth = textureLoad(readDepthTexture, coord, 0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

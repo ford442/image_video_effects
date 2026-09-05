@@ -28,14 +28,11 @@ struct ReduceAcc {
 @group(0) @binding(0) var src: texture_2d<f32>;
 @group(0) @binding(1) var<storage, read_write> acc: ReduceAcc;
 
-@compute @workgroup_size(64)
+@compute @workgroup_size(8, 8)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = textureDimensions(src);
-  let n = dims.x * dims.y;
-  if (gid.x >= n) { return; }
-  let x = gid.x % dims.x;
-  let y = gid.x / dims.x;
-  let c = textureLoad(src, vec2<i32>(i32(x), i32(y)), 0);
+  if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+  let c = textureLoad(src, vec2<i32>(gid.xy), 0);
   let luma = clamp(dot(c.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
   let q = u32(luma * 65535.0 + 0.5);
   atomicMin(&acc.min_q, q);
@@ -63,8 +60,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let y = clamp(dot(c.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
   var bin = u32(floor(y * 256.0));
   if (bin > 255u) { bin = 255u; }
-  let band = f32(lut[bin] & 255u) / 255.0;
-  textureStore(dst, vec2<i32>(gid.xy), vec4<f32>(band, band, band, 1.0));
+  // lut[] holds band index 0..7. Store as rgba8unorm R so CPU readback R == band.
+  let band = lut[bin] & 255u;
+  let t = f32(band) / 255.0;
+  textureStore(dst, vec2<i32>(gid.xy), vec4<f32>(t, t, t, 1.0));
 }
 `;
 
@@ -103,5 +102,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   let avg = acc / max(n, 1.0);
   textureStore(dst, vec2<i32>(gid.xy), vec4<f32>(avg.rgb * params.gain, avg.a));
+}
+`;
+
+/** Full-res RGB gain. Storage format is rewritten to the renderer colorFormat. */
+export const APPLY_GAIN_WGSL = /* wgsl */ `
+struct GainParams {
+  gain: f32,
+  _pad: f32,
+  _pad2: vec2<f32>,
+}
+
+@group(0) @binding(0) var src: texture_2d<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(2) var<uniform> params: GainParams;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = textureDimensions(dst);
+  if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+  let c = textureLoad(src, vec2<i32>(gid.xy), 0);
+  textureStore(dst, vec2<i32>(gid.xy), vec4<f32>(c.rgb * params.gain, c.a));
 }
 `;

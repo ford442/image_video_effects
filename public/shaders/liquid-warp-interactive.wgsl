@@ -1,7 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Liquid Warp Interactive — Batch 56
-//  Curl conveyors, liquid-rainbow ripples, held flow, bounded click fronts
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Warp Interactive — Spectral Curl and Depth-Boundary Flow
+//  Category: distortion
+//  Features: analytic curl spectrum, RK2 advection, depth Coanda flow,
+//            strain caustics, viscous temporal memory, FFT bands, click fronts,
+//            chromatic refraction, ACES, semantic alpha
+//  Upgraded: 2026-08-23
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -17,137 +22,169 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
+  zoom_config: vec4<f32>,  // x=time, yz=mouse UV, w=held
+  zoom_params: vec4<f32>,  // x=distortion, y=flow speed, z=flow scale, w=viscosity
   ripples: array<vec4<f32>, 50>,
 };
 
-const TAU: f32 = 6.28318530718;
+struct FlowDetail {
+  velocity: vec2<f32>,
+  jacobian: vec4<f32>, // du/dx, du/dy, dv/dx, dv/dy
+};
 
-fn hash21(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+const TAU: f32 = 6.28318530717958647692;
+
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let m2 = dot(v, v);
+  if (m2 < 1e-10) { return vec2<f32>(0.0); }
+  return v * inverseSqrt(m2);
 }
 
-fn valueNoise(p: vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  let a = hash21(i);
-  let b = hash21(i + vec2<f32>(1.0, 0.0));
-  let c = hash21(i + vec2<f32>(0.0, 1.0));
-  let d = hash21(i + vec2<f32>(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
-
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-  var sum = 0.0;
-  var amp = 0.5;
-  var freq = 1.0;
-  for (var i = 0; i < octaves; i = i + 1) {
-    sum = sum + amp * valueNoise(p * freq);
-    freq = freq * 2.0;
-    amp = amp * 0.5;
+// Analytic stream-function spectrum. Unlike finite-difference noise curl, this
+// returns a divergence-free velocity and its f32 Jacobian in one four-wave pass.
+fn spectralFlow(p: vec2<f32>, time: f32, speed: f32, scale: f32) -> FlowDetail {
+  var velocity = vec2<f32>(0.0);
+  var jacobian = vec4<f32>(0.0);
+  for (var i = 0u; i < 4u; i = i + 1u) {
+    let fi = f32(i);
+    let angle = fi * 2.39996322972865332 + 0.61;
+    let frequency = scale * exp2(fi * 0.72);
+    let k = vec2<f32>(cos(angle), sin(angle)) * frequency;
+    let band = 0.5 * (plasmaBuffer[i * 2u + 1u].x + plasmaBuffer[i * 2u + 2u].x);
+    let amplitude = (0.095 / pow(frequency, 1.25)) * (0.55 + band * 1.45);
+    let phase = dot(k, p) + time * speed * (0.17 + fi * 0.08)
+                * select(-1.0, 1.0, (i & 1u) == 0u);
+    let s = sin(phase);
+    let c = cos(phase);
+    velocity += vec2<f32>(k.y, -k.x) * amplitude * c;
+    jacobian += vec4<f32>(-k.y * k.x, -k.y * k.y,
+                           k.x * k.x,  k.x * k.y) * amplitude * s;
   }
-  return sum;
+  var out: FlowDetail;
+  out.velocity = velocity;
+  out.jacobian = jacobian;
+  return out;
 }
 
-fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
-  let eps = 0.01;
-  let n1 = fbm(p + vec2<f32>(eps, 0.0) + t * 0.1, 3);
-  let n2 = fbm(p - vec2<f32>(eps, 0.0) + t * 0.1, 3);
-  let n3 = fbm(p + vec2<f32>(0.0, eps) + t * 0.1, 3);
-  let n4 = fbm(p - vec2<f32>(0.0, eps) + t * 0.1, 3);
-  let dy = (n1 - n2) / (2.0 * eps);
-  let dx = (n3 - n4) / (2.0 * eps);
-  return vec2<f32>(dx, -dy);
+fn historyBilinear(p: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+  let maxC = dims - vec2<i32>(1);
+  let base = vec2<i32>(floor(p));
+  let f = fract(p);
+  let s00 = textureLoad(dataTextureC, clamp(base, vec2<i32>(0), maxC), 0);
+  let s10 = textureLoad(dataTextureC, clamp(base + vec2<i32>(1, 0), vec2<i32>(0), maxC), 0);
+  let s01 = textureLoad(dataTextureC, clamp(base + vec2<i32>(0, 1), vec2<i32>(0), maxC), 0);
+  let s11 = textureLoad(dataTextureC, clamp(base + vec2<i32>(1, 1), vec2<i32>(0), maxC), 0);
+  return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
 }
 
-fn bass_env(bass: f32, mids: f32) -> f32 {
-  return 1.0 + bass * 0.5 + mids * 0.2;
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+  return saturate((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let pixel = vec2<i32>(global_id.xy);
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dimsI = vec2<i32>(textureDimensions(writeTexture));
+  if (gid.x >= u32(dimsI.x) || gid.y >= u32(dimsI.y)) { return; }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  let coord = vec2<i32>(gid.xy);
+  let maxC = dimsI - vec2<i32>(1);
+  let dims = vec2<f32>(dimsI);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
+  let texel = 1.0 / dims;
+  let aspect = dims.x / max(dims.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
+  let p = (uv - 0.5) * aspectVec;
   let time = u.config.x;
-  let aspect = resolution.x / resolution.y;
-  let mousePos = u.zoom_config.yz;
-  let clickState = u.zoom_config.w;
-  let held = f32(clickState > 0.5);
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let prev = textureLoad(dataTextureC, pixel, 0);
 
-  let depth = textureLoad(readDepthTexture, pixel, 0).r;
-  let viscosity = mix(0.3, 1.0, depth);
+  let distortion = mix(0.001, 0.032, clamp(u.zoom_params.x, 0.0, 1.0));
+  let flowSpeed = mix(0.35, 3.6, clamp(u.zoom_params.y, 0.0, 1.0));
+  let flowScale = mix(2.0, 17.0, clamp(u.zoom_params.z, 0.0, 1.0));
+  let viscosity = clamp(u.zoom_params.w, 0.0, 1.0);
+  let held = step(0.5, u.zoom_config.w);
+  let mouse = (u.zoom_config.yz - 0.5) * aspectVec;
 
-  let distortAmt = u.zoom_params.x * 0.25 * bass_env(bass, mids) * (1.0 + held * 0.2);
-  let flowSpeed = mix(0.5, 4.0, u.zoom_params.y) * (1.0 + mids * 0.35);
-  let noiseScale = mix(4.0, 40.0, u.zoom_params.z) * (1.0 + treble * 0.2);
-  let viscosityParam = u.zoom_params.w;
+  let base = spectralFlow(p, time, flowSpeed, flowScale);
+  let midpoint = p - base.velocity * distortion * 0.5;
+  let midFlow = spectralFlow(midpoint, time, flowSpeed, flowScale);
+  var velocity = midFlow.velocity;
+  let jacobian = midFlow.jacobian;
 
-  let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
-  let mousePosCorrected = vec2<f32>(mousePos.x * aspect, mousePos.y);
-  let mVec = mousePosCorrected - uvCorrected;
-  let mDist = length(mVec);
-  let ripple = sin((mDist - time * flowSpeed) * (12.0 + noiseScale)) * 0.5 + 0.5;
-  let pull = smoothstep(0.6, 0.0, mDist) * distortAmt * (0.7 + ripple * 0.3) * mix(0.25, 1.0, clickState);
-  let flow = mVec / max(mDist, 0.001) * pull;
+  let mouseDelta = p - mouse;
+  let mouseDist = max(length(mouseDelta), 1e-4);
+  let mouseEnvelope = exp(-mouseDist * mix(16.0, 7.0, 1.0 - viscosity));
+  let tangent = safeNormalize(vec2<f32>(-mouseDelta.y, mouseDelta.x));
+  let radial = safeNormalize(mouseDelta);
+  velocity += tangent * mouseEnvelope * (0.06 + mids * 0.08) * (0.35 + held);
+  velocity -= radial * mouseEnvelope * held * (0.04 + bass * 0.09);
 
-  let conveyor = vec2<f32>(
-    sin(uv.y * noiseScale * 0.5 + time * flowSpeed * 1.3),
-    cos(uv.x * noiseScale * 0.4 - time * flowSpeed * 1.1)
-  ) * 0.008 * viscosity;
-  let curl = curl2D(uv * 2.0, time * 0.12) * 0.025 * bass_env(bass, mids) * viscosity;
-  let turbulence = vec2<f32>(
-    sin(uv.y * noiseScale + time * flowSpeed * (1.5 + mids)),
-    cos(uv.x * noiseScale + time * flowSpeed * (1.2 + treble))
-  ) * (0.006 + (1.0 - viscosityParam) * 0.014) * viscosity;
+  // Depth-gradient boundary: the tangential term makes the flow attach to
+  // scene silhouettes (a compact Coanda approximation) instead of crossing
+  // them as if the depth buffer were absent.
+  let dE = textureLoad(readDepthTexture, clamp(coord + vec2<i32>( 1,  0), vec2<i32>(0), maxC), 0).r;
+  let dW = textureLoad(readDepthTexture, clamp(coord + vec2<i32>(-1,  0), vec2<i32>(0), maxC), 0).r;
+  let dN = textureLoad(readDepthTexture, clamp(coord + vec2<i32>( 0, -1), vec2<i32>(0), maxC), 0).r;
+  let dS = textureLoad(readDepthTexture, clamp(coord + vec2<i32>( 0,  1), vec2<i32>(0), maxC), 0).r;
+  let depthGradient = vec2<f32>(dE - dW, dS - dN) * 0.5;
+  let boundary = smoothstep(0.01, 0.18, length(depthGradient));
+  let boundaryTangent = safeNormalize(vec2<f32>(-depthGradient.y, depthGradient.x));
+  let aligned = select(-1.0, 1.0, dot(velocity, boundaryTangent) >= 0.0);
+  velocity = mix(velocity, boundaryTangent * aligned * length(velocity), boundary * (0.25 + viscosity * 0.45));
 
-  let distUV = clamp(uv + vec2<f32>(flow.x / aspect, flow.y) + turbulence + curl + vec2<f32>(conveyor.x / aspect, conveyor.y),
-    vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
-  let chromaticAberration = (0.004 + (1.0 - viscosityParam) * 0.014) * (1.0 + treble * 0.4) * (1.0 + clickState);
-  let rUV = clamp(distUV + vec2<f32>(chromaticAberration, 0.0), vec2<f32>(0.001), vec2<f32>(0.999));
-  let gUV = distUV;
-  let bUV = clamp(distUV - vec2<f32>(chromaticAberration, 0.0), vec2<f32>(0.001), vec2<f32>(0.999));
-
-  let gColor = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
-  var warped = vec3<f32>(
-    textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
-    gColor.g,
-    textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
-  );
-
-  let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(mDist * 8.0 - time * 0.5) + vec3<f32>(0.0, 0.33, 0.67)));
-  let tint = oilSlick * ripple * pull * 0.35 + vec3<f32>(0.03, 0.18 + mids * 0.08, 0.12 + bass * 0.06) * ripple * pull;
-  var finalColor = warped + tint;
-
-  var clickRing = 0.0;
+  var ringGlow = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
     let rp = u.ripples[i];
     let age = time - rp.z;
-    if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
-      let d = length(uv - rp.xy);
-      clickRing = max(clickRing, exp(-abs(d - age * 0.35) * 50.0) * (1.0 - age / 1.5));
+    if (age >= 0.0 && age < 2.2) {
+      let delta = p - (rp.xy - 0.5) * aspectVec;
+      let r = max(length(delta), 1e-4);
+      let front = r - age * 0.55;
+      let envelope = exp(-front * front * 180.0) * exp(-age * 1.3);
+      velocity += safeNormalize(vec2<f32>(-delta.y, delta.x)) * envelope * (0.07 + bass * 0.09);
+      ringGlow += envelope * envelope;
     }
   }
-  finalColor += oilSlick * clickRing * 0.25;
-  finalColor = mix(finalColor, prev.rgb * 0.9, 0.1 * pull);
+  ringGlow = min(ringGlow, 1.2);
 
-  let alpha = clamp(gColor.a * 0.45 + pull * 1.6 + ripple * 0.12 + bass * 0.05, 0.08, 1.0);
-  let depthOut = clamp(textureLoad(readDepthTexture, pixel, 0).r + pull * 0.18, 0.0, 1.0);
-  let finalPixel = vec4<f32>(finalColor, alpha);
+  let duDx = jacobian.x;
+  let duDy = jacobian.y;
+  let dvDx = jacobian.z;
+  let dvDy = jacobian.w;
+  let vorticity = dvDx - duDy;
+  let shear = sqrt((duDx - dvDy) * (duDx - dvDy) + (duDy + dvDx) * (duDy + dvDx));
+  let strainCaustic = smoothstep(0.10, 1.4, shear * distortion * flowScale);
 
-  textureStore(writeTexture, pixel, finalPixel);
-  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, pixel, finalPixel);
+  let departure = clamp(uv + velocity / aspectVec * distortion, vec2<f32>(0.001), vec2<f32>(0.999));
+  let flowDir = safeNormalize(velocity / aspectVec);
+  let chroma = flowDir * (0.0007 + treble * 0.0042) * (0.4 + strainCaustic);
+  let sampleR = textureSampleLevel(readTexture, u_sampler, clamp(departure + chroma, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
+  let sampleG = textureSampleLevel(readTexture, u_sampler, departure, 0.0);
+  let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(departure - chroma, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
+  var color = vec3<f32>(sampleR, sampleG.g, sampleB);
+
+  let previous = historyBilinear(departure * dims, dimsI);
+  let memory = mix(0.025, 0.24, viscosity) * previous.a;
+  color = mix(color, previous.rgb, memory);
+  let interference = 0.5 + 0.5 * cos(TAU *
+    (vec3<f32>(abs(vorticity) * 0.06 + shear * 0.025 - time * 0.045)
+     + vec3<f32>(0.00, 0.31, 0.67)));
+  color += interference * strainCaustic * (0.08 + 0.18 * treble);
+  color += vec3<f32>(0.42, 0.70, 1.0) * ringGlow * (0.16 + 0.28 * bass);
+  color += vec3<f32>(0.10, 0.24, 0.18) * boundary * (0.08 + 0.12 * mids);
+  color = acesFilm(color);
+
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, departure, 0.0).r;
+  let substance = clamp(length(velocity) * distortion * 18.0 + strainCaustic * 0.45
+                        + ringGlow * 0.35 + boundary * 0.15, 0.0, 1.0);
+  let alpha = clamp(mix(sampleG.a * 0.68 + 0.14, 1.0, substance), 0.0, 1.0);
+  let outColor = vec4<f32>(color, alpha);
+  textureStore(writeTexture, coord, outColor);
+  textureStore(dataTextureA, coord, outColor);
+  textureStore(dataTextureB, coord, vec4<f32>(clamp(vorticity * 0.05 + 0.5, 0.0, 1.0),
+                                              clamp(shear * 0.04, 0.0, 1.0), boundary, strainCaustic));
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth + substance * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

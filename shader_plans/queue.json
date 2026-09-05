@@ -451,9 +451,44 @@
       "added": "2026-08-21T15:28:56.185053"
     },
     {
+      "filename": "2026-08-27_chronos-crystal-labyrinth.md",
+      "title": "Chronos Crystal Labyrinth",
+      "added": "2026-08-27T15:26:12.803741"
+    },
+    {
+      "filename": "2026-08-25_bismuth-hypercrystal-labyrinth.md",
+      "title": "Bismuth Hypercrystal Labyrinth",
+      "added": "2026-08-25T15:30:37.850566"
+    },
+    {
       "filename": "2026-08-23_void-harmonic-cymatic-resonator.md",
       "title": "Void Harmonic Cymatic Resonator",
       "added": "2026-08-23T15:16:43.844592"
+    },
+    {
+      "filename": "2026-08-28_luminescent-nebula-silk-weaver.md",
+      "title": "Luminescent Nebula-Silk Weaver",
+      "added": "2026-08-28T15:33:58.681057"
+    },
+    {
+      "filename": "2026-08-30_quantum-flux-core.md",
+      "title": "Quantum Flux Core",
+      "added": "2026-08-30T15:13:01.492178"
+    },
+    {
+      "filename": "2026-09-01_neutron-star-magnetic-spindle.md",
+      "title": "Neutron-Star Magnetic Spindle",
+      "added": "2026-09-01T15:38:09.462048"
+    },
+    {
+      "filename": "2026-09-02_sentient-bismuth-hypercrystal.md",
+      "title": "Sentient Bismuth Hypercrystal",
+      "added": "2026-09-02T15:26:24.706354"
+    },
+    {
+      "filename": "2026-09-03_bioluminescent-void-orchid.md",
+      "title": "Bioluminescent Void-Orchid",
+      "added": "2026-09-03T15:24:12.972347"
     }
   ],
   "current": null,
@@ -656,6 +691,20 @@
       "added": "2026-08-22T15:12:59.044203",
       "status": "completed",
       "completed_at": "2026-08-23T08:00:01.112629+00:00"
+    },
+    {
+      "filename": "2026-08-23_void-harmonic-cymatic-resonator.md",
+      "title": "Void Harmonic Cymatic Resonator",
+      "added": "2026-08-23T15:16:43.844592",
+      "status": "completed",
+      "completed_at": "2026-08-25T07:52:21.029053+00:00"
+    },
+    {
+      "filename": "2026-08-21_ethereal-quantum-glass-nautilus.md",
+      "title": "Ethereal Quantum-Glass Nautilus",
+      "added": "2026-08-21T15:28:56.185053",
+      "status": "completed",
+      "completed_at": "2026-08-26T08:14:45.326604+00:00"
     }
   ],
   "completed": [
@@ -833,6 +882,62 @@
       "added": "2026-08-20T15:11:37.996029",
       "status": "completed",
       "completed_at": "2026-08-22T08:11:13.109883+00:00"
+    },
+    {
+      "filename": "2026-08-26_fractal-neuro-mycelium-lattice.md",
+      "title": "Fractal Neuro-Mycelium Lattice",
+      "added": "2026-08-27T08:29:54.022445+00:00",
+      "status": "completed",
+      "completed_at": "2026-08-27T08:29:54.022461+00:00"
+    },
+    {
+      "filename": "2026-08-27_chronos-crystal-labyrinth.md",
+      "title": "Chronos Crystal Labyrinth",
+      "added": "2026-08-27T15:26:12.803741",
+      "status": "completed",
+      "completed_at": "2026-08-28T08:16:28.299795+00:00"
+    },
+    {
+      "filename": "2026-08-28_luminescent-nebula-silk-weaver.md",
+      "title": "Luminescent Nebula-Silk Weaver",
+      "added": "2026-08-28T15:33:58.681057",
+      "status": "completed",
+      "completed_at": "2026-08-30T07:55:56.079687+00:00"
+    },
+    {
+      "filename": "2026-08-29_aetherial-plasma-loom.md",
+      "title": "Aetherial Plasma Loom",
+      "added": "2026-08-29T15:26:45.550822",
+      "status": "completed",
+      "completed_at": "2026-08-31T07:58:02.324459+00:00"
+    },
+    {
+      "filename": "2026-08-31_liquid-metal-cymatic-resonator.md",
+      "title": "Liquid-Metal Cymatic Resonator",
+      "added": "2026-08-31T15:19:18.595499",
+      "status": "completed",
+      "completed_at": "2026-09-01T08:00:25.131587+00:00"
+    },
+    {
+      "filename": "2026-09-01_neutron-star-magnetic-spindle.md",
+      "title": "Neutron-Star Magnetic Spindle",
+      "added": "2026-09-01T15:38:09.462048",
+      "status": "completed",
+      "completed_at": "2026-09-02T08:00:05.019631+00:00"
+    },
+    {
+      "filename": "2026-09-02_sentient-bismuth-hypercrystal.md",
+      "title": "Sentient Bismuth Hypercrystal",
+      "added": "2026-09-02T15:26:24.706354",
+      "status": "completed",
+      "completed_at": "2026-09-03T08:16:31.884443+00:00"
+    },
+    {
+      "filename": "2026-09-04_bioluminescent-neural-lattice.md",
+      "title": "Bioluminescent Neural Lattice",
+      "added": "2026-09-04T15:41:01.115345",
+      "status": "completed",
+      "completed_at": "2026-09-05T08:21:55.997384+00:00"
     }
   ],
   "rejected": [],

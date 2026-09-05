@@ -650,7 +650,7 @@
     "id": "pp-chromatic",
     "name": "PP Chromatic",
     "url": "shaders/pp-chromatic.wgsl",
-    "description": "Chromatic aberration with RGB channel separation, barrel/pincushion distortion, and vignette",
+    "description": "Five-wavelength Cauchy lens dispersion with pointer-centered curvature, audio-lit caustics, temporal fringe persistence, vignette control, and expanding click refraction fronts.",
     "tags": [
       "post-process",
       "chromatic",
@@ -686,7 +686,53 @@
         "min": 0,
         "max": 1
       }
-    ]
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "exact-history",
+      "aces-tone-map",
+      "three-band-audio",
+      "held-pointer",
+      "click-reactive",
+      "cauchy-dispersion"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Chromatic Amount",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Vignette",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = final ACES display RGBA with bounded exact chromatic fringe persistence loads; B is unused"
   },
   {
     "id": "pp-sharpen",
@@ -945,7 +991,12 @@
     ],
     "features": [
       "mouse-driven",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "click-reactive",
+      "fast-motion",
+      "psychedelic",
+      "upgraded-rgba"
     ],
     "tags": [
       "blur",
@@ -953,6 +1004,52 @@
       "depth-of-field",
       "post-processing",
       "chromatic"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "sigma",
+        "name": "Blur Sigma",
+        "default": 0.3,
+        "min": 0.01,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base blur radius; also the length scale of the zoom-burst speed lines."
+      },
+      {
+        "index": 1,
+        "id": "shape",
+        "name": "Bokeh Shape",
+        "default": 0,
+        "min": 0,
+        "max": 2,
+        "step": 1,
+        "mapping": "zoom_params.y",
+        "description": "Aperture shape for the bokeh kernel."
+      },
+      {
+        "index": 2,
+        "id": "focalDepth",
+        "name": "Focal Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Depth plane held in focus by the circle-of-confusion term."
+      },
+      {
+        "index": 3,
+        "id": "maxBlur",
+        "name": "Max Blur",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Upper clamp on the circle of confusion; also gains the rotational shear streaks."
+      }
     ]
   },
   {

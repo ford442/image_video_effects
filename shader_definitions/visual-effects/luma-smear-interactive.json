@@ -3,14 +3,22 @@
   "name": "Kinetic Echo",
   "category": "visual-effects",
   "url": "shaders/luma-smear-interactive.wgsl",
-  "description": "Creates a motion trail with chromatic smear (R lags, B leads). Bright objects leave decaying trails. Curl turbulence and audio gusts add organic chaos. Depth controls viscosity.",
+  "description": "Chromatic R-lag / B-lead streaks with curl-advected exact-C trails. Trail Decay, luma gate, color shift, and mouse eraser stay live. ACES display history with trail-energy alpha.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
     "upgraded-rgba",
     "chromatic-smear",
-    "curl-turbulence"
+    "curl-turbulence",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "fast-motion",
+    "spring-cursor",
+    "semantic-alpha",
+    "exact-c-history"
   ],
   "params": [
     {
@@ -50,6 +58,44 @@
     "audio-reactive",
     "depth-aware",
     "chromatic",
-    "curl-noise"
+    "curl-noise",
+    "fast-motion",
+    "aces"
+  ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Trail Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Luma Threshold",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Eraser Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
   ]
 }

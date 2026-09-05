@@ -34,14 +34,25 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-    let uv = vec2<f32>(gid.xy) / res;
+    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let dims = vec2<i32>(res);
     let time = u.config.x;
 
     // === AUDIO SEASONS (plasmaBuffer as climate) ===
@@ -57,7 +68,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let seasonVolatile = treble * 0.8;
 
     // Read previous state
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = stateAt(coord, dims);
     var s1 = prevState.r;
     var s2 = prevState.g;
     var resourceVal = prevState.b;
@@ -84,10 +95,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     toxin = clamp(toxin, 0.0, 2.0);
 
     // === DIFFUSION ===
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+    let right = stateAt(coord + vec2<i32>(1, 0), dims);
+    let down = stateAt(coord + vec2<i32>(0, -1), dims);
+    let up = stateAt(coord + vec2<i32>(0, 1), dims);
 
     let lapS1 = left.r + right.r + down.r + up.r - 4.0 * s1;
     let lapS2 = left.g + right.g + down.g + up.g - 4.0 * s2;
@@ -124,18 +135,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let toxinProduction2 = s2 * (0.003 + seasonHarsh * 0.0025);
 
     // Toxin damage is amplified in harsh seasons
-    let toxinDamage = toxin * (0.018 + seasonHarsh * 0.025);
+    let diffusionRate = mix(0.018, 0.12, u.zoom_params.z) * volatileFactor;
+    let toxinStrength = mix(0.25, 2.0, u.zoom_params.w);
+    let toxinDamage = toxin * (0.018 + seasonHarsh * 0.025) * toxinStrength;
 
     // Resource dynamics with seasonal bloom boost
     resourceVal += resourceRegen - food1 - food2;
-    resourceVal += lapResource * (0.08 + seasonBloom * 0.1);
+    resourceVal += lapResource * diffusionRate * (0.8 + seasonBloom);
 
     // Species update with seasonal death pressure
-    s1 += food1 - competition - toxinDamage + lapS1 * 0.04 * volatileFactor;
-    s2 += food2 - competition - toxinDamage + lapS2 * 0.04 * volatileFactor;
+    s1 += food1 - competition - toxinDamage + lapS1 * diffusionRate;
+    s2 += food2 - competition - toxinDamage + lapS2 * diffusionRate * 0.86;
 
     // Toxin dynamics — lingers longer in harsh seasons
-    toxin += toxinProduction1 + toxinProduction2 - toxin * (0.009 + seasonHarsh * 0.01);
+    toxin += (toxinProduction1 + toxinProduction2) * toxinStrength - toxin * (0.009 + seasonHarsh * 0.01);
     toxin += lapToxin * 0.07;
     toxin *= toxinDecay;
 
@@ -180,8 +193,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ripple = u.ripples[i];
         let rDist = length(uv - ripple.xy);
         let age = time - ripple.z;
-        if (age < 1.2 && rDist < 0.05) {
-            let strength = smoothstep(0.05, 0.0, rDist) * max(0.0, 1.0 - age);
+        if (age >= 0.0 && age < 2.4) {
+            let strength = exp(-abs(rDist - age * 0.14) * 52.0 - age * 1.15);
             let sign = select(1.0, 0.0, f32(i) % 2.0 < 1.0);
             // Volatile seasons make ripples much more effective at seeding new life
             let sporeBoost = 1.0 + seasonVolatile * 1.4;
@@ -222,16 +235,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthTint = mix(vec3<f32>(0.92, 0.95, 1.05), vec3<f32>(1.0), depth);
     displayColor *= depthTint;
 
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.3));
-
     // Alpha = total living biomass + instability (excellent for layering)
     let totalBiomass = s1 + s2;
     let instability = abs(lapS1) + abs(lapS2) + abs(lapResource);
+    displayColor += vec3<f32>(bass, mids, treble) * instability * 0.1;
     let bioAlpha = clamp(totalBiomass * 0.55 + instability * 1.8, 0.25, 1.0);
     let finalAlpha = mix(bioAlpha * 0.8, bioAlpha, depth);
 
     let a = clamp(finalAlpha, 0.0, 1.0);
-    textureStore(writeTexture, coord, vec4<f32>(displayColor * a, a));
+    textureStore(writeTexture, coord, vec4<f32>(aces(displayColor), a));
 
     // Depth output modulated by biomass (deeper biomass = slightly different depth feel)
     let outDepth = mix(depth, depth * 0.9 + totalBiomass * 0.06, 0.4);

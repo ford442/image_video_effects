@@ -2,7 +2,7 @@
   "id": "elastic-strip",
   "name": "Elastic Strip",
   "url": "shaders/elastic-strip.wgsl",
-  "description": "Spring physics strips with beveled sub-ribs, traveling pluck packets, soap-film color from stretch energy, held drag, and bounded click plucks. Display RGBA is packed in A.",
+  "description": "Spring-physics strips with sharper nested bevel sub-ribs, traveling pluck packets along each band, stronger soap-film iridescence driven by stretch energy, held drag punch, and bounded click plucks. Direction (V/H) preserved. Display RGBA packed in A.",
   "params": [
     {
       "id": "density",
@@ -80,7 +80,9 @@
     "upgraded-rgba",
     "held-drag",
     "bounded-click-ripples",
-    "thin-film"
+    "thin-film",
+    "soap-film",
+    "traveling-packets"
   ],
   "tags": [
     "distortion",
@@ -88,6 +90,8 @@
     "physics",
     "spring",
     "chromatic",
-    "frequency"
+    "frequency",
+    "iridescent",
+    "bevel"
   ]
 }

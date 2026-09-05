@@ -116,7 +116,8 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 
 ## History ring (binding 13)
 
-- **Depth:** 8 layers (`HISTORY_DEPTH`)
+- **Depth:** 8 layers (`HISTORY_DEPTH`) is the **maximum**. Runtime may allocate 8, 4, or 1 after a `historyTex` VRAM probe (#1204). Bind-group `arrayLayerCount` must match the allocated texture. At 1 layer the ring copy is skipped (fail-soft graph history).
+- **VRAM:** 2048² × 8 × rgba32float is ~512 MiB — Pascal/Chrome D3D12 often OOMs. Probe-allocate; on `GPUOutOfMemoryError` drop to 1024 and **do not retry 2048** this tab. JS→WASM must `device.destroy()` and **await** `device.lost` before the next `requestDevice`.
 - **Catalog metadata:** `requiresHistoryRing: true` in shader JSON for temporal effects
 - **CPU:** `historyHead` written to `extraBuffer[4]` when any enabled shader uses binding 13
 - **GPU:** after each frame, copy presented color into `historyTexture[historyHead]`, then `historyHead = (historyHead + 1) % 8`
@@ -135,7 +136,7 @@ Both backends validate adapter limits before device creation and request explici
 
 | Limit | Required | Notes |
 |-------|----------|-------|
-| `maxTextureDimension2D` | canvas max(w, h) | Scales with canvas |
+| `maxTextureDimension2D` | **8192** | Comfortable floor (`webgpu_limits.json`). Never canvas max(w,h), maxBufferSize, pixel count, or a mis-ordered init pointer. |
 | `maxBindingsPerBindGroup` | 14 | 14-entry layout (0–13) |
 | `maxSampledTexturesPerShaderStage` | 3 | readTexture, dataTextureC, historyTexture |
 | `maxSamplersPerShaderStage` | 3 | filtering, non-filtering, comparison |
@@ -146,6 +147,16 @@ Both backends validate adapter limits before device creation and request explici
 | `maxComputeWorkgroupSizeX` | 16 | Standard workgroup |
 | `maxComputeWorkgroupSizeY` | 16 | Standard workgroup |
 | `maxComputeInvocationsPerWorkgroup` | 256 | Deep-workgroup shaders need ≥ 1024 at runtime |
+
+### Canonical dispatch
+
+The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, both TypeScript (`parseWorkgroupSize`) and C++ WASM (`ParseWorkgroupSize`) fall back to **16×16** — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
+
+Documented exceptions in that contract:
+
+- **1D helper kernels** — `@workgroup_size(64, 1, 1)` or `(256, 1, 1)` on non-`main` entry points (e.g. `update_boids` before `main`)
+- **Deep-workgroup shaders** — `(16, 16, 4)` with `requiresDeepWorkgroup: true`
+- **`src/gpuChores/`** — 8×8 downsample kernels are exempt (not catalog FX)
 
 ### Symbol cross-reference
 

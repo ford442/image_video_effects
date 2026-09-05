@@ -4,9 +4,20 @@
   "url": "shaders/mouse-mandelbrot-zoom-portal.wgsl",
   "features": [
     "mouse-driven",
-    "raymarched"
+    "raymarched",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "fast-motion",
+    "spring-cursor",
+    "semantic-alpha",
+    "exact-c-history"
   ],
-  "description": "Navigate the infinite Mandelbrot set with mouse position. Click to create nested zoom portals that reveal deeper fractal levels.",
+  "description": "Nested zoom-burst packets and orbital pointer spin through the Mandelbrot set. Click portals remain, sprung navigation, exact-C persist, ACES display, iteration semantic alpha.",
   "params": [
     {
       "id": "zoomLevel",
@@ -42,6 +53,46 @@
     "mouse-driven",
     "fractal",
     "psychedelic",
-    "zoom"
-  ]
+    "zoom",
+    "fast-motion",
+    "audio-reactive",
+    "aces"
+  ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Zoom Level",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Iteration Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Palette Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Portal Blend",
+      "default": 0.8,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "category": "interactive-mouse"
 }

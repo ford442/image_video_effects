@@ -1,0 +1,26 @@
+{
+  "id": "gen-ferrofluid-monolith",
+  "url": "shaders/gen-ferrofluid-monolith.wgsl",
+  "name": "Ferrofluid Monolith",
+  "category": "generative",
+  "tags": ["ferrofluid", "monolith", "magnetic", "raymarched", "liquid-metal", "audio-reactive"],
+  "description": "A raymarched liquid-metal obelisk grows magnetic radial spikes around an emissive core, with pointer orbit and click-driven field rings.",
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {"id": "monolithHeight", "name": "Monolith Height", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
+    {"id": "spikeStrength", "name": "Spike Strength", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
+    {"id": "fieldSpeed", "name": "Field Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
+    {"id": "coreGlow", "name": "Core Glow", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
+  ],
+  "updatedParams": [
+    {"index": 0, "name": "Monolith Height", "default": 0.55, "min": 0, "max": 1, "step": 0.01},
+    {"index": 1, "name": "Spike Strength", "default": 0.65, "min": 0, "max": 1, "step": 0.01},
+    {"index": 2, "name": "Field Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01},
+    {"index": 3, "name": "Core Glow", "default": 0.65, "min": 0, "max": 1, "step": 0.01}
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": ["raymarched", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "feedbackPacking": "A/C = raw HDR display RGBA history"
+}

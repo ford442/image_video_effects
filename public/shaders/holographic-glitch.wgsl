@@ -1,13 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Holographic Glitch
-//  Category: retro-glitch
-//  Features: upgraded-rgba, holographic, glitch, chromatic-aberration,
-//            scanlines, audio-reactive, aces-tone-map, ign-dither,
-//            depth-aware, temporal-feedback, fresnel-rim, split-tone,
-//            film-grain, hue-preserve-clamp
-//  Complexity: Medium
-//  Upgraded: 2026-07-12 (retry)
-// ═══════════════════════════════════════════════════════════════════
+// Holographic Glitch — continuous phase corruption, peel interaction, rich trails.
+// A/C stores tone-mapped display RGBA. B and extraBuffer are intentionally unused.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -24,105 +16,141 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = delta_time, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = zoom, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .xyzw = user params p1..p4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
-fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123); }
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
 fn valueNoise(p: vec2<f32>) -> f32 {
-    let i = floor(p); let f = fract(p); let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x), mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
-}
-fn fbm(p: vec2<f32>, oct: i32) -> f32 { var s = 0.0; var a = 0.5; var f = 1.0; for (var i = 0; i < oct; i = i + 1) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; } return s; }
-fn acesToneMap(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0)); }
-fn ign(p: vec2<f32>) -> f32 { return fract(52.9829181 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715)))); }
-fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)); }
-fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
-    let center = vec2<f32>(0.5);
-    let delta = uv - center;
-    let lenSq = max(dot(delta, delta), 0.000001);
-    let dir = delta * inverseSqrt(lenSq);
-    let offset = dir * max(amount, 0.0);
-    let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-    return vec3<f32>(r, g, b);
+  let i = floor(p);
+  let f = fract(p);
+  let s = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), s.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), s.x), s.y);
 }
 
-// Split-tone the image: cool cyan in shadows and warm amber in highlights.
-fn splitTone(c: vec3<f32>, shadows: vec3<f32>, highlights: vec3<f32>, strength: f32) -> vec3<f32> {
-    let y = luma(c);
-    let mask = smoothstep(0.25, 0.7, y);
-    let tint = mix(shadows, highlights, mask);
-    return mix(c, c * tint, strength);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Fresnel rim brightens the viewport edges like a worn holographic plate.
-fn fresnelRim(uv: vec2<f32>, bias: f32, power: f32) -> f32 {
-    let d = distance(uv, vec2<f32>(0.5));
-    let f = 1.0 - pow(clamp(d * 2.0, 0.0, 1.0), power);
-    return bias + (1.0 - bias) * f;
+fn historyCoord(uv: vec2<f32>, resolution: vec2<f32>) -> vec2<i32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  return clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution),
+               vec2<i32>(0), hi);
 }
 
-// Coarse film-grain overlay for a retro analog feel.
-fn filmGrain(uv: vec2<f32>, time: f32, strength: f32) -> f32 {
-    return (hash21(uv * 1234.5 + time * 37.0) - 0.5) * strength;
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, historyCoord(uv, resolution), 0);
 }
 
-// Keep saturated highlights from clipping to white while preserving hue.
-fn huePreserveClamp(c: vec3<f32>) -> vec3<f32> {
-    let mx = max(max(c.r, c.g), c.b);
-    return c / max(mx, 1.0);
+fn luma(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+fn spectrum(t: f32) -> vec3<f32> {
+  return 0.52 + 0.48 * cos(TAU * (vec3<f32>(0.01, 0.34, 0.67) + t));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let pixel = vec2<i32>(global_id.xy);
-    let res = vec2<f32>(u.config.zw);
-    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
-    let uv = vec2<f32>(pixel) / res;
-    let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
-    let p1 = clamp(u.zoom_params.x, 0.0, 1.0);
-    let p2 = clamp(u.zoom_params.y, 0.0, 1.0);
-    let p3 = clamp(u.zoom_params.z, 0.0, 1.0);
-    let p4 = clamp(u.zoom_params.w, 0.0, 1.0);
+  let coord = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+  let time = u.config.x;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 2.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 2.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 2.0);
+  let glitchIntensity = clamp(u.zoom_params.x, 0.0, 1.0);
+  let holoIntensity = clamp(u.zoom_params.y, 0.0, 1.0);
+  let rgbShift = clamp(u.zoom_params.z, 0.0, 1.0);
+  let phaseInstability = clamp(u.zoom_params.w, 0.0, 1.0);
 
-    let depth = textureLoad(readDepthTexture, pixel, 0).r;
-    let prev = textureLoad(dataTextureC, pixel, 0);
+  let pointerDelta = (uv - mouse) * aspectVec;
+  let pointerDist = length(pointerDelta);
+  let pointerDir = pointerDelta / max(pointerDist, 0.0001);
+  let peelMask = smoothstep(0.42, 0.0, pointerDist) * select(0.18, 1.0, held);
+  let peelFold = sin(pointerDist * 38.0 - time * (2.0 + mids)) * peelMask;
 
-    let block = floor(uv.y * 40.0);
-    let seed = hash21(vec2<f32>(block, floor(time * 8.0 * (1.0 + bass))));
-    let trigger = step(seed, p1);
-    let offset = (hash21(vec2<f32>(time, block)) - 0.5) * p1 * 0.08 * trigger;
-    let warpedUV = clamp(uv + vec2<f32>(offset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  var desync = 0.0;
+  var clickDirection = vec2<f32>(0.0);
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.5) {
+      let delta = (uv - ripple.xy) * aspectVec;
+      let dist = length(delta);
+      let front = age * (0.34 + bass * 0.09);
+      let pulse = sin((dist - front) * 83.0) * exp(-abs(dist - front) * 31.0) * exp(-age * 1.2);
+      desync += pulse;
+      clickDirection += delta / max(dist, 0.0001) * pulse;
+    }
+  }
 
-    let ca = chromaticAberration(warpedUV, p3 * 0.006 * (1.0 + bass) + depth * 0.002);
-    let holo = (0.5 + 0.5 * cos(vec3<f32>(time + uv.x * 6.0, time + uv.x * 6.0 + 2.094, time + uv.x * 6.0 + 4.189))) * p2;
-    let scan = sin(uv.y * res.y * 0.7 + time * (1.0 + p4 * 9.0) * (1.0 + treble)) * 0.07;
-    let flick = 1.0 - p4 * 0.35 * hash21(uv + time);
-    let rim = fresnelRim(uv, 0.08, 2.2) * p2 * (0.4 + bass * 0.4);
+  // Continuous row phase: spatially blocky, temporally smooth (no floor(time)).
+  let row = floor(uv.y * (26.0 + glitchIntensity * 58.0));
+  let phaseNoise = valueNoise(vec2<f32>(row * 0.173 + sin(time * 0.23),
+                                        time * (0.7 + phaseInstability * 3.8) + row * 0.071));
+  let carrier = sin(uv.y * resolution.y * (0.18 + phaseInstability * 0.72) +
+                    time * (2.0 + treble * 5.0) + phaseNoise * TAU);
+  let continuousShear = (phaseNoise - 0.5) * glitchIntensity * (0.025 + bass * 0.035) +
+                        carrier * glitchIntensity * 0.004;
+  let peelOffset = pointerDir / aspectVec * peelFold * (0.008 + holoIntensity * 0.018);
+  let clickOffset = clickDirection / aspectVec * desync * glitchIntensity * 0.006;
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  let warpedUV = clamp(uv + vec2<f32>(continuousShear, 0.0) + peelOffset + clickOffset +
+                       vec2<f32>((depth - 0.5) * rgbShift * 0.004, 0.0),
+                       vec2<f32>(0.0), vec2<f32>(1.0));
 
-    var color = mix(ca, holo + scan + rim, p2 * flick);
-    color = splitTone(color, vec3<f32>(0.65, 0.95, 1.05), vec3<f32>(1.15, 0.92, 0.68), p4 * 0.45);
-    color = acesToneMap(color * (0.9 + mids * 0.25));
-    color += (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
-    color += filmGrain(uv, time, p1 * 0.03);
-    color = huePreserveClamp(color);
+  let chromaDir = normalize((warpedUV - 0.5) * aspectVec + vec2<f32>(0.0001)) / aspectVec;
+  let chromaAmount = rgbShift * (0.0015 + bass * 0.0035 + abs(desync) * 0.0025);
+  let red = textureSampleLevel(readTexture, u_sampler,
+                               clamp(warpedUV + chromaDir * chromaAmount, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let green = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).g;
+  let blue = textureSampleLevel(readTexture, u_sampler,
+                                clamp(warpedUV - chromaDir * chromaAmount, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let source = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
 
-    let depthAlpha = mix(0.35, 0.95, depth);
-    let alpha = clamp(luma(color) * 0.8 * (1.0 + p2) * depthAlpha, 0.1, 0.98);
-    let trail = mix(prev.rgb * (0.94 - p4 * 0.04), color, 0.25 + bass * 0.1);
+  let trailVelocity = vec2<f32>(continuousShear * 0.35, carrier * 0.0015) + peelOffset * 0.3;
+  let historyR = historyAt(uv - trailVelocity + chromaDir * chromaAmount * 0.8, resolution);
+  let historyG = historyAt(uv - trailVelocity * 0.65, resolution);
+  let historyB = historyAt(uv - trailVelocity - chromaDir * chromaAmount * 0.8, resolution);
+  let historyRGB = vec3<f32>(historyR.r, historyG.g, historyB.b);
+  let historyAlpha = max(historyR.a, max(historyG.a, historyB.a));
 
-    textureStore(writeTexture, pixel, vec4<f32>(trail, alpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(trail, alpha));
-    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let interferencePhase = uv.x * (9.0 + holoIntensity * 20.0) +
+                           uv.y * 5.0 + time * (0.55 + mids * 1.4) +
+                           depth * 7.0 + peelFold * 2.5 + desync;
+  let hologram = spectrum(interferencePhase / TAU) * (0.22 + holoIntensity * 1.15);
+  let scan = 0.5 + 0.5 * sin(uv.y * resolution.y * 0.68 + time * (3.0 + treble * 7.0));
+  let scanMask = mix(0.76, 1.08, scan) * (1.0 + treble * 0.12);
+  let peelRim = pow(max(1.0 - pointerDist / 0.42, 0.0), 2.0) * abs(peelFold);
+  var hdr = vec3<f32>(red, green, blue) * scanMask;
+  hdr = mix(hdr, hologram + source.rgb * 0.24, holoIntensity * (0.38 + phaseNoise * 0.28));
+  hdr += spectrum(time * 0.08 + pointerDist + mids * 0.12) * peelRim * (0.45 + treble * 0.7);
+  hdr += spectrum(desync * 0.2 + time * 0.04) * abs(desync) * (0.22 + bass * 0.4);
+  let trailMix = clamp(0.10 + phaseInstability * 0.30 + glitchIntensity * 0.12, 0.08, 0.48);
+  hdr = mix(hdr, historyRGB * (0.90 + holoIntensity * 0.08), trailMix);
+  let display = aces(max(hdr, vec3<f32>(0.0)));
+  let alpha = clamp(source.a * 0.22 + luma(display) * (0.38 + holoIntensity * 0.36) +
+                    historyAlpha * trailMix * 0.35 + peelRim * 0.18, 0.08, 0.98);
+  let result = vec4<f32>(display, alpha);
+
+  textureStore(writeTexture, coord, result);
+  textureStore(dataTextureA, coord, result);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

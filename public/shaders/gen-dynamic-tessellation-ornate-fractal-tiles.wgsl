@@ -23,8 +23,8 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Fractal Detail, y=Motion Speed, z=Tile Density, w=Mouse Warp
   ripples: array<vec4<f32>, 50>,
 };
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
@@ -84,7 +84,7 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
@@ -94,22 +94,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = f32(res.x) / f32(res.y);
     var p = uv * 2.0 - 1.0;
     p.x *= aspect;
-    p += u.zoom_config.yz;
-    let density = max(1.0, 5.0 + u.zoom_params.y * 5.0);
+    let detail = clamp(u.zoom_params.x, 0.0, 1.0);
+    let motionSpeed = mix(0.15, 1.8, clamp(u.zoom_params.y, 0.0, 1.0));
+    let density = mix(3.0, 14.0, clamp(u.zoom_params.z, 0.0, 1.0));
+    let mouseWarp = clamp(u.zoom_params.w, 0.0, 1.0);
+    let mouse = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(aspect, 1.0);
+    p -= mouse * mouseWarp * mix(0.08, 0.38, clamp(u.zoom_config.w, 0.0, 1.0));
     let tile_uv = p * density;
     let tile_id = floor(tile_uv);
-    var tile_local = fract(tile_uv) * 2.0 - 1.0;
+    let tile_local = fract(tile_uv) * 2.0 - 1.0;
     var z = tile_local;
     let base_c = vec2<f32>(
-        sin(tile_id.x * 0.1 + u.config.x * 0.5),
-        cos(tile_id.y * 0.1 + u.config.x * 0.5)
-    );
+        sin(tile_id.x * 0.17 + u.config.x * 0.35 * motionSpeed),
+        cos(tile_id.y * 0.13 + u.config.x * 0.31 * motionSpeed)
+    ) * (0.55 + detail * 0.22);
 
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let iter = i32(max(5.0, 10.0 + u.zoom_params.x * 10.0 + bass * 5.0));
+    let iter = i32(6.0 + detail * 14.0 + bass * 3.0);
     var n = 0;
     var alive = true;
     for (var i = 0; i < 20; i = i + 1) {
@@ -124,21 +128,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let temp = mix(2500.0, 8000.0, clamp(bass + 0.5 * sin(u.config.x * 0.3), 0.0, 1.0));
     let warm = blackbodyRGB(temp);
     let cool = blackbodyRGB(temp * 0.35);
-    let col = mixOkLab(cool, warm, f_val) * (1.0 + f_val * f_val * 2.5);
-    let hdr = hue_preserve_clamp(col, 4.0);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let grout = smoothstep(0.08, 0.02, min(1.0 - abs(tile_local.x), 1.0 - abs(tile_local.y)));
+    var col = mixOkLab(cool, warm, f_val) * (0.5 + f_val * f_val * 3.2);
+    col += vec3<f32>(0.15, 0.35, 0.8) * grout * (0.25 + mids * 0.6);
+
+    var clickFront = 0.0;
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var ri = 0u; ri < rippleCount; ri++) {
+        let ripple = u.ripples[ri];
+        let age = u.config.x - ripple.z;
+        if (age > 0.0 && age < 3.0) {
+            let delta = vec2<f32>((uv.x - ripple.x) * aspect, uv.y - ripple.y);
+            clickFront += exp(-abs(length(delta) - age * 0.22) * 72.0) * exp(-age * 1.4);
+        }
+    }
+    col += vec3<f32>(0.45 + treble * 0.4, 0.25 + mids * 0.4, 1.0) * clickFront * 0.45;
+
+    let previous = textureLoad(dataTextureC, coords, 0);
+    let hdr = hue_preserve_clamp(mix(col, previous.rgb, 0.05 + bass * 0.06), 5.0);
+    let depth = clamp(f_val * 0.78 + grout * 0.18, 0.0, 1.0);
 
     let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
     let bloomWeight = pow(max(0.0, luma - 0.5), 2.0) * 2.0;
-    let a = clamp(bloomWeight + mids * 0.1 + treble * 0.05, 0.0, 1.0);
-    let tm = acesToneMap(hdr) + vec3<f32>((ign(vec2<f32>(coords)) - 0.5) / 255.0);
-    let srgb = pow(tm, vec3<f32>(1.0 / 2.2));
+    let alpha = clamp(bloomWeight * 0.45 + f_val * 0.5 + grout * 0.12 + clickFront * 0.12, 0.02, 1.0);
+    let mapped = acesToneMap(hdr * 1.08) + vec3<f32>((ign(vec2<f32>(coords)) - 0.5) / 255.0);
 
-    var finalColor = vec4<f32>(srgb * a, a);
-    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
-    finalColor = vec4<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5, finalColor.a);
-
-    textureStore(writeTexture, coords, applyGenerativePrimaryControls(finalColor));
-    textureStore(dataTextureA, global_id.xy, finalColor);
+    textureStore(writeTexture, coords, vec4<f32>(clamp(mapped, vec3<f32>(0.0), vec3<f32>(1.0)), alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(hdr, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

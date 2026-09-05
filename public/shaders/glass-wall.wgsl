@@ -149,21 +149,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Calculate intricate geometry normal
   let eps = 0.002;
-  let h = glassHeight(uv, time, bass, mid);
-  let hx = glassHeight(uv + vec2<f32>(eps, 0.0), time, bass, mid);
-  let hy = glassHeight(uv + vec2<f32>(0.0, eps), time, bass, mid);
+  let gridScale = mix(1.0, 5.0, u.zoom_params.y);
+  let h = glassHeight(uv * gridScale, time, bass, mid);
+  let hx = glassHeight((uv + vec2<f32>(eps, 0.0)) * gridScale, time, bass, mid);
+  let hy = glassHeight((uv + vec2<f32>(0.0, eps)) * gridScale, time, bass, mid);
   var normal = normalize(vec3<f32>(h - hx, h - hy, eps * 15.0));
 
   // Add spring pointer influence
+  let interactionRad = mix(1.0, 8.0, u.zoom_params.z);
   let pointerDist = distance(uv * vec2<f32>(aspect, 1.0), springPos * vec2<f32>(aspect, 1.0));
-  let pointerInfluence = exp(-pointerDist * 4.0);
+  let pointerInfluence = exp(-pointerDist * interactionRad);
   normal = normalize(normal + vec3<f32>(normalize(uv - springPos + 0.0001) * pointerInfluence * 0.3, 0.0));
 
   // Add ripple influence
   normal = normalize(normal + vec3<f32>(rippleOffset * 20.0, 0.0));
 
   // Refraction
-  let refractionStrength = 0.08 + bass * 0.02;
+  let refractionStrength = (0.08 + bass * 0.02) * mix(0.1, 2.0, u.zoom_params.x);
   let offset = normal.xy * refractionStrength;
   let finalUV = uv + offset;
   
@@ -176,6 +178,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = mix(color, color * spectralColor * 2.0, smoothstep(0.0, 0.5, tiltMag));
 
   // Glass physical properties
+  // Evaluate unused parameters
+  let unused_x = u.zoom_params.x;
+  let unused_y = u.zoom_params.y;
+  let unused_z = u.zoom_params.z;
+
   let glassDensity = u.zoom_params.w * 2.0 + 0.5;
   let thickness = 0.1 + abs(h) * 0.2;
   

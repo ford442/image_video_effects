@@ -41,6 +41,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uvRaw = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let uv = clamp(uvRaw, vec2<f32>(0.0), vec2<f32>(1.0));
 
+  // Evaluate unused parameters
+  let unused_x = u.zoom_params.x;
+  let unused_y = u.zoom_params.y;
+  let unused_w = u.zoom_params.w;
+
   let field = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   let spectroColor = field.rgb;
   let magnitude = max(field.a, 0.001);
@@ -52,8 +57,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let src = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let freqFactor = clamp(1.0 - uv.y, 0.001, 1.0);
-  let displacementX = magnitude * (src.r - src.b) * 50.0 * effectiveMag * audioBoost;
-  let displacementY = magnitude * (src.g - 0.5) * 30.0 * effectiveMag * freqFactor * audioBoost;
+  let horizontal_disp = u.zoom_params.x;
+  let vertical_disp = u.zoom_params.y;
+  let blend_disp = u.zoom_params.w;
+  let displacementX = magnitude * (src.r - src.b) * 50.0 * effectiveMag * audioBoost * mix(1.0, 3.0, horizontal_disp);
+  let displacementY = magnitude * (src.g - 0.5) * 30.0 * effectiveMag * freqFactor * audioBoost * mix(1.0, 3.0, vertical_disp);
   let waveDisp = sin(uv.y * 20.0 + u.config.x * 3.0) * magnitude * 10.0 * audioBoost;
 
   var displacedX = i32(coord.x) + i32(displacementX + waveDisp);
@@ -63,9 +71,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let displacedColor = textureLoad(readTexture, vec2<i32>(displacedX, displacedY), 0);
 
-  let blendFactor = magnitude * 0.3 * audioBoost;
+  let blendFactor = magnitude * 0.3 * audioBoost * mix(1.0, 2.0, blend_disp);
   var finalColor = displacedColor.rgb;
-  finalColor = finalColor + spectroColor * magnitude * 0.5 * effectiveMag * audioBoost;
+  finalColor = finalColor + spectroColor * magnitude * 0.5 * effectiveMag * audioBoost * blendFactor;
 
   let lowFreqBoost = select(1.0 + magnitude * 0.2 * audioBoost, 1.0, uv.y > 0.7);
   let highFreqBoost = select(1.0 + magnitude * 0.1 * audioBoost, 1.0, uv.y < 0.3);

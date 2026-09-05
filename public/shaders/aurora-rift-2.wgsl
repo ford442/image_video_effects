@@ -1,9 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Aurora Rift 2 - Advanced Alpha with Physical Transmittance
-//  Category: atmospheric
-//  Alpha Mode: Physical Transmittance (Beer's Law) + Depth-Layered
-//  Features: advanced-alpha, volumetric, spectral-rendering
-// ═══════════════════════════════════════════════════════════════════════════════
+// Aurora Rift 2 — magnetically folded oxygen/nitrogen emission curtains.
+// A/C stores ACES display RGBA. B is unused. Source depth passes through.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,145 +22,111 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ ADVANCED ALPHA FUNCTIONS ═══
-
-// Mode 4: Physical Transmittance (Beer's Law)
-fn physicalTransmittance(
-    baseColor: vec3<f32>,
-    opticalDepth: f32,
-    absorptionCoeff: vec3<f32>
-) -> vec3<f32> {
-    let transmittance = exp(-absorptionCoeff * opticalDepth);
-    return baseColor * transmittance;
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn volumetricAlpha(density: f32, thickness: f32) -> f32 {
-    return 1.0 - exp(-density * thickness);
-}
-
-// Mode 1: Depth-Layered Alpha
-fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthAlpha = mix(0.3, 1.0, depth);
-    return mix(1.0, depthAlpha, depthWeight);
-}
-
-// Combined atmospheric alpha
-fn calculateAtmosphericAlpha(
-    uv: vec2<f32>,
-    opticalDepth: f32,
-    density: f32,
-    params: vec4<f32>
-) -> f32 {
-    let volAlpha = volumetricAlpha(density, opticalDepth);
-    let depthAlpha = depthLayeredAlpha(uv, params.z);
-    return clamp(volAlpha * depthAlpha, 0.0, 1.0);
-}
-
-// Noise functions
-fn hash(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
-               mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+  let cell = floor(p);
+  let f = fract(p);
+  let s = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(cell), hash21(cell + vec2<f32>(1.0, 0.0)), s.x),
+             mix(hash21(cell + vec2<f32>(0.0, 1.0)), hash21(cell + vec2<f32>(1.0)), s.x), s.y);
 }
 
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-    var value = 0.0;
-    var amplitude = 0.5;
-    var frequency = 1.0;
-    for (var i: i32 = 0; i < octaves; i++) {
-        value += amplitude * noise(p * frequency);
-        frequency *= 2.0;
-        amplitude *= 0.5;
-    }
-    return value;
+fn fbm3(p: vec2<f32>) -> f32 {
+  return noise(p) * 0.57 + noise(p * 2.03 + 13.7) * 0.29 + noise(p * 4.11 - 7.9) * 0.14;
 }
 
-// Spectral aurora colors
-fn auroraColor(t: f32) -> vec3<f32> {
-    return vec3<f32>(
-        0.2 + 0.8 * sin(t * 6.28),
-        0.5 + 0.5 * sin(t * 6.28 + 1.0),
-        0.8 + 0.2 * sin(t * 6.28 + 2.0)
-    );
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  let coord = clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), hi);
+  return textureLoad(dataTextureC, coord, 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+  let time = u.config.x;
+  let intensity = 0.25 + u.zoom_params.x * 2.5;
+  let speed = 0.12 + u.zoom_params.y * 1.35;
+  let depthWeight = u.zoom_params.z;
+  let turbulence = 0.4 + u.zoom_params.w * 3.2;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+  let sourceDepth = textureLoad(readDepthTexture, coord, 0).r;
+
+  let pointerDelta = (uv - mouse) * aspectVec;
+  let pointerDistance = length(pointerDelta);
+  let pointerBend = exp(-pointerDistance * pointerDistance * 9.0) * select(0.35, 1.15, held);
+  var ionization = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.7) {
+      let rd = length((uv - ripple.xy) * aspectVec);
+      let front = age * (0.22 + audio.y * 0.055);
+      ionization += exp(-abs(rd - front) * 48.0) * exp(-age * 0.9);
     }
-    
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    
-    // Parameters
-    let intensity = u.zoom_params.x;
-    let speed = u.zoom_params.y * 2.0 + 0.5;
-    let depthWeight = u.zoom_params.z;
-    let turbulence = u.zoom_params.w * 3.0 + 1.0;
-    
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
-    // Aurora curtain simulation
-    let curtainUV = uv * vec2<f32>(3.0, 1.0);
-    
-    // Multiple layers of aurora curtains
-    var accumulatedLight = vec3<f32>(0.0);
-    var accumulatedOpticalDepth = 0.0;
-    
-    for (var i: i32 = 0; i < 5; i++) {
-        let layer = f32(i);
-        let layerOffset = vec2<f32>(time * speed * 0.1 * (1.0 + layer * 0.1), 0.0);
-        
-        // FBM for curtain shape
-        let n1 = fbm(curtainUV + layerOffset + vec2<f32>(layer * 10.0), 4);
-        let n2 = fbm(curtainUV * 2.0 - layerOffset * 0.5 + vec2<f32>(layer * 5.0), 3);
-        
-        // Curtain shape
-        let curtainY = 0.3 + n1 * 0.4 + n2 * 0.2;
-        let curtainWidth = 0.15 + n2 * 0.1;
-        
-        // Distance from curtain center
-        let distFromCurtain = abs(uv.y - curtainY);
-        let curtainIntensity = smoothstep(curtainWidth, 0.0, distFromCurtain);
-        
-        // Spectral color
-        let colorPhase = time * 0.2 + layer * 0.3 + n1;
-        let auroraCol = auroraColor(colorPhase) * intensity;
-        
-        // Optical depth for this layer
-        let layerOpticalDepth = curtainIntensity * (0.2 + n1 * 0.3);
-        
-        // Accumulate with Beer's Law
-        let transmittance = exp(-accumulatedOpticalDepth * 2.0);
-        accumulatedLight += auroraCol * layerOpticalDepth * transmittance;
-        accumulatedOpticalDepth += layerOpticalDepth;
-    }
-    
-    // Sample background
-    let bgSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    
-    // Apply aurora with physical transmittance
-    let absorptionCoeff = vec3<f32>(0.5, 0.3, 0.8);
-    let transmitted = physicalTransmittance(bgSample.rgb, accumulatedOpticalDepth, absorptionCoeff);
-    
-    // Final composite
-    let finalColor = transmitted + accumulatedLight;
-    
-    // ═══ ADVANCED ALPHA CALCULATION ═══
-    let density = accumulatedOpticalDepth * 2.0;
-    let alpha = calculateAtmosphericAlpha(uv, accumulatedOpticalDepth, density, u.zoom_params);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    
-    // Depth pass-through
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  }
+
+  let oxygenGreen = vec3<f32>(0.12, 1.25, 0.42);
+  let oxygenRed = vec3<f32>(1.25, 0.16, 0.08);
+  let nitrogenBlue = vec3<f32>(0.18, 0.36, 1.5);
+  let nitrogenViolet = vec3<f32>(0.72, 0.18, 1.25);
+  var accumulatedLight = vec3<f32>(0.0);
+  var opticalDepth = 0.0;
+  var curtainCoordinate = 0.0;
+
+  for (var layer = 0; layer < 4; layer = layer + 1) {
+    let lf = f32(layer);
+    let parallax = 0.75 + lf * 0.24;
+    let flow = vec2<f32>(time * speed * (0.08 + lf * 0.018), -time * speed * 0.015);
+    let fieldUV = vec2<f32>(uv.x * (2.1 + lf * 0.45), uv.y * 1.35) * parallax;
+    let lowField = fbm3(fieldUV + flow + vec2<f32>(lf * 9.7));
+    let highField = fbm3(fieldUV * (1.8 + turbulence * 0.15) - flow * 0.7 - vec2<f32>(lf * 4.1));
+    let magneticFold = sin(uv.x * (10.0 + turbulence * 4.0) + lowField * 5.0 + time * speed + lf * 1.7);
+    let bend = pointerBend * (mouse.x - uv.x) * (0.75 + lf * 0.12);
+    let centerY = 0.18 + lf * 0.135 + lowField * 0.32 + magneticFold * (0.035 + turbulence * 0.012) + bend;
+    let width = 0.035 + highField * 0.055 + audio.y * 0.012;
+    let ribbon = exp(-pow((uv.y - centerY) / max(width, 0.01), 2.0));
+    let striation = 0.35 + 0.65 * pow(0.5 + 0.5 * sin((uv.x + highField * 0.12) * (82.0 + audio.z * 16.0)), 4.0);
+    let density = ribbon * striation * (0.18 + lowField * 0.32) * (1.0 + ionization * 0.65);
+    let altitude = clamp(1.0 - centerY, 0.0, 1.0);
+    let oxygen = mix(oxygenRed, oxygenGreen, smoothstep(0.2, 0.75, altitude + audio.y * 0.12));
+    let nitrogen = mix(nitrogenViolet, nitrogenBlue, smoothstep(0.0, 1.0, highField + audio.z * 0.25));
+    let emission = mix(oxygen, nitrogen, clamp(0.18 + lf * 0.13 + audio.z * 0.14, 0.0, 0.72));
+    let transmittance = exp(-opticalDepth * (1.35 + depthWeight * 0.7));
+    accumulatedLight += emission * density * transmittance * intensity * (0.55 + audio.x * 0.3);
+    opticalDepth += density * (0.55 + depthWeight * 0.45);
+    curtainCoordinate += centerY * density;
+  }
+
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let absorption = vec3<f32>(0.55, 0.28, 0.72) * opticalDepth;
+  let transmitted = source.rgb * exp(-absorption);
+  let historyUV = uv - vec2<f32>(speed * 0.0009, 0.0) + pointerDelta * pointerBend * 0.002;
+  let history = historyAt(historyUV, resolution);
+  var hdr = transmitted + accumulatedLight;
+  hdr += history.rgb * clamp(0.025 + opticalDepth * 0.035, 0.0, 0.09);
+  hdr += vec3<f32>(0.22, 0.5, 1.15) * ionization * (0.2 + audio.z * 0.35);
+  let depthLayer = mix(1.0, mix(0.3, 1.0, sourceDepth), depthWeight);
+  let alpha = clamp((1.0 - exp(-opticalDepth * 1.8)) * depthLayer + ionization * 0.12, 0.0, 1.0);
+  let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
+  textureStore(writeTexture, coord, result);
+  textureStore(dataTextureA, coord, result);
+  textureStore(writeDepthTexture, coord, vec4<f32>(sourceDepth, 0.0, 0.0, 0.0));
 }

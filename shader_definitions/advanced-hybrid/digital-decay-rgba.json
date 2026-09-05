@@ -71,12 +71,6 @@
   "performance_target": "35 FPS (GTX 1060)",
   "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
   "created_date": "2026-04-18",
-  "tags": [
-    "glitch",
-    "decay",
-    "reaction-diffusion",
-    "organic",
-    "digital",
-    "corruption"
-  ]
+  "tags": ["glitch", "decay", "reaction-diffusion", "organic", "digital", "corruption"],
+  "updated": true
 }

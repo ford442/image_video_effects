@@ -4,6 +4,7 @@
   "category": "simulation",
   "url": "shaders/slime-mold-on-video.wgsl",
   "description": "Video luminance feeds a slime-mold trail simulation with velocity-biased history advection, traveling chemotactic pulse packets, and click food fronts. Audio shifts tendril colors, depth boosts glow, and the mouse deposits food.",
+  "feedbackPacking": "A/C = trail, video food luminance, encoded drift.xy; exact bounded video-guided state",
   "features": [
     "simulation",
     "temporal",
@@ -15,7 +16,7 @@
     "click-reactive",
     "fast-motion",
     "upgraded-rgba",
-    "chromatic-tendril"
+    "chromatic-tendril", "exact-load-feedback", "a-only-feedback", "held-food", "aces-tone-map", "semantic-alpha"
   ],
   "tags": [
     "slime",

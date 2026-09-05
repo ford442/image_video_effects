@@ -5,7 +5,8 @@
 //            chromatic-layer-separation, depth-output, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  Upgraded: 2026-08-01 (Batch 23 — coarse/refined search, petal waves)
+//  Upgraded: 2026-08-23 — exact feedback loads, held-cursor lens,
+//            three-band petal voices, finite click waves
 // ═══════════════════════════════════════════════════════════════════
 //  Nested hypotrochoid and epicycloid curves layered to form a
 //  blooming flower/mandala. Multiple gear-ratio pairs evolve slowly,
@@ -72,6 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let mouse  = u.zoom_config.yz;
+  let held   = select(1.0, 1.65, u.zoom_config.w > 0.5);
 
   let spinSpeed  = mix(0.15, 2.0, u.zoom_params.x);
   let petalMult  = mix(1.0, 4.0,  u.zoom_params.y);
@@ -81,7 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mouse-driven distortion: the cursor always pulls the bloom; bass only
   // amplifies the motion instead of acting as an accidental on/off switch.
   let mousePull = (mouse - 0.5) * 0.3;
-  let pullStrength = 0.35 + clamp(bass, 0.0, 1.5) * 0.45;
+  let pullStrength = (0.35 + clamp(bass, 0.0, 1.5) * 0.45) * held;
   let p = (uv - 0.5 + mousePull * pullStrength) * vec2<f32>(aspect, 1.0) * 2.4;
 
   // Clicks send damped radial waves through the petal geometry.
@@ -155,7 +157,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let chromaB = colorAcc * vec3<f32>(0.85, 0.95, 1.1);
   colorAcc = mix(chromaR, chromaB, smoothstep(0.0, 1.0, treble));
 
-  let prev  = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  // Feedback is a simulation contract resource: fetch the corresponding texel
+  // exactly so storage history is never altered by sampler filtering.
+  let prev  = textureLoad(dataTextureC, coord, 0).rgb;
   let fbMix = mix(0.05, 0.70, feedback);
   colorAcc = mix(colorAcc, prev * 0.90, fbMix);
 

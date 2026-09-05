@@ -25,15 +25,6 @@ struct Uniforms {
     zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=MouseInfluence
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(controlled, color.a);
-}
 
 // --- Color Science: OkLab ---
 fn srgb_to_linear(c: vec3<f32>) -> vec3<f32> {
@@ -115,27 +106,31 @@ fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
 
 fn map(pos_in: vec3<f32>) -> vec2<f32> {
     var p = pos_in;
-    let rainDensity = u.zoom_params.x;
-    let dropSpeed = u.zoom_params.y;
-    let fluidViscosity = u.zoom_params.z;
-    let audioReactive = plasmaBuffer[0].x;
-    let t = u.config.x * dropSpeed * (1.0 + audioReactive * 0.5);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let rainDensity = mix(0.65, 2.35, clamp(u.zoom_params.x, 0.0, 1.0)) * (1.0 + bass * 0.22);
+    let dropSpeed = mix(0.25, 1.85, clamp(u.zoom_params.y, 0.0, 1.0));
+    let fluidViscosity = mix(0.08, 0.9, clamp(u.zoom_params.z, 0.0, 1.0)) * (1.0 + mids * 0.28);
+    let stormIntensity = clamp(u.zoom_params.w, 0.0, 1.0);
+    let t = u.config.x * dropSpeed * (1.0 + bass * 0.5);
     p.y -= t * 5.0;
-    // Mouse Y-flip: screen-top = +Y/up
     let mousePos = vec2<f32>((u.zoom_config.y - 0.5) * 20.0, (u.zoom_config.z - 0.5) * 20.0);
     let dMouse = length(p.xz - mousePos);
     if (dMouse < 5.0) {
-        let repelForce = (5.0 - dMouse) * 0.5;
-        let dir = normalize(p.xz - mousePos);
-        p.x += dir.x * repelForce;
-        p.z += dir.y * repelForce;
+        let mouseDelta = p.xz - mousePos;
+        let repelForce = (5.0 - dMouse) * (0.18 + stormIntensity * 0.42);
+        if (dMouse > 0.001) {
+            let dir = mouseDelta / dMouse;
+            p.x += dir.x * repelForce;
+            p.z += dir.y * repelForce;
+        }
     }
     let cellSpacing = 4.0 / rainDensity;
     let cell = floor(p / cellSpacing);
     var q = p - cell * cellSpacing - cellSpacing * 0.5;
     let h = hash33(cell);
     q.y += (h.y - 0.5) * cellSpacing;
-    let stretch = 1.0 + dropSpeed + audioReactive;
+    let stretch = 0.8 + dropSpeed + bass * 0.9;
     let d1 = sdCapsule(q, vec3<f32>(0.0, stretch, 0.0), vec3<f32>(0.0, -stretch, 0.0), 0.2 + h.x * 0.3);
     var d2 = 1e10;
     for(var i=-1; i<=1; i++) {
@@ -156,7 +151,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = vec2<f32>(1.0, -1.0) * 0.5773 * 0.0005;
     return normalize(e.xyy * map(p + e.xyy).x + e.yyx * map(p + e.yyx).x + e.yxy * map(p + e.yxy).x + e.xxx * map(p + e.xxx).x);
 }
-fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
+fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     var col = vec3<f32>(0.0);
     var t = 0.0;
     var m = -1.0;
@@ -168,16 +163,20 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
         t += res.x * 0.8;
     }
     let stormIntensity = u.zoom_params.w;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     // Cosine palette for sky + OkLab mixing with blackbody
     let skyCp = cosinePalette(rd.y * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(0.6, 0.8, 1.0), vec3<f32>(0.1, 0.3, 0.6));
     let skyBb = blackbody(mix(3000.0, 7000.0, rd.y * 0.5 + 0.5 + sin(u.config.x * 0.2) * 0.2));
-    let bgCol = oklab_mix(skyCp, skyBb, 0.4) * stormIntensity;
+    let bgCol = oklab_mix(skyCp, skyBb, 0.4) * (0.2 + stormIntensity * 1.25 + bass * 0.12);
     col = bgCol;
     if (m > 0.0) {
         let p = ro + rd * t;
         let n = calcNormal(p);
         // Pseudo-refraction with cosine palette
-        let refDir = refract(rd, n, 0.8);
+        let eta = mix(0.9, 0.62, clamp(u.zoom_params.z + mids * 0.12, 0.0, 1.0));
+        let refDir = refract(rd, n, eta);
         let hRef = hash33(refDir * 10.0 + u.config.x);
         let refCp = cosinePalette(hRef.x, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(0.8, 1.0, 1.0), vec3<f32>(0.2, 0.5, 0.8));
         let refBb = blackbody(mix(5000.0, 12000.0, hRef.x));
@@ -195,12 +194,13 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
         col = mix(refCol, vec3<f32>(1.0), spe + dif * 0.2);
         col += rimColor * fresnel * 0.5;
         // Caustics approximation on surface
-        let caustics = sin(p.x * 20.0 + u.config.x * 2.0) * cos(p.z * 20.0 + u.config.x * 1.5) * 0.5 + 0.5;
-        col += refCol * caustics * 0.15 * fresnel;
+        let caustics = sin(p.x * (18.0 + treble * 8.0) + u.config.x * 2.0) * cos(p.z * 20.0 + u.config.x * 1.5) * 0.5 + 0.5;
+        col += refCol * caustics * (0.12 + treble * 0.22) * fresnel;
         // Fog with OkLab mixing
         col = mix(col, bgCol, 1.0 - exp(-0.02 * t * t));
     }
-    return col;
+    let hitCoverage = select(0.04, clamp(0.25 + (1.0 - t / 50.0) * 0.7, 0.0, 0.98), m > 0.0);
+    return vec4<f32>(max(col, vec3<f32>(0.0)), hitCoverage);
 }
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -213,14 +213,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let rotY = rotate2D(u.config.x * 0.1);
     let roXZ = rotY * vec2<f32>(ro.x, ro.z); ro.x = roXZ.x; ro.z = roXZ.y;
     let rdXZ = rotY * vec2<f32>(rd.x, rd.z); rd.x = rdXZ.x; rd.z = rdXZ.y;
-    let col = render(ro, rd);
-    // HDR tone mapping
-    let hdrCol = acesToneMap(col * 1.2);
-    let _luma = dot(hdrCol, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    let finalCol2 = vec4<f32>(hdrCol, _alpha);
-    textureStore(writeTexture, vec2<i32>(id.xy), applyGenerativePrimaryControls(finalCol2));
-    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    let pixel = vec2<i32>(id.xy);
+    let rendered = render(ro, rd);
+    var raw = rendered.rgb;
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    var clickCaustic = 0.0;
+    let aspect = dimensions.x / dimensions.y;
+    let screenP = (fragCoord / dimensions - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var ri = 0u; ri < rippleCount; ri++) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age > 0.0 && age < 2.8) {
+            let center = (ripple.xy - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+            let front = abs(distance(screenP, center) - age * (0.2 + u.zoom_params.y * 0.24));
+            clickCaustic += exp(-front * 72.0) * exp(-age * 1.5);
+        }
+    }
+    raw += vec3<f32>(0.22 + bass * 0.18, 0.62 + mids * 0.22, 1.25 + treble * 0.45) * clickCaustic;
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    raw = clamp(mix(prev.rgb * (0.94 + u.zoom_params.z * 0.025), raw, 0.24 + bass * 0.035), vec3<f32>(0.0), vec3<f32>(7.0));
+    let alpha = clamp(rendered.a + clickCaustic * 0.18 + dot(raw, vec3<f32>(0.04, 0.07, 0.02)), 0.04, 0.97);
+    let display = acesToneMap(raw * (1.05 + u.zoom_params.w * 0.22));
+    let inputDepth = textureLoad(readDepthTexture, pixel, 0).r;
+    let generatedDepth = clamp(rendered.a * 0.82 + clickCaustic * 0.16, 0.0, 1.0);
+    textureStore(dataTextureA, pixel, vec4<f32>(raw, alpha));
+    textureStore(writeTexture, pixel, vec4<f32>(display, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(max(inputDepth, generatedDepth), 0.0, 0.0, 0.0));
 }

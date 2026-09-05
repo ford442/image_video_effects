@@ -1,16 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  viscous-drag-bilateral
-//  Category: advanced-hybrid
-//  Features: viscous-drag, bilateral-filter, mouse-driven, ripple-shockwaves
-//  Complexity: High
-//  Chunks From: viscous-drag.wgsl, conv-bilateral-dream.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-14 — Liquid Effects Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Dragging through viscous liquid while applying bilateral filtering
-//  that sharpens near the mouse and ripples, and dreamy-smoothes
-//  elsewhere. Hue shift adds psychedelic liquid color flow.
-// ═══════════════════════════════════════════════════════════════════
+// Viscous Drag Bilateral — Codex (e) edge-aware displacement gel.
+// A/C packing: displacement.xy, edge confidence, coating thickness.
+// B and extraBuffer are intentionally unused; C loads are exact and bounded.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,152 +23,131 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
-fn hash12(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// ═══ CHUNK: rgb2hsv + hsv2rgb (from conv-bilateral-dream.wgsl) ═══
-fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
-  let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-  var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
-  var q = mix(vec4<f32>(p.x, p.y, p.w, c.r), vec4<f32>(c.r, p.y, p.z, p.x), step(p.x, c.r));
-  var d = q.x - min(q.w, q.y);
-  let h = abs((q.w - q.y) / (6.0 * d + 1e-10) + K.x);
-  return vec3<f32>(h, d, q.x);
+fn stateAt(pixel: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC,
+    clamp(pixel, vec2<i32>(0), dims - vec2<i32>(1)), 0);
 }
 
-fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
-  let K = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
-  let p = abs(fract(c.xxx + K.xyz) * 6.0 - 3.0);
-  return c.z * mix(vec3<f32>(1.0), clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+fn stateUV(uv: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+  return stateAt(vec2<i32>(floor(uv * vec2<f32>(dims))), dims);
+}
+
+fn sampleSource(uv: vec2<f32>) -> vec4<f32> {
+  return textureSampleLevel(readTexture, u_sampler,
+    clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+}
+
+fn spectral(t: f32) -> vec3<f32> {
+  return 0.5 + 0.5 * cos(6.283185 *
+    (vec3<f32>(t) + vec3<f32>(0.00, 0.33, 0.67)));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
 
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
-
-  let viscosity = mix(0.1, 0.9, u.zoom_params.x);
-  let colorSigma = mix(0.05, 1.0, u.zoom_params.y);
-  let hueShiftAmt = u.zoom_params.z;
-  let dragStrength = mix(0.1, 2.0, u.zoom_params.w);
-
-  // === VISCOUS DRAG OFFSET FIELD (from viscous-drag) ===
-  let prevData = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  let prevOffset = prevData.xy;
-
-  var mouse = u.zoom_config.yz;
-  let mouseDown = u.zoom_config.w;
-
-  let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
-  let mouse_aspect = vec2<f32>(mouse.x * aspect, mouse.y);
-  let dist = distance(uv_aspect, mouse_aspect);
-  let radius = 0.15;
-
-  var force = vec2<f32>(0.0);
-  if (dist < radius && dist > 0.001) {
-    var dir = normalize(uv_aspect - mouse_aspect);
-    let strength = (1.0 - dist / radius) * dragStrength;
-    force = dir * strength * 0.01;
-  }
-
-  let texel = 1.0 / resolution;
-  let up = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).xy;
-  let down = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).xy;
-  let left = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).xy;
-  let right = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).xy;
-  let avg = (up + down + left + right) * 0.25;
-
-  let diffusedOffset = mix(prevOffset, avg, viscosity);
-  var newOffset = diffusedOffset * mix(0.9, 0.995, viscosity) + force;
-  newOffset = clamp(newOffset, vec2<f32>(-0.5), vec2<f32>(0.5));
-
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newOffset, 0.0, 1.0));
-
-  // === BILATERAL DREAM FILTER (from conv-bilateral-dream) ===
-  let pixelSize = 1.0 / resolution;
+  let coord = vec2<i32>(gid.xy);
+  let dims = vec2<i32>(res);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+  let texel = 1.0 / res;
+  let aspect = res.x / max(res.y, 1.0);
   let time = u.config.x;
-  let mousePos = u.zoom_config.yz;
-  let mouseInfluence = u.zoom_params.w;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  // Mouse distance modulation
-  let mouseDist = length(uv - mousePos);
-  let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * mouseInfluence;
-  let spatialSigmaBase = mix(0.1, 1.0, viscosity);
-  let spatialSigma = mix(spatialSigmaBase, spatialSigmaBase * 0.2, mouseFactor);
+  let viscosity = mix(0.04, 0.42, u.zoom_params.x);
+  let rangeSigma = mix(0.035, 0.55, u.zoom_params.y);
+  let hueAmount = u.zoom_params.z;
+  let dragStrength = mix(0.25, 2.2, u.zoom_params.w);
 
-  // Ripple shockwaves
-  var rippleSharpness = 0.0;
-  let rippleCount = u32(u.config.y);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let ripple = u.ripples[i];
-    let rPos = ripple.xy;
-    let rStart = ripple.z;
-    let rElapsed = time - rStart;
-    if (rElapsed > 0.0 && rElapsed < 3.0) {
-      let rDist = length(uv - rPos);
-      let wave = exp(-pow((rDist - rElapsed * 0.3) * 12.0, 2.0));
-      rippleSharpness = rippleSharpness + wave * (1.0 - rElapsed / 3.0);
+  let previous = stateAt(coord, dims);
+  let average = (stateAt(coord + vec2<i32>(-1, 0), dims) +
+    stateAt(coord + vec2<i32>(1, 0), dims) +
+    stateAt(coord + vec2<i32>(0, -1), dims) +
+    stateAt(coord + vec2<i32>(0, 1), dims)) * 0.25;
+  var displacement = mix(previous.xy, average.xy, viscosity) *
+    mix(0.965, 0.995, u.zoom_params.x);
+
+  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseP = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseDelta = p - mouseP;
+  let mouseDist = max(length(mouseDelta), 0.0001);
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
+  let brush = exp(-mouseDist * mouseDist * 38.0) * held;
+  displacement += vec2<f32>(mouseDelta.x / aspect, mouseDelta.y) / mouseDist *
+    brush * 0.018 * dragStrength;
+  displacement += vec2<f32>(-mouseDelta.y / aspect, mouseDelta.x) / mouseDist *
+    brush * 0.006 * dragStrength;
+
+  var clickFront = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = time - event.z;
+    if (age >= 0.0 && age < 3.0) {
+      let q = (uv - event.xy) * vec2<f32>(aspect, 1.0);
+      let d = max(length(q), 0.0001);
+      let front = sin((d - age * 0.36) * 62.0) *
+        exp(-abs(d - age * 0.36) * 24.0 - age * 0.85);
+      displacement += vec2<f32>(q.x / aspect, q.y) / d *
+        front * 0.012 * dragStrength;
+      clickFront += abs(front);
     }
   }
-  let finalSigma = max(spatialSigma * (1.0 - rippleSharpness * 0.8), 0.02);
 
-  // Apply viscous offset to sample UV
-  let scale = mix(0.01, 0.2, dragStrength);
-  let sampleUV = uv - newOffset * scale;
+  displacement += vec2<f32>(sin(uv.y * 21.0 - time * 2.3),
+    cos(uv.x * 19.0 + time * 1.9)) * audio.xz * 0.0012;
+  displacement = clamp(displacement, vec2<f32>(-0.12), vec2<f32>(0.12));
+  let sampleUV = clamp(uv - displacement, vec2<f32>(0.0), vec2<f32>(1.0));
+  let center = sampleSource(sampleUV);
 
-  // Bilateral filter core
-  let center = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-  var accumColor = vec3<f32>(0.0);
-  var accumWeight = 0.0;
-  let kernelRadius = i32(ceil(finalSigma * 2.5));
-  let maxRadius = min(kernelRadius, 7);
-
-  for (var dy = -maxRadius; dy <= maxRadius; dy++) {
-    for (var dx = -maxRadius; dx <= maxRadius; dx++) {
-      let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-      let neighbor = textureSampleLevel(readTexture, u_sampler, sampleUV + offset, 0.0);
-
-      let spatialDist = length(vec2<f32>(f32(dx), f32(dy)));
-      let spatialWeight = exp(-spatialDist * spatialDist / (2.0 * finalSigma * finalSigma + 0.001));
-
-      let colorDist = length(neighbor.rgb - center.rgb);
-      let rangeWeight = exp(-colorDist * colorDist / (2.0 * colorSigma * colorSigma + 0.001));
-
+  var accumulation = vec3<f32>(0.0);
+  var alphaAccumulation = 0.0;
+  var weightSum = 0.0;
+  for (var y = -2; y <= 2; y = y + 1) {
+    for (var x = -2; x <= 2; x = x + 1) {
+      let delta = vec2<f32>(f32(x), f32(y));
+      let neighbor = sampleSource(sampleUV + delta * texel);
+      let spatialWeight = exp(-dot(delta, delta) / (2.2 + viscosity * 12.0));
+      let colorDelta = neighbor.rgb - center.rgb;
+      let rangeWeight = exp(-dot(colorDelta, colorDelta) /
+        max(2.0 * rangeSigma * rangeSigma, 0.0001));
       let weight = spatialWeight * rangeWeight;
-      accumColor += neighbor.rgb * weight;
-      accumWeight += weight;
+      accumulation += neighbor.rgb * weight;
+      alphaAccumulation += neighbor.a * weight;
+      weightSum += weight;
     }
   }
 
-  var result = vec3<f32>(0.0);
-  if (accumWeight > 0.001) {
-    result = accumColor / accumWeight;
-  } else {
-    result = center.rgb;
-  }
+  let filtered = accumulation / max(weightSum, 0.001);
+  let filteredAlpha = alphaAccumulation / max(weightSum, 0.001);
+  let edgeConfidence = clamp(1.0 - length(filtered - center.rgb) * 2.8, 0.0, 1.0);
+  let coating = clamp(mix(previous.w, 0.24 + brush * 0.58 + clickFront * 0.1,
+    0.065) + audio.y * 0.004, 0.0, 1.0);
+  textureStore(dataTextureA, coord,
+    vec4<f32>(displacement, edgeConfidence, coating));
 
-  // Psychedelic hue shift
-  if (hueShiftAmt > 0.0) {
-    let hsv = rgb2hsv(result);
-    let newHue = fract(hsv.x + hueShiftAmt + mouseDist * 0.3 + time * 0.05);
-    result = hsv2rgb(vec3<f32>(newHue, hsv.y, hsv.z));
-  }
+  let phase = atan2(displacement.y, displacement.x) * 0.15915494 +
+    time * 0.035 + audio.y * 0.14;
+  let tint = spectral(phase);
+  let normal = normalize(vec3<f32>(displacement * 11.0, 0.22));
+  let specular = pow(max(dot(normal,
+    normalize(vec3<f32>(0.45, 0.55, 1.0))), 0.0), 22.0);
+  var rgb = mix(filtered, filtered * tint * 1.45,
+    clamp(hueAmount * (0.25 + coating * 0.55), 0.0, 0.82));
+  rgb += tint * (specular * coating * 0.36 + clickFront * 0.11 + audio.z * 0.035);
+  let alpha = clamp(mix(center.a, filteredAlpha, 0.72) * (0.72 + coating * 0.26) +
+    brush * 0.05, 0.0, 1.0);
+  textureStore(writeTexture, coord, vec4<f32>(aces(rgb), alpha));
 
-  // Specular highlight from viscous drag
-  let normal = normalize(vec3<f32>(newOffset.x, newOffset.y, 0.01));
-  let lightDir = normalize(vec3<f32>(0.5, 0.5, 1.0));
-  let specular = pow(max(dot(normal, lightDir), 0.0), 20.0) * length(newOffset) * 2.0;
-  let finalColor = result + vec3<f32>(specular);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, accumWeight));
-
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler,
+    sampleUV, 0.0).r;
+  textureStore(writeDepthTexture, coord,
+    vec4<f32>(clamp(depth - coating * 0.014 - specular * 0.006, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

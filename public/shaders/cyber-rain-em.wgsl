@@ -1,8 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Cyber Rain EM — Batch 67
-//  fp128 field integration, spring mouse [133..138], racing rain
-//  packets, orbital click charges, held widens wiper, ACES + semantic alpha.
-// ═══════════════════════════════════════════════════════════════════
+// Cyber Rain EM — Composer batch cyber/digital/glitch
+// fp128 field integration, spring mouse, racing rain packets,
+// orbital click charges, held widens wiper, ACES + semantic alpha.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;

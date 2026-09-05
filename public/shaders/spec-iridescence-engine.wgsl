@@ -1,19 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  spec-iridescence-engine
+//  spec-iridescence-engine — Thin-Film Interference & Spectral Optics
 //  Category: advanced-hybrid
-//  Features: thin-film-interference, depth-aware, spectral-render, mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
+//            thin-film-interference, spectral-render, semantic-alpha, ACES
 //  Complexity: High
-//  Chunks From: chunk-library (hash12)
-//  Created: 2026-04-18
-//  By: Agent 3C — Spectral Computation Pioneer
-//  Upgraded: 2026-08-02 — wired dead audio (spectral FFT voices),
-//  sprung film lens (always-on hover), click film waves (ripples[])
-// ═══════════════════════════════════════════════════════════════════
-//  Thin-Film Interference (Soap Bubbles / Oil Slicks)
-//  Simulates thin-film interference where reflected color depends on
-//  viewing angle and film thickness. Uses depth texture for thickness.
-//  Audio: plasmaBuffer FFT bins ride per-wavelength RGB channels so
-//  music plays across the rainbow; bass breathes the intensity.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,159 +21,154 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=FilmThickness, y=FilmIOR, z=Intensity, w=Turbulence
   ripples: array<vec4<f32>, 50>,
 };
 
 fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
 fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
-    let t = clamp((lambda - 380.0) / (700.0 - 380.0), 0.0, 1.0);
-    let r = smoothstep(0.5, 0.85, t) + smoothstep(0.0, 0.2, t) * 0.2;
-    let g = 1.0 - abs(t - 0.45) * 2.5;
-    let b = 1.0 - smoothstep(0.0, 0.45, t);
-    return max(vec3<f32>(r, g, b), vec3<f32>(0.0));
+  let t = clamp((lambda - 380.0) / (700.0 - 380.0), 0.0, 1.0);
+  let r = smoothstep(0.5, 0.85, t) + smoothstep(0.0, 0.2, t) * 0.2;
+  let g = 1.0 - abs(t - 0.45) * 2.5;
+  let b = 1.0 - smoothstep(0.0, 0.45, t);
+  return max(vec3<f32>(r, g, b), vec3<f32>(0.0));
 }
 
 fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
-    let sinTheta_t = sqrt(max(1.0 - cosTheta * cosTheta, 0.0)) / filmIOR;
-    let cosTheta_t = sqrt(max(1.0 - sinTheta_t * sinTheta_t, 0.0));
-    let opd = 2.0 * filmIOR * thicknessNm * cosTheta_t;
+  let sinTheta_t = sqrt(max(1.0 - cosTheta * cosTheta, 0.0)) / filmIOR;
+  let cosTheta_t = sqrt(max(1.0 - sinTheta_t * sinTheta_t, 0.0));
+  let opd = 2.0 * filmIOR * thicknessNm * cosTheta_t;
 
-    var color = vec3<f32>(0.0);
-    var sampleCount = 0.0;
-    for (var lambda = 380.0; lambda <= 700.0; lambda = lambda + 20.0) {
-        let phase = opd / lambda;
-        let interference = cos(phase * 6.28318530718) * 0.5 + 0.5;
-        color += wavelengthToRGB(lambda) * interference;
-        sampleCount = sampleCount + 1.0;
-    }
-    return color / max(sampleCount, 1.0);
+  var color = vec3<f32>(0.0);
+  var sampleCount = 0.0;
+  for (var lambda = 380.0; lambda <= 700.0; lambda += 20.0) {
+    let phase = opd / lambda;
+    let interference = cos(phase * 6.2831853) * 0.5 + 0.5;
+    color += wavelengthToRGB(lambda) * interference;
+    sampleCount += 1.0;
+  }
+  return color / max(sampleCount, 1.0);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let res = u.config.zw;
-    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
-    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
-    let time = u.config.x;
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
 
-    // Slider params (saved-preset contract — ids/defaults fixed):
-    //   x: Film Thickness -> base film thickness in nm
-    //   y: Film IOR       -> refractive index of the film
-    //   z: Intensity      -> iridescence gain
-    //   w: Turbulence     -> animated noise thickness amplitude
-    let filmThicknessBase = mix(200.0, 800.0, u.zoom_params.x);
-    let filmIOR = mix(1.2, 2.4, u.zoom_params.y);
-    var intensity = mix(0.3, 1.5, u.zoom_params.z);
-    let turbulence = mix(0.0, 1.0, u.zoom_params.w);
+  let pixel = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+  let aspect = res.x / max(res.y, 1.0);
+  let time = u.config.x;
 
-    let isMouseDown = u.zoom_config.w > 0.5;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // ── Sprung film lens (mouse matters unpressed) ─────────────────
-    // Critically-damped spring chasing the raw mouse. Persistent state
-    // lives in extraBuffer[133..137] = (pos.xy, vel.xy, init flag) — [0..4] is
-    // reserved and [5..132] belongs to the engine FFT bins.
-    let rawMouse = u.zoom_config.yz;
-    var sprung = vec2<f32>(extraBuffer[133u], extraBuffer[134u]);
-    var vel = vec2<f32>(extraBuffer[135u], extraBuffer[136u]);
-    if (extraBuffer[137u] < 0.5) {
-        sprung = rawMouse; // cold start: snap to the cursor
-        vel = vec2<f32>(0.0);
+  let rawMouse = u.zoom_config.yz;
+  let isMouseDown = u.zoom_config.w > 0.5;
+  let held = select(0.0, 1.0, isMouseDown);
+
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let isWriter = (gid.x == 0u && gid.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var mouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.05);
+    var sPos = mouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
     }
-    let dt = 0.016;              // fixed per-frame step
-    let omega = 10.0;            // spring rate (critically damped)
-    let accel = (rawMouse - sprung) * (omega * omega) - vel * (2.0 * omega);
-    vel = vel + accel * dt;
-    sprung = clamp(sprung + vel * dt, vec2<f32>(-0.25), vec2<f32>(1.25));
-    if (gid.x == 0u && gid.y == 0u) {
-        extraBuffer[133u] = sprung.x;
-        extraBuffer[134u] = sprung.y;
-        extraBuffer[135u] = vel.x;
-        extraBuffer[136u] = vel.y;
-        extraBuffer[137u] = 1.0;
+    let stiffness = 42.0;
+    let damping = 12.96; // 2 * sqrt(42)
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel += accel * dt;
+    sPos += sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
+
+  // Exact parameter contracts
+  let filmThicknessBase = mix(200.0, 800.0, u.zoom_params.x);
+  let filmIOR = mix(1.2, 2.4, u.zoom_params.y);
+  var intensity = mix(0.3, 1.5, u.zoom_params.z) * (1.0 + bass * 0.35);
+  let turbulence = mix(0.0, 1.0, u.zoom_params.w);
+
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+  let toCenter = uv - vec2<f32>(0.5);
+  let dist = length(toCenter);
+  let cosTheta = sqrt(max(1.0 - dist * dist * 0.5, 0.01));
+
+  let noiseVal = hash12(uv * 12.0 + time * 0.1) * 0.5 + hash12(uv * 25.0 - time * 0.15) * 0.25;
+  var thickness = filmThicknessBase * (0.7 + depth * 0.6 + noiseVal * turbulence);
+
+  let lensVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let lensDist = length(lensVec);
+  let lensG = exp(-(lensDist * lensDist) / 0.0625);
+  thickness += 80.0 * lensG;
+
+  if (isMouseDown) {
+    let mouseInfluence = exp(-lensDist * lensDist * 600.0);
+    thickness += mouseInfluence * 300.0 * sin(time * 3.0 + lensDist * 30.0);
+  }
+
+  // Click ripples
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age <= 1.8) {
+      let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      let ring = exp(-abs(rDist - age * 0.45) * 18.0);
+      thickness += 150.0 * sin(age * 20.0 - rDist * 40.0) * exp(-age * 1.8) * ring;
     }
+  }
 
-    // Sample base image and depth
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  var iridescent = thinFilmColor(thickness, cosTheta, filmIOR);
 
-    // Viewing angle from pixel position (simulated)
-    let toCenter = uv - vec2<f32>(0.5);
-    let dist = length(toCenter);
-    let cosTheta = sqrt(max(1.0 - dist * dist * 0.5, 0.01));
+  // Per-wavelength audio energy modulation
+  iridescent = vec3<f32>(
+    iridescent.r * (1.0 + plasmaBuffer[7u].x * 0.35),
+    iridescent.g * (1.0 + plasmaBuffer[4u].x * 0.35),
+    iridescent.b * (1.0 + plasmaBuffer[2u].x * 0.35 + treble * 0.2)
+  ) * intensity;
 
-    // Film thickness varies with depth + animated noise
-    let noiseVal = hash12(uv * 12.0 + time * 0.1) * 0.5
-                 + hash12(uv * 25.0 - time * 0.15) * 0.25;
+  let fresnel = pow(1.0 - cosTheta, 3.0);
+  var outColor = mix(baseColor, iridescent, fresnel * 0.75 + held * 0.1);
 
-    var thickness = filmThicknessBase * (0.7 + depth * 0.6 + noiseVal * turbulence);
+  // Exact dataTextureC persistence
+  let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
+  outColor = mix(outColor, prevC, 0.08);
 
-    // Always-on thickness lens around the SPRUNG point: hovering tilts
-    // the film with a gentle aspect-corrected gaussian (~0.25 radius).
-    let aspect = res.x / max(res.y, 1.0);
-    let aspectVec = vec2<f32>(aspect, 1.0);
-    let lensVec = (uv - sprung) * aspectVec;
-    let lensDist = length(lensVec);
-    let lensRadius = 0.25;
-    let lensG = exp(-(lensDist * lensDist) / (lensRadius * lensRadius));
-    thickness += 80.0 * lensG;
+  let finalRGB = aces(outColor);
+  let thicknessAlpha = clamp(thickness / 1000.0 + fresnel * 0.3 + held * 0.1, 0.15, 1.0);
+  let finalPixel = vec4<f32>(finalRGB, thicknessAlpha);
 
-    // Mouse interaction: local thickness perturbation (rides the SPRUNG
-    // position so the held press lags and settles with the spring)
-    if (isMouseDown) {
-        let mouseDist = length((uv - sprung) * aspectVec);
-        let mouseInfluence = exp(-mouseDist * mouseDist * 800.0);
-        thickness += mouseInfluence * 300.0 * sin(time * 3.0 + mouseDist * 30.0);
-    }
-
-    // Click film waves: each live ripple launches an expanding thickness
-    // wave from its click point (~1.5s life), sending iridescent rings
-    // across the oil slick.
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let rp = u.ripples[i];
-        let age = time - rp.z;
-        if (age < 0.0 || age > 1.5) {
-            continue;
-        }
-        let rVec = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
-        let rDist = length(rVec);
-        let ring = exp(-abs(rDist - age * 0.45) * 18.0); // expanding ring mask
-        thickness += 150.0 * sin(age * 20.0 - rDist * 40.0) * exp(-age * 2.0) * ring;
-    }
-
-    // ── WIRE THE DEAD AUDIO: per-wavelength spectral voices ────────
-    // Global bass breathing on intensity.
-    let bass = plasmaBuffer[0u].x;
-    intensity = intensity * (1.0 + bass * 0.3);
-
-    var iridescent = thinFilmColor(thickness, cosTheta, filmIOR);
-
-    // FFT bins mapped across the visible range — high wavelengths ride
-    // high bins, so music plays across the rainbow.
-    iridescent = vec3<f32>(
-        iridescent.r * (1.0 + plasmaBuffer[7u].x * 0.25),
-        iridescent.g * (1.0 + plasmaBuffer[4u].x * 0.25),
-        iridescent.b * (1.0 + plasmaBuffer[2u].x * 0.25)
-    ) * intensity;
-
-    // Fresnel-like blend based on viewing angle
-    let fresnel = pow(1.0 - cosTheta, 3.0);
-    let outColor = mix(baseColor, iridescent, fresnel * 0.7);
-
-    // HDR tone map
-    let tonemapped = outColor / (1.0 + outColor * 0.2);
-
-    // Alpha stores film thickness for downstream use
-    let thicknessAlpha = clamp(thickness / 1000.0, 0.0, 1.0);
-    textureStore(writeTexture, gid.xy, vec4<f32>(tonemapped, thicknessAlpha));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(iridescent, thicknessAlpha));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, pixel, finalPixel);
+  textureStore(dataTextureA, pixel, finalPixel);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

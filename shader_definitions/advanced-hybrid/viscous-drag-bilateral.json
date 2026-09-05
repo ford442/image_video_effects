@@ -2,7 +2,7 @@
   "id": "viscous-drag-bilateral",
   "name": "Viscous Drag Bilateral",
   "url": "shaders/viscous-drag-bilateral.wgsl",
-  "description": "Viscous Drag Bilateral",
+  "description": "A persistent gel displacement field drives a bounded edge-aware bilateral reconstruction with glossy spectral pointer and click wakes.",
   "tags": [
     "viscous-drag",
     "bilateral-filter",
@@ -53,5 +53,13 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Range Sigma", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Spectral Shift", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Drag Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = displacement.xy, edge confidence, coating thickness",
+  "updated": true,
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

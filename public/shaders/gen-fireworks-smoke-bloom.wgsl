@@ -97,12 +97,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
   let time = u.config.x;
-  let uv01 = vec2<f32>(pixel) / res;
-  let ps = 1.0 / res;
+  let uv01 = (vec2<f32>(pixel) + 0.5) / res;
 
-  let mouse = vec2<f32>(u.zoom_config.yz);
   let mouseDown = u.zoom_config.w;
-  let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);
+  let mouseUV = (u.zoom_config.yz - vec2<f32>(0.5)) * res / min(res.x, res.y);
 
   let smokeDensity = mix(0.25, 1.1, u.zoom_params.x);
   let bloomStrength = mix(0.15, 0.75, u.zoom_params.y);
@@ -234,12 +232,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // ── Feedback light bloom from dataTextureC ──
+  let maxCoord = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
   let bloom = (
-    textureSampleLevel(dataTextureC, u_sampler, clamp(uv01 + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb +
-    textureSampleLevel(dataTextureC, u_sampler, clamp(uv01 - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb +
-    textureSampleLevel(dataTextureC, u_sampler, clamp(uv01 + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb +
-    textureSampleLevel(dataTextureC, u_sampler, clamp(uv01 - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb +
-    textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0).rgb
+    textureLoad(dataTextureC, clamp(pixel + vec2<i32>(1, 0), vec2<i32>(0), maxCoord), 0).rgb +
+    textureLoad(dataTextureC, clamp(pixel + vec2<i32>(-1, 0), vec2<i32>(0), maxCoord), 0).rgb +
+    textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, 1), vec2<i32>(0), maxCoord), 0).rgb +
+    textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, -1), vec2<i32>(0), maxCoord), 0).rgb +
+    prev
   ) * 0.2;
   col += bloom * bloomStrength * (0.6 + bass * 0.4);
 
@@ -253,8 +252,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = acesToneMap(col * 1.08);
   let alpha = clamp(length(col) * 1.1 + 0.13, 0.14, 0.96);
 
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.55 + prev * 0.38, 1.0));
+  let generatedDepth = clamp(dot(col, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.9 + smokeDensity * 0.04, 0.0, 1.0);
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(generatedDepth, 0.0, 0.0, 0.0));
 }

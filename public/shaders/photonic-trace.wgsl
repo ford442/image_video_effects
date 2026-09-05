@@ -63,11 +63,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let intensity = mix(0.5, 3.0, u.zoom_params.w);
 
   let lightPos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-  let emitter = textureLoad(dataTextureB, vec2<i32>(coord), 0);
+  let emitter = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
   let hitNormal = emitter.rgb;
   let lightHeight = emitter.a;
-
-  var prior = textureLoad(dataTextureA, vec2<i32>(coord), 0).rgb;
 
   var causticAccum = vec3<f32>(0.0);
   let batchOffset = i32(fract(frame * 0.1) * f32(PHOTONS_PER_PASS));
@@ -106,6 +104,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     );
   }
 
-  causticAccum = (prior + causticAccum / f32(PHOTONS_PER_PASS) * intensity);
+  causticAccum = causticAccum / f32(PHOTONS_PER_PASS) * intensity;
   textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(causticAccum, 1.0));
 }

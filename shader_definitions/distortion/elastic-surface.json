@@ -2,8 +2,42 @@
   "id": "elastic-surface",
   "name": "Elastic Surface",
   "url": "shaders/elastic-surface.wgsl",
-  "description": "Spring-mass elastic membrane with wave propagation, surface tension coupling, depth-aware deformation, and ripple-reactive impulses.",
+  "description": "Spring-mass elastic membrane with exact textureLoad state, surface-tension waves, depth-aware deformation, audio-reactive ambient drive, held punch, click ripples, thin-film stretch lighting, and caustic runners. A stores disp.rg+vel.ba (never tonemapped); display uses ACES.",
   "params": [
+    {
+      "id": "elasticity",
+      "name": "Elasticity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "surface_tension",
+      "name": "Surface Tension",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "wave_speed",
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "depth_influence",
+      "name": "Depth Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "updatedParams": [
     {
       "id": "elasticity",
       "name": "Elasticity",
@@ -42,7 +76,13 @@
     "mouse-driven",
     "depth-aware",
     "temporal",
-    "ripple-reactive"
+    "ripple-reactive",
+    "audio-reactive",
+    "held-punch",
+    "thin-film",
+    "caustic-lighting",
+    "aces-tone-mapping",
+    "exact-state-loads"
   ],
   "tags": [
     "elastic",
@@ -51,6 +91,8 @@
     "distortion",
     "physics",
     "organic",
-    "liquid"
+    "liquid",
+    "membrane",
+    "caustic"
   ]
 }

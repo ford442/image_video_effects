@@ -20,6 +20,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "flow_speed", "name": "Flow Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "wave_intensity", "name": "Wave Intensity", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "layer_density", "name": "Layer Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "sheen_amount", "name": "Sheen Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -59,5 +65,6 @@
   "updated": true,
   "id": "gen-ethereal-silk-veil",
   "url": "shaders/gen-ethereal-silk-veil.wgsl",
-  "features": []
+  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "depth-aware", "depth-output", "aces-tonemap", "semantic-alpha"],
+  "feedbackPacking": "A/C = ACES silk effect-layer RGBA; exact veil persistence history; output composites the source layer"
 }

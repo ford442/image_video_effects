@@ -84,7 +84,7 @@ fn sdf(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
     let time = u.config.x;
 
-    let audioBass = plasmaBuffer[0].x * 0.5 + 0.5;
+    let audioBass = plasmaBuffer[0].x;
     let complexity = u.zoom_params.x;          // Crystal Complexity (fold iterations)
     let audioReactivityScale = u.zoom_params.y; // Audio Reactivity Scale
 
@@ -253,16 +253,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audioTreble = plasmaBuffer[0].z;
     let audioReactivityScale = u.zoom_params.y;
 
-    // FFT sparkle band (read-only engine bins)
-    let fftLen = arrayLength(&extraBuffer);
-    let fftIdx = 5u + min(u32(floor(uv.x * 0.5 + 0.5) * 32.0) + 16u, 120u);
-    var fftBin = 0.0;
-    if (fftLen > fftIdx) {
-        fftBin = extraBuffer[fftIdx];
-    }
+    let spectralSpark = clamp(audioTreble * 0.75 + audioMids * 0.25, 0.0, 2.0);
 
-    // Camera (rebuilt in-code; matrices deleted with non-canonical struct)
-    let camPos = vec3<f32>(0.0, 0.0, 8.0);
+    // Pointer-orbit camera; held input moves into the resonance field.
+    let mouseOrbit = (u.zoom_config.yz - 0.5) * vec2<f32>(6.28318, 1.6);
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    let camRadius = 8.0 - held * 1.1;
+    let camPos = vec3<f32>(sin(mouseOrbit.x) * cos(mouseOrbit.y), sin(mouseOrbit.y), cos(mouseOrbit.x) * cos(mouseOrbit.y)) * camRadius;
     let lookAt = vec3<f32>(0.0, 0.0, 0.0);
     let fw = normalize(lookAt - camPos);
     let ri = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fw));
@@ -343,7 +340,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col += vec3<f32>(1.0, 0.85, 0.4) * diffBack * 0.20;    // golden back scatter
             // Facet-edge sparkle driven by FFT band
             let edge = smoothstep(0.75, 0.95, facetSeed);
-            col += vec3<f32>(0.9, 1.0, 1.0) * edge * fftBin * audioReactivityScale * 0.6;
+            col += vec3<f32>(0.9, 1.0, 1.0) * edge * spectralSpark * audioReactivityScale * 0.6;
             // Blinn-Phong specular glints on the metallic stair facets
             let halfDir = normalize(keyL + v);
             let spec = pow(clamp(dot(n, halfDir), 0.0, 1.0), 48.0) * shadow;
@@ -370,6 +367,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += glow;
 
     // Click ripples: expanding iridescent shockwave rings in the void
+    var shock = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i++) {
         let rp = u.ripples[i];
@@ -379,19 +377,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let rpUv = (rp.xy * 2.0 - 1.0) * vec2<f32>(res.x / res.y, 1.0);
             let ringD = abs(length(uv - rpUv) - ringR);
             let ringGlow = (1.0 - smoothstep(0.0, 0.08, ringD)) * (1.0 - age / 3.0);
+            shock = max(shock, ringGlow);
             col += thinFilm(ringGlow, age, u.zoom_params.z) * ringGlow * 0.5;
         }
     }
 
-    // ACES filmic tonemap + gentle gamma
-    col = acesToneMap(col * 1.25);
+    // Exact display-history feedback; A owns the same HDR history C reads.
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    let hdr = mix(prev.rgb * 0.93, col, 0.28 + audioTreble * 0.03);
+    col = acesToneMap(hdr * 1.25);
     col = pow(col, vec3<f32>(1.0 / 2.2));
 
     // Semantic alpha from luminance + surface presence
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luma * 0.75 + select(0.0, 0.35, hit), 0.0, 1.0);
+    let alpha = clamp(luma * 0.75 + select(0.0, 0.35, hit) + shock * 0.2, 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(nrm * 0.5 + 0.5, matId * 0.25));
+    textureStore(dataTextureA, pixel, vec4<f32>(hdr, alpha));
 }

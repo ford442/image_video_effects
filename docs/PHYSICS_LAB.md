@@ -1,6 +1,8 @@
 # Physics Lab
 
-Tier C **multipass graph** flagships — living sims that feel psychedelic, beautiful, and strange (see [`notes/CREATIVE_VISION.md`](../notes/CREATIVE_VISION.md)). Prefer polishing these stacks over shipping dozens of new single-pass generatives.
+Physics flagships — five Tier C **multipass graph** simulations plus the
+canonical single-pass Optical Flow Dream. They should feel psychedelic,
+beautiful, and strange (see [`notes/CREATIVE_VISION.md`](../notes/CREATIVE_VISION.md)).
 
 Canonical graph docs: [`MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md).
 
@@ -13,9 +15,12 @@ Canonical graph docs: [`MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md).
 | `photonic-caustics-graph` | 4 (emit → trace×2 → accumulate) | **battery OK** | Move light · chromatic accumulator trails |
 | `chromatographic-fluid` | 7 (force → advect → diffuse×2 → interact → phase → render) | **balanced+** | Hold paints dye · click solvent · wind vane |
 | `gray-scott-tank` | 6 (gs-step×4 → inject → render) | **balanced+** | Hold paints V · click seeds |
-| `optical-flow-dream` | 4 (flow → advect×2 → grade) | **battery OK** | Hold freezes · click temporal tear |
+| `optical-flow-dream` | 1 (exact-history flow + advect + grade) | **battery OK** | Hold vortex · click temporal tear |
 
-All six require `rgba32float` (`requiresRgba32Float`). `optical-flow-dream` also sets `requiresHistoryRing` (binding 13). Look for the **graph · N passes** badge, or the Shader Browser **Physics Lab** chip (Tier C graphs only).
+All six are FP32-pinned by explicit flags or the narrow physics allowlist.
+Optical Flow Dream uses bindings 0–12 only and has no graph badge; the other
+five show **graph · N passes**. The Shader Browser **Physics Lab** chip covers
+the full showcase set.
 
 ### Params (4 clear `zoom_params`)
 
@@ -62,7 +67,8 @@ For each flagship at **balanced**, 1080p-class internal:
 3. Mouse: click/hold/move produces clear force (rings / tear / light / dye / seed / freeze).
 4. Audio (if mic allowed): bass/mids/treble modulate rain, drape, caustic sparkle, wind, feed, or decay.
 5. No explode / NaN blowout after 30s of interaction (especially fabric at high gravity, Gray–Scott at extreme F/K).
-6. Battery: photonic and optical-flow still present; 6–7 pass stacks drop Jacobi/diffuse iters — the image must still render.
+6. Battery: photonic still presents and optical-flow remains a full single pass;
+   6–7 pass stacks drop Jacobi/diffuse iters — the image must still render.
 
 ## Precommit
 

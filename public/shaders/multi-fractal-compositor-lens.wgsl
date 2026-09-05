@@ -1,24 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Multi-Fractal Compositor + Gravitational Lens
-//  Category: generative
-//  Features: advanced-hybrid, mandelbrot, julia, mouse-driven, gravitational-lens, interactive
+//  multi-fractal-compositor-lens — Multi-Layer Fractal & Gravitational Lens
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
+//            fractal-compositor, gravitational-lens, semantic-alpha, ACES
 //  Complexity: Very High
-//  Chunks From: multi-fractal-compositor, gravitational-lensing
-//  Created: 2026-04-18
-//  By: Agent CB-4 - Mouse Physics Injector
 // ═══════════════════════════════════════════════════════════════════
-//  Multi-layer fractal compositor with mouse-controlled gravitational
-//  lensing. Mouse mass bends UV coordinates; ripples create temporary
-//  mass concentrations. Einstein ring glow around mouse.
-//  Alpha stores lens distortion strength.
-// ═══════════════════════════════════════════════════════════════════
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -34,104 +20,30 @@ struct Uniforms {
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-fn ping_pong(a: f32) -> f32 {
-  return (1.0 - abs(((fract((a * 0.5)) * 2.0) - 1.0)));
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=LensMass, y=RingGlow, z=RippleMass, w=ChromaBoost
+  ripples: array<vec4<f32>, 50>,
+};
+
+fn hash12(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
-fn ping_pong_v2_(v: vec2<f32>) -> vec2<f32> {
-  let _e2 = ping_pong(v.x);
-  let _e4 = ping_pong(v.y);
-  return vec2<f32>(_e2, _e4);
+fn noise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u2 = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash12(i + vec2<f32>(0.0, 0.0)), hash12(i + vec2<f32>(1.0, 0.0)), u2.x),
+    mix(hash12(i + vec2<f32>(0.0, 1.0)), hash12(i + vec2<f32>(1.0, 1.0)), u2.x),
+    u2.y
+  );
 }
 
-fn hash21_(p: vec2<f32>) -> f32 {
-  var p3_ = fract((vec3<f32>(p.x, p.y, p.x) * 0.1031));
-  let _e9 = p3_;
-  let _e10 = p3_;
-  let _e11 = p3_;
-  p3_ = (_e9 + vec3(dot(_e10, (_e11 + vec3(33.33)))));
-  let _e19 = p3_.x;
-  let _e21 = p3_.y;
-  let _e24 = p3_.z;
-  return fract(((_e19 + _e21) * _e24));
-}
-
-fn noise(p_1: vec2<f32>) -> f32 {
-  var i_1 = floor(p_1);
-  let f = fract(p_1);
-  let u2_ = ((f * f) * (vec2(3.0) - (2.0 * f)));
-  let _e11 = i_1;
-  let _e16 = hash21_((_e11 + vec2<f32>(0.0, 0.0)));
-  let _e17 = i_1;
-  let _e22 = hash21_((_e17 + vec2<f32>(1.0, 0.0)));
-  let _e25 = i_1;
-  let _e30 = hash21_((_e25 + vec2<f32>(0.0, 1.0)));
-  let _e31 = i_1;
-  let _e36 = hash21_((_e31 + vec2<f32>(1.0, 1.0)));
-  return mix(mix(_e16, _e22, u2_.x), mix(_e30, _e36, u2_.x), u2_.y);
-}
-
-fn hsv2rgb(h: f32, s: f32, v_1: f32) -> vec3<f32> {
-  var rgb = vec3(0.0);
-  let c = (v_1 * s);
-  let h6_ = (h * 6.0);
-  let x = (c * (1.0 - abs(((fract(h6_) * 2.0) - 1.0))));
-  if (h6_ < 1.0) {
-    rgb = vec3<f32>(c, x, 0.0);
-  } else {
-    if (h6_ < 2.0) {
-      rgb = vec3<f32>(x, c, 0.0);
-    } else {
-      if (h6_ < 3.0) {
-        rgb = vec3<f32>(0.0, c, x);
-      } else {
-        if (h6_ < 4.0) {
-          rgb = vec3<f32>(0.0, x, c);
-        } else {
-          if (h6_ < 5.0) {
-            rgb = vec3<f32>(x, 0.0, c);
-          } else {
-            rgb = vec3<f32>(c, 0.0, x);
-          }
-        }
-      }
-    }
-  }
-  let _e40 = rgb;
-  return (_e40 + vec3((v_1 - c)));
-}
-
-fn reconstruct_normal(uv_1: vec2<f32>, depth: f32) -> vec3<f32> {
-  let _e5 = u.config.z;
-  let _e9 = u.config.w;
-  let resolution_1 = vec2<f32>(_e5, _e9);
-  let _e14 = resolution_1.x;
-  let _e18 = resolution_1.y;
-  let offset = vec2<f32>((1.0 / _e14), (1.0 / _e18));
-  let _e28 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (uv_1 + vec2<f32>(offset.x, 0.0)), 0.0);
-  let _e37 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (uv_1 - vec2<f32>(offset.x, 0.0)), 0.0);
-  let dx = (_e28.x - _e37.x);
-  let _e47 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (uv_1 + vec2<f32>(0.0, offset.y)), 0.0);
-  let _e56 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (uv_1 - vec2<f32>(0.0, offset.y)), 0.0);
-  let dy = (_e47.x - _e56.x);
-  let n = vec3<f32>(-(dx), -(dy), 1.0);
-  return normalize(n);
-}
-
-fn schlickFresnel(cosTheta: f32, F0_: f32) -> f32 {
-  return (F0_ + ((1.0 - F0_) * pow((1.0 - cosTheta), 5.0)));
-}
-
-fn calculateVolumetricAlpha(layerDepth: f32, fogDensity: f32, viewDotNormal: f32, accumulatedWeight: f32) -> f32 {
-  let _e7 = schlickFresnel(max(0.0, viewDotNormal), 0.03);
-  let fogAmount = exp(((-(layerDepth) * fogDensity) * 3.0));
-  let depthAlpha = mix(0.95, 0.4, fogAmount);
-  let weightAlpha = mix(0.5, 0.9, smoothstep(0.0, 1.0, accumulatedWeight));
-  let alpha = ((depthAlpha * weightAlpha) * (1.0 - (_e7 * 0.2)));
-  return clamp(alpha, 0.0, 1.0);
-}
-
-// ═══ CHUNK: gravitationalBend (from gravitational-lensing.wgsl) ═══
 fn gravitationalBend(uv: vec2<f32>, massPos: vec2<f32>, mass: f32) -> vec2<f32> {
   let toMass = massPos - uv;
   let dist = length(toMass);
@@ -139,125 +51,153 @@ fn gravitationalBend(uv: vec2<f32>, massPos: vec2<f32>, mass: f32) -> vec2<f32> 
   return uv + deflection * 0.01;
 }
 
+fn pingPong(v: vec2<f32>) -> vec2<f32> {
+  return 1.0 - abs(fract(v * 0.5) * 2.0 - 1.0);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let resolution = vec2<f32>(u.config.z, u.config.w);
-  let uv = vec2<f32>(gid.xy) / resolution;
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+
+  let pixel = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0);
   let time = u.config.x;
   let zoom_time = u.zoom_config.x;
   let zoom_center = u.zoom_config.yz;
-  let mousePos = u.zoom_config.yz;
-  let aspect = resolution.x / resolution.y;
 
-  var accumulatedColor = vec3(0.0);
-  var accumulatedDepth = 0.0;
-  var totalWeight = 0.0;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Gravitational lens parameters
-  let lensMass = mix(0.5, 5.0, u.zoom_params.x);
+  let rawMouse = u.zoom_config.yz;
+  let isMouseDown = u.zoom_config.w > 0.5;
+  let held = select(0.0, 1.0, isMouseDown);
+
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let isWriter = (gid.x == 0u && gid.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var mouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.05);
+    var sPos = mouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
+    }
+    let stiffness = 42.0;
+    let damping = 12.96; // 2 * sqrt(42)
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel += accel * dt;
+    sPos += sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
+
+  // Exact parameter contracts
+  let lensMass = mix(0.5, 5.0, u.zoom_params.x) * (1.0 + bass * 0.35);
   let ringGlowStrength = mix(0.0, 1.0, u.zoom_params.y);
   let rippleMass = mix(0.5, 3.0, u.zoom_params.z);
-  let chromaBoost = mix(0.0, 0.05, u.zoom_params.w);
+  let chromaBoost = mix(0.01, 0.07, u.zoom_params.w) * (1.0 + treble * 0.4);
 
-  // Compute total gravitational bend including ripples as temporary masses
-  var bentUV = gravitationalBend(uv, mousePos, lensMass);
+  // Gravitational bending
+  var bentUV = gravitationalBend(uv, mouse, lensMass);
 
+  // Ripple masses
   let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
     let elapsed = time - ripple.z;
-    if (elapsed > 0.0 && elapsed < 3.0) {
+    if (elapsed >= 0.0 && elapsed < 3.0) {
       let decay = exp(-elapsed * 0.8);
       let rippleBend = gravitationalBend(uv, ripple.xy, rippleMass * decay);
-      bentUV = bentUV + (rippleBend - uv) * decay;
+      bentUV += (rippleBend - uv) * decay;
     }
   }
 
-  var clickIntensity = 0.0;
-  if (arrayLength((&extraBuffer)) > 10u) {
-    clickIntensity = extraBuffer[10];
-  }
+  var accumulatedColor = vec3<f32>(0.0);
+  var accumulatedDepth = 0.0;
+  var totalWeight = 0.0;
 
-  for (var i: i32 = 0; i < 5; i = i + 1) {
-    let layerDepth_1 = (f32(i) / f32((5 - 1)));
-    let layerSpeed = mix(u.zoom_params.x, u.zoom_params.y, layerDepth_1);
-    let layerZoom = (1.0 + (fract((zoom_time * layerSpeed)) * 4.0));
+  for (var i: i32 = 0; i < 4; i = i + 1) {
+    let layerDepth = f32(i) / 3.0;
+    let layerSpeed = mix(0.2, 0.8, layerDepth);
+    let layerZoom = 1.0 + fract(zoom_time * layerSpeed + time * 0.05) * 3.0;
 
-    // Apply gravitational lens to the layer coordinates
-    let lensedToCenter = (bentUV - zoom_center);
-    let angle = atan2(lensedToCenter.y, lensedToCenter.x);
+    let lensedToCenter = (bentUV - zoom_center) * vec2<f32>(aspect, 1.0);
     let dist = length(lensedToCenter);
+    let spinAngle = (0.2 * held / (dist + 0.1)) * layerDepth * (1.0 - layerDepth);
+    let cosS = cos(spinAngle);
+    let sinS = sin(spinAngle);
+    let rotated = vec2<f32>(
+      (cosS * lensedToCenter.x - sinS * lensedToCenter.y) / aspect,
+      sinS * lensedToCenter.x + cosS * lensedToCenter.y
+    ) + zoom_center;
 
-    let vortexStrength = ((clickIntensity * 0.3) / (dist + 0.1));
-    let spinAngle = ((vortexStrength * layerDepth_1) * (1.0 - layerDepth_1));
-    let rotatedUV = (vec2<f32>(
-      ((cos(spinAngle) * lensedToCenter.x) - (sin(spinAngle) * lensedToCenter.y)),
-      ((sin(spinAngle) * lensedToCenter.x) + (cos(spinAngle) * lensedToCenter.y))
-    ) + zoom_center);
+    let flowUV = rotated + vec2<f32>(
+      noise(rotated * 6.0 + vec2<f32>(time * 0.15, 0.0)),
+      noise(rotated * 6.0 + vec2<f32>(0.0, time * 0.15))
+    ) * 0.015 * layerDepth;
 
-    let flowUV = (rotatedUV + ((vec2<f32>(
-      noise(((rotatedUV * 6.0) + vec2<f32>((time * 0.15), 0.0))),
-      noise(((rotatedUV * 6.0) + vec2<f32>(0.0, (time * 0.15))))
-    ) * 0.015) * layerDepth_1));
+    let transformed = (flowUV - zoom_center) / layerZoom + zoom_center;
+    let pingUV = pingPong(transformed);
 
-    let transformed = (((flowUV - zoom_center) / vec2(layerZoom)) + zoom_center);
-    let _e142 = ping_pong_v2_(transformed);
-    let sampleColor = textureSampleLevel(readTexture, u_sampler, _e142, 0.0).xyz;
-    let sampleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _e142, 0.0).x;
+    let sampleColor = textureSampleLevel(readTexture, u_sampler, pingUV, 0.0).rgb;
+    let sampleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, pingUV, 0.0).r;
 
-    let density = exp((-(layerDepth_1) * 1.5));
-    let weight = (density * (1.0 + (sampleDepth * 0.5)));
-    accumulatedColor = accumulatedColor + (sampleColor * weight);
-    accumulatedDepth = accumulatedDepth + (sampleDepth * weight);
-    totalWeight = totalWeight + weight;
+    let density = exp(-layerDepth * 1.5);
+    let weight = density * (1.0 + sampleDepth * 0.5);
+    accumulatedColor += sampleColor * weight;
+    accumulatedDepth += sampleDepth * weight;
+    totalWeight += weight;
   }
 
-  let baseColor = (accumulatedColor / vec3(max(totalWeight, 0.0001)));
-  let baseDepth = (accumulatedDepth / max(totalWeight, 0.0001));
+  let baseColor = accumulatedColor / max(totalWeight, 0.0001);
+  let baseDepth = accumulatedDepth / max(totalWeight, 0.0001);
 
-  var chroma = 0.02;
-  if (arrayLength((&extraBuffer)) > 0u) {
-    chroma = extraBuffer[0];
-  }
+  // Chromatic aberration from lens distortion
+  let effectiveChroma = chromaBoost * (1.0 + baseDepth * 0.5);
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(effectiveChroma, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
+  let g = baseColor.g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(effectiveChroma, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
+  var color = mix(baseColor, vec3<f32>(r, g, b), 0.7);
 
-  // Enhanced chromatic aberration from lens distortion
-  let effectiveChroma = chroma + chromaBoost * lensMass;
-
-  let r = textureSampleLevel(readTexture, u_sampler, (uv + vec2<f32>((effectiveChroma * baseDepth), 0.0)), 0.0).x;
-  let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).y;
-  let b = textureSampleLevel(readTexture, u_sampler, (uv - vec2<f32>((effectiveChroma * baseDepth), 0.0)), 0.0).z;
-  var chromaticColor = vec3<f32>(r, g, b);
-
-  let ps = vec2<f32>((1.0 / resolution.x), (1.0 / resolution.y));
-  let depthX = textureSampleLevel(readDepthTexture, non_filtering_sampler, (uv + vec2<f32>(ps.x, 0.0)), 0.0).x;
-  let depthY = textureSampleLevel(readDepthTexture, non_filtering_sampler, (uv + vec2<f32>(0.0, ps.y)), 0.0).x;
-  let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
-  let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
-  var finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
-
-  // Einstein ring glow around mouse
-  let toMouse = (uv - mousePos) * vec2<f32>(aspect, 1.0);
+  // Einstein ring glow
+  let toMouse = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let mouseDist = length(toMouse);
-  let einsteinRadius = sqrt(lensMass * 0.02);
-  let ringGlow = smoothstep(0.5, 0.0, abs(mouseDist - einsteinRadius)) * ringGlowStrength;
-  finalColor = finalColor + vec3<f32>(0.9, 0.8, 0.6) * ringGlow;
+  let einsteinRadius = sqrt(lensMass * 0.015);
+  let ringGlow = smoothstep(0.06, 0.0, abs(mouseDist - einsteinRadius)) * ringGlowStrength;
+  color += vec3<f32>(0.9, 0.8, 0.6) * ringGlow * (1.0 + mids * 0.3);
 
   // Core glow
-  let coreGlow = exp(-mouseDist * mouseDist * 400.0) * lensMass * 0.3;
-  finalColor = finalColor + vec3<f32>(0.6, 0.9, 1.0) * coreGlow;
+  let coreGlow = exp(-mouseDist * mouseDist * 300.0) * lensMass * 0.25;
+  color += vec3<f32>(0.6, 0.9, 1.0) * coreGlow;
 
-  let fogDensity_1 = u.zoom_params.w;
-  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-  let viewDotNormal_1 = dot(viewDir, reconstruct_normal(uv, baseDepth));
-  let normalizedWeight = (totalWeight / f32(5));
-  let alpha = calculateVolumetricAlpha(0.5, fogDensity_1, viewDotNormal_1, normalizedWeight);
-  let fog = exp(((-(baseDepth) * fogDensity_1) * 3.0));
-  let fogColor = vec3<f32>(0.02, 0.05, 0.1);
-  let outColor = mix(finalColor, fogColor, (1.0 - fog));
+  // Exact dataTextureC persistence
+  let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
+  color = mix(color, prevC, 0.08);
 
-  // Alpha enhanced by lens strength
-  let outAlpha = clamp(alpha + ringGlow * 0.2, 0.0, 1.0);
+  let finalRGB = aces(color);
+  let alpha = clamp(0.35 + ringGlow * 0.3 + coreGlow * 0.4 + held * 0.15, 0.2, 1.0);
+  let finalPixel = vec4<f32>(finalRGB, alpha);
 
-  textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, outAlpha));
-  textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, pixel, finalPixel);
+  textureStore(dataTextureA, pixel, finalPixel);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
 }

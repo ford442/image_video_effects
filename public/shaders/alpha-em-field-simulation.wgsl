@@ -34,6 +34,16 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
 // ═══ CHUNK: hash12 (from chunk-library.md / gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -69,13 +79,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-    let uv = vec2<f32>(gid.xy) / res;
+    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let dims = vec2<i32>(res);
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Read previous state
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = stateAt(coord, dims);
     var eField = prevState.rg;
     var bField = prevState.b;
     var charge = prevState.a;
@@ -102,16 +114,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     charge = clamp(charge, -2.0, 2.0);
 
     // === WAVE EQUATION UPDATE ===
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+    let right = stateAt(coord + vec2<i32>(1, 0), dims);
+    let down = stateAt(coord + vec2<i32>(0, -1), dims);
+    let up = stateAt(coord + vec2<i32>(0, 1), dims);
 
     let lapE = left.rg + right.rg + down.rg + up.rg - 4.0 * eField;
     let lapB = left.b + right.b + down.b + up.b - 4.0 * bField;
 
-    let c = 0.3; // wave speed
+    let c = mix(0.08, 0.42, u.zoom_params.w) * (1.0 + audio.y * 0.18);
     let dt = 0.5;
+    let chargeIntensity = mix(0.1, 1.4, u.zoom_params.y);
+    let bVisibility = mix(0.15, 1.5, u.zoom_params.z);
 
     // Electric field update
     eField += lapE * c * c * dt;
@@ -129,7 +143,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseDist = length(uv - mousePos);
     let mouseInfluence = smoothstep(0.08, 0.0, mouseDist) * mouseDown;
     let clickParity = select(-1.0, 1.0, u.config.y % 2.0 < 1.0);
-    charge += mouseInfluence * clickParity * 0.5;
+    charge += mouseInfluence * clickParity * chargeIntensity * (0.35 + audio.x * 0.45);
 
     // Ripples inject alternating charges
     let rippleCount = min(u32(u.config.y), 50u);
@@ -137,15 +151,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ripple = u.ripples[i];
         let rDist = length(uv - ripple.xy);
         let age = time - ripple.z;
-        if (age < 1.0 && rDist < 0.05) {
-            let strength = smoothstep(0.05, 0.0, rDist) * max(0.0, 1.0 - age);
+        if (age >= 0.0 && age < 2.2) {
+            let strength = exp(-abs(rDist - age * (0.12 + c * 0.22)) * 58.0 - age * 1.25);
             let sign = select(-1.0, 1.0, f32(i) % 2.0 < 1.0);
-            charge += strength * sign * 0.3;
+            charge += strength * sign * chargeIntensity * (0.2 + audio.z * 0.2);
+            bField += strength * sign * (0.02 + audio.y * 0.08);
         }
     }
 
     // === DAMPING ===
-    let damping = mix(0.90, 0.99, u.zoom_params.x);
+    let damping = mix(0.90, 0.995, u.zoom_params.x);
     eField *= damping;
     bField *= damping * 0.95;
     charge *= 0.998;
@@ -190,16 +205,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     // Charge visualization: positive = warm, negative = cool
-    let chargeVis = charge * u.zoom_params.y;
+    let chargeVis = charge * chargeIntensity;
     displayColor.r += max(0.0, chargeVis) * 0.5;
     displayColor.b += max(0.0, -chargeVis) * 0.5;
     displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // B-field adds brightness variation
-    displayColor *= 1.0 + bField * u.zoom_params.z * 0.3;
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    displayColor *= 1.0 + bField * bVisibility * 0.3;
+    displayColor += audio * vec3<f32>(0.08, 0.045, 0.14) * (eStrength + abs(bField));
 
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, abs(charge)));
+    let alpha = clamp(abs(charge) * 0.5 + eStrength * 0.35 + abs(bField) * 0.18, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(aces(displayColor), alpha));
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

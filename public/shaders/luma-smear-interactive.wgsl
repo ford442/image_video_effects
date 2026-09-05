@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Luma Smear Interactive
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, chromatic-smear, curl-turbulence, depth-viscosity, upgraded-rgba
+//  Luma Smear Interactive (Kinetic Echo)
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Chunks From: luma-smear-interactive, curl2D, fbm, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-08-30
+//  A packing: ACES display RGBA (trail energy in alpha)
+//  Motion: chromatic R-lag / B-lead streaks + curl-advected exact-C trails
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,33 +23,34 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
+
 fn hash21(p: vec2<f32>) -> f32 {
-  let h = dot(p, vec2<f32>(127.1, 311.7));
-  return fract(sin(h) * 43758.5453123);
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
 fn valueNoise(p: vec2<f32>) -> f32 {
   let i = floor(p);
   let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
+  let u2 = f * f * (3.0 - 2.0 * f);
   let a = hash21(i);
   let b = hash21(i + vec2<f32>(1.0, 0.0));
   let c = hash21(i + vec2<f32>(0.0, 1.0));
   let d = hash21(i + vec2<f32>(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  return mix(mix(a, b, u2.x), mix(c, d, u2.x), u2.y);
 }
 
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+fn fbm(p: vec2<f32>) -> f32 {
   var sum = 0.0;
   var amp = 0.5;
   var freq = 1.0;
-  for (var i = 0; i < octaves; i = i + 1) {
+  for (var i = 0; i < 3; i = i + 1) {
     sum = sum + amp * valueNoise(p * freq);
     freq = freq * 2.0;
     amp = amp * 0.5;
@@ -58,80 +59,124 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
 }
 
 fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
-  let eps = 0.01;
-  let n1 = fbm(p + vec2<f32>(eps, 0.0) + t * 0.1, 3);
-  let n2 = fbm(p - vec2<f32>(eps, 0.0) + t * 0.1, 3);
-  let n3 = fbm(p + vec2<f32>(0.0, eps) + t * 0.1, 3);
-  let n4 = fbm(p - vec2<f32>(0.0, eps) + t * 0.1, 3);
-  let dy = (n1 - n2) / (2.0 * eps);
-  let dx = (n3 - n4) / (2.0 * eps);
-  return vec2<f32>(dx, -dy);
+  let eps = 0.012;
+  let n1 = fbm(p + vec2<f32>(eps, 0.0) + t);
+  let n2 = fbm(p - vec2<f32>(eps, 0.0) + t);
+  let n3 = fbm(p + vec2<f32>(0.0, eps) + t);
+  let n4 = fbm(p - vec2<f32>(0.0, eps) + t);
+  return vec2<f32>((n3 - n4) / (2.0 * eps), -(n1 - n2) / (2.0 * eps));
 }
 
-fn bass_env(bass: f32, mids: f32) -> f32 {
-  return 1.0 + bass * 0.5 + mids * 0.2;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn loadC(uv: vec2<f32>, dims: vec2<f32>) -> vec4<f32> {
+  let c = vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(0.999)) * dims);
+  return textureLoad(dataTextureC, c, 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
+  let time = u.config.x;
+  let aspect = dims.x / max(dims.y, 1.0);
+  let mouse = u.zoom_config.yz;
+  let held = u.zoom_config.w > 0.5;
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let luma = dot(inputColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let binMid = plasmaBuffer[3].y;
+  let binHi = plasmaBuffer[8].x;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let viscosity = mix(1.5, 0.3, depth);
+  var spring = mouse;
+  var springVel = vec2<f32>(0.0);
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    spring = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  }
+  if (gid.x == 0u && gid.y == 0u && hasSpring) {
+    var pos = spring;
+    var vel = springVel;
+    if (extraBuffer[138] <= 0.5) {
+      pos = mouse;
+      vel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 11.0;
+      vel += ((mouse - pos) * (omega * omega) - vel * (2.0 * omega)) * dt;
+      vel = clamp(vel, vec2<f32>(-3.0), vec2<f32>(3.0));
+      pos += vel * dt;
+    }
+    extraBuffer[133] = pos.x;
+    extraBuffer[134] = pos.y;
+    extraBuffer[135] = vel.x;
+    extraBuffer[136] = vel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    spring = pos;
+    springVel = vel;
+  }
 
-    let smearStrength = u.zoom_params.x * bass_env(bass, mids);
-    let direction = u.zoom_params.y * 6.28318530718;
-    let persistence = u.zoom_params.z;
-    let lumaThreshold = u.zoom_params.w;
+  let decay = u.zoom_params.x;
+  let lumaThreshold = u.zoom_params.y;
+  let colorShift = u.zoom_params.z;
+  let eraser = u.zoom_params.w;
 
-    let mousePos = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
-    let aspect_uv = vec2<f32>(uv.x * aspect, uv.y);
-    let aspect_mouse = vec2<f32>(mousePos.x * aspect, mousePos.y);
-    let dist = distance(aspect_uv, aspect_mouse);
-    let mouseInfluence = smoothstep(0.25, 0.0, dist);
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let luma = dot(src.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let viscosity = mix(1.45, 0.28, depth);
 
-    let dir = vec2<f32>(cos(direction), sin(direction));
-    let smearFactor = max(0.0, luma - lumaThreshold) * 2.0;
+  let aUv = vec2<f32>(uv.x * aspect, uv.y);
+  let aMouse = vec2<f32>(spring.x * aspect, spring.y);
+  let dist = distance(aUv, aMouse);
+  let eraserMask = smoothstep(eraser * 0.28 + 0.02, eraser * 0.08, dist);
+  let mouseGust = smoothstep(0.28, 0.0, dist);
 
-    var velocity = dir * smearStrength * smearFactor * viscosity;
+  let smearAmt = max(0.0, luma - lumaThreshold) * (0.7 + decay * 1.4) * (1.0 + bass * 0.45);
+  let curl = curl2D(uv * 3.2 + time * 0.16, time * 0.28) * (0.006 + mids * 0.004 + binMid * 0.002);
+  let dir = normalize(aUv - aMouse + vec2<f32>(0.0001, 0.0));
+  var velocity = dir * smearAmt * viscosity * 0.018 + curl;
+  velocity = velocity + dir * bass * 0.012 * mouseGust;
+  velocity = velocity + clamp(springVel * vec2<f32>(aspect, 1.0) * 0.04, vec2<f32>(-0.08), vec2<f32>(0.08));
+  velocity = select(velocity, vec2<f32>(0.0), held && eraserMask > 0.55);
 
-    // Curl turbulence on smear
-    let curl = curl2D(uv * 3.0 + u.config.x * 0.15, u.config.x * 0.3) * 0.005 * (1.0 + mids);
-    velocity = velocity + curl;
+  var clickKick = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let r = u.ripples[i];
+    let age = time - r.z;
+    let alive = age > 0.0 && age < 1.8;
+    let rd = length((uv - r.xy) * vec2<f32>(aspect, 1.0));
+    clickKick = clickKick + select(0.0, exp(-abs(rd - age * 0.7) * 14.0) * exp(-age * 1.6), alive);
+  }
+  velocity = clamp(velocity * (1.0 + clickKick * 0.8), vec2<f32>(-0.09), vec2<f32>(0.09));
 
-    // Audio gust: bass expands smear outward from mouse
-    let gust = normalize(aspect_uv - aspect_mouse) * bass * 0.01 * mouseInfluence;
-    velocity = velocity + gust;
+  let persist = mix(0.35, 0.92, decay);
+  let shift = 0.55 + colorShift * 1.35;
+  let prev = loadC(uv - velocity, dims);
+  let rTrail = loadC(uv - velocity * (1.15 + shift * 0.25), dims).r;
+  let bTrail = loadC(uv - velocity * (0.72 - colorShift * 0.12), dims).b;
+  let chromaPrev = vec3<f32>(rTrail, prev.g, bTrail);
 
-    let prevUV = clamp(uv - velocity, vec2<f32>(0.0), vec2<f32>(1.0));
-    let prevColor = textureSampleLevel(dataTextureC, non_filtering_sampler, prevUV, 0.0);
+  var hdr = mix(src.rgb, chromaPrev, persist * smearAmt / max(smearAmt + 0.15, 0.001));
+  hdr = mix(hdr, src.rgb, eraserMask * select(0.35, 1.0, held));
+  hdr = hdr + vec3<f32>(treble * 0.08, treble * 0.05 + binHi * 0.04, clickKick * 0.12);
+  let luma2 = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
+  hdr = luma2 + (hdr - vec3<f32>(luma2)) * (1.15 + colorShift * 0.35);
 
-    // Chromatic smear: R lags, B leads
-    let rUV = clamp(uv - velocity * 1.2, vec2<f32>(0.0), vec2<f32>(1.0));
-    let bUV = clamp(uv - velocity * 0.8, vec2<f32>(0.0), vec2<f32>(1.0));
-    let r = textureSampleLevel(dataTextureC, non_filtering_sampler, rUV, 0.0).r;
-    let b = textureSampleLevel(dataTextureC, non_filtering_sampler, bUV, 0.0).b;
-    let g = prevColor.g;
-    let chromaPrev = vec4<f32>(r, g, b, prevColor.a);
+  let rgb = acesToneMap(hdr * 1.06);
+  let energy = clamp(smearAmt * 0.55 + persist * 0.25 + clickKick * 0.3 + prev.a * persist * 0.4, 0.08, 0.98);
+  let outCol = vec4<f32>(rgb, energy);
 
-    let result = mix(inputColor, chromaPrev, persistence);
-
-    // Treble adds shimmer to smeared pixels
-    let shimmer = treble * 0.1 * smearFactor;
-    let finalRGB = result.rgb + vec3<f32>(shimmer, shimmer * 0.7, shimmer * 0.3);
-    let alpha = clamp(result.a + smearFactor * 0.15 + bass * 0.05, 0.0, 1.0);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalRGB, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, coord, outCol);
+  textureStore(dataTextureA, coord, outCol);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

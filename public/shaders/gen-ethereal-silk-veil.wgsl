@@ -77,7 +77,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sheenAmount = u.zoom_params.w;
 
   // Temporal smoothness
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
+
+  var clickPluck = 0.0;
+  let rippleCount = min(i32(u.config.y), 50);
+  for (var ri = 0; ri < rippleCount; ri++) {
+    let event = u.ripples[ri];
+    let age = time - event.z;
+    if (age > 0.0 && age < 2.5) {
+      let radius = age * 0.3;
+      let ring = exp(-abs(distance(uv, event.xy) - radius) * 100.0) * exp(-age * 1.7) * event.w;
+      clickPluck += ring;
+    }
+  }
 
   // Mouse gather effect: fabric pulls toward mouse with Gaussian falloff
   let toMouse = mouseUV - uv;
@@ -105,7 +117,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Wind-driven sine undulation
     let freq = 3.0 + f32(li) * 0.7 + mids * 2.0;
     let speed = flowSpeed * (1.0 + f32(li) * 0.15);
-    let wave = sin(uv.y * freq + time * speed + ribbonPhase) * waveIntensity;
+    let wave = sin(uv.y * freq + time * speed + ribbonPhase) * waveIntensity + clickPluck * waveIntensity * (1.0 + treble);
 
     // Secondary higher-frequency ripple
     let ripple = sin(uv.y * freq * 2.5 + time * speed * 1.3 + ribbonPhase * 2.0) * waveIntensity * 0.3;

@@ -4,7 +4,8 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Medium
 //  Scientific: Greenberg-Hastings excitable media with cardinal-wave triggering, refractory cooling, and bass-driven spontaneous ignition
-//  Upgraded: 2026-07-22 — wavefront leading-edge tracer, treble ignition sparks, directional mouse painting
+//  Upgraded: 2026-08-23 — finite click ignition rings, wavefront tracer,
+//            treble sparks, directional held-mouse painting
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -131,6 +132,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let held = select(1.0, 1.4, mouseDown > 0.5);
   let mouseMask = (1.0 - smoothstep(0.0, 0.13 * held, pixelDist)) * mouseDown * dirWeight;
 
+  // Clicks launch finite ignition rings. Timestamps are honored so a full
+  // uniform array cannot become a permanent source of automaton energy.
+  var clickIgnition = 0.0;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = u.config.x - ripple.z;
+    if (age < 0.0 || age > 2.2) { continue; }
+    let rippleDistance = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+    let ring = exp(-abs(rippleDistance - age * 0.22) * 85.0) * exp(-age * 1.1);
+    clickIgnition = max(clickIgnition, ring);
+  }
+
   // ── Ignition sources ─────────────────────────────────────────────
   let rand = hash21(vec2<f32>(f32(coord.x), f32(coord.y)) + vec2<f32>(time * 31.1, time * 17.3));
   let spontaneousProb = spontaneousBase * (0.2 + bass * 4.2);
@@ -139,7 +154,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sparkHash = hash21(vec2<f32>(f32(coord.x), f32(coord.y)) * 1.618 + vec2<f32>(time * 113.7, -time * 91.3));
   let trebleSparkProb = spontaneousBase * treble * 9.0 * smoothstep(0.35, 0.95, sparkHash);
   let trebleSpark = sparkHash > 1.0 - clamp(trebleSparkProb, 0.0, 0.9);
-  let ignite = (cardFiring > 0) || (rand < spontaneousProb) || trebleSpark || (mouseMask > 0.02);
+  let ignite = (cardFiring > 0) || (rand < spontaneousProb) || trebleSpark
+    || (mouseMask > 0.02) || (clickIgnition > 0.28);
 
   // ── Greenberg-Hastings state machine (resting=0, firing=1, refractory>=2) ──
   let isResting = currentState == 0;
@@ -187,6 +203,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   generatedColor += vec3<f32>(0.08, 0.12, 0.22) * smoothstep(0.2, 1.0, mids) * (1.0 - refractoryMask) * 0.15;
   generatedColor += tracerColor * tracer * (0.55 + bloomStrength * 0.9);
   generatedColor += vec3<f32>(0.9, 0.95, 1.0) * select(0.0, 1.0, trebleSpark) * 0.35 * (1.0 - firingMask);
+  generatedColor += vec3<f32>(0.22, 0.75, 1.0) * clickIgnition * (0.25 + mids * 0.35);
 
   let opacity = 0.92;
   let finalColor = mix(inputColor.rgb, generatedColor, opacity);

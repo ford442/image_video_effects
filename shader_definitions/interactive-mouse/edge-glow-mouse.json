@@ -3,8 +3,38 @@
   "name": "Edge Glow Mouse",
   "category": "interactive-mouse",
   "url": "shaders/edge-glow-mouse.wgsl",
-  "description": "Unsharp-masked edges bloom into neon HDR halos with anisotropic diffusion, chromatic aberration, ACES tone mapping, and film grain. Bass drives glow radius, mouse creates local edge emphasis, depth controls falloff.",
+  "description": "Unsharp-masked edges bloom into oil-slick magenta/teal neon with anisotropic bloom packets racing along tangents, richer click ring bursts, held tighten+intensify, C-persisted halo trail, ACES, and FFT band shimmer. Distinct psychedelic film — not plain cyan.",
   "params": [
+    {
+      "id": "threshold",
+      "name": "Edge Threshold",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "glowRadius",
+      "name": "Glow Radius",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "colorCycle",
+      "name": "Color Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updatedParams": [
     {
       "id": "threshold",
       "name": "Edge Threshold",
@@ -38,7 +68,12 @@
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "thin-film",
+    "oil-slick",
+    "anisotropic-bloom"
   ],
   "tags": [
     "edges",
@@ -48,6 +83,8 @@
     "audio-reactive",
     "bloom",
     "chromatic",
-    "HDR"
+    "HDR",
+    "iridescent",
+    "oil-slick"
   ]
 }

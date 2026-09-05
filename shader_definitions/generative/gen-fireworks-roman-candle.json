@@ -17,6 +17,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "fireRate", "name": "Fire Rate", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x", "audio": "bass" },
+    { "id": "starSize", "name": "Star Size", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y", "audio": "mid" },
+    { "id": "tubeSpread", "name": "Tube Spread", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z", "audio": "treble" },
+    { "id": "trailLength", "name": "Trail Length", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w", "audio": "overall" }
+  ],
   "updatedParams": [
     {
       "index": 0,

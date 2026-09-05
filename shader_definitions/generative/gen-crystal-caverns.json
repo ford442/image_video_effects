@@ -22,6 +22,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "cave-scale", "name": "Cave Scale", "default": 0.25, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "crystal-purity", "name": "Crystal Purity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "glow-intensity", "name": "Glow Intensity", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "fog-density", "name": "Fog Density", "default": 0.5, "min": 0, "max": 2, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -61,5 +67,43 @@
   "updated": true,
   "id": "gen-crystal-caverns",
   "url": "shaders/gen-crystal-caverns.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "cave_scale",
+      "name": "Cave Scale",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "crystal_purity",
+      "name": "Crystal Purity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "fog_density",
+      "name": "Fog Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

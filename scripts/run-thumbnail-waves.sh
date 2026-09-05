@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run thumbnail coverage waves on a GPU workstation.
-# Usage: bash scripts/run-thumbnail-waves.sh [--wave=W1|W2|W3|all]
+# Usage: bash scripts/run-thumbnail-waves.sh [--wave=attract|W1|W2|W3|all]
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -23,6 +23,11 @@ retry_integrity_failures() {
   else
     echo "No integrity failures to retry."
   fi
+}
+
+wave_priority() {
+  echo "=== thumbs:generate --missing --priority=attract ==="
+  npm run thumbs:generate -- --missing --priority=attract
 }
 
 wave_w1() {
@@ -53,16 +58,18 @@ SKIP_WASM_BUILD=1 npm run build
 retry_integrity_failures
 
 case "$WAVE" in
+  attract|priority) wave_priority ;;
   W1) wave_w1 ;;
   W2) wave_w2 ;;
   W3) wave_w3 ;;
   all)
+    wave_priority
     wave_w1
     wave_w2
     wave_w3
     ;;
   *)
-    echo "Unknown wave: $WAVE (use W1, W2, W3, or all)"
+    echo "Unknown wave: $WAVE (use attract, W1, W2, W3, or all)"
     exit 1
     ;;
 esac

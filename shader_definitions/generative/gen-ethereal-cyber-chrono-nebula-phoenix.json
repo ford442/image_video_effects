@@ -59,7 +59,7 @@
     },
     {
       "index": 2,
-      "name": "Parameter 3",
+      "name": "Chrono Fracture",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -67,10 +67,10 @@
     },
     {
       "index": 3,
-      "name": "Parameter 4",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "name": "Orbit Spin",
+      "default": 0.1,
+      "min": 0.05,
+      "max": 0.5,
       "step": 0.01
     }
   ],
@@ -79,8 +79,8 @@
     {
       "id": "wingspan",
       "name": "Wingspan",
-      "default": 0.5,
-      "min": 0,
+      "default": 0.2,
+      "min": 0.1,
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
@@ -97,8 +97,8 @@
       "audio": "mid"
     },
     {
-      "id": "parameter_3",
-      "name": "Parameter 3",
+      "id": "chrono_fracture",
+      "name": "Chrono Fracture",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -107,8 +107,8 @@
       "audio": "treble"
     },
     {
-      "id": "parameter_4",
-      "name": "Parameter 4",
+      "id": "orbit_spin",
+      "name": "Orbit Spin",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -116,5 +116,7 @@
       "mapping": "zoom_params.w",
       "audio": "overall"
     }
-  ]
+  ],
+  "features": ["audio-reactive", "mouse-driven", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha"],
+  "feedbackPacking": "A/C = phoenix trap distance, signed body distance, nebula density, semantic coverage; exact raw-state history"
 }

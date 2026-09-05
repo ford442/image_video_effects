@@ -2,6 +2,7 @@
   "version": 1,
   "description": "Shared WebGPU minimum compute limits for Pixelocity's 14-entry bind group (bindings 0–13). Keep in sync with src/renderer/webgpuDevicePolicy.ts and wasm_renderer/device.cpp CheckLimit + requiredLimits.",
   "minimumComputeLimits": {
+    "maxTextureDimension2D": 8192,
     "maxBindingsPerBindGroup": 14,
     "maxSampledTexturesPerShaderStage": 3,
     "maxSamplersPerShaderStage": 3,
@@ -12,6 +13,9 @@
     "maxComputeWorkgroupSizeX": 16,
     "maxComputeWorkgroupSizeY": 16,
     "maxComputeInvocationsPerWorkgroup": 256
+  },
+  "notes": {
+    "maxTextureDimension2D": "Comfortable floor (WebGPU base limit is 8192; minimum viable 4096). Never derive this from maxBufferSize, pixel count, width*height, or a mis-ordered init arg / heap pointer."
   },
   "cppReferences": {
     "file": "wasm_renderer/device.cpp",

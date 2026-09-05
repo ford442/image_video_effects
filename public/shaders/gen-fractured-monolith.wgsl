@@ -35,6 +35,11 @@ fn hash31(p: vec3<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Basic 3D Noise for fracture displacement
 fn noise(p: vec3<f32>) -> f32 {
     var i = floor(p);
@@ -69,18 +74,18 @@ fn map(p: vec3<f32>) -> vec3<f32> {
 
     let time = u.config.x;
     // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.config.y;
-    let audioBass = u.config.y * 1.2;
-    let audioMid = u.config.z;
-    let audioHigh = u.config.w;
-    let audioReactivity = 1.0 + audioOverall * 0.5;
+    let audioBass = plasmaBuffer[0].x;
+    let audioMid = plasmaBuffer[0].y;
+    let audioHigh = plasmaBuffer[0].z;
+    let audioOverall = (audioBass + audioMid + audioHigh) / 3.0;
+    let audioReactivity = 1.0 + audioOverall * 0.35;
     let spread = u.zoom_params.x * 2.0;
     let levSpeed = u.zoom_params.y;
     let rotSpeed = u.zoom_params.w;
 
     // --- Liquid Terrain ---
     // Smooth wavy floor
-    let wave = sin(p.x * 0.5 + time * 0.5 * audioReactivity) * cos(p.z * 0.5 + time * 0.3 * audioReactivity) * 0.2;
+    let wave = sin(p.x * 0.5 + time * 0.5 * audioReactivity) * cos(p.z * 0.5 + time * 0.3 * audioReactivity) * 0.2 * (1.0 + audioBass * 0.35);
     let floorDist = sdPlane(p, vec3<f32>(0.0, 1.0, 0.0), 2.0) + wave;
     if (floorDist < d) {
         d = floorDist;
@@ -90,7 +95,7 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     // --- Monolith ---
     var bp = p;
     // Levitation bobbing
-    bp.y -= sin(time * levSpeed * audioReactivity) * 0.5 + 2.0;
+    bp.y -= sin(time * levSpeed * audioReactivity) * (0.5 + audioMid * 0.12) + 2.0;
     // Slow global rotation
     let temp_bp_xz = rot(time * 0.2 * audioReactivity * rotSpeed) * bp.xz;
     bp.x = temp_bp_xz.x;
@@ -136,7 +141,7 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     // Inner Glow accumulation in cracks
     // When inside the bounding box but outside shards
     if (baseBox < 0.5 && shardDist > 0.05) {
-        glow += 0.01 / (0.01 + abs(shardDist)) * u.zoom_params.z;
+        glow += 0.01 / (0.01 + abs(shardDist)) * u.zoom_params.z * (1.0 + audioHigh * 0.45);
     }
 
     return vec3<f32>(d, mat, glow);
@@ -165,8 +170,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Camera setup
     var ro = vec3<f32>(0.0, 2.0, 12.0);
     // Mouse interaction for camera orbit
-    let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
+    let mouseX = u.zoom_config.y * 2.0 - 1.0;
+    let mouseY = u.zoom_config.z * 2.0 - 1.0;
 
     let temp_ro_yz = rot(mouseY * 1.0) * ro.yz;
     ro.y = temp_ro_yz.x;
@@ -237,10 +242,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Subtle vignette
     col *= 1.0 - 0.3 * length(uv);
 
-    // Tone mapping and gamma correction
-    col = col / (col + vec3<f32>(1.0));
-    col = pow(col, vec3<f32>(0.4545));
+    let coord = vec2<i32>(id.xy);
+    let previous = textureLoad(dataTextureC, coord, 0).rgb;
+    col = max(max(col, vec3<f32>(0.0)), previous * 0.82);
+    col = acesToneMap(col * 1.12);
+    let hitMask = select(0.0, 1.0, t < 30.0);
+    let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let alpha = clamp(0.06 + hitMask * 0.68 + luma * 0.24, 0.0, 0.98);
+    let depth = select(1.0, clamp(t / 30.0, 0.0, 0.995), t < 30.0);
 
-    textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

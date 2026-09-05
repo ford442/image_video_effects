@@ -13,11 +13,13 @@
     "semantic-alpha",
     "aces",
     "curl-advection",
+    "midpoint-advection",
+    "bounded-antidiffusion",
     "wipe-fronts",
     "chromatic-aberration",
     "temporal-feedback"
   ],
-  "description": "Temporal feedback advected by a divergence-free curl-noise field whose three octaves are driven by their own FFT bins \u2014 the previous field used raw noise directly as a velocity, which has non-zero divergence and blooms the feedback out. Clicks emit bounded wipe fronts that punch fresh video through the accumulation. History uses exact textureLoad.",
+  "description": "Temporal feedback follows a second-order midpoint trace through three FFT-banded divergence-free curl octaves. Bounded anti-diffusion restores transported detail without inventing new extrema, while click wipe fronts reveal fresh video.",
   "params": [
     {
       "name": "Distortion",

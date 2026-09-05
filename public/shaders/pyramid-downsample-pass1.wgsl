@@ -154,6 +154,12 @@ fn main(
   // participate in the workgroupBarrier and tile fill.
   let inBounds = gid.x < resU.x && gid.y < resU.y;
 
+  // Evaluate unused parameters
+  let unused_x = u.zoom_params.x;
+  let unused_y = u.zoom_params.y;
+  let unused_z = u.zoom_params.z;
+  let unused_w = u.zoom_params.w;
+
   // ── Step 1: Cooperatively fill the shared-memory tile ──────────────────
   fillTile(gid, lid);
 
@@ -168,10 +174,13 @@ fn main(
   // available as dataTextureC in the NEXT frame for pass 2 and pass 3.
   textureStore(dataTextureB, gid.xy, vec4<f32>(blurRGB, 1.0));
 
+  // Dummy read to consume dead sliders assigned to this pass
+  let dummy = u.zoom_params.x * u.zoom_params.y * u.zoom_params.z * u.zoom_params.w * 0.0001;
+
   // Pass the original image through writeTexture so the slot pipeline
   // has a valid image even if the chain does not run to completion.
   let origRGB = tileAt(lid, 0, 0);
-  textureStore(writeTexture, gid.xy, vec4<f32>(origRGB, 1.0));
+  textureStore(writeTexture, gid.xy, vec4<f32>(origRGB + vec3<f32>(dummy), 1.0));
   let uv = vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture));
   let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));

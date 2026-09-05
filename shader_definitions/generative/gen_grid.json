@@ -98,5 +98,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load"
 }

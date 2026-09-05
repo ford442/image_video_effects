@@ -16,6 +16,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "intensity", "name": "Intensity", "default": 0.8, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "speed", "name": "Speed", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "scale", "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "color-shift", "name": "Color Shift", "default": 0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -55,5 +61,43 @@
   "updated": true,
   "id": "gen-cosmic-slime-mold",
   "url": "shaders/gen-cosmic-slime-mold.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }
