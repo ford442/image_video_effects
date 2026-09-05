@@ -474,11 +474,6 @@
       "filename": "2026-09-01_neutron-star-magnetic-spindle.md",
       "title": "Neutron-Star Magnetic Spindle",
       "added": "2026-09-01T15:38:09.462048"
-    },
-    {
-      "filename": "2026-09-02_sentient-bismuth-hypercrystal.md",
-      "title": "Sentient Bismuth Hypercrystal",
-      "added": "2026-09-02T15:26:24.706354"
     }
   ],
   "current": null,
@@ -914,6 +909,13 @@
       "added": "2026-09-01T15:38:09.462048",
       "status": "completed",
       "completed_at": "2026-09-02T08:00:05.019631+00:00"
+    },
+    {
+      "filename": "2026-09-02_sentient-bismuth-hypercrystal.md",
+      "title": "Sentient Bismuth Hypercrystal",
+      "added": "2026-09-02T15:26:24.706354",
+      "status": "completed",
+      "completed_at": "2026-09-05T03:57:57.232306+00:00"
     }
   ],
   "rejected": [],
