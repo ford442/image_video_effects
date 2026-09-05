@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Hyphen URL aliases for legacy underscore catalog ids. Canonical ids stay underscore; new ids use hyphens. CRA-legal copy of public/shader-id-aliases.json.",
     "canonical_rule": "hyphen-alias -> underscore-id",
-    "generated_at": "2026-09-02",
+    "generated_at": "2026-09-03",
     "count": 20,
     "skipped_collisions": [
       {
