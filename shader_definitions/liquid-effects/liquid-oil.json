@@ -2,7 +2,7 @@
   "id": "liquid-oil",
   "name": "Liquid Oil",
   "url": "shaders/liquid-oil.wgsl",
-  "description": "",
+  "description": "A persistent high-viscosity thin-film simulation packing height, response, shear, and coverage in A, with slow capillary flow, pointer stirring, click waves, interference color, specular oil optics, exact C loads, ACES, and semantic alpha.",
   "tags": [
     "filter",
     "image-processing"
@@ -50,6 +50,15 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "held-interaction",
+    "click-reactive",
+    "audio-reactive",
+    "stateful-simulation",
+    "raw-height-velocity-state",
+    "thin-film-interference",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ]
 }

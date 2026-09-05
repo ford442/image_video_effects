@@ -2,7 +2,7 @@
   "id": "voronoi-zoom-turbulence",
   "name": "Voronoi Zoom Turbulence",
   "url": "shaders/voronoi-zoom-turbulence.wgsl",
-  "description": "Divides the screen into Voronoi cells where each cell applies a chaotic, time-varying zoom. Mouse proximity calms or agitates the turbulence.",
+  "description": "Voronoi cells pulse with closed-form zoom and site-boundary shear conveyors. Sprung pointer agitates or calms cells, clicks emit zoom fronts, exact-C persistence, ACES display, and semantic agitation alpha.",
   "params": [
     {
       "name": "Cell Density",
@@ -45,10 +45,58 @@
     "mouse-driven",
     "upgraded-rgba",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "fast-motion",
+    "spring-cursor",
+    "semantic-alpha",
+    "exact-c-history"
   ],
   "tags": [
     "filter",
-    "image-processing"
-  ]
+    "image-processing",
+    "fast-motion",
+    "audio-reactive",
+    "aces"
+  ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Cell Density",
+      "default": 1,
+      "min": 1,
+      "max": 5
+    },
+    {
+      "index": 1,
+      "name": "Turbulence Speed",
+      "default": 1,
+      "min": 0,
+      "max": 3
+    },
+    {
+      "index": 2,
+      "name": "Zoom Intensity",
+      "default": 1,
+      "min": 0,
+      "max": 2
+    },
+    {
+      "index": 3,
+      "name": "Mouse Influence",
+      "default": 1,
+      "min": -1,
+      "max": 1
+    }
+  ],
+  "category": "geometric"
 }

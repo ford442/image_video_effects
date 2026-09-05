@@ -14,6 +14,44 @@
     16,
     1
   ],
+  "params": [
+    {
+      "id": "rotationSpeed",
+      "name": "Bloom Radius",
+      "default": 1,
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "complexity",
+      "name": "Plasma Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "bloomIntensity",
+      "name": "Gold Smoothness",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "gravityWellStrength",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -59,6 +97,9 @@
     "click-reactive",
     "temporal",
     "fast-motion",
-    "depth-aware"
-  ]
+    "depth-aware",
+    "semantic-alpha",
+    "aces-tonemap"
+  ],
+  "feedbackPacking": "A/C = linear HDR display RGBA history; exact torque-advected loads"
 }

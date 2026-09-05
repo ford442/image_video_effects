@@ -1,16 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Chromatic Focus Coupled
+//  chromatic-focus-coupled — Fluid-Coupled Chromatic DOF
 //  Category: advanced-hybrid
-//  Features: mouse-driven, fluid-simulation, chromatic, temporal
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
+//            fluid-simulation, chromatic-aberration, semantic-alpha, ACES
 //  Complexity: High
-//  Chunks From: chromatic-focus-interactive.wgsl, mouse-fluid-coupling.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-9
-// ═══════════════════════════════════════════════════════════════════
-//  Chromatic aberration DOF with fluid-coupled distortion. Mouse
-//  movement stirs a viscous fluid that twists and blurs chromatic
-//  channels. Click ripples inject fluid bursts. Focus point is
-//  advected by fluid velocity.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,182 +21,172 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Strength, y=Blur, z=FocusRad, w=Viscosity
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from mouse-fluid-coupling.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
 }
 
-fn sampleVelocity(tex: texture_2d<f32>, uv: vec2<f32>) -> vec2<f32> {
-  return textureSampleLevel(tex, u_sampler, uv, 0.0).xy;
-}
-
-fn sampleDensity(tex: texture_2d<f32>, uv: vec2<f32>) -> f32 {
-  return textureSampleLevel(tex, u_sampler, uv, 0.0).a;
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(global_id.xy);
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0);
   let time = u.config.x;
 
-  // Parameters
-  let strength = u.zoom_params.x * 0.05;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let rawMouse = u.zoom_config.yz;
+  let mouseDown = u.zoom_config.w > 0.5;
+  let held = select(0.0, 1.0, mouseDown);
+
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let isWriter = (global_id.x == 0u && global_id.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var mouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.05);
+    var sPos = mouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
+    }
+    let stiffness = 42.0;
+    let damping = 12.96; // 2 * sqrt(42)
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel += accel * dt;
+    sPos += sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
+
+  // Exact parameter contracts
+  let strength = u.zoom_params.x * 0.06 * (1.0 + bass * 0.3);
   let blurAmt = u.zoom_params.y;
   let focusRad = u.zoom_params.z;
   let viscosity = mix(0.92, 0.99, u.zoom_params.w);
 
-  let mousePos = u.zoom_config.yz;
-  let mouseDown = u.zoom_config.w;
+  // Exact fluid simulation state loaded from dataTextureC
+  let prevFluid = textureLoad(dataTextureC, coord, 0);
+  let prevVel = prevFluid.xy;
+  let prevDens = prevFluid.a;
 
-  // ── Fluid Simulation (from mouse-fluid-coupling) ──
-  let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
-  let mouseVel = (mousePos - prevMouse) * 60.0;
-  let mouseSpeed = length(mouseVel);
+  let backCoord = clamp(coord - vec2<i32>(prevVel * 3.0), vec2<i32>(0), vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1));
+  let advected = textureLoad(dataTextureC, backCoord, 0);
+  var vel = advected.xy * viscosity;
+  var dens = advected.a * viscosity;
 
-  // Store current mouse position at (0,0)
-  if (global_id.x == 0u && global_id.y == 0u) {
-    textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(mousePos, 0.0, 0.0));
-  }
-
-  let px = vec2<f32>(1.0) / resolution;
-
-  // Read previous velocity and density from dataTextureC
-  let prevVel = sampleVelocity(dataTextureC, uv);
-  let prevDens = sampleDensity(dataTextureC, uv);
-
-  // Advect velocity (semi-Lagrangian)
-  let backUV = uv - prevVel * px * 2.0;
-  let advectedVel = sampleVelocity(dataTextureC, backUV);
-  let advectedDens = sampleDensity(dataTextureC, backUV);
-
-  // Apply viscosity
-  var vel = advectedVel * viscosity;
-  var dens = advectedDens * viscosity;
-
-  // Mouse force: stirring rod
-  let toMouse = (uv - mousePos) * vec2<f32>(aspect, 1.0);
+  let toMouse = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let dist = length(toMouse);
-  let mouseRadius = mix(0.03, 0.15, u.zoom_params.w);
-  let influence = smoothstep(mouseRadius, 0.0, dist);
+  let mouseRadius = mix(0.04, 0.18, u.zoom_params.w);
+  let influence = smoothstep(mouseRadius, 0.0, dist) * (0.6 + held * 0.4);
 
-  // Add mouse velocity as body force
-  vel = vel + mouseVel * influence * 0.5;
+  let mouseVel = (rawMouse - mouse) * 40.0;
+  vel += mouseVel * influence * 0.5;
 
-  // Vortex force: perpendicular to mouse motion
   let vortexDir = vec2<f32>(-mouseVel.y, mouseVel.x);
-  let vortexStrength = 2.0;
-  vel = vel + vortexDir * influence * vortexStrength * mouseSpeed;
+  vel += vortexDir * influence * 1.5;
 
-  // Click ripples = fluid injection points
+  // Click ripple bursts
   let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
     let elapsed = time - ripple.z;
-    if (elapsed > 0.0 && elapsed < 2.0) {
+    if (elapsed >= 0.0 && elapsed < 2.0) {
       let rToMouse = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
       let rDist = length(rToMouse);
       let rInfluence = smoothstep(0.2, 0.0, rDist) * exp(-elapsed * 1.5);
       let outward = select(vec2<f32>(0.0), normalize(rToMouse / vec2<f32>(aspect, 1.0)), rDist > 0.001);
-      vel = vel + outward * rInfluence * 0.3;
-      dens = dens + rInfluence * 0.5;
+      vel += outward * rInfluence * 0.35;
+      dens += rInfluence * 0.5;
     }
   }
 
-  // Damping at edges
   let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-  let edgeDamp = smoothstep(0.05, 0.1, edgeDist);
-  vel = vel * edgeDamp;
-
-  // Clamp to prevent explosion
+  vel = vel * smoothstep(0.02, 0.08, edgeDist);
   vel = clamp(vel, vec2<f32>(-0.5), vec2<f32>(0.5));
   dens = clamp(dens, 0.0, 2.0);
 
-  // Store velocity (RG) and density (A) for next frame
   let vorticity = vel.x - vel.y;
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(vel, vorticity, dens));
+  textureStore(dataTextureA, coord, vec4<f32>(vel, vorticity, dens));
 
-  // ── Chromatic Focus Logic (from chromatic-focus-interactive) ──
-  // Focus point advected by fluid velocity
-  var center = mousePos + vel * 0.02;
+  // Chromatic focus calculation
+  let center = mouse + vel * 0.02;
   let distVec = (uv - center) * vec2<f32>(aspect, 1.0);
   let focusDist = length(distVec);
 
-  // Blur amount enhanced by fluid density
   let fluidBlur = dens * blurAmt * 0.5;
   var amount = smoothstep(focusRad, focusRad + 0.5, focusDist);
-  amount = pow(amount, 1.0 / (1.0 + fluidBlur * 5.0));
-  amount = amount + fluidBlur;
+  amount = pow(amount, 1.0 / (1.0 + fluidBlur * 5.0)) + fluidBlur;
 
-  var dir = normalize(distVec);
-
-  // Chromatic aberration twisted by fluid vorticity
-  let twist = vorticity * 0.5;
+  var dir = normalize(distVec + vec2<f32>(1e-5));
+  let twist = vorticity * 0.5 + mids * 0.3;
   let cosT = cos(twist);
   let sinT = sin(twist);
   dir = vec2<f32>(dir.x * cosT - dir.y * sinT, dir.x * sinT + dir.y * cosT);
 
   let rOffset = dir * amount * strength * (1.0 + dens * 0.3);
   let bOffset = -dir * amount * strength * (1.0 + dens * 0.3);
-  let gOffset = vec2<f32>(0.0);
-
-  // Fluid-blurred sample offsets
   let blurVec = vel * dens * 0.01;
-  let r = textureSampleLevel(readTexture, u_sampler, uv + rOffset + blurVec, 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, uv + gOffset + blurVec * 0.5, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, uv + bOffset - blurVec, 0.0).b;
+
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset + blurVec, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + blurVec * 0.5, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset - blurVec, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
 
   var color = vec3<f32>(r, g, b);
-
-  // Vignette
   let vig = 1.0 - amount * 0.3;
-  color = color * vig;
+  color *= vig;
 
-  // Show focus ring if clicking
-  if (mouseDown > 0.5) {
+  if (held > 0.5) {
     let ring = abs(focusDist - focusRad);
-    if (ring < 0.005) {
-      color = color + vec3<f32>(0.5, 0.5, 0.5);
+    if (ring < 0.006) {
+      color += vec3<f32>(0.5, 0.6, 0.8);
     }
   }
 
-  // Fluid tint: thicker fluid = warmer tint
-  let fluidTint = mix(vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(1.0, 0.85, 0.6), dens * blurAmt);
-  color = color * fluidTint;
+  let fluidTint = mix(vec3<f32>(1.0), vec3<f32>(1.0, 0.85, 0.6), dens * blurAmt);
+  color *= fluidTint;
 
-  // Specular highlight on fluid surface near mouse
   let specNoise = hash12(uv * 300.0 + time * 2.0);
   let specular = pow(specNoise, 20.0) * influence * dens * 3.0;
-  color = color + vec3<f32>(0.9, 0.95, 1.0) * specular;
+  color += vec3<f32>(0.9, 0.95, 1.0) * specular;
 
-  // Wavelength-dependent alpha (from chromatic-focus-interactive)
   let blurThickness = amount * 5.0 + blurAmt * 2.0;
-  let lambdaR = (800.0 - 650.0) / 400.0;
-  let lambdaG = (800.0 - 550.0) / 400.0;
-  let lambdaB = (800.0 - 450.0) / 400.0;
-  let alphaR = exp(-blurThickness * mix(0.3, 1.0, lambdaR));
-  let alphaG = exp(-blurThickness * mix(0.3, 1.0, lambdaG));
-  let alphaB = exp(-blurThickness * mix(0.3, 1.0, lambdaB));
-  let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
-  let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
+  let alphaR = exp(-blurThickness * 0.5625);
+  let alphaG = exp(-blurThickness * 0.7375);
+  let alphaB = exp(-blurThickness * 0.9125);
+  let finalAlpha = clamp(dot(vec3<f32>(alphaR, alphaG, alphaB), vec3<f32>(0.299, 0.587, 0.114)) + held * 0.1, 0.1, 1.0);
 
-  let finalColor = vec3<f32>(color.r * alphaR, color.g * alphaG, color.b * alphaB);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-
-  // Pass through depth
+  let finalRGB = aces(color);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let finalPixel = vec4<f32>(finalRGB, finalAlpha);
+
+  textureStore(writeTexture, coord, finalPixel);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

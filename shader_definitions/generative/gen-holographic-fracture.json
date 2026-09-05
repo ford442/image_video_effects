@@ -12,6 +12,10 @@
     "glow",
     "audio-reactive",
     "mouse-driven",
+    "click-reactive",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tonemap",
     "depth-aware"
   ],
   "tags": [
@@ -70,6 +74,7 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
+  "feedbackPacking": "A/C = exact ACES display RGBA; alpha is fracture, edge, and shock-front coverage; guarded spring state uses extraBuffer[133..137]",
   "updated": true,
   "updatedParams": [
     {

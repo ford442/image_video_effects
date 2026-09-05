@@ -34,8 +34,8 @@
       "id": "alpha-fire-temperature",
       "category": "simulation",
       "dead_param_ids": [
-        "smokeDensity",
-        "emberGlow"
+        "emberGlow",
+        "smokeDensity"
       ]
     },
     {
@@ -71,8 +71,8 @@
       "id": "alpha-paint-thickness",
       "category": "artistic",
       "dead_param_ids": [
-        "specularPower",
-        "dryingRate"
+        "dryingRate",
+        "specularPower"
       ]
     },
     {
@@ -113,6 +113,7 @@
       "id": "aurora-rift-2-pass1",
       "category": "lighting-effects",
       "dead_param_ids": [
+        "diffusion_rate",
         "param3"
       ]
     },
@@ -120,15 +121,19 @@
       "id": "aurora-rift-2-pass2",
       "category": "lighting-effects",
       "dead_param_ids": [
+        "fbm_octaves",
+        "flow_speed",
         "param1",
         "param2",
-        "param4"
+        "param4",
+        "scale"
       ]
     },
     {
       "id": "aurora-rift-pass1",
       "category": "lighting-effects",
       "dead_param_ids": [
+        "diffusion_rate",
         "param3"
       ]
     },
@@ -136,15 +141,19 @@
       "id": "aurora-rift-pass2",
       "category": "lighting-effects",
       "dead_param_ids": [
+        "fbm_octaves",
+        "flow_speed",
         "param1",
         "param2",
-        "param4"
+        "param4",
+        "scale"
       ]
     },
     {
       "id": "boids",
       "category": "artistic",
       "dead_param_ids": [
+        "motion_blur",
         "param4"
       ]
     },
@@ -160,20 +169,20 @@
       "id": "byte-mosh",
       "category": "retro-glitch",
       "dead_param_ids": [
-        "operationMix",
         "bitShift",
+        "blockSize",
         "errorRate",
-        "blockSize"
+        "operationMix"
       ]
     },
     {
       "id": "chroma-vortex",
       "category": "visual-effects",
       "dead_param_ids": [
-        "twist",
-        "spread",
+        "centerBias",
         "radius",
-        "centerBias"
+        "spread",
+        "twist"
       ]
     },
     {
@@ -194,10 +203,10 @@
       "id": "cyber-scan",
       "category": "visual-effects",
       "dead_param_ids": [
-        "scanWidth",
-        "gridIntensity",
         "colorSpeed",
-        "edgeStrength"
+        "edgeStrength",
+        "gridIntensity",
+        "scanWidth"
       ]
     },
     {
@@ -212,26 +221,26 @@
       "id": "data-slicer",
       "category": "distortion",
       "dead_param_ids": [
-        "slideSpeed",
-        "sliceHeight",
+        "aberration",
         "chaos",
-        "aberration"
+        "sliceHeight",
+        "slideSpeed"
       ]
     },
     {
       "id": "digital-glitch-pass1",
       "category": "retro-glitch",
       "dead_param_ids": [
-        "error_propagation",
-        "decay_rate"
+        "decay_rate",
+        "error_propagation"
       ]
     },
     {
       "id": "digital-glitch-pass2",
       "category": "retro-glitch",
       "dead_param_ids": [
-        "corruption_intensity",
-        "bit_manipulation"
+        "bit_manipulation",
+        "corruption_intensity"
       ]
     },
     {
@@ -265,19 +274,19 @@
       "id": "dimension-slicer",
       "category": "distortion",
       "dead_param_ids": [
-        "sliceAngle",
-        "zoomWarp",
         "chromaticAmount",
-        "depthModulation"
+        "depthModulation",
+        "sliceAngle",
+        "zoomWarp"
       ]
     },
     {
       "id": "dynamic-halftone",
       "category": "interactive-mouse",
       "dead_param_ids": [
+        "contrast",
         "density",
-        "radius",
-        "contrast"
+        "radius"
       ]
     },
     {
@@ -299,10 +308,14 @@
       "id": "flux-core",
       "category": "interactive-mouse",
       "dead_param_ids": [
+        "arc_sharpness",
+        "bolt_conductivity",
+        "core_energy",
         "param1",
         "param2",
         "param3",
-        "param4"
+        "param4",
+        "shockwave_distortion"
       ]
     },
     {
@@ -319,28 +332,35 @@
       "id": "glass-wall",
       "category": "interactive-mouse",
       "dead_param_ids": [
+        "grid_scale",
+        "interaction_radius",
         "param1",
         "param2",
-        "param3"
+        "param3",
+        "refraction_strength"
       ]
     },
     {
       "id": "glitch-cathedral",
       "category": "interactive-mouse",
       "dead_param_ids": [
+        "patternSpeed",
         "rgbSplit",
-        "sortStrength",
-        "patternSpeed"
+        "sortStrength"
       ]
     },
     {
       "id": "hex-lens",
       "category": "image",
       "dead_param_ids": [
+        "lens_zoom",
+        "mouse_influence",
         "param1",
         "param2",
         "param3",
-        "param4"
+        "param4",
+        "rotation",
+        "tile_size"
       ]
     },
     {
@@ -348,44 +368,48 @@
       "category": "visual-effects",
       "dead_param_ids": [
         "flickerSpeed",
+        "ghostAmt",
         "glitchAmt",
-        "hologramIntensity",
-        "ghostAmt"
+        "hologramIntensity"
       ]
     },
     {
       "id": "hyb-chromatic-circuit",
       "category": "hybrid",
       "dead_param_ids": [
-        "grid_scale",
-        "trace_width",
         "chroma_spread",
-        "effect_mix"
+        "effect_mix",
+        "grid_scale",
+        "trace_width"
       ]
     },
     {
       "id": "hyb-temporal-fbm-ghost",
       "category": "hybrid",
       "dead_param_ids": [
-        "temporal_shift",
+        "effect_mix",
         "fbm_scale",
-        "warp_amount",
-        "effect_mix"
+        "temporal_shift",
+        "warp_amount"
       ]
     },
     {
       "id": "hyper-space-jump",
       "category": "visual-effects",
       "dead_param_ids": [
+        "chromatic_spread",
         "param2",
         "param3",
-        "param4"
+        "param4",
+        "streak_decay",
+        "vignette_size"
       ]
     },
     {
       "id": "hyper-space-jump-blackbody",
       "category": "advanced-hybrid",
       "dead_param_ids": [
+        "chromatic_spread",
         "param4"
       ]
     },
@@ -400,10 +424,10 @@
       "id": "liquid-oil",
       "category": "liquid-effects",
       "dead_param_ids": [
-        "viscosity",
-        "turbulence",
+        "color_shift",
         "ripple_strength",
-        "color_shift"
+        "turbulence",
+        "viscosity"
       ]
     },
     {
@@ -417,8 +441,8 @@
       "id": "liquid-optimized-pass2",
       "category": "liquid-effects",
       "dead_param_ids": [
-        "gravityScale",
-        "damping"
+        "damping",
+        "gravityScale"
       ]
     },
     {
@@ -432,8 +456,8 @@
       "id": "liquid-pass2",
       "category": "liquid-effects",
       "dead_param_ids": [
-        "turbulence",
-        "ripple_strength"
+        "ripple_strength",
+        "turbulence"
       ]
     },
     {
@@ -457,6 +481,7 @@
       "id": "matrix_digital_rain",
       "category": "lighting-effects",
       "dead_param_ids": [
+        "edge_glow",
         "param3"
       ]
     },
@@ -464,10 +489,10 @@
       "id": "mouse-pixel-sort",
       "category": "artistic",
       "dead_param_ids": [
-        "threshold",
-        "length",
         "direction",
-        "mode"
+        "length",
+        "mode",
+        "threshold"
       ]
     },
     {
@@ -495,6 +520,7 @@
       "id": "parallax_depth_layers",
       "category": "artistic",
       "dead_param_ids": [
+        "depth_of_field",
         "param3"
       ]
     },
@@ -502,6 +528,7 @@
       "id": "particle_dreams_alpha",
       "category": "artistic",
       "dead_param_ids": [
+        "color_shift",
         "param3"
       ]
     },
@@ -509,6 +536,7 @@
       "id": "phase-shift",
       "category": "distortion",
       "dead_param_ids": [
+        "edge_glow",
         "param3"
       ]
     },
@@ -516,10 +544,10 @@
       "id": "photonic-caustics-graph",
       "category": "simulation",
       "dead_param_ids": [
-        "ior",
-        "lightSize",
         "dispersion",
-        "intensity"
+        "intensity",
+        "ior",
+        "lightSize"
       ]
     },
     {
@@ -550,10 +578,14 @@
       "id": "plasma",
       "category": "artistic",
       "dead_param_ids": [
+        "orb_radius",
+        "orbit_speed",
         "param1",
         "param2",
         "param3",
-        "param4"
+        "param4",
+        "plasma_intensity",
+        "shadow_depth"
       ]
     },
     {
@@ -567,10 +599,10 @@
       "id": "prism-displacement",
       "category": "distortion",
       "dead_param_ids": [
-        "zoomAmount",
         "chromatic",
+        "depthWeight",
         "rotationSpeed",
-        "depthWeight"
+        "zoomAmount"
       ]
     },
     {
@@ -584,17 +616,22 @@
       "id": "pyramid-bandprocess-pass2",
       "category": "image",
       "dead_param_ids": [
-        "param4"
+        "param4",
+        "roiradius"
       ]
     },
     {
       "id": "pyramid-downsample-pass1",
       "category": "image",
       "dead_param_ids": [
+        "high_freq_amp",
+        "low_freq_amp",
+        "mid_freq_amp",
         "param1",
         "param2",
         "param3",
-        "param4"
+        "param4",
+        "roiradius"
       ]
     },
     {
@@ -608,6 +645,7 @@
       "id": "quantum-foam-pass2",
       "category": "simulation",
       "dead_param_ids": [
+        "octave_count",
         "param4"
       ]
     },
@@ -615,6 +653,10 @@
       "id": "quantum-foam-pass3",
       "category": "simulation",
       "dead_param_ids": [
+        "diffusion_rate",
+        "flow_speed",
+        "foam_scale",
+        "octave_count",
         "param1",
         "param2",
         "param3",
@@ -635,10 +677,14 @@
       "id": "rgb-ripple-waves",
       "category": "interactive-mouse",
       "dead_param_ids": [
+        "channel_phase",
         "param1",
         "param2",
         "param3",
-        "param4"
+        "param4",
+        "wave_amplitude",
+        "wave_frequency",
+        "wave_speed"
       ]
     },
     {
@@ -659,19 +705,22 @@
       "id": "soft-vignette-bloom",
       "category": "post-processing",
       "dead_param_ids": [
-        "vignetteStrength",
+        "bloomIntensity",
         "bloomRadius",
         "hazeAmount",
-        "bloomIntensity"
+        "vignetteStrength"
       ]
     },
     {
       "id": "spectrogram-displace-pass2",
       "category": "artistic",
       "dead_param_ids": [
+        "horizontal_displace",
         "param1",
         "param2",
-        "param4"
+        "param4",
+        "spectrogram_blend",
+        "vertical_displace"
       ]
     },
     {
@@ -688,36 +737,52 @@
       "id": "stella-orbit",
       "category": "artistic",
       "dead_param_ids": [
+        "glow_intensity",
+        "orbit_speed",
         "param1",
         "param2",
         "param3",
-        "param4"
+        "param4",
+        "rotation",
+        "star_scale"
       ]
     },
     {
       "id": "temporal-feedback-zoom-tracer",
       "category": "post-processing",
       "dead_param_ids": [
+        "blend",
         "param1",
         "param2",
         "param3",
-        "param4"
+        "param4",
+        "persistence",
+        "rotation",
+        "zoom"
       ]
     },
     {
       "id": "temporal-phosphor-burn",
       "category": "post-processing",
       "dead_param_ids": [
+        "b_decay",
+        "g_decay",
+        "mask_strength",
         "param1",
         "param2",
         "param3",
-        "param4"
+        "param4",
+        "r_decay"
       ]
     },
     {
       "id": "temporal-rgb-ghost",
       "category": "post-processing",
       "dead_param_ids": [
+        "b_delay",
+        "blend",
+        "displace",
+        "g_delay",
         "param1",
         "param2",
         "param3",

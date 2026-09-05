@@ -2,8 +2,42 @@
   "id": "elastic-strip",
   "name": "Elastic Strip",
   "url": "shaders/elastic-strip.wgsl",
-  "description": "Spring physics strips with chromatic stretch and audio frequency response. Each strip oscillates at bass-driven frequencies, depth modulates stiffness, and treble adds chromatic edge glow on stretched boundaries.",
+  "description": "Spring-physics strips with sharper nested bevel sub-ribs, traveling pluck packets along each band, stronger soap-film iridescence driven by stretch energy, held drag punch, and bounded click plucks. Direction (V/H) preserved. Display RGBA packed in A.",
   "params": [
+    {
+      "id": "density",
+      "name": "Strip Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "strength",
+      "name": "Stretch Strength",
+      "default": 0.7,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "falloff",
+      "name": "Influence Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "dir",
+      "name": "Direction (V/H)",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "labels": [
+        "Vertical Strips",
+        "Horizontal Strips"
+      ]
+    }
+  ],
+  "updatedParams": [
     {
       "id": "density",
       "name": "Strip Density",
@@ -43,7 +77,12 @@
     "spring-physics",
     "chromatic-aberration",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-drag",
+    "bounded-click-ripples",
+    "thin-film",
+    "soap-film",
+    "traveling-packets"
   ],
   "tags": [
     "distortion",
@@ -51,6 +90,8 @@
     "physics",
     "spring",
     "chromatic",
-    "frequency"
+    "frequency",
+    "iridescent",
+    "bevel"
   ]
 }

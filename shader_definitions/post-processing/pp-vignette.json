@@ -12,29 +12,29 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Vignette",
+      "id": "vignette_intensity",
+      "name": "Vignette Intensity",
       "default": 0.4,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param2",
-      "name": "Grain",
+      "id": "grain_intensity",
+      "name": "Grain Intensity",
       "default": 0.2,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param3",
+      "id": "color_style",
       "name": "Color Style",
       "default": 0,
       "min": 0,
       "max": 1
     },
     {
-      "id": "param4",
-      "name": "Effect",
+      "id": "blend_mode",
+      "name": "Blend Mode",
       "default": 0,
       "min": 0,
       "max": 1

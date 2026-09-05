@@ -48,6 +48,7 @@ import { DeviceFormatCapabilities } from '../config/formatPolicy';
 import { RenderQualityMode } from '../config/performancePolicy';
 import { buildRendererDiagnostics } from './rendererDiagnostics';
 import type { RendererDiagnostics, RendererMetrics } from './rendererTypes';
+import { adoptHandoffDeviceIfWebGpu, clearAdoptedRendererDevice, getAdoptedRendererDevice, releaseAdoptedDeviceIfLeavingWebGpu } from '../utils/adoptedGpuDevice';
 
 export type { RendererType, RendererInitOptions, WebGpuProbeHandoff };
 export { getRendererTypeFromURL };
@@ -58,6 +59,8 @@ export class RendererManager {
   private currentRenderer: Renderer | null = null;
   private currentType: RendererType | null = null;
   private lastFailedWasmRenderer: WASMRenderer | null = null;
+  private lastImageUrl: string | null = null;
+  private lastInputSource: InputSource = 'image';
   private readonly config: RendererConfig;
   private canvas: HTMLCanvasElement | null = null;
   private webGpuHandoff: WebGpuProbeHandoff | undefined;
@@ -139,20 +142,20 @@ export class RendererManager {
 
   async switchRenderer(type: RendererType): Promise<boolean> {
     if (!this.canvas) return false;
-
+    const handoff = type === 'webgpu' ? this.webGpuHandoff : undefined;
+    releaseAdoptedDeviceIfLeavingWebGpu(this.currentType, type);
     const outcome = await performBackendSwitch({
       targetType: type,
       canvas: this.canvas,
       config: this.config,
       previousType: this.currentType,
       previousRenderer: this.currentRenderer,
-      webGpuHandoff: type === 'webgpu' ? this.webGpuHandoff : undefined,
+      webGpuHandoff: handoff,
     });
-    if (type === 'webgpu') {
-      this.webGpuHandoff = undefined;
-    }
+    if (type === 'webgpu') this.webGpuHandoff = undefined;
 
     if (outcome.success) {
+      adoptHandoffDeviceIfWebGpu(type, handoff);
       this.currentRenderer = outcome.renderer;
       this.currentType = outcome.type;
       this.canvas = outcome.canvas;
@@ -161,6 +164,12 @@ export class RendererManager {
       refreshFormatCapabilities(this.perfState, this.shaderRenderer());
       applyPerformancePolicyToRenderer(this.perfState, this.shaderRenderer(), this.adaptiveController);
       this.startMetricsCollection();
+      if (type === 'wasm' || type === 'webgpu') {
+        await inputBridge.rebindMediaAfterBackendSwitch(this.currentRenderer, {
+          inputSource: this.lastInputSource,
+          imageUrl: this.lastImageUrl,
+        });
+      }
       return true;
     }
 
@@ -235,12 +244,22 @@ export class RendererManager {
     );
   }
   setSlotMode(index: number, mode: 'chained' | 'parallel'): void { setSlotMode(this.backend(), index, mode); }
-  setInputSource(source: InputSource): void { inputBridge.setInputSource(this.currentRenderer, source); }
-  getInputSource(): InputSource | null { return inputBridge.getInputSource(this.currentRenderer); }
+  setInputSource(source: InputSource): void {
+    this.lastInputSource = source;
+    inputBridge.setInputSource(this.currentRenderer, source);
+  }
+  getInputSource(): InputSource | null {
+    return inputBridge.getInputSource(this.currentRenderer) ?? this.lastInputSource;
+  }
   addRipple(x: number, y: number): void { addRipple(this.backend(), x, y); }
   addRipplePoint(x: number, y: number): void { this.addRipple(x, y); }
   clearRipples(): void { clearRipples(this.backend()); }
-  async loadImage(url: string): Promise<string> { return inputBridge.loadImage(this.currentRenderer, url); }
+  async loadImage(url: string): Promise<string> {
+    this.lastImageUrl = url;
+    const resolved = await inputBridge.loadImage(this.currentRenderer, url);
+    if (resolved) this.lastImageUrl = resolved;
+    return resolved;
+  }
   async loadImageFromURL(url: string): Promise<void> { await this.loadImage(url); }
   getAvailableModes(): ShaderEntry[] { return inputBridge.getAvailableModes(this.currentRenderer); }
   setImageList(urls: string[]): void { inputBridge.setImageList(this.currentRenderer, urls); }
@@ -301,6 +320,9 @@ export class RendererManager {
     if (this.backend()) return 'webgpu';
     return 'js';
   }
+  getDevice(): GPUDevice | null {
+    return this.getActiveRendererType() === 'webgpu' ? getAdoptedRendererDevice() : null;
+  }
   getDiagnostics(): RendererDiagnostics {
     return buildRendererDiagnostics(
       this.getActiveRendererType(),
@@ -314,6 +336,19 @@ export class RendererManager {
   setRenderQuality(mode: RenderQualityMode, hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities }): void {
     this.applyQualityPolicy(mode, hints);
   }
+  setSourceAutoExposure(enabled: boolean): void {
+    const r = this.shaderRenderer();
+    if (r && 'setSourceAutoExposure' in r) {
+      (r as WebGPURenderer).setSourceAutoExposure(enabled);
+    }
+  }
+  async captureThumbnailPng(outSize: number): Promise<string | null> {
+    const r = this.shaderRenderer();
+    if (r && 'captureChoresThumbnailPng' in r) {
+      return (r as WebGPURenderer).captureChoresThumbnailPng(outSize);
+    }
+    return null;
+  }
   private applyQualityPolicy(mode: RenderQualityMode, hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities }): void {
     applyQualityPolicy(this.perfState, mode, hints, () => this.getSupportsDeepWorkgroup());
     applyPerformancePolicyToRenderer(this.perfState, this.shaderRenderer(), this.adaptiveController);
@@ -325,11 +360,15 @@ export class RendererManager {
   getRenderQualityMode(): RenderQualityMode { return this.perfState.qualityMode; }
   getMaxActiveSlots(): number { return this.perfState.performancePolicy.maxActiveSlots; }
   getPerformanceStatus(): RendererPerformanceStatus {
+    const shader = this.shaderRenderer();
+    const historyLayers =
+      shader instanceof WebGPURenderer ? shader.getHistoryLayers() : undefined;
     return buildPerformanceStatus(
       this.perfState,
       this.getActiveRendererType(),
       () => this.getCurrentFPS(),
-      readResolutionScale(this.perfState, this.config, this.shaderRenderer()),
+      readResolutionScale(this.perfState, this.config, shader),
+      { historyLayers },
     );
   }
   getAudioData() {
@@ -343,6 +382,7 @@ export class RendererManager {
     this.currentRenderer = null;
     this.currentType = null;
     this.metrics.isWASM = false;
+    clearAdoptedRendererDevice();
   }
 }
 export default RendererManager;

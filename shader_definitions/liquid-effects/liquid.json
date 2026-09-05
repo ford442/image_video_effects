@@ -2,7 +2,7 @@
   "id": "liquid",
   "name": "Liquid (Interactive)",
   "url": "shaders/liquid.wgsl",
-  "description": "",
+  "description": "The canonical persistent capillary liquid with viscosity-controlled recovery, bounded pointer inertia, held surface push, click packets, curvature foam, exact C state, three-band optics, ACES, and semantic alpha.",
   "tags": [
     "filter",
     "image-processing"
@@ -52,6 +52,14 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "held-interaction",
+    "click-reactive",
+    "stateful-simulation",
+    "raw-height-velocity-state",
+    "spring-interaction",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
   ]
 }

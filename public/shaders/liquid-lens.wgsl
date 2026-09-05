@@ -1,13 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Liquid Lens v2
-//  Category: liquid-effects
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
-//  Complexity: High
-//  Chunks From: snell-law, chromatic-dispersion, caustics
-//  Created: 2026-05-30
-//  By: 4-Agent Upgrade Swarm
-// ═══════════════════════════════════════════════════════════════════
-
+// Liquid Lens — Batch 59 premium caustic optics.
+// A/C packing: display RGBA history. B and extraBuffer are intentionally unused.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -21,123 +13,17 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Refraction, y=Radius, z=Dispersion, w=SurfaceWave
-  ripples: array<vec4<f32>, 50>,
-};
-
-const PI: f32 = 3.141592653589793;
-
-// ═══ CHUNK: aces_tonemap (standard) ═══
-fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
-  let a = x * (x * 2.51 + 0.03);
-  let b = x * (x * 2.43 + 0.59) + 0.14;
-  return clamp(a / max(b, vec3<f32>(0.001)), vec3(0.0), vec3(1.0));
-}
-
-// ═══ CHUNK: hash21 ═══
-fn hash21(p: vec2<f32>) -> f32 {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-// ═══ CHUNK: snell_refraction ═══
-fn snellRefraction(I: vec3<f32>, N: vec3<f32>, n1: f32, n2: f32) -> vec3<f32> {
-  let eta = n1 / n2;
-  let cosI = dot(-I, N);
-  let sinT2 = eta * eta * (1.0 - cosI * cosI);
-  if (sinT2 > 1.0) {
-    return reflect(I, N);
-  }
-  let cosT = sqrt(1.0 - sinT2);
-  return eta * I + (eta * cosI - cosT) * N;
-}
-
-// ═══ CHUNK: spectral_sample ═══
-fn spectralRefract(uv: vec2<f32>, N: vec3<f32>, nBase: f32, dispersion: f32) -> vec3<f32> {
-  let I = vec3(0.0, 0.0, -1.0);
-  let rUV = uv + snellRefraction(I, N, 1.0, nBase - dispersion * 0.04).xy * 0.05;
-  let gUV = uv + snellRefraction(I, N, 1.0, nBase).xy * 0.05;
-  let bUV = uv + snellRefraction(I, N, 1.0, nBase + dispersion * 0.04).xy * 0.05;
-  let r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2(0.0), vec2(1.0)), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2(0.0), vec2(1.0)), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2(0.0), vec2(1.0)), 0.0).b;
-  return vec3(r, g, b);
-}
-
-// ═══ CHUNK: fresnel_reflectance ═══
-fn fresnelReflectance(cosTheta: f32, n1: f32, n2: f32) -> f32 {
-  let R0 = pow((n1 - n2) / (n1 + n2), 2.0);
-  return R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
-}
-
-// ═══ CHUNK: caustic_highlight ═══
-fn causticHighlight(dist: f32, time: f32, mask: f32, intensity: f32) -> f32 {
-  let c1 = pow(max(0.0, sin(dist * 25.0 - time * 3.0)), 6.0);
-  let c2 = pow(max(0.0, sin(dist * 40.0 + time * 2.0)), 10.0);
-  return (c1 * 0.6 + c2 * 0.4) * mask * intensity;
-}
-
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-  let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
-  let mouse = u.zoom_config.yz;
-  let bass = plasmaBuffer[0].x;
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-  let strength = u.zoom_params.x * (1.0 + bass * 0.2);
-  let radius = u.zoom_params.y;
-  let dispersion = u.zoom_params.z;
-  let surfaceWave = u.zoom_params.w;
-
-  let uvCorrected = vec2(uv.x * aspect, uv.y);
-  let mouseCorrected = vec2(mouse.x * aspect, mouse.y);
-  let dist = distance(uvCorrected, mouseCorrected);
-
-  let waveH = sin(dist * 20.0 - u.config.x * 3.0) * surfaceWave * 0.02 * (1.0 + bass * 0.3);
-  let deformedDist = dist + waveH;
-
-  let lensMask = smoothstep(radius, radius * 0.7, deformedDist);
-  let h = sqrt(max(0.0, radius * radius - deformedDist * deformedDist)) + waveH;
-  let nd = deformedDist / max(radius, 0.001);
-
-  let nBase = 1.33 + depth * 0.2 * strength;
-  let lensThickness = h / max(radius, 0.001);
-
-  let N = normalize(vec3(
-    (uvCorrected - mouseCorrected) / max(radius, 0.001),
-    lensThickness * 2.0
-  ));
-  let I = vec3(0.0, 0.0, -1.0);
-  let cosTheta = max(0.0, dot(-I, N));
-
-  let refracted = spectralRefract(uv, N, nBase, dispersion * strength);
-  let fresnel = fresnelReflectance(cosTheta, 1.0, nBase);
-
-  let caustic = causticHighlight(deformedDist, u.config.x, lensMask, dispersion * strength);
-
-  let specDir = normalize(vec3(-0.3, -0.3, 1.0));
-  let spec = pow(max(0.0, dot(N, specDir)), 30.0) * lensMask * 0.4;
-
-  let rim = smoothstep(radius * 0.8, radius, deformedDist);
-  let isInside = deformedDist < radius;
-  let edgeDarken = 1.0 - rim * 0.4;
-
-  let reflectionColor = vec3(0.6, 0.7, 0.8) * fresnel * lensMask;
-  let surfaceNoise = hash21(uv * 300.0 + u.config.x) * 0.02 * lensMask;
-  let finalColor = refracted * edgeDarken * (1.0 - fresnel) + reflectionColor + spec + caustic + surfaceNoise;
-  let tonemapped = aces_tonemap(finalColor);
-
-  let alpha = clamp(lensThickness * fresnel * lensMask * 2.0, 0.0, 1.0);
-  let outCol = vec4(tonemapped, alpha);
-
-  textureStore(writeTexture, coord, outCol);
-  textureStore(writeDepthTexture, coord, vec4(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, outCol);
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+fn boundedLoad(uv: vec2<f32>, dims: vec2<i32>) -> vec4<f32> { let c=clamp(vec2<i32>(floor(uv*vec2<f32>(dims))),vec2<i32>(0),dims-vec2<i32>(1)); return textureLoad(dataTextureC,c,0); }
+fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x*(2.51*x+0.03))/max(x*(2.43*x+0.59)+0.14,vec3<f32>(0.001)),vec3<f32>(0.0),vec3<f32>(1.0)); }
+fn lensLobe(p:vec2<f32>,c:vec2<f32>,r:f32,lobes:f32,phase:f32)->vec2<f32>{let q=p-c;let d=max(length(q),0.0001);let b=r*(1.0+0.13*sin(atan2(q.y,q.x)*lobes+phase));let h=smoothstep(b,b*0.35,d);return q/d*h*(b-d)/max(b,0.001);}
+@compute @workgroup_size(16,16,1)
+fn main(@builtin(global_invocation_id) gid:vec3<u32>){
+ let res=u.config.zw;if(gid.x>=u32(res.x)||gid.y>=u32(res.y)){return;}let coord=vec2<i32>(gid.xy);let uv=(vec2<f32>(gid.xy)+0.5)/res;let dims=vec2<i32>(res);let aspect=res.x/max(res.y,1.0);let t=u.config.x;let audio=clamp(plasmaBuffer[0].xyz,vec3<f32>(0.0),vec3<f32>(1.0));
+ let refraction=0.012+u.zoom_params.x*0.065;let radius=0.10+u.zoom_params.y*0.34;let dispersion=0.001+u.zoom_params.z*0.018;let waves=0.15+u.zoom_params.w*1.35;let pointer=u.zoom_config.yz;let held=clamp(u.zoom_config.w,0.0,1.0);let p=(uv-0.5)*vec2<f32>(aspect,1.0);let mp=(pointer-0.5)*vec2<f32>(aspect,1.0);
+ let orbitA=mp+vec2<f32>(cos(t*2.3),sin(t*2.7))*(0.10+audio.x*0.035);let orbitB=mp+vec2<f32>(cos(-t*3.1+2.0),sin(t*2.1+2.0))*0.17;var bend=lensLobe(p,mp,radius*(1.0-held*0.18),5.0,t*2.8)*(1.0+held*2.1);bend+=lensLobe(p,orbitA,radius*0.36,3.0,-t*4.0)*0.62;bend+=lensLobe(p,orbitB,radius*0.25,4.0,t*5.0)*0.42;
+ let mesh=sin((p.x+p.y)*42.0-t*7.5)*sin((p.x-p.y)*35.0+t*6.0);bend+=vec2<f32>(sin(p.y*29.0+t*5.4),cos(p.x*31.0-t*4.7))*mesh*waves*0.0008;var ring=0.0;let count=min(u32(max(u.config.y,0.0)),50u);
+ for(var i=0u;i<count;i=i+1u){let r=u.ripples[i];let age=t-r.z;if(age>=0.0&&age<3.0){let q=(uv-r.xy)*vec2<f32>(aspect,1.0);let d=max(length(q),0.0001);let front=sin((d-age*0.30)*70.0)*exp(-abs(d-age*0.30)*20.0-age*0.8);bend+=vec2<f32>(q.x/aspect,q.y)/d*front*refraction;ring+=abs(front);}}
+ let flow=vec2<f32>(bend.x/aspect,bend.y)*refraction*(1.0+audio.y*0.55);let dir=flow/max(length(flow),0.0001);let baseUV=clamp(uv-flow,vec2<f32>(0.0),vec2<f32>(1.0));let spread=dir*dispersion*(1.0+audio.z*0.7);let sr=textureSampleLevel(readTexture,u_sampler,clamp(baseUV+spread,vec2<f32>(0.0),vec2<f32>(1.0)),0.0);let sg=textureSampleLevel(readTexture,u_sampler,baseUV,0.0);let sb=textureSampleLevel(readTexture,u_sampler,clamp(baseUV-spread,vec2<f32>(0.0),vec2<f32>(1.0)),0.0);let history=boundedLoad(clamp(uv-flow*0.35,vec2<f32>(0.0),vec2<f32>(1.0)),dims);
+ let caustic=pow(clamp(abs(mesh)*length(bend)*9.0+ring*0.35,0.0,1.0),2.0);let normal=normalize(vec3<f32>(-bend*5.0,1.0));let fresnel=0.04+0.96*pow(1.0-max(normal.z,0.0),5.0);var rgb=vec3<f32>(sr.r,sg.g,sb.b);rgb+=mix(vec3<f32>(0.05,0.82,0.94),vec3<f32>(1.0,0.48,0.08),0.5+0.5*sin(t*1.9+p.x*8.0))*caustic*(0.28+audio.y*0.4);rgb+=vec3<f32>(0.32,0.7,0.9)*fresnel*0.3;rgb=mix(rgb,history.rgb,clamp(history.a*0.12,0.0,0.16));let alpha=clamp(max(max(sr.a,sg.a),sb.a)*0.86+fresnel*0.12+caustic*0.16,0.0,1.0);let outColor=vec4<f32>(aces(rgb),alpha);textureStore(writeTexture,coord,outColor);textureStore(dataTextureA,coord,outColor);let depth=textureSampleLevel(readDepthTexture,non_filtering_sampler,baseUV,0.0).r;textureStore(writeDepthTexture,coord,vec4<f32>(clamp(depth-caustic*0.02,0.0,1.0),0.0,0.0,0.0));
 }

@@ -55,5 +55,13 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Plant Growth", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Herbivore Efficiency", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Predator Efficiency", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Decay Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = plants, herbivores, predators, nutrients",
+  "updated": true
 }

@@ -25,17 +25,19 @@ npx playwright install chromium
 ```
 
 The `app` engine (default) serves the production build from `build/` and supports the
-full catalog, including multipass shaders. The `minimal` engine skips the build and
+full catalog, including multipass shaders. Thumbnail PNGs use gpu-chores `downsample_2d`
+when the adopted WebGPU device is live (`captureThumbnailPng` in the test harness);
+otherwise the canvas 2D scale fallback. The `minimal` engine skips the build and
 uses a fast inline WebGPU path for **generative shaders only**; it rejects other
 categories rather than producing misleading captures.
 
 ## Commands
 
 ```bash
-# Generate all missing thumbnails (resume-safe)
-npm run thumbs:generate -- --missing
+# Generate missing thumbnails, attract / Physics Lab first
+npm run thumbs:generate -- --priority=attract --missing
 
-# Check coverage vs catalog
+# Check coverage vs catalog (healthy eligible, not PNG-only)
 npm run thumbs:status
 
 # Category batch
@@ -64,6 +66,7 @@ npm run thumbs:generate:minimal -- --limit=20
 | `--missing` | off | Skip shaders that already have PNG + manifest entry |
 | `--force` | off | Regenerate even when thumbnail exists |
 | `--category=NAME` | `all-catalog` | Shader list category or `all-catalog` |
+| `--priority=attract` | off | Process attract + Physics Lab ids first, then 4-param generative, then long tail |
 | `--limit=N` | none | Max shaders to process |
 | `--shard=I/N` | none | Process every Nth shader where `index % N === I` |
 | `--frames=60` | `60` | Animation frames to wait before capture (`app` engine) |
@@ -114,25 +117,28 @@ Failure reasons: `black_frame`, `magenta_frame`, `error_frame`, `compile`, `pipe
 
 Skipped shaders (intentional): listed in `reports/thumbnail_skip_allowlist.json` — excluded from generation queue and eligible coverage denominator.
 
-## Coverage strategy (first campaign ≥60%, stretch target ≥80%)
+## Coverage strategy (campaign target ≥50% healthy; 80% later)
 
-Current catalog is ~1,300 shaders. Run in waves on a discrete-GPU workstation:
+Current catalog is ~1,300 shaders. **Do not capture on the Cloud VM** (no GPU adapter; black PNGs are not coverage). Run on a discrete-GPU workstation:
 
 ```bash
 SKIP_WASM_BUILD=1 npm run build
-bash scripts/run-thumbnail-waves.sh          # all waves
-bash scripts/run-thumbnail-waves.sh --wave=W1
-python3 scripts/audit_thumbnail_integrity.py
+npm run thumbs:generate -- --priority=attract --missing
 npm run thumbs:status
+python3 scripts/audit_thumbnail_integrity.py
+bash scripts/run-thumbnail-waves.sh --wave=attract
 ```
 
 The wave runner audits first and force-retries every currently flagged PNG before
 processing missing entries. This prevents `--missing` from treating an existing
 black/error PNG as complete. The final audit is the authoritative healthy count.
 
+Priority order: `ATTRACT_SHOWCASE_IDS` + `ATTRACT_PHYSICS_LAB_IDS`, then remaining generative with four live `zoom_params` mappings, then long tail.
+
 | Wave | Categories | Notes |
 |------|------------|-------|
-| W1 | `generative` | Largest catalog surface and highest attract-mode impact |
+| attract | `--priority=attract` | Curated pool first |
+| W1 | `generative` | Remaining generative |
 | W2 | `simulation`, `interactive-mouse` | Multipass flagships + user-facing interaction |
 | W3 | `visual-effects`, `distortion`, `liquid-effects`, `image`, remainder | Image shaders use `public/fixtures/thumbnail-sample.png` |
 
@@ -164,10 +170,38 @@ Manual workflow: **Actions → Generate Thumbnails → Run workflow**
 The default GitHub runner has no GPU; the job runs a `--limit=5` smoke capture and uploads artifacts. For full batch runs, use a self-hosted runner with the `webgpu` label (see `.github/workflows/generate-thumbnails.yml`).
 
 Pull requests that add shader definitions run `npm run thumbs:check-regression`.
-The check compares the PR with `origin/main` and fails when a new definition has
-no healthy PNG or when overall healthy coverage drops. PRs that do not add
-definitions receive an informational result. The weekly coverage workflow remains
-reporting-only until the healthy baseline reaches 50%.
+The check compares the PR with the base branch and **fails only** when a newly eligible
+id has no healthy PNG (PNG + manifest + not integrity-flagged) and no unexpired deferral,
+or when a previously healthy PNG is deleted. Global coverage **percentage and count are not gates**.
+
+The CI job stays `continue-on-error` (reporting-only with a sticky PR comment) until
+healthy eligible coverage is ≥ 50%; then drop `continue-on-error` so new-definition
+failures block the PR. The weekly coverage workflow remains reporting-only until that flip.
+
+### Deferral Mechanism
+
+When a PR adds a shader definition but cannot provide a healthy thumbnail (e.g., pending GPU capture), add a deferral entry to `reports/thumbnail_deferrals.json`:
+
+```json
+{
+  "entries": [
+    {
+      "id": "gen-shader-name",
+      "added_by": "author",
+      "pr": 1234,
+      "deferred_at": "2026-08-21",
+      "expires": "2026-09-20",
+      "reason": "pending GPU capture wave"
+    }
+  ]
+}
+```
+
+- `expires` (or `until`) must be ≤ 30 days from `deferred_at` when both are set
+- Each deferral should correspond to an eligible shader without a healthy thumbnail
+- Expired deferrals are not honored
+- Deferrals are distinct from skip allowlist: skip IDs are permanent (unrenderable), deferrals are temporary (pending thumbnail)
+- After a GPU capture wave, remove deferrals for ids that now have healthy PNGs
 
 ## Related
 

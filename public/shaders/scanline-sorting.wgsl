@@ -1,12 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Scanline Sorting
-//  Category: interactive-mouse
-//  Features: mouse-driven, sorting, audio-reactive, palette-mapped,
-//            chromatic-edge, aces-tone-map, early-exit, branchless,
-//            shared-memory, bitonic-sort
-//  Complexity: Medium
-//  Created: 2026-01-01
-//  Upgraded: 2026-07-08
+//  Scanline Sorting — Batch 62
+//  Bitonic luminance sort band: spring scan center, held widen, capped
+//  click sort bursts, regional FFT palette, ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -64,14 +59,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,
     let treble = plasmaBuffer[0].z;
 
     let sort_threshold   = clamp(u.zoom_params.x, 0.0, 1.0);
-    let scan_width       = u.zoom_params.y * 0.2 * (1.0 + bass * 0.3);
+    let scan_width       = u.zoom_params.y * 0.2 * (1.0 + bass * 0.3) * select(1.0, 1.3, u.zoom_config.w > 0.5);
     let scan_speed       = u.zoom_params.z;
     let direction_toggle = step(0.5, u.zoom_params.w);
-    let mouseDown        = u.zoom_config.w;
+    let held = u.zoom_config.w > 0.5;
     let mouse            = u.zoom_config.yz;
 
-    // ── Scanline band ──────────────────────────────────────────────
-    let scan_pos = mix(mix(mouse.y, mouse.x, direction_toggle),
+    var smoothMouse = mouse;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[138] > 0.5) {
+      smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+      var springPos = smoothMouse;
+      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+      if (extraBuffer[138] <= 0.5) {
+        springPos = mouse;
+        springVel = vec2<f32>(0.0);
+      } else {
+        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+        let omega = 9.0;
+        let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+        springVel += accel * dt;
+        springPos += springVel * dt;
+      }
+      extraBuffer[133] = springPos.x;
+      extraBuffer[134] = springPos.y;
+      extraBuffer[135] = springVel.x;
+      extraBuffer[136] = springVel.y;
+      extraBuffer[137] = time;
+      extraBuffer[138] = 1.0;
+      smoothMouse = springPos;
+    }
+    let mouseDown = select(u.zoom_config.w, 1.0, held);
+
+    var rippleBoost = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+      let rp = u.ripples[ri];
+      let age = time - rp.z;
+      if (age >= 0.0 && age < 1.2) {
+        rippleBoost = max(rippleBoost, smoothstep(0.14, 0.0, distance(uv, rp.xy)) * (1.0 - age * 0.85));
+      }
+    }
+
+    let scan_pos = mix(mix(smoothMouse.y, smoothMouse.x, direction_toggle),
                        fract(time * scan_speed),
                        step(0.01, scan_speed));
 
@@ -81,8 +113,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,
 
     // ── Mouse cursor boost ─────────────────────────────────────────
     let aspect = res.x / max(res.y, 1.0);
-    let dMouse = length((uv - mouse) * vec2<f32>(aspect, 1.0));
-    let cursorBoost = fast_exp(-dMouse * dMouse * 6.0) * (0.4 + mouseDown * 0.6);
+    let dMouse = length((uv - smoothMouse) * vec2<f32>(aspect, 1.0));
+    let cursorBoost = fast_exp(-dMouse * dMouse * 6.0) * (0.4 + mouseDown * 0.6) + rippleBoost * 0.35;
 
     // ── Load one texel per thread into shared tile ─────────────────
     var original = vec3<f32>(0.0);
@@ -167,7 +199,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,
 
     // ── Palette overlay ────────────────────────────────────────────
     let pIdx = u32(clamp((lf + sort_strength * 0.005) * 255.0, 0.0, 255.0));
-    let palette = plasmaBuffer[pIdx].rgb;
+    let bandBin = min(u32(uv.x * 8.0), 7u) + 1u;
+    let palette = plasmaBuffer[pIdx].rgb * (1.0 + plasmaBuffer[bandBin].x * 0.15);
     color = mix(color, color * (0.6 + palette * 0.8), band_t * 0.5);
 
     // ── Tone map & semantic alpha ──────────────────────────────────

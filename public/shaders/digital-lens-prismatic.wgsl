@@ -1,16 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  digital-lens-prismatic
+//  digital-lens-prismatic — Digital Prismatic Lens & Hex Quantization
 //  Category: advanced-hybrid
-//  Features: mouse-driven, spectral-rendering, pixelation, physical-dispersion
-//  Complexity: Very High
-//  Chunks From: digital-lens.wgsl, spec-prismatic-dispersion.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-17
-// ═══════════════════════════════════════════════════════════════════
-//  A digital lens that pixelates the image and refracts light
-//  through a virtual glass prism. Inside the lens, each pixel block
-//  undergoes 4-band spectral dispersion via Cauchy's equation.
-//  The digital grid bounds the prismatic regions.
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
+//            cauchy-dispersion, hex-grid, iridescent-rim, semantic-alpha, ACES
+//  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,9 +21,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=BlockSize, y=Radius, z=GridOpacity, w=CauchyB
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -47,88 +40,153 @@ fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
   return max(vec3<f32>(r, g, b), vec3<f32>(0.0));
 }
 
-fn refractThroughSurface(uv: vec2<f32>, center: vec2<f32>, ior: f32, curvature: f32) -> vec2<f32> {
-  let toCenter = uv - center;
+fn refractThroughSurface(uv: vec2<f32>, center: vec2<f32>, ior: f32, curvature: f32, squeeze: f32) -> vec2<f32> {
+  let toCenter = (uv - center) * vec2<f32>(1.0, 1.0 + squeeze * 0.3);
   let dist = length(toCenter);
-  let lensStrength = curvature * 0.4;
-  let offset = toCenter * (1.0 - 1.0 / ior) * lensStrength * (1.0 + dist * 2.0);
+  let lensStrength = curvature * 0.45;
+  let offset = toCenter * (1.0 - 1.0 / ior) * lensStrength * (1.0 + dist * 2.2);
   return uv + offset;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hexEdge(uv: vec2<f32>, scale: f32) -> f32 {
+  let p = uv * scale;
+  let q = vec2<f32>(p.x * 1.7320508 + p.y, p.y * 2.0);
+  let pf = fract(q);
+  let d1 = length(pf - vec2<f32>(0.5, 0.5));
+  let d2 = length(pf - vec2<f32>(0.0, 1.0));
+  return 1.0 - smoothstep(0.01, 0.06, min(d1, d2));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(global_id.xy);
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
-  let aspect = resolution.x / resolution.y;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let rawMouse = u.zoom_config.yz;
+  let held = u.zoom_config.w > 0.5;
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   let block_size = max(2.0, u.zoom_params.x * 50.0 + 2.0);
-  let radius = u.zoom_params.y * 0.4 + 0.05;
+  let radius = u.zoom_params.y * 0.42 + 0.05;
   let grid_opacity = u.zoom_params.z;
-  let cauchyB = mix(0.01, 0.08, u.zoom_params.w);
+  let cauchyB = mix(0.01, 0.1, u.zoom_params.w) * (1.0 + treble * 0.35);
 
-  var mouse = u.zoom_config.yz;
-  let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  // Critically damped spring cursor in extraBuffer[133..138]
+  let isWriter = (global_id.x == 0u && global_id.y == 0u);
+  let hasState = (arrayLength(&extraBuffer) > 138u);
+
+  var smoothMouse = rawMouse;
+  if (hasState && extraBuffer[138] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+
+  if (isWriter && hasState) {
+    let lastTime = extraBuffer[137];
+    let dt = clamp(time - lastTime, 0.0, 0.05);
+    var sPos = smoothMouse;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] < 0.5) {
+      sPos = rawMouse;
+      sVel = vec2<f32>(0.0);
+    }
+    let stiffness = 45.0;
+    let damping = 13.416; // 2 * sqrt(45)
+    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+    sVel += accel * dt;
+    sPos += sVel * dt;
+    extraBuffer[133] = sPos.x;
+    extraBuffer[134] = sPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
+
+  let dist_vec = (uv - smoothMouse) * vec2<f32>(aspect, 1.0);
   let dist = length(dist_vec);
+  let squeeze = select(0.0, 0.35, held);
+  let mask = 1.0 - smoothstep(radius, radius + 0.06, dist);
 
-  let mask = 1.0 - smoothstep(radius, radius + 0.05, dist);
+  var ripplePulse = 0.0;
+  let uvAspect = uv * vec2<f32>(aspect, 1.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.0) {
+      let rAspect = vec2<f32>(rp.x * aspect, rp.y);
+      let rDist = length(uvAspect - rAspect);
+      ripplePulse += smoothstep(0.14, 0.0, rDist) * (1.0 - age);
+    }
+  }
 
   var color: vec4<f32>;
 
-  if (mask > 0.001) {
-    // Pixelate inside lens
+  if (mask > 0.001 || ripplePulse > 0.05) {
     let blocks = resolution / block_size;
     let uv_quantized = floor(uv * blocks) / blocks + (0.5 / blocks);
-
-    // Prismatic dispersion at pixel-block center
-    let lensCenter = mouse;
-    let glassCurvature = 0.8;
+    let lensCenter = smoothMouse;
+    let glassCurvature = 0.85 + mids * 0.15;
     let glassThickness = 0.8;
-    let spectralSat = 0.9;
+    let spectralSat = 0.92 + bass * 0.15;
 
-    let WAVELENGTHS = array<f32, 4>(450.0, 520.0, 600.0, 680.0);
+    let WAVELENGTHS = array<f32, 6>(420.0, 470.0, 520.0, 580.0, 630.0, 680.0);
     var finalColor = vec3<f32>(0.0);
-    var spectralResponse = vec4<f32>(0.0);
 
-    for (var i: i32 = 0; i < 4; i = i + 1) {
+    for (var i: i32 = 0; i < 6; i = i + 1) {
       let ior = cauchyIOR(WAVELENGTHS[i], 1.5, cauchyB);
-      let refractedUV = refractThroughSurface(uv_quantized, lensCenter, ior, glassCurvature);
-      let wrappedUV = fract(refractedUV);
+      let refractedUV = refractThroughSurface(uv_quantized, lensCenter, ior, glassCurvature, squeeze);
+      let wrappedUV = clamp(refractedUV, vec2<f32>(0.0), vec2<f32>(1.0));
       let sample = textureSampleLevel(readTexture, u_sampler, wrappedUV, 0.0);
-      let absorption = exp(-glassThickness * (4.0 - f32(i)) * 0.15);
+      let absorption = exp(-glassThickness * (6.0 - f32(i)) * 0.12);
       let bandIntensity = dot(sample.rgb, wavelengthToRGB(WAVELENGTHS[i])) * absorption;
-      spectralResponse[i] = bandIntensity;
       finalColor += wavelengthToRGB(WAVELENGTHS[i]) * bandIntensity * spectralSat;
     }
 
-    finalColor = finalColor / (1.0 + finalColor * 0.3);
+    finalColor = finalColor / (1.0 + finalColor * 0.28);
 
-    // Grid lines
     let uv_pixel = uv * resolution;
     let grid_x = step(block_size - 1.0, uv_pixel.x % block_size);
     let grid_y = step(block_size - 1.0, uv_pixel.y % block_size);
     let grid_line = max(grid_x, grid_y);
+    let hex = hexEdge(uv, 18.0 + block_size);
 
-    var lens_color = vec4<f32>(finalColor, spectralResponse.w);
-
-    // Digital tint
-    let tint = vec4<f32>(0.0, 1.0, 0.2, 1.0);
-    lens_color = mix(lens_color, lens_color * tint * 1.5, 0.3);
-
-    // Add grid
+    var lens_color = vec4<f32>(finalColor, 1.0);
+    let tint = vec3<f32>(0.15, 1.0, 0.55);
+    lens_color = vec4<f32>(mix(lens_color.rgb, lens_color.rgb * tint * 1.4, 0.35), lens_color.a);
     lens_color = mix(lens_color, vec4<f32>(0.0, 0.0, 0.0, 1.0), grid_line * grid_opacity);
+    lens_color = mix(lens_color, vec4<f32>(wavelengthToRGB(520.0 + sin(time + dist * 8.0) * 80.0), 1.0), hex * 0.25);
+
+    let rim = smoothstep(radius * 0.85, radius, dist) * (1.0 - mask);
+    lens_color = vec4<f32>(lens_color.rgb + wavelengthToRGB(580.0 + treble * 60.0) * rim * 0.6, lens_color.a);
 
     let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    color = mix(original, lens_color, mask);
+    let blendMask = clamp(mask + ripplePulse * 0.4, 0.0, 1.0);
+    color = mix(original, lens_color, blendMask);
   } else {
     color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   }
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  // Exact dataTextureC persistence
+  let prevC = textureLoad(dataTextureC, coord, 0).rgb;
+  let finalRGB = acesToneMap(mix(color.rgb * (0.96 + bass * 0.06), prevC, 0.07));
+  let alpha = clamp(0.55 + mask * 0.35 + ripplePulse * 0.1 + select(0.0, 0.1, held), 0.0, 1.0);
+  let finalPixel = vec4<f32>(finalRGB, alpha);
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, coord, finalPixel);
+  textureStore(dataTextureA, coord, finalPixel);
+
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

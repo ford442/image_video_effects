@@ -71,13 +71,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let foreground = 1.0 - smoothstep(0.40, 0.65, nearestDepth);
   let edgeSilhouette = smoothstep(0.005, 0.09, abs(rawDepth - nearestDepth));
 
-  // Dual continuous motion: 3D perspective parallax undulating wave field + oblique shear flow
+  // Perspective-compressed Gerstner sheet. Crests tighten toward the horizon,
+  // while the derivative terms form a parallax Jacobian instead of a flat warp.
   let pAspect = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-  let perspectiveTilt = 1.0 + (1.0 - uv.y) * 1.6;
-  let parallaxFlow = vec2<f32>(
-    sin(pAspect.y * (density * perspectiveTilt) + time * speed + audio.x * 1.5),
-    cos(pAspect.x * (density * perspectiveTilt) - time * (speed * 0.85) + audio.y * 1.2)
-  ) * intensity * mix(1.2, 0.25, rawDepth);
+  let perspectiveTilt = 1.0 + (1.0 - uv.y) * 2.1;
+  var gerstner = vec2<f32>(0.0);
+  var jacobian = vec2<f32>(0.0);
+  let waveDirs = array<vec2<f32>, 3>(normalize(vec2<f32>(1.0,0.32)), normalize(vec2<f32>(-0.44,1.0)), normalize(vec2<f32>(0.72,-0.69)));
+  for (var waveIndex = 0; waveIndex < 3; waveIndex = waveIndex + 1) {
+    let wf = f32(waveIndex);
+    let direction = waveDirs[waveIndex];
+    let frequency = (density + wf * 2.7) * perspectiveTilt;
+    let phase = dot(pAspect, direction) * frequency - time * speed * (1.0 + wf * 0.31) + audio.x * 1.5;
+    let amplitude = intensity / (1.0 + wf * 0.7);
+    gerstner += direction * cos(phase) * amplitude;
+    jacobian += abs(direction) * abs(sin(phase)) * frequency * amplitude;
+  }
+  let secondaryShear = vec2<f32>(sin(pAspect.y * density * 1.7 - time * speed * 0.73), cos(pAspect.x * density * 1.3 + time * speed * 0.61)) * intensity * (0.2 + audio.y * 0.35);
+  let parallaxFlow = (gerstner + secondaryShear) * mix(1.2, 0.25, rawDepth) / (vec2<f32>(1.0) + jacobian * 0.35);
 
   var totalDisp = parallaxFlow;
   var waveElevation = 0.0;
@@ -96,7 +107,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i = 0u; i < rippleCount; i = i + 1u) {
     let rip = u.ripples[i];
     let age = time - rip.z;
-    if (age > 0.0 && age < 3.2) {
+    if (age < 0.0 || age > 3.2) { continue; }
+    {
       let rDelta = (uv - rip.xy) * vec2<f32>(aspect, 1.0);
       let rDist = max(length(rDelta), 0.0001);
       let rDir = rDelta / rDist;
@@ -143,7 +155,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalRGB = acesToneMapping(finalRGB);
 
   let sourceAlpha = max(baseColor.a, max(redSample.a, blueSample.a));
-  let finalAlpha = clamp(sourceAlpha + edgeSilhouette * 0.2 + dispMag * 3.5, 0.0, 1.0);
+  let sheetSlope = clamp(length(jacobian), 0.0, 1.0);
+  let finalAlpha = clamp(sourceAlpha * 0.82 + edgeSilhouette * 0.2 + dispMag * 3.5 + sheetSlope * 0.12, 0.0, 1.0);
   let outputColor = vec4<f32>(finalRGB, finalAlpha);
 
   textureStore(writeTexture, coord, outputColor);

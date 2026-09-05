@@ -50,6 +50,11 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     return rgb + (v - c);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ── Hash / Value Noise ──
 fn h1(n: f32) -> f32 { return fract(sin(n * 127.1 + 311.7) * 43758.5453123); }
 fn h2(p: vec2<f32>) -> f32 {
@@ -311,6 +316,8 @@ fn accretionDisk(p: vec2<f32>, wellPos: vec2<f32>, mass: f32, t: f32) -> f32 {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res    = u.config.zw;
     if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
+    let coord = vec2<i32>(gid.xy);
+    let previousState = textureLoad(dataTextureC, coord, 0);
     let uv     = vec2<f32>(gid.xy) / res;
     let t      = u.config.x;
     let mouse  = u.zoom_config.yz;
@@ -443,11 +450,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fresnelArc = rsClamped * rsClamped;
     col = col + arcColor * fresnelArc * smoothstep(0.05, 0.2, raySpeed);
 
-    col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    col = acesToneMap(clamp(col, vec3<f32>(0.0), vec3<f32>(6.0)) * 1.08);
 
     // ── Depth: normalized gravitational potential ──
     let phi = gravPotential(p, wells, wellCount);
-    let depthOut = clamp((-phi) / (wellMass * f32(wellCount) * 20.0), 0.0, 1.0);
+    let rawDepth = clamp((-phi) / (wellMass * f32(wellCount) * 20.0), 0.0, 1.0);
+    let depthOut = mix(previousState.r, rawDepth, 0.35 + treble * 0.1);
 
     // ── Alpha: emission energy + lens arc + ring intensity ──
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
@@ -456,6 +464,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     textureStore(writeTexture, gid.xy, vec4<f32>(col, alpha));
     // Persist potential field for downstream feedback shaders
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(depthOut, raySpeed, emEnergy, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(depthOut, raySpeed, emEnergy, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
 }

@@ -2,23 +2,31 @@
   "id": "liquid-oil-iridescence",
   "name": "Liquid Oil Iridescence",
   "url": "shaders/liquid-oil-iridescence.wgsl",
-  "description": "Liquid Oil Iridescence",
+  "description": "Pearl-black film islands transport magenta, cyan, and lime interference contours through fast capillary streams with held-pointer thinning.",
   "tags": [
     "liquid-oil",
     "thin-film-interference",
     "depth-aware",
-    "spectral-render"
+    "spectral-render",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-state",
+    "exact-feedback"
   ],
   "features": [
     "liquid-oil",
     "thin-film-interference",
     "depth-aware",
-    "spectral-render"
+    "spectral-render",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-state",
+    "exact-feedback"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "viscosity",
+      "name": "Viscosity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,8 +34,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "film_ior",
+      "name": "Film IOR",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -35,8 +43,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "intensity",
+      "name": "Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -44,8 +52,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "turbulence",
+      "name": "Turbulence",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -53,5 +61,13 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Film Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Film IOR", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Interference Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Capillary Turbulence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = spectral interference RGB, normalized film thickness",
+  "updated": true,
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

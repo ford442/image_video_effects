@@ -1,0 +1,26 @@
+{
+  "id": "gen-ice-crystal-lattice",
+  "url": "shaders/gen-ice-crystal-lattice.wgsl",
+  "name": "Ice Crystal Lattice",
+  "category": "generative",
+  "tags": ["ice", "crystal", "hexagonal", "frost", "branching", "audio-reactive"],
+  "description": "Hexagonal ice branches advance through luminous frost fronts, pointer-seeded nucleation, Fresnel-like rims, and click-launched fracture waves.",
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {"id": "latticeDensity", "name": "Lattice Density", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
+    {"id": "branching", "name": "Branching", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
+    {"id": "growthSpeed", "name": "Growth Speed", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
+    {"id": "frostGlow", "name": "Frost Glow", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
+  ],
+  "updatedParams": [
+    {"index": 0, "name": "Lattice Density", "default": 0.55, "min": 0, "max": 1, "step": 0.01},
+    {"index": 1, "name": "Branching", "default": 0.6, "min": 0, "max": 1, "step": 0.01},
+    {"index": 2, "name": "Growth Speed", "default": 0.45, "min": 0, "max": 1, "step": 0.01},
+    {"index": 3, "name": "Frost Glow", "default": 0.7, "min": 0, "max": 1, "step": 0.01}
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": ["procedural", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "feedbackPacking": "A/C = raw HDR ice and frost display RGBA history"
+}

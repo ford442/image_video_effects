@@ -39,6 +39,15 @@ fn rotZ(angle: f32) -> mat3x3<f32> {
     return mat3x3<f32>(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0);
 }
 
+fn acesToneMap(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // 3D Noise for fluid/plasma
 fn hash(p: vec3<f32>) -> vec3<f32> {
     var p_temp = vec3<f32>(dot(p, vec3<f32>(127.1, 311.7, 74.7)),
@@ -147,12 +156,56 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let gold_smooth = u.zoom_params.z;
     let mouseInfluence = u.zoom_params.w;
     let audio_val = audioBands.x * plasma_int;
-    let pressKick = select(0.0, 0.35 * mouseInfluence, u.zoom_config.w > 0.5);
+    let mouseDown = u.zoom_config.w > 0.5;
+
+    // Persistent cursor spring: [133..134] position, [135..136] velocity,
+    // [137] held-gravity envelope, [138] initialization flag.
+    let springInitialized = extraBuffer[138] > 0.5;
+    var springPos = u.zoom_config.yz;
+    var springVel = vec2<f32>(0.0);
+    var heldGravity = select(0.0, 1.0, mouseDown);
+    if (springInitialized) {
+        springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        heldGravity = extraBuffer[137];
+    }
+    let springOmega = mix(7.0, 15.0, mouseInfluence);
+    let springAccel = springOmega * springOmega * (u.zoom_config.yz - springPos) - 2.0 * springOmega * springVel;
+    let nextSpringVel = springVel + springAccel * 0.016;
+    let nextSpringPos = springPos + nextSpringVel * 0.016;
+    let nextHeldGravity = mix(heldGravity, select(0.0, 1.0, mouseDown), 0.14);
+    if (id.x == 0u && id.y == 0u) {
+        extraBuffer[133] = nextSpringPos.x;
+        extraBuffer[134] = nextSpringPos.y;
+        extraBuffer[135] = nextSpringVel.x;
+        extraBuffer[136] = nextSpringVel.y;
+        extraBuffer[137] = nextHeldGravity;
+        extraBuffer[138] = 1.0;
+    }
+
+    let pressKick = 0.35 * mouseInfluence * nextHeldGravity;
     let torque = 0.25 + audioBands.y * 0.35 + pressKick;
 
     // Mouse Interaction: Bending ray direction
-    let mx = (u.zoom_config.y - 0.5) * 2.0;
-    let my = (u.zoom_config.z - 0.5) * 2.0;
+    let mx = (nextSpringPos.x - 0.5) * 2.0;
+    let my = (nextSpringPos.y - 0.5) * 2.0;
+
+    // Click wells pull in proportion to each ripple's recorded strength;
+    // holding the pointer deepens the sprung well without creating new state.
+    let screenAspect = res.x / max(res.y, 1.0);
+    let pointerWell = (nextSpringPos - 0.5) * vec2<f32>(screenAspect, 1.0);
+    var gravityAim = pointerWell;
+    var gravityWeight = 0.25 + nextHeldGravity * mouseInfluence * 1.4;
+    let gravityRippleCount = min(u32(u.config.y), 50u);
+    for (var gi = 0u; gi < gravityRippleCount; gi++) {
+        let ripple = u.ripples[gi];
+        let age = time - ripple.z;
+        if (age < 0.0 || age > 2.0) { continue; }
+        let rippleStrength = clamp(ripple.w, 0.0, 1.0) * exp(-age * 1.6);
+        let rippleWell = (ripple.xy - 0.5) * vec2<f32>(screenAspect, 1.0);
+        gravityAim = (gravityAim * gravityWeight + rippleWell * rippleStrength) / max(gravityWeight + rippleStrength, 0.001);
+        gravityWeight += rippleStrength;
+    }
 
     let ro = vec3<f32>(0.0, 2.0, -5.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
@@ -172,9 +225,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     for(var i=0; i<80; i++) {
         p = ro_rot + rd * t;
         // Gravity well distortion near center
-        let dist = length(p.xy);
-        let bend = exp(-dist * dist * 0.5) * 0.2;
-        p += vec3<f32>(bend * rd.xy, 0.0);
+        let toWell = gravityAim - p.xy;
+        let bend = exp(-dot(toWell, toWell) * 0.55) * (0.08 + min(gravityWeight, 2.5) * 0.11);
+        p += vec3<f32>(toWell * bend, 0.0);
 
         d = map(p, time, audio_val, bloom_radius, torque);
         if(d < 0.001) { hit = true; break; }
@@ -226,7 +279,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let age = time - ripple.z;
         if (age < 0.0 || age > 2.0) { continue; }
         let radius = length((screenUV - ripple.xy) * aspectFix);
-        blossomShock += exp(-abs(radius - age * 0.72) * 60.0) * (1.0 - age * 0.5);
+        blossomShock += exp(-abs(radius - age * 0.72) * 60.0) * (1.0 - age * 0.5) * clamp(ripple.w, 0.0, 1.0);
     }
     col += vec3<f32>(1.0, 0.42, 0.12) * blossomShock * (0.4 + plasma_int * 0.25);
 
@@ -234,10 +287,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let centered = screenUV - 0.5;
     let historyCentered = rotZ(-0.018 * (1.0 + torque)) * vec3<f32>(centered, 0.0);
     let historyUV = clamp(historyCentered.xy + 0.5, vec2<f32>(0.002), vec2<f32>(0.998));
-    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let historySize = vec2<i32>(textureDimensions(dataTextureC));
+    let historyCoord = clamp(vec2<i32>(floor(historyUV * vec2<f32>(historySize))), vec2<i32>(0), historySize - vec2<i32>(1));
+    let previous = textureLoad(dataTextureC, historyCoord, 0).rgb;
     let temporal = clamp(max(col, previous * (0.86 + gold_smooth * 0.08)), vec3<f32>(0.0), vec3<f32>(6.0));
     let depth = select(1.0, clamp(t / 20.0, 0.0, 0.995), hit);
-    textureStore(dataTextureA, id.xy, vec4<f32>(temporal, 1.0));
-    textureStore(writeTexture, vec2<i32>(i32(id.x), i32(id.y)), vec4<f32>(temporal, 1.0));
+    let temporalLuma = dot(temporal, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let semanticAlpha = clamp(select(0.08 + smoothstep(0.02, 0.4, temporalLuma) * 0.35, 0.72 + blossomShock * 0.2, hit), 0.0, 1.0);
+    textureStore(dataTextureA, id.xy, vec4<f32>(temporal, semanticAlpha));
+    textureStore(writeTexture, vec2<i32>(i32(id.x), i32(id.y)), vec4<f32>(acesToneMap(temporal), semanticAlpha));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

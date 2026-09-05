@@ -22,23 +22,23 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Filter Radius",
+      "id": "rad",
+      "name": "Rad",
       "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Epsilon",
+      "id": "eps",
+      "name": "Eps",
       "default": 0.3,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
+      "id": "guide_strength",
       "name": "Guide Strength",
       "default": 0.85,
       "min": 0,
@@ -46,8 +46,8 @@
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Mouse Sharpening",
+      "id": "mouse_strength",
+      "name": "Mouse Strength",
       "default": 0.8,
       "min": 0,
       "max": 1,

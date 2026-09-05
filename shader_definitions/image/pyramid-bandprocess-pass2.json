@@ -2,7 +2,7 @@
   "id": "pyramid-bandprocess-pass2",
   "name": "Gaussian-Laplacian Pyramid (Pass 2: Band Processing)",
   "url": "shaders/pyramid-bandprocess-pass2.wgsl",
-  "description": "Pass 2 of 3: Extracts Laplacian (high-freq residual = original − prev-frame blur) and applies per-band creative effects: neon edge saturation (L0), audio-bass hue rotation (L1), slow LFO colour breathing (L2). Audio-reactive via plasmaBuffer.",
+  "description": "Pass 2 of 3: Extracts Laplacian (high-freq residual = original \u2212 prev-frame blur) and applies per-band creative effects: neon edge saturation (L0), audio-bass hue rotation (L1), slow LFO colour breathing (L2). Audio-reactive via plasmaBuffer.",
   "features": [
     "multi-pass-2",
     "audio-reactive",
@@ -26,7 +26,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "high_freq_amp",
       "name": "High Freq Amp",
       "default": 0.7,
       "min": 0,
@@ -34,7 +34,7 @@
       "step": 0.01
     },
     {
-      "id": "param2",
+      "id": "mid_freq_amp",
       "name": "Mid Freq Amp",
       "default": 0.5,
       "min": 0,
@@ -42,7 +42,7 @@
       "step": 0.01
     },
     {
-      "id": "param3",
+      "id": "low_freq_amp",
       "name": "Low Freq Amp",
       "default": 0.3,
       "min": 0,
@@ -50,8 +50,8 @@
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "ROI Radius",
+      "id": "roiradius",
+      "name": "Roiradius",
       "default": 0.2,
       "min": 0.05,
       "max": 0.5,

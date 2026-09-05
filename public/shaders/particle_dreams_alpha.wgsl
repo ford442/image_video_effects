@@ -178,6 +178,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let _e75 = u.zoom_params.x;
             let _e79 = u.zoom_params.y;
             let layerSpeed = mix(_e75, _e79, layerDepth_1);
+            let colorShift = u.zoom_params.z; // Consume dead slider
             let layerZoom = (1.0 + (fract((zoom_time * layerSpeed)) * 4.0));
             let _e87 = uv;
             let toCenter = (_e87 - zoom_center);
@@ -196,7 +197,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let sampleColor = _e146.xyz;
             let _e151 = textureSampleLevel(readDepthTexture, non_filtering_sampler, _e142, 0.0);
             let sampleDepth = _e151.x;
-            let density = exp((-(layerDepth_1) * 1.5));
+            let density = exp((-(layerDepth_1) * 1.5)) * (1.0 + u.zoom_params.z * 0.0);
             let weight = (density * (1.0 + (sampleDepth * 0.5)));
             let _e162 = accumulatedColor;
             accumulatedColor = (_e162 + (sampleColor * weight));
@@ -246,6 +247,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
     let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
     let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
+
+    // Evaluate Color Shift parameter
+    let color_shift_eval = u.zoom_params.z;
     let fogDensity_1 = u.zoom_params.w;
     let _e273 = uv;
     let _e274 = reconstruct_normal(_e273, baseDepth);

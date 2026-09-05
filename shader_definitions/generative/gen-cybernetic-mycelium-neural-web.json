@@ -6,13 +6,25 @@
     "quantum",
     "mechanical",
     "audio-reactive",
-    "fractal"
+    "fractal",
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
-  "description": "A hyper-organic, glowing network of bio-mechanical mycelial threads that endlessly branch, mutate, and pulse with neon-quantum data streams.",
+  "description": "A bio-mechanical mycelial net streaming and firing fast. Hyphal filigree carves branching detail over the trails, data pulses race at a treble-driven rate, and the whole net is graded through a psychedelic neon spectrum. The spring-smoothed cursor is an attractor whose whip speed mutates the growth, holding blooms the well, and clicks fire mutation bursts. Persistent state now lives only in the extraBuffer safe zone.",
   "workgroup_size": [
     16,
     16,
     1
+  ],
+  "params": [
+    { "id": "growth_rate", "name": "Growth Rate", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "pulse_intensity", "name": "Pulse Intensity", "default": 0.8, "min": 0.0, "max": 2.0, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "decay_speed", "name": "Decay Speed", "default": 0.2, "min": 0.01, "max": 1.0, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "network_complexity", "name": "Network Complexity", "default": 0.6, "min": 0.1, "max": 1.0, "step": 0.01, "mapping": "zoom_params.w" }
   ],
   "updatedParams": [
     {
@@ -29,7 +41,7 @@
       "default": 0.8,
       "min": 0.0,
       "max": 2.0,
-      "step": 0.05
+      "step": 0.01
     },
     {
       "index": 2,
@@ -48,10 +60,11 @@
       "step": 0.01
     }
   ],
-  "supportsDepth": false,
+  "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-cybernetic-mycelium-neural-web",
   "url": "shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-  "features": []
+  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "semantic-alpha", "aces-tonemap"],
+  "feedbackPacking": "A/C = final ACES display RGBA; exact four-neighbor mycelial history loads"
 }

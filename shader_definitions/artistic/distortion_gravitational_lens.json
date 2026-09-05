@@ -19,7 +19,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "lens_strength",
       "name": "Lens Strength",
       "default": 0.5,
       "min": 0,
@@ -27,7 +27,7 @@
       "step": 0.1
     },
     {
-      "id": "param2",
+      "id": "mass_count",
       "name": "Mass Count",
       "default": 0.3,
       "min": 0,
@@ -35,7 +35,7 @@
       "step": 0.1
     },
     {
-      "id": "param3",
+      "id": "disk_intensity",
       "name": "Disk Intensity",
       "default": 0.5,
       "min": 0,
@@ -43,8 +43,8 @@
       "step": 0.1
     },
     {
-      "id": "param4",
-      "name": "Chromatic Aberration",
+      "id": "aberration",
+      "name": "Aberration",
       "default": 0.2,
       "min": 0,
       "max": 1,

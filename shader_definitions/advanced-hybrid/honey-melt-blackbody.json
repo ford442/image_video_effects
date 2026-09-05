@@ -2,7 +2,7 @@
   "id": "honey-melt-blackbody",
   "name": "Honey Melt Blackbody",
   "url": "shaders/honey-melt-blackbody.wgsl",
-  "description": "Catalog entry for Honey Melt Blackbody.",
+  "description": "High-viscosity honey carries thickness and heat through a melting hex-cell field with Beer-Lambert absorption and blackbody glow.",
   "tags": [
     "hex-grid",
     "blackbody-radiation",
@@ -17,8 +17,8 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "grid_size",
+      "name": "Grid Size",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,8 +26,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "melt_radius",
+      "name": "Melt Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -35,8 +35,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "distort_strength",
+      "name": "Distort Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -44,8 +44,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "softness",
+      "name": "Softness",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -53,5 +53,13 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Cell Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Melt Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Flow Pull", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Surface Softness", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = velocity.xy, honey thickness, normalized temperature",
+  "updated": true,
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

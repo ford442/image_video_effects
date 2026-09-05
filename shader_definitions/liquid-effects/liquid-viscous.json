@@ -2,10 +2,15 @@
   "id": "liquid-viscous",
   "name": "Liquid Viscous",
   "url": "shaders/liquid-viscous.wgsl",
-  "description": "",
+  "description": "A persistent 2D fluid state with midpoint semi-Lagrangian transport, streamline-aligned viscosity, Reynolds-number turbulence transition, shared-stencil vorticity confinement, a convergent local Jacobi projection, continuously drifting audio vortices, and per-band dye injection.",
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "fluid",
+    "navier-stokes",
+    "vorticity",
+    "simulation",
+    "dye"
   ],
   "params": [
     {
@@ -50,6 +55,63 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "vorticity-confinement",
+    "midpoint-advection",
+    "anisotropic-diffusion",
+    "reynolds-transition",
+    "stencil-vorticity",
+    "local-jacobi-pressure",
+    "fluid-simulation"
+  ],
+  "updatedParams": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Velocity damping and dye dissipation rate."
+    },
+    {
+      "id": "turbulence",
+      "name": "Vorticity Confinement",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Strength of the confinement force that keeps eddies from smearing out (maps to zoom_params.y)."
+    },
+    {
+      "id": "ripple_strength",
+      "name": "Turbulence Injection",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Gain on the three-octave cascade and the per-band dye emitters (maps to zoom_params.z)."
+    },
+    {
+      "id": "color_shift",
+      "name": "Hue Shift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Rotates the dye/vorticity hue mapping (maps to zoom_params.w)."
+    }
   ]
 }

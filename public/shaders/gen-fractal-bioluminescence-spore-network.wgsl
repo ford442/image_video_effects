@@ -114,11 +114,18 @@ fn hueShift(c: vec3<f32>, h: f32) -> vec3<f32> {
     return c * cos_a + cross(k, c) * sin(h) + k * dot(k, c) * (1.0 - cos_a);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dimensions = textureDimensions(writeTexture);
     if (id.x >= dimensions.x || id.y >= dimensions.y) { return; }
-    let uv = (vec2<f32>(id.xy) - 0.5 * vec2<f32>(dimensions)) / f32(dimensions.y);
+    let pixel = vec2<i32>(id.xy);
+    let dimf = vec2<f32>(dimensions);
+    let uv = (vec2<f32>(id.xy) + 0.5 - 0.5 * dimf) / dimf.y;
     let time = u.config.x;
     let spore_density = u.zoom_params.x;
     let network_complexity = u.zoom_params.y;
@@ -128,9 +135,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0;
+    let mouse = (u.zoom_config.yz * dimf - 0.5 * dimf) / dimf.y;
     let mouse_dist = length(uv - mouse);
     let injection = (1.0 / (1.0 + mouse_dist * 10.0)) * u.zoom_config.w;
+
+    var clickPulse = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let clickAge = time - ripple.z;
+        if (clickAge >= 0.0 && clickAge < 2.4) {
+            let clickPos = (ripple.xy * dimf - 0.5 * dimf) / dimf.y;
+            let ringRadius = clickAge * 0.22;
+            clickPulse += exp(-abs(length(uv - clickPos) - ringRadius) * 42.0) * exp(-clickAge * 1.15) * ripple.w;
+        }
+    }
+
+    let prev = textureLoad(dataTextureC, pixel, 0).rgb;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler,
         (vec2<f32>(id.xy) + 0.5) / vec2<f32>(dimensions), 0.0).r;
@@ -144,7 +165,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var t = 0.0; var d = 0.0; var glow = 0.0; var energy = 0.0;
     for (var i = 0; i < 64; i = i + 1) {
         let p = ro + rd * t;
-        d = map(p, network_complexity + injection * 2.0, time + bass * audio_react, audio_react);
+        d = map(p, network_complexity + injection * 2.0 + clickPulse, time + (bass + mids * 0.5) * audio_react, audio_react);
         if (d < 0.01) {
             energy = 1.0 - f32(i) / 64.0;
             break;
@@ -160,6 +181,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var final_col = mix(col_base, col_hot, glow * 0.1) * glow * bio_intensity * 0.25;
     final_col += col_inj * injection * 2.0;
+    final_col += vec3<f32>(0.35, 0.95, 1.2) * clickPulse * (0.7 + mids * 0.5);
     final_col = final_col * (1.0 + audio_react * bass * 0.3 + treble * 0.1);
 
     let hueDrift = warpedFBM(uv * 2.0, time * 0.05) * PI * 0.25;
@@ -168,6 +190,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let absorb = exp(-depth * 2.0 * LN2);
     final_col = final_col * absorb + vec3<f32>(0.02, 0.08, 0.12) * (1.0 - absorb);
 
+    final_col = max(final_col, prev * (0.80 + spore_density * 0.12));
+    final_col = acesToneMap(final_col * (1.05 + bio_intensity * 0.08));
     let luma = dot(final_col, vec3<f32>(0.299, 0.587, 0.114));
     let semantic_alpha = clamp(energy * 0.4 + luma * 2.0 + glow * 0.1, 0.05, 0.98);
 

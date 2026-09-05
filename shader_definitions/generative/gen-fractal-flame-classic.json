@@ -1,0 +1,26 @@
+{
+  "id": "gen-fractal-flame-classic",
+  "url": "shaders/gen-fractal-flame-classic.wgsl",
+  "name": "Classic Fractal Flame",
+  "category": "generative",
+  "tags": ["fractal", "flame", "ifs", "swirl", "horseshoe", "audio-reactive"],
+  "description": "A classic fractal flame blends swirl, horseshoe, and polar affine variations into warm spectral density traps with temporal embers.",
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {"id": "iterations", "name": "Iterations", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
+    {"id": "variationMix", "name": "Variation Mix", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
+    {"id": "flameZoom", "name": "Flame Zoom", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
+    {"id": "paletteCycle", "name": "Palette Cycle", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
+  ],
+  "updatedParams": [
+    {"index": 0, "name": "Iterations", "default": 0.55, "min": 0, "max": 1, "step": 0.01},
+    {"index": 1, "name": "Variation Mix", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"index": 2, "name": "Flame Zoom", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"index": 3, "name": "Palette Cycle", "default": 0.3, "min": 0, "max": 1, "step": 0.01}
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": ["fractal", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "feedbackPacking": "A/C = raw HDR display RGBA history"
+}

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Barnsley Fern IFS — Advanced Hybrid
+//  Barnsley Fern IFS — Batch 61 (fast motion / psychedelic / mouse spring)
 //  Combined techniques: Barnsley IFS + Voronoi displacement +
 //                       SDF vignette mask + audio-driven palette +
 //                       domain-warped FBM + chromatic aberration +
@@ -96,18 +96,20 @@ fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32) -> vec3<f32
   return vec3<f32>(color.r * (1.0 + s.x * 0.8), color.g, color.b * (1.0 - s.y * 0.5));
 }
 
-fn audioPalette(fy: f32, bass: f32, treble: f32) -> vec3<f32> {
+fn audioPalette(fy: f32, bass: f32, mids: f32, treble: f32) -> vec3<f32> {
   let forest = vec3<f32>(0.02, 0.18, 0.04);
   let emerald = vec3<f32>(0.05, 0.65, 0.18);
   let lime = vec3<f32>(0.45, 0.95, 0.12);
   let gold = vec3<f32>(0.85, 0.75, 0.15);
-  let magenta = vec3<f32>(0.55, 0.15, 0.45);
+  let magenta = vec3<f32>(0.95, 0.12, 0.72);
+  let cyan = vec3<f32>(0.12, 0.92, 1.0);
   var c: vec3<f32>;
   if fy < 0.3 { c = mix(forest, emerald, fy / 0.3); }
   else if fy < 0.7 { c = mix(emerald, lime, (fy - 0.3) / 0.4); }
   else { c = mix(lime, gold, (fy - 0.7) / 0.3); }
-  let shift = clamp(bass * 0.25 + treble * 0.15, 0.0, 1.0);
-  c = mix(c, magenta, shift * 0.2);
+  let shift = clamp(bass * 0.35 + treble * 0.25, 0.0, 1.0);
+  c = mix(c, magenta, shift * 0.45);
+  c = mix(c, cyan, mids * 0.28);
   return c;
 }
 
@@ -133,9 +135,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let uv01 = vec2<f32>(pixel) / res;
   let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
-  let time = u.config.x;
-  let mouse = u.zoom_config.yz;
+  let time = u.config.x * 2.4;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+  if (hasSpring) { springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+  let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = springPos - rawMouse; let temp = (springVel + omega * sdelta) * dt;
+  springVel = (springVel - omega * temp) * springDecay; springPos = rawMouse + (sdelta + temp) * springDecay;
+  if (hasSpring && gid.x == 0u && gid.y == 0u) { extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
+  let mouse = springPos;
+  let mouseDown = u.zoom_config.w > 0.5;
+  let held = select(1.0, 1.45, mouseDown);
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let prev = textureLoad(dataTextureC, pixel, 0);
@@ -154,12 +168,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Voronoi displacement on frond coordinates
   let voro = voronoi(p * 0.35 + vec2<f32>(time * 0.04, time * 0.03));
-  p = p + (vec2<f32>(voro.y, voro.x) - 0.5) * 0.12 * (1.0 + treble);
+  p = p + (vec2<f32>(voro.y, voro.x) - 0.5) * 0.18 * (1.0 + treble + mids);
 
-  // Mouse attracts frond tips
+  // Mouse attracts frond tips (held-drag tightens)
   let mouseFern = (mouse - 0.5) * vec2<f32>(aspect * 5.0, 10.0) / scale;
   let tipFactor = smoothstep(0.0, 1.0, (p.y + 3.0) / 8.0);
-  let pull = exp(-length(p - mouseFern) * 0.8) * tipFactor * 0.4;
+  let pull = exp(-length(p - mouseFern) * 0.65) * tipFactor * 0.55 * held;
   p = mix(p, mouseFern, pull);
 
   // Quasi-random inverse IFS Monte-Carlo coverage
@@ -191,7 +205,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Natural + audio-driven fern palette by height
   let fy = clamp((p.y + 3.0) / 10.0, 0.0, 1.0);
-  var color = audioPalette(fy, bass, treble);
+  var color = audioPalette(fy, bass, mids, treble);
 
   // Sunlight filtering through fronds
   let sun = 0.3 + 0.7 * smoothstep(0.2, 0.9, density);
@@ -205,6 +219,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Temporal feedback echo
   color = mix(color, prev.rgb * 0.96, 0.03 + feedback * 0.08 + bass * 0.02);
+  let geo = abs(fract(voro.y * 8.0 + time * 0.4) - 0.5);
+  color += vec3<f32>(0.85, 0.15, 1.0) * (1.0 - smoothstep(0.0, 0.08, geo)) * 0.25 * (0.4 + treble);
 
   // Audio warms palette
   let warmth = bass * 0.15;

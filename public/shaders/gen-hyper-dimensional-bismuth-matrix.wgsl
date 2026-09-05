@@ -128,7 +128,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
   if (mDist < disruptionRadius * 3.0) {
     let disrupt = (1.0 - mDist / (disruptionRadius * 3.0));
     let noiseDisrupt = hash3(p * 5.0 + time) * 2.0 - 1.0;
-    p = p + normalize(md) * disrupt * noiseDisrupt * 0.4;
+    p = p + md / max(mDist, 1e-4) * disrupt * noiseDisrupt * 0.4;
   }
 
   // Domain repetition grid
@@ -220,6 +220,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mid = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
+  // Guarded bass envelope state lives outside engine FFT slots.
+  var bassEnv = bass;
+  let hasBassState = arrayLength(&extraBuffer) > 133u;
+  if (hasBassState) {
+    bassEnv = mix(extraBuffer[133], bass, select(0.035, 0.16, bass > extraBuffer[133]));
+  }
+  if (hasBassState && gid.x == 0u && gid.y == 0u) {
+    extraBuffer[133] = bassEnv;
+  }
+
   // Parameters
   let complexity = mix(1.5, 5.0, clamp(u.zoom_params.x, 0.0, 1.0));
   let iridescence = mix(0.3, 2.0, clamp(u.zoom_params.y, 0.0, 1.0));
@@ -248,6 +258,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
+  let mouseDown = u.zoom_config.w > 0.5;
+
+  // Screen-space crystal disruption fronts alter the local SDF radius while
+  // they are alive, then decay completely.
+  let rippleCount = min(u32(u.config.y), 50u);
+  var crystalShock = 0.0;
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 3.6) { continue; }
+    let center = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
+    let delta = p - center;
+    let radius = age * (0.24 + growthRate * 0.22);
+    crystalShock += exp(-pow((length(delta) - radius) * 20.0, 2.0)) * exp(-age * 0.78);
+  }
+  let effectiveDisruption = disruptionRadius * (1.0 + crystalShock * 1.2 + select(0.0, 0.65, mouseDown));
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
 
   // Raymarch
@@ -261,7 +287,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   for (var i: i32 = 0; i < 120; i = i + 1) {
     let pos = ro + rd * t;
-    let res = map(pos, time, audio, complexity, growthRate, 1.5, disruptionRadius, mousePos);
+    let res = map(pos, time, bassEnv, complexity, growthRate, 1.5, effectiveDisruption, mousePos);
     if (res.d < 0.005) {
       hit = true;
       hitPos = pos;
@@ -275,7 +301,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   if (hit) {
-    let n = calcNormal(hitPos, time, audio, complexity, growthRate, 1.5, disruptionRadius, mousePos);
+    let n = calcNormal(hitPos, time, bassEnv, complexity, growthRate, 1.5, effectiveDisruption, mousePos);
     let viewDir = -rd;
     let nDotV = sat(dot(n, viewDir));
 
@@ -319,6 +345,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
       // Audio-reactive shimmer on crystal faces
       col = col + ired * bass * 0.3;
+      col += iridescent(nDotV, time + crystalShock * 2.0, treble) * crystalShock * (0.7 + mid * 0.5);
     }
 
     // Ambient occlusion
@@ -356,19 +383,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   col = col + fogAccum;
 
-  // Temporal persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  let bassEnv = extraBuffer[0];
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[0] = mix(bassEnv, bass, 0.03);
-  }
-  col = mix(col, prev.rgb * 0.96, 0.02 + extraBuffer[0] * 0.02);
+  let crystalSpark = step(0.985, hash21(vec2<f32>(f32(gid.x), f32(gid.y)) + vec2<f32>(floor(time * 18.0)))) * treble;
+  col += vec3<f32>(0.75, 0.9, 1.2) * crystalSpark * (0.4 + crystalShock);
 
-  // Tone map
-  col = acesToneMap(col * 1.2);
+  // Exact A/C display history and one ACES application on the current path.
+  let currentDisplay = acesToneMap(col * 1.2);
+  let prev = textureLoad(dataTextureC, coord, 0);
+  col = mix(prev.rgb * 0.95, currentDisplay, 0.23 + bassEnv * 0.035);
 
-  let alpha = 1.0;
   let finalDepth = sat(0.95 - depth * 0.03);
+  let hitCoverage = select(0.0, 0.68 + finalDepth * 0.24, hit);
+  let fogCoverage = clamp(length(fogAccum) * 1.8 + crystalShock * 0.28 + crystalSpark * 0.2, 0.0, 0.88);
+  let alpha = max(max(hitCoverage, fogCoverage), prev.a * 0.92);
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));

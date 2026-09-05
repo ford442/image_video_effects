@@ -245,6 +245,11 @@ fn calcNormal(p: vec3<f32>, time: f32, audio: f32, mouseTarget: vec3<f32>, param
     return normalize(n);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -352,8 +357,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add volumetric nebula fog
     col = mix(col, neb_col, smoothstep(10.0, 50.0, total_dist));
 
-    // Tone mapping + vignette
-    col = col / (1.0 + col);
+    // Exact display-history persistence and output-only ACES.
+    let previous = textureLoad(dataTextureC, pixel, 0);
+    col = mix(col, previous.rgb * 0.94, 0.04 + mids * 0.02);
     let vig = 1.0 - length(uv) * 0.8;
     col = col * vig;
 
@@ -361,7 +367,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = select(0.0, clamp(1.0 - total_dist / maxDist, 0.0, 1.0), hit);
 
     // Semantic alpha from luma
-    let luma = dot(clamp(col, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.299, 0.587, 0.114));
+    col = acesToneMap(col * (1.05 + audio * 0.2));
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luma * 0.7 + 0.2, 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(col, alpha));

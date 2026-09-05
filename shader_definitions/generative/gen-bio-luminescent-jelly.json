@@ -54,5 +54,43 @@
   "updated": true,
   "id": "gen-bio-luminescent-jelly",
   "url": "shaders/gen-bio-luminescent-jelly.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "pulse_speed",
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "tentacle_length",
+      "name": "Tentacle Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "drift_speed",
+      "name": "Drift Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

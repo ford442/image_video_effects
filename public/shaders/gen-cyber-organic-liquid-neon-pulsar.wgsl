@@ -124,7 +124,7 @@ fn map(p_in: vec3<f32>, time: f32, bass: f32) -> f32 {
     let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0;
     let mouse_p = vec3<f32>(mouse_pos * vec2<f32>(u.config.z / u.config.w, 1.0) * 2.0, 0.0);
     let mouse_dist = length(p.xy - mouse_p.xy);
-    let mouse_dir = normalize(vec3<f32>(p.xy - mouse_p.xy, p.z));
+    let mouse_dir = normalize(vec3<f32>(p.xy - mouse_p.xy, p.z) + vec3<f32>(0.0001));
 
     p = p - mouse_dir * smoothstep(0.8, 0.0, mouse_dist) * 0.4;
 
@@ -281,27 +281,43 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += palette(time * 0.3 + u.zoom_params.x) * fieldGlow;
 
     // Add volumetric god rays / glow
-    let glow_col = palette(time * 0.2 + u.zoom_params.x) * glow * 0.05 * u.zoom_params.w;
-    col = col + glow_col * (1.0 + bass * 0.5);
+    let glow_col = palette(time * 0.2 + u.zoom_params.x + mids * 0.15) * glow * 0.05 * u.zoom_params.w;
+    col = col + glow_col * (1.0 + bass * 0.5 + mids * 0.3);
 
     // Background fade
     let bg = vec3<f32>(0.02, 0.01, 0.05) * (1.0 - length(uv));
     col = mix(bg, col, clamp(t / 10.0, 0.0, 1.0));
 
-    // Step 3: Temporal feedback
+    // Clicks launch magnetic wavefronts across the pulsar magnetosphere.
+    var rippleGlow = 0.0;
+    let uv01 = (vec2<f32>(coords) + vec2<f32>(0.5)) / resolution;
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age > 0.0 && age < 2.5) {
+            let delta = vec2<f32>((uv01.x - ripple.x) * aspect, uv01.y - ripple.y);
+            rippleGlow += exp(-abs(length(delta) - age * 0.28) * 70.0) * exp(-age * 1.6);
+        }
+    }
+    col += palette(time * 0.12 + treble * 0.25) * rippleGlow * (0.35 + treble * 0.8);
+
+    // Step 3: Temporal feedback (exact integer C load)
     let prev = textureLoad(dataTextureC, coords, 0);
-    col = mix(prev.rgb * 0.96, col, 0.25);
+    let hdrColor = clamp(mix(prev.rgb * 0.96, col, 0.25 + mids * 0.08), vec3<f32>(0.0), vec3<f32>(8.0));
 
     // Step 4: Chromatic aberration
     let caStr = 0.003 * (1.0 + bass);
-    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+    col = vec3<f32>(hdrColor.r + caStr * (1.0 + treble), hdrColor.g, hdrColor.b - caStr * 0.5);
 
     // Step 5: ACES tone mapping + semantic alpha
     col = acesToneMap(col * 1.1);
-    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+    let alpha = clamp(select(0.04, 0.28 + length(col) * 0.38, hit) + rippleGlow * 0.12, 0.02, 0.98);
 
     let outColor = vec4<f32>(col, alpha);
     textureStore(writeTexture, coords, outColor);
-    textureStore(dataTextureA, coords, outColor);
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(hdrColor, alpha));
+    let depth = select(0.0, clamp(1.0 - t / 10.0, 0.0, 1.0), hit);
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

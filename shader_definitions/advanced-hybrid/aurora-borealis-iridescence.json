@@ -2,7 +2,7 @@
   "id": "aurora-borealis-iridescence",
   "name": "Aurora Borealis Iridescence",
   "url": "shaders/aurora-borealis-iridescence.wgsl",
-  "description": "Northern lights with flowing ribbon curves enhanced by thin-film iridescence. Each aurora ribbon shimmers with soap-bubble and oil-slick interference colors driven by ribbon intensity and animated turbulence.",
+  "description": "Northern lights with flowing ribbon curves enhanced by thin-film iridescence, curl-noise turbulence, ACES tone mapping, and atmospheric luminescence persistence.",
   "tags": [
     "aurora",
     "iridescence",
@@ -17,7 +17,9 @@
     "curl-noise",
     "mouse-driven",
     "audio-reactive",
-    "atmospheric"
+    "atmospheric",
+    "temporal-feedback",
+    "click-reactive"
   ],
   "params": [
     {
@@ -53,5 +55,40 @@
       "step": 0.01
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Ribbon Count",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Flow Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Ribbon Width",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Iridescence",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through source depth.",
   "target_rating": 4.9
 }

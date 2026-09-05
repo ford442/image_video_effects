@@ -202,11 +202,12 @@ fn dielectricBreakdown(dist: f32, fieldStrength: f32) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
     let uv01 = vec2<f32>(pixel) / res;
     
     let time = u.config.x;
-    let mousePos = (u.zoom_config.yz - res * 0.5) / min(res.x, res.y);
+    let mousePos = (u.zoom_config.yz - 0.5) * vec2<f32>(res.x / res.y, 1.0);
     let mouseDown = u.zoom_config.w > 0.5;
     let intensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
@@ -219,6 +220,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
     let audioIntensity = intensity * (1.0 + bass * 0.5);
     let audioSpeed = speed * (1.0 + mids * 0.4);
+    var shock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.6) {
+            let front = abs(length((uv01 - ripple.xy) * vec2<f32>(res.x / res.y, 1.0)) - age * (0.2 + speed * 0.18));
+            shock += (1.0 - smoothstep(0.0, 0.026, front)) * (1.0 - age / 2.6);
+        }
+    }
+    shock = min(shock, 2.0);
     
     // Mouse controls rotation and symmetry
     let mouseRot = atan2(mousePos.y, mousePos.x);
@@ -299,6 +311,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rings = sin(centerDist * ringFreq - time * (3.0 + audioSpeed * 4.0)) * 0.5 + 0.5;
     let ringGlow = rings * exp(-centerDist * 3.0) * 0.2;
     col += vec3<f32>(0.2, 0.5, 0.8) * ringGlow * audioIntensity;
+    col += electricColor(fract(colorShift + time * 0.08)) * shock * (0.8 + treble * 1.4);
     
     // Random electric sparks
     let sparkSeed = floor(time * 8.0);
@@ -325,21 +338,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    // ACES tone mapping
-    col = acesToneMap(col);
-
-    // Neon glow color grading
-    col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(1.1, 1.0, 0.9));
-
-    // Semantic alpha
-    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
-
-    // Temporal feedback
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    // Exact HDR temporal feedback, then ACES display mapping.
+    let prev = textureLoad(dataTextureC, pixel, 0);
     let decay = 0.96;
     let temporal = mix(prev.rgb * decay, col, 0.25);
+    var mapped = acesToneMap(temporal);
+    mapped = pow(max(mapped, vec3<f32>(0.0)), vec3<f32>(1.1, 1.0, 0.9));
+
+    let alpha = clamp(length(temporal) * 0.42 + shock * 0.2 + orbGlow * 0.25, 0.04, 0.96);
     textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
 
-    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - alpha * 0.85, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

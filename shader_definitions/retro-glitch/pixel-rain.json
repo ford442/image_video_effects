@@ -2,48 +2,31 @@
   "id": "pixel-rain",
   "name": "Pixel Rain",
   "url": "shaders/pixel-rain.wgsl",
+  "workgroup_size": [16, 16, 1],
   "features": [
     "mouse-driven",
     "upgraded-rgba",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "click-ripples",
+    "held-drag",
+    "spring-cursor",
+    "aces-tone-map",
+    "temporal-feedback"
   ],
-  "description": "Matrix-style digital rain. Mouse repels and highlights drops.",
+  "description": "Multi-layer parallax matrix rain with spring repulsion, held burst, capped ripples, exact C trail fade, and three-band audio.",
   "params": [
-    {
-      "id": "speed",
-      "name": "Rain Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "glitch",
-      "name": "Glitch / Tint",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "density",
-      "name": "Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "trail_fade",
-      "name": "Trail Fade",
-      "default": 0.7,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Trail persistence/fade rate"
-    }
+    { "id": "speed", "name": "Rain Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "glitch", "name": "Glitch / Tint", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "density", "name": "Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "trail_fade", "name": "Trail Fade", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
   ],
-  "tags": [
-    "filter",
-    "image-processing"
-  ]
+  "updatedParams": [
+    { "index": 0, "name": "Rain Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Glitch / Tint", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Trail Fade", "default": 0.7, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "tags": ["filter", "image-processing", "matrix", "rain"],
+  "updated": true
 }

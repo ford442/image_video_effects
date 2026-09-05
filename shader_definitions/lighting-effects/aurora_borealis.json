@@ -2,32 +2,33 @@
   "id": "aurora_borealis",
   "name": "Aurora Borealis",
   "url": "shaders/aurora_borealis.wgsl",
-  "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
+  "description": "Flowing atmospheric ribbons with curl noise advection, altitude-based oxygen and nitrogen emission spectra, starfield composite, ACES tone mapping, and atmospheric persistence.",
+  "category": "lighting-effects",
   "tags": [
     "aurora",
-    "northern-lights",
     "atmospheric",
-    "nature",
-    "sky"
+    "lighting",
+    "night-sky",
+    "nature"
   ],
   "features": [
-    "rgba",
-    "aurora",
-    "curl-noise",
-    "ribbons",
-    "atmospheric"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "temporal-feedback",
+    "click-reactive"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Ribbons",
+      "id": "num_ribbons",
+      "name": "Num Ribbons",
       "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.1
     },
     {
-      "id": "param2",
+      "id": "flow_speed",
       "name": "Flow Speed",
       "default": 0.4,
       "min": 0,
@@ -35,7 +36,7 @@
       "step": 0.1
     },
     {
-      "id": "param3",
+      "id": "ribbon_width",
       "name": "Ribbon Width",
       "default": 0.3,
       "min": 0,
@@ -43,13 +44,47 @@
       "step": 0.1
     },
     {
-      "id": "param4",
-      "name": "Glow",
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
       "default": 0.7,
       "min": 0,
       "max": 1,
       "step": 0.1
     }
   ],
-  "target_rating": 4.8
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Num Ribbons",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Ribbon Width",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA for continuous atmospheric luminescence persistence; B is unused; depth passes through source depth."
 }

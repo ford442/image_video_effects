@@ -2,8 +2,11 @@
 /**
  * verify-device-policy-sync.js
  *
- * CI check: src/contracts/webgpu_limits.json must match
- * MINIMUM_COMPUTE_LIMITS in webgpuDevicePolicy.ts and device.cpp CheckLimit / requiredLimits.
+ * CI check: webgpu_limits.json ↔ TS policy ↔ device.cpp CheckLimit/requiredLimits;
+ * optional feature order ↔ device.ts / device.cpp; wasm_exports.json ↔ KEEPALIVE /
+ * build.sh / CMakeLists (no hardcoded export lists);
+ * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
+ * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_.
  */
 
 const fs = require('fs');
@@ -111,10 +114,257 @@ for (const [key, expected] of Object.entries(EXPECTED_LIMITS)) {
   }
 }
 
+function fail(msg) {
+  console.error(msg);
+  failed = true;
+}
+
+function verifyOptionalFeatures() {
+  const feat = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'src/contracts/webgpu_optional_features.json'), 'utf8'),
+  );
+  const tsDevice = fs.readFileSync(path.join(ROOT, 'src/renderer/webgpu/device.ts'), 'utf8');
+  const fn = tsDevice.match(
+    /export function collectOptionalDeviceFeatures\([\s\S]*?\n\}/,
+  );
+  if (!fn) {
+    fail('collectOptionalDeviceFeatures not found in device.ts');
+    return;
+  }
+  const body = fn[0];
+  const i32 = body.indexOf("'float32-filterable'");
+  const iTs = body.indexOf("'timestamp-query'");
+  const iSg = body.indexOf('resolveSubgroupFeatureName');
+  if (i32 < 0 || iTs < 0 || iSg < 0) {
+    fail('device.ts collectOptionalDeviceFeatures missing float32 / timestamp-query / resolveSubgroupFeatureName');
+  } else if (!(i32 < iTs && iTs < iSg)) {
+    fail('device.ts collectOptionalDeviceFeatures order must be float32 → timestamp-query → subgroups');
+  }
+  if (!feat.timestampQueryAlwaysOnWhenAvailable) {
+    fail('webgpu_optional_features.json must keep timestampQueryAlwaysOnWhenAvailable true (#1007)');
+  }
+
+  const cpp = fs.readFileSync(CPP_DEVICE, 'utf8');
+  const arr = cpp.match(/WGPUFeatureName requiredFeatures\[(\d+)\]/);
+  if (!arr || parseInt(arr[1], 10) < feat.requiredFeaturesArrayMin) {
+    fail(
+      `device.cpp requiredFeatures[] must be >= ${feat.requiredFeaturesArrayMin} (got ${arr ? arr[1] : 'missing'})`,
+    );
+  }
+  const optBlock = cpp.match(/Optional features:[\s\S]*?deviceDesc\.requiredFeatureCount/);
+  if (!optBlock) {
+    fail('device.cpp optional-features request block not found');
+    return;
+  }
+  const block = optBlock[0];
+  const pF32 = block.indexOf('WGPUFeatureName_Float32Filterable');
+  const pTs = block.indexOf('WGPUFeatureName_TimestampQuery');
+  const pSg = block.indexOf('WGPUFeatureName_Subgroups');
+  if (pF32 < 0 || pTs < 0 || pSg < 0) {
+    fail('device.cpp must request Float32Filterable, TimestampQuery, and Subgroups');
+  } else if (!(pF32 < pTs && pTs < pSg)) {
+    fail('device.cpp feature request order must be float32 → timestamp-query → subgroups');
+  }
+  if (pSg >= 0 && pTs >= 0 && pSg < pTs) {
+    fail('device.cpp must not request subgroups before timestamp-query');
+  }
+
+  const scanner = path.join(ROOT, 'src/utils/requestPixelocityDevice.ts');
+  if (fs.existsSync(scanner)) {
+    const src = fs.readFileSync(scanner, 'utf8');
+    if (!src.includes('collectOptionalDeviceFeatures')) {
+      fail(
+        'requestPixelocityDevice.ts must call collectOptionalDeviceFeatures (timestamp-query always-on when available)',
+      );
+    }
+  }
+}
+
+function verifyWasmExports() {
+  const json = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_exports.json'), 'utf8'),
+  );
+  const runtimeOnly = new Set(json.runtimeOnlyExports || ['_main', '_malloc', '_free']);
+  const jsonKeep = new Set(
+    json.exportedFunctions.filter((n) => !runtimeOnly.has(n)),
+  );
+
+  const mainCpp = fs.readFileSync(path.join(ROOT, 'wasm_renderer/main.cpp'), 'utf8');
+  const keepalive = new Set();
+  const re = /EMSCRIPTEN_KEEPALIVE[\s\S]*?\n[\w\s\*]+\s+(\w+)\s*\(/g;
+  let m;
+  while ((m = re.exec(mainCpp))) {
+    keepalive.add(`_${m[1]}`);
+  }
+  for (const name of jsonKeep) {
+    if (!keepalive.has(name)) fail(`wasm_exports.json has ${name} but main.cpp has no matching KEEPALIVE`);
+  }
+  for (const name of keepalive) {
+    if (!jsonKeep.has(name)) fail(`main.cpp KEEPALIVE ${name} missing from wasm_exports.json`);
+  }
+
+  const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
+  const cmake = fs.readFileSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'), 'utf8');
+  if (/_initWasmRenderer,_shutdownWasmRenderer/.test(buildSh)) {
+    fail('build.sh must not hardcode EXPORTED_FUNCTIONS; use format-wasm-exports.js');
+  }
+  if (!buildSh.includes('format-wasm-exports.js')) {
+    fail('build.sh must invoke scripts/format-wasm-exports.js');
+  }
+  if (/_initWasmRenderer,_shutdownWasmRenderer/.test(cmake)) {
+    fail('CMakeLists.txt must not hardcode EXPORTED_FUNCTIONS; read wasm_exports.json');
+  }
+  if (!cmake.includes('wasm_exports.json')) {
+    fail('CMakeLists.txt must file(READ) src/contracts/wasm_exports.json');
+  }
+  if (!cmake.includes('GROWABLE_ARRAYBUFFERS=0')) {
+    fail('CMakeLists.txt must set -sGROWABLE_ARRAYBUFFERS=0 to match build.sh');
+  }
+}
+
+function verifyWorkgroupDispatch() {
+  const wgContract = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'src/contracts/workgroup_dispatch.json'), 'utf8'),
+  );
+  const fallback = wgContract.unparsedFallback;
+  if (!fallback || fallback.x !== 16 || fallback.y !== 16) {
+    fail('workgroup_dispatch.json unparsedFallback must be { x: 16, y: 16 }');
+  }
+
+  const tsShader = fs.readFileSync(
+    path.join(ROOT, 'src/renderer/ShaderCompilation.ts'),
+    'utf8',
+  );
+  if (!tsShader.includes("from '../contracts/workgroup_dispatch.json'")) {
+    fail('ShaderCompilation.ts must import workgroup_dispatch.json');
+  }
+  if (!tsShader.includes('workgroupDispatchContract.unparsedFallback.x')) {
+    fail('ShaderCompilation.ts unparsed fallback must use workgroupDispatchContract.unparsedFallback.x');
+  }
+  if (!tsShader.includes('workgroupDispatchContract.unparsedFallback.y')) {
+    fail('ShaderCompilation.ts unparsed fallback must use workgroupDispatchContract.unparsedFallback.y');
+  }
+  if (/\breturn\s*\{\s*x:\s*8\s*,\s*y:\s*8\s*\}/.test(tsShader)) {
+    fail('ShaderCompilation.ts must not return hardcoded 8x8 unparsed fallback');
+  }
+
+  const cppInternal = fs.readFileSync(
+    path.join(ROOT, wgContract.cppReferences.file),
+    'utf8',
+  );
+  const fnBlock = cppInternal.match(
+    /void ParseWorkgroupSize\([\s\S]*?\n\}/,
+  );
+  if (!fnBlock) {
+    fail('ParseWorkgroupSize not found in wasm_internal.cpp');
+    return;
+  }
+  const init = fnBlock[0].match(/x\s*=\s*(\d+);\s*\n\s*y\s*=\s*(\d+);/);
+  if (!init) {
+    fail('ParseWorkgroupSize default x/y assignment not found in wasm_internal.cpp');
+  } else {
+    const cppX = parseInt(init[1], 10);
+    const cppY = parseInt(init[2], 10);
+    if (cppX !== fallback.x || cppY !== fallback.y) {
+      fail(
+        `wasm_internal.cpp ParseWorkgroupSize default: expected ${fallback.x}x${fallback.y}, got ${cppX}x${cppY}`,
+      );
+    }
+  }
+
+  const shadersDir = path.join(ROOT, 'public/shaders');
+  const forbidden = /@compute\s+@workgroup_size\(\s*8\s*,\s*8/;
+  for (const name of fs.readdirSync(shadersDir)) {
+    if (!name.endsWith('.wgsl')) continue;
+    const content = fs.readFileSync(path.join(shadersDir, name), 'utf8');
+    if (forbidden.test(content)) {
+      fail(`public/shaders/${name} still declares @workgroup_size(8, 8, …); use canonical 16x16`);
+    }
+  }
+}
+
+function verifyEmptyPlaceholder() {
+  const wgContract = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'src/contracts/workgroup_dispatch.json'), 'utf8'),
+  );
+  const ph = wgContract.emptyPlaceholder;
+  if (!ph || ph.format !== 'r32float' || ph.bytesPerRow !== 4) {
+    fail('workgroup_dispatch.json emptyPlaceholder must be { format: "r32float", bytesPerRow: 4 }');
+    return;
+  }
+
+  const tsPath = path.join(ROOT, ph.tsFile || 'src/renderer/webgpu/resources.ts');
+  const tsSrc = fs.readFileSync(tsPath, 'utf8');
+  const emptyTexBlock = tsSrc.match(
+    /const emptyTex = device\.createTexture\(\{[\s\S]*?writeTexture\([\s\S]*?\[1,\s*1\],/,
+  );
+  if (!emptyTexBlock) {
+    fail('resources.ts emptyTex createTexture + writeTexture block not found');
+  } else {
+    const block = emptyTexBlock[0];
+    if (!block.includes("format: 'r32float'") && !block.includes('format: "r32float"')) {
+      fail(`resources.ts emptyTex must use format ${ph.format}`);
+    }
+    if (!block.includes(`bytesPerRow: ${ph.bytesPerRow}`)) {
+      fail(`resources.ts emptyTex writeTexture must use bytesPerRow: ${ph.bytesPerRow}`);
+    }
+    if (!block.includes('new Float32Array([0])')) {
+      fail('resources.ts emptyTex must upload new Float32Array([0]) (one r32float, not rgba)');
+    }
+  }
+
+  const cppPath = path.join(ROOT, ph.cppFile || 'wasm_renderer/resources.cpp');
+  const cppSrc = fs.readFileSync(cppPath, 'utf8');
+  const marker = cppSrc.indexOf('Empty texture (1x1 r32float)');
+  if (marker < 0) {
+    fail('resources.cpp emptyTexture_ comment block not found');
+    return;
+  }
+  const writeEnd = cppSrc.indexOf('sizeof(black)', marker);
+  const cppBlock = cppSrc.slice(marker, writeEnd > marker ? writeEnd + 80 : marker + 1200);
+  if (!cppBlock.includes('emptyTexture_')) {
+    fail('emptyTexture_ not found in resources.cpp empty-placeholder block');
+    return;
+  }
+  if (!/texDesc\.size\s*=\s*\{\s*1\s*,\s*1\s*,\s*1\s*\}/.test(cppBlock)) {
+    fail('resources.cpp emptyTexture_ must set texDesc.size = {1, 1, 1}');
+  }
+  const sizePos = cppBlock.search(/texDesc\.size\s*=\s*\{\s*1\s*,\s*1\s*,\s*1\s*\}/);
+  const formatPos = cppBlock.search(/texDesc\.format\s*=\s*WGPUTextureFormat_R32Float/);
+  if (formatPos < 0 || (sizePos >= 0 && formatPos < sizePos)) {
+    fail(
+      'resources.cpp emptyTexture_ must set texDesc.format = WGPUTextureFormat_R32Float after 1×1 size (explicit reset)',
+    );
+  }
+  if (/bytesPerRow\s*=\s*sizeof\(float\)\s*\*\s*4/.test(cppBlock)) {
+    fail('resources.cpp emptyTexture_ must not use bytesPerRow = sizeof(float) * 4');
+  }
+  if (/bytesPerRow\s*=\s*16\b/.test(cppBlock)) {
+    fail('resources.cpp emptyTexture_ must not use bytesPerRow = 16');
+  }
+  if (!/bytesPerRow\s*=\s*sizeof\(float\)/.test(cppBlock)) {
+    fail('resources.cpp emptyTexture_ must use bytesPerRow = sizeof(float)');
+  }
+  if (/float\s+black\s*\[\s*4\s*\]/.test(cppBlock)) {
+    fail('resources.cpp emptyTexture_ must upload one float, not float black[4]');
+  }
+  if (!/float\s+black\s*=\s*0\.0f/.test(cppBlock)) {
+    fail('resources.cpp emptyTexture_ must declare float black = 0.0f');
+  }
+  if (!/sizeof\(black\)/.test(cppBlock)) {
+    fail('resources.cpp emptyTexture_ write must use sizeof(black)');
+  }
+}
+
+verifyOptionalFeatures();
+verifyWasmExports();
+verifyWorkgroupDispatch();
+verifyEmptyPlaceholder();
+
 if (failed) {
   process.exit(1);
 }
 
 console.log(
-  '✅ Device policy sync OK (src/contracts/webgpu_limits.json ↔ TS ↔ device.cpp CheckLimit + requiredLimits)',
+  '✅ Device policy sync OK (limits + optional features + wasm_exports + workgroup_dispatch + emptyPlaceholder ↔ TS/C++/shaders)',
 );

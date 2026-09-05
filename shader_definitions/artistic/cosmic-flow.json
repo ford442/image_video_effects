@@ -2,7 +2,7 @@
   "id": "cosmic-flow",
   "name": "Cosmic Flow Pro",
   "url": "shaders/cosmic-flow.wgsl",
-  "description": "Depth-aware ethereal energy field with domain warping, temporal trails, chromatic aberration, and multiple color modes ranges.",
+  "description": "Braided magnetohydrodynamic nebula currents with layered domain warping, lensing eddies, click-launched vortices, depth deflection, chromatic source refraction, and advected HDR persistence.",
   "params": [
     {
       "id": "speed",
@@ -37,10 +37,12 @@
     "depth-aware",
     "temporal-persistence",
     "chromatic-aberration",
-    "multi-mode",
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "click-reactive",
+    "braided-flow",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",

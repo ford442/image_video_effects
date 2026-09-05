@@ -130,12 +130,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let audioReactivity = 1.0 + audioBass * 0.5;
   var mouse = u.zoom_config.yz;
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
-  var uv = (vec2<f32>(id.xy) / res - 0.5) * vec2<f32>(res.x / res.y, 1.0) * u.zoom_config.z;
+  let uv01 = (vec2<f32>(id.xy) + 0.5) / res;
+  var uv = (uv01 - 0.5) * vec2<f32>(res.x / res.y, 1.0);
   let scale = u.zoom_params.x * 1.9 + 0.1;
+  let purity = clamp(u.zoom_params.y, 0.0, 1.0);
   let glowIntensity = u.zoom_params.z * 2.0;
   let fogDensity = u.zoom_params.w * 2.0;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  var shock = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 3.2) {
+      let front = abs(length((uv01 - ripple.xy) * vec2<f32>(res.x / res.y, 1.0)) - age * 0.18);
+      shock += (1.0 - smoothstep(0.0, 0.026, front)) * (1.0 - age / 3.2);
+    }
+  }
+  shock = min(shock, 2.0);
   let mouseAngle = mouse.x * 6.28;
-  var ro = vec3<f32>(sin(mouseAngle) * 10.0, 3.0, cos(mouseAngle) * 10.0);
+  var ro = vec3<f32>(sin(mouseAngle) * (10.0 - held), 3.0 + (mouse.y - 0.5) * 2.0, cos(mouseAngle) * (10.0 - held));
   let lookAt = vec3<f32>(0.0, 0.0, 0.0);
   let fwd = normalize(lookAt - ro);
   let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
@@ -145,7 +159,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var mat = 0.0;
   for (var i: i32 = 0; i < 100; i = i + 1) {
     var p = ro + rd * t;
-    let r = map(p, scale, 0.5, time, audioReactivity);
+    let r = map(p, scale, 0.2 + purity * 0.8, time, audioReactivity + shock * 0.35);
     if (r.x < 0.001) { mat = r.y; break; }
     t = t + r.x * 0.9;
     if (t > 80.0) { break; }
@@ -153,15 +167,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var col = vec3<f32>(0.01, 0.005, 0.03);
   if (t < 79.0) {
     var p = ro + rd * t;
-    let n = getNormal(p, scale, 0.5, time, audioReactivity);
+    let n = getNormal(p, scale, 0.2 + purity * 0.8, time, audioReactivity + shock * 0.35);
     let lightDir = normalize(vec3<f32>(0.5, 1.0, 0.3));
     let sources = array<vec3<f32>, 4>(
       vec3<f32>(3.0, 4.0, 2.0), vec3<f32>(-3.0, 3.0, -2.0),
       vec3<f32>(0.0, 5.0, 4.0), vec3<f32>(2.0, 2.0, -3.0)
     );
-    let caustics = causticIntensity(p, sources, time) * glowIntensity;
+    let caustics = causticIntensity(p, sources, time) * glowIntensity * (0.35 + purity * 1.1);
     if (mat > 1.5) {
-      let sss = subsurfaceScattering(p, n, lightDir, 0.3, vec3<f32>(0.6, 0.8, 1.0));
+      let sss = subsurfaceScattering(p, n, lightDir, mix(0.65, 0.16, purity), vec3<f32>(0.6, 0.8, 1.0));
       let glow = pow(glowIntensity * 1.5 + sin(time * 8.0 * audioReactivity) * 0.3, 2.0);
       col = vec3<f32>(0.4, 0.8, 1.0) * glow + vec3<f32>(0.6, 0.3, 1.0) * 0.6;
       col = col + sss * 0.4 + vec3<f32>(0.8, 0.9, 1.0) * caustics * 0.5;
@@ -171,8 +185,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       col = col + sss * 0.15;
     }
   }
-  let mouseLight = max(0.0, 1.0 - length(uv - mouse) * 3.0);
-  col = col + vec3<f32>(0.8, 0.6, 1.0) * mouseLight * 0.8;
+  let mouseCentered = (mouse - 0.5) * vec2<f32>(res.x / res.y, 1.0);
+  let mouseLight = max(0.0, 1.0 - length(uv - mouseCentered) * 3.0);
+  col = col + vec3<f32>(0.8, 0.6, 1.0) * mouseLight * (0.25 + held * 0.85);
+  col += vec3<f32>(0.22, 0.72, 1.0) * shock * (0.35 + audioHigh * 0.7);
 
   // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
   let coord = vec2<i32>(id.xy);
@@ -187,7 +203,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
   var alpha = 0.0;
   if (t < 79.0) { alpha = clamp(1.0 - t / 80.0 * fogDensity, 0.05, 1.0); }
-  alpha = alpha * (0.2 + 0.8 * mouseLight);
+  alpha = clamp(alpha * (0.35 + purity * 0.5 + mouseLight * 0.3) + shock * 0.22, 0.02, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));
   var depth = 0.5;
   if (t < 79.0) { depth = 1.0 - (t / 80.0); }

@@ -26,16 +26,16 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Evolution Speed",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
+      "id": "bioluminescent_shift",
+      "name": "Bioluminescent Shift",
+      "default": 0.0,
+      "min": -1.0,
+      "max": 1.0,
       "step": 0.1,
-      "mapping": "zoom_params.w"
+      "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "audio_reactivity",
       "name": "Audio Reactivity",
       "default": 1.0,
       "min": 0.0,
@@ -44,7 +44,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "void_intensity",
       "name": "Void Intensity",
       "default": 0.5,
       "min": 0.0,
@@ -53,22 +53,22 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Bioluminescent Shift",
-      "default": 0.0,
-      "min": -1.0,
-      "max": 1.0,
+      "id": "evolution_speed",
+      "name": "Evolution Speed",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
       "step": 0.1,
-      "mapping": "zoom_params.x"
+      "mapping": "zoom_params.w"
     }
   ],
   "updatedParams": [
     {
       "index": 0,
-      "name": "Evolution Speed",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
+      "name": "Bioluminescent Shift",
+      "default": 0.0,
+      "min": -1.0,
+      "max": 1.0,
       "step": 0.1
     },
     {
@@ -89,10 +89,10 @@
     },
     {
       "index": 3,
-      "name": "Bioluminescent Shift",
-      "default": 0.0,
-      "min": -1.0,
-      "max": 1.0,
+      "name": "Evolution Speed",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
       "step": 0.1
     }
   ],

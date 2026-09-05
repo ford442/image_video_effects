@@ -1,16 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  steamy-glass-volumetric
-//  Category: advanced-hybrid
-//  Features: steamy-glass, depth-fog, volumetric, mouse-driven
-//  Complexity: High
-//  Chunks From: steamy-glass.wgsl, alpha-depth-fog-volumetric.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-14 — Liquid Effects Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Steam condensation on glass merges with depth-aware volumetric
-//  fog. Mouse wipes clear both steam and fog while depth drives
-//  fog density and Beer-Lambert extinction unifies both media.
-// ═══════════════════════════════════════════════════════════════════
+// Steamy Glass Volumetric — Codex (g) depth-layered condensation volume.
+// A/C packing: steam density, optical depth, droplets, vertical flow.
+// B and extraBuffer are intentionally unused; C reads are exact and bounded.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,127 +23,126 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
 }
 
-// ═══ CHUNK: valueNoise + fbm2 (from alpha-depth-fog-volumetric.wgsl) ═══
-fn valueNoise(p: vec2<f32>) -> f32 {
+fn noise(p: vec2<f32>) -> f32 {
   let i = floor(p);
   let f = fract(p);
-  let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-  let a = hash12(i + vec2<f32>(0.0, 0.0));
-  let b = hash12(i + vec2<f32>(1.0, 0.0));
-  let c = hash12(i + vec2<f32>(0.0, 1.0));
-  let d = hash12(i + vec2<f32>(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  let s = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash12(i), hash12(i + vec2<f32>(1.0, 0.0)), s.x),
+    mix(hash12(i + vec2<f32>(0.0, 1.0)),
+      hash12(i + vec2<f32>(1.0, 1.0)), s.x), s.y);
 }
 
-fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
-  var value = 0.0;
-  var amplitude = 0.5;
-  var frequency = 1.0;
-  for (var i: i32 = 0; i < octaves; i = i + 1) {
-    value = value + amplitude * valueNoise(p * frequency);
-    amplitude = amplitude * 0.5;
-    frequency = frequency * 2.0;
-  }
-  return value;
+fn stateAt(pixel: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC,
+    clamp(pixel, vec2<i32>(0), dims - vec2<i32>(1)), 0);
 }
 
-const SIGMA_T_STEAM: f32 = 1.5;
-const SIGMA_S_STEAM: f32 = 1.3;
-const STEP_SIZE: f32 = 0.025;
+fn stateUV(uv: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+  return stateAt(vec2<i32>(floor(uv * vec2<f32>(dims))), dims);
+}
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
 
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
-  var mouse = u.zoom_config.yz;
+  let pixel = vec2<i32>(gid.xy);
+  let dims = vec2<i32>(res);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+  let aspect = res.x / max(res.y, 1.0);
   let time = u.config.x;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let steamGain = mix(0.2, 1.4, u.zoom_params.x);
+  let depthGain = mix(0.5, 3.2, u.zoom_params.y);
+  let dropletGain = mix(0.08, 1.1, u.zoom_params.z);
+  let turbulence = mix(0.03, 0.75, u.zoom_params.w);
 
-  let steamDensityParam = u.zoom_params.x;
-  let fogHeight = u.zoom_params.y;
-  let turbulence = u.zoom_params.z;
-  let wipeRadius = u.zoom_params.w * 0.3 + 0.05;
+  let state = stateAt(pixel, dims);
+  let flow = vec2<f32>(
+    (noise(uv * 7.0 + vec2<f32>(time * 0.12, 0.0)) - 0.5) * turbulence * 0.009,
+    -(0.001 + turbulence * 0.004 + audio.y * 0.002));
+  let advected = stateUV(clamp(uv - flow, vec2<f32>(0.0), vec2<f32>(1.0)), dims);
+  let average = (stateAt(pixel + vec2<i32>(-1, 0), dims) +
+    stateAt(pixel + vec2<i32>(1, 0), dims) +
+    stateAt(pixel + vec2<i32>(0, -1), dims) +
+    stateAt(pixel + vec2<i32>(0, 1), dims)) * 0.25;
+  var steam = mix(advected.r, average.r, 0.06);
+  steam += (0.22 + steamGain * 0.42 - steam) * 0.012;
+  steam += audio.x * 0.004;
+  var droplets = mix(advected.b, average.b, 0.035) +
+    max(steam - 0.4, 0.0) * dropletGain * 0.006;
+  var verticalFlow = mix(advected.a, flow.y, 0.08);
 
-  // === STEAM SIMULATION (from steamy-glass) ===
-  let prevSteam = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
-  let steamNoise = hash12(uv * 50.0 + time * 0.01);
-  let steamTurb = hash12(uv * 100.0 - time * 0.02) * 0.5 + 0.5;
-  let accumulation = steamNoise * steamDensityParam * 0.02;
-  var newSteam = min(prevSteam + accumulation, 1.0);
-  newSteam = max(0.0, newSteam - 0.005 * (1.0 - steamDensityParam));
+  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseP = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+  let mouseDistance = length(p - mouseP);
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
+  let clearing = exp(-mouseDistance * mouseDistance * 55.0) * held;
+  steam *= 1.0 - clearing * 0.68;
+  droplets *= 1.0 - clearing * 0.5;
 
-  // === DEPTH FOG (from alpha-depth-fog-volumetric) ===
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let noiseUV = uv * 3.0 + vec2<f32>(time * 0.02, time * 0.015);
-  let fogNoise = fbm2(noiseUV, 4) * turbulence + (1.0 - turbulence);
-  let distFactor = (1.0 - depth);
-  let heightFactor = 1.0 - uv.y * fogHeight;
-  let fogOpticalDepth = steamDensityParam * 2.0 * distFactor * heightFactor * fogNoise * 3.0;
-
-  // === MOUSE WIPE (unified for steam + fog) ===
-  let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-  let dist = length(distVec);
-  let wipe = smoothstep(wipeRadius, wipeRadius - 0.1, dist);
-  newSteam = max(0.0, newSteam - wipe);
-
-  // === RIPPLE FOG SWIRL ===
-  let rippleCount = min(u32(u.config.y), 50u);
-  var rippleDisturbance = 0.0;
+  var clickFront = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
   for (var i = 0u; i < rippleCount; i = i + 1u) {
-    let ripple = u.ripples[i];
-    let rDist = length(uv - ripple.xy);
-    let age = time - ripple.z;
-    if (age < 2.0 && rDist < 0.2) {
-      rippleDisturbance += smoothstep(0.2, 0.0, rDist) * max(0.0, 1.0 - age * 0.5) * 0.3;
+    let event = u.ripples[i];
+    let age = time - event.z;
+    if (age >= 0.0 && age < 3.2) {
+      let d = length((uv - event.xy) * vec2<f32>(aspect, 1.0));
+      let front = exp(-abs(d - age * 0.29) * 31.0 - age * 0.72);
+      steam *= 1.0 - clamp(front * 0.24, 0.0, 0.58);
+      droplets += front * 0.018;
+      clickFront += front;
     }
   }
 
-  // === UNIFIED VOLUMETRIC COMPOSITION ===
-  // Combined optical depth: steam + depth fog
-  let combinedOpticalDepth = newSteam * STEP_SIZE * SIGMA_T_STEAM + fogOpticalDepth * (1.0 - wipe);
-  let modifiedOpticalDepth = mix(combinedOpticalDepth, combinedOpticalDepth * 0.5, rippleDisturbance);
+  steam = clamp(steam * 0.997, 0.0, 1.35);
+  droplets = clamp(droplets * 0.994, 0.0, 1.0);
+  let opticalDepth = clamp(steam * depthGain * (0.6 + droplets * 0.8), 0.0, 4.0);
+  textureStore(dataTextureA, pixel,
+    vec4<f32>(steam, opticalDepth, droplets, verticalFlow));
 
-  let transmittance = exp(-modifiedOpticalDepth);
-  let alpha = 1.0 - transmittance;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  var integratedColor = vec3<f32>(0.0);
+  var transmittance = 1.0;
+  for (var layer = 0; layer < 6; layer = layer + 1) {
+    let z = (f32(layer) + 0.5) / 6.0;
+    let layerNoise = noise(uv * (4.0 + z * 5.0) +
+      vec2<f32>(time * 0.08 * z, -time * 0.05));
+    let layerDensity = steam * (0.45 + layerNoise * 0.8) *
+      (1.0 - smoothstep(0.15, 1.0, z)) * (0.7 + depth * 0.3);
+    let absorption = exp(-layerDensity * depthGain * 0.22);
+    let layerColor = mix(vec3<f32>(0.44, 0.56, 0.7),
+      vec3<f32>(0.82, 0.9, 1.0), z + audio.z * 0.12);
+    integratedColor += layerColor * (1.0 - absorption) * transmittance;
+    transmittance *= absorption;
+  }
 
-  // Fog colors
-  let nearFog = vec3<f32>(0.95, 0.97, 1.0);  // Steam white/blue
-  let farFog = vec3<f32>(0.25, 0.35, 0.6);   // Cool blue fog
-  let fogColor = mix(nearFog, farFog, distFactor);
-
-  // Scene composite
-  let sceneColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-
-  // Blur from steam scattering
-  let blurAmount = newSteam * 0.02;
-  var blurColor = vec3<f32>(0.0);
-  blurColor += textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(blurAmount, 0.0), 0.0).rgb;
-  blurColor += textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(blurAmount, 0.0), 0.0).rgb;
-  blurColor += textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, blurAmount), 0.0).rgb;
-  blurColor += textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, blurAmount), 0.0).rgb;
-  blurColor *= 0.25;
-
-  let scatteredImage = mix(sceneColor, blurColor, newSteam);
-  let inScattered = fogColor * newSteam * SIGMA_S_STEAM * (1.0 - transmittance);
-  let finalColor = scatteredImage * transmittance + inScattered;
-
-  // Condensation droplet highlights
-  let dropletNoise = hash12(uv * 200.0 + time * 0.5);
-  let droplets = smoothstep(0.98, 1.0, dropletNoise) * newSteam * 0.3;
-  let finalWithDroplets = finalColor + vec3<f32>(droplets);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalWithDroplets, alpha));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newSteam, fogOpticalDepth, 0.0, alpha));
-
-  let steamDepth = mix(depth, 0.9, alpha * 0.3);
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(steamDepth, modifiedOpticalDepth, 0.0, alpha));
+  let gradient = vec2<f32>(
+    stateAt(pixel + vec2<i32>(1, 0), dims).b -
+      stateAt(pixel + vec2<i32>(-1, 0), dims).b,
+    stateAt(pixel + vec2<i32>(0, 1), dims).b -
+      stateAt(pixel + vec2<i32>(0, -1), dims).b);
+  let sourceUV = clamp(uv + gradient * (0.02 + droplets * 0.03),
+    vec2<f32>(0.0), vec2<f32>(1.0));
+  let source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
+  var rgb = source.rgb * transmittance + integratedColor;
+  rgb += vec3<f32>(0.55, 0.82, 1.0) *
+    (droplets * 0.18 + clickFront * 0.08 + audio.z * 0.025);
+  let alpha = clamp(source.a * transmittance + (1.0 - transmittance) * 0.9 +
+    droplets * 0.06, 0.0, 1.0);
+  textureStore(writeTexture, pixel, vec4<f32>(aces(rgb), alpha));
+  textureStore(writeDepthTexture, pixel,
+    vec4<f32>(clamp(mix(depth, 0.86, (1.0 - transmittance) * 0.3), 0.0, 1.0), 0.0, 0.0, 0.0));
 }

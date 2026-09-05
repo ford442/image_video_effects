@@ -2,7 +2,7 @@
   "id": "gen-crystalline-nebula-weaver-void-spider",
   "name": "Crystalline Nebula-Weaver Void-Spider",
   "type": "generative",
-  "url": "/shaders/gen-crystalline-nebula-weaver-void-spider.wgsl",
+  "url": "shaders/gen-crystalline-nebula-weaver-void-spider.wgsl",
   "controls": [
     {
       "name": "Web Complexity",
@@ -41,17 +41,47 @@
       "uniform": "zoom_params.w"
     }
   ],
-  "updatedParams": [
+  "params": [
     {
-      "index": 0,
+      "id": "web_complexity",
+      "name": "Web Complexity",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "gravity_distortion",
+      "name": "Gravity Distortion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "plasma_intensity",
+      "name": "Plasma Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "void_depth",
       "name": "Void Depth",
       "default": 1.5,
       "min": 0.1,
       "max": 4.0,
-      "step": 0.1
-    },
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
     {
-      "index": 1,
+      "index": 0,
       "name": "Web Complexity",
       "default": 1.0,
       "min": 0.1,
@@ -59,7 +89,7 @@
       "step": 0.1
     },
     {
-      "index": 2,
+      "index": 1,
       "name": "Gravity Distortion",
       "default": 0.5,
       "min": 0.0,
@@ -67,14 +97,50 @@
       "step": 0.05
     },
     {
-      "index": 3,
+      "index": 2,
       "name": "Plasma Intensity",
       "default": 0.8,
       "min": 0.0,
       "max": 2.0,
       "step": 0.05
+    },
+    {
+      "index": 3,
+      "name": "Void Depth",
+      "default": 1.5,
+      "min": 0.1,
+      "max": 4.0,
+      "step": 0.1
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "description": "A crystalline void-spider weaving at speed: a skittering articulated gait, a faceted plated carapace, and three tiers of web thread down to fine cross-bracing filaments. The nebula and the weaver are both graded through a psychedelic crystalline spectrum. The spring-smoothed cursor drags the gravity field, holding lunges the camera in, and clicks snap the web into expanding rings.",
+  "tags": [
+    "fast-motion",
+    "psychedelic",
+    "mouse-reactive",
+    "click-ripples",
+    "audio-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "features": [
+    "raymarched",
+    "audio-reactive",
+    "mouse-interactive",
+    "ripple-reactive",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tone-mapping",
+    "depth-aware"
+  ],
+  "feedbackPacking": "A/C = raw HDR display RGBA history"
 }

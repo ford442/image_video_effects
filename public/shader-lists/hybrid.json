@@ -421,7 +421,7 @@
     "category": "hybrid",
     "type": "compute",
     "url": "shaders/hyb-spectral-fbm-displace.wgsl",
-    "description": "FBM domain warping displaces the input image, and the warp gradient drives a chromatic RGB smear tinted by a spectral wavelength palette.",
+    "description": "FBM spectral displacement with conveyor bands, oil-slick interference, held warp, click fronts. Display RGBA in A.",
     "features": [
       "hybrid",
       "fbm-noise",
@@ -431,7 +431,12 @@
       "image-distortion",
       "alpha-passthrough",
       "depth-aware",
-      "randomization-safe"
+      "randomization-safe",
+      "mouse-driven",
+      "audio-reactive",
+      "held-drag",
+      "bounded-click-ripples",
+      "upgraded-rgba"
     ],
     "tags": [
       "hybrid",
@@ -497,7 +502,49 @@
       "wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
     ],
     "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
-    "updated": true
+    "updated": true,
+    "updatedParams": [
+      {
+        "id": "fbm_scale",
+        "name": "FBM Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Scale of the FBM noise domain used for displacement"
+      },
+      {
+        "id": "warp_amount",
+        "name": "Warp Amount",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of the nested FBM domain warp"
+      },
+      {
+        "id": "spectral_spread",
+        "name": "Spectral Spread",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of RGB channel separation along the displacement gradient"
+      },
+      {
+        "id": "effect_mix",
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend strength of the spectral displacement over the input"
+      }
+    ]
   },
   {
     "id": "hyb-temporal-fbm-ghost",
@@ -1230,7 +1277,7 @@
     "id": "hybrid-voronoi-glass",
     "name": "Hybrid Voronoi Glass",
     "url": "shaders/hybrid-voronoi-glass.wgsl",
-    "description": "Voronoi diagram rendered as glass blocks with chromatic dispersion and physically-inspired refraction",
+    "description": "Stable Voronoi cell boundaries drive Cauchy dispersion, Fresnel and total internal reflection, thickness absorption, cursor lens pressure, and click fracture fronts.",
     "features": [
       "mouse-driven",
       "hybrid",
@@ -1238,7 +1285,13 @@
       "glass-refraction",
       "chromatic-dispersion",
       "fresnel",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "cauchy-dispersion",
+      "total-internal-reflection",
+      "thickness-absorption",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -1282,9 +1335,47 @@
         "description": "Virtual thickness of glass blocks"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cell Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Refraction Index",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Dispersion",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glass Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for restrained glass persistence; B is unused; refracted source depth retains Fresnel modulation.",
     "tags": [
       "interactive",
-      "cursor"
+      "cursor",
+      "voronoi",
+      "glass",
+      "dispersion"
     ],
     "chunks_used": [
       "hash22 (voronoi-glass.wgsl)",

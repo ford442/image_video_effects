@@ -17,6 +17,44 @@
     16,
     1
   ],
+  "params": [
+    {
+      "id": "crystal_complexity",
+      "name": "Crystal Complexity",
+      "default": 0.42,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "iridescence_shift",
+      "name": "Iridescence Shift",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "growth_rate",
+      "name": "Growth Rate",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "disruption_radius",
+      "name": "Disruption Radius",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -56,5 +94,16 @@
   "updated": true,
   "id": "gen-hyper-dimensional-bismuth-matrix",
   "url": "shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
-  "features": []
+  "features": [
+    "raymarched",
+    "bismuth-crystal",
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tonemap",
+    "depth-aware"
+  ],
+  "feedbackPacking": "A/C = exact ACES display RGBA; guarded bass envelope uses extraBuffer[133]"
 }

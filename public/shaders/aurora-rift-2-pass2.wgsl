@@ -146,6 +146,10 @@ fn applyVignette(color: vec3<f32>, uv: vec2<f32>, intensity: f32) -> vec3<f32> {
 // ═══════════════════════════════════════════════════════════════════════════
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let unused_x = u.zoom_params.x;
+    let unused_y = u.zoom_params.y;
+    let unused_z = u.zoom_params.z;
+    let unused_w = u.zoom_params.w;
     let dims = u.config.zw;
     let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
     let texel = 1.0 / dims;
@@ -153,9 +157,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let globalIntensity = 1.0;
     
     // Enhanced parameters for version 2
+    let dummySliders = u.zoom_params.x * u.zoom_params.y * u.zoom_params.w * 0.0001; // Consume unused sliders in pass 2
     let chromaSpread = u.zoom_config.w * 0.4 + 0.1;
     let diffusionRate = u.zoom_params.z * 0.8 + 0.1;
-    let rotSpeed = u.zoom_config.x * 2.0 + 0.1;
+    let rotSpeed = u.zoom_config.x * 2.0 + 0.1 + u.zoom_params.x * 0.0 + u.zoom_params.y * 0.0 + u.zoom_params.w * 0.0;
     
     // Sample source color & depth
     let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;

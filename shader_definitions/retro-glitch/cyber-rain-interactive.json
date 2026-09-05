@@ -2,9 +2,23 @@
   "id": "cyber-rain-interactive",
   "name": "Cyber Rain",
   "url": "shaders/cyber-rain-interactive.wgsl",
-  "description": "Matrix-style digital rain that reacts to image luminance and mouse.",
+  "description": "Layered glyph downpour with three parallax rain sheets, per-column FFT bins, spring-free pointer bending (distinct from cyber-rain-em), bounded EMP rings, luminance wetness cling, exact C trails, and ACES display.",
+  "workgroup_size": [16, 16, 1],
+  "updated": true,
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "dot-matrix-glyphs",
+    "depth-parallax-layers",
+    "chromatic-aberration",
+    "temporal-trails"
   ],
   "params": [
     {
@@ -39,6 +53,44 @@
   "tags": [
     "glitch",
     "retro",
-    "vintage"
+    "vintage",
+    "matrix",
+    "rain",
+    "glyph",
+    "parallax"
+  ],
+  "updatedParams": [
+    {
+      "id": "speed",
+      "name": "Rain Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Base fall rate before the per-column band multiplier."
+    },
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Column pitch of the middle sheet (40\u2013150 columns)."
+    },
+    {
+      "id": "glitch",
+      "name": "Glitch",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "description": "Column-coherent dropout rate and glyph scramble amount."
+    },
+    {
+      "id": "trail",
+      "name": "Trail Len",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Length of the fading tail behind each drop head."
+    }
   ]
 }

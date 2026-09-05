@@ -17,6 +17,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "cell_scale", "name": "Cell Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "evolution_speed", "name": "Evolution Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "invasive_force", "name": "Invasive Force", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "bioluminescence", "name": "Bioluminescence", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -64,6 +70,8 @@
     "depth-aware",
     "depth-output",
     "semantic-alpha",
-    "procedural"
-  ]
+    "procedural",
+    "aces-tonemap"
+  ],
+  "feedbackPacking": "A/C = untonemapped colony trail RGB plus colony age; exact cellular history; extraBuffer[133..138] = smoothed attractor and click state"
 }

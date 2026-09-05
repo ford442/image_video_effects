@@ -1,9 +1,9 @@
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { DEFAULT_CONFIG } from '../renderer/Renderer';
 
-import * as WasmBridge from '../wasm/wasm_bridge.js';
+import * as WasmBridge from '../wasm/wasm_bridge';
 
-jest.mock('../wasm/wasm_bridge.js', () => ({
+jest.mock('../wasm/wasm_bridge', () => ({
   initWasmRenderer: jest.fn().mockResolvedValue(true),
   shutdownWasmRenderer: jest.fn(),
   setInputSource: jest.fn(),
@@ -98,5 +98,29 @@ describe('WASMRenderer input sources', () => {
     expect(drawImage).toHaveBeenCalled();
     expect(getImageData).toHaveBeenCalledWith(0, 0, 32, 24);
     expect(WasmBridge.uploadImageData).toHaveBeenCalledWith(fakeImageData, 32, 24);
+  });
+
+  it('logs input w×h when the image upload runs', async () => {
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: jest.fn(),
+      getImageData: jest.fn().mockReturnValue({
+        data: new Uint8ClampedArray(8 * 4 * 4),
+        width: 8,
+        height: 4,
+      }),
+    } as unknown as GPUCanvasContext);
+
+    jest.spyOn(global, 'Image').mockImplementation(() => {
+      const img = document.createElement('img');
+      Object.defineProperty(img, 'naturalWidth', { value: 8 });
+      Object.defineProperty(img, 'naturalHeight', { value: 4 });
+      img.decode = jest.fn().mockResolvedValue(undefined);
+      return img;
+    });
+
+    await renderer.loadImageFromURL('https://example.com/rebind.png');
+    expect(log).toHaveBeenCalledWith('[WASM] Input upload ran: 8×4 (image)');
+    log.mockRestore();
   });
 });

@@ -2,23 +2,25 @@
   "id": "cyber-lattice-bilateral",
   "name": "Cyber Lattice Bilateral",
   "url": "shaders/cyber-lattice-bilateral.wgsl",
-  "description": "Cyber Lattice Bilateral",
-  "tags": [
-    "mouse-driven",
-    "bilateral-filter",
-    "grid-distortion",
-    "dreamy"
-  ],
+  "description": "Mouse-warped cyber grid with edge-preserving bilateral dream smoothing, spring cursor, held hue flip, capped ripples, exact C blend, and three-band audio.",
+  "workgroup_size": [16, 16, 1],
   "features": [
     "mouse-driven",
     "bilateral-filter",
     "grid-distortion",
-    "dreamy"
+    "dreamy",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "spring-cursor",
+    "aces-tone-map",
+    "upgraded-rgba",
+    "temporal-feedback"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Param 1",
+      "id": "grid_scale",
+      "name": "Grid Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,8 +28,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Param 2",
+      "id": "distort_strength",
+      "name": "Distort Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -35,8 +37,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Param 3",
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -44,8 +46,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Param 4",
+      "id": "radius",
+      "name": "Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -53,5 +55,18 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    { "index": 0, "name": "Grid Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Distort Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Glow Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "tags": [
+    "mouse-driven",
+    "bilateral-filter",
+    "grid-distortion",
+    "dreamy",
+    "cyber"
+  ],
+  "updated": true
 }

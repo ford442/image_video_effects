@@ -33,6 +33,11 @@ const PHI: f32 = 1.618033988749895;
 const IOR_AIR: f32 = 1.0;
 const IOR_GLASS: f32 = 1.52;
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn hash1(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453); }
 
 fn hash2(p: vec2<f32>) -> vec2<f32> {
@@ -141,6 +146,7 @@ fn chromaticAberration(uv: vec2<f32>, strength: f32, time: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = u.config.zw;
     if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
+    let coord = vec2<i32>(id.xy);
     let uv = vec2<f32>(id.xy) / res;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
@@ -207,12 +213,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let specAngle = sin(uv.x * 20.0 + uv.y * 15.0 + time + fbm2(uv * 5.0, 3) * TAU) * 0.5 + 0.5;
     finalCol += vec3<f32>(0.3, 0.3, 0.35) * specAngle * specAngle * 0.3 * (1.0 + mids * 0.5);
     // Temporal feedback via dataTextureC with chromatic decay
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prev = textureLoad(dataTextureC, coord, 0);
     let decayR = 0.95 + treble * 0.02; let decayG = 0.95 + mids * 0.02; let decayB = 0.95 + bass * 0.02;
     let prevDecay = vec3<f32>(prev.r * decayR, prev.g * decayG, prev.b * decayB);
     finalCol = mix(finalCol, prevDecay, 0.03 + bass * 0.015);
-    let lum2 = dot(clamp(finalCol, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.299, 0.587, 0.114));
+    finalCol = acesToneMap(max(finalCol, vec3<f32>(0.0)) * 1.08);
+    let lum2 = dot(finalCol, vec3<f32>(0.2126, 0.7152, 0.0722));
     let alpha = clamp(lum2 * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, id.xy, vec4<f32>(clamp(finalCol, vec3<f32>(0.0), vec3<f32>(2.0)), alpha));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalCol, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(finalCol, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

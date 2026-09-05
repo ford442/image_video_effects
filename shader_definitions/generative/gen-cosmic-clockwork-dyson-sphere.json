@@ -20,10 +20,16 @@
     16,
     1
   ],
+  "params": [
+    { "id": "mechanical-complexity", "name": "Mechanical Complexity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "clock-speed", "name": "Clock Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "plasma-intensity", "name": "Plasma Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "gear-ratio", "name": "Gear Ratio", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
-      "name": "Intensity",
+      "name": "Mechanical Complexity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -31,7 +37,7 @@
     },
     {
       "index": 1,
-      "name": "Speed",
+      "name": "Clock Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -39,7 +45,7 @@
     },
     {
       "index": 2,
-      "name": "Scale",
+      "name": "Plasma Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -47,7 +53,7 @@
     },
     {
       "index": 3,
-      "name": "Mouse Influence",
+      "name": "Gear Ratio",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -58,5 +64,43 @@
   "supportsDof": false,
   "updated": true,
   "url": "shaders/gen-cosmic-clockwork-dyson-sphere.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "mechanical_complexity",
+      "name": "Mechanical Complexity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "clock_speed",
+      "name": "Clock Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "plasma_intensity",
+      "name": "Plasma Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "gear_ratio",
+      "name": "Gear Ratio",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

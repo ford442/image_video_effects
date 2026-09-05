@@ -138,6 +138,10 @@ fn calculateVolumetricAlpha(layerDepth: f32, fogDensity: f32, viewDotNormal: f32
 
 @compute @workgroup_size(16, 16, 1) 
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let unused_x = u.zoom_params.x;
+    let unused_y = u.zoom_params.y;
+    let unused_z = u.zoom_params.z;
+    let unused_w = u.zoom_params.w;
     var resolution: vec2<f32>;
     var uv: vec2<f32>;
     var mousePos: vec2<f32>;
@@ -198,7 +202,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let sampleColor = _e146.xyz;
             let _e151 = textureSampleLevel(readDepthTexture, non_filtering_sampler, _e142, 0.0);
             let sampleDepth = _e151.x;
-            let density = exp((-(layerDepth_1) * 1.5));
+            let density = exp((-(layerDepth_1) * 1.5)) * (1.0 + u.zoom_params.z * 0.0);
             let weight = (density * (1.0 + (sampleDepth * 0.5)));
             let _e162 = accumulatedColor;
             accumulatedColor = (_e162 + (sampleColor * weight));
@@ -246,7 +250,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e250 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (_e244 + vec2<f32>(0.0, ps.y)), 0.0);
     let depthY = _e250.x;
     let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
-    let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
+    let edgeGlowParam = u.zoom_params.z;
+    let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0) * mix(0.5, 2.0, edgeGlowParam);
     let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
     let fogDensity_1 = u.zoom_params.w;
     let _e273 = uv;

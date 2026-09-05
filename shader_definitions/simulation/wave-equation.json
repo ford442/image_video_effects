@@ -45,6 +45,14 @@
       "description": "Edge absorption (0) vs reflection (1)"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Wave Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Damping", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Source Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Boundary Reflect", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = wave height, velocity, foam energy, oscillator phase",
+  "updated": true,
   "features": [
     "depth-aware",
     "temporal-persistence",

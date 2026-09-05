@@ -1,12 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Scan
-//  Category: visual-effects
-//  Features: mouse-driven, audio-reactive, temporal-scan-pass, depth-colorize, chromatic-scan, upgraded-rgba,
-//            holographic-scanlines, data-visualization, hex-grid, interference-patterns
-//  Complexity: Very High
-//  Chunks From: cyber-scan, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-06-28
+//  Cyber Scan — Batch 59
+//  Triple scan lines, hex grid, binary rain, exact C smear, capped click
+//  bursts, held widens band, ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -118,24 +113,30 @@ fn hueToRGB(hue: f32) -> vec3<f32> {
   return clamp(p - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let pixel = vec2<i32>(global_id.xy);
 
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let held = u.zoom_config.w > 0.5;
 
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let depthColorize = mix(0.5, 1.5, depth);
 
-    let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
     let scanSpeed = zp.x * bass_env(bass, mids);
     let trailLength = zp.y;
     let scanWidth = zp.z;
@@ -151,7 +152,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist2 = abs(uv.x - scanLine2);
     let dist3 = abs(uv.x - scanLine3);
 
-    let w = scanWidth * (1.0 + bass * 0.3);
+    let w = scanWidth * (1.0 + bass * 0.3) * select(1.0, 1.35, held);
     let intensity = smoothstep(w, 0.0, dist);
     let intensity2 = smoothstep(w * 1.5, 0.0, dist2) * 0.5;
     let intensity3 = smoothstep(w * 2.0, 0.0, dist3) * 0.3;
@@ -161,9 +162,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trail2 = smoothstep(w * 7.0, w * 1.5, dist2) * trailLength * 0.5;
     let totalTrail = trail + trail2;
 
-    // Temporal scan: previous pass smears vertically
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+    // Temporal scan: exact load from C
+    let prev = textureLoad(dataTextureC, pixel, 0);
     let smear = mix(prev.rgb * 0.85, vec3<f32>(0.0), 0.15);
+
+    var clickBurst = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 1.2) {
+            let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+            clickBurst += smoothstep(0.04, 0.0, abs(rDist - age * 0.35)) * exp(-age * 1.8);
+        }
+    }
 
     let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let luma = dot(sourceColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
@@ -223,12 +235,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sparkle = hash12(vec2<f32>(global_id.xy) + vec2<f32>(time * 20.0, 0.0));
     let sparkleBright = smoothstep(0.98, 1.0, sparkle) * treble * totalIntensity * 2.0;
     rgb = rgb + vec3<f32>(sparkleBright);
+    rgb = rgb + scanColor * clickBurst * (0.6 + treble * 0.4);
 
-    let alpha = clamp(totalIntensity + totalTrail * 0.2 + bass * 0.05 + hexData * 0.1, 0.0, 1.0);
+    let band = min(u32(uv.x * 8.0), 7u);
+    rgb = rgb + vec3<f32>(0.05, 0.12, 0.18) * plasmaBuffer[band + 1u].x * totalIntensity * 0.15;
 
-    // Premultiplied alpha
-    let premultColor = rgb * alpha;
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(premultColor, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(rgb, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    rgb = acesToneMap(rgb * (0.95 + mids * 0.1));
+
+    let alpha = clamp(totalIntensity + totalTrail * 0.2 + bass * 0.05 + hexData * 0.1 + clickBurst * 0.2, 0.0, 1.0);
+
+    textureStore(writeTexture, pixel, vec4<f32>(rgb, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(smear, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

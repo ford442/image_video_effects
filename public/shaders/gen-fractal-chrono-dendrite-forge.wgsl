@@ -130,17 +130,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Guarded engine FFT bins 1–8 → spectral shimmer on the thin-film phase
-    var fftShimmer = 0.0;
-    if (arrayLength(&extraBuffer) > 13u) {
-        for (var k = 1u; k <= 8u; k = k + 1u) {
-            fftShimmer += extraBuffer[5u + k];
-        }
-        fftShimmer = clamp(fftShimmer * 0.125, 0.0, 1.5);
-    }
+    // Three-band spectral shimmer; engine-owned extraBuffer slots stay untouched.
+    let fftShimmer = clamp((bass + mids + treble) * 0.333333, 0.0, 1.5);
 
-    // Mouse Interaction (uv is 0-1, y=0 top; recentered to scene space)
-    let mouse_pos = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(resolution.x / resolution.y, 1.0);
+    // Mouse Interaction (normalized canvas uv recentered to raymarch space)
+    let mouse_pos = (u.zoom_config.yz * resolution - 0.5 * resolution) / resolution.y;
     let click = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
     // Camera
@@ -222,6 +216,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Atmospheric near-miss aura visible even off-surface (bounded HDR)
     col += vec3<f32>(0.35, 0.75, 0.85) * glowAccum * 0.35;
+
+    // Discrete click ripples ring the forge without mutating its raymarch state.
+    var rippleGlow = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let rippleAge = time - ripple.z;
+        if (rippleAge >= 0.0 && rippleAge < 2.5) {
+            let ripplePos = (ripple.xy * resolution - 0.5 * resolution) / resolution.y;
+            rippleGlow += exp(-abs(length(uv - ripplePos) - rippleAge * 0.28) * 48.0)
+                        * exp(-rippleAge * 1.2) * ripple.w;
+        }
+    }
+    col += vec3<f32>(0.28, 0.85, 1.35) * rippleGlow * (0.7 + treble * 0.4);
+
+    let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+    col = max(col, prev * (0.74 + complexity * 0.12));
 
     // ACES filmic rolloff; exposure breathes gently with the mids
     col = acesToneMap(col * (1.15 + mids * 0.25));

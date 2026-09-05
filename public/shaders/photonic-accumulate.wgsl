@@ -21,16 +21,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn calculateAdvancedAlpha(color: vec3<f32>, uv: vec2<f32>) -> f32 {
-  let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-  let intensity = u.zoom_params.w * 0.5 + 0.4;
-  let threshold = u.zoom_params.y * 0.15 + 0.05;
-  let softness = u.zoom_params.z * 0.1 + 0.02;
-  let depthWeight = u.zoom_params.x * 0.5;
-  let lumaAlpha = smoothstep(threshold - softness, threshold + softness, luma) * intensity;
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let depthAlpha = mix(0.3, 1.0, depth);
-  return clamp(mix(lumaAlpha, depthAlpha, depthWeight), 0.0, 1.0);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -40,16 +34,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (coord.x >= size.x || coord.y >= size.y) { return; }
 
   let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   let dispersion = mix(0.0, 0.1, u.zoom_params.z);
   let treble = plasmaBuffer[0].z;
 
-  let prevCaustic = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-  let thisTrace = textureLoad(dataTextureA, vec2<i32>(coord), 0);
-  let emitter = textureLoad(dataTextureB, vec2<i32>(coord), 0);
-  let surfaceNormal = emitter.rgb;
+  let thisTrace = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
   let lightPos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-  let lightHeight = emitter.a;
+  let lightHeight = 1.0;
+
+  // Recompute surface normal from depth for refraction
+  let hL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(-texelSize.x, 0.0), 0.0).r;
+  let hR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
+  let hU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, -texelSize.y), 0.0).r;
+  let hD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
+  let surfaceNormal = normalize(vec3<f32>((hL - hR) * 2.0, (hU - hD) * 2.0, 0.3));
 
   var causticAccum = thisTrace.rgb;
   for (var i = 0; i < 50; i = i + 1) {
@@ -67,14 +66,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  // Higher blend so the temporal accumulator is visibly alive (not a faint wash)
   let intensity = mix(0.5, 3.0, u.zoom_params.w);
-  let blendFactor = 0.28 + treble * 0.08;
-  var accumulatedCaustic = mix(prevCaustic.rgb, causticAccum, blendFactor);
-  // Soft decay so trails breathe instead of blooming to white
-  accumulatedCaustic = accumulatedCaustic * 0.985;
-  // Soft-knee display boost — accumulator must read as light, not haze
-  let displayCaustic = accumulatedCaustic / (1.0 + accumulatedCaustic * 0.35) * (0.85 + intensity * 0.25);
+  let displayCaustic = causticAccum * (0.85 + intensity * 0.25);
 
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -85,8 +78,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let colorB = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace - vec2<f32>(chromaOffset, 0.0), 0.0).b;
   let refractedChromatic = vec3<f32>(colorR, colorG, colorB);
 
-  var finalColor = mix(sourceColor, refractedChromatic, 0.35);
-  finalColor = finalColor + displayCaustic;
+  var finalColor = mix(sourceColor, refractedChromatic, 0.35) + displayCaustic;
 
   let viewDir = vec3<f32>(0.0, 0.0, 1.0);
   let reflectDir = reflect(-viewDir, surfaceNormal);
@@ -94,12 +86,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let specular = pow(max(dot(reflectDir, lightDir), 0.0), 48.0);
   finalColor = finalColor + vec3<f32>(specular * 0.65);
 
-  // Iridescent rim from dispersion — strange + beautiful
   let rim = pow(1.0 - abs(dot(surfaceNormal, viewDir)), 3.0);
   finalColor = finalColor + vec3<f32>(0.3, 0.7, 1.0) * rim * dispersion * 2.0;
 
-  let alpha = calculateAdvancedAlpha(finalColor, uv);
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, alpha));
+  let alpha = clamp(0.7 + length(displayCaustic) * 0.3, 0.0, 1.0);
+  let result = vec4<f32>(aces(max(finalColor, vec3<f32>(0.0))), alpha);
+
+  textureStore(writeTexture, vec2<i32>(coord), result);
   textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(accumulatedCaustic, 1.0));
+  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(causticAccum, alpha));
 }

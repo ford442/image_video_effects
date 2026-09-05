@@ -81,6 +81,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = vec2<f32>(u.config.zw);
   let uv = vec2<f32>(gid.xy) / dims;
   let t = u.config.x;
+  let time = u.config.x;
+    let treble = plasmaBuffer[0].z;
+
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let env = 1.0 + bass * 2.0;
@@ -135,6 +138,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = aces(col * 1.4);
   col += (ign(vec2<f32>(gid.xy)) - 0.5) / 256.0;
   let out = col * alpha + bgAb * (1.0 - alpha);
-  textureStore(writeTexture, gid.xy, vec4(out, alpha));
+  
+    var clickFront = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let aspect = u.config.z / max(u.config.w, 1.0);
+    let screenUV = vec2<f32>(gid.xy) / vec2<f32>(u.config.z, u.config.w);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let event = u.ripples[i];
+        let age = max(time - event.z, 0.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+    }
+    
+    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+
+    let __finalRGB = out + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, gid.xy, vec4<f32>(__finalRGB, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4(depth * 0.5 + alpha * 0.5, 0.0, 0.0, 1.0));
 }

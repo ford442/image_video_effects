@@ -1,10 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Glitch
-//  Category: image
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: High
-//  Created: 2026-04-15
-//  Upgraded: 2026-05-23
+//  Digital Glitch — Composer batch cyber/digital/glitch
+//  Bit corruption, temporal error mask via exact C load, capped ripple
+//  bursts, spring cursor, held intensifies corruption, ACES + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -191,27 +188,75 @@ fn applyDigitalDecay(color: vec3<f32>, decayRate: f32, time: f32, uv: vec2<f32>)
     return decayedColor;
 }
 
-@compute @workgroup_size(8, 8, 1)
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let texelCoord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    let aspect = resolution.x / resolution.y;
+    let held = u.zoom_config.w > 0.5;
+    let mouse = u.zoom_config.yz;
     
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+
+    var smoothMouse = mouse;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[138] > 0.5) {
+        smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+        var springPos = smoothMouse;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = mouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 9.0;
+            let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+        smoothMouse = springPos;
+    }
 
     let corruptionIntensity = clamp(u.zoom_params.x * (1.0 + bass * 0.4), 0.0, 1.0);
     let bitManipulationType = u.zoom_params.y;
     let errorPropagation = u.zoom_params.z;
     let decayRate = u.zoom_params.w;
     
-    let mousePos = u.zoom_config.yz;
-    let mouseDist = distance(uv, mousePos);
+    let mousePos = smoothMouse;
+    let mouseDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
     let mouseInfluence = smoothstep(0.4, 0.0, mouseDist);
-    let effectiveIntensity = clamp(corruptionIntensity + mouseInfluence * 0.3, 0.0, 1.0);
+    var effectiveIntensity = clamp(corruptionIntensity + mouseInfluence * 0.3, 0.0, 1.0);
+    effectiveIntensity = clamp(effectiveIntensity * select(1.0, 1.35, held), 0.0, 1.0);
+
+    let prevMask = textureLoad(dataTextureC, texelCoord, 0).r;
+    var rippleBurst = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 1.0) {
+            let rDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+            rippleBurst += smoothstep(0.12, 0.0, rDist) * (1.0 - age);
+        }
+    }
+    effectiveIntensity = clamp(effectiveIntensity + rippleBurst * 0.4 + prevMask * 0.15, 0.0, 1.0);
     
     let blockSize = mix(8.0, 64.0, effectiveIntensity);
     let blockCoord = floor(uv * blockSize);
@@ -282,12 +327,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(uv - 0.5);
     color = color * (1.0 - smoothstep(0.7, 1.0, dist) * 0.5);
     
+    let band = min(u32(uv.x * 8.0), 7u);
+    effectiveIntensity = clamp(effectiveIntensity + plasmaBuffer[band + 1u].x * 0.08, 0.0, 1.0);
+
     let glitchLuma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    color = acesToneMap(color * (0.95 + bass * 0.08));
     let alpha = clamp(0.5 + glitchLuma * 0.3 + effectiveIntensity * 0.3 + mouseInfluence * 0.15, 0.0, 1.0);
-    
+    let errorMask = clamp(effectiveIntensity * 0.85 + prevMask * 0.12, 0.0, 1.0);
+
     textureStore(writeTexture, texelCoord, vec4<f32>(color, alpha));
-    textureStore(dataTextureA, texelCoord, vec4<f32>(color, alpha));
-    
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, texelCoord, vec4<f32>(errorMask, glitchLuma, effectiveIntensity, alpha));
+
+    let depth = textureLoad(readDepthTexture, texelCoord, 0).r;
+    textureStore(writeDepthTexture, texelCoord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

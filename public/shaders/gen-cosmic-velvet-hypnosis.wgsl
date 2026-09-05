@@ -71,6 +71,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let core = exp(-radius * (6.0 + velvetSoftness * 6.0));
     let counterSpiral = pow(0.5 + 0.5 * sin(angle * (arms + 2.0) - log(radius + 0.03) * 7.0 + spin * 0.73), mix(10.0, 3.0, velvetSoftness));
     let moire = pow(0.5 + 0.5 * cos(spiralPhase * 0.55 - angle * 3.0 + time * (0.4 + spinRate)), 14.0) * counterSpiral;
+    let velvetWeave = pow(0.5 + 0.5 * cos(angle * (arms * 2.0 + 1.0) + radius * (44.0 + spiralArms * 38.0) - spin * 1.7), 18.0) * velvet;
 
     var clickHalo = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -88,13 +89,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hdr = palette(hue) * velvet * (0.6 + saturation * 2.5 + audio.y);
     hdr += palette(hue + 0.36) * rings * (0.25 + runner * 1.8 + audio.z * 0.45);
     hdr += palette(hue + 0.51) * (counterSpiral * 0.42 + moire * 0.85) * (0.5 + audio.y);
+    hdr += palette(hue + 0.18) * velvetWeave * (0.22 + audio.z * 0.72);
     hdr += palette(hue + 0.68) * clickHalo * 1.9;
     hdr += vec3<f32>(0.85, 0.25, 1.0) * (core * (0.7 + audio.x) + dragMask * 0.9);
     let radialDirection = p / radius;
     let historyUV = clamp(uv - vec2<f32>(radialDirection.x / max(aspect, 0.001), radialDirection.y) * (0.003 + spinRate * 0.007) + vec2<f32>(-radialDirection.y / max(aspect, 0.001), radialDirection.x) * 0.002, vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + velvetSoftness * 0.19 + dragMask * 0.12, 0.0, 0.42));
-    let structure = clamp(velvet * 0.7 + counterSpiral * 0.28 + rings * 0.35 + runner + clickHalo * 0.45 + core * 0.4, 0.0, 1.0);
+    let structure = clamp(velvet * 0.7 + counterSpiral * 0.28 + rings * 0.35 + runner + velvetWeave * 0.32 + clickHalo * 0.45 + core * 0.4, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(hdr), clamp(0.12 + structure * 0.86, 0.0, 1.0));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);

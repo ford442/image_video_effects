@@ -1,7 +1,7 @@
 {
   "id": "log-polar-droste",
   "name": "Log-Polar Droste",
-  "url": "shaders/log-polar-droste.wgsl",
+  "url": "shaders/log-polar-droste-remap.wgsl",
   "description": "Infinite recursive zoom with spiral distortion creating Droste/Escher-like effects.",
   "params": [
     {
@@ -34,13 +34,49 @@
     }
   ],
   "features": [
+    "audio-reactive",
+    "graph-runner",
     "interactive",
     "mathematical",
+    "mouse-driven",
+    "multi-pass",
+    "physics",
     "recursive",
-    "mouse-driven"
+    "simulation"
   ],
   "tags": [
+    "droste",
     "geometric",
-    "pattern"
-  ]
+    "log-polar",
+    "pattern",
+    "physics",
+    "showcase",
+    "simulation"
+  ],
+  "multipass": {
+    "graph": {
+      "maxPassesPerFrame": 8,
+      "nodes": [
+        {
+          "id": "remap",
+          "entry": "log-polar-droste-remap",
+          "reads": [],
+          "writes": [
+            "dataA"
+          ]
+        },
+        {
+          "id": "grade",
+          "entry": "log-polar-droste-grade",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "color",
+            "dataA"
+          ]
+        }
+      ]
+    }
+  }
 }

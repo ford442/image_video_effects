@@ -149,6 +149,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv    = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
     let time  = u.config.x;
     let mouse = u.zoom_config.yz;
+    let held = f32(u.zoom_config.w > 0.5);
     let aspect = res.x / res.y;
 
     let freq = u.zoom_params.x * 24.0 + 2.0;
@@ -173,17 +174,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var disp = waveField(sampleUv + voroDisp, mouse, aspect, time, freq, spd, 0.5 + bass * 0.2);
 
+    // Entangled twin-ripple sources orbit the pointer in opposite phase.
+    let twinAxis = vec2<f32>(cos(time * 1.3), sin(time * 1.1)) * (0.07 + u.zoom_params.z * 0.1);
+    let twinA = clamp(mouse + twinAxis, vec2<f32>(0.0), vec2<f32>(1.0));
+    let twinB = clamp(mouse - twinAxis, vec2<f32>(0.0), vec2<f32>(1.0));
+    disp += waveField(sampleUv + voroDisp, twinA, aspect, time, freq * PHI, spd * 1.1, 0.35) * 0.42;
+    disp -= waveField(sampleUv + voroDisp, twinB, aspect, time + PI, freq * PHI, spd * 1.1, 0.35) * 0.42;
+
     // Superpose historical ripple sources (max 8 for performance)
-    let rippleCount = u32(u.config.y);
-    for (var i = 0u; i < min(rippleCount, 8u); i = i + 1u) {
+    let rippleCount = min(u32(u.config.y), 8u);
+    var clickEnergy = 0.0;
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
         let rp = u.ripples[i];
         let age = time - rp.z;
-        let rf = freq * (1.0 + hash21(rp.xy) * 0.3);
-        disp += waveField(sampleUv + voroDisp, rp.xy, aspect, time, rf, spd * 0.7, 0.25) *
-                exp(-age * 2.0) * 0.5;
+        if (rp.z > 0.0 && age >= 0.0 && age < 1.8) {
+            let rf = freq * (1.0 + hash21(rp.xy) * 0.3);
+            let decay = exp(-age * 1.6);
+            disp += waveField(sampleUv + voroDisp, rp.xy, aspect, time, rf, spd * 0.7, 0.25) * decay * 0.7;
+            clickEnergy += decay * exp(-abs(distance(uv01, rp.xy) - age * 0.5) * 70.0);
+        }
     }
 
-    let activeAmp = select(1.0, 2.0, u.zoom_config.w > 0.5);
+    let activeAmp = 1.0 + held * 1.8 + clickEnergy * 0.9;
     disp *= amp * activeAmp;
 
     // SDF mask centered on mouse shapes the ripple domain into a soft portal
@@ -212,6 +224,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                       vec3<f32>(1.0, 1.0, 0.9),
                       vec3<f32>(0.0, 0.33, 0.67));
     color = mix(color, color * pal * (1.0 + bass * 0.4), clamp(csh * energy + bass * 0.2, 0.0, 1.0));
+
+    // Probability-cloud interference and chromatic Voronoi diffraction.
+    let probability = exp(-length(boxUv) * (3.0 + freq * 0.04))
+                    * pow(0.5 + 0.5 * cos(length(boxUv) * freq * 2.0 - time * spd), 2.0);
+    let diffraction = pow(1.0 - smoothstep(0.04, 0.24, voro.x), 3.0);
+    let quantumColor = palette(voro.y + probability + time * 0.06,
+                               vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0),
+                               vec3<f32>(0.0, 0.33, 0.67));
+    color += quantumColor * (probability * 0.2 + diffraction * 0.16 + clickEnergy * 0.3)
+           * (0.5 + mids + treble * 0.5);
 
     let shift = energy * csh * sin(time * 0.5) * 0.3;
     color.r += shift + energy * treble * 0.08;

@@ -24,7 +24,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "l1_coefficient",
       "name": "L1 Coefficient",
       "default": 0.55,
       "min": 0,
@@ -33,7 +33,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "l2_coefficient",
       "name": "L2 Coefficient",
       "default": 0.5,
       "min": 0,
@@ -42,7 +42,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "l3_coefficient",
       "name": "L3 Coefficient",
       "default": 0.4,
       "min": 0,
@@ -51,7 +51,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "hue_shift",
       "name": "Hue Shift",
       "default": 0,
       "min": 0,
@@ -95,5 +95,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = harmonic pattern, storm mask, limb factor, validity; exact telemetry stabilization load"
 }

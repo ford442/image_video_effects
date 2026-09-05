@@ -73,12 +73,7 @@ export function collectOptionalDeviceFeatures(adapter: GPUAdapter): GPUFeatureNa
   if (adapter.features.has('timestamp-query')) {
     features.push('timestamp-query');
   }
-  const subgroupFeatureName: GPUFeatureName | null =
-    adapter.features.has('subgroups')
-      ? 'subgroups'
-      : adapter.features.has('chromium-experimental-subgroups' as GPUFeatureName)
-        ? ('chromium-experimental-subgroups' as GPUFeatureName)
-        : null;
+  const subgroupFeatureName = resolveSubgroupFeatureName(adapter);
   if (subgroupFeatureName) {
     features.push(subgroupFeatureName);
   }
@@ -160,6 +155,14 @@ export function attachDeviceLostHandler(
   onLost: () => void,
 ): void {
   device.lost.then((info) => {
+    if (info.reason === 'destroyed') {
+      try {
+        context?.unconfigure();
+      } catch {
+        // Ignore errors during cleanup
+      }
+      return;
+    }
     reportError({
       type: 'device-lost',
       message: `GPU device lost: ${info.reason}. Try reloading the page.`,

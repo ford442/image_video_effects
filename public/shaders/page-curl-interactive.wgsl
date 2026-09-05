@@ -120,6 +120,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / res;
   let coord = vec2<i32>(global_id.xy);
   let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let held = f32(u.zoom_config.w > 0.5);
 
   let curlRadius = max(0.03, u.zoom_params.x * 0.35);
   let shadowIntensity = u.zoom_params.y;
@@ -133,9 +135,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prev = textureLoad(dataTextureC, coord, 0);
 
   let snap = 1.0 + bass * 0.4 * step(0.6, bass);
-  let curlX = clamp(u.zoom_config.y, 0.05, 0.95);
+  let curlX = clamp(mouse.x, 0.05, 0.95);
   let dx = uv.x - curlX;
-  let radius = curlRadius * snap;
+  let radius = curlRadius * snap * (1.0 + held * (0.25 + abs(mouse.y - 0.5)));
   let rSafe = max(radius, EPS);
 
   // Branchless page masks
@@ -144,7 +146,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Click shockwaves (branchless)
   var shockDisp = 0.0;
-  let rippleCount = u32(u.config.y);
+  var shockGlow = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let rp = u.ripples[i];
     let rDist = length(uv - rp.xy);
@@ -154,6 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rippleActive = f32(rBand < 0.04 && rAge >= 0.0 && rAge < 1.2);
     let decay = clamp(1.0 - rAge / 1.2, 0.0, 1.0);
     shockDisp = shockDisp + rippleActive * decay * 0.025 * sin(rDist * 40.0 - rAge * 12.0);
+    shockGlow = max(shockGlow, rippleActive * decay);
   }
 
   // Front page (masked shadow)
@@ -165,7 +169,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Curl cylinder: only meaningful inside curlMask, kept branchless
   let theta = asin(clamp(dx / rSafe, -1.0, 1.0)) * curlMask;
   let srcX = clamp(curlX + radius * theta, 0.0, 1.0);
-  let srcUV = vec2<f32>(srcX, uv.y);
+  let heldTwist = held * (mouse.y - 0.5) * sin(theta) * 0.45;
+  let tunnelFold = sin(theta * 5.0 - time * 2.4) * curlMask * 0.018;
+  let srcUV = vec2<f32>(srcX, clamp(uv.y + heldTwist + tunnelFold, 0.0, 1.0));
 
   // LOD noise: more octaves near the fold, fewer near the back edge
   let lod = clamp(dx / rSafe, 0.0, 1.0);
@@ -173,6 +179,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let paperNoise = fbmLod(srcUV * 40.0 + vec2<f32>(time * 0.01, 0.0), oct) * 0.15 * curlMask;
   let chromaOff = mids * 0.01;
   var curlLin = srgb_to_linear(curlSample(srcUV, chromaOff) * 0.55 + vec3<f32>(paperNoise));
+
+  // Aurora marbling across the curled backside.
+  let marble = fbmLod(srcUV * 12.0 + vec2<f32>(time * 0.18, -time * 0.11), 3);
+  let aurora = 0.5 + 0.5 * cos(TAU * (vec3<f32>(marble + theta * 0.15 + time * 0.05)
+                                  + vec3<f32>(0.0, 0.33, 0.67)));
+  curlLin = mix(curlLin, curlLin * aurora * 1.8, curlMask * (0.28 + mids * 0.22));
+  curlLin += aurora * shockGlow * curlMask * 0.35;
 
   // 3-point lighting on curl
   let normalZ = cos(theta);
@@ -188,7 +201,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Background
   let bgDark = vec3<f32>(0.02, 0.025, 0.035);
   let bgEdge = smoothstep(0.0, 0.6, uv.y + sin(uv.x * TAU + time * 0.2) * 0.05);
-  let bgLin = mixOkLab(bgDark, vec3<f32>(0.08, 0.1, 0.14), bgEdge * 0.6);
+  let pageTunnel = pow(0.5 + 0.5 * sin((abs(dx) / rSafe) * 24.0 - time * 3.0), 8.0);
+  let bgLin = mixOkLab(bgDark, vec3<f32>(0.08, 0.1, 0.14), bgEdge * 0.6)
+            + vec3<f32>(0.12, 0.05, 0.22) * pageTunnel * (1.0 - frontMask) * 0.7;
 
   // Branchless blend: front > curl > background
   var rgb = mixOkLab(bgLin, curlLin, curlMask);

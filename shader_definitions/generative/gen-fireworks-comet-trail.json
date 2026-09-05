@@ -18,6 +18,12 @@
     16,
     1
   ],
+  "params": [
+    { "id": "comet-speed", "name": "Comet Speed", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "trail-length", "name": "Trail Length", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "head-brightness", "name": "Head Brightness", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "color-shift", "name": "Color Shift", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -57,5 +63,13 @@
   "updated": true,
   "id": "gen-fireworks-comet-trail",
   "url": "shaders/gen-fireworks-comet-trail.wgsl",
-  "features": []
+  "features": [
+    "three-band-audio-reactive",
+    "mouse-comet",
+    "temporal-feedback",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map"
+  ],
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

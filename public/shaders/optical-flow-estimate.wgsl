@@ -1,6 +1,5 @@
-// ═══ OPTICAL FLOW DREAM — FLOW ESTIMATE ════════════════════════════════════
-//  Binding 13 history ring. Packs dream.rgb + pack2x16float(flow) in .a
-//  extraBuffer[4] = history head (read-only). zoom_params: flow, decay, chroma, mix
+// Optical Flow Dream — canonical single-pass dream-field estimator.
+// A/C: HDR dream RGB and semantic trail coverage. No history-ring binding.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -15,59 +14,36 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-@group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-const HISTORY_DEPTH: u32 = 8u;
-
-fn luma(c: vec3<f32>) -> f32 {
-  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
-}
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)); }
+fn hist(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> { return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0); }
+fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0)); }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let pixel = vec2<i32>(gid.xy);
-  let res = vec2<f32>(u.config.zw);
-  let resI = vec2<i32>(res);
-  if (pixel.x >= resI.x || pixel.y >= resI.y) { return; }
-
-  let uv = (vec2<f32>(pixel) + 0.5) / res;
-  let head = u32(extraBuffer[4]) % HISTORY_DEPTH;
-  let scale = mix(0.4, 3.2, u.zoom_params.x);
-  let cur = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let prevLayer = (head + HISTORY_DEPTH - 1u) % HISTORY_DEPTH;
-  let prev = textureLoad(historyTexture, pixel, prevLayer, 0);
-  let older = textureLoad(historyTexture, pixel, (head + HISTORY_DEPTH - 3u) % HISTORY_DEPTH, 0);
-
-  var flow = vec2<f32>(0.0);
-  let stepPx = 2;
-  let c0 = luma(prev.rgb);
-  let cx = luma(textureLoad(historyTexture, clamp(pixel + vec2<i32>(stepPx, 0), vec2<i32>(0), resI - vec2<i32>(1)), prevLayer, 0).rgb);
-  let cy = luma(textureLoad(historyTexture, clamp(pixel + vec2<i32>(0, stepPx), vec2<i32>(0), resI - vec2<i32>(1)), prevLayer, 0).rgb);
-  let gx = cx - c0;
-  let gy = cy - c0;
-  let it = luma(cur.rgb) - luma(prev.rgb);
-  let mag = gx * gx + gy * gy + 0.0004;
-  flow = vec2<f32>(-gx, -gy) * it / mag * scale * 0.015;
-  flow += (older.rg - prev.rg) * 0.08 * scale;
-
-  let mouse = u.zoom_config.yz;
-  let held = u.zoom_config.w > 0.5;
-  let dm = uv - mouse;
-  if (held) {
-    flow *= mix(0.15, 0.55, smoothstep(0.0, 0.25, length(dm)));
-  }
-
-  var dream = textureLoad(dataTextureC, pixel, 0).rgb;
-  if (dot(dream, dream) < 0.0001) {
-    dream = mix(cur.rgb, prev.rgb, 0.5);
-  }
-  let packed = bitcast<f32>(pack2x16float(clamp(flow, vec2<f32>(-4.0), vec2<f32>(4.0))));
-  textureStore(dataTextureA, pixel, vec4<f32>(clamp(dream, vec3<f32>(0.0), vec3<f32>(4.0)), packed));
+  let size = vec2<u32>(u32(u.config.z), u32(u.config.w)); if (gid.x >= size.x || gid.y >= size.y) { return; }
+  let p = vec2<i32>(gid.xy); let hi = vec2<i32>(size) - vec2<i32>(1); let res = vec2<f32>(size);
+  let uv = (vec2<f32>(p) + 0.5) / res; let aspect = res.x / max(res.y, 1.0); let time = u.config.x;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0)); let cur = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let center = hist(p, hi); let hx = hist(p + vec2<i32>(1, 0), hi); let hy = hist(p + vec2<i32>(0, 1), hi);
+  let gx = luma(hx.rgb) - luma(center.rgb); let gy = luma(hy.rgb) - luma(center.rgb); let temporal = luma(cur.rgb) - luma(center.rgb);
+  let denom = gx * gx + gy * gy + 0.001; let flowScale = mix(0.25, 3.5, u.zoom_params.x);
+  var flow = -vec2<f32>(gx, gy) * temporal / denom * flowScale * (0.018 + audio.x * 0.008);
+  let mq = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0); let md = length(mq) + 0.0001;
+  let swirl = vec2<f32>(-mq.y, mq.x) / md * exp(-md * 10.0);
+  flow += swirl * (0.003 + select(0.0, 0.028 + audio.y * 0.010, u.zoom_config.w > 0.5));
+  var fronts = 0.0; let count = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 1.4) { let q = (uv - e.xy) * vec2<f32>(aspect, 1.0); let d = length(q); let ring = exp(-age * 2.0) * exp(-abs(d - age * 0.38) * 62.0); flow += normalize(q + vec2<f32>(0.0001)) * ring * 0.035; fronts += ring; } }
+  flow = clamp(flow, vec2<f32>(-0.08), vec2<f32>(0.08));
+  let advPx = clamp(vec2<i32>((uv - flow) * res), vec2<i32>(0), hi); let adv = hist(advPx, hi);
+  let chroma = mix(0.0, 1.8, u.zoom_params.z) * (1.0 + audio.z * 0.5); let split = normalize(flow + vec2<f32>(0.0001)) * chroma * 3.0;
+  let rPx = clamp(advPx + vec2<i32>(split), vec2<i32>(0), hi); let bPx = clamp(advPx - vec2<i32>(split), vec2<i32>(0), hi);
+  let dreamSample = vec3<f32>(hist(rPx, hi).r, adv.g, hist(bPx, hi).b);
+  let decay = clamp(mix(0.80, 0.987, u.zoom_params.y) + audio.x * 0.01, 0.75, 0.995);
+  let dreamMix = mix(0.25, 0.94, u.zoom_params.w); let hue = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + atan2(flow.y, flow.x) * 2.0 + time * (0.3 + audio.y));
+  var hdr = mix(cur.rgb, dreamSample * decay, dreamMix); hdr += hue * (length(flow) * 9.0 + fronts * 0.38);
+  let alpha = clamp(cur.a * (1.0 - dreamMix * 0.25) + adv.a * decay * dreamMix + length(flow) * 3.0 + fronts * 0.25, 0.0, 1.0);
+  let state = vec4<f32>(clamp(hdr, vec3<f32>(0.0), vec3<f32>(8.0)), alpha); textureStore(dataTextureA, p, state);
+  let mapped = aces(state.rgb); let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, p, vec4<f32>(clamp(mix(depth, 1.0 - clamp(length(flow) * 10.0, 0.0, 1.0), 0.35), 0.0, 1.0), 0.0, 0.0, 0.0));
 }

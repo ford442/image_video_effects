@@ -2,15 +2,20 @@
   "id": "digital-decay-rgba",
   "name": "Digital Decay RGBA",
   "url": "shaders/digital-decay-rgba.wgsl",
-  "description": "Digital block corruption feeds into a 4-species reaction-diffusion system. Corrupted pixels become chemical seeds that evolve into organic decay patterns, merging glitch aesthetics with emergent biological forms.",
+  "description": "MPEG block corruption seeds a 4-species reaction-diffusion system with spring injection, held corrupt bursts, capped ripples, exact C Laplacian, and spectral RD visualization.",
   "features": [
     "advanced-hybrid",
     "digital-decay",
     "reaction-diffusion",
     "rgba-state-machine",
     "mouse-driven",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "aces-tone-map",
     "randomization-safe"
   ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "intensity",
@@ -53,6 +58,12 @@
       "description": "Reaction-diffusion feed rate"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Decay Intensity", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Block Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Corruption Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "RD Feed Rate", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+  ],
   "chunks_used": [
     "Block corruption, chromatic aberration, scanlines (digital-decay.wgsl)",
     "4-species reaction-diffusion, Laplacian (alpha-reaction-diffusion-rgba.wgsl)"
@@ -60,12 +71,6 @@
   "performance_target": "35 FPS (GTX 1060)",
   "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
   "created_date": "2026-04-18",
-  "tags": [
-    "glitch",
-    "decay",
-    "reaction-diffusion",
-    "organic",
-    "digital",
-    "corruption"
-  ]
+  "tags": ["glitch", "decay", "reaction-diffusion", "organic", "digital", "corruption"],
+  "updated": true
 }

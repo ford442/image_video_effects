@@ -36,16 +36,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = (vec2<f32>(pixel) + 0.5) / res;
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
   let mouse = u.zoom_config.yz;
   let held = u.zoom_config.w > 0.5;
-  let windAmp = mix(0.002, 0.028, u.zoom_params.y) * (1.0 + bass * 0.8);
+  let windAmp = mix(0.002, 0.028, u.zoom_params.y) * (1.0 + bass * 0.8 + mids * 0.25);
 
   let wind = vec2<f32>(
     sin(time * 0.37 + uv.y * 3.1) + (mouse.x - 0.5) * 0.8,
     cos(time * 0.29 + uv.x * 2.7) + (0.5 - mouse.y) * 0.8,
   );
   var vel = wind * windAmp;
-  let dm = uv - mouse;
+  let dm = (uv - mouse) * vec2<f32>(res.x / res.y, 1.0);
   let md = length(dm) + 0.0001;
   if (held) {
     vel += vec2<f32>(-dm.y, dm.x) / md * 0.012 * smoothstep(0.35, 0.0, md);

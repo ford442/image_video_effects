@@ -248,6 +248,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
   let mouseY = mouseUV.y;  // Flip Y: screen top = up
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  var shock = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 3.0) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      let ring = abs(length(delta) - age * (0.18 + temporalFlow * 0.08));
+      shock += (1.0 - smoothstep(0.0, 0.028, ring)) * (1.0 - age / 3.0);
+    }
+  }
+  shock = min(shock, 2.0);
   let mousePos = vec3<f32>(
     (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect,
     (mouseUV.y * 2.0 - 1.0) * 3.0,  // 3D position: screen top = +Y (up)
@@ -255,7 +268,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   );
 
   // Camera - orbiting the monolith
-  let camDist = 5.0 + sin(time * 0.1) * 0.5;
+  let camDist = 5.0 + sin(time * 0.1) * 0.5 - held * 0.65 + shock * 0.18;
   let camAng = time * 0.15 * temporalFlow + mouseUV.x * 0.5;
   let camHeight = sin(time * 0.08) * 0.5 + mouseY * 0.3;
   let ro = vec3<f32>(cos(camAng) * camDist, camHeight, sin(camAng) * camDist);
@@ -373,14 +386,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   col = col + volGlow;
 
+  // Screen-space resonator harmonics make click energy legible across the void.
+  let radial = length((uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0));
+  let harmonic = pow(0.5 + 0.5 * cos(radial * (58.0 + monolithComplexity * 7.0) - time * temporalFlow * 8.0), 16.0);
+  col += vec3<f32>(0.18, 0.55, 1.0) * harmonic * (coreResonance * 0.18 + shock * 0.55 + treble * 0.08);
+  col += vec3<f32>(0.7, 0.2, 1.0) * exp(-length((uv - mouseUV) * vec2<f32>(aspect, 1.0)) * 8.0) * held * (0.25 + mids * 0.35);
+
   // Temporal persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   col = mix(col, prev.rgb * 0.92, 0.03);
 
   // Tone map
   col = acesToneMap(col * 1.3);
 
-  let alpha = 1.0;
+  let hitSignal = select(0.0, 1.0, hit);
+  let alpha = clamp(hitSignal * 0.72 + length(volGlow) * 0.9 + harmonic * coreResonance * 0.18 + shock * 0.25, 0.02, 1.0);
   let finalDepth = sat(0.95 - depth * 0.03);
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));

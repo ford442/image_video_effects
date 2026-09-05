@@ -105,9 +105,10 @@ This ensures:
   - `pixelocity_wasm.js` (Emscripten runtime glue)
   - `wasm_bridge.js` (JavaScript bridge to the C++ renderer)
 
-- **Bridge sync** (#821): `wasm_renderer/wasm_bridge.js` must match both
-  `src/wasm/wasm_bridge.js` and `public/wasm/wasm_bridge.js` (and `.d.ts`). Skew fails validation with:
-  *"Bridge skew detected — run npm run wasm:build or cp wasm_renderer/wasm_bridge.js src/wasm/"*
+- **Bridge sync**: generated `wasm_renderer/` and `public/wasm/` ESM copies must match
+  each other; `wasm_bridge.d.ts` must match `src/wasm/wasm_bridge.d.ts`.
+  `npm run verify:wasm-bridge-sync` fails if they drift from TypeScript emit.
+  Hand-edit `src/wasm/bridge/*.ts` only.
 
 See [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md) for the full artifact layout.
 

@@ -10,13 +10,13 @@ struct Uniforms {
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var filteringSampler: sampler;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparisonSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 // Hash function
@@ -61,6 +61,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   var uv = vec2<f32>(coord) / vec2<f32>(dims);
   let aspect = f32(dims.x) / f32(dims.y);
+  let time = u.config.x;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
 
   // Params
   let radius = mix(0.05, 0.5, u.zoom_params.x);
@@ -73,7 +75,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
 
   let dist = distance(uv_aspect, mouse_aspect);
-  let press_factor = smoothstep(radius, radius * 0.5, dist); // 1.0 at center, 0.0 outside
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.35) * 64.0);
+  }
+  let press_factor = smoothstep(radius, radius * 0.5, dist) * (0.55 + held * 0.9) + clickFront * 0.35;
 
   // 1. Generate Foil Normal
   // High frequency noise
@@ -113,7 +123,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let final_albedo = mix(foil_base, target_color, press_factor);
 
   // 5. Lighting
-  let light_dir = normalize(vec3<f32>(0.5, -0.5, 1.0));
+  let light_dir = normalize(vec3<f32>(0.5 + sin(time * 0.8) * 0.4, -0.5 + cos(time * 0.6) * 0.35, 1.0));
   let view_dir = vec3<f32>(0.0, 0.0, 1.0);
   let half_dir = normalize(light_dir + view_dir);
 
@@ -123,7 +133,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spec_pow = mix(30.0, 10.0, press_factor);
   let spec = pow(NdotH, spec_pow) * 0.8;
 
-  var col = final_albedo * (0.3 + 0.7 * NdotL) + vec3<f32>(spec);
+  let brushed = sin((uv.x + uv.y) * mix(80.0, 260.0, roughness) - time * (4.0 + audio.y * 7.0));
+  let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + brushed * 2.0 + time + audio.z * 2.0);
+  var col = final_albedo * (0.3 + 0.7 * NdotL) + vec3<f32>(spec) + spectral * (abs(brushed) * 0.08 + clickFront * 0.22 + audio.x * 0.08) * (0.3 + relief);
 
   // Tone mapping / clamp
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
@@ -131,6 +143,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(writeTexture, coord, vec4<f32>(col, img_color_sample.a));
 
   // Pass through depth
-  let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

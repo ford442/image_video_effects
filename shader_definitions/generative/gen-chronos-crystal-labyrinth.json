@@ -1,0 +1,64 @@
+{
+  "name": "Chronos Crystal Labyrinth",
+  "category": "generative",
+  "tags": [
+    "crystal",
+    "tesseract",
+    "fractal",
+    "refraction",
+    "raymarching",
+    "time-distortion"
+  ],
+  "description": "A mind-bending journey through an infinite, self-folding tesseract of crystalline structures where time distortion ripples visualize as chromatic refraction patterns. This shader creates a sensation of navigating a multidimensional clockwork maze built of light, bridging organic growth algorithms with rigid geometric precision.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "id": "gen-chronos-crystal-labyrinth",
+  "url": "shaders/gen-chronos-crystal-labyrinth.wgsl",
+  "features": [
+    "raymarching",
+    "refraction",
+    "audio-reactive",
+    "mouse-interaction"
+  ],
+  "params": [
+    {
+      "id": "dispersion",
+      "name": "Dispersion",
+      "mapping": "zoom_params.x",
+      "default": 1.2,
+      "min": 0.5,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "id": "gravity_strength",
+      "name": "Gravity Strength",
+      "mapping": "zoom_params.y",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "id": "fractal_fold",
+      "name": "Fractal Fold",
+      "mapping": "zoom_params.z",
+      "default": 2.0,
+      "min": 1.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "mapping": "zoom_params.w",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    }
+  ]
+}

@@ -3,7 +3,7 @@
   "name": "Phase Memory Weave",
   "url": "shaders/phase-memory-weave.wgsl",
   "category": "generative",
-  "description": "Continuous Ginzburg-Landau order parameter with Allen-Cahn interface energy and exponential-decay memory kernel. Opalescent thin-film interference on phase boundaries with fluid caustics and crystalline subsurface scattering. Bass nucleates crystal seeds, mids control grain boundary mobility, treble adds capillary waves. Mouse deposits heat or cold based on click parity.",
+  "description": "Authoritative Ginzburg-Landau state packed as psiR, psiI, slow memory, and activity, with exact center/neighbor loads, sprung thermal focus, bounded click phase fronts, opalescent ACES display, semantic alpha, and source depth.",
   "features": [
     "ginzburg-landau",
     "allen-cahn",
@@ -11,7 +11,13 @@
     "opalescent-interfaces",
     "audio-driven",
     "mouse-thermal",
-    "temporal"
+    "temporal",
+    "exact-history",
+    "raw-state-feedback",
+    "spring-interaction",
+    "click-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "viscous",

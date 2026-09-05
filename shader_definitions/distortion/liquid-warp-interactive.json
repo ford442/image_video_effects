@@ -2,9 +2,21 @@
   "id": "liquid-warp-interactive",
   "name": "Liquid Warp",
   "url": "shaders/liquid-warp-interactive.wgsl",
-  "description": "Fluid-like distortion driven by mouse flow and noise.",
+  "description": "Four analytic stream-function modes provide divergence-free velocity and a full Jacobian in one pass. RK2 transport, depth-gradient Coanda attachment, strain caustics, viscous temporal memory, held-pointer flow, and bounded vortex fronts shape the warp.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "held-drag",
+    "bounded-click-ripples",
+    "upgraded-rgba",
+    "temporal",
+    "per-band-fft",
+    "rk2-advection",
+    "analytic-divergence-free-flow",
+    "depth-boundary-flow",
+    "strain-caustics",
+    "semantic-alpha",
+    "aces"
   ],
   "params": [
     {
@@ -40,5 +52,39 @@
     "warp",
     "distort",
     "transform"
+  ],
+  "updatedParams": [
+    {
+      "id": "distort",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Distance traced through the analytic spectral flow field."
+    },
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "description": "Temporal phase speed of the four flow modes."
+    },
+    {
+      "id": "scale",
+      "name": "Spectral Flow Scale",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Base frequency of the divergence-free stream-function spectrum."
+    },
+    {
+      "id": "visc",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Temporal memory and strength of flow attachment along depth boundaries."
+    }
   ]
 }

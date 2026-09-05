@@ -1,208 +1,8 @@
 {
-  "generated": "2026-08-16T00:23:14.193255+00:00",
-  "files_scanned": 1359,
+  "generated": "2026-08-30T18:11:04.543303+00:00",
+  "files_scanned": 1397,
   "new_violations": [],
   "known_violations": [
-    {
-      "file": "public/shaders/cyber-rain.wgsl",
-      "line": 123,
-      "expr": "PREV_PRESS",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/cyber-rain.wgsl",
-      "line": 124,
-      "expr": "CLICK_TIME",
-      "op": "=",
-      "index": 1,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/cyber-rain.wgsl",
-      "line": 125,
-      "expr": "CLICK_X",
-      "op": "=",
-      "index": 2,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/cyber-rain.wgsl",
-      "line": 126,
-      "expr": "CLICK_Y",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/cyber-rain.wgsl",
-      "line": 127,
-      "expr": "SMOOTH_X",
-      "op": "=",
-      "index": 4,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/cyber-rain.wgsl",
-      "line": 128,
-      "expr": "SMOOTH_Y",
-      "op": "=",
-      "index": 5,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/cyber-rain.wgsl",
-      "line": 129,
-      "expr": "VEL_X",
-      "op": "=",
-      "index": 6,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/cyber-rain.wgsl",
-      "line": 130,
-      "expr": "VEL_Y",
-      "op": "=",
-      "index": 7,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "line": 144,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "line": 145,
-      "expr": "1",
-      "op": "=",
-      "index": 1,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "line": 146,
-      "expr": "2",
-      "op": "=",
-      "index": 2,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "line": 147,
-      "expr": "3",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "line": 148,
-      "expr": "4",
-      "op": "=",
-      "index": 4,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "line": 149,
-      "expr": "5",
-      "op": "=",
-      "index": 5,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "line": 150,
-      "expr": "6",
-      "op": "=",
-      "index": 6,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "line": 151,
-      "expr": "7",
-      "op": "=",
-      "index": 7,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/echo-trace.wgsl",
-      "line": 152,
-      "expr": "8",
-      "op": "=",
-      "index": 8,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 209,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 210,
-      "expr": "1",
-      "op": "=",
-      "index": 1,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 211,
-      "expr": "2",
-      "op": "=",
-      "index": 2,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 212,
-      "expr": "3",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 226,
-      "expr": "4",
-      "op": "=",
-      "index": 4,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 227,
-      "expr": "5",
-      "op": "=",
-      "index": 5,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 228,
-      "expr": "6",
-      "op": "=",
-      "index": 6,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/elastic-chromatic.wgsl",
-      "line": 230,
-      "expr": "8",
-      "op": "=",
-      "index": 8,
-      "class": "fft-zone"
-    },
     {
       "file": "public/shaders/electric-eel-storm.wgsl",
       "line": 207,
@@ -238,126 +38,6 @@
     {
       "file": "public/shaders/gen-chrono-mycelial-tapestry.wgsl",
       "line": 181,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
-      "line": 190,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-      "line": 119,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-      "line": 120,
-      "expr": "1",
-      "op": "=",
-      "index": 1,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-      "line": 121,
-      "expr": "2",
-      "op": "=",
-      "index": 2,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-      "line": 134,
-      "expr": "3",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-      "line": 135,
-      "expr": "4",
-      "op": "=",
-      "index": 4,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-      "line": 147,
-      "expr": "5",
-      "op": "=",
-      "index": 5,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-      "line": 148,
-      "expr": "6",
-      "op": "=",
-      "index": 6,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/gen-echo-dunes.wgsl",
-      "line": 106,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
-      "line": 191,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-feedback-echo-chamber.wgsl",
-      "line": 188,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-fireworks-audio-symphony.wgsl",
-      "line": 112,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-ghost-flame.wgsl",
-      "line": 174,
-      "expr": "3",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-ghost-flame.wgsl",
-      "line": 175,
-      "expr": "4",
-      "op": "=",
-      "index": 4,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
-      "line": 363,
       "expr": "0",
       "op": "=",
       "index": 0,
@@ -700,14 +380,6 @@
       "class": "fft-zone"
     },
     {
-      "file": "public/shaders/hyperbolic-crystal-symbiosis.wgsl",
-      "line": 222,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
       "file": "public/shaders/interactive-voronoi-lens.wgsl",
       "line": 116,
       "expr": "PREV_PRESS",
@@ -772,22 +444,6 @@
       "class": "fft-zone"
     },
     {
-      "file": "public/shaders/magnetic-interference.wgsl",
-      "line": 205,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/magnetic-interference.wgsl",
-      "line": 206,
-      "expr": "1",
-      "op": "=",
-      "index": 1,
-      "class": "reserved"
-    },
-    {
       "file": "public/shaders/mouse-ink-bleed.wgsl",
       "line": 127,
       "expr": "PREV_PRESS",
@@ -849,78 +505,6 @@
       "expr": "VEL_Y",
       "op": "=",
       "index": 7,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/optical-feedback.wgsl",
-      "line": 153,
-      "expr": "PREV_PRESS",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/optical-feedback.wgsl",
-      "line": 154,
-      "expr": "CLICK_TIME",
-      "op": "=",
-      "index": 1,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/optical-feedback.wgsl",
-      "line": 155,
-      "expr": "CLICK_X",
-      "op": "=",
-      "index": 2,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/optical-feedback.wgsl",
-      "line": 156,
-      "expr": "CLICK_Y",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/optical-feedback.wgsl",
-      "line": 157,
-      "expr": "SMOOTH_X",
-      "op": "=",
-      "index": 4,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/optical-feedback.wgsl",
-      "line": 158,
-      "expr": "SMOOTH_Y",
-      "op": "=",
-      "index": 5,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/optical-feedback.wgsl",
-      "line": 159,
-      "expr": "VEL_X",
-      "op": "=",
-      "index": 6,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/optical-feedback.wgsl",
-      "line": 160,
-      "expr": "VEL_Y",
-      "op": "=",
-      "index": 7,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/optical-feedback.wgsl",
-      "line": 161,
-      "expr": "HUE_PHASE",
-      "op": "=",
-      "index": 8,
       "class": "fft-zone"
     },
     {
@@ -1090,17 +674,10 @@
       "op": "=",
       "index": 6,
       "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/waveform-glitch.wgsl",
-      "line": 172,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
     }
   ],
-  "dynamic_writes": 33,
+  "dynamic_writes": 32,
+  "dynamic_untriaged": 0,
   "out_of_range_writes": 0,
   "baseline": "reports/extrabuffer_write_audit_baseline.json"
 }

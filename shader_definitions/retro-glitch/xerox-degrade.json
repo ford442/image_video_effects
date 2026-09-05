@@ -2,46 +2,30 @@
   "id": "xerox-degrade",
   "name": "Xerox Degrade",
   "url": "shaders/xerox-degrade.wgsl",
-  "description": "Simulates the degradation of repeated photocopying with grain, high contrast, and smear.",
+  "description": "Repeated photocopy degradation with halftone dots, ordered dither, spring smear, held burst, capped ripples, exact C memory, and three-band audio.",
+  "workgroup_size": [16, 16, 1],
   "params": [
-    {
-      "id": "contrast",
-      "name": "Contrast",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "grain",
-      "name": "Grain",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "smear",
-      "name": "Smear",
-      "default": 0.2,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "threshold",
-      "name": "Threshold",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
+    { "id": "contrast", "name": "Contrast", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "grain", "name": "Grain", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "smear", "name": "Smear", "default": 0.2, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "threshold", "name": "Threshold", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Contrast", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Grain", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Smear", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Threshold", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ],
   "features": [
     "glitch",
-    "branchless",
-    "texture",
+    "mouse-driven",
     "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "spring-cursor",
+    "aces-tone-map",
     "upgraded-rgba"
   ],
-  "tags": [
-    "filter",
-    "image-processing"
-  ]
+  "tags": ["filter", "image-processing", "photocopy", "xerox"],
+  "updated": true
 }

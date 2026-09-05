@@ -3,7 +3,7 @@
   "name": "Liquid Lens",
   "url": "shaders/liquid-lens.wgsl",
   "category": "interactive-mouse",
-  "description": "Spherical aberration simulation with Snell's law refraction at curved interfaces, 7-sample chromatic dispersion, caustic highlights, Fresnel reflections, and ACES tone mapping.",
+  "description": "Moving multi-lobed aqua/amber lenses and orbiting lenslets refract the image through animated caustic meshes, click-launched rings, and held-pointer compression.",
   "params": [
     {
       "id": "refraction",
@@ -34,11 +34,21 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Refraction", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 1, "name": "Lens Radius", "default": 0.3, "min": 0, "max": 1 },
+    { "index": 2, "name": "Dispersion", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 3, "name": "Caustic Waves", "default": 0.3, "min": 0, "max": 1 }
+  ],
+  "feedbackPacking": "A/C = display RGBA history",
+  "updated": true,
   "features": [
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal",
+    "click-responsive"
   ],
   "tags": [
     "lens",

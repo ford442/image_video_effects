@@ -1,11 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Contour Flow
-//  Category: image
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
-//  Complexity: High
-//  Chunks From: contour-flow
-//  Upgraded: 2026-05-30
-// ═══════════════════════════════════════════════════════════════════
+// Contour Flow — multiscale tangent advection with coherent history ribbons.
+// A/C stores tone-mapped display RGBA. B and extraBuffer are intentionally unused.
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -27,97 +22,126 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+const TAU: f32 = 6.28318530718;
+
+fn luma(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyCoord(uv: vec2<f32>, resolution: vec2<f32>) -> vec2<i32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  return clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution),
+               vec2<i32>(0), hi);
+}
+
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, historyCoord(uv, resolution), 0);
+}
+
+fn gradientAt(uv: vec2<f32>, stepUV: vec2<f32>) -> vec2<f32> {
+  let lo = vec2<f32>(0.0);
+  let hi = vec2<f32>(1.0);
+  let left = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(stepUV.x, 0.0), lo, hi), 0.0).rgb);
+  let right = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(stepUV.x, 0.0), lo, hi), 0.0).rgb);
+  let top = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, stepUV.y), lo, hi), 0.0).rgb);
+  let bottom = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, stepUV.y), lo, hi), 0.0).rgb);
+  return vec2<f32>(right - left, bottom - top);
+}
+
+fn spectral(t: f32) -> vec3<f32> {
+  return 0.55 + 0.45 * cos(TAU * (vec3<f32>(0.0, 0.31, 0.67) + t));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
-    let coord = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    let aspect = resolution.x / resolution.y;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
-    let mouse = u.zoom_config.yz;
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let coord = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let texel = vec2<f32>(1.0) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+  let time = u.config.x;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 2.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 2.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 2.0);
 
-    let flowSpeed = u.zoom_params.x * 4.0 * (1.0 + bass * 0.4);
-    let flowLength = u.zoom_params.y * 0.06;
-    let mouseRadius = u.zoom_params.z * 0.5 + 0.01;
-    let edgeSensitivity = u.zoom_params.w * 4.0 + 1.0;
+  let flowSpeed = 0.15 + u.zoom_params.x * 2.8;
+  let curlStrength = 0.08 + u.zoom_params.y * 1.4;
+  let flowSize = 0.35 + u.zoom_params.z * 2.4;
+  let directionAngle = u.zoom_params.w * TAU;
+  let rotation = mat2x2<f32>(cos(directionAngle), -sin(directionAngle),
+                              sin(directionAngle),  cos(directionAngle));
 
-    let texel = vec2<f32>(1.0) / resolution;
-    let tl = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texel.x, -texel.y), 0.0).rgb;
-    let t  = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).rgb;
-    let tr = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, -texel.y), 0.0).rgb;
-    let l  = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).rgb;
-    let c  = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let r  = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb;
-    let bl = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texel.x, texel.y), 0.0).rgb;
-    let b  = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb;
-    let br = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, texel.y), 0.0).rgb;
+  let fineGradient = gradientAt(uv, texel);
+  let broadGradient = gradientAt(uv, texel * (2.0 + flowSize * 1.5));
+  let fineMag = length(fineGradient);
+  let broadMag = length(broadGradient);
+  let fineTangent = normalize(vec2<f32>(-fineGradient.y, fineGradient.x) + vec2<f32>(0.0001));
+  let broadTangent = normalize(vec2<f32>(-broadGradient.y, broadGradient.x) + vec2<f32>(0.0001));
+  var tangent = normalize(mix(fineTangent, broadTangent, 0.32 + 0.24 * sin(time * 0.31 + broadMag * 18.0)) + vec2<f32>(0.0001));
+  tangent = rotation * tangent;
 
-    let grayTL = dot(tl, vec3<f32>(0.299, 0.587, 0.114));
-    let grayT  = dot(t,  vec3<f32>(0.299, 0.587, 0.114));
-    let grayTR = dot(tr, vec3<f32>(0.299, 0.587, 0.114));
-    let grayL  = dot(l,  vec3<f32>(0.299, 0.587, 0.114));
-    let grayR  = dot(r,  vec3<f32>(0.299, 0.587, 0.114));
-    let grayBL = dot(bl, vec3<f32>(0.299, 0.587, 0.114));
-    let grayB  = dot(b,  vec3<f32>(0.299, 0.587, 0.114));
-    let grayBR = dot(br, vec3<f32>(0.299, 0.587, 0.114));
+  let pointerDelta = (uv - mouse) * aspectVec;
+  let pointerDist = length(pointerDelta);
+  let pointerTangent = vec2<f32>(-pointerDelta.y, pointerDelta.x) / max(pointerDist, 0.0001);
+  let heldMask = smoothstep(0.42 + u.zoom_params.z * 0.18, 0.0, pointerDist) * select(0.18, 1.0, held);
+  let vortex = pointerTangent * heldMask * curlStrength;
 
-    let gx = -grayTL - 2.0 * grayT - grayTR + grayBL + 2.0 * grayB + grayBR;
-    let gy = -grayTL - 2.0 * grayL - grayBL + grayTR + 2.0 * grayR + grayBR;
+  var contourFront = 0.0;
+  var frontVector = vec2<f32>(0.0);
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 2.6) {
+      let delta = (uv - ripple.xy) * aspectVec;
+      let dist = length(delta);
+      let front = age * (0.28 + bass * 0.08);
+      let band = sin((dist - front) * 72.0) * exp(-abs(dist - front) * 30.0) * exp(-age * 1.1);
+      contourFront += band;
+      frontVector += delta / max(dist, 0.0001) * band;
+    }
+  }
 
-    let gradMag = length(vec2<f32>(gx, gy));
-    let edgeStrength = smoothstep(0.05, 0.25, gradMag * edgeSensitivity);
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  let edge = smoothstep(0.018, 0.16 / flowSize + 0.025, fineMag + broadMag * 0.65);
+  let audioVelocity = 1.0 + bass * 0.65 + mids * 0.18;
+  let velocity = (tangent * (0.45 + edge * 1.4) + vortex + frontVector * 0.55) *
+                 flowSpeed * audioVelocity * (0.0025 + depth * 0.0045);
+  let ribbonWobble = vec2<f32>(sin(uv.y * 19.0 + time * (1.5 + bass)),
+                                cos(uv.x * 17.0 - time * (1.1 + mids))) *
+                     curlStrength * (0.001 + treble * 0.0015);
+  let advectUV = clamp(uv - velocity - ribbonWobble, vec2<f32>(0.0), vec2<f32>(1.0));
+  let history0 = historyAt(advectUV, resolution);
+  let history1 = historyAt(advectUV - tangent * texel * (2.0 + flowSize * 2.0), resolution);
+  let history2 = historyAt(advectUV + tangent * texel * (3.0 + flowSize), resolution);
+  let current = textureSampleLevel(readTexture, u_sampler, advectUV, 0.0);
 
-    let flowDir = normalize(vec2<f32>(-gy, gx) + vec2<f32>(0.0001));
+  let ribbonPhase = luma(history0.rgb) * (12.0 + flowSize * 8.0) +
+                    dot(uv * aspectVec, tangent) * (34.0 + flowSize * 18.0) -
+                    time * flowSpeed * (2.0 + bass * 2.0);
+  let ribbons = pow(0.5 + 0.5 * sin(ribbonPhase), 8.0) * edge;
+  let coherence = 1.0 - clamp(length(history1.rgb - history2.rgb), 0.0, 1.0);
+  let ribbonColor = spectral(ribbonPhase / TAU + mids * 0.12) * (0.35 + treble * 0.9);
 
-    let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
-    let mouseFactor = smoothstep(mouseRadius, 0.0, dist);
-    let vortex = vec2<f32>(-distVec.y, distVec.x) / max(dist * dist + 0.001, 0.001);
+  var hdr = mix(history0.rgb * (0.90 - u.zoom_params.x * 0.08), current.rgb, 0.12 + edge * 0.12);
+  hdr += ribbonColor * ribbons * coherence * (0.3 + curlStrength * 0.35);
+  hdr += spectral(time * 0.05 + pointerDist) * abs(contourFront) * (0.25 + bass * 0.5);
+  hdr += (history1.rgb + history2.rgb) * 0.08 * edge;
+  let display = aces(max(hdr, vec3<f32>(0.0)));
+  let alpha = clamp(current.a * 0.25 + edge * 0.42 + ribbons * 0.28 + heldMask * 0.12 + abs(contourFront) * 0.18, 0.0, 1.0);
+  let result = vec4<f32>(display, alpha);
 
-    let turbulence = sin(uv.x * 8.0 + time * flowSpeed) * cos(uv.y * 6.0 - time * flowSpeed * 0.7);
-    let viscosity = mix(0.3, 1.0, depth);
-
-    let advectDir_base = flowDir * (gradMag * edgeSensitivity + 0.15) * flowLength * viscosity;
-    var advectDir = advectDir_base + vortex * mouseFactor * 0.02;
-    advectDir += vec2<f32>(turbulence * bass * 0.01, turbulence * bass * 0.008);
-
-    let advectUV = clamp(uv - advectDir, vec2<f32>(0.0), vec2<f32>(1.0));
-    let advected = textureSampleLevel(readTexture, u_sampler, advectUV, 0.0);
-
-    let streakDir = normalize(advectDir + vec2<f32>(0.0001));
-    let streakUV1 = clamp(advectUV + streakDir * texel * 2.0, vec2<f32>(0.0), vec2<f32>(1.0));
-    let streakUV2 = clamp(advectUV - streakDir * texel * 2.0, vec2<f32>(0.0), vec2<f32>(1.0));
-    let streak1 = textureSampleLevel(readTexture, u_sampler, streakUV1, 0.0).rgb;
-    let streak2 = textureSampleLevel(readTexture, u_sampler, streakUV2, 0.0).rgb;
-    let streaks = (streak1 + streak2) * 0.5 * edgeStrength * (1.0 + mids);
-
-    let flowMag = length(advectDir) * 20.0;
-    let velocityColor = mix(vec3<f32>(0.1, 0.3, 0.9), vec3<f32>(1.0, 0.2, 0.1), clamp(flowMag, 0.0, 1.0));
-
-    var rgb = mix(advected.rgb, advected.rgb * velocityColor * 1.3, edgeStrength * 0.4);
-    rgb += streaks * vec3<f32>(0.5, 0.7, 1.0) * treble;
-    rgb += velocityColor * edgeStrength * flowMag * 0.15;
-
-    rgb = aces_tonemap(rgb * (1.0 + bass * 0.1));
-
-    let alpha = clamp(flowMag * edgeStrength + advected.a * 0.4 + mouseFactor * 0.15, 0.0, 1.0);
-
-    textureStore(writeTexture, coord, vec4<f32>(rgb, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth + edgeStrength * 0.05, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(rgb, alpha));
+  textureStore(writeTexture, coord, result);
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth + edge * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, result);
 }

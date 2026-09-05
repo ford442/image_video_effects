@@ -2,11 +2,16 @@
   "id": "julia-warp",
   "name": "Julia Warp",
   "url": "shaders/julia-warp.wgsl",
-  "description": "Julia fractal-based warping with orbit traps for psychedelic coloring.",
+  "description": "Derivative-aware Julia orbit traps drive refractive distortion, animated complex-parameter control, held zoom, spectral orbit light, and age-bounded shockwaves.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "derivative-aware",
+    "orbit-traps",
+    "refractive-distortion",
+    "temporal-feedback",
+    "click-reactive"
   ],
   "tags": [
     "warp",
@@ -14,11 +19,14 @@
     "transform",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "julia",
+    "fractal-optics",
+    "interactive"
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "intensity",
       "name": "Intensity",
       "default": 0.5,
       "min": 0,
@@ -26,28 +34,35 @@
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "julia_scale",
+      "name": "Julia Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "depth_weight",
+      "name": "Depth Weight",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
+      "id": "max_iter",
+      "name": "Max Iter",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Julia Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Depth Weight", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Max Iter", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA for restrained orbit persistence; B is unused; warped source depth keeps the original modulation semantics."
 }

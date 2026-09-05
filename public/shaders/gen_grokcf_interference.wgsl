@@ -139,9 +139,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv     = vec2<f32>(global_id.xy) / resolution;
     let time   = u.config.x;
     let coord  = vec2<i32>(global_id.xy);
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let audioBands = plasmaBuffer[0].xyz;
+    let bass   = audioBands.x;
+    let mids   = audioBands.y;
+    let treble = audioBands.z;
+    let previousState = textureLoad(dataTextureC, coord, 0);
+    let previousValid = step(0.0001, previousState.a);
 
     // ─── Sliders (all four honestly wired to this shader's algorithm) ───
     let modeScale  = mix(0.5, 2.5, clamp(u.zoom_params.x, 0.0, 1.0));  // x: radial mode scale ONLY
@@ -198,6 +201,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // radiates outward as a damped wave packet, then rings down exponentially.
     let strikeCount = min(u32(u.config.y), 50u);
     var strikeGlow  = 0.0;
+    var strikeDisplacement = 0.0;
     for (var i: u32 = 0u; i < strikeCount; i = i + 1u) {
         let rp  = u.ripples[i];
         let age = time - rp.z;
@@ -207,11 +211,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let d       = distance(p, hitP);
             // Localized decaying impulse + outward-travelling wave packet
             let impulse = exp(-d * d * 10.0) * cos(d * 22.0 - age * 14.0);
-            u_total += rp.w * 0.8 * exp(-age * 3.0) * impulse;
+            strikeDisplacement += rp.w * 0.8 * exp(-age * 3.0) * impulse;
             // Impact flash: bright contact point that fades with the ring-down
             strikeGlow += rp.w * exp(-d * d * 24.0) * exp(-age * 4.5);
         }
     }
+
+    // Exact-load prior membrane displacement and damp it through the existing
+    // A.r state channel. Analytic modes keep driving the target while the
+    // stored displacement supplies physically legible ring-down continuity.
+    u_total = mix(u_total, previousState.r * 0.965, previousValid * 0.72) + strikeDisplacement;
 
     // ─── Boundary: circular membrane fixed at r = R ───
     // Dirichlet condition u(R) = 0, softened over a thin rim for anti-aliasing.
@@ -244,13 +253,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Blend with image input: the membrane figure overlays the source frame
     // wherever displacement or node glow is strong.
-    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let blendAlpha = clamp(val * 0.85 + nodeGlow * 0.3 + bass * 0.05 + strikeGlow * 0.25, 0.0, 1.0);
-    let finalColor = mix(inputColor, chladniColor, blendAlpha);
+    let finalColor = mix(inputColor.rgb, chladniColor, blendAlpha);
+    let finalAlpha = max(inputColor.a, blendAlpha);
+    let membraneDepth = clamp(0.5 - u_total * 0.16, 0.05, 0.95);
+    let finalDepth = mix(inputDepth, membraneDepth, blendAlpha);
 
-    // Output (tone-mapped display), sim state (raw, never clamped), depth pass-through.
-    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(finalColor * 1.1), 1.0));
+    // Output (tone-mapped display), sim state (raw, never clamped), generated membrane depth.
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(finalColor * 1.1), finalAlpha));
     textureStore(dataTextureA, coord, vec4<f32>(u_total, r, phi / 6.28318, blendAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

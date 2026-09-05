@@ -103,6 +103,10 @@ fn spectralGlow(angle: f32, intensity: f32) -> vec3<f32> {
     ) * intensity;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn volumetricFog(p: vec3<f32>, ro: vec3<f32>, t: f32, audio: f32) -> vec3<f32> {
     let fogDensity = 0.03 + audio * 0.02;
     let fogAmount = 1.0 - exp(-fogDensity * t);
@@ -206,21 +210,35 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     } else { col = vec3<f32>(0.05, 0.05, 0.1) * hash3(rd).x; }
     // Volumetric fog integration
     col += volumetricFog(ro + rd * t, ro, t, bass);
-    // Temporal feedback with chromatic dispersion
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    // Temporal feedback with integer chromatic dispersion. C must never be filtered.
+    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let prev = textureLoad(dataTextureC, coords, 0);
     col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
     let cStr = 0.003 + bass * 0.005; let cDir = normalize(uv01 - vec2<f32>(0.5) + 0.001);
-    let prevR = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * (1.0 + mids), 0.0).r;
-    let prevG = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * (0.5 + treble), 0.0).g;
-    let prevB = textureSampleLevel(dataTextureC, u_sampler, uv01 - cDir * cStr * (0.8 + bass * 0.5), 0.0).b;
+    let dispersionPx = cDir * cStr * res;
+    let prevR = textureLoad(dataTextureC, clamp(coords + vec2<i32>(dispersionPx * (1.0 + mids)), vec2<i32>(0), maxCoord), 0).r;
+    let prevG = textureLoad(dataTextureC, clamp(coords + vec2<i32>(dispersionPx * (0.5 + treble)), vec2<i32>(0), maxCoord), 0).g;
+    let prevB = textureLoad(dataTextureC, clamp(coords - vec2<i32>(dispersionPx * (0.8 + bass * 0.5)), vec2<i32>(0), maxCoord), 0).b;
     col.r = mix(col.r, prevR * 0.9, 0.02 + treble * 0.01);
     col.g = mix(col.g, prevG * 0.9, 0.02 + bass * 0.01);
     col.b = mix(col.b, prevB * 0.9, 0.02 + mids * 0.01);
-    let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(lum * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
-    let d_uv = clamp(vec2<f32>(coords) / res, vec2<f32>(0.0), vec2<f32>(1.0));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, d_uv, 0.0).r;
+    var clickEnergy = 0.0;
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age > 0.0 && age < 3.0) {
+            let radius = age * 0.18;
+            clickEnergy += exp(-abs(distance(uv01, ripple.xy) - radius) * 90.0) * exp(-age * 1.5);
+        }
+    }
+    col += spectralGlow(length(uv) + u.config.x * 0.08, clickEnergy * (0.25 + treble * 0.45));
+    let hdrColor = clamp(col, vec3<f32>(0.0), vec3<f32>(8.0));
+    let mappedColor = acesToneMap(hdrColor);
+    let lum = dot(mappedColor, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(select(0.08, 0.3 + lum * 0.65, hit) + clickEnergy * 0.08, 0.02, 1.0);
+    textureStore(writeTexture, coords, vec4<f32>(mappedColor, alpha));
+    let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, coords, vec4<f32>(hdrColor, alpha));
 }

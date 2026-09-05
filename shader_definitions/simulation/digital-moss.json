@@ -2,46 +2,73 @@
   "id": "digital-moss",
   "name": "Digital Moss",
   "url": "shaders/digital-moss.wgsl",
-  "description": "Digital moss grows on dark areas. Use the mouse to clean it.",
+  "description": "Four-state digital moss colonizes dark regions through moisture and spores; held input cleans colonies while clicks launch new growth fronts.",
+  "workgroup_size": [16, 16, 1],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "held-drag",
+    "spring-cursor",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "simulation"
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "intensity",
       "name": "Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Spawn threshold and brush size"
     },
     {
-      "id": "param2",
+      "id": "speed",
       "name": "Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Propagation growth rate"
     },
     {
-      "id": "param3",
+      "id": "scale",
       "name": "Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Digital scanline density"
     },
     {
-      "id": "param4",
+      "id": "detail",
       "name": "Detail",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Moss thickness and opacity detail"
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Detail", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ],
   "tags": [
     "filter",
-    "image-processing"
-  ]
+    "image-processing",
+    "simulation",
+    "organic",
+    "moss"
+  ],
+  "feedbackPacking": "A/C = moss growth, moisture, spores, colony age",
+  "updated": true
 }

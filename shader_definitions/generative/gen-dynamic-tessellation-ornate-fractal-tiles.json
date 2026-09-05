@@ -6,14 +6,52 @@
   ],
   "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes. Now audio-reactive to bass frequencies with meaningful alpha compositing.",
   "workgroup_size": [
-    8,
-    8,
+    16,
+    16,
     1
+  ],
+  "params": [
+    {
+      "id": "fractalDetail",
+      "name": "Fractal Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "motionSpeed",
+      "name": "Motion Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "tileDensity",
+      "name": "Tile Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mouseWarp",
+      "name": "Mouse Warp",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ],
   "updatedParams": [
     {
       "index": 0,
-      "name": "Intensity",
+      "name": "Fractal Detail",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -21,7 +59,7 @@
     },
     {
       "index": 1,
-      "name": "Speed",
+      "name": "Motion Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -29,7 +67,7 @@
     },
     {
       "index": 2,
-      "name": "Scale",
+      "name": "Tile Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -37,7 +75,7 @@
     },
     {
       "index": 3,
-      "name": "Mouse Influence",
+      "name": "Mouse Warp",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -49,5 +87,15 @@
   "updated": true,
   "id": "gen-dynamic-tessellation-ornate-fractal-tiles",
   "url": "shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl",
-  "features": []
+  "features": [
+    "fractal",
+    "audio-reactive",
+    "mouse-interactive",
+    "ripple-reactive",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tone-mapping",
+    "depth-aware"
+  ],
+  "feedbackPacking": "A/C = raw HDR display RGBA history"
 }

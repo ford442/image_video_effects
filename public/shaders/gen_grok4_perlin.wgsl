@@ -149,9 +149,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let audioBands = plasmaBuffer[0].xyz;
+  let bass = audioBands.x;
+  let mids = audioBands.y;
+  let treble = audioBands.z;
 
   let erosionControl = saturate(u.zoom_params.x);
   let waterTable = mix(0.18, 0.62, u.zoom_params.y);
@@ -159,6 +160,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let windControl = saturate(u.zoom_params.w);
   let mouse = u.zoom_config.yz;
   let mouseMask = (1.0 - smoothstep(0.0, 0.12, distance(uv, mouse))) * u.zoom_config.w;
+
+  // Recent clicks become finite rain/erosion impulses. The ring is bounded
+  // in age and count so long sessions cannot accumulate unbounded work.
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  var clickRain = 0.0;
+  var clickErosion = 0.0;
+  for (var i = 0u; i < rippleCount; i++) {
+    let ripple = u.ripples[i];
+    let age = u.config.x - ripple.z;
+    if (age < 0.0 || age > 2.4) { continue; }
+    let strength = clamp(ripple.w, 0.0, 1.0) * exp(-age * 1.35);
+    let dist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+    let rainCore = exp(-dist * dist * 420.0) * strength;
+    let erosionFront = exp(-abs(dist - age * 0.11) * 75.0) * strength;
+    clickRain += rainCore + erosionFront * 0.35;
+    clickErosion += erosionFront;
+  }
 
   let prev = textureLoad(dataTextureC, coord, 0);
   let base = terrainBase(uv, time, mouse, terrainScale);
@@ -183,18 +202,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let basin = (1.0 - smoothstep(0.03, 0.18, slope)) * (1.0 - smoothstep(waterTable + 0.02, waterTable + 0.25, h));
   let pondDepth = max(waterTable - h, 0.0);
-  let newWater = saturate(advected.b * 0.992 + pondDepth * 1.35 + basin * 0.04 - slope * 0.025);
+  let newWater = saturate(advected.b * 0.992 + pondDepth * 1.35 + basin * 0.04 - slope * 0.025 + clickRain * 0.16);
 
   let velocity2 = dot(flowVelocity, flowVelocity) * 220.0;
   let windAbrasion = abs(hR - hL) * gust * (0.35 + (1.0 - hardness)) * (0.25 + windControl * 1.4);
-  let erosionRate = erosionControl * velocity2 * (0.18 + newWater * 1.35) * (1.0 - hardness);
+  let erosionRate = erosionControl * velocity2 * (0.18 + newWater * 1.35) * (1.0 - hardness) + clickErosion * (0.012 + erosionControl * 0.026);
   let depositionRate = advected.g * advected.g * (0.2 + basin * 1.5) * (0.25 + hardness * 0.45);
 
   let seismicPulse = smoothstep(0.78, 0.98, bass) * faultMask(uv, time) * (0.008 + 0.024 * hash12(floor(uv * 28.0) + floor(time * 6.0)));
   let mouseUplift = mouseMask * 0.045;
 
   let newUplift = clamp(advected.a * 0.992 + seismicPulse + mouseUplift, 0.0, 0.35);
-  let newSediment = saturate(advected.g + erosionRate * 0.7 + windAbrasion * 0.4 - depositionRate * 0.65);
+  let newSediment = saturate(advected.g + erosionRate * 0.7 + windAbrasion * 0.4 + clickErosion * 0.035 - depositionRate * 0.65);
   let newErosion = clamp(advected.r * 0.996 + erosionRate * 0.18 + windAbrasion * 0.12 - depositionRate * 0.08 - seismicPulse * 0.45 - mouseUplift * 0.35, 0.0, 0.72);
 
   let height = clamp(base + newUplift - newErosion, 0.0, 1.0);
@@ -237,6 +256,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   textureStore(writeTexture, coord, vec4<f32>(acesToneMap((finalColor) * 1.1), finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(newErosion, newSediment, newWater, newUplift));
-  textureStore(dataTextureB, coord, vec4<f32>(height, slope, waterMask, hardness));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

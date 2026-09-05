@@ -94,11 +94,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let decay = 0.95;
     let tempRangeLow = mix(800.0, 2500.0, u.zoom_params.y);
     let tempRangeHigh = mix(4000.0, 15000.0, u.zoom_params.z);
+    let chromaticSpread = u.zoom_params.w; // Consume parameter to fix dead slider
 
     for (var i = 0; i < samples; i = i + 1) {
         let f = f32(i);
         let offset = dir_uv * (f / f32(samples)) * strength * dist * 10.0;
-        let sample_uv = uv - offset;
+        // Apply tiny chromatic spread offset to radial blur
+        let sample_uv = uv - offset + vec2<f32>(chromaticSpread * 0.001 * f * dist);
 
         if (sample_uv.x < 0.0 || sample_uv.x > 1.0 || sample_uv.y < 0.0 || sample_uv.y > 1.0) {
             continue;
@@ -108,8 +110,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let s_color = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset, 0.0);
 
         // Chromatic aberration on streaks
-        let r = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset + dir_uv * 0.005 * f, 0.0).r;
-        let b = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset - dir_uv * 0.005 * f, 0.0).b;
+        let chrom_spread = u.zoom_params.w * 0.01;
+        let r = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset + dir_uv * chrom_spread * f, 0.0).r;
+        let b = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset - dir_uv * chrom_spread * f, 0.0).b;
         let sample_color = vec3<f32>(r, s_color.g, b);
 
         let luma = dot(sample_color, vec3<f32>(0.299, 0.587, 0.114));

@@ -26,17 +26,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
-}
-
-
 const PI: f32 = 3.14159265;
 
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
@@ -71,17 +60,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let p1 = u.zoom_params.x;
   let p2 = u.zoom_params.y;
+  let p3 = u.zoom_params.z;
+  let p4 = u.zoom_params.w;
 
-  // S² base space rotation from mouse + bass-driven 4D rotation
-  var s2phi = uv.x * PI;
-  var s2theta = uv.y * PI;
+  // Pointer always steers the base sphere; held input increases the orbit.
+  let held = u.zoom_config.w > 0.5;
+  let pointerGain = select(0.22, 1.0, held);
+  var s2phi = uv.x * PI + (mouse.x - 0.5) * PI * pointerGain;
+  var s2theta = uv.y * PI + (mouse.y - 0.5) * PI * 0.5 * pointerGain;
   if (u.zoom_config.w > 0.5) {
-    s2phi += (mouse.x - 0.5) * PI * 2.0;
-    s2theta += (mouse.y - 0.5) * PI;
+    s2phi += (mouse.x - 0.5) * PI;
+    s2theta += (mouse.y - 0.5) * PI * 0.5;
   }
-  let rot4D = time * 0.12 * (1.0 + bass);
+  let rot4D = time * mix(0.04, 0.55, p1) * (1.0 + bass * 0.25) + p1 * PI;
   let fiberCount = 40;
-  let fiberThick = 0.003 + mids * 0.008;
+  let fiberThick = mix(0.0018, 0.0105, p2) * (1.0 + mids * 0.28);
   var accum = vec3<f32>(0.0, 0.0, 0.0);
   var alphaAcc = 0.0;
   var crossingInt = 0.0;
@@ -89,12 +82,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   for (var i: i32 = 0; i < fiberCount; i = i + 1) {
     let fi = f32(i);
-    let phi = fi * 2.4 + rot4D + p1 * PI;
-    let theta = asin(clamp(hash11(fi * 3.7) * 2.0 - 1.0, -0.999, 0.999));
+    let phi = fi * 2.4 + rot4D + s2phi * 0.12;
+    let theta = asin(clamp(hash11(fi * 3.7) * 2.0 - 1.0, -0.999, 0.999)) + (s2theta - PI * 0.5) * 0.08;
     let x2 = cos(theta) * cos(phi);
     let y2 = cos(theta) * sin(phi);
     let z2 = sin(theta);
-    let fiberPhase = fi * 1.618 + time * 0.2;
+    let fiberPhase = fi * 1.618 + time * mix(0.04, 0.65, p4) + sin(fi + time * 0.3) * mids * 0.08;
     let tSteps = 32;
     var prevProj = vec2<f32>(0.0, 0.0);
     var prevW = 0.0;
@@ -137,7 +130,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           alphaAcc += glow * depthFade;
           maxDepth = max(maxDepth, depthFade * glow);
           let segmentDepthDiff = abs(wCoord - prevW);
-          crossingInt += glow * (1.0 - smoothstep(0.0, 0.3, segmentDepthDiff));
+          crossingInt += glow * (1.0 - smoothstep(0.0, 0.3, segmentDepthDiff)) * mix(0.25, 1.6, p3);
         }
       }
       prevProj = proj2;
@@ -146,20 +139,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // Treble particle drift + crossing bloom
-  let drift = hash11(floor(uv.x * 50.0) + floor(uv.y * 50.0) * 127.0 + time * 3.0);
+  let driftCoord = uv + vec2<f32>(time * 0.015, -time * 0.011) * p4;
+  let drift = hash11(floor(driftCoord.x * 50.0) + floor(driftCoord.y * 50.0) * 127.0 + time * mix(0.4, 4.0, p4));
   let speck = step(0.97, drift) * treble * 2.0;
   accum += vec3<f32>(1.0, 0.95, 0.85) * speck;
-  accum += vec3<f32>(0.5, 0.4, 0.6) * crossingInt * treble * 0.3;
+  accum += vec3<f32>(0.5, 0.4, 0.8) * crossingInt * (0.12 + treble * 0.35) * mix(0.3, 1.8, p3);
 
-  // ACES tone mapping
-  accum = accum * (2.51 * accum + 0.03) / (accum * (2.43 * accum + 0.59) + 0.14);
+  // Finite fiber-phase blooms launched by click timestamps.
+  let aspect = res.x / max(res.y, 1.0);
+  let screenP = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  var clickBloom = 0.0;
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 3.0) { continue; }
+    let center = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0);
+    let d = length(screenP - center);
+    let phaseFront = abs(d - age * mix(0.12, 0.42, p4));
+    clickBloom += exp(-phaseFront * phaseFront * 620.0) * exp(-age * 0.85);
+  }
+  accum += hsv2rgb(fract(time * 0.08 + p1), 0.7, 1.0) * clickBloom * (0.8 + p3 * 1.8);
+  alphaAcc += clickBloom * 1.4;
+  maxDepth = max(maxDepth, clickBloom * 0.75);
 
   // Alpha: fiber density × crossing_intensity × depth
   let alpha = clamp(alphaAcc * 0.4 * (1.0 + crossingInt) * maxDepth, 0.0, 1.0);
-  let out = vec4<f32>(accum, alpha);
+  let currentDisplay = acesToneMap(accum * (0.95 + mids * 0.12));
+  let prevDisplay = textureLoad(dataTextureC, coord, 0);
+  let display = mix(prevDisplay.rgb * 0.945, currentDisplay, 0.24 + bass * 0.035);
+  let displayAlpha = max(alpha, prevDisplay.a * 0.92);
+  let out = vec4<f32>(display, displayAlpha);
 
   // Depth: nearest fiber crossing occludes deeper bundle layers
-  textureStore(writeTexture, coord, applyGenerativePrimaryControls(out));
+  textureStore(writeTexture, coord, out);
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(maxDepth, 0.0, 1.0), 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coord, out);
 }

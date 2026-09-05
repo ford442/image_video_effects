@@ -2,8 +2,39 @@
   "id": "echo-ripple",
   "name": "Echo Ripple",
   "url": "shaders/echo-ripple.wgsl",
-  "description": "Mouse movement and click history spawn expanding ripples that echo through time. Audio-reactive envelopes smooth bass pulses, depth-aware parallax separates foreground from background, and chromatic aberration plus ACES tone mapping give the feedback loop a modern, saturated look. Phase B adds LOD noise and a cached displacement field for cleaner echo accumulation.",
+  "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing.",
+  "updated": true,
   "params": [
+    {
+      "id": "freq",
+      "name": "Frequency",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "decay",
+      "name": "Echo Decay",
+      "default": 0.9,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "strength",
+      "name": "Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updatedParams": [
     {
       "id": "freq",
       "name": "Frequency",
@@ -43,7 +74,13 @@
     "aces-tone-mapping",
     "upgraded-rgba",
     "lod-noise",
-    "cached-displacement"
+    "cached-displacement",
+    "thin-film-interference",
+    "bioluminescent-harmonics",
+    "held-gravity-bowl",
+    "caustic-wakes",
+    "exact-history-advection",
+    "bounded-click-ripples"
   ],
   "tags": [
     "filter",

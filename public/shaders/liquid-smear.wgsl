@@ -1,15 +1,35 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Liquid Smear Shader with Alpha Physics
+//  Liquid Smear — Pointer-Velocity Pigment Drag
 //  Category: liquid-effects
-//  Features: temporal feedback, smear effect, viscosity simulation
+//  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
+//            per-band-fft, spring-damper-pointer, velocity-smear,
+//            pigment-diffusion, edge-guided transport, monotone reconstruction,
+//            depth-aware, upgraded-rgba, semantic-alpha, aces
+//  Upgraded: 2026-08-23 (Batch 58B + tensor-guided precision pass)
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Two structures replace the original "pull toward the cursor" offset:
 //
-//  ALPHA PHYSICS:
-//  - Smear accumulation affects opacity
-//  - Viscosity affects transparency
-//  - Mouse velocity affects liquid film thickness
+//    1. Velocity smear from a spring-damped pointer — the smoothed cursor and
+//       its velocity live in extraBuffer[133..136] (position xy, velocity xy),
+//       written by invocation (0,0) only. The smear direction is now the
+//       pointer's actual travel direction with its speed as the drag length,
+//       so flicking the cursor rakes pigment along the stroke. The old code had
+//       no velocity at all — it always pulled toward the cursor centre, which
+//       reads as a sink, not a brush.
+//
+//    2. Per-band FFT pigment diffusion — the smeared field is blurred along the
+//       stroke normal by a kernel whose width comes from the local FFT bin, so
+//       loud bands bleed pigment sideways while quiet ones keep crisp streaks.
+//
+//  Also fixed: the shader had NO bounds guard (it wrote past the render target
+//  on non-multiple-of-16 resolutions), and it read dataTextureC through the
+//  FILTERING sampler. dataTextureC is rgba32float and `float32-filterable` is
+//  only requested when the adapter offers it (src/renderer/webgpu/device.ts),
+//  so that read is invalid on devices without the feature. History is now
+//  fetched with exact textureLoad, bilinear-interpolated by hand where the
+//  advection offset is sub-pixel.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -17,139 +37,209 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=SmearStrength, y=BrushSize, z=Decay, w=MixStrength
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=SmearStrength, y=BrushSize, z=Persistence, w=MixStrength
   ripples: array<vec4<f32>, 50>,
 };
 
-// Schlick's approximation for Fresnel
 fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  let m = clamp(1.0 - cosTheta, 0.0, 1.0);
+  let m2 = m * m;
+  return F0 + (1.0 - F0) * m2 * m2 * m;
 }
 
-// Calculate smear alpha based on accumulation
-fn calculateSmearAlpha(
-    smearStrength: f32,
-    decayRate: f32,
-    distanceToMouse: f32,
-    brushSize: f32
-) -> f32 {
-  // Fresnel (subtle for smear effect)
-  let F0 = 0.02;
-  let normal = normalize(vec3<f32>(smearStrength * 0.5, smearStrength * 0.5, 1.0));
-  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-  let fresnel = schlickFresnel(max(0.0, dot(viewDir, normal)), F0);
-  
-  // Smear thickness based on strength and proximity to mouse
-  let proximityFactor = 1.0 - smoothstep(0.0, brushSize, distanceToMouse);
-  let thickness = smearStrength * 2.0 * proximityFactor + 0.2;
-  
-  // Decay affects opacity (more decay = more transparent over time)
-  let decayAlpha = mix(0.7, 0.95, decayRate);
-  
-  // Absorption
-  let absorption = exp(-thickness * 1.0);
-  let baseAlpha = mix(0.4, decayAlpha, absorption);
-  
-  let alpha = baseAlpha * (1.0 - fresnel * 0.2);
-  
-  return clamp(alpha, 0.0, 1.0);
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
 }
 
-// Calculate smear color with accumulation
-fn calculateSmearColor(
-    currentColor: vec3<f32>,
-    smearedColor: vec3<f32>,
-    smearStrength: f32,
-    mixStrength: f32
-) -> vec3<f32> {
-  // Blend between current and smeared based on mix strength
-  let mixed = mix(currentColor, smearedColor, mixStrength);
-  
-  // Smear adds slight warmth
-  let smearTint = vec3<f32>(0.02, 0.01, 0.0) * smearStrength;
-  
-  return mixed + smearTint;
+// Exact float32 history fetch with hand-rolled bilinear — dataTextureC must
+// never go through the filtering sampler (see header).
+fn historyBilinear(p: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+    let maxC = dims - vec2<i32>(1);
+    let f = fract(p);
+    let i0 = vec2<i32>(floor(p));
+    let s00 = textureLoad(dataTextureC, clamp(i0, vec2<i32>(0), maxC), 0);
+    let s10 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(1, 0), vec2<i32>(0), maxC), 0);
+    let s01 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(0, 1), vec2<i32>(0), maxC), 0);
+    let s11 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(1, 1), vec2<i32>(0), maxC), 0);
+    return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+}
+
+struct HistoryBounds {
+    low: vec4<f32>,
+    high: vec4<f32>,
+};
+
+// Clamp higher-detail reconstruction to the local cross stencil. This is the
+// same monotonicity safeguard used by high-order fluid advection: it prevents
+// ringing from creating negative pigment or HDR speckles in persistent trails.
+fn historyBounds(p: vec2<f32>, dims: vec2<i32>) -> HistoryBounds {
+    let maxC = dims - vec2<i32>(1);
+    let c = clamp(vec2<i32>(round(p)), vec2<i32>(0), maxC);
+    let e = textureLoad(dataTextureC, clamp(c + vec2<i32>( 1,  0), vec2<i32>(0), maxC), 0);
+    let w = textureLoad(dataTextureC, clamp(c + vec2<i32>(-1,  0), vec2<i32>(0), maxC), 0);
+    let n = textureLoad(dataTextureC, clamp(c + vec2<i32>( 0,  1), vec2<i32>(0), maxC), 0);
+    let s = textureLoad(dataTextureC, clamp(c + vec2<i32>( 0, -1), vec2<i32>(0), maxC), 0);
+    let m = textureLoad(dataTextureC, c, 0);
+    var out: HistoryBounds;
+    out.low = min(m, min(min(e, w), min(n, s)));
+    out.high = max(m, max(max(e, w), max(n, s)));
+    return out;
+}
+
+fn plateGradient(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
+    let weights = vec3<f32>(0.2126, 0.7152, 0.0722);
+    let l = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb, weights);
+    let r = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb, weights);
+    let t = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, texel.y), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb, weights);
+    let b = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb, weights);
+    return vec2<f32>(r - l, b - t);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let dimsI = vec2<i32>(textureDimensions(writeTexture));
+    if (global_id.x >= u32(dimsI.x) || global_id.y >= u32(dimsI.y)) { return; }
 
-    // Parameters
+    let coord = vec2<i32>(global_id.xy);
+    let resolution = vec2<f32>(dimsI);
+    let texel = 1.0 / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    let aspect = resolution.x / resolution.y;
+
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // ── Params ───────────────────────────────────────────────────────────────
     let smearStrength = 0.1 + (u.zoom_params.x * 0.9);
     let brushSize = 0.05 + (u.zoom_params.y * 0.2);
-    let decayRate = 0.9 + (u.zoom_params.z * 0.095); // 0.9 - 0.995
+    let decayRate = 0.9 + (u.zoom_params.z * 0.095);
     let mixStrength = 0.1 + (u.zoom_params.w * 0.9);
 
-    let aspect = resolution.x / resolution.y;
-    var mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w > 0.5; // Only smear when mouse is down? Or always? Let's say always for "liquid" feel but maybe stronger when down.
+    // ── Structure 1: spring-damped pointer + velocity ────────────────────────
+    // extraBuffer[133..134] = smoothed position, [135..136] = smoothed velocity.
+    // Only invocation (0,0) writes, as the house pattern requires.
+    let rawMouse = u.zoom_config.yz;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        var sm = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        if (sm.x == 0.0 && sm.y == 0.0) { sm = rawMouse; }
+        let dt = 0.016;
+        let k = 1.0 - exp(-9.0 * dt);
+        let next = sm + (rawMouse - sm) * k;
+        let vel = (next - sm) / dt;
+        var smoothVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        smoothVel = mix(smoothVel, vel, 0.25);
+        extraBuffer[133] = next.x;
+        extraBuffer[134] = next.y;
+        extraBuffer[135] = smoothVel.x;
+        extraBuffer[136] = smoothVel.y;
+    }
+    let mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    let mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    let held = step(0.5, u.zoom_config.w);
 
-    // For this shader, we want the "history" to be the smeared image.
-    // If it's the first frame (or we want to reset), we should maybe mix in the original image strongly.
+    let toMouse = (uv - mousePos) * vec2<f32>(aspect, 1.0);
+    let dist = length(toMouse);
+    let brushFalloff = 1.0 - smoothstep(0.0, brushSize, dist);
 
-    // Sample previous smeared frame
-    var history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Drag along the pointer's actual travel, not toward its centre.
+    let speed = length(mouseVel);
+    let strokeDir = select(vec2<f32>(0.0), mouseVel / max(speed, 1e-5), speed > 1e-4);
+    let imageGradient = plateGradient(uv, texel);
+    let edgeEnergy = clamp(length(imageGradient) * 5.0, 0.0, 1.0);
+    let edgeTangent = normalize(vec2<f32>(-imageGradient.y, imageGradient.x) + strokeDir * 1e-4);
+    // Wet pigment follows source contours instead of bleeding across them.
+    let guidedDir = normalize(mix(strokeDir, edgeTangent, edgeEnergy * (0.25 + 0.45 * smearStrength)) + vec2<f32>(1e-6));
+    let dragLen = clamp(speed * 0.02, 0.0, 0.06) * smearStrength * (0.5 + held);
+    var offset = guidedDir * dragLen * brushFalloff;
 
-    // Sample current fresh input
+    // ── Bounded click splats ─────────────────────────────────────────────────
+    var splat = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 2.2) {
+            let rDelta = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+            let r = max(length(rDelta), 1e-4);
+            let front = r - age * 0.42;
+            let env = exp(-front * front * 150.0) * exp(-age * 1.5);
+            offset += (rDelta / r) * env * smearStrength * 0.03;
+            splat += env;
+        }
+    }
+    splat = min(splat, 1.5);
+
+    // ── Structure 2: per-band FFT pigment diffusion ──────────────────────────
+    // Band chosen by position so different regions bleed with different bins;
+    // the blur runs along the stroke NORMAL, spreading pigment sideways.
+    let bandIdx = u32(clamp((uv.x * 0.5 + uv.y * 0.5) * 8.0, 0.0, 7.999));
+    let band = plasmaBuffer[bandIdx + 1u].x;
+    let bleed = (0.4 + band * 3.2 + mids * 0.8) * (0.5 + smearStrength);
+    let normalDir = vec2<f32>(-guidedDir.y, guidedDir.x);
+
+    let basePx = (uv - offset) * resolution;
+    let bleedPx = normalDir * bleed;
+    let h0 = historyBilinear(basePx, dimsI);
+    let h1 = historyBilinear(basePx + bleedPx, dimsI);
+    let h2 = historyBilinear(basePx - bleedPx, dimsI);
+    let h3 = historyBilinear(basePx + bleedPx * 2.0, dimsI);
+    let h4 = historyBilinear(basePx - bleedPx * 2.0, dimsI);
+    // Gaussian-ish 5-tap along the normal.
+    var smeared = h0 * 0.38 + (h1 + h2) * 0.24 + (h3 + h4) * 0.07;
+    let bounds = historyBounds(basePx, dimsI);
+    smeared = clamp(smeared, bounds.low, bounds.high);
+
     let currentInput = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // Calculate displacement based on mouse velocity would be ideal, but we don't have explicit velocity passed easily unless we calculate it ourselves from previous pos (which we don't store easily).
-    // Instead, we can just push pixels away from the mouse, or pull them towards it.
-    // Let's do a "pull" effect towards the mouse position if close.
+    // Cold start: an empty history seeds from the live plate.
+    if (smeared.a <= 0.0001) { smeared = currentInput; }
 
-    let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
+    // Fresh input keeps bleeding in so the field never degenerates; clicks and
+    // the brush core inject extra fresh pigment.
+    let refresh = clamp(splat * 0.5 + brushFalloff * held * 0.4, 0.0, 0.9);
+    let keep = decayRate * (1.0 - refresh);
+    let blend = mix(currentInput, smeared, keep);
 
-    var offset = vec2<f32>(0.0);
-    if (dist < brushSize && dist > 0.001) {
-        // Simple directional smear: pull towards mouse center?
-        // Or actually, it's better if we just sample "from" the direction of the mouse.
-        // If we are at P, and mouse is at M, looking at M means we pull M's color to P.
-        var dir = normalize(mousePos - uv);
-        offset = dir * smearStrength * (1.0 - smoothstep(0.0, brushSize, dist)) * 0.05;
-    }
+    // ── Colour ───────────────────────────────────────────────────────────────
+    var color = mix(currentInput.rgb, blend.rgb, mixStrength);
+    color += vec3<f32>(0.02, 0.01, 0.0) * smearStrength;
+    color += vec3<f32>(1.0, 0.86, 0.7) * splat * 0.25 * (1.0 + bass * 0.6);
+    color += vec3<f32>(0.25, 0.45, 0.8) * brushFalloff * held * (0.15 + treble * 0.35);
+    let fibrePhase = dot(uv * resolution, guidedDir) * (0.16 + band * 0.12) + time * (0.7 + treble);
+    color += vec3<f32>(0.16, 0.09, 0.04) * sin(fibrePhase) * edgeEnergy * smearStrength * 0.045;
+    color = acesFilm(color);
 
-    // Sample history at offset location to create the "smear"
-    var smeared = textureSampleLevel(dataTextureC, u_sampler, uv - offset, 0.0);
+    // ── Semantic alpha ───────────────────────────────────────────────────────
+    let normal = normalize(vec3<f32>(offset * 40.0, 1.0));
+    let fresnel = schlickFresnel(max(0.0, normal.z), 0.02);
+    let thickness = smearStrength * 2.0 * brushFalloff + 0.2;
+    let absorption = exp(-thickness);
+    let baseAlpha = mix(0.4, mix(0.7, 0.95, decayRate), absorption);
+    let pigment = clamp(brushFalloff * 0.5 + splat * 0.6 + length(offset) * 12.0, 0.0, 1.0);
+    let alpha = clamp(mix(currentInput.a * baseAlpha, 1.0, pigment) * (1.0 - fresnel * 0.2), 0.0, 1.0);
 
-    // If the history is empty/black (start), fill with current input
-    if (history.a == 0.0) {
-        smeared = currentInput;
-    }
+    let outColor = vec4<f32>(color, alpha);
+    textureStore(writeTexture, coord, outColor);
+    // A carries the smeared field forward — it becomes next frame's C.
+    textureStore(dataTextureA, coord, vec4<f32>(blend.rgb, max(alpha, 0.02)));
 
-    // Continually mix in the fresh input so the image doesn't degenerate completely
-    // decayRate controls how much of the old smear we keep.
-    let blend = mix(currentInput, smeared, decayRate);
-
-    // Write back to history
-    textureStore(dataTextureA, global_id.xy, blend);
-
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // ALPHA CALCULATION
-    // ═══════════════════════════════════════════════════════════════════════════════
-    
-    // Calculate smear color
-    let smearColor = calculateSmearColor(currentInput.rgb, blend.rgb, smearStrength, mixStrength);
-    
-    // Calculate alpha
-    let alpha = calculateSmearAlpha(smearStrength, decayRate, dist, brushSize);
-
-    // Output with alpha
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(smearColor, alpha));
-
-    // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -60,5 +60,43 @@
   "updated": true,
   "id": "gen-bismuth-crystal-citadel",
   "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
-  "features": []
+  "features": [],
+  "params": [
+    {
+      "id": "terrace_step_size",
+      "name": "Terrace Step Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "ascension_speed",
+      "name": "Ascension Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "metallic_shine",
+      "name": "Metallic Shine",
+      "default": 0.8,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "iridescence_shift",
+      "name": "Iridescence Shift",
+      "default": 1,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

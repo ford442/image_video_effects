@@ -24,7 +24,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "cell_density",
       "name": "Cell Density",
       "default": 0.5,
       "min": 0,
@@ -33,7 +33,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "edge_glow",
       "name": "Edge Glow",
       "default": 0.55,
       "min": 0,
@@ -42,7 +42,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "color_shift",
       "name": "Color Shift",
       "default": 0,
       "min": 0,
@@ -51,7 +51,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "parallax",
       "name": "Parallax",
       "default": 0.4,
       "min": 0,
@@ -95,5 +95,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = cell id x, cell id y, edge mask, F1 distance; exact edge-afterglow telemetry load"
 }

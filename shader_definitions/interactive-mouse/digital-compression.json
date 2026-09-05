@@ -2,46 +2,65 @@
   "id": "digital-compression",
   "name": "Digital Compression",
   "url": "shaders/digital-compression.wgsl",
-  "description": "Simulates digital artifacts and compression blocks. Mouse controls the clear focus area.",
+  "description": "YUV block crush with spring focus window, held widen, capped ripples, block-edge geometry, exact C artifact memory, and ACES tone map.",
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "blockSize",
       "name": "Block Size",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "colorDepth",
       "name": "Bit Crush",
       "default": 0.3,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "artifacts",
       "name": "Artifacts",
       "default": 0.4,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "focus",
       "name": "Focus Radius",
       "default": 0.3,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.w"
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Block Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Bit Crush", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Artifacts", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Focus Radius", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
   ],
   "features": [
     "mouse-driven",
     "glitch",
     "upgraded-rgba",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "click-reactive",
+    "held-drag",
+    "spring-cursor",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",
-    "image-processing"
-  ]
+    "image-processing",
+    "compression",
+    "blocky",
+    "yuv"
+  ],
+  "updated": true
 }

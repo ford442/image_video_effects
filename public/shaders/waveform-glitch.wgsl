@@ -1,14 +1,6 @@
-// ═══ Waveform Glitch ═══════════════════════════════════════════════
-//  Category: advanced-hybrid
-//  Features: glitch, waveform, retro, rgb-tear, scanline, depth-jitter,
-//            clifford-attractor, domain-warped-fbm, curl-flow,
-//            voronoi-ridge-corruption, yuv-chroma-noise, aces-tone-map,
-//            chromatic-aberration, temporal-feedback, sdf-mask,
-//            audio-palette, bass-env
-//  Complexity: Medium-High
-//  Updated: 2026-07-08
-//  By: Advanced Hybrid Creator — hybrid upgrade: SDF glitch masks,
-//      audio-driven cosine palette, bass-envelope smoothing
+// Waveform Glitch — Composer batch cyber/digital/glitch
+// Oscilloscope Lissajous + signal aliasing: spring cursor, held burst,
+// capped ripples, exact C phosphor trails, three-band audio, ACES + semantic alpha.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,230 +17,139 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
-// ── Hash & Noise ──────────────────────────────────────────────────
-fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123); }
-
-fn valueNoise(p: vec2<f32>) -> f32 {
-  let i = floor(p); let f = fract(p); let u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
-             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-  var sum = 0.0; var amp = 0.5; var freq = 1.0;
-  for (var i = 0; i < octaves; i++) { sum += amp * valueNoise(p * freq); freq *= 2.0; amp *= 0.5; }
-  return sum;
-}
-
-fn domainWarp(p: vec2<f32>, strength: f32, octaves: i32) -> vec2<f32> {
-  let q = vec2<f32>(fbm(p, octaves), fbm(p + vec2<f32>(5.2, 1.3), octaves));
-  return p + strength * q;
-}
-
-fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
-  let eps = 0.001;
-  let nx = fbm(p + vec2<f32>(0.0, eps), 4) - fbm(p - vec2<f32>(0.0, eps), 4);
-  let ny = fbm(p + vec2<f32>(eps, 0.0), 4) - fbm(p - vec2<f32>(eps, 0.0), 4);
-  return vec2<f32>(nx, -ny) / (2.0 * eps);
-}
-
-fn voronoiRidge(p: vec2<f32>) -> f32 {
-  var F1 = 1e9; var F2 = 1e9; let ip = floor(p);
-  for (var i = -2; i <= 2; i++) {
-    for (var j = -2; j <= 2; j++) {
-      let n = ip + vec2<f32>(f32(i), f32(j));
-      let d = length(p - n - hash21(n));
-      if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
-    }
+fn lissajous(uv: vec2<f32>, t: f32, freqX: f32, freqY: f32, phase: f32, thickness: f32) -> f32 {
+  let centered = uv * 2.0 - 1.0;
+  var minDist = 1.0;
+  let steps = 64.0;
+  for (var i = 0.0; i < steps; i += 1.0) {
+    let pt = i * TAU / steps;
+    let lx = sin(freqX * pt + t);
+    let ly = sin(freqY * pt + t + phase);
+    let dist = length(centered - vec2<f32>(lx, ly) * 0.8);
+    minDist = min(minDist, dist);
   }
-  return F2 - F1;
+  return smoothstep(thickness, thickness * 0.2, minDist);
 }
 
-// ── Color & Tone ──────────────────────────────────────────────────
-fn luma(rgb: vec3<f32>) -> f32 { return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722)); }
+fn signalAliasing(uv: vec2<f32>, sampleRate: f32) -> vec2<f32> {
+  return floor(uv * sampleRate) / sampleRate;
+}
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
-  return a + b * cos(TAU * (c * t + d));
-}
-
-fn rgbToYuv(rgb: vec3<f32>) -> vec3<f32> {
-  return vec3<f32>(0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b,
-                  -0.14713 * rgb.r - 0.28886 * rgb.g + 0.436 * rgb.b,
-                   0.615 * rgb.r - 0.51499 * rgb.g - 0.10001 * rgb.b);
-}
-
-fn yuvToRgb(yuv: vec3<f32>) -> vec3<f32> {
-  return vec3<f32>(yuv.x + 1.13983 * yuv.z,
-                   yuv.x - 0.39465 * yuv.y - 0.58060 * yuv.z,
-                   yuv.x + 2.03211 * yuv.y);
-}
-
-// ── VHS & Glitch ──────────────────────────────────────────────────
-fn vhsTracking(uv: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
-  let warp = fbm(vec2<f32>(uv.y * 8.0, time * 0.3), 3);
-  return uv + vec2<f32>(sin(time * 30.0 + uv.y * 1000.0 + warp * TAU) * intensity * 0.02,
-                        sin(time * 0.2 + warp * PI) * intensity * 0.005);
-}
-
-fn blockCorruption(uv: vec2<f32>, blockSize: f32, intensity: f32, time: f32) -> vec2<f32> {
-  let blockId = floor(uv / blockSize);
-  let ridge = voronoiRidge(blockId * 3.0 + vec2<f32>(time * 0.1, 7.31));
-  let rnd = hash21(blockId + vec2<f32>(time * 0.05, 7.31));
-  return uv + vec2<f32>((rnd - 0.5) * intensity * blockSize * (1.0 + smoothstep(0.0, 0.3, ridge) * 2.0), 0.0);
-}
-
-fn filmGrain(uv: vec2<f32>, time: f32) -> f32 { return (hash21(uv * 137.0 + floor(time * 24.0)) - 0.5) * 0.06; }
-
-fn bayer4x4(p: vec2<i32>) -> f32 {
-  let m = array<i32, 16>(0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
-  return f32(m[(p.x & 3) + ((p.y & 3) << 2)]) / 16.0 - 0.5;
-}
-
-// ── Strange Attractor ─────────────────────────────────────────────
-fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
-  return vec2<f32>(sin(a * p.y) + c * cos(a * p.x), sin(b * p.x) + d * cos(b * p.y));
-}
-
-// ── Audio Envelope ────────────────────────────────────────────────
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-  let k = select(release, attack, bass > prev);
-  return mix(prev, bass, k);
-}
-
-// ── SDF Masking ───────────────────────────────────────────────────
-fn smin(a: f32, b: f32, k: f32) -> f32 {
-  let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-  return mix(b, a, h) - k * h * (1.0 - h);
-}
-
-fn sdCircle(p: vec2<f32>, r: f32) -> f32 { return length(p) - r; }
-
-fn sdSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
-  let pa = p - a; let ba = b - a;
-  let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-  return length(pa - ba * h);
-}
-
-// ── Main ──────────────────────────────────────────────────────────
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
-  let res = vec2<f32>(u.config.zw);
-  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+  let res = u.config.zw;
+  if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
 
-  let uv = vec2<f32>(pixel) / res;
+  let uv = (vec2<f32>(pixel) + 0.5) / res;
   let time = u.config.x;
-  let p1 = u.zoom_params.x; let p2 = u.zoom_params.y; let p3 = u.zoom_params.z; let p4 = u.zoom_params.w;
+  let aspect = res.x / max(res.y, 1.0);
+  let held = u.zoom_config.w > 0.5;
+  let mouse = u.zoom_config.yz;
 
-  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
-  let depth = textureLoad(readDepthTexture, pixel, 0).r;
-  let prev = textureLoad(dataTextureC, pixel, 0);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  let waveIntensity = p1 * (1.0 + bass * 0.8);
-  let vhsIntensity = p2 * (1.0 + mids * 0.5);
-  let blockSize = mix(0.02, 0.16, p3);
-  let shadowMaskAmount = p4;
-
-  let mousePos = u.zoom_config.yz;
-  let mouseZone = exp(-length(uv - mousePos) * 6.0) * (1.0 + u.zoom_config.w);
-
-  // Bass-envelope smoothing (replaces raw-bass strobing)
-  let prevBass = extraBuffer[0];
-  let smoothBass = bass_env(prevBass, bass, 0.35, 0.08);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[0] = smoothBass;
+  var smoothMouse = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
   }
-  let transient = max(smoothBass - prevBass, 0.0) * 5.0;
+  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = mouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 9.0;
+      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
+  }
 
-  // SDF glitch-mask: a pulsing circle blended with a roaming segment
-  let aspect = res.x / res.y;
-  let suv = vec2<f32>((uv.x - 0.5) * aspect, uv.y - 0.5);
-  let pulse = 0.22 + 0.12 * sin(time * 0.7 + smoothBass * 3.0);
-  let dCircle = sdCircle(suv + vec2<f32>(sin(time * 0.3) * 0.15, cos(time * 0.25) * 0.1), pulse);
-  let segA = vec2<f32>(-0.4, sin(time * 0.5) * 0.25);
-  let segB = vec2<f32>(0.4, cos(time * 0.4 + mids) * 0.25);
-  let dSeg = sdSegment(suv, segA, segB) - 0.06;
-  let sdfRaw = smin(dCircle, dSeg, 0.18);
-  let sdfMask = smoothstep(0.25, -0.05, sdfRaw);
+  let waveIntensity = u.zoom_params.x * (1.0 + bass * 0.8) * select(1.0, 1.3, held);
+  let vhsIntensity = u.zoom_params.y * (1.0 + mids * 0.5);
+  let aliasingFactor = mix(200.0, 20.0, u.zoom_params.z);
+  let scopeIntensity = u.zoom_params.w;
 
-  let depthScale = mix(1.0, 0.3, depth);
-  let glitchAmt = vhsIntensity * depthScale * (1.0 + mouseZone * 2.0 + transient * 3.0 + sdfMask * 1.5);
+  var rippleWarp = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 1.2) {
+      rippleWarp += smoothstep(0.14, 0.0, length((uv - rp.xy) * vec2<f32>(aspect, 1.0))) * (1.0 - age * 0.85);
+    }
+  }
 
-  let chaotic = clifford(uv * TAU + time * 0.1, 1.7 + smoothBass * 0.3, -0.7, 1.4, 1.6);
-  let attractorWarp = chaotic * glitchAmt * 0.015;
+  let mousePull = (uv - smoothMouse) * exp(-length((uv - smoothMouse) * vec2<f32>(aspect, 1.0)) * 6.0) * 0.02 * select(0.0, 1.0, held);
+  let aliasedUV = signalAliasing(uv + mousePull, aliasingFactor + treble * 50.0);
 
-  var warped = vhsTracking(uv, time, glitchAmt) + attractorWarp;
-  warped = domainWarp(warped, glitchAmt * 0.04, 3);
-  warped = blockCorruption(warped, blockSize, glitchAmt, time);
-  let flow = curl2D(uv * 4.0 + time * 0.3, time);
-  warped = clamp(warped + flow * waveIntensity * depthScale * 0.05, vec2<f32>(0.0), vec2<f32>(1.0));
+  let beatFreq = time * (1.0 + bass * 2.0);
+  let waveX = sin(aliasedUV.y * 50.0 + beatFreq) * 0.05 * waveIntensity;
+  let waveY = cos(aliasedUV.x * 40.0 - beatFreq * 0.8) * 0.03 * waveIntensity;
+  let displacedUV = clamp(aliasedUV + vec2<f32>(waveX + rippleWarp * 0.03, waveY), vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let glitchMag = length(warped - uv);
-  let blockCorrup = smoothstep(0.0, blockSize, glitchMag);
-
-  let scanQ = floor(uv.y * 240.0) / 240.0;
-  let quant = step(0.5, hash21(vec2<f32>(scanQ, floor(time * 8.0)))) * 0.06 * vhsIntensity;
-  let displacedUV = clamp(warped + vec2<f32>(quant, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-
-  let caAmt = 0.003 * (1.0 + smoothBass) + glitchMag * 0.01;
-  let r = textureSampleLevel(readTexture, u_sampler, displacedUV + vec2<f32>(caAmt, 0.0), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, displacedUV - vec2<f32>(caAmt * 0.6, 0.0), 0.0).b;
+  let baseSample = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
+  let r = textureSampleLevel(readTexture, u_sampler, displacedUV + vec2<f32>(0.01 * vhsIntensity, 0.0), 0.0).r;
+  let g = baseSample.g;
+  let b = textureSampleLevel(readTexture, u_sampler, displacedUV - vec2<f32>(0.01 * vhsIntensity, 0.0), 0.0).b;
   var col = vec3<f32>(r, g, b);
 
-  let yuv = rgbToYuv(col);
-  let chromaNoise = hash21(uv * 200.0 + time * 10.0) - 0.5;
-  let chromaShift = yuv + vec3<f32>(0.0, chromaNoise * vhsIntensity * 0.2, chromaNoise * vhsIntensity * 0.15);
-  col = mix(col, yuvToRgb(chromaShift), glitchMag * 2.0);
+  let lissX = 3.0 + floor(mids * 2.0);
+  let lissY = 2.0 + floor(bass * 2.0);
+  let lissPhase = PI * 0.25 * treble;
+  let lissPattern = lissajous(uv, time * 2.0, lissX, lissY, lissPhase, 0.02 + bass * 0.02);
+  col += vec3<f32>(0.2, 1.0, 0.4) * lissPattern * scopeIntensity * 2.0;
 
-  let inBand = step(0.92, uv.y);
-  let bandNoise = hash21(vec2<f32>(uv.x * 100.0, time * 30.0)) * inBand * vhsIntensity * (0.3 + treble * 0.4);
-  let flicker = 0.8 + 0.2 * fract(time * 2.0 + bandNoise * 10.0);
-  col = col * flicker;
+  let scanline = sin(uv.y * res.y * PI) * 0.2 + 0.8;
+  let blanking = step(0.05, fract(time * 5.0 + uv.y * 2.0));
+  col = col * scanline * mix(1.0, blanking, vhsIntensity * 0.5);
 
-  let lum = luma(col);
-  let crush = floor(lum * 16.0 * (1.0 + vhsIntensity * 2.0)) / (16.0 * (1.0 + vhsIntensity * 2.0));
-  col = mix(col, col * (crush / max(lum, 0.001)), glitchMag * 1.6);
+  let bandBin = min(u32(uv.x * 8.0), 7u) + 1u;
+  col += vec3<f32>(0.0, plasmaBuffer[bandBin].x * 0.08, plasmaBuffer[bandBin].y * 0.04) * scopeIntensity;
 
-  let shadowMask = 0.85 + 0.15 * step(0.33, fract(uv.x * res.x / 3.0));
-  col = col * mix(1.0, shadowMask, shadowMaskAmount);
-  col = col + vec3<f32>(bandNoise * 0.5, bandNoise * 0.3, bandNoise * 0.1);
+  let prev = textureLoad(dataTextureC, pixel, 0);
+  let persistence = mix(0.15, 0.55, u.zoom_params.z);
+  let trail = mix(col, prev.rgb, persistence * (0.85 + bass * 0.1));
+  col = mix(col, trail, 0.55 + bass * 0.15);
 
-  // Audio-driven cosine palette replaces the old wavelength tint
-  let palT = time * 0.15 + glitchMag * 12.0 + smoothBass * 1.5 + mids * 0.8;
-  let audioPal = palette(palT,
-    vec3<f32>(0.5, 0.5, 0.5),
-    vec3<f32>(0.5 + treble * 0.25, 0.45, 0.4 + smoothBass * 0.2),
-    vec3<f32>(1.0, 0.95, 0.85),
-    vec3<f32>(0.0, 0.33, 0.67));
-  col = mix(col, col * audioPal, glitchMag * 0.55 + sdfMask * 0.25);
+  col = acesToneMap(col * (0.95 + bass * 0.05));
 
-  let decay = 0.94;
-  let trail = mix(prev.rgb * decay, col, 0.2 + smoothBass * 0.1);
-  textureStore(dataTextureA, pixel, vec4<f32>(trail, prev.a));
-
-  let bloom = max(lum - 0.6, 0.0) * 0.4;
-  col = col + vec3<f32>(bloom * 1.1, bloom * 0.7, bloom * 0.5);
-  col = col + filmGrain(uv, time);
-  col = col + bayer4x4(pixel) * 0.015;
-
-  col = acesToneMap(col * (0.9 + mids * 0.2));
-
-  let alpha = clamp(glitchMag * 5.0 * blockCorrup * (1.0 + transient) * (1.0 + mouseZone + sdfMask), 0.0, 1.0);
+  let waveMag = abs(waveX) + abs(waveY) + lissPattern * scopeIntensity;
+  let alpha = clamp(baseSample.a * (1.0 - waveMag * 0.2) + waveMag * 0.35 + rippleWarp * 0.15, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

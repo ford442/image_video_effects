@@ -3,9 +3,23 @@
   "url": "shaders/liquid-time-warp.wgsl",
   "features": [
     "mouse-driven",
-    "webcam"
+    "webcam",
+    "held-drag",
+    "bounded-click-ripples",
+    "audio-reactive",
+    "per-band-fft",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "aces",
+    "curl-advection",
+    "midpoint-advection",
+    "bounded-antidiffusion",
+    "wipe-fronts",
+    "chromatic-aberration",
+    "temporal-feedback"
   ],
-  "description": "Fluid feedback loop where time is distorted by mouse movement.",
+  "description": "Temporal feedback follows a second-order midpoint trace through three FFT-banded divergence-free curl octaves. Bounded anti-diffusion restores transported detail without inventing new extrema, while click wipe fronts reveal fresh video.",
   "params": [
     {
       "name": "Distortion",
@@ -42,7 +56,49 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "feedback",
+    "temporal",
+    "warp",
+    "flow"
   ],
-  "name": "Liquid Time Warp"
+  "name": "Liquid Time Warp",
+  "updatedParams": [
+    {
+      "name": "Distortion",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "id": "distortion",
+      "description": "Advection distance per frame; bass adds up to +50%."
+    },
+    {
+      "name": "Flow Speed",
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "id": "flow_speed",
+      "description": "Drift rate of the curl-noise octaves."
+    },
+    {
+      "name": "Scale",
+      "type": "float",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "id": "scale",
+      "description": "Base spatial frequency of the flow field."
+    },
+    {
+      "name": "Decay",
+      "type": "float",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "id": "decay",
+      "description": "History retention before wipes are applied."
+    }
+  ]
 }

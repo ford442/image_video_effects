@@ -2,15 +2,20 @@
   "id": "datamosh-brush-diffusion",
   "name": "Datamosh Brush Diffusion",
   "url": "shaders/datamosh-brush-diffusion.wgsl",
-  "description": "Interactive datamoshing brush with anisotropic diffusion. Paint to freeze or corrupt pixels while Perona-Malik diffusion smooths along edges, creating oil-painted MPEG artifact trails with temporal persistence.",
+  "description": "Perona-Malik anisotropic diffusion merged with datamosh brush: spring cursor heat source, held paint freeze, capped click ripples, exact C neighbor loads, oil-slick palette, and audio.",
   "features": [
     "advanced-hybrid",
     "datamosh",
     "anisotropic-diffusion",
     "mouse-driven",
     "temporal",
+    "audio-reactive",
+    "click-ripples",
+    "held-drag",
+    "aces-tone-map",
     "randomization-safe"
   ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "brush_size",
@@ -53,6 +58,12 @@
       "description": "Alpha ghost trail intensity"
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Brush Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Edge Sensitivity", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Diffusion Rate", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Ghost Intensity", "default": 0.7, "min": 0, "max": 1, "step": 0.01 }
+  ],
   "chunks_used": [
     "Datamosh brush, block corruption, alpha ghosting (datamosh-brush.wgsl)",
     "Perona-Malik diffusion, edge coefficients (conv-anisotropic-diffusion.wgsl)"
@@ -67,5 +78,6 @@
     "mouse-driven",
     "oil-paint",
     "temporal"
-  ]
+  ],
+  "updated": true
 }

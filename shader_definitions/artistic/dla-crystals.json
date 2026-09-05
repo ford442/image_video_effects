@@ -1,8 +1,8 @@
 {
   "id": "dla-crystals",
   "name": "DLA Crystal Growth",
-  "url": "shaders/dla-crystals.wgsl",
-  "description": "Diffusion-limited aggregation creating fractal crystal structures that grow from click points.",
+  "url": "shaders/dla-walkers.wgsl",
+  "description": "Physics Lab \u2014 diffusion-limited aggregation walkers freeze into fractal crystals. Click seeds, bass stickiness. graph \u00b7 2 passes \u00b7 rgba32float.",
   "params": [
     {
       "id": "walkerSpeed",
@@ -34,18 +34,54 @@
     }
   ],
   "features": [
-    "temporal-persistence",
-    "interactive",
-    "fractal",
-    "mouse-driven",
+    "audio-driven",
     "audio-reactive",
-    "audio-driven"
+    "fractal",
+    "graph-runner",
+    "interactive",
+    "mouse-driven",
+    "multi-pass",
+    "physics",
+    "simulation",
+    "temporal-persistence"
   ],
   "tags": [
-    "simulation",
-    "physics",
     "audio",
+    "crystals",
+    "dla",
+    "fractal",
     "music",
-    "reactive"
-  ]
+    "physics",
+    "reactive",
+    "showcase",
+    "simulation"
+  ],
+  "multipass": {
+    "graph": {
+      "maxPassesPerFrame": 8,
+      "nodes": [
+        {
+          "id": "walkers",
+          "entry": "dla-walkers",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ]
+        },
+        {
+          "id": "render",
+          "entry": "dla-render",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "color",
+            "dataA"
+          ]
+        }
+      ]
+    }
+  }
 }

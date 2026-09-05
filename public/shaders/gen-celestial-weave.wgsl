@@ -110,7 +110,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
   // Clamp/normalize parameter vector
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let zp_x = u.zoom_params.x;
+  let zp_y = u.zoom_params.y;
+  let zp_z = u.zoom_params.z;
+  let zp_w = u.zoom_params.w;
+  let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
 
   // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
   let prevBass = extraBuffer[0];
@@ -119,10 +123,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     extraBuffer[0] = smoothBass;
   }
 
-  let weaveScale = mix(3.0, 30.0, zp.x);
-  let twist = mix(0.0, 2.5, zp.y);
-  let glowAmp = mix(0.2, 2.0, zp.z);
-  let voidDepth = mix(0.1, 1.0, zp.w);
+  let weaveScale = mix(3.0, 30.0, u.zoom_params.x);
+  let twist = mix(0.0, 2.5, u.zoom_params.y);
+  let glowAmp = mix(0.2, 2.0, u.zoom_params.z);
+  let voidDepth = mix(0.1, 1.0, u.zoom_params.w);
 
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   var p = uv * 2.0 - 1.0;

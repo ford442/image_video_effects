@@ -102,6 +102,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ---- parameters & audio ----
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let tailLen = mix(0.4, 1.0, u.zoom_params.x);
   let spread = mix(0.02, 0.15, u.zoom_params.y);
@@ -147,7 +148,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (bAge > 0.0 && bAge < 7.5) {
       let center = vec2<f32>(bx, by + 1.28);
       let fade = smoothstep(7.0, 0.5, bAge);
-      let gust = shellWind(center, time, seed);
+      let gust = shellWind(center, time, seed) * (0.8 + mids * 0.4);
 
       // core flash
       let flash = exp(-bAge * 6.0) * energy * hexBokeh(uv, center, 0.07, 1.5);
@@ -210,8 +211,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let alpha = clamp(length(col) * 1.2 + 0.1, 0.12, 0.96);
   // generated depth: bright streamer cores are near, empty sky is far
   let depth = clamp(1.0 - exp(-heat * 1.5), 0.0, 1.0) * 0.85;
-  let persistent = col * 0.65 + prev * 0.28;
-  textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

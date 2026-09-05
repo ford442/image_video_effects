@@ -2,7 +2,7 @@
   "id": "liquid-chrome-ripple",
   "name": "Liquid Chrome Ripple",
   "url": "shaders/liquid-chrome-ripple.wgsl",
-  "description": "Metallic liquid effect that ripples with mouse movement.",
+  "description": "A capillary chrome sheet with pointer and click wave trains, derivative normals, RGB refraction, thin-film reflection, dual-lobe highlights, caustics, and advected metallic afterimages.",
   "params": [
     {
       "id": "flow",
@@ -34,7 +34,15 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "click-reactive",
+    "audio-reactive",
+    "temporal",
+    "depth-aware",
+    "pbr-chrome",
+    "capillary-waves",
+    "chromatic-dispersion",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",

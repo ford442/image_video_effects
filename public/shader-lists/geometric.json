@@ -250,13 +250,15 @@
     "id": "datamosh",
     "name": "Datamosh",
     "url": "shaders/datamosh.wgsl",
-    "description": "True video compression datamoshing with I/P-frame simulation, motion vector prediction, and authentic macroblock smearing artifacts.",
+    "description": "Corrected single-state datamoshing: authoritative A packs motion, age, and strength, while current source pixels are predicted through that state with sprung scrubbing, bounded click corruption, ACES, and semantic alpha.",
     "features": [
       "mouse-driven",
-      "multi-pass",
+      "temporal-state",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive",
+      "aces-tone-map"
     ],
     "tags": [
       "datamosh",
@@ -305,6 +307,40 @@
         "step": 0.01,
         "description": "How long motion trails persist (higher=longer trails)"
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Motion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "I-Frame Interval",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Smear Blend",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Decay",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -312,35 +348,78 @@
     "name": "Digital Crease",
     "category": "geometric",
     "url": "shaders/digital-crease.wgsl",
-    "description": "Origami crease pattern simulation with mountain/valley assignment, Kawasaki-Justin flat-foldability approximation, depth-driven layer shadows, digital paper fiber texture, chromatic folding, HDR crease specular, and ACES tone mapping. Bass drives fold speed; mouse performs local folds; depth controls layer ordering.",
+    "description": "Origami crease simulation with spring fold focus, held deepen, capped ripples, exact C fold memory, chromatic folding, and ACES tone map.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "fold-count",
         "name": "Fold Count",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "fold-depth",
         "name": "Fold Depth",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "fold-softness",
         "name": "Fold Softness",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "chroma-offset",
         "name": "Chromatic Offset",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fold Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fold Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Fold Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Offset",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
@@ -349,7 +428,12 @@
       "upgraded-rgba",
       "temporal-paper-fold",
       "chromatic-folding",
-      "origami"
+      "origami",
+      "mouse-driven",
+      "click-reactive",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map"
     ],
     "tags": [
       "geometric",
@@ -361,15 +445,21 @@
       "chromatic",
       "temporal",
       "origami"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "flip-matrix",
     "name": "Flip Matrix",
     "url": "shaders/flip-matrix.wgsl",
-    "description": "Grid of tiles that flip vertically in pseudo-3D based on mouse proximity.",
+    "description": "Inertial split-flap cells propagate hover and click update waves through hinge mechanics, distinct front/back materials, bevel lighting, and held acceleration.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "split-flap-mechanics",
+      "inertial-propagation",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -405,9 +495,42 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Effect Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Flip Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Tile Gap",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for update-wave persistence; B is unused; source depth passes through.",
     "tags": [
-      "filter",
-      "image-processing"
+      "split-flap",
+      "kinetic",
+      "geometric",
+      "interactive"
     ]
   },
   {
@@ -475,12 +598,17 @@
     "id": "interactive-origami",
     "name": "Interactive Origami",
     "url": "shaders/interactive-origami.wgsl",
-    "description": "Simulates folded paper with triangle-wave crease planes radiating from the mouse. Normal-map facet shading, depth-aware fold amplitude (far objects fold more), audio-reactive bass amplitude, and ripple-triggered expanding crease rings.",
+    "description": "Folded-paper crease planes with held pinch, traveling crease runners, foil iridescence, bounded click rings, and exact C history. Display RGBA in A.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "continuous-motion",
+      "psychedelic-color"
     ],
     "params": [
       {
@@ -526,20 +654,93 @@
       "depth",
       "audio",
       "reactive"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "id": "fold_scale",
+        "name": "Fold Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "id": "fold_depth",
+        "name": "Fold Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "id": "light_intensity",
+        "name": "Light Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "id": "depth_influence",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "kaleido-scope-grokcf1",
     "name": "Kaleido-Scope Prism grokcf1",
     "url": "shaders/kaleido-scope-grokcf1.wgsl",
-    "description": "Kaleidoscope with spring-damper mouse follow, attack/release audio envelope, and temporal feedback trails.",
+    "description": "Kaleidoscope with stained-glass facet seams, wedge conveyors, radial packets, oil-slick prism palettes, held singularity, bounded iris clicks, spring-damper mouse follow, and trails packed as display RGBA except origin [env, springXY, vel].",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "stained-glass-facets"
     ],
     "params": [
+      {
+        "id": "segments",
+        "name": "Segments",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "offset",
+        "name": "Ring Offset",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "segments",
         "name": "Segments",
@@ -952,7 +1153,7 @@
     "id": "voronoi-zoom-turbulence",
     "name": "Voronoi Zoom Turbulence",
     "url": "shaders/voronoi-zoom-turbulence.wgsl",
-    "description": "Divides the screen into Voronoi cells where each cell applies a chaotic, time-varying zoom. Mouse proximity calms or agitates the turbulence.",
+    "description": "Voronoi cells pulse with closed-form zoom and site-boundary shear conveyors. Sprung pointer agitates or calms cells, clicks emit zoom fronts, exact-C persistence, ACES display, and semantic agitation alpha.",
     "params": [
       {
         "name": "Cell Density",
@@ -995,11 +1196,59 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "fast-motion",
+      "audio-reactive",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cell Density",
+        "default": 1,
+        "min": 1,
+        "max": 5
+      },
+      {
+        "index": 1,
+        "name": "Turbulence Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3
+      },
+      {
+        "index": 2,
+        "name": "Zoom Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "index": 3,
+        "name": "Mouse Influence",
+        "default": 1,
+        "min": -1,
+        "max": 1
+      }
+    ],
+    "category": "geometric"
   }
 ]

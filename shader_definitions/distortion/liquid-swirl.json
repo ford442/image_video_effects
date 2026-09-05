@@ -5,10 +5,19 @@
     "audio-reactive",
     "audio-driven",
     "upgraded-rgba",
-    "depth-aware"
+    "depth-aware",
+    "held-drag",
+    "bounded-click-ripples",
+    "per-band-fft",
+    "spring-damper-pointer",
+    "lamb-oseen-vortex",
+    "strain-caustics",
+    "temporal-persistence",
+    "semantic-alpha",
+    "aces"
   ],
   "url": "shaders/liquid-swirl.wgsl",
-  "description": "Swirls the image around the cursor like mixing paint.",
+  "description": "A spring-followed Lamb-Oseen vortex with a finite viscous core, counter-rotating satellite pair, midpoint transport, FFT circulation, bounded vortex wakes, tensor-derived strain caustics, and temporal sheen.",
   "params": [
     {
       "id": "strength",
@@ -46,6 +55,40 @@
     "audio",
     "music",
     "reactive"
+  ],
+  "updatedParams": [
+    {
+      "id": "strength",
+      "name": "Circulation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Circulation of the primary and paired vortices."
+    },
+    {
+      "id": "radius",
+      "name": "Vortex Core Radius",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "description": "Finite viscous-core radius and satellite orbit scale."
+    },
+    {
+      "id": "smoothness",
+      "name": "Fluid Smoothness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Pointer spring stiffness and temporal sheen persistence."
+    },
+    {
+      "id": "rotation",
+      "name": "Pair Rotation",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "description": "Signed orbital speed of the counter-rotating vortex pair."
+    }
   ],
   "name": "Liquid Swirl"
 }

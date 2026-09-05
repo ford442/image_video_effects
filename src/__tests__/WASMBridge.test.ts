@@ -10,11 +10,11 @@
 import { renderHook, act } from '@testing-library/react';
 import { useWASM } from '../hooks/useWASM';
 
-// ── Mock the src/wasm/wasm_bridge.js module ───────────────────────────────────
+// ── Mock the src/wasm/wasm_bridge module ─────────────────────────────────────
 //
 // We don't have an Emscripten binary available in Jest, so we mock the bridge.
 // The mock verifies the API surface that TypeScript consumers rely on.
-jest.mock('../wasm/wasm_bridge.js', () => {
+jest.mock('../wasm/wasm_bridge', () => {
   const bridge = {
     initWasmRenderer: jest.fn().mockResolvedValue(false),
     shutdownWasmRenderer: jest.fn(),

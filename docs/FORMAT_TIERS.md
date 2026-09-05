@@ -8,8 +8,11 @@ Memory sketch (order of magnitude, 2048²):
 
 | Target count | rgba32float | rgba16float |
 |--------------|-------------|-------------|
-| 1× | ~64 MiB | ~32 MiB |
-| ~6 storage/sampled rgba targets | ~384 MiB | ~192 MiB |
+| 1× 2D | ~64 MiB | ~32 MiB |
+| 6× 2D (source/read/write/A/B/C) | ~384 MiB | ~192 MiB |
+| history 8-layer 2D-array | ~512 MiB | ~256 MiB |
+
+`historyTex` is the largest single `CreateCommittedResource`. After OOM, working size is capped at 1024 and history layers may drop to 4 or 1 (#1204). Do not retry 2048 in the same tab.
 
 Adaptive resolution scaling alone cannot save integrated GPUs when format bandwidth dominates.
 
@@ -44,8 +47,14 @@ When such a shader is loaded, the host records it and **pins the internal storag
 `rgba32float`** — the user's quality tier (scale, slot cap, pass cap) is left alone. The pin is
 resolved by `resolveFp32Pin()` in [`src/config/formatPolicy.ts`](../src/config/formatPolicy.ts)
 and re-applied on every tier change, so switching to balanced/battery **after** loading a sim
-cannot silently demote it. Category `simulation` and tags `physics` / `reaction-diffusion` /
-`fluid` are inferred as FP32-required when the flag is omitted.
+cannot silently demote it.
+
+Inference is **narrow**: only the explicit JSON flag, plus a short allowlist of true Jacobi / RD /
+fluid **state** graphs (`ripple-tank`, `fabric-of-reality`, `chromatographic-fluid`,
+`gray-scott-tank`, `wave-tank`, `optical-flow-dream`, `photonic-caustics-graph`,
+`sim-fluid-feedback-coupled`). Category `simulation` and tags `physics` / `fluid` /
+`reaction-diffusion` are **not** enough — those tags also mark visual/liquid shaders that should
+run the FP16 balanced path.
 
 `RendererManager.getPerformanceStatus()` reports `requestedColorFormat` (what the tier asked
 for), `colorFormat` (what is actually allocated), `fp32Pinned` and `fp32PinnedBy`. The render
@@ -76,17 +85,33 @@ failure. A non-empty warning list is a bug: fix the shader or widen the rewrite.
 
 ## Capability probe
 
-At device init ([`src/renderer/webgpu/device.ts`](../src/renderer/webgpu/device.ts)):
+At boot, **after** the single `requestDevice` ([`src/renderer/webgpuBootProbe.ts`](../src/renderer/webgpuBootProbe.ts)
+and [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp) `CreateDevice()`):
 
 - `adapter.info` GPU type: discrete / integrated / cpu
-- `float32-filterable` (existing)
-- `maxTextureDimension2D` (existing)
+- `adapter.features`: `float32-filterable`, `float32-blendable`
+- `adapter.limits` (existing contract table)
+- A **1×1** `STORAGE_BINDING` create of `rgba16float` and `rgba32float` (destroy immediately).
+  `supportsRgba32FloatStorage` is measured — never hardcoded. A throw / validation error /
+  `GPUDevice.lost` counts as unsupported.
+
+gpu-chores still adopt this same renderer device. There is no second `requestDevice`.
+
+Safari / older Chromium without `Float16Array`: fail-soft stay on `rgba32float` with a console
+breadcrumb. CPU packing still has a software binary16 path so an accidental FP16 upload does
+not throw.
 
 Resolved in [`src/config/formatPolicy.ts`](../src/config/formatPolicy.ts).
 
 ## C++ WASM parity
 
-[`wasm_renderer/resources.cpp`](../wasm_renderer/resources.cpp) and [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) use the same tier mapping via [`wasm_renderer/performance_policy.h`](../wasm_renderer/performance_policy.h). WGSL rewrite runs in TypeScript before `loadShader()` passes source to C++.
+[`wasm_renderer/resources.cpp`](../wasm_renderer/resources.cpp) and [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) use the same tier mapping via [`wasm_renderer/performance_policy.h`](../wasm_renderer/performance_policy.h). After the 1×1 storage probe, WASM prefers **`rgba16float`** when the probe succeeded so the bind-group layout is not left at `RGBA32Float` while rewritten WGSL is `rgba16float` (#1205). `LoadShader` rewrites write-only `rgba*` storage decls onto `colorFormat_` in C++ (JS `rewriteWgslStorageFormats` does the same before `ccall`). A Validation error on `CreateComputePipeline` is fail-soft: the slot is not stored, a banner is raised, and the frame loop does not `SetPipeline`/`Submit` that encoder.
+
+Depth feedback copies `Depth Texture Write` → `Depth Texture Read`. Those textures include **`CopySrc`** (Dawn does not infer copy-src from StorageBinding).
+
+`wgpuQueueWriteTexture` `bytesPerRow` follows `colorFormat_`: 16 B/px for rgba32float, 8 B/px for
+rgba16float. Zero-init of `dataC` / `readTexture` and `UploadRGBA8ToReadTexture` pack IEEE-754
+binary16 in [`wasm_renderer/format_pack.h`](../wasm_renderer/format_pack.h) (no npm half-float dep).
 
 ## Benchmarking
 
@@ -113,7 +138,9 @@ Real runs come from a human machine or a self-hosted GPU runner via Actions →
 **GPU_REQUIRED (manual)** ([`.github/workflows/gpu-required.yml`](../.github/workflows/gpu-required.yml)).
 
 Fill in hardware, sim spot-checks, thermal notes and the go/no-go verdict by hand using
-[`reports/format-tier-bench-TEMPLATE.md`](../reports/format-tier-bench-TEMPLATE.md).
+[`reports/format-tier-bench-TEMPLATE.md`](../reports/format-tier-bench-TEMPLATE.md) and file
+`reports/format-tier-evidence-YYYY-MM-DD.md` (adapter strings, MiB estimate vs observed, FPS,
+whether the FP32 pin fired, empty `getFormatRewriteWarnings()`).
 
 Priority shaders for ad-hoc comparison: `sim-fluid-feedback-coupled`, `gen-lichen-reaction-diffusion`, `plasma`.
 

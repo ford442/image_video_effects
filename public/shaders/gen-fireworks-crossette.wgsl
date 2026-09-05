@@ -61,7 +61,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);
   let sampleUV = (vec2<f32>(pixel) + 0.5) / res;
   let time = u.config.x;
-  let mouseUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);
+  let mouseUV = (u.zoom_config.yz-vec2<f32>(0.5))*res/min(res.x,res.y);
   let power = mix(0.45, 1.5, u.zoom_params.x);
   let splitDly = mix(0.15, 0.7, u.zoom_params.y);
   let armSpread = mix(0.2, 0.55, u.zoom_params.z);
@@ -145,9 +145,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = mix(prev*0.925, col, 0.32);
   col = acesToneMap(col*1.1);
   let alpha = clamp(length(col)*1.2+0.1, 0.12, 0.96);
-  let persistent = col*0.55 + prev*0.38;
-  textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
+  let depth = clamp((alpha-0.12)/0.84, 0.0, 1.0)*0.85;
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

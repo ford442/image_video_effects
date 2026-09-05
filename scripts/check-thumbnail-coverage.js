@@ -1,19 +1,22 @@
 #!/usr/bin/env node
 /**
- * Fail a pull request when adding shader definitions lowers thumbnail coverage.
- *
- * The base tree is read through git so this check compares the PR with the
- * actual target branch, rather than relying on a hand-maintained baseline.
+ * Fail a pull request when newly eligible shaders lack a healthy thumbnail
+ * and have no unexpired deferral. Does not gate on global coverage %.
  */
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { loadThumbnailSkipIds } = require('./lib/thumbnailSkipAllowlist');
 
 const ROOT = path.join(__dirname, '..');
 const LISTS_DIR = path.join(ROOT, 'public', 'shader-lists');
 const THUMB_DIR = path.join(ROOT, 'public', 'thumbnails');
 const THUMB_MANIFEST_PATH = path.join(THUMB_DIR, 'manifest.json');
+const INTEGRITY_PATH = path.join(ROOT, 'reports', 'thumbnail_integrity_audit.json');
+const DEFERRALS_PATH = path.join(ROOT, 'reports', 'thumbnail_deferrals.json');
+const COVERAGE_MD_PATH = path.join(ROOT, 'reports', 'thumbnail_coverage.md');
 
 function gitText(args) {
   return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
@@ -25,6 +28,17 @@ function readGitJson(ref, file) {
   } catch {
     return null;
   }
+}
+
+function thumbnailFingerprint(files) {
+  const digest = crypto.createHash('sha256');
+  for (const file of files) {
+    digest.update(file, 'utf8');
+    digest.update(Buffer.from([0]));
+    digest.update(fs.readFileSync(path.join(THUMB_DIR, file)));
+    digest.update(Buffer.from([0]));
+  }
+  return digest.digest('hex');
 }
 
 function loadCurrentCatalog() {
@@ -83,23 +97,95 @@ function loadCurrentThumbManifest() {
     : {};
 }
 
-function healthyIds(catalog, pngs, manifest) {
-  return new Set([...catalog].filter(id => pngs.has(id) && Boolean(manifest[id])));
+function loadBaseIntegrityFlags(ref) {
+  const integrity = readGitJson(ref, 'reports/thumbnail_integrity_audit.json');
+  return new Set((integrity?.entries || []).map(e => e.id));
 }
 
-function changedAddedDefinitionIds(ref) {
-  return gitText(['diff', '--diff-filter=A', '--name-only', `${ref}...HEAD`, '--', 'shader_definitions'])
-    .split('\n')
-    .filter(file => file.endsWith('.json'))
-    .map(file => {
-      try {
-        const value = JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8'));
-        return Array.isArray(value) ? value[0]?.id : value?.id;
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
+function isIntegrityCurrent(integrity, pngFiles) {
+  if (!integrity) return false;
+  return integrity.scanned === pngFiles.length &&
+    integrity.png_fingerprint === thumbnailFingerprint(pngFiles);
+}
+
+function loadCurrentIntegrityFlags() {
+  if (!fs.existsSync(INTEGRITY_PATH)) {
+    return { flagged: new Set(), stale: false };
+  }
+  const integrity = JSON.parse(fs.readFileSync(INTEGRITY_PATH, 'utf8'));
+  const pngFiles = fs.readdirSync(THUMB_DIR).filter(file => file.endsWith('.png')).sort();
+  if (!isIntegrityCurrent(integrity, pngFiles)) {
+    return { flagged: new Set(), stale: true };
+  }
+  return { flagged: new Set((integrity.entries || []).map(e => e.id)), stale: false };
+}
+
+function deferralExpiry(entry) {
+  return entry.expires || entry.until || null;
+}
+
+function loadDeferralEntries() {
+  if (!fs.existsSync(DEFERRALS_PATH)) {
+    return { valid: new Set(), all: [] };
+  }
+  const data = JSON.parse(fs.readFileSync(DEFERRALS_PATH, 'utf8'));
+  const entries = data.entries || [];
+
+  const today = new Date().toISOString().split('T')[0];
+  const valid = new Set();
+
+  for (const entry of entries) {
+    if (!entry.id) continue;
+    const expires = deferralExpiry(entry);
+    if (!expires) continue;
+    if (expires >= today) {
+      valid.add(entry.id);
+    }
+  }
+
+  return { valid, all: entries };
+}
+
+function healthyIds(catalog, pngs, manifest, flaggedIds) {
+  return new Set([...catalog].filter(id => pngs.has(id) && Boolean(manifest[id]) && !flaggedIds.has(id)));
+}
+
+function evaluateNewlyEligible(newlyEligible, currentHealthy, validDeferrals) {
+  const offending = [];
+  for (const id of newlyEligible) {
+    if (!currentHealthy.has(id) && !validDeferrals.has(id)) {
+      offending.push(id);
+    }
+  }
+  return offending.sort();
+}
+
+function writeCoverageMarkdown(report) {
+  const lines = [
+    '# Thumbnail coverage',
+    '',
+    `- Catalog: **${report.catalog}**`,
+    `- Skip allowlist: **${report.skip}**`,
+    `- Eligible: **${report.eligible}**`,
+    `- Healthy: **${report.healthy}** (${report.healthyPct}%)`,
+    `- Unexpired deferrals: **${report.deferred}**`,
+    `- Missing (no healthy PNG, no deferral): **${report.missing}**`,
+    `- Newly eligible: **${report.newlyEligible}**`,
+    `- Newly eligible without thumb or deferral: **${report.offending.length}**`,
+    '',
+  ];
+  if (report.integrityStale) {
+    lines.push('Integrity audit is stale for the current PNG set; flags were not applied.');
+    lines.push('');
+  }
+  if (report.offending.length > 0) {
+    lines.push('## Newly eligible missing');
+    lines.push('');
+    for (const id of report.offending) lines.push(`- \`${id}\``);
+    lines.push('');
+  }
+  fs.mkdirSync(path.dirname(COVERAGE_MD_PATH), { recursive: true });
+  fs.writeFileSync(COVERAGE_MD_PATH, lines.join('\n'));
 }
 
 function parseArgs(argv) {
@@ -116,13 +202,35 @@ function main() {
     throw new Error(`Could not load a shader catalog from git ref "${baseRef}"`);
   }
 
+  const skipIds = loadThumbnailSkipIds();
   const currentCatalog = loadCurrentCatalog();
-  const baseHealthy = healthyIds(baseCatalog, loadBasePngs(baseRef), loadBaseThumbManifest(baseRef));
-  const currentHealthy = healthyIds(currentCatalog, loadCurrentPngs(), loadCurrentThumbManifest());
+  const currentEligible = new Set([...currentCatalog].filter(id => !skipIds.has(id)));
+  const baseEligible = new Set([...baseCatalog].filter(id => !skipIds.has(id)));
+
+  const { flagged: currentIntegrity, stale: integrityStale } = loadCurrentIntegrityFlags();
+  const baseIntegrity = loadBaseIntegrityFlags(baseRef);
+  const deferrals = loadDeferralEntries();
+
+  const currentPngs = loadCurrentPngs();
+  const basePngs = loadBasePngs(baseRef);
+  const baseHealthy = healthyIds(baseEligible, basePngs, loadBaseThumbManifest(baseRef), baseIntegrity);
+  const currentHealthy = healthyIds(currentEligible, currentPngs, loadCurrentThumbManifest(), currentIntegrity);
+
   const basePct = (baseHealthy.size / baseCatalog.size) * 100;
   const currentPct = (currentHealthy.size / currentCatalog.size) * 100;
-  const addedIds = changedAddedDefinitionIds(baseRef);
-  const missingAddedIds = addedIds.filter(id => !currentHealthy.has(id));
+  const eligiblePct = currentEligible.size
+    ? ((currentHealthy.size / currentEligible.size) * 100).toFixed(1)
+    : '0.0';
+
+  const newlyEligible = new Set([...currentEligible].filter(id => !baseEligible.has(id)));
+  const missing = [...currentEligible].filter(id => !currentHealthy.has(id) && !deferrals.valid.has(id)).sort();
+
+  if (integrityStale) {
+    console.warn(
+      'Integrity audit is stale for the current PNG files; flags were ignored. ' +
+      'Run python3 scripts/audit_thumbnail_integrity.py',
+    );
+  }
 
   console.log(
     `Thumbnail PR baseline: ${baseHealthy.size}/${baseCatalog.size} (${basePct.toFixed(1)}%)`,
@@ -130,26 +238,61 @@ function main() {
   console.log(
     `Thumbnail PR head: ${currentHealthy.size}/${currentCatalog.size} (${currentPct.toFixed(1)}%)`,
   );
+  console.log(
+    `Healthy eligible: ${currentHealthy.size}/${currentEligible.size} (${eligiblePct}%)`,
+  );
+  console.log(`Unexpired deferrals: ${deferrals.valid.size}`);
+  console.log(`Missing (no healthy, no deferral): ${missing.length}`);
 
-  if (addedIds.length === 0) {
-    console.log('No new shader definitions in this pull request; coverage check is informational.');
-    return;
+  let exitCode = 0;
+
+  const offendingIds = evaluateNewlyEligible(newlyEligible, currentHealthy, deferrals.valid);
+
+  if (newlyEligible.size > 0) {
+    if (offendingIds.length > 0) {
+      console.error(
+        `❌ New eligible shaders without thumbnails (${offendingIds.length}): ` +
+        offendingIds.join(', '),
+      );
+      exitCode = 1;
+    } else {
+      console.log(`✓ ${newlyEligible.size} new eligible shader(s) have thumbnails or deferrals`);
+    }
+  } else {
+    console.log('No newly eligible shaders in this pull request; coverage check is informational.');
   }
 
-  if (missingAddedIds.length > 0) {
+  const deletedPngs = new Set([...basePngs].filter(id => !currentPngs.has(id) && baseHealthy.has(id)));
+
+  if (deletedPngs.size > 0) {
     console.error(
-      `New shader definitions without healthy thumbnails (${missingAddedIds.length}): ` +
-      missingAddedIds.join(', '),
+      `❌ Thumbnails deleted for healthy shaders (${deletedPngs.size}): ` +
+      [...deletedPngs].join(', '),
     );
-    process.exitCode = 1;
+    exitCode = 1;
   }
 
-  if (currentPct + 1e-9 < basePct) {
-    console.error(
-      `Thumbnail coverage regressed by ${(basePct - currentPct).toFixed(2)} percentage points.`,
-    );
-    process.exitCode = 1;
+  writeCoverageMarkdown({
+    catalog: currentCatalog.size,
+    skip: skipIds.size,
+    eligible: currentEligible.size,
+    healthy: currentHealthy.size,
+    healthyPct: eligiblePct,
+    deferred: deferrals.valid.size,
+    missing: missing.length,
+    newlyEligible: newlyEligible.size,
+    offending: offendingIds,
+    integrityStale,
+  });
+  console.log(`Wrote ${path.relative(ROOT, COVERAGE_MD_PATH)}`);
+
+  if (exitCode === 0) {
+    console.log('✓ Thumbnail coverage regression check passed');
+  } else {
+    console.error('❌ Thumbnail coverage regression check FAILED');
   }
+
+  process.exitCode = exitCode;
 }
 
 if (require.main === module) main();
@@ -158,4 +301,8 @@ module.exports = {
   healthyIds,
   loadCurrentCatalog,
   parseArgs,
+  loadDeferralEntries,
+  evaluateNewlyEligible,
+  deferralExpiry,
+  isIntegrityCurrent,
 };

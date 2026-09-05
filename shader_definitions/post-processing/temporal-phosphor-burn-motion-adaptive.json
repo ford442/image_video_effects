@@ -23,7 +23,7 @@
   "requiresHistoryRing": true,
   "params": [
     {
-      "id": "param1",
+      "id": "motion_sensitivity",
       "name": "Motion Sensitivity",
       "default": 0.5,
       "min": 0,
@@ -31,7 +31,7 @@
       "step": 0.01
     },
     {
-      "id": "param2",
+      "id": "max_decay_fast",
       "name": "Max Decay (Fast)",
       "default": 0.5,
       "min": 0,
@@ -39,7 +39,7 @@
       "step": 0.01
     },
     {
-      "id": "param3",
+      "id": "min_decay_still",
       "name": "Min Decay (Still)",
       "default": 0.5,
       "min": 0,
@@ -47,7 +47,7 @@
       "step": 0.01
     },
     {
-      "id": "param4",
+      "id": "warm_tint",
       "name": "Warm Tint",
       "default": 0.6,
       "min": 0,

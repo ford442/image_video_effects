@@ -42,6 +42,9 @@ void WebGPURenderer::UpdateVideoFrame(const uint8_t* data, int width, int height
 void WebGPURenderer::UpdateDepthMap(const float* data, int width, int height) {
     if (!queue_.get() || !depthTextureRead_.get() || !data || deviceLost_) return;
 
+    // Depth stays r32float (not colorFormat_). bytesPerRow is width * sizeof(float).
+    // RGBA color uploads use QueueWriteRgba / format_pack in resources.cpp.
+
     // Clamp copy dimensions to the texture size.
     const int dstW = canvasWidth_;
     const int dstH = canvasHeight_;

@@ -101,15 +101,16 @@ fn stabilizeHistory(h: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
     let px = vec2<i32>(global_id.xy);
+    if (px.x >= i32(resolution.x) || px.y >= i32(resolution.y)) { return; }
+    var uv = (vec2<f32>(px) + vec2<f32>(0.5)) / resolution;
 
     // --- Audio Reactivity ---
     // bass drives the radial-burst pulse and chromatic aberration,
     // mid adds a slow hue drift, treble adds a faint sparkle to the warp.
     let bass = plasmaBuffer[0].x;
-    let mid = plasmaBuffer[1].x;
-    let treble = plasmaBuffer[2].x;
+    let mid = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // ═══ SLIDER WIRING (saved-preset contract: zoom_params.x/y/z/w) ═══
     // Intensity -> warp amplitude (q weight driving the r warp layer)
@@ -135,8 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) - 0.5;
     mouse.x *= aspect;
     let mouse_dist = length(p - mouse);
-    // Inverted smoothstep logic
-    let mouse_warp = pow(1.0 - smoothstep(0.2, 0.0, mouse_dist), 2.0) * u.zoom_config.w;
+    let mouse_warp = pow(1.0 - smoothstep(0.0, 0.32, mouse_dist), 2.0) * clamp(u.zoom_config.w, 0.0, 1.0);
 
     // --- Domain Warping ---
     // Warp the coordinate space using multiple layers of fBm for a liquid-like distortion
@@ -145,10 +145,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         fbm(p + vec2<f32>(5.2, time * 0.3), 3, 0.5)
     );
     // Add mouse influence to the domain warp
-    let warp_dir = normalize(p - mouse);
-    // Only apply if mouse_warp has value
-    if (length(warp_dir) > 0.001) {
-         q += mouse_warp * warp_dir * 0.5;
+    let mouseDelta = p - mouse;
+    if (length(mouseDelta) > 0.001) {
+         q += mouse_warp * normalize(mouseDelta) * 0.5;
     }
 
     // Intensity slider scales the q weight that feeds the r warp layer.
@@ -169,8 +168,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // --- Final Pattern Generation ---
     // The final value is a mix of warped coordinates and a radial component
     let val = fbm((p + r) * 2.0, 5, 0.5);
-    // Inverted smoothstep logic; bass gives the burst a gentle pulse
-    let radial_burst = pow(1.0 - smoothstep(0.5, 0.0, length(p)), 2.0);
+    // Bass gives the centered burst a gentle pulse.
+    let radial_burst = pow(1.0 - smoothstep(0.0, 0.5, length(p)), 2.0);
     let final_val = val + radial_burst * (0.2 + 0.1 * bass);
 
     // --- Advanced Color Mapping ---
@@ -208,7 +207,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ═══ BLEND WITH INPUT ═══
     let finalColor = mix(inputColor.rgb, generatedColor, opacity);
-    let finalAlpha = max(inputColor.a, opacity);
+    let effectCoverage = clamp(0.12 + lumaOf(generatedColor) * 0.82 + mouse_warp * 0.2, 0.08, 0.97);
+    let finalAlpha = max(inputColor.a, effectCoverage);
 
     let caStr = 0.003 * (1.0 + bass) + inputDepth * 0.001;
     let chromaticColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
@@ -217,7 +217,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - 0.25 * smoothstep(0.45, 0.95, length(p));
     let acesColor = acesToneMap(chromaticColor * 1.1 * vignette);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesColor, finalAlpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(acesColor, finalAlpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
+    let rawHistory = clamp(chromaticColor * vignette, vec3<f32>(0.0), vec3<f32>(6.0));
+    let generatedDepth = clamp(0.18 + length(flowVec) * 0.045 + radial_burst * 0.45 + mouse_warp * 0.25, 0.0, 1.0);
+    textureStore(writeTexture, px, vec4<f32>(acesColor, finalAlpha));
+    textureStore(dataTextureA, px, vec4<f32>(rawHistory, finalAlpha));
+    textureStore(writeDepthTexture, px, vec4<f32>(max(inputDepth, generatedDepth), 0.0, 0.0, 0.0));
 }

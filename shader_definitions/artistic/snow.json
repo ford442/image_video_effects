@@ -11,15 +11,7 @@
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param2",
+      "id": "speed",
       "name": "Speed",
       "default": 0.5,
       "min": 0,
@@ -27,16 +19,24 @@
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "density",
+      "name": "Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
+      "id": "wind",
+      "name": "Wind",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "accumulation",
+      "name": "Accumulation",
       "default": 0.5,
       "min": 0,
       "max": 1,

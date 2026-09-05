@@ -16,7 +16,9 @@
     "click-reactive",
     "temporal",
     "fast-motion",
-    "depth-aware"
+    "depth-aware",
+    "semantic-alpha",
+    "aces-tone-map"
   ],
   "tags": [
     "ferrofluid",
@@ -104,5 +106,6 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

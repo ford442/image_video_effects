@@ -111,7 +111,7 @@ Umbrella: [#885](https://github.com/ford442/image_video_effects/issues/885)
 Browser (TypeScript)
   └─ RendererManager.ts        — selects WebGPU / WASM / Canvas2D
        └─ WASMRenderer.ts      — TypeScript wrapper
-            └─ wasm_bridge.js  — JS glue (canonical: wasm_renderer/wasm_bridge.js)
+            └─ wasm_bridge.ts  — TS glue SoT (src/wasm/); generated JS in public/wasm/
                  └─ pixelocity_wasm.{js,wasm}  — Emscripten output
                       └─ renderer.cpp / main.cpp  — C++ WebGPU via Dawn/emdawnwebgpu
 ```
@@ -140,7 +140,7 @@ cd wasm_renderer && ./build.sh   # requires emsdk
 npm run wasm:build
 ```
 
-Outputs: `public/wasm/pixelocity_wasm.{js,wasm}` + synced `wasm_bridge.js` in `public/wasm/` and `src/wasm/`.
+Outputs: `public/wasm/pixelocity_wasm.{js,wasm}` + generated `wasm_bridge.js` in `public/wasm/` and `wasm_renderer/` (from `src/wasm/*.ts`).
 
 See [`ARTIFACTS.md`](./ARTIFACTS.md) for CI artifact strategy.
 

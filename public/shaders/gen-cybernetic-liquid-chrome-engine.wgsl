@@ -145,8 +145,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distFromCenter = length(uv);
     uv *= 1.0 - (distFromCenter * audio * 0.1);
 
+    // Timestamped clicks kick the conveyor and ring the chrome housing.
+    var clickDrive = 0.0;
+    let uv01 = (coords + vec2<f32>(0.5)) / res;
+    let aspect = res.x / max(res.y, 1.0);
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age > 0.0 && age < 2.5) {
+            let delta = vec2<f32>((uv01.x - ripple.x) * aspect, uv01.y - ripple.y);
+            clickDrive += exp(-abs(length(delta) - age * 0.25) * 68.0) * exp(-age * 1.55);
+        }
+    }
+
     // Camera
-    let cameraTravel = u.config.x * (1.6 + speed * 6.0 + audio * 1.8);
+    let cameraTravel = u.config.x * (1.6 + speed * 6.0 + audio * 1.8) + clickDrive * 0.65;
     var ro = vec3<f32>(0.0, 4.0, -10.0 + (cameraTravel - 8.0 * floor(cameraTravel / 8.0)));
     var rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
 
@@ -221,6 +235,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let chromeStreak = pow(max(sin(streakPhase), 0.0), 18.0) * smoothstep(0.15, 0.85, distFromCenter);
     col += vec3<f32>(0.35 + treble * 0.4, 0.75 + mids * 0.35, 1.25) * chromeStreak *
            (0.16 + intensity * 0.25);
+    col += vec3<f32>(0.45, 0.8 + mids * 0.35, 1.25 + treble * 0.4) * clickDrive * 0.22;
 
     // Fog
     col = mix(col, vec3<f32>(0.02, 0.02, 0.05), 1.0 - exp(-0.01 * t));
@@ -233,7 +248,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyCoord = clamp(coord - vec2<i32>(historyVelocity), vec2<i32>(0), maxCoord);
     let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
     let hdrColor = clamp(col * (0.68 + intensity * 0.72) + history * (0.23 + speed * 0.17), vec3<f32>(0.0), vec3<f32>(6.0));
-    let alpha = clamp(select(0.02, 0.28 + length(hdrColor) * 0.2, hit) + chromeStreak * 0.18, 0.02, 0.97);
+    let alpha = clamp(select(0.02, 0.28 + length(hdrColor) * 0.2, hit) + chromeStreak * 0.18 + clickDrive * 0.08, 0.02, 0.97);
     let depth = select(0.0, clamp(1.0 - t / 80.0, 0.0, 1.0), hit);
     textureStore(dataTextureA, coord, vec4<f32>(hdrColor, alpha));
     textureStore(writeTexture, coord, vec4<f32>(acesToneMap(hdrColor * 1.1), alpha));

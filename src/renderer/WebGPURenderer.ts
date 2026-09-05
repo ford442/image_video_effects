@@ -43,10 +43,12 @@ import {
 } from './webgpu/WebGPUMediaInput';
 import { ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
 import type { InternalColorFormat } from '../config/formatPolicy';
-import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities } from '../config/formatPolicy';
+import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, inferRequiresRgba32Float } from '../config/formatPolicy';
+import { getHistoryWorkingSizeCap, persistHistoryOomCap } from '../config/vramBudget';
 import { graphRunner } from './GraphRunner';
 import { GpuChoresHost } from '../gpuChores';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
+import { probeHistoryTex } from './webgpu/historyTexProbe';
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private device: GPUDevice | null = null;
@@ -105,6 +107,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private adapterSummary = '';
   private adapterAttemptLabel: string | null = null;
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
+  private releasingDevice = false;
 
   readonly gpuChores = new GpuChoresHost();
 
@@ -115,70 +118,150 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   getSupportsDeepWorkgroup(): boolean { return this.supportsDeepWorkgroup; }
   getColorFormat(): InternalColorFormat { return this.colorFormat; }
   getFormatCapabilities(): DeviceFormatCapabilities { return this.formatCapabilities; }
+  getHistoryLayers(): number { return this.resources.historyLayers; }
+  getWorkingSizeCap(): number { return getHistoryWorkingSizeCap(); }
 
   async init(canvas: HTMLCanvasElement, webGpuHandoff?: WebGpuProbeHandoff): Promise<boolean> {
     if (this.initialized) return true;
 
-    const outcome = await initializeWebGPUDevice(
-      canvas,
-      this.config.width,
-      this.config.height,
-      webGpuHandoff,
-    );
-    if (!outcome.ok) return false;
+    let handoff = webGpuHandoff;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const outcome = await initializeWebGPUDevice(
+        canvas,
+        this.config.width,
+        this.config.height,
+        handoff,
+      );
+      if (!outcome.ok) return false;
 
-    this.device = outcome.device;
-    this.context = outcome.context;
-    this.canvasFormat = outcome.canvasFormat;
-    this.canvasW = outcome.canvasW;
-    this.canvasH = outcome.canvasH;
-    this.supportsSubgroups = outcome.supportsSubgroups;
-    this.supportsDeepWorkgroup = outcome.supportsDeepWorkgroup;
-    this.hasF32Filterable = outcome.hasF32Filterable;
-    this.formatCapabilities = outcome.formatCapabilities;
-    this.adapterSummary = outcome.adapterSummary ?? '';
-    this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;
+      this.device = outcome.device;
+      this.context = outcome.context;
+      this.canvasFormat = outcome.canvasFormat;
+      this.canvasW = outcome.canvasW;
+      this.canvasH = outcome.canvasH;
+      this.supportsSubgroups = outcome.supportsSubgroups;
+      this.supportsDeepWorkgroup = outcome.supportsDeepWorkgroup;
+      this.hasF32Filterable = outcome.hasF32Filterable;
+      this.formatCapabilities = outcome.formatCapabilities;
+      this.adapterSummary = outcome.adapterSummary ?? '';
+      this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;
 
-    attachDeviceLostHandler(outcome.device, outcome.context, () => {
-      this.initialized = false;
-      this.timestampRuntime.hasRealGpuTimings = false;
-      this.timestampRuntime.readbackPending = false;
-      this.gpuChores.detach('device lost');
-    });
+      attachDeviceLostHandler(outcome.device, outcome.context, () => {
+        if (this.releasingDevice) return;
+        this.initialized = false;
+        this.timestampRuntime.hasRealGpuTimings = false;
+        this.timestampRuntime.readbackPending = false;
+        this.gpuChores.detach('device lost');
+      });
 
-    this.updateScaledDimensions();
-    this.setupGpuResources(outcome.hasF32Filterable, this.colorFormat);
-    this.gpuChores.attach(outcome.device);
+      this.bindOutOfMemoryHandler(outcome.device);
+      this.updateScaledDimensions();
+      const resourcesResult = await this.setupGpuResources(outcome.hasF32Filterable, this.colorFormat);
+      if (resourcesResult !== 'ok') {
+        if (resourcesResult === 'lost' && attempt === 0) {
+          persistHistoryOomCap();
+          this.teardownGpuHandles(false);
+          handoff = undefined;
+          continue;
+        }
+        return false;
+      }
 
-    this.frameState = createFrameState(createRendererFrameHost(this as unknown as RendererFrameDeps));
-    this.initialized = true;
-    this.startTime = performance.now() / 1000;
-    this.lastFPSTime = this.startTime;
-    this.frameRenderer.startRenderLoop(this.frameState);
+      this.gpuChores.attach(outcome.device, 'no GPUDevice adopted', this.colorFormat);
 
-    console.log(
-      `✅ TypeScript WebGPU renderer initialized (${this.canvasW}×${this.canvasH}` +
-      `${outcome.hasF32Filterable ? ', float32-filterable' : ''}` +
-      `${this.supportsSubgroups ? ', subgroups' : ''}` +
-      `${this.supportsDeepWorkgroup ? ', deep-workgroup' : ''})` +
-      (outcome.adapterAttemptLabel ? ` [${outcome.adapterAttemptLabel}]` : ''),
-    );
-    return true;
+      this.frameState = createFrameState(createRendererFrameHost(this as unknown as RendererFrameDeps));
+      this.initialized = true;
+      this.startTime = performance.now() / 1000;
+      this.lastFPSTime = this.startTime;
+      this.frameRenderer.startRenderLoop(this.frameState);
+
+      console.log(
+        `✅ TypeScript WebGPU renderer initialized (${this.canvasW}×${this.canvasH}` +
+        `, work ${this.scaledW}²×hist${this.resources.historyLayers}` +
+        `${outcome.hasF32Filterable ? ', float32-filterable' : ''}` +
+        `${this.supportsSubgroups ? ', subgroups' : ''}` +
+        `${this.supportsDeepWorkgroup ? ', deep-workgroup' : ''})` +
+        (outcome.adapterAttemptLabel ? ` [${outcome.adapterAttemptLabel}]` : ''),
+      );
+      return true;
+    }
+    return false;
   }
 
-  private setupGpuResources(hasF32Filt: boolean, colorFormat: InternalColorFormat): void {
-    const d = this.device!;
-    this.colorFormat = colorFormat;
-    this.pipeline.setupComputeLayout(d, hasF32Filt, colorFormat);
-    this.resources.setup(d, this.canvasW, this.canvasH, this.scaledW, this.scaledH, colorFormat);
+  private bindOutOfMemoryHandler(device: GPUDevice): void {
+    const onOom = () => {
+      persistHistoryOomCap();
+      if (this.scaledW > 1024) {
+        console.warn('[WebGPU] GPUOutOfMemoryError — capping working size at 1024, not retrying 2048');
+        this.updateScaledDimensions();
+        if (this.device && this.initialized) {
+          this.resources.recreateScaleTextures(
+            this.device, this.canvasW, this.canvasH, this.scaledW, this.scaledH,
+            this.colorFormat, this.resources.historyLayers,
+          );
+          this.rebuildComputeBindGroup();
+        }
+      }
+    };
+    device.addEventListener('uncapturederror', (ev: Event) => {
+      const err = (ev as GPUUncapturedErrorEvent).error;
+      if (!err) return;
+      const name = (err as { name?: string }).name;
+      if (name === 'GPUValidationError') return;
+      if (
+        (typeof GPUOutOfMemoryError !== 'undefined' && err instanceof GPUOutOfMemoryError) ||
+        name === 'GPUOutOfMemoryError' ||
+        /out of memory/i.test(err.message)
+      ) {
+        onOom();
+      }
+    });
+  }
+
+  private rebuildComputeBindGroup(): void {
+    if (!this.device) return;
     this.computeBindGroup = createComputeBindGroup(
-      d,
+      this.device,
       this.pipeline.bindGroupLayout,
       this.resources.getTextureSet(),
       this.resources.getBufferSet(),
       this.resources.getSamplerSet(),
     );
     this.blitReadTex = this.resources.blitReadTex;
+    this.lastBlitReadTex = null;
+  }
+
+  private async setupGpuResources(
+    hasF32Filt: boolean,
+    colorFormat: InternalColorFormat,
+  ): Promise<'ok' | 'lost' | 'oom'> {
+    const d = this.device!;
+    this.colorFormat = colorFormat;
+    this.pipeline.setupComputeLayout(d, hasF32Filt, colorFormat);
+
+    const requested = Math.max(this.scaledW, this.scaledH);
+    const probe = await probeHistoryTex(d, requested, colorFormat);
+    if (probe.deviceLost) {
+      console.error('[WebGPU] historyTex probe: device lost during OOM — will requestDevice at 1024');
+      return 'lost';
+    }
+    if (!probe.ok) {
+      console.error(`[WebGPU] historyTex probe failed (oom=${probe.oom})`);
+      return 'oom';
+    }
+    if (probe.workingSize < requested) {
+      persistHistoryOomCap();
+    }
+    this.updateScaledDimensions();
+    if (this.scaledW > probe.workingSize) {
+      this.scaledW = probe.workingSize;
+      this.scaledH = probe.workingSize;
+    }
+
+    this.resources.setup(
+      d, this.canvasW, this.canvasH, this.scaledW, this.scaledH, colorFormat, probe.layers,
+    );
+    this.rebuildComputeBindGroup();
     this.pipeline.setupBlitPipelines(d, this.canvasFormat, this.blitReadTex, colorFormat);
     this.lastBlitReadTex = this.blitReadTex;
     this.lastBlitScaledW = this.scaledW;
@@ -188,6 +271,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.timestampRuntime = timing;
     this.supportsTimestampQuery = timing.supportsTimestampQuery;
     this.gpuTimings = timing.gpuTimings;
+    return 'ok';
   }
 
   private getMediaContext(): WebGPUMediaInputContext {
@@ -225,7 +309,30 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   encodePreFxChores(encoder: GPUCommandEncoder): void {
-    this.gpuChores.encodePreFx(encoder, this.resources.readTex, this.scaledW, this.scaledH);
+    this.gpuChores.setPhysicsPinned(this.hasPhysicsPinnedSlot());
+    this.gpuChores.encodePreFx(
+      encoder,
+      this.resources.readTex,
+      this.scaledW,
+      this.scaledH,
+      this.resources.writeTex,
+    );
+  }
+
+  setSourceAutoExposure(enabled: boolean): void {
+    this.gpuChores.setSourceNormalizeEnabled(enabled);
+  }
+
+  async captureChoresThumbnailPng(outSize: number): Promise<string | null> {
+    const src = this.resources.blitReadTex ?? this.resources.readTex;
+    if (!src) return null;
+    return this.gpuChores.captureDownsampledPng(src, this.scaledW, this.scaledH, outSize);
+  }
+
+  private hasPhysicsPinnedSlot(): boolean {
+    return this.slots.some(
+      (slot) => slot.enabled && !!slot.shaderId && inferRequiresRgba32Float({ id: slot.shaderId }),
+    );
   }
 
   afterFrameSubmitChores(): void {
@@ -332,12 +439,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.resources.recreateScaleTextures(
         this.device, this.canvasW, this.canvasH, this.scaledW, this.scaledH, this.colorFormat,
       );
-      this.computeBindGroup = createComputeBindGroup(
-        this.device, this.pipeline.bindGroupLayout,
-        this.resources.getTextureSet(), this.resources.getBufferSet(), this.resources.getSamplerSet(),
-      );
-      this.blitReadTex = this.resources.blitReadTex;
-      this.lastBlitReadTex = null;
+      this.rebuildComputeBindGroup();
       // recreateScaleTextures destroys sourceTex/readTex. Re-upload the last
       // image/video frame so image-effect shaders don't go blank black after
       // adaptive quality changes scale. Generative mode intentionally stays clear.
@@ -350,21 +452,14 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   setColorFormat(format: InternalColorFormat): void {
     if (this.colorFormat === format) return;
     this.colorFormat = format;
+    this.gpuChores.setColorFormat(format);
     if (!this.device || !this.initialized) return;
 
     this.pipeline.setColorFormat(this.device, format);
     this.resources.recreateScaleTextures(
       this.device, this.canvasW, this.canvasH, this.scaledW, this.scaledH, format,
     );
-    this.computeBindGroup = createComputeBindGroup(
-      this.device,
-      this.pipeline.bindGroupLayout,
-      this.resources.getTextureSet(),
-      this.resources.getBufferSet(),
-      this.resources.getSamplerSet(),
-    );
-    this.blitReadTex = this.resources.blitReadTex;
-    this.lastBlitReadTex = null;
+    this.rebuildComputeBindGroup();
     if (this.inputSource !== 'generative') {
       restoreSourceFromOffscreen(this.getMediaContext(), this.mediaState);
     }
@@ -388,8 +483,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   private updateScaledDimensions(): void {
     const dims = computeScaledDimensions(this.canvasW, this.canvasH, this.resolutionScale);
-    this.scaledW = dims.scaledW;
-    this.scaledH = dims.scaledH;
+    const cap = getHistoryWorkingSizeCap();
+    this.scaledW = Math.min(dims.scaledW, cap);
+    this.scaledH = Math.min(dims.scaledH, cap);
   }
 
   private adaptQualityIfNeeded(): void {
@@ -487,6 +583,14 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   destroy(): void {
+    void this.teardownGpuHandles(true);
+  }
+
+  async releaseExclusiveGpu(): Promise<void> {
+    await this.teardownGpuHandles(true);
+  }
+
+  private teardownGpuHandles(awaitLost: boolean): Promise<void> | void {
     if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
     this.initialized = false;
     this.gpuChores.destroy();
@@ -495,8 +599,23 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.pipeline.clear();
     this.resources.destroyWorkingTextures();
     this.resources.destroyBuffers();
-    this.context?.unconfigure();
-    this.device?.destroy();
+    try {
+      this.context?.unconfigure();
+    } catch {
+      /* ignore */
+    }
+    const device = this.device;
     this.device = null;
+    this.context = null;
+    if (!device) return awaitLost ? Promise.resolve() : undefined;
+    this.releasingDevice = true;
+    const lost = device.lost;
+    try {
+      device.destroy();
+    } catch {
+      /* already destroyed */
+    }
+    if (!awaitLost) return undefined;
+    return lost.then(() => undefined).catch(() => undefined);
   }
 }

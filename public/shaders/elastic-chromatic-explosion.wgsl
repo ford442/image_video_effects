@@ -3,7 +3,7 @@
 //  Category: advanced-hybrid
 //  Features: chromatic-lag, prism-explosion, mouse-driven, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-16 (Batch 52: Prismatic Snell dispersion, viscoelastic shockwave, exact C load)
+//  Upgraded: 2026-08-23 (Batch 68: sprung prism focus, bounded shocks, semantic alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,7 +27,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn aces_film(x: vec3<f32>) -> vec3<f32> {
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
   let c = 2.43;
@@ -65,8 +65,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prism_str = mix(0.02, 0.16, u.zoom_params.z) * (1.0 + bass * 0.5);
   let sat_boost = u.zoom_params.w * (1.5 + treble * 0.8);
 
-  let mouse_pos = u.zoom_config.yz;
+  let raw_mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
   let is_down = u.zoom_config.w;
+
+  // Guarded critically damped prism focus. Only invocation (0,0) persists it.
+  let hasSpring = arrayLength(&extraBuffer) >= 139u;
+  var mouse_pos = raw_mouse;
+  var spring_vel = vec2<f32>(0.0);
+  var last_time = t;
+  var initialized = false;
+  if (hasSpring) {
+    mouse_pos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    spring_vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    last_time = extraBuffer[137];
+    initialized = extraBuffer[138] > 0.5;
+  }
+  if (!initialized) { mouse_pos = raw_mouse; spring_vel = vec2<f32>(0.0); }
+  let dt = select(0.0, clamp(t - last_time, 0.0, 0.05), initialized);
+  let omega = 10.0;
+  let spring_decay = exp(-omega * dt);
+  let spring_delta = mouse_pos - raw_mouse;
+  let spring_temp = (spring_vel + omega * spring_delta) * dt;
+  spring_vel = (spring_vel - omega * spring_temp) * spring_decay;
+  mouse_pos = raw_mouse + (spring_delta + spring_temp) * spring_decay;
+  if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[133] = mouse_pos.x; extraBuffer[134] = mouse_pos.y;
+    extraBuffer[135] = spring_vel.x; extraBuffer[136] = spring_vel.y;
+    extraBuffer[137] = t; extraBuffer[138] = 1.0;
+  }
 
   let depth_tex = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depth_factor = mix(0.5, 1.5, depth_tex);
@@ -94,7 +120,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let r_pos = (uv - r.xy) * aspect_vec;
       let d_r = length(r_pos);
       let front = abs(d_r - age * 0.6);
-      let pulse = exp(-front * 30.0) * exp(-age * 1.2);
+      let pulse = exp(-front * 34.0) * exp(-age * 1.05) * (1.0 + bass * 0.35);
       let dir = select(vec2<f32>(0.0), (uv - r.xy) / max(d_r, 0.001), d_r > 0.001);
       r_shock += dir * pulse * 0.045 * sin(d_r * 36.0 - age * 12.0 - 0.4);
       g_shock += dir * pulse * 0.045 * sin(d_r * 36.0 - age * 12.0);
@@ -126,12 +152,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let caustic = max(0.0, length(vec3<f32>(out_r - live_g, 0.0, out_b - live_g))) * 2.5;
   col += vec3<f32>(1.0, 0.85, 0.95) * caustic * (0.3 + 0.7 * is_down) * (1.0 + mids * 0.4);
 
-  col = aces_film(col);
+  col = acesToneMap(max(col, vec3<f32>(0.0)));
 
-  let out_rgba = vec4<f32>(col, src_alpha);
-  let out_depth = clamp(depth_tex + caustic * 0.2, 0.0, 1.0);
+  let effect_energy = clamp(caustic * 1.5 + length(r_shock + g_shock + b_shock) * 4.0 + mouse_pull * is_down * 0.4, 0.0, 1.0);
+  let out_alpha = clamp(src_alpha + (1.0 - src_alpha) * effect_energy, 0.0, 1.0);
+  let out_rgba = vec4<f32>(col, out_alpha);
 
   textureStore(writeTexture, coord, out_rgba);
   textureStore(dataTextureA, coord, out_rgba);
-  textureStore(writeDepthTexture, coord, vec4<f32>(out_depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth_tex, 0.0, 0.0, 0.0));
 }

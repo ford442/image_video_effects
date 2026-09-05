@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "wasm_internal.h"
+#include "format_pack.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
 #include <cstdio>
@@ -163,8 +164,9 @@ void WebGPURenderer::Render() {
     int firstEnabled = -1;
     int lastEnabled  = -1;
     for (int i = 0; i < MAX_SHADER_SLOTS; i++) {
+        auto itSlot = shaders_.find(slots_[i].shaderId);
         if (slots_[i].enabled && !slots_[i].shaderId.empty() &&
-            shaders_.find(slots_[i].shaderId) != shaders_.end()) {
+            itSlot != shaders_.end() && itSlot->second.pipeline.get()) {
             if (firstEnabled < 0) firstEnabled = i;
             lastEnabled = i;
         }
@@ -191,7 +193,7 @@ void WebGPURenderer::Render() {
     if (firstEnabled < 0) {
         if (!activeShaderId_.empty()) {
             auto it = shaders_.find(activeShaderId_);
-            if (it != shaders_.end()) {
+            if (it != shaders_.end() && it->second.pipeline.get()) {
                 // Single pass: readTexture_ -> writeTexture_
                 WriteSlotParams(zoomParams_);
                 WGPUBindGroup bg = CreateComputeBindGroup(readTexture_.get(), writeTexture_.get());
@@ -225,7 +227,7 @@ void WebGPURenderer::Render() {
                 if (anyReadsC && anyWritesDataA) {
                     CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
                 }
-                if (anyUsesHistory) {
+                if (anyUsesHistory && historyLayerCount_ > 1) {
                     WGPUTexelCopyTextureInfo src = {};
                     src.texture = writeTexture_.get();
                     src.mipLevel = 0;
@@ -238,7 +240,7 @@ void WebGPURenderer::Render() {
                     dst.aspect = WGPUTextureAspect_All;
                     WGPUExtent3D ext = { W, H, 1 };
                     wgpuCommandEncoderCopyTextureToTexture(enc, &src, &dst, &ext);
-                    historyHead_ = (historyHead_ + 1) % HISTORY_DEPTH;
+                    historyHead_ = (historyHead_ + 1) % historyLayerCount_;
                 }
 
                 WGPUCommandBufferDescriptor cbDesc = {};
@@ -257,7 +259,7 @@ void WebGPURenderer::Render() {
         for (int i = 0; i < MAX_SHADER_SLOTS; i++) {
             if (!slots_[i].enabled || slots_[i].shaderId.empty()) continue;
             auto it = shaders_.find(slots_[i].shaderId);
-            if (it == shaders_.end()) continue;
+            if (it == shaders_.end() || !it->second.pipeline.get()) continue;
 
             // Which texture does this slot read from?
             WGPUTexture readFrom = (slots_[i].mode == SlotMode::Parallel)
@@ -358,7 +360,7 @@ void WebGPURenderer::Render() {
             if (anyReadsC && anyWritesDataA) {
                 CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
             }
-            if (anyUsesHistory) {
+            if (anyUsesHistory && historyLayerCount_ > 1) {
                 WGPUTexelCopyTextureInfo src = {};
                 src.texture = writeTexture_.get();
                 src.mipLevel = 0;
@@ -371,7 +373,7 @@ void WebGPURenderer::Render() {
                 dst.aspect = WGPUTextureAspect_All;
                 WGPUExtent3D ext = { W, H, 1 };
                 wgpuCommandEncoderCopyTextureToTexture(enc, &src, &dst, &ext);
-                historyHead_ = (historyHead_ + 1) % HISTORY_DEPTH;
+                historyHead_ = (historyHead_ + 1) % historyLayerCount_;
             }
             WGPUCommandBufferDescriptor cbDesc = {};
             cbDesc.label = MakeStringView("Feedback CmdBuf");
@@ -416,8 +418,8 @@ void WebGPURenderer::BeginFrameCapture() {
     const uint32_t H = static_cast<uint32_t>(canvasHeight_);
 
     // WebGPU requires bytesPerRow to be a multiple of 256.
-    // writeTexture_ is RGBA32Float: 4 channels × 4 bytes = 16 bytes per pixel.
-    const uint32_t bytesPerRow = AlignUp(W * 16u, 256u);
+    const uint32_t bpp = format_pack::BytesPerPixel(colorFormat_);
+    const uint32_t bytesPerRow = AlignUp(W * bpp, 256u);
     const size_t   needed      = static_cast<size_t>(bytesPerRow) * H;
 
     // (Re)create the readback buffer if the size has changed.
@@ -500,19 +502,24 @@ int WebGPURenderer::ReadCapturedFrame(uint8_t* outRGBA8, int maxBytes) {
         return 0;
     }
 
-    const float* src = static_cast<const float*>(mapped);
-    // readbackBytesPerRow_ is in bytes; divide by 4 to get float stride.
-    const uint32_t floatStride = readbackBytesPerRow_ / 4u;
+    const uint8_t* mappedBytes = static_cast<const uint8_t*>(mapped);
+    const uint32_t bpp = format_pack::BytesPerPixel(colorFormat_);
 
     for (uint32_t y = 0; y < H; y++) {
-        const float*  rowSrc = src + static_cast<size_t>(y) * floatStride;
-        uint8_t*      rowDst = outRGBA8 + static_cast<size_t>(y) * W * 4;
+        const uint8_t* rowSrc = mappedBytes + static_cast<size_t>(y) * readbackBytesPerRow_;
+        uint8_t* rowDst = outRGBA8 + static_cast<size_t>(y) * W * 4;
         for (uint32_t x = 0; x < W; x++) {
-            // Clamp float [0,1] to uint8 [0,255].
-            const float r = rowSrc[x * 4 + 0];
-            const float g = rowSrc[x * 4 + 1];
-            const float b = rowSrc[x * 4 + 2];
-            const float a = rowSrc[x * 4 + 3];
+            float r, g, b, a;
+            if (colorFormat_ == policy::InternalColorFormat::Rgba16Float) {
+                const uint16_t* px = reinterpret_cast<const uint16_t*>(rowSrc + static_cast<size_t>(x) * bpp);
+                r = format_pack::HalfToFloat(px[0]);
+                g = format_pack::HalfToFloat(px[1]);
+                b = format_pack::HalfToFloat(px[2]);
+                a = format_pack::HalfToFloat(px[3]);
+            } else {
+                const float* px = reinterpret_cast<const float*>(rowSrc + static_cast<size_t>(x) * bpp);
+                r = px[0]; g = px[1]; b = px[2]; a = px[3];
+            }
             rowDst[x * 4 + 0] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, r)) * 255.0f);
             rowDst[x * 4 + 1] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, g)) * 255.0f);
             rowDst[x * 4 + 2] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, b)) * 255.0f);

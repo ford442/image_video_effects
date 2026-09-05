@@ -23,7 +23,7 @@
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "center_x",
       "name": "Center X",
       "default": 0.5,
       "min": 0,
@@ -32,7 +32,7 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
+      "id": "center_y",
       "name": "Center Y",
       "default": 0.5,
       "min": 0,
@@ -41,7 +41,7 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
+      "id": "zoom_scale",
       "name": "Zoom Scale",
       "default": 0.6,
       "min": 0,
@@ -50,7 +50,7 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
+      "id": "evolution_speed",
       "name": "Evolution Speed",
       "default": 0.3,
       "min": 0,
@@ -94,5 +94,6 @@
     }
   ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "feedbackPacking": "A/C = linear Buddhabrot RGB accumulation and semantic presence alpha; exact same-pixel load"
 }

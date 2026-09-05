@@ -333,6 +333,8 @@ private:
     // ═══════════════════════════════════════════════════════════════════════════
     bool CreateDevice();
     bool CreateResources();
+    bool TryCreateHistoryTexture(uint32_t width, uint32_t height, uint32_t layers);
+    bool CreateHistoryTextureFailSoft();
     bool CreateBindGroupLayout();
     bool CreateBindGroups();
     bool CreateRenderPipeline();
@@ -425,10 +427,11 @@ private:
     WGPUTextureHandle dataTextureB_;  // write-only storage (binding 8)
     WGPUTextureHandle dataTextureC_;  // read-only texture  (binding 9)
 
-    // Temporal history ring (binding 13) — HISTORY_DEPTH past frames
+    // Temporal history ring (binding 13) — HISTORY_DEPTH is the maximum; runtime may be 8/4/1
     static constexpr uint32_t HISTORY_DEPTH = 8;
     WGPUTextureHandle historyTexture_;
     uint32_t historyHead_ = 0;
+    uint32_t historyLayerCount_ = HISTORY_DEPTH;
 
     // Depth map (AI-generated from depth estimation model)
     WGPUTextureHandle depthTextureRead_;
@@ -462,6 +465,8 @@ private:
     // Adapter capability (set during CreateDevice)
     uint32_t maxComputeInvocations_ = 256;
     bool     supportsDeepWorkgroup_ = false;
+    bool     supportsRgba32FloatStorage_ = false;
+    bool     supportsRgba16FloatStorage_ = false;
     policy::InternalColorFormat colorFormat_ = policy::kUltraColorFormat;
 
     // Wall-clock render timings from last frame (ms) — always updated.
@@ -492,6 +497,8 @@ private:
     // Reused across frames for UploadRGBA8ToReadTexture().
     // Grows on demand but never shrinks.
     std::vector<float> videoStagingBuffer_;
+    // Packed texel bytes for rgba16float (and rgba32float copies) queue writes.
+    std::vector<uint8_t> packedUploadBuffer_;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // ASYNC FRAME CAPTURE STATE

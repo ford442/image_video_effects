@@ -47,6 +47,10 @@ describe('resolveFp32Pin', () => {
               adapterGpuType: gpuType,
               isMobile,
               supportsRgba32FloatStorage: true,
+              supportsRgba16FloatStorage: true,
+              supportsFloat16Array: true,
+              hasFloat32Filterable: true,
+              hasFloat32Blendable: false,
             },
           });
           const pin = resolveFp32Pin(policy.colorFormat, ['sim-fluid-feedback-coupled']);
@@ -59,11 +63,13 @@ describe('resolveFp32Pin', () => {
 
 describe('FP32 inference feeding the pin', () => {
   it.each([
-    [{ category: 'simulation' }, true],
-    [{ tags: ['fluid'] }, true],
-    [{ tags: ['reaction-diffusion'] }, true],
-    [{ tags: ['physics'] }, true],
+    [{ category: 'simulation' }, false],
+    [{ tags: ['fluid'] }, false],
+    [{ tags: ['reaction-diffusion'] }, false],
+    [{ tags: ['physics'] }, false],
     [{ requiresRgba32Float: true }, true],
+    [{ id: 'ripple-tank' }, true],
+    [{ id: 'gray-scott-tank' }, true],
     [{ category: 'generative', tags: ['neon', 'audio'] }, false],
   ])('infers %o → %s and pins accordingly', (shader, expected) => {
     const requiresFp32 = inferRequiresRgba32Float(shader);

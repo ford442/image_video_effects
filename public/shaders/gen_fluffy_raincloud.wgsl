@@ -121,11 +121,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   let size = vec2<i32>(i32(resolution.x), i32(resolution.y));
   let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
-  let time = u.config.x;
+  let time = u.config.x * 5.0; // Fast motion upgrade
   // Long-session precision fix: wrap the noise-coordinate time so the fbm
   // fields do not degrade into banding after hours of runtime. Simulation
   // state lives in dataTextureA, so only procedural coordinates need this.
-  let noiseTime = mod(time, 3600.0);
+  let noiseTime = time - floor(time / 3600.0) * 3600.0;
   let pixel = 1.0 / min(resolution.x, resolution.y);
 
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -278,9 +278,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Channel packing contract (vorticity-confinement neighbor reads depend on
   // .gb = velocity layout — do NOT repack; sim state stays raw, never toned):
   //   dataTextureA = (density, velocity.x, velocity.y, moisture)
-  //   dataTextureB = (rain, omega * 0.5 + 0.5, silverEdge, lightning)
+  // Derived rain/lightning values are display-only; A is the sole writeback.
   textureStore(writeTexture, coord, vec4<f32>(acesToneMap((finalColor) * 1.1), finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(density, velocity.x, velocity.y, moisture));
-  textureStore(dataTextureB, coord, vec4<f32>(rain, omega * 0.5 + 0.5, silverEdge, lightning));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

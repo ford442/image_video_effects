@@ -1,8 +1,5 @@
-// ═══ RIPPLE TANK — GRAPH NODE: SOURCE INJECTION ════════════════════════════
-//  Tier C graph: mouse driver, click ripples, audio-reactive rain.
-//
-//  Reads dataTextureC (binding 9, host copies dataA→C before dispatch),
-//  writes dataTextureB (binding 8).
+// Ripple Tank — Codex (e) graph node 2: pointer, click, and audio sources.
+// Reads exact bounded state from C and writes only A.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,90 +22,92 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265359;
-const TAU: f32 = 6.28318530718;
-
-fn hashf(n: f32) -> f32 {
-    return fract(sin(n * 127.1) * 43758.5453);
-}
-fn hash2f(n: f32) -> vec2<f32> {
-    return vec2<f32>(hashf(n), hashf(n + 73.156));
+fn hash11(x: f32) -> f32 {
+  return fract(sin(x * 127.1) * 43758.5453);
 }
 
-fn splash(distSq: f32, radius: f32) -> f32 {
-    let d = sqrt(distSq) / radius;
-    return smoothstep(1.0, 0.0, d) * cos(d * PI * 0.5);
+fn hash21(x: f32) -> vec2<f32> {
+  return vec2<f32>(hash11(x), hash11(x + 73.156));
+}
+
+fn splash(distanceSquared: f32, radius: f32) -> f32 {
+  let normalizedDistance = sqrt(distanceSquared) / max(radius, 0.0001);
+  return smoothstep(1.0, 0.0, normalizedDistance) *
+    cos(normalizedDistance * 1.5707963);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let pixel = vec2<i32>(global_id.xy);
-    let res   = vec2<f32>(u.config.zw);
-    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
 
-    let uv     = vec2<f32>(pixel) / res;
-    let aspect = vec2<f32>(res.x / res.y, 1.0);
-    let time   = u.config.x;
+  let pixel = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+  let aspect = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+  let time = u.config.x;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let sourceStrength = mix(0.15, 1.5, u.zoom_params.z) *
+    (1.0 + audio.x * 0.65);
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let state = textureLoad(dataTextureC, pixel, 0);
+  var height = state.r;
+  var velocity = state.g;
+  var foam = state.b;
+  var phase = state.a;
 
-    let sourceStrength = mix(0.15, 1.5, u.zoom_params.z) * (1.0 + bass * 0.6);
-    let driverFreq     = mix(4.0, 18.0, u.zoom_params.z) * (1.0 + treble * 0.5);
+  let mouseDelta = (uv - u.zoom_config.yz) * aspect;
+  let mouseDistanceSquared = dot(mouseDelta, mouseDelta);
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
+  let mouseRadius = 0.022 + audio.y * 0.006;
+  if (held > 0.0 && mouseDistanceSquared < mouseRadius * mouseRadius) {
+    phase = fract(phase + (0.055 + audio.z * 0.045));
+    let drive = sin(phase * 6.283185) * sourceStrength * held;
+    let shape = splash(mouseDistanceSquared, mouseRadius);
+    height += drive * shape * 0.34;
+    velocity += drive * shape * 0.08;
+    foam += abs(drive) * shape * 0.06;
+  }
 
-    let state = textureLoad(dataTextureC, pixel, 0);
-    var height   = state.r;
-    var velocity = state.g;
-    var phase    = state.a;
-    let prevHeight = state.b;
-
-    let mouse = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w > 0.5;
-    let dm = (uv - mouse) * aspect;
-    let mouseDistSq = dot(dm, dm);
-    let mouseRadius = 0.018;
-    if (mouseDown && mouseDistSq < mouseRadius * mouseRadius) {
-        phase += driverFreq * 0.016;
-        let drive = sin(phase * TAU) * sourceStrength * 0.4;
-        height += drive * splash(mouseDistSq, mouseRadius);
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = time - event.z;
+    if (age >= 0.0 && age < 0.14) {
+      let delta = (uv - event.xy) * aspect;
+      let distanceSquared = dot(delta, delta);
+      let radius = 0.026;
+      if (distanceSquared < radius * radius) {
+        let punch = (1.0 - age / 0.14) * sourceStrength * max(event.w, 0.35);
+        let shape = splash(distanceSquared, radius);
+        height -= punch * shape * 0.48;
+        velocity -= punch * shape * 0.12;
+        foam += punch * shape * 0.09;
+      }
     }
-    phase = fract(phase);
+  }
 
-    for (var i = 0; i < 50; i++) {
-        let ripple = u.ripples[i];
-        if (ripple.z <= 0.0) { continue; }
-        let age = time - ripple.z;
-        if (age < 0.0 || age > 0.1) { continue; }
-        let dr = (uv - ripple.xy) * aspect;
-        let distSq = dot(dr, dr);
-        let radius = 0.02;
-        if (distSq < radius * radius) {
-            let punch = (1.0 - age / 0.1) * sourceStrength * ripple.w;
-            height -= punch * 0.5 * splash(distSq, radius);
-        }
+  let dripRate = 0.8 + audio.z * 1.55;
+  for (var drop = 0; drop < 3; drop = drop + 1) {
+    let clock = time * dripRate + f32(drop) * 0.37;
+    let cell = floor(clock);
+    let age = fract(clock) / dripRate;
+    let position = hash21(cell * 7.31 + f32(drop) * 91.7) * 0.8 + vec2<f32>(0.1);
+    if (age < 0.1) {
+      let delta = (uv - position) * aspect;
+      let distanceSquared = dot(delta, delta);
+      let radius = 0.015 + audio.y * 0.004;
+      if (distanceSquared < radius * radius) {
+        let amplitude = sourceStrength * (0.1 + audio.y * 0.32 + audio.z * 0.14);
+        let shape = splash(distanceSquared, radius) * (1.0 - age / 0.1);
+        height -= amplitude * shape;
+        foam += amplitude * shape * 0.16;
+      }
     }
+  }
 
-    // Audio rain — treble densifies droplets; mids punch amplitude
-    let dripRate = 0.85 + treble * 1.2;
-    for (var d = 0; d < 3; d++) {
-        let t = time * dripRate + f32(d) * 0.37;
-        let cell = floor(t);
-        let age  = fract(t) / dripRate;
-        let pos  = hash2f(cell * 7.31 + f32(d) * 91.7) * 0.8 + vec2<f32>(0.1);
-        if (age < 0.1) {
-            let dd = (uv - pos) * aspect;
-            let distSq = dot(dd, dd);
-            let radius = 0.016;
-            if (distSq < radius * radius) {
-                let amp = sourceStrength * 0.32 * (0.4 + mids * 0.9 + treble * 0.35);
-                height -= amp * splash(distSq, radius) * (1.0 - age / 0.1);
-            }
-        }
-    }
-
-    height   = clamp(height, -1.5, 1.5);
-    velocity = clamp(velocity, -0.8, 0.8);
-
-    textureStore(dataTextureB, pixel, vec4<f32>(height, velocity, prevHeight, phase));
+  textureStore(dataTextureA, pixel, vec4<f32>(
+    clamp(height, -1.5, 1.5),
+    clamp(velocity, -0.8, 0.8),
+    clamp(foam, 0.0, 1.5),
+    phase));
 }

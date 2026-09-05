@@ -44,6 +44,10 @@ EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice
         return 0;
     }
     try {
+        // Matches TS buildCanvasConfigureOptions. Do NOT drop this configure
+        // as a "simplification": importJsSurface needs a configured context.
+        // ConfigureSurface() below is a second configure (Fifo + width/height)
+        // — both are required; omitting the C++ pass can yield a black canvas.
         ctx.configure({
             device: jsDevice,
             format: preferredFormat,
@@ -259,13 +263,17 @@ bool WebGPURenderer::CreateDevice() {
     // contract (bindings 0–13; see docs/BINDING_CONTRACT.md) so that a weak
     // adapter fails here with an actionable message instead of deep inside
     // CreateResources() with a cryptic bind-group-layout error.
+    //
+    // maxTextureDimension2D need is the named comfortable floor (8192), matching
+    // src/contracts/webgpu_limits.json — NOT canvas max(w,h), NOT maxBufferSize,
+    // NOT pixel count / width*height, and NOT a mis-ordered init heap pointer.
     WGPULimits limits = {};
     wgpuAdapterGetLimits(adapter_.get(), &limits);
 
     bool limitsOk = true;
-    const uint64_t maxCanvasDim = (uint64_t)std::max(canvasWidth_, canvasHeight_);
+    // 8192 = webgpu_limits.json minimumComputeLimits.maxTextureDimension2D (comfortable floor).
     printf("[WASM] Adapter limits (validating against 14-entry compute contract):\n");
-    CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              maxCanvasDim, limitsOk);
+    CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              8192, limitsOk);
     CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            14,  limitsOk);
     CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    3,  limitsOk);
     CheckLimit("maxSamplersPerShaderStage",          limits.maxSamplersPerShaderStage,           3,  limitsOk);
@@ -296,11 +304,23 @@ bool WebGPURenderer::CreateDevice() {
 #else
     bool hasTimestampQuery    = false;
 #endif
-    printf("[WASM] Adapter features: Float32Filterable=%s Float32Blendable=%s BGRA8UnormStorage=%s TimestampQuery=%s\n",
+#ifdef WGPUFeatureName_Subgroups
+    bool hasSubgroups         = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_Subgroups);
+#else
+    bool hasSubgroups         = false;
+#endif
+#ifdef WGPUFeatureName_ChromiumExperimentalSubgroups
+    bool hasChromiumSubgroups = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_ChromiumExperimentalSubgroups);
+#else
+    bool hasChromiumSubgroups = false;
+#endif
+    printf("[WASM] Adapter features: Float32Filterable=%s Float32Blendable=%s BGRA8UnormStorage=%s TimestampQuery=%s Subgroups=%s ChromiumExperimentalSubgroups=%s\n",
            hasFloat32Filterable ? "yes" : "no",
            hasFloat32Blendable  ? "yes" : "no",
            hasBGRA8Storage      ? "yes" : "no",
-           hasTimestampQuery    ? "yes" : "no");
+           hasTimestampQuery    ? "yes" : "no",
+           hasSubgroups ? "yes" : "no",
+           hasChromiumSubgroups ? "yes" : "no");
 
     if (!limitsOk) {
         printf("❌ Adapter does not meet the minimum WebGPU limits required by Pixelocity's\n");
@@ -338,7 +358,7 @@ bool WebGPURenderer::CreateDevice() {
     // All other fields stay WGPU_LIMIT_*_UNDEFINED (via WGPU_LIMITS_INIT) so
     // we don't over-request anything the adapter doesn't already offer.
     WGPULimits requiredLimits = WGPU_LIMITS_INIT;
-    requiredLimits.maxTextureDimension2D             = (uint32_t)maxCanvasDim;
+    requiredLimits.maxTextureDimension2D             = 8192; // webgpu_limits.json comfortable floor
     requiredLimits.maxBindingsPerBindGroup           = 14;
     requiredLimits.maxSampledTexturesPerShaderStage  = 3;
     requiredLimits.maxSamplersPerShaderStage         = 3;
@@ -350,9 +370,12 @@ bool WebGPURenderer::CreateDevice() {
     requiredLimits.maxComputeWorkgroupSizeY          = 16;
     requiredLimits.maxComputeInvocationsPerWorkgroup = 256;
 
-    // Optional features: request float32-filterable when the adapter offers it
-    // (matches TypeScript webgpuDevicePolicy / WebGPURenderer.init()).
-    WGPUFeatureName requiredFeatures[2] = {};
+    // Optional features: same order as collectOptionalDeviceFeatures() in
+    // src/renderer/webgpu/device.ts — float32-filterable, timestamp-query
+    // (#1007 always-on when available), then one subgroup variant.
+    // requiredFeatures[3] is a contract: do not shrink. Dropping a slot
+    // silently omits timestamp-query when float32 + subgroups are both present.
+    WGPUFeatureName requiredFeatures[3] = {};
     size_t requiredFeatureCount = 0;
     if (hasFloat32Filterable) {
         requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_Float32Filterable;
@@ -364,6 +387,17 @@ bool WebGPURenderer::CreateDevice() {
         printf("[WASM] Requesting device feature: TimestampQuery\n");
     }
 #endif
+    if (hasSubgroups) {
+#ifdef WGPUFeatureName_Subgroups
+        requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_Subgroups;
+        printf("[WASM] Requesting device feature: Subgroups\n");
+#endif
+    } else if (hasChromiumSubgroups) {
+#ifdef WGPUFeatureName_ChromiumExperimentalSubgroups
+        requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_ChromiumExperimentalSubgroups;
+        printf("[WASM] Requesting device feature: ChromiumExperimentalSubgroups\n");
+#endif
+    }
 
     // Request device using callback-based API
     WGPUDeviceDescriptor deviceDesc = {};
@@ -463,7 +497,106 @@ bool WebGPURenderer::CreateDevice() {
 
     printf("[WASM] Successfully created WebGPU device and queue.\n");
 
+    {
+        std::string enabled = "features=[";
+        bool first = true;
+        auto appendFeat = [&](bool on, const char* name) {
+            if (!on) return;
+            if (!first) enabled += ",";
+            enabled += name;
+            first = false;
+        };
+        appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_Float32Filterable),
+                   "float32-filterable");
+#ifdef WGPUFeatureName_TimestampQuery
+        appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_TimestampQuery),
+                   "timestamp-query");
+#endif
+#ifdef WGPUFeatureName_Subgroups
+        appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_Subgroups),
+                   "subgroups");
+#endif
+#ifdef WGPUFeatureName_ChromiumExperimentalSubgroups
+        appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_ChromiumExperimentalSubgroups),
+                   "chromium-experimental-subgroups");
+#endif
+        enabled += "]";
+        adapterSummary_ += " | ";
+        adapterSummary_ += enabled;
+        printf("[WASM] Enabled device %s\n", enabled.c_str());
+    }
+
     queue_.reset(wgpuDeviceGetQueue(device_.get()));
+
+    // Tiny STORAGE_BINDING creates — measure rgba16/32float instead of assuming
+    // float32-filterable implies storage. Same GPUDevice as requestDevice (no second device).
+    {
+        auto probeFmt = [&](WGPUTextureFormat format, const char* label) -> bool {
+            wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_Validation);
+
+            WGPUTextureDescriptor texDesc = {};
+            texDesc.nextInChain = nullptr;
+            texDesc.label = MakeStringView(label);
+            texDesc.dimension = WGPUTextureDimension_2D;
+            texDesc.size = {1, 1, 1};
+            texDesc.format = format;
+            texDesc.mipLevelCount = 1;
+            texDesc.sampleCount = 1;
+            texDesc.usage = WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopyDst
+                          | WGPUTextureUsage_TextureBinding;
+
+            WGPUTexture tex = wgpuDeviceCreateTexture(device_.get(), &texDesc);
+
+            struct PopResult { bool hadError = false; };
+            PopResult pop;
+            auto popCb = [](WGPUPopErrorScopeStatus status, WGPUErrorType type,
+                            WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+                auto* out = static_cast<PopResult*>(userdata1);
+                const bool okStatus = status == WGPUPopErrorScopeStatus_Success;
+                const bool isGpuError =
+                    type == WGPUErrorType_Validation
+                    || type == WGPUErrorType_OutOfMemory
+                    || type == WGPUErrorType_Internal;
+                if (!okStatus || isGpuError) {
+                    out->hadError = true;
+                    if (message.data && message.length > 0) {
+                        printf("[WASM] Format probe validation: %.*s\n",
+                               (int)message.length, message.data);
+                    }
+                }
+            };
+
+            WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
+                nullptr, WGPUCallbackMode_WaitAnyOnly, popCb, &pop, nullptr
+            });
+            WGPUFutureWaitInfo popWait = {};
+            popWait.future = popFuture;
+            wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+
+            const bool ok = tex != nullptr && !pop.hadError;
+            if (tex) wgpuTextureRelease(tex);
+            return ok;
+        };
+
+        supportsRgba16FloatStorage_ = probeFmt(WGPUTextureFormat_RGBA16Float, "probe-rgba16float");
+        supportsRgba32FloatStorage_ = probeFmt(WGPUTextureFormat_RGBA32Float, "probe-rgba32float");
+        printf("[WASM] Storage format probe: rgba16float=%s rgba32float=%s Float32Filterable=%s Float32Blendable=%s\n",
+               supportsRgba16FloatStorage_ ? "yes" : "no",
+               supportsRgba32FloatStorage_ ? "yes" : "no",
+               hasFloat32Filterable ? "yes" : "no",
+               hasFloat32Blendable ? "yes" : "no");
+        // Prefer FP16 storage when the probe succeeded so BGL and rewritten WGSL
+        // agree on Pascal/balanced (do not leave BGL at 32 while shaders are 16).
+        if (supportsRgba16FloatStorage_) {
+            colorFormat_ = policy::InternalColorFormat::Rgba16Float;
+            printf("[WASM] Internal storage colorFormat=rgba16float (probe yes)\n");
+        } else if (supportsRgba32FloatStorage_) {
+            colorFormat_ = policy::InternalColorFormat::Rgba32Float;
+            printf("[WASM] Internal storage colorFormat=rgba32float (rgba16float probe no)\n");
+        } else {
+            printf("[WASM] WARNING: neither rgba16float nor rgba32float storage probed yes\n");
+        }
+    }
 
     // ── Device limits ─────────────────────────────────────────────────────
     // Re-check against the same minimums as the adapter: a device can clamp
@@ -474,9 +607,8 @@ bool WebGPURenderer::CreateDevice() {
         WGPULimits deviceLimits = {};
         wgpuDeviceGetLimits(device_.get(), &deviceLimits);
         bool deviceLimitsOk = true;
-        const uint64_t maxCanvasDim = (uint64_t)std::max(canvasWidth_, canvasHeight_);
         printf("[WASM] Device limits (post-creation, catches clamping):\n");
-        CheckLimit("maxTextureDimension2D",             deviceLimits.maxTextureDimension2D,             maxCanvasDim, deviceLimitsOk);
+        CheckLimit("maxTextureDimension2D",             deviceLimits.maxTextureDimension2D,             8192, deviceLimitsOk);
         CheckLimit("maxBindingsPerBindGroup",           deviceLimits.maxBindingsPerBindGroup,           14,  deviceLimitsOk);
         CheckLimit("maxSampledTexturesPerShaderStage",  deviceLimits.maxSampledTexturesPerShaderStage,  3,   deviceLimitsOk);
         CheckLimit("maxSamplersPerShaderStage",         deviceLimits.maxSamplersPerShaderStage,         3,   deviceLimitsOk);
@@ -519,6 +651,9 @@ bool WebGPURenderer::CreateDevice() {
             return false;
         }
         surface_.reset(reinterpret_cast<WGPUSurface>(surfHandle));
+        // Second configure: JS already set opaque + RENDER_ATTACHMENT so
+        // importJsSurface succeeds. This pass sets width/height + Fifo.
+        // Do not delete this as a simplification — black canvas on present.
         ConfigureSurface();
     }
 
@@ -541,6 +676,9 @@ bool WebGPURenderer::CreateDevice() {
 void WebGPURenderer::ConfigureSurface() {
     if (!surface_.get() || !device_.get()) return;
 
+    // Intentional second configure after JS_CreateSurfaceFromCanvas.
+    // JS path matches TS { alphaMode: opaque, usage: RENDER_ATTACHMENT }.
+    // C++ adds swapchain size + presentMode Fifo. Keep both.
     WGPUSurfaceConfiguration config = {};
     config.device      = device_.get();
     config.format      = surfaceFormat_;          // negotiated via JS_GetPreferredCanvasFormat()
@@ -641,9 +779,10 @@ void WebGPURenderer::PresentToSurface() {
     wgpuTextureViewRelease(surfaceView);
     wgpuTextureRelease(surfaceTex.texture);
 
-    // In browser WebGPU, wgpuSurfacePresent is typically a no-op — the browser
-    // presents automatically at the end of the animation frame.
-    wgpuSurfacePresent(surface_.get());
+    // Do not call wgpuSurfacePresent. emdawnwebgpu's browser stub aborts:
+    // "wgpuSurfacePresent is unsupported (use requestAnimationFrame via html5.h instead)".
+    // Acquire + blit + submit is enough; JS rAF in WASMRenderer.startRenderLoop
+    // drives the next updateUniforms ccall, and the browser composites on return.
 }
 
 

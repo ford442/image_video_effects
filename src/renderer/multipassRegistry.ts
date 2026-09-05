@@ -138,6 +138,114 @@ export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
 };
 
 export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
+  "anisotropic-kuwahara": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "tensor",
+        "entry": "anisotropic-kuwahara-tensor",
+        "reads": [],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "filter",
+        "entry": "anisotropic-kuwahara-filter",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "anisotropic-kuwahara-render",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
+  "dla-crystals": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "walkers",
+        "entry": "dla-walkers",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "dla-render",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
+  "log-polar-droste": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "remap",
+        "entry": "log-polar-droste-remap",
+        "reads": [],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "grade",
+        "entry": "log-polar-droste-grade",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
+  "byte-mosh": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "mangle",
+        "entry": "byte-mosh-mangle",
+        "reads": [],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "byte-mosh-render",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
   "chromatographic-fluid": {
     "maxPassesPerFrame": 8,
     "nodes": [
@@ -179,7 +287,7 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
           "dataC"
         ],
         "writes": [
-          "dataB"
+          "dataA"
         ]
       },
       {
@@ -289,12 +397,12 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       }
     ]
   },
-  "optical-flow-dream": {
-    "maxPassesPerFrame": 8,
+  "jfa-aurora-voronoi": {
+    "maxPassesPerFrame": 10,
     "nodes": [
       {
-        "id": "flow",
-        "entry": "optical-flow-estimate",
+        "id": "seed",
+        "entry": "jfa-aurora-seed",
         "reads": [
           "dataC"
         ],
@@ -303,19 +411,19 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         ]
       },
       {
-        "id": "advect",
-        "entry": "optical-flow-advect",
+        "id": "flood",
+        "entry": "jfa-aurora-flood",
         "reads": [
           "dataC"
         ],
         "writes": [
           "dataA"
         ],
-        "repeat": 2
+        "repeat": 8
       },
       {
-        "id": "grade",
-        "entry": "optical-flow-grade",
+        "id": "render",
+        "entry": "jfa-aurora-render",
         "reads": [
           "dataC"
         ],
@@ -336,14 +444,15 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
           "dataC"
         ],
         "writes": [
-          "dataB",
           "dataA"
         ]
       },
       {
         "id": "trace",
         "entry": "photonic-trace",
-        "reads": [],
+        "reads": [
+          "dataA"
+        ],
         "writes": [
           "dataA"
         ],
@@ -353,7 +462,56 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         "id": "accumulate",
         "entry": "photonic-accumulate",
         "reads": [
-          "dataA",
+          "dataA"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
+  "poincare-tiling": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "map",
+        "entry": "poincare-tiling-map",
+        "reads": [],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "layer",
+        "entry": "poincare-tiling-layer",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
+  "predator-prey-ecology": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "step",
+        "entry": "predator-prey-ecology-step",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "predator-prey-ecology-render",
+        "reads": [
           "dataC"
         ],
         "writes": [
@@ -419,22 +577,24 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
           "dataA"
         ],
         "writes": [
-          "dataB"
+          "dataA"
         ]
       },
       {
         "id": "gather",
         "entry": "ripple-tank-pass2",
         "reads": [
-          "dataB"
+          "dataA"
         ],
-        "writes": []
+        "writes": [
+          "dataA"
+        ]
       },
       {
         "id": "render",
         "entry": "ripple-tank-pass3",
         "reads": [
-          "dataB"
+          "dataA"
         ],
         "writes": [
           "color",

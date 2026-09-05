@@ -2,7 +2,7 @@
   "id": "elastic-chromatic-explosion",
   "name": "Elastic Chromatic Explosion",
   "url": "shaders/elastic-chromatic-explosion.wgsl",
-  "description": "Prismatic Snell refraction with Cauchy angular dispersion, viscoelastic shockwave propagation, triple-phase temporal EMA lag, and exact-load chromatic persistence.",
+  "description": "Exact chromatic EMA persistence with sprung prism focus, bounded click shockwaves, live three-band plasma audio, canonical ACES, semantic alpha, and source-depth pass-through.",
   "tags": [
     "chromatic-lag",
     "prism-explosion",
@@ -16,13 +16,18 @@
     "mouse-driven",
     "temporal",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "exact-history",
+    "spring-interaction",
+    "click-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "updated": true,
   "params": [
     {
-      "id": "param1",
-      "name": "Red Channel Lag",
+      "id": "explosion_force",
+      "name": "Explosion Force",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -30,8 +35,8 @@
       "mapping": "zoom_params.x"
     },
     {
-      "id": "param2",
-      "name": "Blue Channel Lag",
+      "id": "chromatic_spread",
+      "name": "Chromatic Spread",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -39,8 +44,8 @@
       "mapping": "zoom_params.y"
     },
     {
-      "id": "param3",
-      "name": "Prism Power",
+      "id": "elastic_snap",
+      "name": "Elastic Snap",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -48,8 +53,8 @@
       "mapping": "zoom_params.z"
     },
     {
-      "id": "param4",
-      "name": "Saturation Boost",
+      "id": "trail_decay",
+      "name": "Trail Decay",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -60,7 +65,7 @@
   "updatedParams": [
     {
       "id": "param1",
-      "name": "Red Channel Lag",
+      "name": "Explosion Force",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -69,7 +74,7 @@
     },
     {
       "id": "param2",
-      "name": "Blue Channel Lag",
+      "name": "Chromatic Spread",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -78,7 +83,7 @@
     },
     {
       "id": "param3",
-      "name": "Prism Power",
+      "name": "Elastic Snap",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -87,7 +92,7 @@
     },
     {
       "id": "param4",
-      "name": "Saturation Boost",
+      "name": "Trail Decay",
       "default": 0.5,
       "min": 0,
       "max": 1,

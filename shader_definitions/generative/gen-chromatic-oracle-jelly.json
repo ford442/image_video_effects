@@ -5,17 +5,95 @@
   "url": "shaders/gen-chromatic-oracle-jelly.wgsl",
   "description": "A psychedelic-inspired swarm of drifting oracle jellyfish with layered bells, sigil eyes, and curling tentacles. Drags attract persistent wakes and clicks trigger bioluminescent prophecies.",
   "params": [
-    { "id": "swarm-density", "name": "Swarm Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "drift-speed", "name": "Drift Speed", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "tentacle-curl", "name": "Tentacle Curl", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "oracle-chroma", "name": "Oracle Chroma", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+    {
+      "id": "swarm_density",
+      "name": "Swarm Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "drift_speed",
+      "name": "Drift Speed",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "tentacle_curl",
+      "name": "Tentacle Curl",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "oracle_chroma",
+      "name": "Oracle Chroma",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ],
   "updatedParams": [
-    { "index": 0, "name": "Swarm Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Drift Speed", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Tentacle Curl", "default": 0.65, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Oracle Chroma", "default": 0.7, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "index": 0,
+      "name": "Swarm Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Drift Speed",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Tentacle Curl",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Oracle Chroma",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ],
-  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "fast-motion", "semantic-alpha", "generated-depth", "oracle-sigils"],
-  "tags": ["generative", "psychedelic", "jellyfish", "oracle", "bioluminescent", "chromatic"]
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "drag-reactive",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "semantic-alpha",
+    "generated-depth",
+    "oracle-sigils"
+  ],
+  "tags": [
+    "generative",
+    "psychedelic",
+    "jellyfish",
+    "oracle",
+    "bioluminescent",
+    "chromatic"
+  ]
 }

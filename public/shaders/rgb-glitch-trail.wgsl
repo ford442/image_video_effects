@@ -1,10 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  RGB Glitch Trail — Alpha Translucency Upgrade
-//  Category: retro-glitch
-//  Features: mouse-driven, chromatic, trail, audio-reactive, upgraded-rgba
-//  Complexity: Medium-High
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-17
+//  RGB Glitch Trail — Batch 61
+//  textureLoad C persistence, A=(intensity, trailHue.rg, persistence),
+//  held widens radius, click ripples, 3-band audio, ACES display.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,13 +19,12 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// ── Hash & Noise ─────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3(p.x, p.y, p.x) * vec3(0.1031, 0.1030, 0.0973));
   p3 = p3 + dot(p3, p3.yzx + 33.33);
@@ -43,7 +39,6 @@ fn valueNoise(p: vec2<f32>) -> f32 {
              mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
 
-// ── Domain-Warped FBM ────────────────────────────────────────
 fn fbm(p: vec2<f32>) -> f32 {
     var a = 0.5; var s = 0.0; var q = p;
     for (var i = 0; i < 5; i = i + 1) {
@@ -59,7 +54,6 @@ fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
     return fbm(p + 4.0*r);
 }
 
-// ── Turbulent Displacement Field ─────────────────────────────
 fn turbulentFBM(p: vec2<f32>, t: f32) -> f32 {
     var sum = 0.0;
     var amp = 0.5;
@@ -73,95 +67,98 @@ fn turbulentFBM(p: vec2<f32>, t: f32) -> f32 {
     return sum;
 }
 
-// ── Spectral Tint ────────────────────────────────────────────
 fn wavelengthToRGB(w: f32) -> vec3<f32> {
   return 0.5 + 0.5 * cos(vec3<f32>(w, w + 2.09, w + 4.18));
 }
 
-// ── Physical Decay Equation ──────────────────────────────────
 fn temporalDecay(intensity: f32, decayRate: f32, time: f32) -> f32 {
   return intensity * pow(decayRate, 1.0 + fract(time * 0.1) * 0.1);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  let maxCoord = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
   var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
+  let held = u.zoom_config.w > 0.5;
+  let aspect = resolution.x / resolution.y;
 
-  // Audio reactivity
-  let bass = plasmaBuffer[0].x;
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Parameters
-  let decayRate = 0.9 + u.zoom_params.x * 0.09;
-  let radius = 0.05 + u.zoom_params.y * 0.2;
-  let shiftStrength = u.zoom_params.z * 0.05 * (1.0 + bass * 2.0);
-  let chaos = clamp(u.zoom_params.w * (1.0 + bass * 0.5), 0.0, 1.0);
+  let decayRate = 0.9 + u.zoom_params.x * 0.09 - select(0.0, 0.04, held);
+  var radius = 0.05 + u.zoom_params.y * 0.2 + select(0.0, 0.06, held);
+  let shiftStrength = u.zoom_params.z * 0.05 * (1.0 + bass * 2.0 + mids * 0.5);
+  let chaos = clamp(u.zoom_params.w * (1.0 + bass * 0.5 + treble * 0.3), 0.0, 1.0);
 
-  // Mouse
-  var mouse = u.zoom_config.yz;
+  let mouse = u.zoom_config.yz;
   let dist = distance(uv, mouse);
 
-  // Persistence (Glitch Intensity)
-  var intensity = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+  let histCoord = clamp(coord, vec2<i32>(0), maxCoord);
+  let prevState = textureLoad(dataTextureC, histCoord, 0);
+  var intensity = prevState.r;
+  let prevHue = prevState.gb;
 
-  // Decay with physical falloff
   intensity = temporalDecay(intensity, decayRate, time);
 
-  // Add from mouse
   if (dist < radius) {
      let val = smoothstep(radius, radius * 0.2, dist);
      intensity = min(1.0, intensity + val);
   }
 
-  // Organic displacement via domain-warped FBM
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let ripple = u.ripples[ri];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 0.8) {
+      let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+      let spike = smoothstep(0.04, 0.0, rDist) * exp(-age * 1.5);
+      intensity = min(1.0, intensity + spike * 0.65);
+    }
+  }
+
   let warp = warpedFBM(uv * 4.0, time * 0.2);
   let warpAngle = warp * 6.2831 + time * 0.3;
   let warpDir = vec2<f32>(cos(warpAngle), sin(warpAngle));
-
-  // Turbulent layer for high-frequency detail
   let turb = turbulentFBM(uv * 8.0, time * 0.4);
 
-  // Single smooth displacement field
   let shift = intensity * shiftStrength;
   let smoothOffset = warpDir * shift * (1.0 + chaos * 0.5) + warpDir * turb * shift * 0.3;
-
-  // Displacement magnitude for alpha encoding
   let displacementMagnitude = length(smoothOffset) / max(shiftStrength, 0.001);
+  let alpha = clamp(displacementMagnitude * intensity * 2.0 + treble * 0.05, 0.0, 1.0);
 
-  // Alpha = glitch intensity * temporal persistence
-  let alpha = clamp(displacementMagnitude * intensity * 2.0, 0.0, 1.0);
-
-  // Single UV sample — no per-channel splitting
   let displacedUV = clamp(uv + smoothOffset, vec2<f32>(0.0), vec2<f32>(1.0));
   let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
-  // Spectral tint via mix, NOT per-channel sampling
   let spectralTint = wavelengthToRGB(time * 0.5 + chaos * 3.14 + warp * 2.0);
   let tintStrength = chaos * intensity;
-  let color = mix(baseColor, baseColor * spectralTint, alpha * tintStrength);
+  var color = mix(baseColor, baseColor * spectralTint, alpha * tintStrength);
 
-  // Write state as trail with alpha-translucency
-  let trailHue = mix(vec3<f32>(1.0, 0.0, 0.5), vec3<f32>(0.0, 1.0, 1.0), chaos);
-  let trail_color = vec4<f32>(trailHue * intensity, intensity);
-  textureStore(dataTextureA, global_id.xy, trail_color);
-
-  // Streak corruption with unified displacement field
-  var finalColor = color;
   if (chaos > 0.0 && intensity > 0.5) {
      let seed = uv.y * 100.0 + time;
      let noise = fract(sin(seed) * 43758.5453);
      if (noise > 0.9) {
-        let streakOffset = smoothOffset + vec2<f32>(noise * 0.05, 0.0);
-        let streakUV = clamp(uv + streakOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+        let streakUV = clamp(uv + smoothOffset + vec2<f32>(noise * 0.05, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
         let streakColor = textureSampleLevel(readTexture, u_sampler, streakUV, 0.0).rgb;
-        finalColor = mix(finalColor, streakColor, alpha * chaos);
+        color = mix(color, streakColor, alpha * chaos);
      }
   }
 
-  // Depth pass-through
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let trailHue = mix(vec3<f32>(1.0, 0.0, 0.5), vec3<f32>(0.0, 1.0, 1.0), chaos);
+  let blendedHue = mix(prevHue, trailHue.xy, 0.15);
+  let persistence = clamp(intensity * decayRate, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(intensity, blendedHue, persistence));
+
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, coord, vec4<f32>(acesToneMap(clamp(color, vec3<f32>(0.0), vec3<f32>(4.0))), alpha));
 }

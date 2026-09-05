@@ -2,7 +2,7 @@
   "id": "chromatic-reaction-diffusion-rgba",
   "name": "Chromatic Reaction Diffusion RGBA",
   "url": "shaders/chromatic-reaction-diffusion-rgba.wgsl",
-  "description": "Four-species reaction-diffusion with chromatic cross-coupling. Activators A/C and inhibitors B/D form warm/cool tone pairs that suppress each other at boundaries, creating iridescent fringe patterns. RGBA packs full simulation state.",
+  "description": "Two cross-coupled warm/cool Turing systems with exact-load RGBA chemistry, audio-shifted spectral phases, pointer spiral seeding, bounded click fronts, ACES color, and semantic boundary alpha. Raw state persists only in dataTextureA.",
   "tags": [
     "reaction-diffusion",
     "simulation",
@@ -55,5 +55,12 @@
       "max": 1,
       "step": 0.01
     }
+  ],
+  "updated": true,
+  "updatedParams": [
+    { "id": "param1", "name": "Feed Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param2", "name": "Kill Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param3", "name": "Chromatic Separation", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param4", "name": "Cross Coupling", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
   ]
 }

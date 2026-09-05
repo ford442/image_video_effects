@@ -135,41 +135,58 @@ artifacts.forEach(artifact => {
 });
 
 /**
- * Fail if canonical wasm_renderer bridge copies drift from runtime/deploy paths.
+ * Fail if generated wasm_renderer / public bridge copies drift from each other
+ * or from src/wasm/wasm_bridge.d.ts (hand-edited contract). JS SoT is TypeScript
+ * under src/wasm/; run npm run verify:wasm-bridge-sync to compare against emit.
  */
 function checkBridgeSkew() {
   const pairs = [
-    ['wasm_renderer/wasm_bridge.js', 'src/wasm/wasm_bridge.js'],
     ['wasm_renderer/wasm_bridge.js', 'public/wasm/wasm_bridge.js'],
-    ['wasm_renderer/wasm_bridge.d.ts', 'src/wasm/wasm_bridge.d.ts'],
+    ['src/wasm/wasm_bridge.d.ts', 'wasm_renderer/wasm_bridge.d.ts'],
+    ['src/wasm/wasm_bridge.d.ts', 'public/wasm/wasm_bridge.d.ts'],
   ];
 
-  for (const [canonicalRel, copyRel] of pairs) {
-    const canonicalPath = path.resolve(canonicalRel);
-    const copyPath = path.resolve(copyRel);
+  const bridgeModules = [
+    'api.js',
+    'capture.js',
+    'diagnostics.js',
+    'init.js',
+    'recording.js',
+    'shader.js',
+    'state.js',
+    'uniforms.js',
+    'wgslFormat.js',
+  ];
+  for (const name of bridgeModules) {
+    pairs.push([`wasm_renderer/bridge/${name}`, `public/wasm/bridge/${name}`]);
+  }
 
-    if (!fs.existsSync(canonicalPath)) {
-      errors.push(`❌ ${canonicalRel}: canonical bridge file not found`);
+  for (const [leftRel, rightRel] of pairs) {
+    const leftPath = path.resolve(leftRel);
+    const rightPath = path.resolve(rightRel);
+
+    if (!fs.existsSync(leftPath)) {
+      errors.push(`❌ ${leftRel}: bridge file not found`);
       allValid = false;
       continue;
     }
 
-    if (!fs.existsSync(copyPath)) {
-      errors.push(`❌ ${copyRel}: bridge copy missing (expected sync from ${canonicalRel})`);
+    if (!fs.existsSync(rightPath)) {
+      errors.push(`❌ ${rightRel}: bridge copy missing (expected sync from src/wasm via concat_bridge.sh)`);
       allValid = false;
       continue;
     }
 
-    const canonical = fs.readFileSync(canonicalPath);
-    const copy = fs.readFileSync(copyPath);
+    const left = fs.readFileSync(leftPath);
+    const right = fs.readFileSync(rightPath);
 
-    if (!canonical.equals(copy)) {
+    if (!left.equals(right)) {
       errors.push(
-        `❌ Bridge skew detected (${canonicalRel} vs ${copyRel}) — run npm run wasm:build or cp wasm_renderer/wasm_bridge.js src/wasm/`
+        `❌ Bridge skew detected (${leftRel} vs ${rightRel}) — run npm run wasm:build`
       );
       allValid = false;
     } else {
-      console.log(`Bridge sync: ✅ ${copyRel} matches ${canonicalRel}`);
+      console.log(`Bridge sync: ✅ ${rightRel} matches ${leftRel}`);
     }
   }
 

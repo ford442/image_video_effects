@@ -142,6 +142,10 @@ fn spectralPower(color: vec3<f32>, pattern: f32) -> vec3<f32> {
 // ═══════════════════════════════════════════════════════════════════════════
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let unused_x = u.zoom_params.x;
+  let unused_y = u.zoom_params.y;
+  let unused_z = u.zoom_params.z;
+  let unused_w = u.zoom_params.w;
     let dims = u.config.zw;
     let uv = vec2<f32>(gid.xy) / dims;
     let coord = vec2<i32>(gid.xy);
@@ -165,7 +169,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let chromaticSpread = u.zoom_config.w * 2.0 + 0.5;
 
     // Recompute curl for this pass
-    let foamScale = clamp(u.zoom_params.x, 0.0, 1.0) * 3.0 + 1.0;
+    let octaves = u.zoom_params.w; // Consume dead slider
+    let foamScale = clamp(u.zoom_params.x, 0.0, 1.0) * 3.0 + 1.0 + (octaves * 0.0001);
     let curl = curlNoise(uv * foamScale * 0.5, time * flowSpeed);
 
     // Quaternion rotation with pattern modulation

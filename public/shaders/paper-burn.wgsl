@@ -1,3 +1,7 @@
+// Paper Burn — fibrous thermal diffusion, char curl, and drifting ember fronts.
+// A/C packing remains [burn state, 0, 0, 1]. B and extraBuffer are unused.
+// Premium mixed-eight upgrade: 2026-08-27.
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -5,137 +9,115 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Write New State
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // Read Old State
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=IsMouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Paper Burn Interactive
-// Param1: Burn Speed
-// Param2: Spread Speed (Diffusion)
-// Param3: Char Width (Edge darkness)
-// Param4: Reset/Regrow (If > 0.5, clears burn)
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn burnAt(coord: vec2<i32>, dims: vec2<i32>) -> f32 {
+  return clamp(textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), dims - vec2<i32>(1)), 0).r, 0.0, 1.0);
+}
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let dims = vec2<i32>(resolution);
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let aspectVec = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+  let time = u.config.x;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 2.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 2.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 2.0);
+
+  let burnSpeed = mix(0.0015, 0.035, u.zoom_params.x) * (1.0 + bass * 0.55);
+  let spread = mix(0.025, 0.34, u.zoom_params.y) * (1.0 + mids * 0.18);
+  let charWidth = mix(0.025, 0.28, u.zoom_params.z);
+  let reset = u.zoom_params.w > 0.5;
+
+  let center = burnAt(coord, dims);
+  let left = burnAt(coord + vec2<i32>(-1, 0), dims);
+  let right = burnAt(coord + vec2<i32>(1, 0), dims);
+  let top = burnAt(coord + vec2<i32>(0, -1), dims);
+  let bottom = burnAt(coord + vec2<i32>(0, 1), dims);
+  let diag0 = burnAt(coord + vec2<i32>(-1, -1), dims);
+  let diag1 = burnAt(coord + vec2<i32>(1, -1), dims);
+  let diag2 = burnAt(coord + vec2<i32>(-1, 1), dims);
+  let diag3 = burnAt(coord + vec2<i32>(1, 1), dims);
+  let axial = (left + right + top + bottom) * 0.25;
+  let diagonal = (diag0 + diag1 + diag2 + diag3) * 0.25;
+
+  let fiberCell = floor(uv * vec2<f32>(resolution.x * 0.22, resolution.y * 0.055));
+  let fiberNoise = hash12(fiberCell);
+  let grain = 0.5 + 0.5 * sin(uv.x * resolution.x * 0.31 + uv.y * 47.0 + fiberNoise * 9.0);
+  let fiberBias = mix(0.72, 1.28, grain) * (0.9 + treble * 0.08);
+  let neighbor = mix(axial, diagonal, 0.22 + grain * 0.2);
+  let diffusion = center + (neighbor - center) * spread * fiberBias;
+  let liveEdge = smoothstep(0.03, 0.62, neighbor) * (1.0 - smoothstep(0.72, 0.98, center));
+
+  let pointerDelta = (uv - mouse) * aspectVec;
+  let pointerDist = length(pointerDelta);
+  let pointerFiber = pow(max(0.0, 0.5 + 0.5 * sin(atan2(pointerDelta.y, pointerDelta.x) * 11.0 + pointerDist * 130.0)), 6.0);
+  let pointerMask = smoothstep(0.095, 0.008, pointerDist) * mix(0.1, 1.0, select(0.0, 1.0, held));
+  let pointerIgnition = pointerMask * mix(0.55, 1.0, pointerFiber);
+
+  var clickIgnition = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 3.0) {
+      let rd = length((uv - ripple.xy) * aspectVec);
+      let front = age * (0.15 + bass * 0.07);
+      let emberFront = exp(-abs(rd - front) * 54.0) * exp(-age * 0.82);
+      clickIgnition += emberFront * (0.68 + 0.32 * hash12(floor(uv * 160.0) + f32(i)));
     }
+  }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    var mousePos = u.zoom_config.yz;
-    let isMouseDown = u.zoom_config.w > 0.5;
+  var burn = clamp(diffusion + liveEdge * burnSpeed * fiberBias + max(pointerIgnition, clickIgnition) * burnSpeed * 5.0, 0.0, 1.0);
+  if (reset) { burn = 0.0; }
 
-    let burnSpeed = u.zoom_params.x * 0.1;
-    let spreadSpeed = u.zoom_params.y * 2.0; // Pixel radius
-    let charWidth = u.zoom_params.z;
-    let reset = u.zoom_params.w;
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let frontCenter = 0.48 + grain * 0.07;
+  let emberBand = smoothstep(frontCenter - charWidth, frontCenter, burn) * (1.0 - smoothstep(frontCenter, frontCenter + charWidth * 0.55, burn));
+  let charBand = smoothstep(0.08, max(0.1, frontCenter - charWidth * 0.35), burn) * (1.0 - smoothstep(frontCenter + charWidth * 0.25, 0.96, burn));
+  let hole = smoothstep(frontCenter + charWidth * 0.35, min(0.99, frontCenter + charWidth + 0.14), burn);
+  let ashFiber = pow(grain, 5.0) * charBand;
+  let emberColor = vec3<f32>(2.8 + bass, 0.38 + mids * 0.22, 0.018 + treble * 0.035);
+  let charColor = mix(vec3<f32>(0.055, 0.018, 0.006), vec3<f32>(0.24, 0.075, 0.012), ashFiber);
+  var hdr = mix(source.rgb, charColor, clamp(charBand + hole * 0.88, 0.0, 1.0));
+  hdr += emberColor * emberBand * (0.62 + mids * 0.65 + clickIgnition * 0.4);
+  hdr += vec3<f32>(0.32, 0.12, 0.025) * ashFiber * treble;
+  let display = aces(max(hdr, vec3<f32>(0.0)));
+  let alpha = clamp(source.a * (1.0 - hole), 0.0, 1.0);
 
-    // Read previous burn state (R channel)
-    // 0.0 = paper, 1.0 = burnt hole
-    var burnVal = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
-
-    if (reset > 0.5) {
-        burnVal = 0.0;
-    }
-
-    // Mouse Interaction: Start fire
-    // Only burn if mouse is down? Or always? Let's say always if close, but stronger if down.
-    if (mousePos.x >= 0.0) {
-        let aspect = resolution.x / resolution.y;
-        var d = vec2<f32>((uv.x - mousePos.x) * aspect, uv.y - mousePos.y);
-        let dist = length(d);
-        let brushSize = 0.05;
-
-        if (dist < brushSize) {
-            let intensity = 1.0 - smoothstep(brushSize * 0.5, brushSize, dist);
-            burnVal += intensity * burnSpeed * 2.0;
-        }
-    }
-
-    // Diffusion / Spread
-    // Sample neighbors to spread the fire
-    // Since we are in compute shader, we can sample texture C arbitrarily.
-    // Simple box blur spread logic
-    let pixelSize = 1.0 / resolution;
-    var avgNeighbor = 0.0;
-
-    // Small kernel for performance
-    let offsets = array<vec2<f32>, 4>(
-        vec2<f32>(1.0, 0.0), vec2<f32>(-1.0, 0.0),
-        vec2<f32>(0.0, 1.0), vec2<f32>(0.0, -1.0)
-    );
-
-    for (var i = 0; i < 4; i++) {
-        avgNeighbor += textureSampleLevel(dataTextureC, u_sampler, uv + offsets[i] * pixelSize * spreadSpeed, 0.0).r;
-    }
-    avgNeighbor /= 4.0;
-
-    // If neighbors are burning, catch fire
-    // Threshold: if neighbor > 0.1, we start increasing slowly
-    if (avgNeighbor > 0.1) {
-        burnVal += burnSpeed * 0.2;
-    }
-
-    burnVal = clamp(burnVal, 0.0, 1.0);
-
-    // Store new state
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(burnVal, 0.0, 0.0, 1.0));
-
-    // Render
-    let imgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    // Visual mapping
-    // Burn < 0.5: Darkening/Charring
-    // Burn > 0.5: Disintegrating/Transparent
-
-    var finalColor = imgColor.rgb;
-    var alpha = 1.0;
-
-    // Edge charring
-    // Create a gradient for the edge
-    let edge = smoothstep(0.4, 0.6, burnVal); // 0 at 0.4, 1 at 0.6
-
-    // Char color (dark brown/black)
-    let charColor = vec3<f32>(0.1, 0.05, 0.0);
-
-    // Fire color at the very edge of the burn
-    // Active burning happens where burnVal is increasing? Or just at the transition zone.
-    let fireZone = smoothstep(0.45, 0.55, burnVal) * (1.0 - smoothstep(0.6, 0.7, burnVal));
-    let fireColor = vec3<f32>(1.0, 0.6, 0.1) * 2.0; // Bright orange
-
-    if (burnVal > 0.0) {
-       // Mix image with char based on burnVal up to 0.5
-       let charMix = smoothstep(0.0, 0.5, burnVal);
-       finalColor = mix(finalColor, charColor, charMix);
-
-       // Add fire glow
-       finalColor += fireColor * fireZone;
-
-       // Transparency/Black hole for fully burnt
-       if (burnVal > 0.6) {
-           finalColor = vec3<f32>(0.0); // Or transparent? Texture storage format is rgba32float.
-           // Note: The render pipeline usually treats alpha=0 as transparent if blending is on.
-           // But here we are writing to a texture that is later composited.
-           // Let's set alpha to 0.
-           alpha = 1.0 - smoothstep(0.6, 0.8, burnVal);
-       }
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-
-    // Passthrough depth
-    var d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(burn, 0.0, 0.0, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(display, alpha));
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

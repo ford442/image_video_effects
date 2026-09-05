@@ -35,9 +35,10 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `timing.cpp` | GPU timestamp queries + `getGPUTimings` resolve/readback |
 | `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
 | `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
-| `wasm_bridge.js` | JS bridge (canonical; copied to `public/wasm/` + `src/wasm/`) |
+| `src/wasm/bridge/*.ts` | **Hand-edited JS glue** (webpack compiles `src/wasm/wasm_bridge.ts`) |
+| `wasm_bridge.js` (generated) | ESM copies in `wasm_renderer/` + `public/wasm/` — do not edit |
 | `build.sh` | **Canonical build** — single-pass `emcc` + emdawnwebgpu |
-| `CMakeLists.txt` | Optional IDE/fallback build (link-time port only) |
+| `CMakeLists.txt` | Optional IDE/fallback build (link-time port only). Reads `src/contracts/wasm_exports.json` — not used in CI. |
 
 Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePolicy.ts`
 (must stay in sync with `device.cpp` `CreateDevice()` limits table).
@@ -46,7 +47,7 @@ Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePol
 ┌─────────────────────────────────────────────────────────────┐
 │                    JavaScript/TypeScript                    │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │  wasm_bridge.js                                     │   │
+│  │  src/wasm/wasm_bridge.ts (SoT) + generated public/wasm/wasm_bridge.js │
 │  │  - initWasmRenderer()                               │   │
 │  │  - loadShader(id, wgslCode)                         │   │
 │  │  - updateUniforms({time, mouse, ...})               │   │
@@ -177,7 +178,7 @@ cp ../wasm_bridge.js ../../public/wasm/
 
 - `public/wasm/pixelocity_wasm.js` - Emscripten-generated JS glue
 - `public/wasm/pixelocity_wasm.wasm` - Compiled WASM binary
-- `public/wasm/wasm_bridge.js` - JavaScript bridge for TS integration
+- `public/wasm/wasm_bridge.js` - Generated ESM bridge (edit `src/wasm/bridge/*.ts`)
 
 ## JavaScript API
 
@@ -374,7 +375,7 @@ hardened the init/format/limits handshake:
 
 | Issue | Status | What it fixed |
 |-------|--------|---------------|
-| [#821](https://github.com/ford442/image_video_effects/issues/821) | ✅ | Bridge sync — `wasm_renderer/wasm_bridge.js` → `src/wasm/` + `public/wasm/` |
+| [#821](https://github.com/ford442/image_video_effects/issues/821) | ✅ | Bridge sync — generated copies; SoT is now `src/wasm/bridge/*.ts` |
 | [#818](https://github.com/ford442/image_video_effects/issues/818) | ✅ | `getPreferredCanvasFormat()` instead of hardcoded BGRA |
 | [#820](https://github.com/ford442/image_video_effects/issues/820) | ✅ | Fatal surface-creation failure |
 | [#817](https://github.com/ford442/image_video_effects/issues/817) | ✅ | Adapter info/limits query + logging |

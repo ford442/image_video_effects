@@ -22,6 +22,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pixel = vec2<i32>(gid.xy);
@@ -40,8 +44,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = mix(src.rgb * 0.15, col, 0.88);
   col += vec3<f32>(1.0, 0.7, 0.3) * temp * lum * 0.25;
   col += vec3<f32>(0.4, 0.8, 1.0) * plasmaBuffer[0].z * lum * 0.12;
-  let alpha = clamp(0.35 + lum * 0.55, 0.2, 1.0);
-  textureStore(writeTexture, pixel, vec4<f32>(clamp(col, vec3<f32>(0.0), vec3<f32>(1.5)), alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(1.0 - lum * 0.4, 0.05, 1.0) * max(depth, 0.05), 0.0, 0.0, 0.0));
+  let alpha = clamp(src.a * 0.2 + (1.0 - exp(-lum)) * 0.8 + temp * 0.08, 0.0, 1.0);
+  textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(col), alpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, pixel, vec4<f32>(clamp(dye, vec3<f32>(0.0), vec3<f32>(4.0)), clamp(temp, 0.0, 1.0)));
 }

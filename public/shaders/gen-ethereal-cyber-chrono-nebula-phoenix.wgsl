@@ -23,7 +23,7 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 const PI: f32 = 3.14159265359;
 // Persistent halo-spring state. extraBuffer layout contract:
-//   [0..4] reserved, [5..132] engine FFT bins, [133..255] shader state.
+//   [0..132] engine-owned; this effect uses only shader state [133..137].
 //   [133..134] = eased halo position, [135..136] = spring velocity,
 //   [137] = initialized flag.
 const HALO_POS_X: u32 = 133u;
@@ -118,6 +118,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // u.config.y is the ripple COUNT (near-constant), not sound — the old
     // "audio" read was dead; bass/treble now drive the reaction for real.
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
     let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
     let rawMouse = u.zoom_config.yz;
     let wingspan = clamp(u.zoom_params.x, 0.05, 0.5);
@@ -128,7 +129,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Critically-damped spring halo: thread (0,0) integrates once per
     // frame, every thread reads the eased center so the phoenix's
     // attention glides instead of snapping to the cursor.
-    if (id.x == 0u && id.y == 0u) {
+    let hasSpring = arrayLength(&extraBuffer) >= 138u;
+    var mouse = rawMouse;
+    if (id.x == 0u && id.y == 0u && hasSpring) {
         var haloPos = vec2<f32>(extraBuffer[HALO_POS_X], extraBuffer[HALO_POS_Y]);
         var haloVel = vec2<f32>(extraBuffer[HALO_VEL_X], extraBuffer[HALO_VEL_Y]);
         if (extraBuffer[HALO_INIT] < 0.5) {
@@ -146,7 +149,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         extraBuffer[HALO_VEL_Y] = haloVel.y;
         extraBuffer[HALO_INIT] = 1.0;
     }
-    let mouse = vec2<f32>(extraBuffer[HALO_POS_X], extraBuffer[HALO_POS_Y]);
+    if (hasSpring) {
+        mouse = vec2<f32>(extraBuffer[HALO_POS_X], extraBuffer[HALO_POS_Y]);
+    }
 
     let video = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
     let inDepthUV = clamp(uv01, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -154,20 +159,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Domain-warped FBM nebula background; bass breathes through the gas.
     let warp = domainWarp(uv * 2.0 + vec2<f32>(time * 0.02), time * 0.05);
+    let previous = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
     var nebula = fbm(warp * 3.0, 5);
-    nebula += 0.5 * fbm(warp * 6.0 + bass, 4);
+    nebula += 0.5 * fbm(warp * 6.0 + bass + mids * 0.4, 4);
+    nebula = mix(previous.b, nebula, 0.32 + mids * 0.18);
     let bgColor = vec3<f32>(0.08, 0.05, 0.15) * nebula * (1.0 + bass * 2.0);
 
     // Strange-attractor chrono fractal: bass wobbles the orbit constant,
     // treble drives the shimmer of the chrono glow.
-    let trap = attractorTrap(uv * 1.5, time, bass);
+    let trapNow = attractorTrap(uv * 1.5, time, bass);
+    let trap = mix(previous.r, trapNow, 0.65 + treble * 0.2);
     let shimmer = 0.85 + 0.3 * sin(time * 9.0 + trap * 14.0) * treble;
     let chronoGlow = exp(-trap * 6.0) * (0.5 + 0.5 * treble) * shimmer * (0.35 + chronoMix * 0.65);
 
     // Phoenix SDF and orbit-trap coloring.
     var p = uv;
     p = rot(mouse.x * 2.0 + time * (0.05 + spinRate * 0.35)) * p;
-    let d = sdPhoenix(p, wingspan);
+    let dNow = sdPhoenix(p, wingspan);
+    let d = mix(previous.g, dNow, 0.78 + mids * 0.12);
     let edge = abs(d);
     let density = smoothstep(0.12, 0.0, d);
     let shell = exp(-edge * 12.0);

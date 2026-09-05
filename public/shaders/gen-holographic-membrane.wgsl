@@ -174,6 +174,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseRipple = sin(mouseDist * 20.0 - time * 4.0) * exp(-mouseDist * 2.0) * 0.03;
   membraneZ += mouseRipple;
 
+  // Timestamp-bounded click impulses flex the raw membrane height field.
+  // ripple.w is padding; click energy comes from the advancing front + age.
+  let rippleCount = min(u32(u.config.y), 50u);
+  var clickSlope = vec2<f32>(0.0);
+  var clickEnergy = 0.0;
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 3.2) { continue; }
+    let center = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0);
+    let delta = p - center;
+    let d = length(delta);
+    let radius = age * (0.20 + freq * 0.035);
+    let front = exp(-pow((d - radius) * 26.0, 2.0)) * exp(-age * 0.85);
+    let impulse = sin((d - radius) * 32.0) * front * amplitude * 0.85;
+    membraneZ += impulse;
+    clickSlope += delta / max(d, 1e-4) * impulse * 4.0;
+    clickEnergy += abs(impulse);
+  }
+
   // Temporal smoothing
   membraneZ = mix(membraneZ, prevDepth * 2.0 - 1.0, 0.15);
 
@@ -186,7 +206,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let eps = 0.01;
   let dx = sin((p.x + eps) * freq * 6.28318 + time * 1.5) - sin((p.x - eps) * freq * 6.28318 + time * 1.5);
   let dy = sin((p.y + eps) * freq * 4.0 + time * 1.2) - sin((p.y - eps) * freq * 4.0 + time * 1.2);
-  var normal = normalize(vec3<f32>(-dx * amplitude * 5.0, -dy * amplitude * 5.0, 1.0));
+  var normal = normalize(vec3<f32>(-dx * amplitude * 5.0 - clickSlope.x, -dy * amplitude * 5.0 - clickSlope.y, 1.0));
 
   // Blend with temporal normal for smoother shading
   normal = normalize(vec3<f32>(
@@ -239,8 +259,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vignette = 1.0 - length(uv - 0.5) * 0.3;
   col *= vignette;
 
-  col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(0.4545));
-
   // ── Alpha encoding ──────────────────────────────────────────────
   // Alpha = membrane depth: peaks (high Z) = opaque, troughs (low Z) = transparent
   let depthNorm = clamp(membraneZ / amplitude * 0.5 + 0.5, 0.0, 1.0);
@@ -255,8 +273,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Audio-reactive transparency in troughs
   alpha = mix(alpha, alpha * (1.0 - bassSmooth * 0.3), smoothstep(0.5, 0.0, depthNorm));
 
-  alpha = clamp(alpha, 0.05, 0.95);
+  alpha = clamp(alpha + clickEnergy * 0.7, 0.05, 0.95);
 
+  // ACES is display-only. A/C remains raw [height, normal.xy, alpha].
   let outCol = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture, gid.xy, outCol);
   textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(depthNorm, normal.x, normal.y, alpha));

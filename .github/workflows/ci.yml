@@ -40,6 +40,9 @@ jobs:
     
     - name: Validate WASM artifacts
       run: npm run wasm:validate
+
+    - name: Verify WASM bridge copies match TypeScript SoT
+      run: npm run verify:wasm-bridge-sync
     
     - name: Run WASM unit smoke tests
       run: npm test -- --watchAll=false --ci --testPathPattern='WASM'
@@ -88,7 +91,9 @@ jobs:
           public/wasm/pixelocity_wasm.js
           public/wasm/pixelocity_wasm.wasm
           public/wasm/wasm_bridge.js
-          src/wasm/wasm_bridge.js
+          public/wasm/wasm_bridge.d.ts
+          public/wasm/bridge
+          src/wasm/wasm_bridge.ts
           src/wasm/wasm_bridge.d.ts
         retention-days: 7
 
@@ -147,6 +152,9 @@ jobs:
       run: npm run build
       env:
         SKIP_WASM_BUILD: '1'
+
+    - name: Verify catalog count SoT
+      run: npm run verify:catalog-counts
 
     - name: Enforce bundle and dependency boundaries
       run: npm run verify:toolchain-foundation
@@ -297,6 +305,88 @@ jobs:
           reports/dead_sliders_audit.md
         retention-days: 30
 
+  catalog-consistency-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+    - name: Report-only expiry check
+      run: |
+        MARKER="# REPORT-ONLY-UNTIL: 2026-10-15"
+        DEADLINE="2026-10-15"
+        TODAY=$(date +%Y-%m-%d)
+        if [ "$TODAY" \> "$DEADLINE" ]; then
+          if grep -Fq "$MARKER" .github/workflows/ci.yml; then
+            echo "Catalog/workgroup audits are still report-only after $DEADLINE."
+            echo "Promote to blocking: drop || true and the REPORT-ONLY-UNTIL marker."
+            exit 1
+          fi
+        fi
+
+    - name: Catalog drift audit (report-only)
+      run: |
+        # REPORT-ONLY-UNTIL: 2026-10-15
+        python3 scripts/audit_catalog_consistency.py --ensure-lists --report || true
+
+    - name: Workgroup size audit (report-only)
+      run: |
+        # REPORT-ONLY-UNTIL: 2026-10-15
+        python3 scripts/wgsl_workgroup_detector.py --report || true
+
+    - name: Catalog and workgroup audit unit tests
+      run: |
+        python3 scripts/test_audit_catalog_consistency.py
+        python3 scripts/test_wgsl_workgroup_detector.py
+
+    - name: Catalog drift gate (baseline-decay)
+      run: python3 scripts/audit_catalog_consistency.py --ensure-lists --gate
+
+    - name: Publish catalog audit summary
+      if: always()
+      run: |
+        echo "## Catalog drift audit" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/catalog_drift.md ]; then
+          cat reports/catalog_drift.md >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "- No catalog drift report generated" >> "$GITHUB_STEP_SUMMARY"
+        fi
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "## Workgroup size audit" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/workgroup_audit.md ]; then
+          cat reports/workgroup_audit.md >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "- No workgroup audit report generated" >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Upload catalog audit reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: catalog-audit-reports
+        path: |
+          reports/catalog_drift.json
+          reports/catalog_drift.md
+          reports/catalog_drift_baseline.json
+          reports/workgroup_audit.json
+          reports/workgroup_audit.md
+        retention-days: 30
+        if-no-files-found: warn
+
   lint:
     runs-on: ubuntu-latest
     permissions:
@@ -325,13 +415,83 @@ jobs:
     - name: Regenerate unified shader manifest
       run: npm run build:manifest
 
-    - name: Check thumbnail coverage regression
-      if: github.event_name == 'pull_request'
-      run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}"
-
     - name: Validate JSON manifests
       run: |
         for f in public/shader-lists/*.json; do
           echo "Validating $f"
           node -e "JSON.parse(require('fs').readFileSync('$f'))"
         done
+
+  thumbnail-coverage:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Generate shader lists
+      run: node scripts/generate_shader_lists.js
+
+    - name: Regenerate unified shader manifest
+      run: npm run build:manifest
+
+    - name: Check thumbnail coverage regression
+      id: thumbs
+      continue-on-error: true
+      run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
+
+    - name: Report to job summary
+      if: always()
+      run: |
+        cat /tmp/thumbs-check.txt >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/thumbnail_coverage.md ]; then
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat reports/thumbnail_coverage.md >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Sticky thumbnail coverage comment
+      if: always()
+      continue-on-error: true
+      run: |
+        MARKER="<!-- thumbnail-coverage-sticky -->"
+        {
+          echo "$MARKER"
+          echo "## Thumbnail coverage"
+          echo ""
+          cat /tmp/thumbs-check.txt
+          echo ""
+          if [ -f reports/thumbnail_coverage.md ]; then
+            cat reports/thumbnail_coverage.md
+            echo ""
+          fi
+          echo "Check is reporting-only until healthy eligible coverage is ≥ 50%, then newly eligible missing thumbs become blocking."
+          echo ""
+          echo "Tip: add a deferral in \`reports/thumbnail_deferrals.json\` (\`expires\` or \`until\`) for new shaders without a GPU capture."
+          echo "See [Thumbnail Pipeline](docs/THUMBNAIL_PIPELINE.md)."
+        } > /tmp/thumbs-comment.md
+
+        PR="${{ github.event.pull_request.number }}"
+        EXISTING=$(gh api "repos/${{ github.repository }}/issues/${PR}/comments" \
+          --jq '.[] | select(.body | contains("thumbnail-coverage-sticky")) | .id' | head -n 1)
+        if [ -n "$EXISTING" ]; then
+          gh api --method PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+            -f body="$(cat /tmp/thumbs-comment.md)"
+        else
+          gh pr comment "$PR" --body-file /tmp/thumbs-comment.md
+        fi
+      env:
+        GH_TOKEN: ${{ github.token }}

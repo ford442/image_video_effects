@@ -150,20 +150,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     let uv = (fragCoord - 0.5 * res) / res.y;
+    let uv01 = (fragCoord + 0.5) / res;
     let time = u.config.x;
-    let audio = u.config.y;
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let audio = bass * 0.5 + mids * 0.3 + treble * 0.2;
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
     let petal_complex = u.zoom_params.x;
     let aurora_int = u.zoom_params.y;
     let audio_react = u.zoom_params.z * audio;
     let pollen_dens = u.zoom_params.w;
 
-    var ro = vec3<f32>(0.0, 0.0, -5.0);
+    var ro = vec3<f32>(0.0, 0.0, -5.0 + held * 0.65);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     ro = rotY(time * 0.1) * ro;
@@ -227,20 +229,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     col += emission;
 
+    var auroraShock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 3.5) {
+            let front = abs(length((uv01 - ripple.xy) * vec2<f32>(res.x / res.y, 1.0)) - age * 0.16);
+            auroraShock += (1.0 - smoothstep(0.0, 0.024, front)) * (1.0 - age / 3.5);
+        }
+    }
+    auroraShock = min(auroraShock, 2.0);
+    col += vec3<f32>(0.2 + treble * 0.4, 1.0, 0.65 + mids * 0.4) * auroraShock * aurora_int * 0.35;
+    col += vec3<f32>(0.7, 0.2, 1.0) * held * exp(-length((uv01 - mouse) * vec2<f32>(res.x / res.y, 1.0)) * 8.0) * 0.35;
+
     // Chromatic aberration
     let caStr = 0.003 * (1.0 + bass);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    // ACES tone mapping
-    col = acesToneMap(col * 1.1);
-
-    // Semantic alpha (ghost orchid transparency)
-    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
-
-    // Temporal feedback
+    // Exact HDR temporal feedback and filmic presentation.
     let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
     let feedback = mix(prev.rgb * 0.96, col, 0.25);
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(feedback, 1.0));
+    col = acesToneMap(feedback * 1.1);
+    let alpha = clamp(length(emission) * 0.35 + auroraShock * 0.2 + held * 0.08, 0.04, 0.95);
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(feedback, alpha));
 
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
