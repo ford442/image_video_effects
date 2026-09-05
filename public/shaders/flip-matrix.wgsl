@@ -1,4 +1,6 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// Flip Matrix — inertial split-flap propagation with hinge and bevel mechanics.
+// A/C stores ACES display RGBA. B is unused. Source depth passes through.
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,157 +8,119 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI: f32 = 3.14159265359;
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+               (x * (2.43 * x + 0.59) + 0.14),
+               vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(91.7, 271.9))) * 43758.5453);
+}
+
+fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  let coord = clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), hi);
+  return textureLoad(dataTextureC, coord, 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
+  let time = u.config.x;
+  let density = 9.0 + u.zoom_params.x * 54.0;
+  let effectRadius = 0.08 + u.zoom_params.y * 0.82;
+  let flipIntensity = 0.25 + u.zoom_params.z * 2.75;
+  let gap = 0.025 + u.zoom_params.w * 0.24;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held = u.zoom_config.w > 0.5;
+
+  let grid = vec2<f32>(uv.x * aspect, uv.y) * density;
+  let cellId = floor(grid);
+  let local = fract(grid);
+  let cellCenterAspect = (cellId + 0.5) / density;
+  let cellCenter = vec2<f32>(cellCenterAspect.x / aspect, cellCenterAspect.y);
+  let mouseDistance = length((cellCenter - mouse) * aspectVec);
+  let hoverArrival = mouseDistance / (0.5 + audio.y * 0.08);
+  let hoverAge = fract(time * 0.42 - hoverArrival);
+  let hoverEnvelope = smoothstep(effectRadius, 0.0, mouseDistance) * exp(-hoverAge * 2.1);
+  let heldDrive = select(0.0, smoothstep(effectRadius, 0.0, mouseDistance), held);
+
+  var updateWave = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 3.2) {
+      let rd = length((cellCenter - ripple.xy) * aspectVec);
+      let arrival = age - rd / (0.32 + audio.x * 0.08);
+      if (arrival >= 0.0) {
+        updateWave += exp(-arrival * 1.35) * sin(arrival * (18.0 + audio.z * 4.0)) * exp(-rd * 0.8);
+      }
     }
+  }
 
-    // Normalize UV
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+  let phaseJitter = (hash21(cellId) - 0.5) * 0.22;
+  let inertialAngle = (hoverEnvelope * sin(hoverAge * PI * 2.0) + heldDrive * sin(time * (7.0 + audio.x * 2.0)) * 0.45 + updateWave) * PI * flipIntensity + phaseJitter;
+  let cosineAngle = cos(inertialAngle);
+  let sineAngle = sin(inertialAngle);
+  let projectedHeight = max(abs(cosineAngle), 0.025);
+  let sourceLocalY = (local.y - 0.5) / projectedHeight + 0.5;
+  let inside = sourceLocalY >= gap && sourceLocalY <= 1.0 - gap && local.x >= gap && local.x <= 1.0 - gap;
 
-    // Parameters
-    // x: Grid Density (10 to 80)
-    // y: Influence Radius (0.1 to 1.5)
-    // z: Max Rotation (PI to 4PI)
-    // w: Gap Size (0.0 to 0.4)
+  var hdr = vec3<f32>(0.008, 0.01, 0.014);
+  var coverage = 0.0;
+  if (inside) {
+    let sampleLocalY = select(sourceLocalY, 1.0 - sourceLocalY, cosineAngle < 0.0);
+    let sampleUV = clamp(vec2<f32>((cellId.x + local.x) / density / aspect, (cellId.y + sampleLocalY) / density), vec2<f32>(0.0), vec2<f32>(1.0));
+    let source = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let frontMaterial = source.rgb * (0.32 + 0.68 * projectedHeight);
+    let backMaterial = mix(source.bgr * 0.14, vec3<f32>(0.11, 0.035, 0.018), 0.68);
+    hdr = select(frontMaterial, backMaterial, cosineAngle < 0.0);
 
-    let density = u.zoom_params.x * 70.0 + 10.0;
-    let radius = u.zoom_params.y * 1.4 + 0.1;
-    let max_rot = u.zoom_params.z * 12.56; // up to 4PI
-    let gap = u.zoom_params.w * 0.4;
+    let seam = 1.0 - smoothstep(0.006, 0.035, abs(sourceLocalY - 0.5));
+    let edgeDistance = min(min(local.x - gap, 1.0 - gap - local.x), min(sourceLocalY - gap, 1.0 - gap - sourceLocalY));
+    let bevel = smoothstep(0.0, 0.075, edgeDistance);
+    let hinge = exp(-abs(sourceLocalY - 0.5) * 85.0);
+    let normal = normalize(vec3<f32>(0.0, sineAngle, cosineAngle));
+    let lightDirection = normalize(vec3<f32>(-0.45, -0.6, 0.85));
+    let diffuse = 0.25 + 0.75 * max(dot(normal, lightDirection), 0.0);
+    let specular = pow(max(dot(reflect(-lightDirection, normal), vec3<f32>(0.0, 0.0, 1.0)), 0.0), 28.0);
+    hdr *= diffuse * (0.58 + bevel * 0.42) * (1.0 - seam * 0.72);
+    hdr += vec3<f32>(0.8, 0.86, 0.95) * specular * (0.35 + audio.z * 0.35);
+    hdr += vec3<f32>(0.12, 0.07, 0.025) * hinge * (0.4 + abs(sineAngle));
+    coverage = source.a * (0.45 + projectedHeight * 0.55) * smoothstep(0.0, 0.04, edgeDistance);
+  }
 
-    var mouse = u.zoom_config.yz;
-
-    // Grid Calculations
-    // Scale X by aspect to make square cells
-    let grid_uv = vec2<f32>(uv.x * aspect, uv.y) * density;
-    let cell_id = floor(grid_uv);
-    let cell_local = fract(grid_uv); // 0.0 to 1.0
-
-    // Cell Center in Global UV (aspect corrected)
-    let cell_center_aspect = (cell_id + 0.5) / density;
-    // Map back to true UV for distance check
-    let cell_center = vec2<f32>(cell_center_aspect.x / aspect, cell_center_aspect.y);
-
-    // Distance to mouse (corrected for aspect)
-    let dist_vec = (cell_center - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(dist_vec);
-
-    // Calculate rotation angle
-    var angle: f32 = 0.0;
-    if (dist < radius) {
-        let falloff = smoothstep(radius, 0.0, dist);
-        // Add a bit of wave based on distance for ripple effect
-        let wave = sin(dist * 10.0 - u.config.x * 2.0) * 0.5 + 0.5;
-        angle = falloff * max_rot;
-
-        // Add time-based idling
-        angle = angle + (sin(u.config.x + cell_id.x * 0.1 + cell_id.y * 0.1) * 0.2 * falloff);
-    }
-
-    // 3D Flip Simulation (Vertical Flip around X axis)
-    // We modify the Y coordinate of the texture lookup.
-    // As the tile rotates, the projected height decreases -> cos(angle)
-    // We map the 0..1 local coordinate to a larger range and check bounds
-
-    let cos_a = cos(angle);
-    let sin_a = sin(angle); // unused for simple projection but useful for shading
-
-    // Perspective projection simulation
-    // "Compressed" Y coordinate
-    // If cos_a is 1, scale is 1. If cos_a is 0, scale is 0 (invisible).
-    // To find the source pixel that projects to the current pixel:
-    // current_y = (source_y - 0.5) * cos_a + 0.5
-    // So: source_y = (current_y - 0.5) / cos_a + 0.5
-
-    // Avoid division by zero
-    let scale_y = max(abs(cos_a), 0.001);
-
-    let source_local_y = (cell_local.y - 0.5) / scale_y + 0.5;
-
-    var final_color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-
-    // Check if the source pixel is within the tile bounds
-    // Apply gap
-    let bounds_min = gap;
-    let bounds_max = 1.0 - gap;
-
-    if (source_local_y >= bounds_min && source_local_y <= bounds_max &&
-        cell_local.x >= bounds_min && cell_local.x <= bounds_max) {
-
-        // Calculate Global Sample UV
-        // We know the cell_id.
-        // We need to map (cell_local.x, source_local_y) back to global UV.
-
-        // Aspect un-correction for X
-        let sample_u = (cell_id.x + cell_local.x) / density / aspect;
-        let sample_v = (cell_id.y + source_local_y) / density;
-
-        final_color = textureSampleLevel(readTexture, u_sampler, vec2<f32>(sample_u, sample_v), 0.0);
-
-        // Shading / Backface
-        // If cos_a < 0, we are seeing the back.
-        // Let's darken it significantly or invert color
-        if (cos_a < 0.0) {
-            // Back face
-            final_color = vec4<f32>(final_color.rgb * 0.2, 1.0); // Dark back
-            // Maybe add a color tint?
-            final_color = vec4<f32>(final_color.r + 0.1, final_color.g, final_color.b, 1.0);
-        } else {
-            // Front face shading based on angle
-            // Make it shine when flat (cos_a ~ 1) or when catching light?
-            // Simple diffuse: dot product with light.
-            // Let's just darken slightly as it rotates away
-            final_color = vec4<f32>(final_color.rgb * scale_y, 1.0);
-        }
-
-        // ═══ UNIQUE VISUAL IDEA: split-flap display mechanics ═══
-        // (1) Center seam — real split-flap tiles are two hinged flaps meeting at the
-        //     middle. A thin dark gap runs horizontally across the tile center.
-        let seam = smoothstep(0.03, 0.0, abs(source_local_y - 0.5));
-        final_color = vec4<f32>(final_color.rgb * (1.0 - seam * 0.7), 1.0);
-
-        // (2) Mechanical specular glint — as the glossy plastic flap sweeps through
-        //     mid-rotation it catches the room light in a quick bright flash, the
-        //     signature shimmer of a flip-disc board updating.
-        let glint = pow(abs(sin_a), 6.0) * smoothstep(0.0, 0.4, angle);
-        final_color = vec4<f32>(final_color.rgb + vec3<f32>(0.7, 0.75, 0.8) * glint * 0.6, 1.0);
-
-        // (3) Beveled edge shadow — darken the flap rim so each tile reads as a raised
-        //     physical plaque rather than a flat cell.
-        let bevelX = smoothstep(bounds_min, bounds_min + 0.06, cell_local.x) *
-                     smoothstep(bounds_max, bounds_max - 0.06, cell_local.x);
-        let bevelY = smoothstep(bounds_min, bounds_min + 0.06, source_local_y) *
-                     smoothstep(bounds_max, bounds_max - 0.06, source_local_y);
-        final_color = vec4<f32>(final_color.rgb * (0.65 + 0.35 * bevelX * bevelY), 1.0);
-
-    } else {
-        // Background / Gap
-        // Make it transparent or black
-        final_color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
-
-    // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let history = historyAt(uv, resolution);
+  hdr += history.rgb * clamp(abs(updateWave) * 0.035 + hoverEnvelope * 0.015, 0.0, 0.07);
+  let alpha = clamp(coverage + abs(updateWave) * 0.12 + heldDrive * 0.08, 0.0, 1.0);
+  let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
+  textureStore(writeTexture, coord, result);
+  textureStore(dataTextureA, coord, result);
+  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

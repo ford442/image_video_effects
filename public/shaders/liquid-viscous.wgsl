@@ -3,7 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
 //            per-band-fft, vorticity-confinement, stencil-vorticity,
-//            local-jacobi-pressure, depth-aware, upgraded-rgba,
+//            midpoint-advection, anisotropic-streamline-diffusion,
+//            Reynolds-transition, local-jacobi-pressure, depth-aware, upgraded-rgba,
 //            semantic-alpha, aces
 //  Complexity: Very High
 //  Scientific: 2D incompressible Navier-Stokes with vorticity confinement,
@@ -182,11 +183,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let omegaN = (cNE.y - cNW.y) * invDx - (cNN.x - c00.x) * invDy;
   let omegaS = (cSE.y - cSW.y) * invDx - (c00.x - cSS.x) * invDy;
 
-  // ── Semi-Lagrangian advection ─────────────────────────────────────────────
-  let departurePx = clampUV(uv - c00.rg * dt) * resolution;
+  // ── Second-order semi-Lagrangian advection ────────────────────────────────
+  // Re-evaluating velocity at the midpoint materially reduces orbital phase
+  // error compared with the former single Euler backtrace.
+  let midpointPx = clampUV(uv - c00.rg * (0.5 * dt)) * resolution;
+  let midpointState = stateBilinear(midpointPx, dimsI);
+  let departurePx = clampUV(uv - midpointState.rg * dt) * resolution;
   let advectedState = stateBilinear(departurePx, dimsI);
-  var velocity = advectedState.rg;
-  var dye = advectedState.b * exp(-viscosity * 0.025);
+  let streamline = safeNormalize(midpointState.rg);
+  let normalLine = vec2<f32>(-streamline.y, streamline.x);
+  let alongA = stateBilinear(departurePx + streamline * 1.5, dimsI);
+  let alongB = stateBilinear(departurePx - streamline * 1.5, dimsI);
+  let acrossA = stateBilinear(departurePx + normalLine * 1.25, dimsI);
+  let acrossB = stateBilinear(departurePx - normalLine * 1.25, dimsI);
+  let alongMean = 0.5 * (alongA + alongB);
+  let acrossMean = 0.5 * (acrossA + acrossB);
+  // Thick fluid diffuses along streamlines more readily than across shear
+  // layers, retaining the fine rolled edges of dye tendrils.
+  var velocity = mix(advectedState.rg, alongMean.rg, viscosity * 0.14);
+  velocity = mix(velocity, acrossMean.rg, viscosity * 0.035);
+  var dye = mix(advectedState.b, alongMean.b, viscosity * 0.10);
+  dye = mix(dye, acrossMean.b, viscosity * 0.02) * exp(-viscosity * 0.025);
+  let reynolds = length(midpointState.rg) * min(resolution.x, resolution.y)
+               * 0.08 / max(viscosity, 0.015);
+  let turbulentTransition = smoothstep(0.35, 3.5, reynolds);
 
   // ── Vorticity confinement ─────────────────────────────────────────────────
   let eta = safeNormalize(vec2<f32>(abs(omegaE) - abs(omegaW), abs(omegaS) - abs(omegaN)));
@@ -198,7 +218,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   cascadeForce += curlNoise(uv * 3.0  + vec2<f32>( time * 0.07, -time * 0.03)) * (0.00025 + 0.0018 * bass);
   cascadeForce += curlNoise(uv * 8.0  + vec2<f32>(-time * 0.11,  time * 0.05)) * (0.00018 + 0.0011 * mids);
   cascadeForce += curlNoise(uv * 18.0 + vec2<f32>( time * 0.19,  time * 0.13)) * (0.00012 + 0.0010 * treble);
-  cascadeForce *= injectionScale * (1.15 - 0.65 * viscosity);
+  cascadeForce *= injectionScale * (1.15 - 0.65 * viscosity)
+                * mix(0.35, 1.35, turbulentTransition);
 
   // ── Pointer ───────────────────────────────────────────────────────────────
   let mouse = u.zoom_config.yz;
@@ -258,6 +279,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let divW = (c00.x - cWW.x) * invDx + (cNW.y - cSW.y) * invDy;
   let divN = (cNE.x - cNW.x) * invDx + (cNN.y - c00.y) * invDy;
   let divS = (cSE.x - cSW.x) * invDx + (c00.y - cSS.y) * invDy;
+  let duDx = (cE.x - cW.x) * invDx;
+  let dvDy = (cN.y - cS.y) * invDy;
+  let duDy = (cN.x - cS.x) * invDy;
+  let dvDx = (cE.y - cW.y) * invDx;
+  let extensionalStrain = sqrt((duDx - dvDy) * (duDx - dvDy)
+                             + (duDy + dvDx) * (duDy + dvDx));
 
   // Frozen outer ring = Dirichlet boundary for the local solve.
   let pEE = cEE.a; let pWW = cWW.a; let pNN = cNN.a; let pSS = cSS.a;
@@ -292,7 +319,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let saturation = clamp(0.55 + 0.25 * dye + 0.35 * vorticityVisual + 0.15 * mids, 0.0, 1.0);
   let value = clamp(0.35 + 0.55 * dye + 0.45 * vorticityVisual + 0.20 * luma, 0.0, 1.0);
   let iridescent = hsv2rgb(vec3<f32>(hue, saturation, value));
-  let rollupGlow = vec3<f32>(0.20, 0.10, 0.32) * vorticityVisual + vec3<f32>(0.10, 0.18, 0.28) * dye;
+  let shearHighlight = smoothstep(0.5, 18.0, extensionalStrain)
+                     * mix(0.35, 1.0, turbulentTransition);
+  let rollupGlow = vec3<f32>(0.20, 0.10, 0.32) * vorticityVisual
+                 + vec3<f32>(0.10, 0.18, 0.28) * dye
+                 + vec3<f32>(0.55, 0.72, 0.95) * shearHighlight * (0.08 + 0.18 * treble);
   let blend = clamp(0.32 + 0.45 * dye + 0.28 * vorticityVisual, 0.0, 1.0);
   let finalColor = acesFilm(mix(advectedColor.rgb, iridescent + rollupGlow, blend));
 
@@ -306,6 +337,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(dataTextureA, coord, vec4<f32>(velocity, dye, pressure));
   textureStore(dataTextureB, coord, vec4<f32>(vorticityVisual,
                                               clamp(abs(divC) * 0.01, 0.0, 1.0),
-                                              clamp(length(velocity) * 90.0, 0.0, 1.0), 1.0));
+                                              clamp(length(velocity) * 90.0, 0.0, 1.0), turbulentTransition));
   textureStore(writeDepthTexture, coord, vec4<f32>(depthProxy, 0.0, 0.0, 1.0));
 }

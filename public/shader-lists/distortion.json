@@ -89,7 +89,7 @@
     "name": "Bubble Lens",
     "category": "distortion",
     "url": "shaders/bubble-lens.wgsl",
-    "description": "Soap bubble lens with Marangoni convection — surface-tension gradients drive tangential flow along the film, which is why real bubble bands swirl rather than merely sagging — and per-band membrane resonance: eight drum modes of the film, one per FFT bin, perturbing the thickness so the bubble rings at the frequencies present in the audio. Retains the spring-damped pointer, satellite bubbles and film shockwaves; adds ACES, dataTextureC iridescent trails and a corrected A/B packing.",
+    "description": "Soap bubble lens with Marangoni convection — surface-tension gradients drive tangential flow along the film, which is why real bubble bands swirl rather than merely sagging — and per-band membrane resonance: eight drum modes of the film, one per FFT bin, perturbing the thickness so the bubble rings at the frequencies present in the audio. Retains the spring-damped pointer, satellite bubbles and film shockwaves; adds ACES, dataTextureC iridescent trails and a corrected A/B packing. Optical, good Gemini-style check.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -630,7 +630,7 @@
     "id": "elastic-strip",
     "name": "Elastic Strip",
     "url": "shaders/elastic-strip.wgsl",
-    "description": "Spring physics strips with beveled sub-ribs, traveling pluck packets, soap-film color from stretch energy, held drag, and bounded click plucks. Display RGBA is packed in A.",
+    "description": "Spring-physics strips with sharper nested bevel sub-ribs, traveling pluck packets along each band, stronger soap-film iridescence driven by stretch energy, held drag punch, and bounded click plucks. Direction (V/H) preserved. Display RGBA packed in A.",
     "params": [
       {
         "id": "density",
@@ -708,7 +708,9 @@
       "upgraded-rgba",
       "held-drag",
       "bounded-click-ripples",
-      "thin-film"
+      "thin-film",
+      "soap-film",
+      "traveling-packets"
     ],
     "tags": [
       "distortion",
@@ -716,15 +718,51 @@
       "physics",
       "spring",
       "chromatic",
-      "frequency"
+      "frequency",
+      "iridescent",
+      "bevel"
     ]
   },
   {
     "id": "elastic-surface",
     "name": "Elastic Surface",
     "url": "shaders/elastic-surface.wgsl",
-    "description": "Spring-mass elastic membrane with wave propagation, surface tension coupling, depth-aware deformation, and ripple-reactive impulses.",
+    "description": "Spring-mass elastic membrane with exact textureLoad state, surface-tension waves, depth-aware deformation, audio-reactive ambient drive, held punch, click ripples, thin-film stretch lighting, and caustic runners. A stores disp.rg+vel.ba (never tonemapped); display uses ACES.",
     "params": [
+      {
+        "id": "elasticity",
+        "name": "Elasticity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "surface_tension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "wave_speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "depth_influence",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
       {
         "id": "elasticity",
         "name": "Elasticity",
@@ -763,7 +801,13 @@
       "mouse-driven",
       "depth-aware",
       "temporal",
-      "ripple-reactive"
+      "ripple-reactive",
+      "audio-reactive",
+      "held-punch",
+      "thin-film",
+      "caustic-lighting",
+      "aces-tone-mapping",
+      "exact-state-loads"
     ],
     "tags": [
       "elastic",
@@ -772,7 +816,9 @@
       "distortion",
       "physics",
       "organic",
-      "liquid"
+      "liquid",
+      "membrane",
+      "caustic"
     ]
   },
   {
@@ -2074,11 +2120,16 @@
     "id": "julia-warp",
     "name": "Julia Warp",
     "url": "shaders/julia-warp.wgsl",
-    "description": "Julia fractal-based warping with orbit traps for psychedelic coloring.",
+    "description": "Derivative-aware Julia orbit traps drive refractive distortion, animated complex-parameter control, held zoom, spectral orbit light, and age-bounded shockwaves.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "derivative-aware",
+      "orbit-traps",
+      "refractive-distortion",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "tags": [
       "warp",
@@ -2086,7 +2137,10 @@
       "transform",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "julia",
+      "fractal-optics",
+      "interactive"
     ],
     "params": [
       {
@@ -2121,7 +2175,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Julia Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Depth Weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Max Iter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for restrained orbit persistence; B is unused; warped source depth keeps the original modulation semantics."
   },
   {
     "id": "kaleidoscope",
@@ -2341,10 +2430,19 @@
       "audio-reactive",
       "audio-driven",
       "upgraded-rgba",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "per-band-fft",
+      "spring-damper-pointer",
+      "lamb-oseen-vortex",
+      "strain-caustics",
+      "temporal-persistence",
+      "semantic-alpha",
+      "aces"
     ],
     "url": "shaders/liquid-swirl.wgsl",
-    "description": "Swirls the image around the cursor like mixing paint.",
+    "description": "A spring-followed Lamb-Oseen vortex with a finite viscous core, counter-rotating satellite pair, midpoint transport, FFT circulation, bounded vortex wakes, tensor-derived strain caustics, and temporal sheen.",
     "params": [
       {
         "id": "strength",
@@ -2383,20 +2481,61 @@
       "music",
       "reactive"
     ],
+    "updatedParams": [
+      {
+        "id": "strength",
+        "name": "Circulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Circulation of the primary and paired vortices."
+      },
+      {
+        "id": "radius",
+        "name": "Vortex Core Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "description": "Finite viscous-core radius and satellite orbit scale."
+      },
+      {
+        "id": "smoothness",
+        "name": "Fluid Smoothness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Pointer spring stiffness and temporal sheen persistence."
+      },
+      {
+        "id": "rotation",
+        "name": "Pair Rotation",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Signed orbital speed of the counter-rotating vortex pair."
+      }
+    ],
     "name": "Liquid Swirl"
   },
   {
     "id": "liquid-warp-interactive",
     "name": "Liquid Warp",
     "url": "shaders/liquid-warp-interactive.wgsl",
-    "description": "Liquid curl warp with conveyor flow, liquid-rainbow ripples, held pull, bounded click fronts. Display RGBA in A.",
+    "description": "Four analytic stream-function modes provide divergence-free velocity and a full Jacobian in one pass. RK2 transport, depth-gradient Coanda attachment, strain caustics, viscous temporal memory, held-pointer flow, and bounded vortex fronts shape the warp.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "held-drag",
       "bounded-click-ripples",
       "upgraded-rgba",
-      "temporal"
+      "temporal",
+      "per-band-fft",
+      "rk2-advection",
+      "analytic-divergence-free-flow",
+      "depth-boundary-flow",
+      "strain-caustics",
+      "semantic-alpha",
+      "aces"
     ],
     "params": [
       {
@@ -2439,35 +2578,39 @@
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Distance traced through the analytic spectral flow field."
       },
       {
         "id": "speed",
         "name": "Flow Speed",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Temporal phase speed of the four flow modes."
       },
       {
         "id": "scale",
-        "name": "Noise Scale",
+        "name": "Spectral Flow Scale",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Base frequency of the divergence-free stream-function spectrum."
       },
       {
         "id": "visc",
         "name": "Viscosity",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Temporal memory and strength of flow attachment along depth boundaries."
       }
     ]
   },
   {
     "id": "log-polar-droste",
     "name": "Log-Polar Droste",
-    "url": "shaders/log-polar-droste.wgsl",
+    "url": "shaders/log-polar-droste-remap.wgsl",
     "description": "Infinite recursive zoom with spiral distortion creating Droste/Escher-like effects.",
     "params": [
       {
@@ -2500,15 +2643,51 @@
       }
     ],
     "features": [
+      "audio-reactive",
+      "graph-runner",
       "interactive",
       "mathematical",
+      "mouse-driven",
+      "multi-pass",
+      "physics",
       "recursive",
-      "mouse-driven"
+      "simulation"
     ],
     "tags": [
+      "droste",
       "geometric",
-      "pattern"
-    ]
+      "log-polar",
+      "pattern",
+      "physics",
+      "showcase",
+      "simulation"
+    ],
+    "multipass": {
+      "graph": {
+        "maxPassesPerFrame": 8,
+        "nodes": [
+          {
+            "id": "remap",
+            "entry": "log-polar-droste-remap",
+            "reads": [],
+            "writes": [
+              "dataA"
+            ]
+          },
+          {
+            "id": "grade",
+            "entry": "log-polar-droste-grade",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "luma-glass",
@@ -4723,14 +4902,23 @@
     "name": "Zoom Burst",
     "category": "distortion",
     "url": "shaders/zoom-burst.wgsl",
-    "description": "Exponential zoom burst with radial motion blur, angular streak sampling, starburst light rays, chromatic radial dispersion, HDR bloom, film grain, and ACES tone mapping. Bass accelerates the burst; mouse positions the center; depth controls streak perspective.",
+    "description": "Radial speed lines with rotational shear streaks and chromatic burst sampling. Sprung epicenter, click zoom packets, exact-C persist, ACES display, burst-energy alpha.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
       "radial-blur",
       "starburst",
-      "film-grain"
+      "film-grain",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "tags": [
       "zoom",
@@ -4740,7 +4928,9 @@
       "audio-reactive",
       "starburst",
       "bloom",
-      "film-grain"
+      "film-grain",
+      "fast-motion",
+      "aces"
     ],
     "params": [
       {
@@ -4766,6 +4956,42 @@
       },
       {
         "id": "chroma",
+        "name": "Chroma",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Burst Length",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Sample Quality",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Spin",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
         "name": "Chroma",
         "default": 0.3,
         "min": 0,

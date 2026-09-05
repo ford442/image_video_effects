@@ -2,7 +2,7 @@
   "id": "liquid-smear",
   "name": "Liquid Smear",
   "url": "shaders/liquid-smear.wgsl",
-  "description": "Pigment drag along the pointer's real travel direction, taken from a spring-damped cursor and its velocity in extraBuffer[133..136] \u2014 the previous version always pulled toward the cursor centre, which reads as a sink rather than a brush. A five-tap kernel bleeds pigment along the stroke normal with a width set by the local FFT bin. History is fetched with exact textureLoad, bilinear by hand.",
+  "description": "Spring-damped pigment drag follows the pointer's real velocity and bends along source-image contours. FFT-scaled anisotropic bleed gains a monotone local-extrema clamp, preserving fine fibres without feedback ringing or negative pigment.",
   "params": [
     {
       "id": "strength",
@@ -46,7 +46,9 @@
     "aces",
     "spring-damper-pointer",
     "velocity-smear",
-    "pigment-diffusion"
+    "pigment-diffusion",
+    "edge-guided-transport",
+    "monotone-reconstruction"
   ],
   "tags": [
     "filter",

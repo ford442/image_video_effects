@@ -2,9 +2,14 @@
   "id": "flip-matrix",
   "name": "Flip Matrix",
   "url": "shaders/flip-matrix.wgsl",
-  "description": "Grid of tiles that flip vertically in pseudo-3D based on mouse proximity.",
+  "description": "Inertial split-flap cells propagate hover and click update waves through hinge mechanics, distinct front/back materials, bevel lighting, and held acceleration.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "split-flap-mechanics",
+    "inertial-propagation",
+    "temporal-feedback",
+    "click-reactive"
   ],
   "params": [
     {
@@ -40,8 +45,17 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Grid Density", "default": 0.3, "min": 0, "max": 1 },
+    { "index": 1, "name": "Effect Radius", "default": 0.4, "min": 0, "max": 1 },
+    { "index": 2, "name": "Flip Intensity", "default": 0.5, "min": 0, "max": 1 },
+    { "index": 3, "name": "Tile Gap", "default": 0.1, "min": 0, "max": 1 }
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA for update-wave persistence; B is unused; source depth passes through.",
   "tags": [
-    "filter",
-    "image-processing"
+    "split-flap",
+    "kinetic",
+    "geometric",
+    "interactive"
   ]
 }

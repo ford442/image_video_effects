@@ -449,7 +449,13 @@
     "id": "ascii-flow-structure",
     "name": "ASCII Flow + Structure Tensor",
     "url": "shaders/ascii-flow-structure.wgsl",
-    "description": "ASCII glyph rendering driven by structure tensor flow field. Glyphs align with image edges and orientations instead of random noise. Line Integral Convolution modulates brightness.",
+    "description": "Edge-aligned ASCII glyphs driven by structure-tensor flow and LIC brightness, with spring flow bias, held coherence lock, click shockfront, exact C coherency blend, and ACES display.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "tags": [
       "ascii",
       "structure-tensor",
@@ -463,7 +469,12 @@
       "advanced-convolution",
       "upgraded-rgba",
       "mouse-driven",
-      "randomization-safe"
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback"
     ],
     "params": [
       {
@@ -499,7 +510,40 @@
         "step": 0.01
       }
     ],
-    "target_rating": 4.5
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Coherence Boost",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "LIC Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "astral-kaleidoscope-julia",
@@ -863,7 +907,7 @@
     "id": "aurora-borealis-iridescence",
     "name": "Aurora Borealis Iridescence",
     "url": "shaders/aurora-borealis-iridescence.wgsl",
-    "description": "Northern lights with flowing ribbon curves enhanced by thin-film iridescence. Each aurora ribbon shimmers with soap-bubble and oil-slick interference colors driven by ribbon intensity and animated turbulence.",
+    "description": "Northern lights with flowing ribbon curves enhanced by thin-film iridescence, curl-noise turbulence, ACES tone mapping, and atmospheric luminescence persistence.",
     "tags": [
       "aurora",
       "iridescence",
@@ -878,7 +922,9 @@
       "curl-noise",
       "mouse-driven",
       "audio-reactive",
-      "atmospheric"
+      "atmospheric",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -914,13 +960,56 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ribbon Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ribbon Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through source depth.",
     "target_rating": 4.9
   },
   {
     "id": "aurora-rift-2-iridescence",
     "name": "Aurora Rift 2 Iridescence",
     "url": "shaders/aurora-rift-2-iridescence.wgsl",
-    "description": "Iridescent aurora curtains combining volumetric aurora simulation with thin-film interference. Each aurora layer gets soap-bubble/oil-slick coloring from optical path difference. Optical depth modulates film thickness; viewing angle drives color shift. Beer's Law transmittance composites physically.",
+    "description": "5-layer volumetric aurora curtains with multi-order thin-film interference, Beer's Law physical transmittance, geomagnetic turbulence, ACES tone mapping, and atmospheric luminescence persistence.",
+    "tags": [
+      "aurora-rift-2",
+      "thin-film-interference",
+      "spectral-render",
+      "interference",
+      "aurora",
+      "volumetric"
+    ],
     "features": [
       "thin-film-interference",
       "aurora",
@@ -928,8 +1017,9 @@
       "depth-aware",
       "spectral-render",
       "mouse-driven",
-      "HDR",
-      "randomization-safe"
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -973,29 +1063,47 @@
         "description": "Noise turbulence for film thickness variation"
       }
     ],
-    "chunks_used": [
-      "fbm (aurora-rift-2)",
-      "physicalTransmittance / Beer's Law (aurora-rift-2)",
-      "thinFilmColor (spec-iridescence-engine)",
-      "wavelengthToRGB (spec-iridescence-engine)"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Depth Weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
-    "tags": [
-      "aurora",
-      "iridescence",
-      "thin-film",
-      "interference",
-      "volumetric",
-      "spectral",
-      "atmospheric"
-    ],
-    "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
-    "created_date": "2026-04-18"
+    "feedbackPacking": "A/C = ACES display RGBA for continuous atmospheric luminescence persistence; B is unused; depth passes through layered depth."
   },
   {
     "id": "aurora-rift-iridescence",
     "name": "Aurora Rift Iridescence",
     "url": "shaders/aurora-rift-iridescence.wgsl",
-    "description": "Atmospheric curl-flow aurora blended with thin-film interference. Pattern density drives soap-bubble and oil-slick film thickness, producing flowing iridescence that rides the aurora's organic motion.",
+    "description": "Atmospheric curl-flow aurora blended with thin-film interference. Pattern density drives soap-bubble and oil-slick film thickness, producing flowing iridescence with ACES tone mapping and continuous plasma persistence.",
     "tags": [
       "iridescence",
       "thin-film",
@@ -1011,7 +1119,10 @@
       "curl-noise",
       "mouse-driven",
       "depth-aware",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -1047,6 +1158,41 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Pattern Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Film IOR",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for continuous plasma trail persistence; B is unused; depth passes through source depth.",
     "target_rating": 4.8
   },
   {
@@ -1314,7 +1460,7 @@
     "id": "black-hole-iridescence",
     "name": "Black Hole Iridescence",
     "url": "shaders/black-hole-iridescence.wgsl",
-    "description": "Gravitational lensing black hole with iridescent accretion disk. The warped background and glowing disk receive thin-film interference coloring based on viewing angle, producing soap-bubble chromatic effects around the event horizon.",
+    "description": "Schwarzschild gravitational lensing with relativistic Doppler-boosted accretion disk, thin-film interference, gravitational wave strain, ACES tone mapping, and photon persistence.",
     "tags": [
       "black-hole",
       "iridescence",
@@ -1328,7 +1474,10 @@
       "thin-film-interference",
       "accretion-disk",
       "mouse-driven",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -1364,6 +1513,41 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Lens Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Event Horizon",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Disk Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for relativistic photon persistence; B is unused; depth passes through source depth.",
     "target_rating": 4.9
   },
   {
@@ -2941,17 +3125,27 @@
     "id": "crt-tv-stipple",
     "name": "CRT TV Stipple",
     "url": "shaders/crt-tv-stipple.wgsl",
-    "description": "Authentic CRT TV simulation with blue-noise stippled phosphor dots. Combines barrel distortion, chromatic aberration, scanlines, and phosphor decay with perceptually optimal blue-noise dot placement for each RGB subpixel triad.",
+    "description": "CRT phosphor physics with blue-noise stipple aperture grille, spring focus, held bulge, capped ripples, exact C persistence, and three-band audio.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "features": [
       "advanced-hybrid",
       "crt-simulation",
       "blue-noise",
       "stippling",
       "barrel-distortion",
-      "randomization-safe",
-      "upgraded-rgba",
+      "mouse-driven",
       "audio-reactive",
-      "depth-aware"
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2961,8 +3155,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "CRT scanline darkness"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "phosphor_glow",
@@ -2971,8 +3164,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Phosphor bloom around bright areas"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "stipple_density",
@@ -2981,8 +3173,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Density of blue-noise stipple dots"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "barrel",
@@ -2991,17 +3182,43 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "CRT screen curvature amount"
+        "mapping": "zoom_params.w"
       }
     ],
-    "chunks_used": [
-      "Barrel distortion, scanlines, phosphor decay (crt-tv.wgsl)",
-      "Blue-noise offset, stipple placement (spec-blue-noise-stipple.wgsl)"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scanline Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Phosphor Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Stipple Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Barrel Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "crt",
       "retro",
@@ -3170,18 +3387,24 @@
     "id": "cyber-lattice-bilateral",
     "name": "Cyber Lattice Bilateral",
     "url": "shaders/cyber-lattice-bilateral.wgsl",
-    "description": "Cyber Lattice Bilateral",
-    "tags": [
-      "mouse-driven",
-      "bilateral-filter",
-      "grid-distortion",
-      "dreamy"
+    "description": "Mouse-warped cyber grid with edge-preserving bilateral dream smoothing, spring cursor, held hue flip, capped ripples, exact C blend, and three-band audio.",
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "features": [
       "mouse-driven",
       "bilateral-filter",
       "grid-distortion",
-      "dreamy"
+      "dreamy",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba",
+      "temporal-feedback"
     ],
     "params": [
       {
@@ -3221,7 +3444,48 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Distort Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "tags": [
+      "mouse-driven",
+      "bilateral-filter",
+      "grid-distortion",
+      "dreamy",
+      "cyber"
+    ],
+    "updated": true
   },
   {
     "id": "cyber-organic-ecosystem",
@@ -3284,7 +3548,12 @@
     "id": "cyber-rain-em",
     "name": "Cyber Rain Em",
     "url": "shaders/cyber-rain-em.wgsl",
-    "description": "Catalog entry for Cyber Rain Em.",
+    "description": "Electromagnetic cyber rain with fp128 field integration, spring cursor, orbital click charges, held wiper, exact C smear, and three-band audio.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "tags": [
       "mouse-driven",
       "cyber-rain",
@@ -3295,7 +3564,14 @@
       "mouse-driven",
       "cyber-rain",
       "electromagnetic-field",
-      "chromatic"
+      "chromatic",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3335,7 +3611,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rain Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Charge Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Field Visibility",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Wiper Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "cyber-ripples-coupled",
@@ -3498,7 +3808,12 @@
     "id": "cyber-trace-structure",
     "name": "Cyber Trace Structure",
     "url": "shaders/cyber-trace-structure.wgsl",
-    "description": "Cyber Trace Structure",
+    "description": "Structure-tensor LIC mouse trace with spring cursor, held brush, capped ripples, exact C history, three-band audio, and ACES output.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "tags": [
       "mouse-driven",
       "cyber-trace",
@@ -3509,7 +3824,14 @@
       "mouse-driven",
       "cyber-trace",
       "structure-tensor",
-      "lic-flow"
+      "lic-flow",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3549,7 +3871,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Decay Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Hue Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "data-scanner-gabor",
@@ -3822,7 +4178,8 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "datamosh-brush-diffusion",
@@ -3936,7 +4293,8 @@
       "mouse-driven",
       "oil-paint",
       "temporal"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "deep-workgroup-multi-effect-blend",
@@ -4104,24 +4462,31 @@
       "organic",
       "digital",
       "corruption"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "digital-glitch-explosion",
     "name": "Digital Glitch Explosion",
     "url": "shaders/digital-glitch-explosion.wgsl",
-    "description": "Digital Glitch Explosion",
-    "tags": [
-      "mouse-driven",
-      "digital-glitch",
-      "chromatic-explosion",
-      "bit-corruption"
+    "description": "Bitwise corruption meets prismatic chromatic shockwaves with spring cursor, held burst, capped ripples, exact C smear, and three-band audio.",
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "features": [
       "mouse-driven",
       "digital-glitch",
       "chromatic-explosion",
-      "bit-corruption"
+      "bit-corruption",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "upgraded-rgba",
+      "temporal-feedback"
     ],
     "params": [
       {
@@ -4161,7 +4526,48 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Corruption Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Prism Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Dispersion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "tags": [
+      "mouse-driven",
+      "digital-glitch",
+      "chromatic-explosion",
+      "bit-corruption",
+      "glitch"
+    ],
+    "updated": true
   },
   {
     "id": "digital-lens-prismatic",
@@ -4637,18 +5043,23 @@
     "id": "divine-light-iridescence",
     "name": "Divine Light Iridescence",
     "url": "shaders/divine-light-iridescence.wgsl",
-    "description": "Divine Light Iridescence",
+    "description": "Volumetric god rays emanating from cursor position with multi-order thin-film iridescence, radial ray-marching, ACES tone mapping, and temporal beam persistence.",
     "tags": [
       "god-rays",
       "thin-film-interference",
       "volumetric-light",
-      "mouse-driven"
+      "mouse-driven",
+      "iridescence",
+      "spectral"
     ],
     "features": [
       "god-rays",
       "thin-film-interference",
       "volumetric-light",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -4688,7 +5099,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ray Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Luma Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ray Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth."
   },
   {
     "id": "double-exposure-hdr",
@@ -7158,20 +7603,22 @@
     "id": "glass-wipes-coupled",
     "name": "Glass Wipes Coupled",
     "url": "shaders/glass-wipes-coupled.wgsl",
-    "description": "Rain on glass combined with viscous fluid coupling physics. Rain drops feed a fluid simulation that creates realistic water streaks, while the mouse wiper clears fluid with vortex dynamics.",
+    "description": "Rain on glass combined with Navier-Stokes viscous fluid coupling, wiper sweeps, vortex street generation, ACES tone mapping, and raw fluid state feedback.",
     "tags": [
-      "glass",
+      "glass-wipes",
+      "fluid-simulation",
+      "physics",
       "rain",
-      "fluid",
-      "simulation",
-      "water",
-      "temporal",
-      "mouse-driven"
+      "glass",
+      "refraction"
     ],
     "features": [
-      "mouse-driven",
       "fluid-simulation",
-      "temporal"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive",
+      "raw-persistent-state"
     ],
     "params": [
       {
@@ -7207,7 +7654,41 @@
         "step": 0.01
       }
     ],
-    "target_rating": 4.7
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rain Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wiper Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Vortex Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = raw fluid state [vel.xy, vorticity, density]; ACES is presentation-only on writeTexture; depth passes through source depth."
   },
   {
     "id": "gravitational-lensing-nlm",
@@ -11920,18 +12401,23 @@
     "id": "vaporwave-horizon-prismatic",
     "name": "Vaporwave Horizon Prismatic",
     "url": "shaders/vaporwave-horizon-prismatic.wgsl",
-    "description": "Vaporwave Horizon Prismatic",
+    "description": "Retro-futuristic vaporwave perspective grid with 4-band Cauchy spectral reflection, glowing striped sunset sun, CRT scanlines, ACES tone mapping, and phosphor glow persistence.",
     "tags": [
       "vaporwave-horizon",
       "spectral-dispersion",
       "physical-dispersion",
-      "mouse-driven"
+      "mouse-driven",
+      "synthwave",
+      "retro"
     ],
     "features": [
       "vaporwave-horizon",
       "spectral-dispersion",
       "physical-dispersion",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -11971,20 +12457,67 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Grid Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Warp Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for CRT phosphor glow persistence; B is unused; depth passes through source depth."
   },
   {
     "id": "vhs-tracking-bilateral",
     "name": "VHS Tracking Bilateral",
     "url": "shaders/vhs-tracking-bilateral.wgsl",
-    "description": "Full VHS signal chain physics with edge-preserving bilateral smoothing. Timebase jitter, chroma noise, and control track dropouts are filtered through a bilateral dream, creating a soft analog degradation while preserving edges.",
+    "description": "VHS signal chain with AR(1) capstan jitter, chroma phase noise, control-track dropouts, tracking-band bilateral smoothing, spring bar, held freeze, click dropout pulses, and exact C smear.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
     "features": [
       "advanced-hybrid",
       "vhs-simulation",
       "bilateral-filter",
       "chroma-noise",
       "temporal",
-      "randomization-safe"
+      "mouse-driven",
+      "audio-reactive",
+      "click-ripples",
+      "held-drag",
+      "spring-cursor",
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -11994,8 +12527,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "VHS tracking error intensity"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "chroma_noise",
@@ -12004,8 +12536,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Chroma channel noise amount"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "spatial_sigma",
@@ -12014,8 +12545,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Bilateral spatial spread"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "color_sigma",
@@ -12024,17 +12554,43 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Bilateral color range sensitivity"
+        "mapping": "zoom_params.w"
       }
     ],
-    "chunks_used": [
-      "VHS jitter, chroma noise, dropouts, quantization (vhs-tracking.wgsl)",
-      "Bilateral filter core (conv-bilateral-dream.wgsl)"
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tracking Error",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Chroma Noise",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spatial Sigma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Sigma",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
-    "performance_target": "45 FPS (GTX 1060)",
-    "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "vhs",
       "retro",

@@ -1,202 +1,162 @@
-// src/wasm/bridge/capture.js
-// Frame capture, screenshots, and image/video upload.
+// GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
-import { state, wasmRef } from './state.js';
-
-/**
- * Capture the current rendered frame as RGBA8 pixel data.
- *
- * The capture is asynchronous (GPU readback via CopyTextureToBuffer + mapAsync).
- * This function polls requestAnimationFrame until the GPU has finished, then
- * converts the RGBA32Float frame data to RGBA8 and resolves the Promise.
- *
- * @returns {Promise<ImageData>} Resolves with an ImageData containing the frame pixels.
- */
-export function captureFrame() {
+import { state, wasmRef } from "./state.js";
+function captureFrame() {
   return new Promise((resolve, reject) => {
     if (!state.initialized || !wasmRef.module) {
-      reject(new Error('[WASM] Renderer not initialized'));
+      reject(new Error("[WASM] Renderer not initialized"));
       return;
     }
-
-    wasmRef.module.ccall('beginFrameCapture', null, [], []);
-
+    wasmRef.module.ccall("beginFrameCapture", null, [], []);
     const pollState = () => {
       if (!wasmRef.module) {
-        reject(new Error('[WASM] Module invalidated during capture'));
+        reject(new Error("[WASM] Module invalidated during capture"));
         return;
       }
-
-      const captureState = wasmRef.module.ccall('getFrameCaptureState', 'number', [], []);
-
-      if (captureState === 3) { // Complete
-        const width = wasmRef.module.ccall('getCanvasWidth', 'number', [], []);
-        const height = wasmRef.module.ccall('getCanvasHeight', 'number', [], []);
+      const captureState = Number(wasmRef.module.ccall("getFrameCaptureState", "number", [], []));
+      if (captureState === 3) {
+        const width = Number(wasmRef.module.ccall("getCanvasWidth", "number", [], []));
+        const height = Number(wasmRef.module.ccall("getCanvasHeight", "number", [], []));
         const numPixels = width * height;
         const floatByteLength = numPixels * 4 * 4;
-
-        const floatPtr = wasmRef.module.ccall('readCapturedFrame', 'number', [], []);
-
+        const floatPtr = Number(wasmRef.module.ccall("readCapturedFrame", "number", [], []));
         if (!floatPtr) {
-          wasmRef.module.ccall('endFrameCapture', null, [], []);
-          reject(new Error('[WASM] readCapturedFrame returned null pointer'));
+          wasmRef.module.ccall("endFrameCapture", null, [], []);
+          reject(new Error("[WASM] readCapturedFrame returned null pointer"));
           return;
         }
-
         const floatBuffer = wasmRef.module.HEAPF32.subarray(
           floatPtr / 4,
           (floatPtr + floatByteLength) / 4
         );
-
         const rgba8 = new Uint8ClampedArray(numPixels * 4);
         for (let i = 0; i < numPixels * 4; i++) {
           rgba8[i] = Math.min(255, Math.max(0, Math.round(floatBuffer[i] * 255)));
         }
-
-        wasmRef.module.ccall('endFrameCapture', null, [], []);
-
-        const imageData = new ImageData(rgba8, width, height);
-        resolve(imageData);
-
-      } else if (captureState === 4) { // Error
-        wasmRef.module.ccall('endFrameCapture', null, [], []);
-        reject(new Error('[WASM] GPU frame capture failed on C++ side'));
-      } else { // 0=Idle, 1=Copying, 2=Mapping
+        wasmRef.module.ccall("endFrameCapture", null, [], []);
+        resolve(new ImageData(rgba8, width, height));
+      } else if (captureState === 4) {
+        wasmRef.module.ccall("endFrameCapture", null, [], []);
+        reject(new Error("[WASM] GPU frame capture failed on C++ side"));
+      } else {
         requestAnimationFrame(pollState);
       }
     };
-
     requestAnimationFrame(pollState);
   });
 }
-
-/**
- * Capture the current frame and return it as a data URL PNG string.
- * @returns {Promise<string>}
- */
-export async function captureFrameDataUrl() {
+async function captureFrameDataUrl() {
   const imgData = await captureFrame();
-  const offscreen = document.createElement('canvas');
+  const offscreen = document.createElement("canvas");
   offscreen.width = imgData.width;
   offscreen.height = imgData.height;
-  const ctx = offscreen.getContext('2d');
-  if (!ctx) throw new Error('[WASM] Failed to create 2D context for data URL');
+  const ctx = offscreen.getContext("2d");
+  if (!ctx) throw new Error("[WASM] Failed to create 2D context for data URL");
   ctx.putImageData(imgData, 0, 0);
-  return offscreen.toDataURL('image/png');
+  return offscreen.toDataURL("image/png");
 }
-
-/**
- * Take a screenshot of the current frame and trigger browser file download.
- * @param {string} [filename='pixelocity-shader.png'] - Download filename
- * @returns {Promise<void>}
- */
-export async function takeScreenshot(filename = 'pixelocity-shader.png') {
+async function takeScreenshot(filename = "pixelocity-shader.png") {
   const dataUrl = await captureFrameDataUrl();
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = dataUrl;
   a.download = filename;
   a.click();
 }
-
-/**
- * Upload raw RGBA8 image pixel data to C++ texture
- * @param {ImageData|HTMLImageElement|Uint8Array} image - Image data, element, or byte array
- * @param {number} [width] - Width in pixels (required if image is Uint8Array)
- * @param {number} [height] - Height in pixels (required if image is Uint8Array)
- */
-export function uploadImageData(image, width, height) {
+function asU8(pixels) {
+  return pixels instanceof Uint8Array ? pixels : new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.byteLength);
+}
+function uploadImageData(image, width, height) {
   if (!state.initialized || !wasmRef.module) return;
-
-  let imgWidth, imgHeight, pixels;
-  if (typeof ImageData !== 'undefined' && image instanceof ImageData) {
+  let imgWidth = 0;
+  let imgHeight = 0;
+  let pixels = null;
+  if (typeof ImageData !== "undefined" && image instanceof ImageData) {
     imgWidth = image.width;
     imgHeight = image.height;
     pixels = image.data;
-  } else if (image instanceof Uint8Array) {
+  } else if (image instanceof Uint8Array || image instanceof Uint8ClampedArray) {
     if (!width || !height || image.length === 0) return;
     imgWidth = width;
     imgHeight = height;
     pixels = image;
-  } else if (typeof HTMLImageElement !== 'undefined' && image instanceof HTMLImageElement) {
+  } else if (typeof HTMLImageElement !== "undefined" && image instanceof HTMLImageElement) {
     imgWidth = image.naturalWidth || image.width;
     imgHeight = image.naturalHeight || image.height;
-    const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement("canvas");
     tempCanvas.width = imgWidth;
     tempCanvas.height = imgHeight;
-    const ctx = tempCanvas.getContext('2d');
+    const ctx = tempCanvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(image, 0, 0);
     pixels = ctx.getImageData(0, 0, imgWidth, imgHeight).data;
   } else {
     return;
   }
-
   if (!imgWidth || !imgHeight || !pixels || pixels.length === 0) return;
-
   const numBytes = imgWidth * imgHeight * 4;
   const ptr = wasmRef.module._malloc(numBytes);
-  wasmRef.module.HEAPU8.set(pixels, ptr);
-
+  wasmRef.module.HEAPU8.set(asU8(pixels).subarray(0, numBytes), ptr);
   try {
     wasmRef.module.ccall(
-      'loadImageData',
+      "loadImageData",
       null,
-      ['number', 'number', 'number', 'number'],
-      [ptr, imgWidth, imgHeight, numBytes]
+      ["number", "number", "number"],
+      [ptr, imgWidth, imgHeight]
     );
   } finally {
     wasmRef.module._free(ptr);
   }
 }
-
-/**
- * Upload a frame from an HTMLVideoElement or VideoFrame
- * @param {HTMLVideoElement} video - Video element
- */
-export function uploadVideoFrame(video) {
+function uploadVideoFrame(videoOrPixels, width, height) {
   if (!state.initialized || !wasmRef.module) return;
+  if (videoOrPixels instanceof Uint8Array || videoOrPixels instanceof Uint8ClampedArray) {
+    if (!width || !height || videoOrPixels.length === 0) return;
+    const numBytes2 = width * height * 4;
+    const ptr2 = wasmRef.module._malloc(numBytes2);
+    wasmRef.module.HEAPU8.set(asU8(videoOrPixels).subarray(0, numBytes2), ptr2);
+    wasmRef.module.ccall(
+      "uploadVideoFrame",
+      null,
+      ["number", "number", "number"],
+      [ptr2, width, height]
+    );
+    wasmRef.module._free(ptr2);
+    return;
+  }
+  const video = videoOrPixels;
   if (!video || video.readyState < 2) return;
-
-  const width = video.videoWidth;
-  const height = video.videoHeight;
-  if (!width || !height) return;
-
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = width;
-  tempCanvas.height = height;
-  const ctx = tempCanvas.getContext('2d');
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  if (!w || !h) return;
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = w;
+  tempCanvas.height = h;
+  const ctx = tempCanvas.getContext("2d");
   if (!ctx) return;
-
-  ctx.drawImage(video, 0, 0, width, height);
-  const imageData = ctx.getImageData(0, 0, width, height);
-
-  const numBytes = width * height * 4;
+  ctx.drawImage(video, 0, 0, w, h);
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const numBytes = w * h * 4;
   const ptr = wasmRef.module._malloc(numBytes);
-  wasmRef.module.HEAPU8.set(imageData.data, ptr);
-
+  wasmRef.module.HEAPU8.set(asU8(imageData.data).subarray(0, numBytes), ptr);
   wasmRef.module.ccall(
-    'uploadVideoFrame',
+    "uploadVideoFrame",
     null,
-    ['number', 'number', 'number', 'number'],
-    [ptr, width, height, numBytes]
+    ["number", "number", "number"],
+    [ptr, w, h]
   );
-
   wasmRef.module._free(ptr);
 }
-
-/**
- * Resize the rendering canvas and rebuild swapchain textures
- * @param {number} width - New width
- * @param {number} height - New height
- */
-export function resizeCanvas(width, height) {
+function resizeCanvas(width, height) {
   if (!state.initialized || !wasmRef.module) return;
   state.canvasWidth = width;
   state.canvasHeight = height;
-  wasmRef.module.ccall(
-    'resizeCanvas',
-    null,
-    ['number', 'number'],
-    [width, height]
-  );
+  wasmRef.module.ccall("resizeCanvas", null, ["number", "number"], [width, height]);
 }
+export {
+  captureFrame,
+  captureFrameDataUrl,
+  resizeCanvas,
+  takeScreenshot,
+  uploadImageData,
+  uploadVideoFrame
+};

@@ -56,6 +56,15 @@
   "workgroup_size": [16, 16, 1],
   "tags": [
     "filter",
-    "image-processing"
-  ]
+    "image-processing",
+    "glitch",
+    "digital"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Corruption Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Bit Manipulation", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Error Propagation", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Decay Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "updated": true
 }

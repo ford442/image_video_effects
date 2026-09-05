@@ -1,11 +1,6 @@
-// ═══ Phosphor Decay (Multi-Pass Architect Upgrade) ════════════════
-//  Category: retro-glitch
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
-//            oklab-mixed, blackbody-graded, ign-dithered, linear-feedback
-//  Complexity: Medium
-//  Upgrades: Linear radiance cached in dataTextureA for temporal feedback,
-//            branchless CRT shadow mask, separate display pass (tone-map +
-//            dither) to writeTexture, energy-carrying feedback alpha.
+// Phosphor Decay — Composer batch cyber/digital/glitch cohort 3
+// Per-channel linear-feedback decay, OkLab trail blending, blackbody grading,
+// spring cursor, held static-charge, capped click blooms, row-voice FFT bins.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -129,15 +124,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv   = vec2<f32>(pixel) / res;
     let time = u.config.x;
+    let aspect = res.x / max(res.y, 1.0);
+    let held = u.zoom_config.w > 0.5;
+    let mouse = u.zoom_config.yz;
 
     let decayRateParam     = u.zoom_params.x;
     let bloomSpread        = u.zoom_params.y;
     let shadowMaskStrength = u.zoom_params.z;
     let scanBlanking       = u.zoom_params.w;
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let rowVoice = clamp(plasmaBuffer[(u32(pixel.y) % 8u) + 1u].x, 0.0, 1.0);
+
+    var smoothMouse = mouse;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[138] > 0.5) {
+        smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+        var springPos = smoothMouse;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = mouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 11.0;
+            let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+        smoothMouse = springPos;
+    }
 
     // ---- PASS 1: temporal accumulation (cached as linear radiance) ----
     // dataTextureC is the previous frame's copy of dataTextureA.
@@ -170,8 +196,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mask = shadow_mask(pixel.x);
     state = mix(state, state * mask, shadowMaskStrength * (1.0 + mids * 0.6) * 0.5);
 
-    let scanLine = sin(uv.y * res.y * 0.5) * 0.5 + 0.5;
+    let scanLine = sin(uv.y * res.y * 0.5 * (1.0 + rowVoice * 0.04)) * 0.5 + 0.5;
     state *= mix(1.0, scanLine, scanBlanking * (1.0 + treble * 0.4) * 0.4);
+
+    let mDist = length((uv - smoothMouse) * vec2<f32>(aspect, 1.0));
+    let mouseFalloff = 1.0 - smoothstep(0.0, 0.14, mDist);
+    state += vec3<f32>(0.15, 0.35, 0.55) * mouseFalloff * (0.2 + treble * 0.3) * select(0.4, 1.0, held);
+
+    var clickBloom = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let radius = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+            clickBloom = max(clickBloom, exp(-age * 2.5) * (1.0 - smoothstep(0.0, 0.12, radius)) + exp(-abs(radius - age * 0.1) * 60.0) * exp(-age * 1.1) * 0.6);
+        }
+    }
+    state += vec3<f32>(1.0, 0.5 + rowVoice * 0.3, 0.25) * clickBloom * 0.5;
 
     // Depth haze + blackbody temperature grading.
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
@@ -195,7 +237,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Semantic alpha = bloom/bright weight; IGN dither; premultiplied write.
     let luma = dot(finalRGB, vec3<f32>(0.2126, 0.7152, 0.0722));
     let bloomWeight = pow(max(0.0, luma - 0.55), 2.0) * 3.0;
-    let alpha = clamp(bloomWeight, 0.0, 1.0);
+    let alpha = clamp(bloomWeight + clickBloom * 0.25 + mouseFalloff * 0.1 + bass * 0.05, 0.0, 1.0);
     let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
     finalRGB = finalRGB + vec3<f32>(dither);
 

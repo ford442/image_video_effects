@@ -3,8 +3,9 @@
 //  Category: liquid-effects
 //  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
 //            per-band-fft, spring-damper-pointer, velocity-smear,
-//            pigment-diffusion, depth-aware, upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+//            pigment-diffusion, edge-guided transport, monotone reconstruction,
+//            depth-aware, upgraded-rgba, semantic-alpha, aces
+//  Upgraded: 2026-08-23 (Batch 58B + tensor-guided precision pass)
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Two structures replace the original "pull toward the cursor" offset:
 //
@@ -78,6 +79,37 @@ fn historyBilinear(p: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
     return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
 }
 
+struct HistoryBounds {
+    low: vec4<f32>,
+    high: vec4<f32>,
+};
+
+// Clamp higher-detail reconstruction to the local cross stencil. This is the
+// same monotonicity safeguard used by high-order fluid advection: it prevents
+// ringing from creating negative pigment or HDR speckles in persistent trails.
+fn historyBounds(p: vec2<f32>, dims: vec2<i32>) -> HistoryBounds {
+    let maxC = dims - vec2<i32>(1);
+    let c = clamp(vec2<i32>(round(p)), vec2<i32>(0), maxC);
+    let e = textureLoad(dataTextureC, clamp(c + vec2<i32>( 1,  0), vec2<i32>(0), maxC), 0);
+    let w = textureLoad(dataTextureC, clamp(c + vec2<i32>(-1,  0), vec2<i32>(0), maxC), 0);
+    let n = textureLoad(dataTextureC, clamp(c + vec2<i32>( 0,  1), vec2<i32>(0), maxC), 0);
+    let s = textureLoad(dataTextureC, clamp(c + vec2<i32>( 0, -1), vec2<i32>(0), maxC), 0);
+    let m = textureLoad(dataTextureC, c, 0);
+    var out: HistoryBounds;
+    out.low = min(m, min(min(e, w), min(n, s)));
+    out.high = max(m, max(max(e, w), max(n, s)));
+    return out;
+}
+
+fn plateGradient(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
+    let weights = vec3<f32>(0.2126, 0.7152, 0.0722);
+    let l = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb, weights);
+    let r = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb, weights);
+    let t = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, texel.y), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb, weights);
+    let b = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb, weights);
+    return vec2<f32>(r - l, b - t);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimsI = vec2<i32>(textureDimensions(writeTexture));
@@ -85,6 +117,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let coord = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(dimsI);
+    let texel = 1.0 / resolution;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let aspect = resolution.x / resolution.y;
@@ -128,8 +161,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Drag along the pointer's actual travel, not toward its centre.
     let speed = length(mouseVel);
     let strokeDir = select(vec2<f32>(0.0), mouseVel / max(speed, 1e-5), speed > 1e-4);
+    let imageGradient = plateGradient(uv, texel);
+    let edgeEnergy = clamp(length(imageGradient) * 5.0, 0.0, 1.0);
+    let edgeTangent = normalize(vec2<f32>(-imageGradient.y, imageGradient.x) + strokeDir * 1e-4);
+    // Wet pigment follows source contours instead of bleeding across them.
+    let guidedDir = normalize(mix(strokeDir, edgeTangent, edgeEnergy * (0.25 + 0.45 * smearStrength)) + vec2<f32>(1e-6));
     let dragLen = clamp(speed * 0.02, 0.0, 0.06) * smearStrength * (0.5 + held);
-    var offset = strokeDir * dragLen * brushFalloff;
+    var offset = guidedDir * dragLen * brushFalloff;
 
     // ── Bounded click splats ─────────────────────────────────────────────────
     var splat = 0.0;
@@ -154,7 +192,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bandIdx = u32(clamp((uv.x * 0.5 + uv.y * 0.5) * 8.0, 0.0, 7.999));
     let band = plasmaBuffer[bandIdx + 1u].x;
     let bleed = (0.4 + band * 3.2 + mids * 0.8) * (0.5 + smearStrength);
-    let normalDir = vec2<f32>(-strokeDir.y, strokeDir.x);
+    let normalDir = vec2<f32>(-guidedDir.y, guidedDir.x);
 
     let basePx = (uv - offset) * resolution;
     let bleedPx = normalDir * bleed;
@@ -165,6 +203,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let h4 = historyBilinear(basePx - bleedPx * 2.0, dimsI);
     // Gaussian-ish 5-tap along the normal.
     var smeared = h0 * 0.38 + (h1 + h2) * 0.24 + (h3 + h4) * 0.07;
+    let bounds = historyBounds(basePx, dimsI);
+    smeared = clamp(smeared, bounds.low, bounds.high);
 
     let currentInput = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
@@ -182,6 +222,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += vec3<f32>(0.02, 0.01, 0.0) * smearStrength;
     color += vec3<f32>(1.0, 0.86, 0.7) * splat * 0.25 * (1.0 + bass * 0.6);
     color += vec3<f32>(0.25, 0.45, 0.8) * brushFalloff * held * (0.15 + treble * 0.35);
+    let fibrePhase = dot(uv * resolution, guidedDir) * (0.16 + band * 0.12) + time * (0.7 + treble);
+    color += vec3<f32>(0.16, 0.09, 0.04) * sin(fibrePhase) * edgeEnergy * smearStrength * 0.045;
     color = acesFilm(color);
 
     // ── Semantic alpha ───────────────────────────────────────────────────────

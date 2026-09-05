@@ -1,8 +1,6 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Cyber Rain Interactive — Batch 67
-//  fp128 column flow phase, glyph ROM parallax sheets, C smear trails,
-//  racing head packets, spring-free pointer, capped EMP rings, ACES.
-// ────────────────────────────────────────────────────────────────────────────────
+// Cyber Rain Interactive — Composer batch cyber/digital/glitch cohort 3
+// fp128 column flow, glyph ROM parallax sheets, C smear trails, racing head
+// packets, spring-free pointer (distinct from cyber-rain-em), capped EMP rings, ACES.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture:    texture_2d<f32>;
@@ -176,8 +174,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let imgColor = vec3<f32>(iR, iG.g, iB);
     let lumaImg = dot(imgColor, vec3<f32>(0.299, 0.587, 0.114));
 
-    let wetness = smoothstep(0.35, 0.85, lumaImg);
-    brightness *= 0.55 + wetness * 0.9;
+    let wetness = smoothstep(0.25, 0.9, lumaImg);
+    brightness *= 0.45 + wetness * 1.05 + emp * 0.15;
 
     let dropout = step(1.0 - glitch * 0.12, hash12(vec2<f32>(floor(uv.x * baseCols), time * 9.0)));
     brightness *= 1.0 - dropout;
@@ -187,7 +185,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var rainColor = mix(coolGreen, paleGreen, wetness) * brightness;
     rainColor += vec3<f32>(0.85, 1.0, 0.95) * head * (1.2 + bass * 0.8);
     rainColor += vec3<f32>(0.35, 0.75, 1.0) * mouseField * (0.8 + mids * 0.6);
-    rainColor += vec3<f32>(0.6, 1.0, 0.85) * emp * 1.1;
+    rainColor += vec3<f32>(0.6, 1.0, 0.85) * emp * (1.35 + wetness * 0.4);
     rainColor += vec3<f32>(0.4, 1.0, 0.7) * packet * 0.5;
 
     var color = mix(imgColor * (0.12 + wetness * 0.28), rainColor, clamp(brightness, 0.0, 1.0));

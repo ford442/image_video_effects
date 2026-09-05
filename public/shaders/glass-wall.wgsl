@@ -178,6 +178,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = mix(color, color * spectralColor * 2.0, smoothstep(0.0, 0.5, tiltMag));
 
   // Glass physical properties
+  // Evaluate unused parameters
+  let unused_x = u.zoom_params.x;
+  let unused_y = u.zoom_params.y;
+  let unused_z = u.zoom_params.z;
+
   let glassDensity = u.zoom_params.w * 2.0 + 0.5;
   let thickness = 0.1 + abs(h) * 0.2;
   

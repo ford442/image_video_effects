@@ -1446,7 +1446,7 @@
     "id": "liquid-smear",
     "name": "Liquid Smear",
     "url": "shaders/liquid-smear.wgsl",
-    "description": "Pigment drag along the pointer's real travel direction, taken from a spring-damped cursor and its velocity in extraBuffer[133..136] — the previous version always pulled toward the cursor centre, which reads as a sink rather than a brush. A five-tap kernel bleeds pigment along the stroke normal with a width set by the local FFT bin. History is fetched with exact textureLoad, bilinear by hand.",
+    "description": "Spring-damped pigment drag follows the pointer's real velocity and bends along source-image contours. FFT-scaled anisotropic bleed gains a monotone local-extrema clamp, preserving fine fibres without feedback ringing or negative pigment.",
     "params": [
       {
         "id": "strength",
@@ -1490,7 +1490,9 @@
       "aces",
       "spring-damper-pointer",
       "velocity-smear",
-      "pigment-diffusion"
+      "pigment-diffusion",
+      "edge-guided-transport",
+      "monotone-reconstruction"
     ],
     "tags": [
       "filter",
@@ -1891,7 +1893,7 @@
     "id": "liquid-viscous",
     "name": "Liquid Viscous",
     "url": "shaders/liquid-viscous.wgsl",
-    "description": "2D incompressible Navier-Stokes with vorticity confinement. Vorticity at the centre and its four neighbours now comes from ONE shared stencil (was five separate calls, each doing four filtered samples), the pressure solve genuinely relaxes instead of recomputing one value four times, and the audio vortices drift along continuous Lissajous paths instead of teleporting every 0.7 s. Dye is injected per FFT band. dataTextureA carries simulation state.",
+    "description": "A persistent 2D fluid state with midpoint semi-Lagrangian transport, streamline-aligned viscosity, Reynolds-number turbulence transition, shared-stencil vorticity confinement, a convergent local Jacobi projection, continuously drifting audio vortices, and per-band dye injection.",
     "tags": [
       "filter",
       "image-processing",
@@ -1954,6 +1956,9 @@
       "semantic-alpha",
       "aces",
       "vorticity-confinement",
+      "midpoint-advection",
+      "anisotropic-diffusion",
+      "reynolds-transition",
       "stencil-vorticity",
       "local-jacobi-pressure",
       "fluid-simulation"
@@ -2005,7 +2010,7 @@
     "id": "liquid-zoom",
     "name": "Liquid Zoom",
     "url": "shaders/liquid-zoom.wgsl",
-    "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses.",
+    "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses. Simple liquid warp, not full ferro.",
     "features": [
       "mouse-driven",
       "held-drag",

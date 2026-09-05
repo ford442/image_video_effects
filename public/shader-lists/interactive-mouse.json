@@ -3483,7 +3483,7 @@
     "id": "echo-ripple",
     "name": "Echo Ripple",
     "url": "shaders/echo-ripple.wgsl",
-    "description": "Oil-slick thin-film rings with bioluminescent caustic wakes, spectral echo harmonics, held gravity deformation, bounded click history, and exact-load feedback advection preserving [displayRGB, bassEnvelope] A packing.",
+    "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing.",
     "updated": true,
     "params": [
       {
@@ -3557,6 +3557,8 @@
       "lod-noise",
       "cached-displacement",
       "thin-film-interference",
+      "bioluminescent-harmonics",
+      "held-gravity-bowl",
       "caustic-wakes",
       "exact-history-advection",
       "bounded-click-ripples"
@@ -3575,8 +3577,38 @@
     "name": "Edge Glow Mouse",
     "category": "interactive-mouse",
     "url": "shaders/edge-glow-mouse.wgsl",
-    "description": "Unsharp-masked edges bloom into neon HDR halos with anisotropic diffusion, chromatic aberration, ACES tone mapping, and film grain. Bass drives glow radius, mouse creates local edge emphasis, depth controls falloff.",
+    "description": "Unsharp-masked edges bloom into oil-slick magenta/teal neon with anisotropic bloom packets racing along tangents, richer click ring bursts, held tighten+intensify, C-persisted halo trail, ACES, and FFT band shimmer. Distinct psychedelic film — not plain cyan.",
     "params": [
+      {
+        "id": "threshold",
+        "name": "Edge Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorCycle",
+        "name": "Color Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "threshold",
         "name": "Edge Threshold",
@@ -3610,7 +3642,12 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "thin-film",
+      "oil-slick",
+      "anisotropic-bloom"
     ],
     "tags": [
       "edges",
@@ -3620,18 +3657,59 @@
       "audio-reactive",
       "bloom",
       "chromatic",
-      "HDR"
+      "HDR",
+      "iridescent",
+      "oil-slick"
     ]
   },
   {
     "id": "energy-shield",
     "name": "Energy Shield",
     "url": "shaders/energy-shield.wgsl",
+    "description": "A sci-fi hexagonal force field that lights up under the cursor, trails activation history, and detonates expanding impact rings on click. Hex edges shimmer with oil-slick iridescence instead of flat cyan; a stronger Fresnel rim reads as a curved shield surface. Held press tightens the hex grid and sharpens cell edges. Bass pulses the standing wave and overall glow; treble crackles along the hex rims. Exact textureLoad trail state, ACES on the display path, semantic alpha from shield activation.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-interaction",
+      "click-shockwaves",
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "fresnel-rim",
+      "oil-slick",
+      "hex-grid"
     ],
-    "description": "A hexagonal energy grid that lights up and ripples upon mouse interaction.",
     "params": [
+      {
+        "id": "hexScale",
+        "name": "Hex Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rippleSpeed",
+        "name": "Ripple Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "impactStrength",
+        "name": "Impact Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.95,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "hexScale",
         "name": "Hex Size",
@@ -3663,8 +3741,13 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
-    ]
+      "interactive",
+      "hex-grid",
+      "sci-fi",
+      "audio-reactive",
+      "force-field"
+    ],
+    "updated": true
   },
   {
     "id": "entropy-grid",
@@ -7071,11 +7154,13 @@
       "semantic-alpha",
       "aces",
       "curl-advection",
+      "midpoint-advection",
+      "bounded-antidiffusion",
       "wipe-fronts",
       "chromatic-aberration",
       "temporal-feedback"
     ],
-    "description": "Temporal feedback advected by a divergence-free curl-noise field whose three octaves are driven by their own FFT bins — the previous field used raw noise directly as a velocity, which has non-zero divergence and blooms the feedback out. Clicks emit bounded wipe fronts that punch fresh video through the accumulation. History uses exact textureLoad.",
+    "description": "Temporal feedback follows a second-order midpoint trace through three FFT-banded divergence-free curl octaves. Bounded anti-diffusion restores transported detail without inventing new extrema, while click wipe fronts reveal fresh video.",
     "params": [
       {
         "name": "Distortion",
@@ -7162,8 +7247,20 @@
     "id": "liquid-touch",
     "name": "Liquid Touch",
     "url": "shaders/liquid-touch.wgsl",
+    "description": "An exact-load height-field solver with a 13-point biharmonic capillary stencil, nonlinear mean-curvature pressure, Marangoni flow, dispersive droplet waves, touch coalescence, and curvature-driven microfoam.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
+      "audio-reactive",
+      "depth-aware",
+      "fluid-simulation",
+      "biharmonic-dispersion",
+      "mean-curvature-pressure",
+      "marangoni-flow",
+      "microfoam",
+      "semantic-alpha",
+      "aces"
     ],
     "params": [
       {
@@ -7193,6 +7290,40 @@
         "default": 0.3,
         "min": 0,
         "max": 1
+      }
+    ],
+    "updatedParams": [
+      {
+        "id": "viscosity",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Young-Laplace tension and capillary dispersion strength."
+      },
+      {
+        "id": "brush",
+        "name": "Droplet Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Radius of held-pointer droplet displacement and heating."
+      },
+      {
+        "id": "refract",
+        "name": "Optical Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Height-gradient refraction and surface-normal strength."
+      },
+      {
+        "id": "tint",
+        "name": "Marangoni Flow",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Thermal surface-tension-gradient flow and capillary tint."
       }
     ],
     "tags": [
@@ -7264,10 +7395,13 @@
       "aces",
       "rk4-advection",
       "strain-tensor",
+      "cauchy-green-deformation",
+      "principal-stretch",
+      "fold-caustics",
       "chromatic-aberration",
       "fluid-simulation"
     ],
-    "description": "RK4 semi-Lagrangian warp whose strain tensor now comes from the flow field's ANALYTIC Jacobian instead of four extra finite-difference field evaluations (each of which ran three curl-noise octaves). Fixes an alpha bug that multiplied a UV-space magnitude by the pixel width, pinning alpha at 1.0 at every real resolution. Clicks emit bounded vortex rings; state reads use exact textureLoad.",
+    "description": "RK4 semi-Lagrangian flow combines exact-load state with an analytic pointer Jacobian. A finite-time Cauchy-Green tensor now yields rotation-invariant principal stretch, anisotropic chromatic spread, and near-singular fold caustics; bounded click rings inject vorticity.",
     "params": [
       {
         "id": "radius",
@@ -7325,11 +7459,11 @@
       },
       {
         "id": "decay",
-        "name": "Shear Stretch",
+        "name": "Principal Stretch",
         "default": 0.9,
         "min": 0,
         "max": 1,
-        "description": "How much the strain tensor's shear stretches the velocity (maps to zoom_params.z)."
+        "description": "Blend toward the Cauchy-Green tensor's dominant principal stretch (maps to zoom_params.z)."
       },
       {
         "id": "swirl",
@@ -9189,9 +9323,20 @@
     "url": "shaders/mouse-mandelbrot-zoom-portal.wgsl",
     "features": [
       "mouse-driven",
-      "raymarched"
+      "raymarched",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
-    "description": "Navigate the infinite Mandelbrot set with mouse position. Click to create nested zoom portals that reveal deeper fractal levels.",
+    "description": "Nested zoom-burst packets and orbital pointer spin through the Mandelbrot set. Click portals remain, sprung navigation, exact-C persist, ACES display, iteration semantic alpha.",
     "params": [
       {
         "id": "zoomLevel",
@@ -9227,8 +9372,48 @@
       "mouse-driven",
       "fractal",
       "psychedelic",
-      "zoom"
-    ]
+      "zoom",
+      "fast-motion",
+      "audio-reactive",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Zoom Level",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Iteration Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Palette Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Portal Blend",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "category": "interactive-mouse"
   },
   {
     "id": "mouse-neural-dreamscape",
@@ -9965,7 +10150,7 @@
     "id": "neon-fluid-warp",
     "name": "Neon Fluid Warp",
     "url": "shaders/neon-fluid-warp.wgsl",
-    "description": "Distorts the image like a fluid around the mouse, adding neon edges.",
+    "description": "Viscous curl jets and neon edge runners around a sprung pointer. Held drag thickens the fluid, clicks kick refraction rings, exact-C glow persist, ACES display, emissive semantic alpha.",
     "params": [
       {
         "id": "warpStrength",
@@ -9999,15 +10184,65 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
       "music",
-      "reactive"
-    ]
+      "reactive",
+      "fast-motion",
+      "audio-reactive",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Glow Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Liquidity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "category": "interactive-mouse"
   },
   {
     "id": "neon-pulse",
@@ -10248,7 +10483,7 @@
     "id": "neon-warp",
     "name": "Neon Warp",
     "url": "shaders/neon-warp.wgsl",
-    "description": "Thermal mirage refraction driven by diffusing heat sources, ripples, and blackbody plasma glow.",
+    "description": "Closed-form thermal packets and a refraction whip. Heat is analytic from pointer and ripples — A stores ACES display, not a second sim. Exact-C glow advection, ACES, heat-energy alpha.",
     "params": [
       {
         "id": "refraction_strength",
@@ -10283,15 +10518,64 @@
       "mouse-driven",
       "temporal-persistence",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
       "thermal",
-      "mirage"
-    ]
+      "mirage",
+      "fast-motion",
+      "audio-reactive",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Refraction Strength",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Diffusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Emission Gain",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Cooling",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "category": "interactive-mouse"
   },
   {
     "id": "neural-nexus",
@@ -14546,7 +14830,7 @@
     "name": "Solarize Warp",
     "category": "interactive-mouse",
     "url": "shaders/solarize-warp.wgsl",
-    "description": "Sabattier solarization with domain-warped fBm displacement, Mackie edge lines, split-tone shadows/highlights, ACES tone mapping, and film grain. Bass drives threshold oscillation, mouse warps field, depth controls parallax.",
+    "description": "Sabattier solarize with a domain-warp conveyor and traveling threshold wavefronts. Sprung pointer twist, held gain, bounded click fronts, exact-C trails, ACES display, and Mackie-edge semantic alpha.",
     "params": [
       {
         "id": "twist",
@@ -14581,14 +14865,60 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "tags": [
       "solarize",
       "darkroom",
       "warp",
       "twist",
-      "audio-reactive"
+      "audio-reactive",
+      "fast-motion",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Twist Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Solarize Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Effect Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Effect Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -15336,9 +15666,15 @@
     "id": "stipple-engraving",
     "name": "Stipple Engraving",
     "url": "shaders/stipple-engraving.wgsl",
-    "description": "Converts the image into a vintage stipple engraving. Mouse proximity acts as a spotlight, revealing details by increasing luminance.",
+    "description": "Tone-aware low-discrepancy stippling combines directional hatching, paper absorption, cursor burnishing, held ink pooling, and click-driven engraving rings.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "low-discrepancy-stipple",
+      "directional-hatching",
+      "paper-absorption",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "params": [
       {
@@ -15370,9 +15706,43 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Spot Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Spot Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for restrained ink persistence; B is unused; depth stores engraved ink density.",
     "tags": [
-      "filter",
-      "image-processing"
+      "stipple",
+      "engraving",
+      "hatching",
+      "printmaking",
+      "interactive"
     ]
   },
   {
@@ -15648,9 +16018,20 @@
     "id": "temporal-slit-paint",
     "name": "Temporal Slit Paint",
     "url": "shaders/temporal-slit-paint.wgsl",
-    "description": "Parametric brush painting with shape selection, velocity-aware smearing, and diffusion-based color bleeding onto a temporal canvas.",
+    "description": "Velocity-stretched brush and traveling slit-head runners on a raw A canvas. Display is ACES of the paint composite; coverage stays in A. Held stamps, click spatters, exact-C diffusion.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "params": [
       {
@@ -15694,8 +16075,48 @@
       "paint",
       "brush",
       "artistic",
-      "temporal"
-    ]
+      "temporal",
+      "fast-motion",
+      "audio-reactive",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Brush Shape",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Brush Softness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Diffusion",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "category": "interactive-mouse"
   },
   {
     "id": "thermal-touch",
@@ -16727,7 +17148,7 @@
     "id": "vortex-drag",
     "name": "Vortex Drag",
     "url": "shaders/vortex-drag.wgsl",
-    "description": "Twisting vortex distortion that follows the mouse cursor.",
+    "description": "Sprung vortex core with helical streak ribbons. Twist, radius, pinch, and hardness stay exact. Held shear, click whirl fronts, exact-C smear, ACES display.",
     "params": [
       {
         "id": "twist",
@@ -16763,14 +17184,62 @@
       "audio-reactive",
       "audio-driven",
       "upgraded-rgba",
-      "depth-aware"
+      "depth-aware",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "fast-motion",
+      "spring-cursor",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
-      "music"
-    ]
+      "music",
+      "fast-motion",
+      "audio-reactive",
+      "aces"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Twist Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Vortex Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Pinch/Bulge",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Edge Hardness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "category": "interactive-mouse"
   },
   {
     "id": "x-ray-reveal",

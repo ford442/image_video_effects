@@ -32,3 +32,57 @@ export function lutU8Map(
   }
   return out;
 }
+
+/**
+ * Unpack rgba8unorm classifyTex (R = band 0..7) into one byte per pixel.
+ * `bytesPerRow` must match the GPU copy (256-byte aligned).
+ */
+export function unpackClassifyRgba8(
+  packed: Uint8Array,
+  width: number,
+  height: number,
+  bytesPerRow: number,
+): Uint8Array {
+  const out = new Uint8Array(Math.max(0, width * height));
+  const rowStride = Math.max(bytesPerRow, width * 4);
+  for (let y = 0; y < height; y++) {
+    const row = y * rowStride;
+    for (let x = 0; x < width; x++) {
+      out[y * width + x] = packed[row + x * 4] ?? 0;
+    }
+  }
+  return out;
+}
+
+/** Distinct hues for Dev Tools false-color (band 0..7). */
+export const CLASSIFY_FALSE_COLOR: ReadonlyArray<[number, number, number]> = [
+  [20, 24, 48],
+  [48, 72, 160],
+  [32, 140, 180],
+  [40, 180, 96],
+  [220, 196, 48],
+  [232, 128, 36],
+  [220, 56, 64],
+  [200, 80, 200],
+];
+
+/** Band indices → RGBA8 false-color (4 bytes/pixel). */
+export function classifyBandsToRgba(
+  bands: ArrayLike<number>,
+  width: number,
+  height: number,
+): Uint8ClampedArray {
+  const n = Math.max(0, width * height);
+  const out = new Uint8ClampedArray(n * 4);
+  const palette = CLASSIFY_FALSE_COLOR;
+  for (let i = 0; i < n; i++) {
+    const band = Math.max(0, Math.min(palette.length - 1, bands[i] ?? 0));
+    const rgb = palette[band];
+    const o = i * 4;
+    out[o] = rgb[0];
+    out[o + 1] = rgb[1];
+    out[o + 2] = rgb[2];
+    out[o + 3] = 255;
+  }
+  return out;
+}

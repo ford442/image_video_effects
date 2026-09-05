@@ -1,15 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Vinyl Scratch — Groove Cinema Edition
-//  Category: retro-glitch
-//  Features: mouse-driven, audio-reactive, rotating-scratch, depth-groove,
-//            chromatic-wobble, upgraded-rgba, dust-particles, groove-lighting,
-//            analog-warmth, film-grain, vignette, chromatic-aberration,
-//            lens-dirt, saturation-rolloff, groove-reflections
-//  Complexity: High
-//  Chunks From: vinyl-scratch, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-06-28
-// ═══════════════════════════════════════════════════════════════════
+// Vinyl Scratch — Composer batch cyber/digital/glitch cohort 3
+// Groove cinema with spring stylus, held drag warp, click scratch bursts,
+// exact C groove-sparkle coherence, ACES + semantic alpha.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -123,21 +114,54 @@ fn grooveSparkle(uv: vec2<f32>, dist: f32, time: f32, treble: f32) -> f32 {
     return sparkle * grooveMask * 0.3 * treble;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let coord = vec2<i32>(global_id.xy);
+    let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
+    let held = u.zoom_config.w > 0.5;
     let aspect = resolution.x / resolution.y;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    var smoothMouse = mousePos;
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[138] > 0.5) {
+        smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+        var springPos = smoothMouse;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = mousePos;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 10.0;
+            let accel = (mousePos - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+        smoothMouse = springPos;
+    }
+
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     let depthGroove = mix(0.7, 1.3, depth);
 
     let rotationSpeed = (u.zoom_params.x - 0.5) * 4.0 * (1.0 + bass * 0.5);
@@ -160,8 +184,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let angle = atan2(dirCorrected.y, dirCorrected.x);
 
     var rot = time * rotationSpeed;
-    let scratchOffset = (mousePos.x - 0.5) * 10.0 * scratchAmount;
+    let scratchOffset = (smoothMouse.x - 0.5) * 10.0 * scratchAmount;
     rot = rot + scratchOffset;
+    if (held) { rot += sin(time * 18.0) * 0.08 * scratchAmount; }
+
+    var clickPop = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 1.2) {
+            let radius = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+            clickPop = max(clickPop, exp(-age * 3.0) * (1.0 - smoothstep(0.0, 0.08, radius)));
+        }
+    }
+    rot += clickPop * 0.5;
 
     let wobbleOffset = sin(angle * 2.0 + time * 5.0) * 0.02 * wobble * dist * depthGroove;
 
@@ -200,7 +237,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ── Groove sparkle ──
     let sparkle = grooveSparkle(uv, dist, time, treble);
-    color = vec4<f32>(color.rgb + vec3<f32>(sparkle), color.a);
+    let prevSparkle = textureLoad(dataTextureC, coord, 0).a;
+    let sparkleCoherent = mix(sparkle, prevSparkle * 0.9, 0.35);
+    color = vec4<f32>(color.rgb + vec3<f32>(sparkleCoherent + clickPop * 0.25), color.a);
 
     // ── Temporal film grain ──
     let grain = temporalGrain(vec2<f32>(global_id.xy), time, treble);
@@ -222,12 +261,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dirt = lensDirt(uv, time, brightMask);
     color = vec4<f32>(color.rgb + vec3<f32>(0.9, 0.85, 0.7) * dirt, color.a);
 
-    color.a = clamp(color.a + grooveIntensity * 0.15 + bass * 0.05, 0.0, 1.0);
+    color.a = clamp(color.a + grooveIntensity * 0.15 + clickPop * 0.2 + bass * 0.05, 0.0, 1.0);
 
-    let finalColor = clamp(color.rgb, vec3<f32>(0.0), vec3<f32>(1.5));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor * color.a, color.a));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor * color.a, color.a));
+    var finalColor = acesToneMap(clamp(color.rgb, vec3<f32>(0.0), vec3<f32>(1.5)) * (0.95 + bass * 0.05));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, color.a));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor, color.a));
 
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

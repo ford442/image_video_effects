@@ -1,14 +1,13 @@
-// src/wasm/bridge/wgslFormat.js
-// WGSL storage format rewrite — keep in sync with src/renderer/wgslFormatRewrite.ts
+// GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
-const RGBA32_STORAGE_RE =
-  /texture_storage_2d\s*<\s*rgba32float\s*,\s*write\s*>/g;
-
-/**
- * @param {string} wgsl
- * @param {number} colorFormatWasm 0=rgba32float, 1=rgba16float
- */
-export function rewriteWgslStorageFormats(wgsl, colorFormatWasm) {
-  if (colorFormatWasm === 0) return wgsl;
-  return wgsl.replace(RGBA32_STORAGE_RE, 'texture_storage_2d<rgba16float, write>');
+function rewriteWgslStorageFormats(wgsl, colorFormatWasm) {
+  const colorFormat = colorFormatWasm === 1 ? "rgba16float" : "rgba32float";
+  const re = /texture_storage_2d\s*<\s*(rgba\w+)\s*,\s*(read_write|write|read)\s*>/g;
+  return wgsl.replace(re, (full, fmt, access) => {
+    if (access !== "write" || fmt === colorFormat) return full;
+    return `texture_storage_2d<${colorFormat}, write>`;
+  });
 }
+export {
+  rewriteWgslStorageFormats
+};

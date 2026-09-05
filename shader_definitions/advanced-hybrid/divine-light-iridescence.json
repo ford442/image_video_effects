@@ -2,18 +2,23 @@
   "id": "divine-light-iridescence",
   "name": "Divine Light Iridescence",
   "url": "shaders/divine-light-iridescence.wgsl",
-  "description": "Divine Light Iridescence",
+  "description": "Volumetric god rays emanating from cursor position with multi-order thin-film iridescence, radial ray-marching, ACES tone mapping, and temporal beam persistence.",
   "tags": [
     "god-rays",
     "thin-film-interference",
     "volumetric-light",
-    "mouse-driven"
+    "mouse-driven",
+    "iridescence",
+    "spectral"
   ],
   "features": [
     "god-rays",
     "thin-film-interference",
     "volumetric-light",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-feedback",
+    "click-reactive"
   ],
   "params": [
     {
@@ -53,5 +58,39 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Ray Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Luma Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Softness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Ray Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth."
 }

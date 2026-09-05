@@ -142,6 +142,10 @@ fn spectralPower(color: vec3<f32>, pattern: f32) -> vec3<f32> {
 // ═══════════════════════════════════════════════════════════════════════════
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let unused_x = u.zoom_params.x;
+  let unused_y = u.zoom_params.y;
+  let unused_z = u.zoom_params.z;
+  let unused_w = u.zoom_params.w;
     let dims = u.config.zw;
     let uv = vec2<f32>(gid.xy) / dims;
     let coord = vec2<i32>(gid.xy);

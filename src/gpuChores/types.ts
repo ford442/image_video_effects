@@ -10,7 +10,16 @@ export type GpuChoresOp =
   | 'reduce_f32'
   | 'lut_u8_map'
   | 'downsample_2d'
-  | 'auto_exposure';
+  | 'auto_exposure'
+  | 'apply_gain_2d';
+
+export type SourceGainStatus = 'on' | 'off' | 'skipped-physics';
+
+export interface ClassifyPreview {
+  width: number;
+  height: number;
+  bands: number[];
+}
 
 export const HISTOGRAM_BINS = 256;
 export const PREVIEW_SIZE = 64;
@@ -54,6 +63,8 @@ export interface GpuChoresBreadcrumbs {
   lastOp: GpuChoresOp | null;
   backend: GpuChoresBackend;
   autoUniforms: GpuChoresAutoUniforms;
+  sourceGain: SourceGainStatus;
+  classifyPreview: ClassifyPreview | null;
 }
 
 export const NEUTRAL_AUTO_UNIFORMS: GpuChoresAutoUniforms = {
@@ -73,6 +84,8 @@ export function createDefaultBreadcrumbs(
     lastOp: null,
     backend: 'ts',
     autoUniforms: { ...NEUTRAL_AUTO_UNIFORMS },
+    sourceGain: 'off',
+    classifyPreview: null,
     ...overrides,
   };
 }

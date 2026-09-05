@@ -219,7 +219,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mousePos = vec2<f32>(u.zoom_config.y, mouseY);
 
     // Parameters
-    let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
     let viscosity = mix(0.3, 0.95, zp.x);
     let turbulence = zp.y * 3.0;
     let decay = mix(0.8, 0.99, zp.z);

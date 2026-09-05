@@ -245,8 +245,8 @@
   {
     "id": "anisotropic-kuwahara",
     "name": "Van Gogh Flow",
-    "url": "shaders/anisotropic-kuwahara.wgsl",
-    "description": "Anisotropic Kuwahara filter creating painterly Van Gogh-style brushstroke effects.",
+    "url": "shaders/anisotropic-kuwahara-tensor.wgsl",
+    "description": "Physics Lab — structure tensor → oriented Kuwahara brushstrokes. graph · 3 passes · mouse vortex.",
     "params": [
       {
         "id": "windowSize",
@@ -278,15 +278,61 @@
       }
     ],
     "features": [
+      "audio-reactive",
       "depth-aware",
+      "graph-runner",
       "interactive",
+      "mouse-driven",
+      "multi-pass",
       "painterly",
-      "mouse-driven"
+      "physics",
+      "simulation"
     ],
     "tags": [
-      "stylized",
-      "artistic"
-    ]
+      "artistic",
+      "kuwahara",
+      "painterly",
+      "physics",
+      "showcase",
+      "simulation",
+      "stylized"
+    ],
+    "multipass": {
+      "graph": {
+        "maxPassesPerFrame": 8,
+        "nodes": [
+          {
+            "id": "tensor",
+            "entry": "anisotropic-kuwahara-tensor",
+            "reads": [],
+            "writes": [
+              "dataA"
+            ]
+          },
+          {
+            "id": "filter",
+            "entry": "anisotropic-kuwahara-filter",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "dataA"
+            ]
+          },
+          {
+            "id": "render",
+            "entry": "anisotropic-kuwahara-render",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "artistic_painterly_oil",
@@ -535,13 +581,21 @@
     "id": "aurora-rift-2",
     "name": "Aurora Rift V2",
     "url": "shaders/aurora-rift-2.wgsl",
-    "description": "Enhanced aurora effects with improved color gradients.",
+    "description": "Layered magnetic curtains emit oxygen green/red and nitrogen blue/violet through volumetric transmittance, with cursor field bending, held ionization, and click fronts.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "magnetic-curtains",
+      "oxygen-nitrogen-emission",
+      "volumetric-transmittance",
+      "temporal-feedback",
+      "click-reactive"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "aurora",
+      "atmospheric",
+      "spectral-emission",
+      "interactive"
     ],
     "params": [
       {
@@ -576,7 +630,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Depth Weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for restrained curtain persistence; B is unused; source depth passes through."
   },
   {
     "id": "aurora-rift-gemini",
@@ -1395,8 +1484,8 @@
   {
     "id": "dla-crystals",
     "name": "DLA Crystal Growth",
-    "url": "shaders/dla-crystals.wgsl",
-    "description": "Diffusion-limited aggregation creating fractal crystal structures that grow from click points.",
+    "url": "shaders/dla-walkers.wgsl",
+    "description": "Physics Lab — diffusion-limited aggregation walkers freeze into fractal crystals. Click seeds, bass stickiness. graph · 2 passes · rgba32float.",
     "params": [
       {
         "id": "walkerSpeed",
@@ -1428,20 +1517,56 @@
       }
     ],
     "features": [
-      "temporal-persistence",
-      "interactive",
-      "fractal",
-      "mouse-driven",
+      "audio-driven",
       "audio-reactive",
-      "audio-driven"
+      "fractal",
+      "graph-runner",
+      "interactive",
+      "mouse-driven",
+      "multi-pass",
+      "physics",
+      "simulation",
+      "temporal-persistence"
     ],
     "tags": [
-      "simulation",
-      "physics",
       "audio",
+      "crystals",
+      "dla",
+      "fractal",
       "music",
-      "reactive"
-    ]
+      "physics",
+      "reactive",
+      "showcase",
+      "simulation"
+    ],
+    "multipass": {
+      "graph": {
+        "maxPassesPerFrame": 8,
+        "nodes": [
+          {
+            "id": "walkers",
+            "entry": "dla-walkers",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "dataA"
+            ]
+          },
+          {
+            "id": "render",
+            "entry": "dla-render",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "double-exposure-zoom",
@@ -1499,8 +1624,39 @@
     "id": "echo-trace",
     "name": "Temporal Velocity Echo",
     "url": "shaders/echo-trace.wgsl",
-    "description": "Predictive velocity echo field combining structure-tensor advection, smoothed mouse-motion extrapolation, deformed brush trails, curl-noise flow, and temporal feedback displacement.",
+    "description": "4D Kalman mouse estimator with covariance-driven Mahalanobis dashed trails, held brush tightening, capped click spark echoes, oil-slick psychedelic tint, exact-load C feedback, and ACES display. Kalman state lives in extraBuffer[133..141].",
+    "updated": true,
     "params": [
+      {
+        "id": "prediction_horizon",
+        "name": "Prediction Horizon",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "velocity_smoothing",
+        "name": "Velocity Smoothing",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "trail_deformation",
+        "name": "Trail Deformation",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "velocity_threshold",
+        "name": "Velocity Threshold",
+        "default": 0.15,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updatedParams": [
       {
         "id": "prediction_horizon",
         "name": "Prediction Horizon",
@@ -1540,7 +1696,14 @@
       "velocity-sensing",
       "predictive-echo",
       "feedback-displacement",
-      "curl-noise"
+      "kalman-filter",
+      "mahalanobis-trails",
+      "held-brush-tighten",
+      "bounded-click-sparks",
+      "oil-slick-trails",
+      "exact-history-advection",
+      "aces-tone-mapping",
+      "upgraded-rgba"
     ],
     "tags": [
       "stylized",
