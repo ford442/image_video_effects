@@ -275,9 +275,23 @@ re-deriving anything.
 
 ---
 
-## B. GitHub issue — draft now, for Copilot later
+## B. GitHub issue — EXPANDED AND FILED AS #1223
+
+> **Update, later on 2026-09-05.** The draft below was expanded through C1–C3 and filed as **issue #1223**. Point Copilot at #1223, not at this draft.
+>
+> **Three tree-verified corrections came out of the expansion, and they changed the design:**
+>
+> 1. **The remote window has no canvas.** `RemoteApp.tsx` renders the header plus `<div className="remote-content"><Controls …/></div>` — nothing else. #1201's "expand canvas" means the scrollable control area, so there is no resize observer to notify and no canvas z-index hazard.
+> 2. **The remote is the operator's control surface, not the output** — a 420×900 popup they are looking at. There is no blind-control scenario, which is the deciding argument for keeping the hidden flag local rather than syncing it.
+> 3. **`go.1ink.us` is already gated.** `publicHost.ts` `shouldMountRemoteApp()` returns `false` there and `AppShell` hides the "Open Remote" button. This work does **not** lift that hold, contrary to one model's answer.
+>
+> Two further claims were fabricated and are not in the filed issue: this project has **no Redux/Zustand** (so no "200 KB of selectors" cost), and the host does **not** share one injected `<link>` with the remote — they are separate documents loading the same bundle, so there is no cross-window cascade.
+>
+> **Decisions locked in #1223:** hidden flag local to the remote, never in `SyncMessage`/`FullState` (syncing it would make the restore path depend on the same channel that hid it — and `RemoteApp` already has a `LOST CONNECTION` state); persistence via a `chrome` URL param with `history.replaceState`; a **sticky restore strip, not** a copy of `.show-controls-overlay`, because the remote is a dense scrolling control panel rather than a canvas; plus a keyboard restore; scoped plain CSS in `style.css` (the project has zero CSS modules); and no extraction from `AppShell`, which stays untouched.
 
 Decoupled from A by construction: A lives in `src/contracts/`, `scripts/`, `src/gpuChores/`, `tests/` and docs; B lives entirely in the remote-control UI surface. No shared file.
+
+Original first-pass draft, kept for reference:
 
 ```
 Title: remote: complete #1201 — hide-controls must collapse the remote's own titlebar,
@@ -480,18 +494,22 @@ Scope is strict. You may touch ONLY these files:
   src/RemoteApp.tsx
   src/RemoteControlHeader.tsx
   src/RemoteControlHeader.test.tsx
-  src/hooks/useRemoteSync.ts
-  src/hooks/useRemoteSync.test.ts
-  src/components/app/AppShell.tsx     (only if a shared helper must be extracted)
+  src/RemoteApp.test.tsx              (new, if the toggle path needs its own suite)
   src/style.css
 
 Do NOT touch anything under src/contracts/, src/gpuChores/, src/renderer/,
 wasm_renderer/, public/wasm/, scripts/, tests/, public/shaders/, or storage_manager/.
 Another agent is working in those directories concurrently and any overlap will conflict.
 
-Mirror the existing pattern in `src/components/app/AppShell.tsx` (`chromeHidden`,
-`.main-container.fullscreen`, `.show-controls-overlay`) rather than inventing a second
-approach. Reuse before you add.
+Also do NOT touch `src/hooks/useRemoteSync.ts`, `src/syncTypes.ts`, or
+`src/components/app/AppShell.tsx`. The issue explains why: the hidden flag is deliberately
+LOCAL to the remote window and must not enter the `SyncMessage` union or `FullState`, and
+the host's chrome handling stays exactly as it is.
+
+The issue's "Design decisions" section is decided, not advisory. In particular: do NOT
+copy `.show-controls-overlay` — the remote is a dense scrolling control panel, not a
+canvas, and a floating button would sit on top of sliders. Use the sticky restore strip
+the issue specifies. Do NOT introduce CSS modules; this project has none.
 
 Before you open a PR, all of these must pass:
   npx tsc --noEmit
