@@ -101,7 +101,7 @@
     },
     {
       "file": "public/shaders/gen-celestial-weave.wgsl",
-      "line": 119,
+      "line": 123,
       "expr": "0",
       "op": "=",
       "index": 0,
