@@ -233,7 +233,11 @@ export async function loadShaderOnSlot(
       const api = (window as any).__pixelocity__;
       api.setInputSource(source);
       const ok = await api.loadShader(s.id, s.url);
-      if (!ok) return false;
+      if (!ok) {
+        const diags = api.renderer?.getDiagnostics?.();
+        const lastErr = diags?.wasm?.lastLoadError || 'Unknown (check console)';
+        throw new Error(`loadShader failed for ${s.id}: ${lastErr}`);
+      }
       api.setSlotShader(s.slot ?? 0, s.id);
       return true;
     },
