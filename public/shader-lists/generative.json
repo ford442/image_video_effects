@@ -5664,6 +5664,51 @@
     ]
   },
   {
+    "id": "gen-bioluminescent-neural-lattice",
+    "name": "Bioluminescent Neural Lattice",
+    "description": "A mesmerizing, pulsating web of deep-sea neural pathways that crackles with bioluminescent energy.",
+    "category": "generative",
+    "url": "/shaders/gen-bioluminescent-neural-lattice.wgsl",
+    "params": [
+      {
+        "id": "synapse_density",
+        "name": "Synapse Density",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "mapping": "zoom_params.y",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "mapping": "zoom_params.z",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "mapping": "zoom_params.w",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "name": "Bioluminescent Reaction-Diffusion",
     "category": "generative",
     "tags": [
