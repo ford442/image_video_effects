@@ -24,6 +24,8 @@ import {
   getRendererFps,
   isStrictGpuMode,
   MIN_WASM_FPS,
+  installGpuUncapturedErrorHook,
+  readGpuUncapturedErrors,
 } from './helpers/rendererHarness';
 
 test.beforeAll(async () => {
@@ -223,4 +225,108 @@ test('WASM multi-slot stack (fluid + generative)', async ({ page }) => {
   const slot1 = await page.evaluate(() => (window as any).__pixelocity__?.getSlotState?.(1));
   expect(slot0?.enabled).toBe(true);
   expect(slot1?.enabled).toBe(true);
+});
+
+const TINY_PNG =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+test('?renderer=wasm boot fails the spec on GPUValidationError (skip without adapter)', async ({
+  page,
+}) => {
+  const { criticalErrors } = attachConsoleCollector(page);
+  await installGpuUncapturedErrorHook(page);
+  await page.goto(buildAppUrl('wasm'), { waitUntil: 'networkidle' });
+  await waitForWebGpuProbe(page);
+
+  const probeOk = await page.evaluate(
+    () => (window as { webgpuProbe?: { ok?: boolean } }).webgpuProbe?.ok === true,
+  );
+  if (!probeOk) {
+    test.skip(true, 'No GPU adapter (WebGPU boot probe failed)');
+    return;
+  }
+
+  await waitForTestApi(page);
+  await page.waitForTimeout(1500);
+
+  const gpuErrors = await readGpuUncapturedErrors(page);
+  const validation = gpuErrors.filter(
+    (e) =>
+      e.type === 'GPUValidationError' ||
+      /GPUValidationError|Dispatch workgroup count/i.test(e.message),
+  );
+  expect(validation, JSON.stringify(gpuErrors)).toEqual([]);
+
+  const consoleValidation = criticalErrors.filter((e) =>
+    /GPUValidationError|Dispatch workgroup count|uncapturederror/i.test(e),
+  );
+  expect(consoleValidation).toEqual([]);
+});
+
+test('JS→WASM switch rebinds input so the photo is not empty (skip without adapter)', async ({
+  page,
+}) => {
+  await installGpuUncapturedErrorHook(page);
+  await page.goto(buildAppUrl('webgpu'), { waitUntil: 'networkidle' });
+  await waitForWebGpuProbe(page);
+
+  const probeOk = await page.evaluate(
+    () => (window as { webgpuProbe?: { ok?: boolean } }).webgpuProbe?.ok === true,
+  );
+  if (!probeOk) {
+    test.skip(true, 'No GPU adapter (WebGPU boot probe failed)');
+    return;
+  }
+
+  await waitForTestApi(page);
+
+  const loaded = await page.evaluate(async (url) => {
+    const api = (window as { __pixelocity__?: { loadImage?: (u: string) => Promise<unknown> } })
+      .__pixelocity__;
+    if (!api?.loadImage) return false;
+    await api.loadImage(url);
+    return true;
+  }, TINY_PNG);
+  if (!loaded) {
+    test.skip(true, 'Test API loadImage unavailable');
+    return;
+  }
+
+  const switched = await page.evaluate(async () => {
+    const manager = (
+      window as {
+        __pixelocity__?: { renderer?: { switchRenderer?: (t: string) => Promise<boolean> } };
+      }
+    ).__pixelocity__?.renderer;
+    if (!manager?.switchRenderer) return false;
+    return manager.switchRenderer('wasm');
+  });
+  if (!switched) {
+    if (isStrictGpuMode()) {
+      throw new Error('switchRenderer(wasm) failed under WASM_GPU_TESTS=1');
+    }
+    test.skip(true, 'WASM backend unavailable after JS→WASM switch');
+    return;
+  }
+
+  const after = await page.evaluate(() => {
+    const manager = (
+      window as {
+        __pixelocity__?: {
+          getRendererType?: () => string;
+          renderer?: { getInputSource?: () => string | null };
+        };
+      }
+    ).__pixelocity__;
+    return {
+      type: manager?.getRendererType?.() ?? null,
+      input: manager?.renderer?.getInputSource?.() ?? null,
+    };
+  });
+  expect(after.type).toBe('wasm');
+  expect(after.input).toBeTruthy();
+  expect(after.input).not.toBe('generative');
+
+  const gpuErrors = await readGpuUncapturedErrors(page);
+  expect(gpuErrors.filter((e) => e.type === 'GPUValidationError')).toEqual([]);
 });

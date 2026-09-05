@@ -1,4 +1,12 @@
 export { GpuChoresHost, shrinkCpuSource, rgba16BufferToRgba32 } from './GpuChoresHost';
+export {
+  DEFAULT_MAX_WORKGROUPS_PER_DIMENSION,
+  maxWorkgroupsPerDimension,
+  clampWorkgroupCount,
+  workgroups1d,
+  workgroups2d,
+} from './dispatch';
+export { assertDispatchWithinLimits, clampDispatchToLimits } from './dispatchLimits';
 export type { CpuSourceCache } from './GpuChoresHost';
 export { lumaBt709, lumaToBin } from './bt709';
 export { lumaHistogramBt709 } from './histogram';

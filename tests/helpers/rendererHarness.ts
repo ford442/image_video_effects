@@ -170,6 +170,47 @@ export function attachConsoleCollector(page: Page): {
   return { criticalErrors, consoleErrors };
 }
 
+export type GpuUncapturedErrorRecord = { message: string; type: string };
+
+/** Hook GPUDevice uncapturederror before page scripts run. Pair with readGpuUncapturedErrors. */
+export async function installGpuUncapturedErrorHook(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as Window & {
+      __pxUncapturedErrors?: GpuUncapturedErrorRecord[];
+    };
+    w.__pxUncapturedErrors = [];
+    const hookDevice = (device: GPUDevice | undefined) => {
+      if (!device) return device;
+      const tagged = device as GPUDevice & { __pxHooked?: boolean };
+      if (tagged.__pxHooked) return device;
+      tagged.__pxHooked = true;
+      device.addEventListener('uncapturederror', (ev) => {
+        const err = (ev as GPUUncapturedErrorEvent).error;
+        w.__pxUncapturedErrors!.push({
+          message: err?.message ?? String(err),
+          type: err?.constructor?.name ?? 'GPUError',
+        });
+      });
+      return device;
+    };
+    if (typeof GPUAdapter !== 'undefined' && GPUAdapter.prototype.requestDevice) {
+      const orig = GPUAdapter.prototype.requestDevice;
+      GPUAdapter.prototype.requestDevice = function (
+        this: GPUAdapter,
+        ...args: Parameters<GPUAdapter['requestDevice']>
+      ) {
+        return orig.apply(this, args).then((device) => hookDevice(device) as GPUDevice);
+      };
+    }
+  });
+}
+
+export async function readGpuUncapturedErrors(page: Page): Promise<GpuUncapturedErrorRecord[]> {
+  return page.evaluate(() => {
+    return (window as { __pxUncapturedErrors?: GpuUncapturedErrorRecord[] }).__pxUncapturedErrors ?? [];
+  });
+}
+
 export async function waitForWebGpuProbe(page: Page, timeoutMs = 30000): Promise<void> {
   await page.waitForFunction(
     () => {

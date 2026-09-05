@@ -26,6 +26,8 @@ WGSL for chores is **inline** in [`src/gpuChores/shaders.ts`](../src/gpuChores/s
 
 Workgroups: `@workgroup_size(8, 8)` 2D reduce (same as histogram); `@workgroup_size(8, 8)` 2D image.
 
+Dispatch ceiling: WebGPU `maxComputeWorkgroupsPerDimension` is **65535**. Chores must dispatch a **2D** grid (`ceil(w/8)` × `ceil(h/8)`), then `assertDispatchWithinLimits`. Never flatten `ceil(w*h/64)` as `DispatchWorkgroups(N)` — at 2048² that is `(65536, 1, 1)` and a per-frame `GPUValidationError` (#1200). See [`WASM_RUNTIME_INVARIANTS.md`](./WASM_RUNTIME_INVARIANTS.md).
+
 ## Device policy
 
 - **Single device:** `GpuChoresHost.attach(rendererDevice)` only. No `requestAdapter()` / `requestDevice()`.

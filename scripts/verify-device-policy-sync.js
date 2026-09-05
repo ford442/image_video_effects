@@ -94,23 +94,28 @@ function extractCppCheckLimits() {
   return out;
 }
 
-const ts = extractTsLimits();
-const cppRequired = extractCppRequiredLimits();
-const cppCheck = extractCppCheckLimits();
+const ONLY_WASM_INVARIANTS = process.argv.includes('--wasm-invariants');
+
 let failed = false;
 
-for (const [key, expected] of Object.entries(EXPECTED_LIMITS)) {
-  if (ts[key] !== expected) {
-    console.error(`TS ${key}: expected ${expected}, got ${ts[key]}`);
-    failed = true;
-  }
-  if (cppRequired[key] !== expected) {
-    console.error(`C++ requiredLimits.${key}: expected ${expected}, got ${cppRequired[key]}`);
-    failed = true;
-  }
-  if (cppCheck[key] !== expected && key !== 'maxUniformBufferBindingSize') {
-    console.error(`C++ CheckLimit ${key}: expected ${expected}, got ${cppCheck[key]}`);
-    failed = true;
+if (!ONLY_WASM_INVARIANTS) {
+  const ts = extractTsLimits();
+  const cppRequired = extractCppRequiredLimits();
+  const cppCheck = extractCppCheckLimits();
+
+  for (const [key, expected] of Object.entries(EXPECTED_LIMITS)) {
+    if (ts[key] !== expected) {
+      console.error(`TS ${key}: expected ${expected}, got ${ts[key]}`);
+      failed = true;
+    }
+    if (cppRequired[key] !== expected) {
+      console.error(`C++ requiredLimits.${key}: expected ${expected}, got ${cppRequired[key]}`);
+      failed = true;
+    }
+    if (cppCheck[key] !== expected && key !== 'maxUniformBufferBindingSize') {
+      console.error(`C++ CheckLimit ${key}: expected ${expected}, got ${cppCheck[key]}`);
+      failed = true;
+    }
   }
 }
 
@@ -356,15 +361,194 @@ function verifyEmptyPlaceholder() {
   }
 }
 
-verifyOptionalFeatures();
-verifyWasmExports();
-verifyWorkgroupDispatch();
-verifyEmptyPlaceholder();
+if (!ONLY_WASM_INVARIANTS) {
+  verifyOptionalFeatures();
+  verifyWasmExports();
+  verifyWorkgroupDispatch();
+  verifyEmptyPlaceholder();
+}
+verifyWasmRuntimeInvariants();
 
 if (failed) {
   process.exit(1);
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + wasm_exports + workgroup_dispatch + emptyPlaceholder ↔ TS/C++/shaders)',
+  '✅ Device policy sync OK (limits + optional features + wasm_exports + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
+
+function walkCppFiles(dir) {
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) out.push(...walkCppFiles(p));
+    else if (ent.name.endsWith('.cpp')) out.push(p);
+  }
+  return out;
+}
+
+function stripCppComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+}
+
+function verifyWasmRuntimeInvariants() {
+  const invPath = path.join(ROOT, 'src/contracts/wasm_runtime_invariants.json');
+  const inv = JSON.parse(fs.readFileSync(invPath, 'utf8'));
+  const { readWasmImports } = require('./wasm_import_table.js');
+
+  for (const ban of inv.forbiddenCppSymbols || []) {
+    const re = new RegExp(ban.callPattern);
+    const roots = ban.globs || ['wasm_renderer/**/*.cpp'];
+    for (const glob of roots) {
+      const base = glob.replace(/\/\*\*\/\*\.cpp$/, '');
+      for (const file of walkCppFiles(path.join(ROOT, base))) {
+        const stripped = stripCppComments(fs.readFileSync(file, 'utf8'));
+        if (re.test(stripped)) {
+          fail(
+            `${path.relative(ROOT, file)} must not call ${ban.symbol} (${ban.reason})`,
+          );
+        }
+      }
+    }
+
+    const artifact = path.join(ROOT, ban.wasmArtifact || 'public/wasm/pixelocity_wasm.wasm');
+    if (!fs.existsSync(artifact)) {
+      fail(`missing wasm artifact ${ban.wasmArtifact}`);
+    } else {
+      let imports;
+      try {
+        imports = readWasmImports(artifact);
+      } catch (err) {
+        fail(`wasm import table: ${err instanceof Error ? err.message : String(err)}`);
+        imports = [];
+      }
+      const names = new Set(imports.map((imp) => imp.name));
+      for (const forbidden of ban.wasmImportNames || [ban.symbol]) {
+        if (names.has(forbidden)) {
+          fail(
+            `${ban.wasmArtifact} import table contains forbidden ${forbidden} (must be DCE'd; do not call ${ban.symbol})`,
+          );
+        }
+      }
+    }
+  }
+
+  const samp = inv.requiredSamplerDefaults;
+  if (samp) {
+    const cppPath = path.join(ROOT, samp.cppFile);
+    const cpp = fs.readFileSync(cppPath, 'utf8');
+    const assignRe = new RegExp(samp.assignmentPattern);
+    const assign = assignRe.exec(cpp);
+    if (!assign) {
+      fail(`${samp.cppFile} must assign ${samp.assignmentPattern} (Dawn rejects maxAnisotropy < ${samp.maxAnisotropy})`);
+    }
+    const createRe = new RegExp(samp.createSamplerPattern, 'g');
+    const creates = [];
+    let m;
+    while ((m = createRe.exec(cpp))) creates.push(m.index);
+    if (creates.length !== samp.createSamplerCount) {
+      fail(
+        `${samp.cppFile} expected ${samp.createSamplerCount} wgpuDeviceCreateSampler calls, found ${creates.length}`,
+      );
+    }
+    if (assign && creates.some((idx) => idx < assign.index)) {
+      fail(
+        `${samp.cppFile} samplerDesc.maxAnisotropy = ${samp.maxAnisotropy} must precede all ${samp.createSamplerCount} wgpuDeviceCreateSampler calls (filtering, non-filtering, comparison)`,
+      );
+    }
+  }
+
+  const ladder = inv.historyTexLadder;
+  if (ladder) {
+    const vram = fs.readFileSync(path.join(ROOT, 'src/config/vramBudget.ts'), 'utf8');
+    const probe = fs.readFileSync(path.join(ROOT, 'src/renderer/webgpu/historyTexProbe.ts'), 'utf8');
+    const constants = fs.readFileSync(path.join(ROOT, 'src/renderer/webgpu/webgpuConstants.ts'), 'utf8');
+    const keyRe = new RegExp(`HISTORY_OOM_CAP_KEY\\s*=\\s*['"]${ladder.sessionStorageKey}['"]`);
+    if (!keyRe.test(vram)) {
+      fail(`vramBudget.ts HISTORY_OOM_CAP_KEY must be '${ladder.sessionStorageKey}'`);
+    }
+    const full = vram.match(/HISTORY_FULL_WORKING_SIZE\s*=\s*(\d+)/);
+    const safe = vram.match(/HISTORY_SAFE_WORKING_SIZE\s*=\s*(\d+)/);
+    const depth = constants.match(/HISTORY_DEPTH\s*=\s*(\d+)/);
+    if (!full || !safe || !depth) {
+      fail('history size/depth constants missing from vramBudget.ts / webgpuConstants.ts');
+    } else {
+      const expected = ladder.rungs;
+      const actual = [
+        [parseInt(full[1], 10), parseInt(depth[1], 10)],
+        [parseInt(safe[1], 10), parseInt(depth[1], 10)],
+        [parseInt(safe[1], 10), 4],
+        [parseInt(safe[1], 10), 1],
+      ];
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        fail(
+          `historyTex ladder mismatch: contract ${JSON.stringify(expected)} vs sources ${JSON.stringify(actual)}`,
+        );
+      }
+    }
+    if (!probe.includes('HISTORY_PROBE_RUNGS')) {
+      fail('historyTexProbe.ts must export HISTORY_PROBE_RUNGS');
+    }
+    const rungCount = (probe.match(/size:\s*HISTORY_(FULL|SAFE)_WORKING_SIZE/g) || []).length;
+    if (rungCount !== 4) {
+      fail(`historyTexProbe.ts HISTORY_PROBE_RUNGS must have 4 rungs (found ${rungCount} size: assignments)`);
+    }
+  }
+
+  const fmt = inv.storageFormatRewrite;
+  if (fmt) {
+    const tsRewrite = fs.readFileSync(path.join(ROOT, fmt.tsFile), 'utf8');
+    if (!tsRewrite.includes(fmt.catalogWgslFormat)) {
+      fail(`${fmt.tsFile} must keep catalog authored format ${fmt.catalogWgslFormat}`);
+    }
+    const cppRewrite = fs.readFileSync(path.join(ROOT, fmt.cppRewriteFile), 'utf8');
+    if (!/\bRewriteWgslStorageFormats\s*\(/.test(cppRewrite)) {
+      fail(`${fmt.cppRewriteFile} must define RewriteWgslStorageFormats`);
+    }
+    const cppProbe = fs.readFileSync(path.join(ROOT, fmt.cppProbeFile), 'utf8');
+    if (!cppProbe.includes('InternalColorFormat::Rgba16Float')) {
+      fail(`${fmt.cppProbeFile} must prefer rgba16float (Rgba16Float) after a successful storage probe`);
+    }
+    if (fmt.rewriteStorageDeclsToActiveColorFormat && !cppRewrite.includes('texture_storage_2d')) {
+      fail(`${fmt.cppRewriteFile} must rewrite texture_storage_2d declarations to the active colour format`);
+    }
+  }
+
+  const wg = inv.maxComputeWorkgroupsPerDimension;
+  if (wg) {
+    if (wg.value !== 65535) {
+      fail('maxComputeWorkgroupsPerDimension contract value must be 65535');
+    }
+    const host = fs.readFileSync(path.join(ROOT, wg.hostFile), 'utf8');
+    if (!host.includes('assertDispatchWithinLimits')) {
+      fail(`${wg.hostFile} must route chores dispatches through assertDispatchWithinLimits`);
+    }
+    const rawCeil = host.match(/\.dispatchWorkgroups\(\s*Math\.ceil/g);
+    if (rawCeil) {
+      fail(`${wg.hostFile} must not call dispatchWorkgroups(Math.ceil(...)) directly`);
+    }
+    const dispatchCount = (host.match(/this\.dispatchWorkgroupsSafe\(/g) || []).length;
+    if (dispatchCount !== 5) {
+      fail(
+        `${wg.hostFile} must route all five chore passes through dispatchWorkgroupsSafe (found ${dispatchCount})`,
+      );
+    }
+    const dispatchTs = fs.readFileSync(path.join(ROOT, 'src/gpuChores/dispatch.ts'), 'utf8');
+    if (!dispatchTs.includes(`DEFAULT_MAX_WORKGROUPS_PER_DIMENSION = ${wg.value}`)) {
+      fail(`dispatch.ts DEFAULT_MAX_WORKGROUPS_PER_DIMENSION must equal contract ${wg.value}`);
+    }
+  }
+
+  const rebind = inv.mediaRebindAfterBackendSwitch;
+  if (rebind) {
+    const bridge = fs.readFileSync(path.join(ROOT, rebind.tsFile), 'utf8');
+    if (!new RegExp(`export async function ${rebind.function}\\b`).test(bridge)) {
+      fail(`${rebind.tsFile} must export ${rebind.function}`);
+    }
+    const manager = fs.readFileSync(path.join(ROOT, rebind.managerFile), 'utf8');
+    if (!new RegExp(`\\b${rebind.function}\\s*\\(`).test(manager)) {
+      fail(`${rebind.managerFile} must call ${rebind.function} after a successful backend switch`);
+    }
+  }
+}
