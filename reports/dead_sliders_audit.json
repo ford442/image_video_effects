@@ -1,7 +1,7 @@
 {
-  "generated": "2026-09-05T12:06:51.306752+00:00",
-  "defs_scanned": 1201,
-  "defs_with_params": 1201,
+  "generated": "2026-08-29T12:06:07.540077+00:00",
+  "defs_scanned": 1191,
+  "defs_with_params": 1191,
   "new_dead_sliders": [],
   "known_dead_sliders": [
     {
@@ -65,6 +65,13 @@
       "category": "artistic",
       "param_id": "flowStrength",
       "name": "Flow Strength",
+      "field": "w"
+    },
+    {
+      "id": "echo-trace",
+      "category": "artistic",
+      "param_id": "velocity_threshold",
+      "name": "Velocity Threshold",
       "field": "w"
     },
     {
@@ -178,6 +185,13 @@
       "param_id": "bit_manipulation",
       "name": "Bit Manipulation",
       "field": "y"
+    },
+    {
+      "id": "pixel-rain",
+      "category": "retro-glitch",
+      "param_id": "trail_fade",
+      "name": "Trail Fade",
+      "field": "w"
     },
     {
       "id": "sim-fluid-feedback-field",
