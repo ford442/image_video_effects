@@ -1,6 +1,20 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-31 (#1206 WASM input rebind after exclusive switch)
+**Last updated:** 2026-09-06 (10-shader interactive/post-processing/image upgrade cohort)
+
+## 2026-09-06 — 10-Shader Interactive / Post-Processing / Image Upgrade Cohort
+
+- Cohort: `kinetic_tiles`, `sliding-tile-glitch`, `pp-sharpen`, `pp-vignette`, `pixel-scattering`, `refraction-shards`, `pixelate-blast`, `double-exposure`, `brush-strokes`, `voronoi-light`.
+- Contract: 13 bindings, `@workgroup_size(16, 16, 1)`, exact `textureLoad` C, A-only writes (`dataTextureA`), ACES display, semantic alpha, 3-band audio (`plasmaBuffer[0].xyz`), single-writer spring-damper cursor `extraBuffer[133..138]` at (0,0), held pointer drag + capped click ripples (`min(u32(u.config.y), 50u)`), byte-exact saved params + aligned `updatedParams`.
+- Refraction Shards: replaced discrete time-quantized hashing (`floor(time * 0.2)`) with smooth continuous sinusoidal orbital drift to eliminate visual pop artifacts.
+- Gates passed: Naga 10/10; `audit:extrabuffer` 0 new writes; `audit:dead-sliders` 0 new dead sliders (40/40 live); `prestart` 1,359 catalog shaders; `verify:shader-list-urls` green; `verify:uniforms` green; `verify:catalog-counts` green; `typecheck` green; `SKIP_WASM_BUILD=1 npm run build` green; `verify:bundle-size` green; `verify:toolchain-foundation` green. Real-GPU visual QA external.
+
+## 2026-09-06 — #1204 residual Pascal-safe working budget
+
+- Default working size is **1024**, not 2048. Probing/creating `historyTex` at 2048²×8 first still device-removed Pascal before the ladder ran.
+- `allowsFullWorkingSize`: discrete + `maxBufferSize >= 1 GiB` + not Pascal/GTX 10xx/MX1xx + not fallback + no OOM cap. Then destroy the 1024 pool and allocate 2048 (full pool, history first). OOM → persist 1024, never retry 2048.
+- WASM init clamps canvas to 1024 (JS SoT + emitted bridge). C++ unchanged; no wasm artifact rebuild.
+- `maxBufferSize` is a working-size heuristic only — `maxTextureDimension2D` need stays 8192.
 
 ## 2026-08-31 — #1206 empty WASM input after successful boot
 
@@ -24,7 +38,7 @@
 ## 2026-08-31 — WASM sampler maxAnisotropy
 
 - Dawn rejects `maxAnisotropy < 1`. C++ `{}` left 0 on filtering / non-filtering / comparison samplers; bind group became invalid.
-- SoT: `wasm_renderer/resources.cpp` `CreateResources()` sets `maxAnisotropy = 1` once. Artifacts rebuilt (emcc 6.0.3). Uncommitted. Real-GPU after deploy.
+- SoT: `wasm_renderer/resources.cpp` `CreateResources()` sets `maxAnisotropy = 1` once. Artifacts rebuilt 2026-09-06 with emcc 6.0.3 (`public/wasm/pixelocity_wasm.{js,wasm}`). Real-GPU confirm after deploy + hard-reload.
 
 ## 2026-08-31 — WASM present abort on emdawn browser WebGPU
 

@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Brush Strokes
 //  Category: interactive-mouse
-//  Features: mouse-driven, paint-brush, trail, organic, audio-reactive, semantic-alpha
-//  Complexity: Medium
-//  Created: 2026-05-30
-//  Updated: 2026-06-01
-//  By: Kimi Agent (integrated + upgraded)
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
+//  Complexity: High
+//  Upgraded: 2026-09-06
+//  A packing: ACES display RGBA
+//  Motion: spring bristle stroke advection + wet paint ripple spatters
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,111 +23,163 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=BrushSize, y=TextureAmount, z=ColorIntensity, w=Speed
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.141592653589793;
-
-fn hash(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+fn hash21(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
-fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
-               mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+fn noise2(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+    mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x),
+    u.y
+  );
 }
 
 fn fbm(p0: vec2<f32>) -> f32 {
-    var p = p0;
-    var a = 0.5;
-    var s = 0.0;
-    for (var i = 0; i < 4; i = i + 1) {
-        s = s + noise(p) * a;
-        p = p * 2.08 + vec2<f32>(13.7, 5.9);
-        a = a * 0.5;
-    }
-    return s;
+  var p = p0;
+  var a = 0.5;
+  var s = 0.0;
+  for (var i = 0; i < 4; i = i + 1) {
+    s += noise2(p) * a;
+    p = p * 2.08 + vec2<f32>(13.7, 5.9);
+    a *= 0.5;
+  }
+  return s;
 }
 
-fn aces(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
-fn ign(p: vec2<f32>) -> f32 {
-    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
+  let aspect = dims.x / max(dims.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let held = u.zoom_config.w > 0.5;
 
-    let mouse = u.zoom_config.yz;
-    let isPress = u.zoom_config.w;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let binA = plasmaBuffer[1].z;
+  let binB = plasmaBuffer[5].x;
 
-    let brushSize = u.zoom_params.x;
-    let textureAmount = u.zoom_params.y;
-    let colorIntensity = u.zoom_params.z;
-    let speed = u.zoom_params.w;
+  // Single-writer spring cursor in extraBuffer[133..138]
+  var spring = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    spring = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (gid.x == 0u && gid.y == 0u && hasSpring) {
+    var pos = spring;
+    var vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      pos = mouse;
+      vel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 14.0;
+      vel += ((mouse - pos) * (omega * omega) - vel * (2.0 * omega)) * dt;
+      vel = clamp(vel, vec2<f32>(-4.0), vec2<f32>(4.0));
+      pos += vel * dt;
+    }
+    extraBuffer[133] = pos.x;
+    extraBuffer[134] = pos.y;
+    extraBuffer[135] = vel.x;
+    extraBuffer[136] = vel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    spring = pos;
+  }
 
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  // Four saved controls preserved
+  let brushRadius = mix(0.04, 0.45, u.zoom_params.x) * (1.0 + bass * 0.25);
+  let textureAmount = u.zoom_params.y;
+  let colorIntensity = u.zoom_params.z;
+  let strokeSpeed = mix(0.2, 2.5, u.zoom_params.w);
 
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  // Depth sampling
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthFade = mix(0.7, 1.3, depth);
 
-    let dist = length(uv - mouse);
-    let activeBrush = smoothstep(brushSize * 0.9, brushSize * 0.15, dist) * (0.5 + isPress * 1.3);
+  // Capped click ripple paint spatters
+  var spatterEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let r = u.ripples[i];
+    let age = time - r.z;
+    if (age > 0.0 && age < 2.2) {
+      let d = length((uv - r.xy) * aspectVec);
+      let ring = exp(-abs(d - age * 0.45) * 30.0) * exp(-age * 1.5);
+      // Organic droplet spatter around ring
+      let dropNoise = hash21(floor(uv * 120.0));
+      let drops = smoothstep(0.7, 0.95, dropNoise) * ring;
+      spatterEnergy += ring * 0.7 + drops * 1.5;
+    }
+  }
 
-    let angle = atan2(uv.y - mouse.y, uv.x - mouse.x);
-    let bristleNoise = fbm(uv * vec2<f32>(36.0, 120.0) + vec2<f32>(time * 0.18, -time * 0.07));
-    let stroke = sin(angle * 5.0 + time * speed * 4.0 + bristleNoise * 3.2) * 0.5 + 0.5;
+  // Spring cursor proximity & velocity
+  let toSpring = (uv - spring) * aspectVec;
+  let dist = length(toSpring);
+  let strokeActive = smoothstep(brushRadius, brushRadius * 0.15, dist) * select(1.0, 1.7, held);
 
-    let hue = fract(time * 0.05 + colorIntensity * 0.3 + mids * 0.2);
-    let tint = vec3<f32>(
-        0.5 + 0.5 * cos(hue * 6.283 + 0.0),
-        0.5 + 0.5 * cos(hue * 6.283 + 2.094),
-        0.5 + 0.5 * cos(hue * 6.283 + 4.189)
-    );
+  // Bristle friction field
+  let strokeAngle = atan2(toSpring.y, toSpring.x);
+  let bristleCoord = uv * vec2<f32>(45.0, 140.0) + vec2<f32>(time * 0.15 * strokeSpeed, -time * 0.08 * strokeSpeed);
+  let bristleNoise = fbm(bristleCoord);
+  let strokeFlow = sin(strokeAngle * 4.0 + time * strokeSpeed * 3.0 + bristleNoise * 3.5) * 0.5 + 0.5;
 
-    let warmGlaze = mix(tint, vec3<f32>(1.0, 0.72, 0.42), bass * 0.35);
-    let activeColor = mix(baseColor, baseColor * warmGlaze * 1.45, colorIntensity * 0.42);
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-    let brushMask = activeBrush * (0.4 + stroke * 0.6) * (0.8 + bass * 0.4);
-    let impasto = pow(brushMask, 2.4) * (0.35 + bristleNoise * 0.75);
-    let wetEdge = smoothstep(brushSize * 0.88, brushSize * 0.45, dist) * smoothstep(brushSize * 0.12, brushSize * 0.55, dist);
-    var hdr = mix(baseColor, activeColor, brushMask);
-    hdr = hdr + tint * impasto * (0.65 + mids * 0.55);
-    hdr = hdr + vec3<f32>(1.0, 0.86, 0.62) * wetEdge * treble * 0.35;
+  // Glaze palette cycling
+  let hue = fract(time * 0.06 + colorIntensity * 0.35 + mids * 0.25);
+  let glazePalette = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + hue * 6.28318);
+  let warmGlaze = mix(glazePalette, vec3<f32>(1.0, 0.75, 0.45), bass * 0.4);
 
-    // Add paper grain texture
-    let grain = noise(uv * 500.0 + time * 0.3) * 0.045 * (0.5 + treble * 0.5);
-    hdr = hdr * (1.0 - grain) + vec3<f32>(grain * 0.48);
-    let vignette = mix(1.0, 0.72, smoothstep(0.45, 1.0, length(uv - vec2<f32>(0.5)) * 1.414));
-    hdr = hdr * vignette;
-    let dither = (ign(vec2<f32>(global_id.xy) + time * 17.0) - 0.5) / 255.0;
-    let finalWithGrain = clamp(aces(hdr * (1.08 + colorIntensity * 0.18)) + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
+  // Impasto layer formulation
+  let brushMask = clamp(strokeActive * (0.35 + strokeFlow * 0.65) * (0.8 + bass * 0.4) + spatterEnergy * 0.6, 0.0, 1.0);
+  let impastoRelief = pow(brushMask, 2.0) * (0.3 + bristleNoise * 0.7 * textureAmount);
+  let wetBorder = smoothstep(brushRadius * 0.9, brushRadius * 0.5, dist) * smoothstep(brushRadius * 0.1, brushRadius * 0.5, dist);
 
-    // Semantic alpha
-    let hdrLuma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let semantic_alpha = clamp(0.24 + brushMask * 0.48 + pow(max(0.0, hdrLuma - 0.58), 2.0) * 2.5, 0.0, 1.0);
+  let glazedColor = mix(baseColor, baseColor * warmGlaze * 1.45, colorIntensity * 0.55);
+  var hdr = mix(baseColor, glazedColor, brushMask);
+  hdr += glazePalette * impastoRelief * (0.5 + mids * 0.6);
+  hdr += vec3<f32>(1.0, 0.9, 0.7) * wetBorder * (0.2 + treble * 0.6 + binA * 0.3);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  // Canvas grain relief
+  let canvasGrain = (noise2(uv * 400.0) - 0.5) * 0.06 * textureAmount * (1.0 + treble * 0.4);
+  hdr += vec3<f32>(canvasGrain);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalWithGrain * semantic_alpha, semantic_alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Exact previous frame history load from dataTextureC for persistent paint accumulation
+  let hist = textureLoad(dataTextureC, coord, 0);
+  let paintPersistence = mix(0.06, 0.30, brushMask);
+  hdr = mix(hdr, hist.rgb, paintPersistence);
+
+  let finalRGB = acesToneMap(hdr);
+  let luma = dot(finalRGB, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let semanticAlpha = clamp(0.75 + brushMask * 0.2 + wetBorder * 0.2 + spatterEnergy * 0.3, 0.0, 1.0);
+  let outCol = vec4<f32>(finalRGB, semanticAlpha);
+
+  textureStore(writeTexture, coord, outCol);
+  textureStore(dataTextureA, coord, outCol);
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(mix(depth, depth * depthFade + impastoRelief * 0.4, 0.35), 0.0, 1.0), 0.0, 0.0, 0.0));
 }

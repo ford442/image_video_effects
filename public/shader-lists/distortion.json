@@ -3268,19 +3268,23 @@
   {
     "id": "pixelate-blast",
     "name": "Pixelate Blast",
+    "category": "distortion",
     "url": "shaders/pixelate-blast.wgsl",
-    "description": "Catalog entry for Pixelate Blast.",
-    "tags": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba",
-      "voronoi-cells"
-    ],
+    "description": "Voronoi cellular pixelation with shockwave domain distortion and explosive blast dispersal. Features spring-damper cursor dynamics, Cauchy chromatic aberration along blast normals, multi-ring click ripples, exact-C temporal feedback, and ACES tonemapping.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "voronoi-cells"
+      "depth-aware",
+      "voronoi-cells",
+      "fast-motion",
+      "spring-cursor",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "semantic-alpha",
+      "exact-c-history"
     ],
     "params": [
       {
@@ -3320,7 +3324,51 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cell Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Blast Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Edge Glow Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "distortion",
+      "pixelate",
+      "blast",
+      "voronoi",
+      "fast-motion",
+      "audio-reactive",
+      "aces"
+    ]
   },
   {
     "id": "predator-camouflage",

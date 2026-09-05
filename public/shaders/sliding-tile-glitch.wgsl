@@ -1,14 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Sliding Tile Glitch - Grid Displacement with Alpha Preservation
-//  Category: retro-glitch
-//
-//  Interactive grid-based tile sliding effect:
-//  - Mouse hover triggers tile offset accumulation
-//  - Chaos parameter controls random vs aligned movement
-//  - Decay returns tiles to original position
-//  - Grid lines highlight high chaos
-//  - Alpha preserved through displacement
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Sliding Tile Glitch
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
+//  Complexity: High
+//  Upgraded: 2026-09-06
+//  A packing: ACES display RGBA
+//  Motion: directional row/column tile sliding conveyors + chromatic tear
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,115 +23,147 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=IsMouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=GridSize, y=SlideAmount, z=Chaos, w=Restoration
   ripples: array<vec4<f32>, 50>,
 };
 
-// Sliding Tile Glitch
-// Param1: Grid Density
-// Param2: Slide Probability/Speed
-// Param3: Chaos (Random direction vs aligned)
-// Param4: Reset Speed
+fn hash21(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
 
-fn rand(co: vec2<f32>) -> f32 {
-    return fract(sin(dot(co, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
+
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
+  let aspect = dims.x / max(dims.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let held = u.zoom_config.w > 0.5;
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let binA = plasmaBuffer[1].w;
+  let binB = plasmaBuffer[5].z;
+
+  // Single-writer spring-damper cursor in extraBuffer[133..138]
+  var spring = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    spring = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (gid.x == 0u && gid.y == 0u && hasSpring) {
+    var pos = spring;
+    var vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      pos = mouse;
+      vel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 15.0;
+      vel += ((mouse - pos) * (omega * omega) - vel * (2.0 * omega)) * dt;
+      vel = clamp(vel, vec2<f32>(-4.5), vec2<f32>(4.5));
+      pos += vel * dt;
     }
+    extraBuffer[133] = pos.x;
+    extraBuffer[134] = pos.y;
+    extraBuffer[135] = vel.x;
+    extraBuffer[136] = vel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    spring = pos;
+  }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    var mousePos = u.zoom_config.yz;
+  // Four saved controls preserved
+  let gridDensity = mix(6.0, 32.0, u.zoom_params.x);
+  let slideAmount = mix(0.02, 0.28, u.zoom_params.y) * (1.0 + bass * 0.45);
+  let chaos = u.zoom_params.z;
+  let restoration = mix(0.04, 0.40, u.zoom_params.w);
 
-    let gridDensity = u.zoom_params.x * 20.0 + 5.0; // 5 to 25
-    let slideSpeed = u.zoom_params.y * 0.05;
-    let chaos = u.zoom_params.z;
-    let decay = u.zoom_params.w * 0.05;
+  // Depth sampling
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthFactor = mix(0.65, 1.35, depth);
 
-    // 1. Determine Grid Cell
-    let gridUV = uv * gridDensity;
-    let cellID = floor(gridUV);
-
-    // Sample previous offset from state (stored in dataTextureC)
-    // We sample at the CENTER of the cell to ensure uniform value across the cell
-    let cellCenterUV = (cellID + 0.5) / gridDensity;
-    var state = textureSampleLevel(dataTextureC, u_sampler, cellCenterUV, 0.0);
-    var offset = state.xy; // xy = offset
-    var alphaHistory = state.a; // alpha history
-
-    // 2. Mouse Interaction
-    var isHover = false;
-    if (mousePos.x >= 0.0) {
-        // Check if mouse is inside this cell (approximately)
-        let mouseGridPos = floor(mousePos * gridDensity);
-        if (mouseGridPos.x == cellID.x && mouseGridPos.y == cellID.y) {
-            isHover = true;
-        }
+  // Capped click ripple fronts
+  var rippleImpulse = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let r = u.ripples[i];
+    let age = time - r.z;
+    if (age > 0.0 && age < 2.0) {
+      let d = length((uv - r.xy) * aspectVec);
+      let ring = exp(-abs(d - age * 0.45) * 32.0) * exp(-age * 1.6);
+      rippleImpulse += ring;
     }
+  }
 
-    if (isHover) {
-        // Apply force/offset
-        // Random direction
-        let r = rand(cellID + vec2<f32>(time, 0.0));
-        var dir = vec2<f32>(0.0);
+  // Grid index calculation
+  let gridCoord = uv * vec2<f32>(gridDensity * aspect, gridDensity);
+  let cellId = floor(gridCoord);
+  let cellFract = fract(gridCoord);
 
-        if (chaos > 0.5) {
-            // Random direction
-            dir = vec2<f32>(cos(r * 6.28), sin(r * 6.28));
-        } else {
-            // Axis aligned slide (either X or Y)
-            if (r > 0.5) { dir.x = (r - 0.75) * 4.0; } // +/- 1 approx
-            else { dir.y = (r - 0.25) * 4.0; }
-        }
+  // Random cell properties
+  let cellRandX = hash21(cellId);
+  let cellRandY = hash21(cellId + vec2<f32>(17.3, 41.7));
+  let isRowSliding = (cellRandX > 0.45);
 
-        offset += dir * slideSpeed;
-        // Active tiles have reduced alpha for ghost effect
-        alphaHistory = 0.9;
-    }
+  // Mouse distance to cell center
+  let cellCenterUV = (cellId + vec2<f32>(0.5)) / vec2<f32>(gridDensity * aspect, gridDensity);
+  let distMouse = length((cellCenterUV - spring) * aspectVec);
+  let mouseProximity = smoothstep(0.45, 0.02, distMouse) * select(1.0, 1.4, held);
 
-    // Decay (return to zero)
-    if (decay > 0.0) {
-        offset = mix(offset, vec2<f32>(0.0), decay);
-        // Alpha returns to normal
-        alphaHistory = mix(alphaHistory, 1.0, decay);
-    }
+  // Glitch trigger from mouse, ripples, audio
+  let glitchActivity = clamp(mouseProximity + rippleImpulse * 0.9 + bass * 0.35 + binA * 0.25, 0.0, 2.5);
 
-    // Store new state (redundantly for every pixel in cell, but easy)
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(offset, 0.0, alphaHistory));
+  // Continuous slide displacement with restoring oscillatory decay
+  let slideFreq = 4.0 + chaos * 8.0 + mids * 3.0;
+  let rawSlide = sin(time * slideFreq + cellRandX * 6.28318) * slideAmount;
+  let dirChoice = select(select(vec2<f32>(1.0, 0.0), vec2<f32>(-1.0, 0.0), cellRandX > 0.7),
+                         select(vec2<f32>(0.0, 1.0), vec2<f32>(0.0, -1.0), cellRandY > 0.7),
+                         chaos > 0.5 && !isRowSliding);
+  
+  let slideVec = dirChoice * rawSlide * glitchActivity * (1.0 - restoration * 0.5);
 
-    // 3. Render
-    // Sample image at uv + offset
-    let readUV = uv + offset;
-    
-    // Sample with alpha preservation
-    let sample = textureSampleLevel(readTexture, u_sampler, readUV, 0.0);
-    var finalColor = sample.rgb;
-    var finalAlpha = sample.a;
+  // Slid sampling UV
+  let shiftedUV = clamp(uv + slideVec, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Add grid lines for visual style?
-    // Optional: Highlight grid edges if chaos is high
-    let gridLocal = fract(gridUV);
-    let border = 0.05;
-    if ((gridLocal.x < border || gridLocal.y < border) && chaos > 0.8) {
-        finalColor *= 0.5;
-        // Grid edges have slight alpha reduction
-        finalAlpha = finalAlpha * 0.8;
-    }
-    
-    // Blend with history alpha for smooth transitions
-    finalAlpha = mix(finalAlpha, alphaHistory, 0.1);
-    finalAlpha = clamp(finalAlpha, 0.0, 1.0);
+  // Chromatic split on displaced tiles
+  let chromaOffset = length(slideVec) * 0.035 * (1.0 + treble * 0.6 + binB * 0.4);
+  let rSample = textureSampleLevel(readTexture, u_sampler, clamp(shiftedUV + vec2<f32>(chromaOffset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let gSample = textureSampleLevel(readTexture, u_sampler, shiftedUV, 0.0).g;
+  let bSample = textureSampleLevel(readTexture, u_sampler, clamp(shiftedUV - vec2<f32>(chromaOffset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  var color = vec3<f32>(rSample, gSample, bSample);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+  // Grid line highlight for high-chaos glitch zones
+  let cellEdge = min(min(cellFract.x, 1.0 - cellFract.x), min(cellFract.y, 1.0 - cellFract.y));
+  let gridLine = smoothstep(0.06, 0.01, cellEdge) * glitchActivity * (0.2 + chaos * 0.8);
+  let gridNeon = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + cellRandX * 6.28 + time * 2.0);
+  color += gridNeon * gridLine * 0.75;
 
-    // Passthrough depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  // Exact previous frame history load from dataTextureC
+  let hist = textureLoad(dataTextureC, coord, 0);
+  let feedbackWeight = mix(0.06, 0.28, clamp(glitchActivity * 0.5, 0.0, 1.0));
+  var hdr = mix(color, hist.rgb, feedbackWeight);
+
+  let finalRGB = acesToneMap(hdr);
+  let semanticAlpha = clamp(0.72 + glitchActivity * 0.25 + gridLine * 0.3, 0.0, 1.0);
+  let outCol = vec4<f32>(finalRGB, semanticAlpha);
+
+  textureStore(writeTexture, coord, outCol);
+  textureStore(dataTextureA, coord, outCol);
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth * depthFactor + length(slideVec) * 0.5, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

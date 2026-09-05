@@ -1,14 +1,31 @@
 {
   "id": "pp-vignette",
   "name": "PP Vignette",
+  "category": "post-processing",
   "url": "shaders/pp-vignette.wgsl",
-  "description": "Film vignette with grain, sepia/warm/cool color grading, and retro scanline effects",
+  "description": "Cinematic optical vignette with triangular film grain, continuous multi-style color grading, bleach bypass blend modes, spring-damper cursor deflection, exposure ripple blooms, exact-C temporal grain integration, and ACES tonemapping.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "depth-aware",
+    "fast-motion",
+    "spring-cursor",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "semantic-alpha",
+    "exact-c-history"
+  ],
   "tags": [
     "post-process",
     "vignette",
     "grain",
     "film",
-    "vintage"
+    "vintage",
+    "audio-reactive",
+    "aces"
   ],
   "params": [
     {
@@ -34,6 +51,42 @@
     },
     {
       "id": "blend_mode",
+      "name": "Blend Mode",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Vignette Intensity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Grain Intensity",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Color Style",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
       "name": "Blend Mode",
       "default": 0,
       "min": 0,

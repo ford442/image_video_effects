@@ -1,8 +1,23 @@
 {
   "id": "sliding-tile-glitch",
   "name": "Sliding Tile Glitch",
+  "category": "interactive-mouse",
   "url": "shaders/sliding-tile-glitch.wgsl",
-  "description": "Grid tiles slide and glitch when touched by the mouse.",
+  "description": "Grid tiles slide along directional conveyors when excited by mouse proximity, clicks, and bass transients. Features spring-damper cursor dynamics, chromatic tear, restoring decay, exact-C phosphor trails, and ACES tonemapping.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "depth-aware",
+    "fast-motion",
+    "spring-cursor",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "semantic-alpha",
+    "exact-c-history"
+  ],
   "params": [
     {
       "id": "gridDensity",
@@ -33,11 +48,48 @@
       "max": 1
     }
   ],
-  "features": [
-    "mouse-driven"
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Grid Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Slide Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Chaos",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Restoration",
+      "default": 0.1,
+      "min": 0,
+      "max": 1
+    }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "glitch",
+    "interactive",
+    "tiles",
+    "grid",
+    "audio-reactive",
+    "aces"
   ]
 }

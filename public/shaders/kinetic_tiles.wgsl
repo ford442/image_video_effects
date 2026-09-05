@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Kinetic Tiles
+//  Category: geometric
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
+//  Complexity: High
+//  Upgraded: 2026-09-06
+//  A packing: ACES display RGBA
+//  Motion: kinetic traveling wave cascade + rotating bevel tile shear
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,122 +21,170 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=Ripples, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // Params
+  zoom_params: vec4<f32>,  // x=GridDensity, y=MouseRadius, z=RotationAmt, w=TileScale
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn rotateVec(v: vec2<f32>, angle: f32) -> vec2<f32> {
+  let s = sin(angle);
+  let c = cos(angle);
+  return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    // Audio: bass densifies the grid, mids widens influence, treble spins tiles harder
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
+  let aspect = dims.x / max(dims.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let held = u.zoom_config.w > 0.5;
 
-    // Parameters
-    // x: Grid Density (10.0 to 100.0)
-    // y: Influence Radius (0.1 to 1.0)
-    // z: Rotation Amount (0.0 to PI)
-    // w: Scale/Inset (0.5 to 1.0)
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let binA = plasmaBuffer[2].z;
+  let binB = plasmaBuffer[6].y;
 
-    let gridDensity = (u.zoom_params.x * 90.0 + 10.0) * (1.0 + bass * 0.3);
-    let radius = (u.zoom_params.y * 0.8 + 0.05) * (1.0 + mids * 0.3);
-    let maxRotation = u.zoom_params.z * 3.14159 * 2.0 * (1.0 + treble * 0.4);
-    let scale = u.zoom_params.w * 0.5 + 0.5;
-
-    // Mouse
-    var mouse = u.zoom_config.yz;
-
-    // Grid calculations
-    // Adjust UV for aspect ratio to make square cells
-    let uvAspect = vec2<f32>(uv.x * aspect, uv.y);
-    let cellIndex = floor(uvAspect * gridDensity);
-    let cellUV = fract(uvAspect * gridDensity); // 0.0 to 1.0 inside cell
-
-    // Find cell center in global UV space
-    // We need to map back from aspect corrected space
-    let cellCenterAspect = (cellIndex + 0.5) / gridDensity;
-    let cellCenter = vec2<f32>(cellCenterAspect.x / aspect, cellCenterAspect.y);
-
-    // Distance from mouse to cell center
-    let diff = cellCenter - mouse;
-    // Correct diff for aspect for proper circular distance
-    let diffAspect = vec2<f32>(diff.x * aspect, diff.y);
-    let dist = length(diffAspect);
-
-    var angle: f32 = 0.0;
-    var currentScale: f32 = 1.0;
-
-    if (dist < radius) {
-        let pct = 1.0 - smoothstep(0.0, radius, dist);
-        angle = pct * maxRotation;
-        currentScale = 1.0 - (pct * (1.0 - scale)); // Shrink near mouse if scale < 1.0
-    }
-
-    // Rotate cellUV around center (0.5, 0.5)
-    let s = sin(angle);
-    let c = cos(angle);
-    let centered = cellUV - 0.5;
-    let rotated = vec2<f32>(
-        centered.x * c - centered.y * s,
-        centered.x * s + centered.y * c
-    );
-
-    // Apply scale (zoom in/out of cell)
-    // If we want gaps, we clamp
-    let scaled = rotated / currentScale; // divide by scale to zoom in (if scale < 1, we zoom in? No, we want to shrink content?)
-    // Actually, usually "scale" means size of content.
-    // If currentScale is 0.8 (smaller), we want to see more? Or do we want gaps?
-    // Let's treat 'scale' as the size of the valid image area.
-
-    let finalCellUV = scaled + 0.5;
-
-    var color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-
-    // Check bounds of cell
-    if (finalCellUV.x >= 0.0 && finalCellUV.x <= 1.0 && finalCellUV.y >= 0.0 && finalCellUV.y <= 1.0) {
-        // Map back to global texture UV
-        // We know the cell bounds in global UV.
-        // But simpler:
-        // We want to sample the texture at the location corresponding to this cell,
-        // but offset by the rotation.
-
-        // Strategy: We want the image to look "chopped up".
-        // So we sample the texture at the "cell center" + "offset within cell".
-        // But the "offset within cell" is rotated.
-
-        // Convert finalCellUV back to global offset
-        // The width of a cell in UV space:
-        // X width = (1.0 / gridDensity) / aspect
-        // Y height = (1.0 / gridDensity)
-
-        let cellWidth = vec2<f32>(1.0 / (gridDensity * aspect), 1.0 / gridDensity);
-
-        let offsetFromCenter = (finalCellUV - 0.5) * cellWidth;
-
-        let sampleUV = cellCenter + offsetFromCenter;
-
-        color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+  // Single-writer spring-damper cursor in extraBuffer[133..138]
+  var spring = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    spring = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (gid.x == 0u && gid.y == 0u && hasSpring) {
+    var pos = spring;
+    var vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      pos = mouse;
+      vel = vec2<f32>(0.0);
     } else {
-        // Gap color (black or maybe dark grey)
-        color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 14.0;
+      vel += ((mouse - pos) * (omega * omega) - vel * (2.0 * omega)) * dt;
+      vel = clamp(vel, vec2<f32>(-4.0), vec2<f32>(4.0));
+      pos += vel * dt;
     }
+    extraBuffer[133] = pos.x;
+    extraBuffer[134] = pos.y;
+    extraBuffer[135] = vel.x;
+    extraBuffer[136] = vel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    spring = pos;
+  }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
+  // Four saved controls preserved
+  let gridDensity = mix(8.0, 72.0, u.zoom_params.x) * (1.0 + bass * 0.25);
+  let mouseRadius = mix(0.08, 0.85, u.zoom_params.y) * select(1.0, 1.35, held);
+  let rotationAmt = (u.zoom_params.z * 3.14159265 * 2.0) * (1.0 + treble * 0.45);
+  let tileScale = mix(0.45, 1.0, u.zoom_params.w);
 
-    // Passthrough depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Depth sampling
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthFactor = mix(0.6, 1.4, depth);
+
+  // Capped click ripple wavefronts
+  var rippleFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let r = u.ripples[i];
+    let age = time - r.z;
+    if (age > 0.0 && age < 2.2) {
+      let d = length((uv - r.xy) * aspectVec);
+      let front = exp(-abs(d - age * 0.42) * 28.0) * exp(-age * 1.5);
+      rippleFront += front;
+    }
+  }
+
+  // Aspect-corrected square cell lattice
+  let uvAspect = vec2<f32>(uv.x * aspect, uv.y);
+  let cellIndex = floor(uvAspect * gridDensity);
+  let cellUV = fract(uvAspect * gridDensity);
+  let cellCenterAspect = (cellIndex + 0.5) / gridDensity;
+  let cellCenter = vec2<f32>(cellCenterAspect.x / aspect, cellCenterAspect.y);
+
+  // Proximity to smoothed spring pointer
+  let toCenter = (cellCenter - spring) * aspectVec;
+  let distCenter = length(toCenter);
+
+  // Kinetic cascade wave
+  let cascadePhase = distCenter * 16.0 - time * (3.5 + bass * 3.0) + sin(cellIndex.x * 0.5 + cellIndex.y * 0.3);
+  let waveMotion = sin(cascadePhase) * 0.5 + 0.5;
+
+  var pct = 0.0;
+  if (distCenter < mouseRadius) {
+    pct = 1.0 - smoothstep(0.0, mouseRadius, distCenter);
+  }
+  let totalImpulse = clamp(pct + rippleFront * 0.85 + waveMotion * 0.18 * (mids + 0.2), 0.0, 2.5);
+
+  let currentAngle = totalImpulse * rotationAmt;
+  let effectiveScale = clamp(tileScale * (1.0 - totalImpulse * 0.25 * (1.0 - tileScale)), 0.3, 1.0);
+
+  // Rotate and scale cell coordinate
+  let centeredUV = cellUV - 0.5;
+  let rotatedUV = rotateVec(centeredUV, currentAngle);
+  let scaledUV = rotatedUV / effectiveScale;
+  let inTileUV = scaledUV + 0.5;
+
+  // Bevel edge metric
+  let edgeDist = min(min(inTileUV.x, 1.0 - inTileUV.x), min(inTileUV.y, 1.0 - inTileUV.y));
+  let bevel = smoothstep(0.0, 0.08, edgeDist);
+  let borderGlint = smoothstep(0.08, 0.01, edgeDist) * (0.3 + treble * 0.7 + binA * 0.4);
+
+  var color = vec3<f32>(0.0);
+  var validTile = false;
+
+  if (inTileUV.x >= 0.0 && inTileUV.x <= 1.0 && inTileUV.y >= 0.0 && inTileUV.y <= 1.0) {
+    validTile = true;
+    let cellWidth = vec2<f32>(1.0 / (gridDensity * aspect), 1.0 / gridDensity);
+    let sampleUV = clamp(cellCenter + (inTileUV - 0.5) * cellWidth, vec2<f32>(0.0), vec2<f32>(1.0));
+    
+    // Chromatic aberration at high tile velocity
+    let chromaShift = (currentAngle * 0.006 + rippleFront * 0.008) * (1.0 + binB);
+    let rCol = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let gCol = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
+    let bCol = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    
+    color = vec3<f32>(rCol, gCol, bCol) * (0.75 + 0.25 * bevel);
+    
+    // Metallic specular glint based on angle
+    let glintAngle = abs(sin(currentAngle * 2.0 + time * 2.0));
+    color += vec3<f32>(1.0, 0.9, 0.7) * pow(glintAngle, 8.0) * borderGlint * 1.5;
+  } else {
+    // Gap underneath tiles - show underlying raw texture darkened with shadow
+    let underCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    color = underCol * 0.15;
+  }
+
+  // Load exact temporal history from dataTextureC
+  let hist = textureLoad(dataTextureC, coord, 0);
+  let trailMix = mix(0.08, 0.35, clamp(totalImpulse * 0.5, 0.0, 1.0));
+  var hdr = mix(color, hist.rgb, trailMix);
+
+  // Kinetic border glow palette
+  let glowPalette = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + totalImpulse * 2.5 + time * 0.6);
+  hdr += glowPalette * borderGlint * 0.6 + glowPalette * rippleFront * 0.4;
+
+  let finalRGB = acesToneMap(hdr);
+  let semanticAlpha = clamp(select(0.25, 0.96, validTile) + totalImpulse * 0.2 + borderGlint * 0.3, 0.0, 1.0);
+  let outCol = vec4<f32>(finalRGB, semanticAlpha);
+
+  textureStore(writeTexture, coord, outCol);
+  textureStore(dataTextureA, coord, outCol);
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(mix(depth, select(0.1, 0.85, validTile) * depthFactor, 0.35), 0.0, 1.0), 0.0, 0.0, 0.0));
 }

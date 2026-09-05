@@ -1,13 +1,22 @@
 {
   "id": "kinetic-tiles",
   "name": "Kinetic Tiles",
+  "category": "geometric",
   "url": "shaders/kinetic_tiles.wgsl",
-  "description": "Grid of tiles that rotate and scale responsively to mouse proximity.",
+  "description": "Mechanical square facet tiles rotate and scale in a kinetic traveling wave. Driven by spring-damper cursor, click ripple wavefronts, depth extrusion, bevel glints, exact-C temporal trails, and ACES tonemapping.",
   "features": [
     "mouse-driven",
-    "upgraded-rgba",
     "audio-reactive",
-    "depth-aware"
+    "upgraded-rgba",
+    "depth-aware",
+    "fast-motion",
+    "spring-cursor",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "semantic-alpha",
+    "exact-c-history"
   ],
   "params": [
     {
@@ -43,8 +52,48 @@
       "max": 1
     }
   ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Grid Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Mouse Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Rotation Amt",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Tile Scale",
+      "default": 0.8,
+      "min": 0,
+      "max": 1
+    }
+  ],
   "tags": [
-    "filter",
-    "image-processing"
+    "geometric",
+    "kinetic",
+    "tiles",
+    "fast-motion",
+    "audio-reactive",
+    "aces"
   ]
 }
