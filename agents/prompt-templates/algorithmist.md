@@ -198,6 +198,7 @@ fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) 
 - [ ] No divisions by zero (add `+ 0.001` guard)
 
 ## Output Rules
+- **Upgrade = add 2–4 native ideas to this effect.** Name them before coding. Elevate the math that is already here (better kernel, extra field, extra force). Do not replace the solver with a different simulation. Bindings / ACES / naga are the floor. See `docs/SHADER_UPGRADE_BATCH.md`.
 - Keep the original "soul" of the shader while elevating it mathematically.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.

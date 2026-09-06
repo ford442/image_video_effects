@@ -1,5 +1,8 @@
 # Shader Upgrade Swarm - Complete Overview
 
+> **Historical (Phase A/B/C, target ~650 shaders).** The catalog is now ~1,350+.
+> **LIVE upgrade law:** [`docs/SHADER_UPGRADE_BATCH.md`](../../docs/SHADER_UPGRADE_BATCH.md).
+
 ## Project Summary
 
 **Total Phases:** 2  

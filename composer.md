@@ -1,8 +1,11 @@
 # Composer Plan — Generative Shader Upgrade Sprint
 
+> **Historical (2026-06-06).** An ACES / `upgraded-rgba` **hygiene** sprint. Not the live upgrade law.
+> **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](docs/SHADER_UPGRADE_BATCH.md) — incremental ideas, not tag-and-ACES-only batches.
+
 **Date:** 2026-06-06  
-**Scope:** Upgrade generative WGSL shaders to `upgraded-rgba` standard  
-**Category:** `generative` (317 shaders)  
+**Scope (then):** Upgrade generative WGSL shaders to `upgraded-rgba` standard  
+**Category:** `generative`  
 **Constraint:** Shader authors only — do NOT modify `Renderer.ts`, `types.ts`, or bind groups.
 
 ---

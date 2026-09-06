@@ -63,6 +63,6 @@
   "updated": true,
   "id": "gen-hyperbolic-tessellation",
   "url": "shaders/gen-hyperbolic-tessellation.wgsl",
-  "features": ["hyperbolic-geometry", "recursive", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "features": ["upgraded-rgba", "hyperbolic-geometry", "recursive", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
   "feedbackPacking": "A/C = raw HDR tessellation display RGBA history; depth = normalized recursive depth"
 }

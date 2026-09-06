@@ -4,8 +4,9 @@
 //  Features: procedural, fractal, apollonian-gasket, circle-inversion,
 //            descartes-theorem, audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-30
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-06
+//  Ideas: packing rims on seed circles; curvature tint from last inverted k
+//  A packing: linear RGB + alpha (ACES on display)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -84,6 +85,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var q = p;
   var invCount = 0.0;
+  var lastK = 2.0;
   let spin = mat2x2<f32>(cos(time * 0.35 + mids), sin(time * 0.35), -sin(time * 0.35), cos(time * 0.35 + mids));
   q = spin * q;
 
@@ -95,6 +97,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       if (distance(q, c) < r) {
         q = circle_inv(q, c, r);
         invCount = invCount + 1.0;
+        lastK = 1.0 / max(r, 0.05);
         inverted = true;
         break;
       }
@@ -116,7 +119,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let density = exp(-minDist * 15.0);
-  let hue = fract(invCount * 0.14 + length(q) * 0.3 + time * 0.12 + treble * 0.2);
+
+  // Idea 1 — packing rims on the five seed circles (pre-inversion plane)
+  var packRim = 0.0;
+  for (var j = 0; j < 5; j = j + 1) {
+    packRim += exp(-abs(distance(p, circles[j].xy) - circles[j].z) * 72.0);
+  }
+
+  // Idea 2 — Descartes curvature tint from last inverted k
+  let hue = fract(invCount * 0.14 + lastK * 0.08 + length(q) * 0.3 + time * 0.12 + treble * 0.2);
   let sat = 0.55 + density * 0.45 + mids * 0.15;
   let val = 0.18 + density * 0.85;
 
@@ -127,6 +138,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   );
   let ring = abs(fract(minDist * 18.0 + time * 2.0) - 0.5);
   color += vec3<f32>(1.0, 0.2, 0.85) * (1.0 - smoothstep(0.0, 0.08, ring)) * 0.35;
+  color += vec3<f32>(0.92, 0.88, 0.72) * clamp(packRim, 0.0, 1.0) * 0.32;
 
   let ca = smoothstep(0.0, 0.4, density) * rainbow;
   color = vec3<f32>(

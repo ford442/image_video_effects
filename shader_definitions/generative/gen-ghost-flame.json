@@ -61,6 +61,7 @@
   "id": "gen-ghost-flame",
   "url": "shaders/gen-ghost-flame.wgsl",
   "features": [
+    "upgraded-rgba",
     "advected-flame-state",
     "three-band-audio-reactive",
     "mouse-and-click-heat",

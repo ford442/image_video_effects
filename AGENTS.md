@@ -271,6 +271,8 @@ You: Directly create the cron job at 21:00 with no offset suggestion.
 
 This repository is the **Pixelocity / WebGPU Shader Effects** app (Create React App + React 19 + WGSL compute shaders, with an optional C++/WASM renderer). See `README.md` and the `scripts` in `package.json` for the canonical commands. Notes below are the non-obvious things that bite you in the headless Cloud VM.
 
+**Shader upgrades:** live contract is [`docs/SHADER_UPGRADE_BATCH.md`](docs/SHADER_UPGRADE_BATCH.md). Add 2–4 named visual ideas to the existing effect. Do not reimagine the shader. Do not treat bindings / ACES / `updatedParams` / springs as the upgrade. Plumbing reference: [`agents/CLOUD_UPGRADE.md`](agents/CLOUD_UPGRADE.md). Bindings: [`agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md).
+
 ### Services / commands
 - **Dev server:** `npm start` (CRA on port 3000). The `prestart` step regenerates `public/shader-lists/*.json` and the unified manifest with **relative** same-origin shader paths (no `--base-url`; set `SHADER_LIST_BASE_URL` only for deploy builds). Use `BROWSER=none` to avoid CRA trying to open a browser.
 - **Unit tests:** `npx react-scripts test --watchAll=false --ci` (Jest; ~125 tests, all pass). `npm test` works too.

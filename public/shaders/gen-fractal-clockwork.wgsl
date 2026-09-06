@@ -6,7 +6,9 @@
 //  Features: mouse-driven, temporal, chromatic, depth-aware
 //  Tags: steampunk, mechanical, 3d, raymarching, gears
 //  Author: ford442
-//  Upgraded: 2026-08-03 (Batch 33)
+//  Upgraded: 2026-09-06
+//  Ideas: gear-tooth sparks; inter-gear mesh line
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -160,6 +162,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       map(p + vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity) - map(p - vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity)
     ));
     col = shade(p, n, ro, material);
+
+    // Local gear cell (same tiling as map)
+    let spacing = 5.0 * gearScale;
+    var q = p;
+    q.x = (fract((p.x + spacing * 0.5) / spacing) - 0.5) * spacing;
+    q.z = (fract((p.z + spacing * 0.5) / spacing) - 0.5) * spacing;
+    let cell = floor((p.xz + spacing * 0.5) / spacing);
+    let parity = abs(i32(cell.x) + i32(cell.y)) % 2;
+    let dir = select(-1.0, 1.0, parity == 0);
+    let tGear = time * speed * audioReactivity * dir * 2.0;
+    let onGear = select(0.0, 1.0, p.y > -1.05);
+    // Idea 1 — tooth crest spark
+    let toothPhase = sin(atan2(q.z, q.x) * teeth * 2.0 + tGear);
+    let toothSpark = smoothstep(0.72, 1.0, toothPhase) * onGear * (1.0 - smoothstep(0.32, 0.55, abs(p.y)));
+    col += vec3<f32>(1.0, 0.78, 0.32) * toothSpark * (0.22 + audioHigh * 0.25);
+    // Idea 2 — mesh line between neighboring gears
+    let meshR = abs(length(q.xz) - spacing * 0.5);
+    let meshLine = exp(-meshR * 14.0) * onGear * (1.0 - smoothstep(0.28, 0.5, abs(p.y)));
+    col += vec3<f32>(1.0, 0.85, 0.45) * meshLine * (0.18 + audioMid * 0.2);
 
     // ═══ Chromatic dispersion: per-channel spatial offsets on gear surface ═══
     let chromAmt = 0.015 + audioBass * 0.02;

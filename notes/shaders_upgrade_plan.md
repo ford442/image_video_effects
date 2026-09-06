@@ -9,15 +9,16 @@
 
 ## What "Upgrade" Means Here
 
-> **An upgrade adds to the visual output — it is not a refactor.** The goal of
-> upgrading a shader is to introduce *new* visual effects, richer detail, or
-> creative alterations of the image that were not there before (new lighting,
-> color, motion, depth, texture, generative structure, interactivity, etc.).
-> Fixing bindings, adding the workgroup barrier, clamping UVs, or passing
-> `naga` validation are **prerequisites**, not the upgrade itself. A shader
-> that compiles cleanly but looks the same as before has **not** been upgraded.
-> The size tiers below only decide *order of work*; every shader touched should
-> come out visibly more interesting than it went in.
+> **An upgrade adds 2–4 named ideas to the existing effect — it is not a
+> refactor and not a reimagining.** Introduce new visual structure that belongs
+> on *this* picture (lighting, motion, texture, optical detail, interactivity)
+> while a viewer still recognizes the original effect. Fixing bindings, adding
+> the workgroup barrier, clamping UVs, ACES, or passing `naga` are
+> **prerequisites**, not the upgrade. A shader that compiles cleanly but looks
+> the same has **not** been upgraded. A shader rewritten as a different motif
+> under the same filename has **not** been upgraded either.
+> Live process: [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+> The size tiers below only decide *order of work*.
 
 ## Executive Summary
 

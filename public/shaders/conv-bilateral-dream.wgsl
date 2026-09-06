@@ -6,7 +6,9 @@
 //  Complexity: High
 //  Chunks From: chunk-library (hash12)
 //  Created: 2026-04-18
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-06
+//  Ideas: joint bilateral (depth in range); luma-range RGB scale
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -132,8 +134,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let spatialDist = length(vec2<f32>(f32(dx), f32(dy)));
             let spatialWeight = exp(-spatialDist * spatialDist / (2.0 * finalSigma * finalSigma + 0.001));
 
-            let colorDist = length(neighbor.rgb - center.rgb);
-            let rangeWeight = exp(-colorDist * colorDist / (2.0 * depthColorSigma * depthColorSigma + 0.001));
+            let neighborLuma = dot(neighbor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+            let centerLuma = dot(center.rgb, vec3<f32>(0.299, 0.587, 0.114));
+            let lumaDist = abs(neighborLuma - centerLuma);
+            let nDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + offset, 0.0).r;
+            let depthDist = abs(nDepth - depth);
+            let rangeDist = lumaDist + depthDist * 0.65;
+            let rangeWeight = exp(-rangeDist * rangeDist / (2.0 * depthColorSigma * depthColorSigma + 0.001));
 
             let weight = spatialWeight * rangeWeight;
             accumColor += neighbor.rgb * weight;
@@ -177,5 +184,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = accumWeight * edgeConfidence * depthFactor;
 
     textureStore(writeTexture, global_id.xy, vec4<f32>(result, alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(result, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

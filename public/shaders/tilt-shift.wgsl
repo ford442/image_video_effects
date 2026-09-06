@@ -4,7 +4,9 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-06
+//  Ideas: hexagonal CoC aperture; specular bloom only in defocus
+//  A packing: ACES display RGBA
 //  Chunks From: scheimpflug-coc, aces-tonemap, chromatic-aberration
 // ═══════════════════════════════════════════════════════════════════
 
@@ -89,13 +91,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i = 0.0; i < samples; i = i + 1.0) {
     let r = sqrt(i + 0.5) / sqrt(samples) * radius;
     let theta = 2.3999632 * i + tiltAngle * 3.0;
-    let offset = vec2<f32>(cos(theta), sin(theta)) * r / resolution;
+    let dir = vec2<f32>(cos(theta), sin(theta));
+    let q = abs(dir * (r / max(radius, 0.5)));
+    let hex = max(q.x * 0.866025 + q.y * 0.5, q.y);
+    let hexW = 1.0 - smoothstep(0.92, 1.08, hex);
+    let offset = dir * r / resolution;
     let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-    colorSum += textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-    totalWeight += 1.0;
+    colorSum += textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb * hexW;
+    totalWeight += hexW;
   }
 
   var finalColor = colorSum / totalWeight;
+  let sharp = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let hi = max(dot(sharp, vec3<f32>(0.2126, 0.7152, 0.0722)) - 0.72, 0.0);
+  finalColor += sharp * hi * smoothstep(0.8, 6.0, coc) * 0.55;
 
   // Chromatic aberration in out-of-focus areas
   let caStrength = coc * 0.003;

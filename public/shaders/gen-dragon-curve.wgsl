@@ -1,6 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Heighway Dragon Curve (Algorithmist Upgrade)
+//  Heighway Dragon Curve
 //  Category: generative
+//  Features: upgraded-rgba, mouse-driven, audio-reactive, temporal
+//  Upgraded: 2026-09-06
+//  Ideas: paper crease at closest fold; generation thickness (early segments thicker)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 const PI=3.14159265358979323846; const TAU=6.28318530717958647692;
 const PHI=1.61803398874989484820; const SQRT2=1.41421356237309504880;
@@ -215,14 +219,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let warmKey = vec3<f32>(1.28 - tempShift, 0.96, 0.70 + tempShift);
     let coolFill = vec3<f32>(0.58 + tempShift, 0.76, 1.32 - tempShift);
 
-    let coreGlow = exp(-minDist / glowWidth) * turnIntensity * (1.0 + bgField * 0.3);
-    let halo = exp(-minDist / (glowWidth * 6.0)) * (0.55 + fftPulse * 0.4);
+    // Idea 2 — generation thickness: early folds are a wider paper strip
+    let genT = f32(closestIdx) / max(f32(maxSeg), 1.0);
+    let genThick = mix(1.55, 0.72, genT);
+    let width = glowWidth / genThick;
+
+    let coreGlow = exp(-minDist / width) * turnIntensity * (1.0 + bgField * 0.3);
+    let halo = exp(-minDist / (width * 6.0)) * (0.55 + fftPulse * 0.4);
     var color = neon * coreGlow * warmKey * 2.8
               + neon * halo * coolFill * 0.85;
     color += thinFilm(hue + time * 0.02) * clickEnergy * (0.35 + treble * 0.35);
 
+    // Idea 1 — paper crease energy at the closest fold vertex
+    let crease = select(0.0, 1.0, closestTurn) * exp(-minDist / max(width * 0.45, 0.0008));
+    color += neon * crease * (0.85 + bass * 0.35);
+
     // Chromatic aberration on tight folds
-    let fold = select(0.0, 1.0, t1 != t2) * smoothstep(0.0, glowWidth * 3.0, coreGlow);
+    let fold = select(0.0, 1.0, t1 != t2) * smoothstep(0.0, width * 3.0, coreGlow);
     color = vec3<f32>(color.r * (1.0 + fold * caAmt), color.g,
                         color.b * (1.0 - fold * caAmt * 0.5));
 
@@ -248,7 +261,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = mix(color, prev * 0.95, 0.04 + feedback * 0.06 + bass * 0.02);
 
     // Depth controls line thickness perspective
-    let curveDensity = exp(-minDist / (glowWidth * (1.0 + depth)));
+    let curveDensity = exp(-minDist / (width * (1.0 + depth)));
     let alpha = clamp(curveDensity * turnIntensity * (0.3 + depth * 0.7)
       + clickEnergy * halo * 0.18, 0.0, 1.0);
 

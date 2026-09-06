@@ -316,11 +316,12 @@ function generatePrompt(item) {
 
   const prompt = `# Shader Upgrade Task: \`${item.id}\`
 
+Read \`docs/SHADER_UPGRADE_BATCH.md\` first. An upgrade **adds 2–4 named visual ideas to this existing effect**. It is not a rewrite and not a formatting / ACES / binding pass.
+
 ## Metadata
 - **Shader ID**: ${item.id}
 - **Agent Role**: ${item.agent_role}
 - **Current Size**: ${item.size} bytes
-- **Target Line Count**: ~${item.target_lines} lines
 - **Status**: ${item.status}
 
 ## Immutable Rules
@@ -328,8 +329,10 @@ The following MUST NOT be changed:
 1. The 13-binding contract header (copy exactly).
 2. The \`Uniforms\` struct definition.
 3. \`@workgroup_size\` unless the shader already uses shared memory or explicit local_invocation_id math.
-4. Do NOT install new npm packages.
-5. Do NOT modify Renderer.ts, types.ts, or bind groups.
+4. Saved JSON \`params\` (ids, names, defaults, min/max/step, mapping). Align \`updatedParams\` additively only.
+5. Do NOT install new npm packages.
+6. Do NOT modify Renderer.ts, types.ts, or bind groups.
+7. Do NOT stamp a spring + ripple + IQ-palette overlay unless this effect already lives under the pointer.
 
 ${BINDING_HEADER}
 
@@ -350,19 +353,22 @@ ${jsonContent}
 ## Agent Specialization
 ${template}
 
+Use the toolkit only for ideas that belong on **this** effect. Do not apply the whole toolkit.
+
 ---
 
 ## Your Task
-1. Analyze the current shader and identify its biggest weaknesses in your domain.
-2. Apply 2-3 upgrade techniques from your toolkit above.
-3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly ${item.target_lines} lines (±20%).
-5. Write a brief upgrade rationale (2-3 sentences).
+1. Write an Idea Card **before** editing (identity, keep-verbatim, 2–4 native additions, A packing).
+2. Implement those ideas in the existing main path. Keep modes, kernel family, param roles.
+3. Apply the plumbing floor (ACES on display, semantic alpha, exact C loads, live sliders) without replacing the algorithm.
+4. Header must include \`Ideas:\` and \`A packing:\` lines. Do not chase a line-count target.
+5. Saved \`params\` stay byte-exact.
 
 ## Output Format
-Return exactly two code blocks:
-1. \`\`\`wgsl\n[upgraded shader source]\n\`\`\`
-2. \`\`\`json\n[updated shader definition]\n\`\`\`
+Return three blocks:
+1. A fenced Idea Card (plain text).
+2. \`\`\`wgsl\n[upgraded shader source]\n\`\`\`
+3. \`\`\`json\n[updated shader definition]\n\`\`\`
 
 If the JSON does not need changes, return the original JSON unchanged.
 `;

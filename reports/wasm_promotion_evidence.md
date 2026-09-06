@@ -41,8 +41,8 @@ Sources: `memory/2026-08-30.md`, `memory/2026-08-31.md`, and the tree as of this
 | | |
 |---|---|
 | **Root cause** | Pascal/Chrome D3D12 `GPUOutOfMemoryError` on `historyTex` ~256–512 MiB. Retrying 2048 or switching to WASM without awaiting `device.lost` OOMs again. |
-| **Fix location** | `historyTexProbe.ts` ladder 2048×8 → 1024×8 → 1024×4 → 1024×1; `vramBudget.ts` `px_history_oom_cap`; C++ fail-soft (source only — not rebuilt here). |
-| **Automated guard** | Contract `historyTexLadder` matched to TS constants + `HISTORY_PROBE_RUNGS` (4 rungs). |
+| **Fix location** | Default working size 1024; `allowsFullWorkingSize` (1 GiB `maxBufferSize`, discrete, not Pascal); full-pool allocate with `historyTex` first; ladder 2048×8 → 1024×8 → 1024×4 → 1024×1; `vramBudget.ts` `px_history_oom_cap`; C++ fail-soft (source only — not rebuilt here). |
+| **Automated guard** | Contract `historyTexLadder` (`defaultWorkingSize` 1024, `minMaxBufferSizeForFull` 1GiB) matched to TS constants + `HISTORY_PROBE_RUNGS` (4 rungs). |
 | **Hardware** | **GPU-PENDING** |
 
 ## 5. BGL RGBA32Float vs shader RGBA16Float (#1205)
@@ -50,8 +50,8 @@ Sources: `memory/2026-08-30.md`, `memory/2026-08-31.md`, and the tree as of this
 | | |
 |---|---|
 | **Root cause** | WASM pipeline layout stayed RGBA32Float while LoadShader rewrote WGSL to RGBA16Float → invalid pipeline submitted every frame. |
-| **Fix location** | WASM prefers `rgba16float` after a yes storage probe; `RewriteWgslStorageFormats` at LoadShader. Catalog WGSL stays `rgba32float`. |
-| **Automated guard** | `storageFormatRewrite` checks TS rewrite module, C++ rewrite + Rgba16Float probe path. |
+| **Fix location** | WASM prefers `rgba16float` after a yes storage probe; `RewriteWgslStorageFormats` at LoadShader. Catalog WGSL stays `rgba32float`. JS `compileShader` uses Validation error scope (Dawn may return invalid without throw). WaitAny fail on the C++ error scope = do not store. Depth write includes CopySrc. |
+| **Automated guard** | `storageFormatRewrite` checks TS rewrite, C++ rewrite + probe, BGL `RgbaStorageFormat(colorFormat_)`, LoadShader skip/`waitFailed`, Depth Texture Write CopySrc, frame depth CopyTex. |
 | **Hardware** | **GPU-PENDING** |
 
 ## 6. JS→WASM switch drops the photo (#1206)

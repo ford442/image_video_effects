@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Domain-Warped FBM Grid v2 - Audio-reactive lattice
+//  Domain-Warped FBM Grid
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, temporal,
-//            domain-warping, FBM-noise
-//  Upgraded: 2026-05-02 (Tier-1 integration pass)
-//  Creative additions: recursive mini-grid moiré, chromatic dispersion edges
-//  Batch-19: per-cell FFT moiré shimmer, click ripple warp pulses,
-//            spring-damped gravity well (extraBuffer[133..136])
+//            domain-warping, FBM-noise, mouse-driven
+//  Upgraded: 2026-09-06
+//  Ideas: anisotropic H/V lattice from warp Jacobian; intersection phosphor from C
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -76,14 +75,19 @@ fn domainWarp(uv: vec2<f32>, time: f32, scale: f32, amount: f32, attractor: vec2
     return uv + amount * r + gravity * amount * 0.5;
 }
 
-fn gridLine(warpedUV: vec2<f32>, gridSize: f32, thickness: f32) -> vec2<f32> {
+fn gridLine(warpedUV: vec2<f32>, gridSize: f32, thickness: f32, stretch: vec2<f32>) -> vec2<f32> {
     let gridPos = warpedUV * gridSize;
     let gridFract = fract(gridPos - 0.5) - 0.5;
     let lineDist = abs(gridFract);
-    let nearestLine = min(lineDist.x, lineDist.y);
-    let adjustedThickness = thickness * (1.0 + length(gridFract) * 0.5);
-    let intensity = 1.0 - smoothstep(0.0, adjustedThickness, nearestLine);
-    let glow = 0.3 * (1.0 - smoothstep(0.0, adjustedThickness * 3.0, nearestLine));
+    let thickV = thickness * stretch.x * (1.0 + abs(gridFract.y) * 0.5);
+    let thickH = thickness * stretch.y * (1.0 + abs(gridFract.x) * 0.5);
+    let vLine = 1.0 - smoothstep(0.0, thickV, lineDist.x);
+    let hLine = 1.0 - smoothstep(0.0, thickH, lineDist.y);
+    let intensity = max(vLine, hLine);
+    let glow = 0.3 * max(
+        1.0 - smoothstep(0.0, thickV * 3.0, lineDist.x),
+        1.0 - smoothstep(0.0, thickH * 3.0, lineDist.y)
+    );
     return vec2<f32>(intensity, glow);
 }
 
@@ -224,17 +228,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warpedP = domainWarp(pulsedP, time, gridDensity * 2.0, warpAmount, attractor, attractorStrength);
     let distortionMag = length(warpedP - p);
 
+    // Idea 1 — anisotropic lattice: warp Jacobian stretches H vs V line weight
+    let jacEps = 0.004;
+    let warpDx = domainWarp(pulsedP + vec2<f32>(jacEps, 0.0), time, gridDensity * 2.0, warpAmount, attractor, attractorStrength);
+    let warpDy = domainWarp(pulsedP + vec2<f32>(0.0, jacEps), time, gridDensity * 2.0, warpAmount, attractor, attractorStrength);
+    let stretch = vec2<f32>(
+        clamp(length(warpDx - warpedP) / jacEps, 0.45, 2.4),
+        clamp(length(warpDy - warpedP) / jacEps, 0.45, 2.4)
+    );
+
     let gridSize = 8.0 * gridDensity;
-    let gr = gridLine(warpedP, gridSize, thickness);
+    let gr = gridLine(warpedP, gridSize, thickness, stretch);
     let lineIntensity = gr.x;
     let lineGlow = gr.y;
 
-    // ─── Creative: chromatic dispersion — sample the grid 3 times slightly offset ───
+    // Chromatic dispersion — sample the grid 3 times slightly offset
     let dispersion = thickness * (0.6 + bass * 0.6);
     let warpR = domainWarp(pulsedP + vec2<f32>(dispersion, 0.0), time, gridDensity * 2.0, warpAmount, attractor, attractorStrength);
     let warpB = domainWarp(pulsedP - vec2<f32>(dispersion, 0.0), time, gridDensity * 2.0, warpAmount, attractor, attractorStrength);
-    let lineR = gridLine(warpR, gridSize, thickness).x;
-    let lineB = gridLine(warpB, gridSize, thickness).x;
+    let lineR = gridLine(warpR, gridSize, thickness, stretch).x;
+    let lineB = gridLine(warpB, gridSize, thickness, stretch).x;
     let chromaLine = vec3<f32>(lineR, lineIntensity, lineB);
 
     // ─── Creative: recursive mini-grid (moiré) — per-cell FFT shimmer ───
@@ -252,7 +265,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         warpedP.x * sR + warpedP.y * cR
     );
     let miniShimmer = 0.35 + binEnergy * 0.9;
-    let mini = gridLine(miniUV, gridSize * 4.0, thickness * 0.5).x * nearIntersection * miniShimmer;
+    let mini = gridLine(miniUV, gridSize * 4.0, thickness * 0.5, vec2<f32>(1.0)).x * nearIntersection * miniShimmer;
 
     // Color composition
     let colorT = distortionMag * 2.0 + time * 0.05 + shift;
@@ -271,8 +284,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Click ripple wavefront glow
     generatedColor = generatedColor + lineColor * rippleGlow * 0.6;
 
-    // Treble sparkle on grid intersections
-    let sparkleSeed = hash12(floor(warpedP * gridSize) + vec2<f32>(time * 4.0, 0.0));
+    // Treble sparkle on grid intersections (continuous in time)
+    let sparkleSeed = hash12(floor(warpedP * gridSize) + vec2<f32>(sin(time * 0.7), cos(time * 0.51)));
     let sparkle = step(1.0 - treble * 0.55, sparkleSeed) * nearIntersection;
     generatedColor = generatedColor + vec3<f32>(sparkle);
 
@@ -282,9 +295,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     generatedColor = generatedColor * clamp(vignette, 0.0, 1.0);
 
     // Temporal feedback: blend with previous frame for motion blur
-    let prev = textureLoad(dataTextureC, coord, 0).rgb;
+    let prev = textureLoad(dataTextureC, coord, 0);
     let motionBlur = clamp(warpAmount * 0.35, 0.0, 0.55);
-    generatedColor = mix(generatedColor, prev, motionBlur);
+    generatedColor = mix(generatedColor, prev.rgb, motionBlur);
+
+    // Idea 2 — intersection phosphor (exact C at lattice joints, no floor(time) strobe)
+    let phosphor = nearIntersection * (0.12 + treble * 0.18);
+    generatedColor = mix(generatedColor, max(generatedColor, prev.rgb * 1.15), phosphor);
 
     // Tone map
     generatedColor = acesToneMapping(generatedColor);

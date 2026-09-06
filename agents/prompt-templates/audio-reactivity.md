@@ -23,6 +23,8 @@ let treble = plasmaBuffer[0].z;  // 2k–20k Hz, ~0–2
   ```
   Store `prev` in `dataTextureA.r` if the shader has free feedback.
 
+> Live upgrade law: [`docs/SHADER_UPGRADE_BATCH.md`](../../docs/SHADER_UPGRADE_BATCH.md). Audio is the floor when the JSON claims it. Do not add bass-driven palettes as the only “upgrade.”
+
 ## Output Rules
 - Add at least one musically coherent audio-driven parameter.
 - Update JSON `features` to include `audio-reactive`.

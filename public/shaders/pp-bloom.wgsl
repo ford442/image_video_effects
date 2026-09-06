@@ -1,16 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  pp-bloom.wgsl - High Quality Bloom Post-Process
-//  
-//  Usage: Apply in Slot 1 or 2 after a base effect
-//  Input: readTexture (previous slot output)
-//  Output: writeTexture (bloom added to input)
-//
-//  Techniques:
-//    - Multi-tap Gaussian blur approximation
-//    - HDR threshold extraction
-//    - Anamorphic bloom (optional via uniforms)
-//    - Quality levels (4-16 taps based on performance)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  PP Bloom
+//  Category: post-processing
+//  Features: audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-06
+//  Ideas: hue-preserving bright extract; horizontal anamorphic streak
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,159 +29,118 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Quality settings (tap counts)
 const QUALITY_LOW: i32 = 4;
 const QUALITY_MED: i32 = 8;
 const QUALITY_HIGH: i32 = 16;
 
-// Gaussian weights for different tap counts
-fn getWeights(taps: i32) -> array<f32, 16> {
-    // Pre-computed normalized Gaussian weights
-    if (taps == 4) {
-        return array<f32, 16>(0.383f, 0.242f, 0.061f, 0.006f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-    }
-    if (taps == 8) {
-        return array<f32, 16>(0.199f, 0.176f, 0.121f, 0.065f, 0.028f, 0.009f, 0.002f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-    }
-    // High quality - 16 taps
-    return array<f32, 16>(0.088f, 0.085f, 0.079f, 0.070f, 0.059f, 0.047f, 0.035f, 0.024f, 0.015f, 0.008f, 0.004f, 0.002f, 0.001f, 0.0f, 0.0f, 0.0f);
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn getOffsets(taps: i32, radius: f32, invRes: vec2<f32>) -> array<vec2<f32>, 16> {
-    var offsets: array<vec2<f32>, 16>;
-    for (var i: i32 = 0; i < taps; i = i + 1) {
-        let dist = f32(i + 1) / f32(taps);
-        // Anamorphic stretch in Y based on param2
-        let anamorphic = 1.0 + u.zoom_params.y * 2.0; // 1.0 - 3.0 stretch
-        offsets[i] = vec2<f32>(
-            invRes.x * dist * radius,
-            invRes.y * dist * radius * anamorphic
-        );
-    }
-    return offsets;
+fn luma(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
 fn extractBright(color: vec3<f32>, threshold: f32) -> vec3<f32> {
-    let luminance = dot(color, vec3<f32>(0.299f, 0.587f, 0.114f));
-    let contribution = max(luminance - threshold, 0.0f);
-    // Soft knee
-    let knee = threshold * 0.5f;
-    let soft = max(luminance - threshold + knee, 0.0f);
-    let softContribution = min(soft, knee) * (soft / max(knee, 0.001f));
-    
-    return color * (contribution + softContribution) / max(luminance, 0.001f);
+  let l = luma(color);
+  let knee = threshold * 0.5;
+  let soft = max(l - threshold + knee, 0.0);
+  let softContribution = min(soft, knee) * (soft / max(knee, 0.001));
+  let contribution = max(l - threshold, 0.0) + softContribution;
+  return color * (contribution / max(l, 0.001));
+}
+
+fn sampleBright(uv: vec2<f32>, threshold: f32) -> vec3<f32> {
+  let s = textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  return extractBright(s.rgb, threshold);
+}
+
+fn getWeights(taps: i32) -> array<f32, 16> {
+  if (taps == 4) {
+    return array<f32, 16>(0.383, 0.242, 0.061, 0.006, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  }
+  if (taps == 8) {
+    return array<f32, 16>(0.199, 0.176, 0.121, 0.065, 0.028, 0.009, 0.002, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  }
+  return array<f32, 16>(0.088, 0.085, 0.079, 0.070, 0.059, 0.047, 0.035, 0.024, 0.015, 0.008, 0.004, 0.002, 0.001, 0.0, 0.0, 0.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    let coord = vec2<i32>(global_id.xy);
-    
-    if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) {
-        return;
-    }
-    
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let invRes = 1.0f / resolution;
-    
-    // Parameters
-    // param1: Bloom intensity (0-1)
-    // param2: Anamorphic stretch (0-1)
-    // param3: Threshold (0-1, where bloom starts)
-    // param4: Quality level (0=low, 0.33=med, 0.66=high)
-    let intensity = u.zoom_params.x;
-    let threshold = u.zoom_params.z;
-    let qualityParam = u.zoom_params.w;
-    
-    var taps: i32;
-    if (qualityParam < 0.33f) {
-        taps = QUALITY_LOW;
-    } else if (qualityParam < 0.66f) {
-        taps = QUALITY_MED;
-    } else {
-        taps = QUALITY_HIGH;
-    }
-    
-    // Sample original color
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0f);
-    
-    // Extract bright areas
-    let bright = extractBright(original.rgb, threshold);
-    
-    // Multi-tap blur in both directions
-    let weights = getWeights(taps);
-    let radius = 4.0f + intensity * 8.0f; // 4-12 pixel radius
-    let offsets = getOffsets(taps, radius, invRes);
-    
-    var blurred = bright * weights[0];
-    
-    // Horizontal + vertical blur (simplified)
-    for (var i: i32 = 0; i < taps; i = i + 1) {
-        let offset = offsets[i];
-        
-        // Horizontal samples
-        let h1 = extractBright(
-            textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(offset.x, 0.0f), 0.0f).rgb,
-            threshold
-        );
-        let h2 = extractBright(
-            textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(offset.x, 0.0f), 0.0f).rgb,
-            threshold
-        );
-        
-        // Vertical samples
-        let v1 = extractBright(
-            textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0f, offset.y), 0.0f).rgb,
-            threshold
-        );
-        let v2 = extractBright(
-            textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0f, offset.y), 0.0f).rgb,
-            threshold
-        );
-        
-        // Diagonal samples for better quality
-        let d1 = extractBright(
-            textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0f).rgb,
-            threshold
-        );
-        let d2 = extractBright(
-            textureSampleLevel(readTexture, u_sampler, uv - offset, 0.0f).rgb,
-            threshold
-        );
-        let d3 = extractBright(
-            textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(offset.x, -offset.y), 0.0f).rgb,
-            threshold
-        );
-        let d4 = extractBright(
-            textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-offset.x, offset.y), 0.0f).rgb,
-            threshold
-        );
-        
-        let avg = (h1 + h2 + v1 + v2 + d1 + d2 + d3 + d4) * 0.125f;
-        blurred += avg * weights[i];
-    }
-    
-    // Normalize
-    var totalWeight = weights[0];
-    for (var i: i32 = 1; i < taps; i = i + 1) {
-        totalWeight += weights[i] * 8.0f; // 8 samples per iteration
-    }
-    blurred /= totalWeight;
-    
-    // Additive bloom with intensity
-    let bloomContribution = blurred * intensity * 2.0f;
-    
-    // HDR addition (allow values > 1.0)
-    var finalColor = original.rgb + bloomContribution;
-    
-    // Optional: lens dirt effect (simulated vignette on bloom)
-    let lensDirt = 1.0f - length(uv - 0.5f) * 0.5f;
-    finalColor += blurred * intensity * 0.3f * lensDirt;
-    
-    // Store bloom in dataTextureA for potential multi-pass
-    textureStore(dataTextureA, coord, vec4<f32>(blurred, 1.0f));
-    
-    // Write final
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, original.a));
-    textureStore(writeDepthTexture, coord, vec4<f32>(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0f).r, 0.0f, 0.0f, 1.0f));
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
+
+  let coord = vec2<i32>(gid.xy);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+  let invRes = 1.0 / res;
+
+  let bass = plasmaBuffer[0].x;
+  let treble = plasmaBuffer[0].z;
+
+  let intensity = u.zoom_params.x * (1.0 + treble * 0.25);
+  let anamorphic = u.zoom_params.y;
+  let threshold = clamp(u.zoom_params.z - bass * 0.08, 0.0, 1.0);
+  let qualityParam = u.zoom_params.w;
+
+  var taps: i32 = QUALITY_MED;
+  if (qualityParam < 0.33) {
+    taps = QUALITY_LOW;
+  } else if (qualityParam >= 0.66) {
+    taps = QUALITY_HIGH;
+  }
+
+  let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let bright0 = extractBright(original.rgb, threshold);
+  let weights = getWeights(taps);
+  let radius = 4.0 + intensity * 8.0;
+  let stretch = 1.0 + anamorphic * 2.0;
+
+  var blurred = bright0 * weights[0];
+  var totalWeight = weights[0];
+
+  for (var i: i32 = 0; i < taps; i = i + 1) {
+    let dist = f32(i + 1) / f32(taps);
+    let ox = invRes.x * dist * radius;
+    let oy = invRes.y * dist * radius * stretch;
+    let offset = vec2<f32>(ox, oy);
+    let h1 = sampleBright(uv + vec2<f32>(ox, 0.0), threshold);
+    let h2 = sampleBright(uv - vec2<f32>(ox, 0.0), threshold);
+    let v1 = sampleBright(uv + vec2<f32>(0.0, oy), threshold);
+    let v2 = sampleBright(uv - vec2<f32>(0.0, oy), threshold);
+    let d1 = sampleBright(uv + offset, threshold);
+    let d2 = sampleBright(uv - offset, threshold);
+    let d3 = sampleBright(uv + vec2<f32>(ox, -oy), threshold);
+    let d4 = sampleBright(uv + vec2<f32>(-ox, oy), threshold);
+    let avg = (h1 + h2 + v1 + v2 + d1 + d2 + d3 + d4) * 0.125;
+    blurred += avg * weights[i];
+    totalWeight += weights[i];
+  }
+  blurred = blurred / max(totalWeight, 1e-4);
+
+  // Idea 2: extra 1D horizontal streak using the anamorphic control
+  var streak = bright0 * 0.35;
+  let streakTaps = 6;
+  for (var s: i32 = 1; s <= streakTaps; s = s + 1) {
+    let t = f32(s) / f32(streakTaps);
+    let w = exp(-t * t * 4.0);
+    let sx = invRes.x * t * radius * (1.5 + anamorphic * 4.0);
+    streak += sampleBright(uv + vec2<f32>(sx, 0.0), threshold) * w;
+    streak += sampleBright(uv - vec2<f32>(sx, 0.0), threshold) * w;
+  }
+  streak = streak / (0.35 + 2.0 * 6.0 * 0.4);
+  let streakMix = anamorphic * intensity;
+
+  var hdr = original.rgb + blurred * intensity * 2.0 + streak * streakMix * 1.4;
+  let lensDirt = 1.0 - length(uv - 0.5) * 0.5;
+  hdr += blurred * intensity * 0.3 * lensDirt;
+
+  let display = acesToneMap(hdr);
+  let bloomLuma = luma(blurred + streak * streakMix);
+  let alpha = clamp(original.a * 0.5 + bloomLuma * 0.8, 0.0, 1.0);
+  let outCol = vec4<f32>(display, alpha);
+
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, outCol);
+  textureStore(dataTextureA, coord, outCol);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,17 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Buddhabrot Nebula v3 - Audio-reactive orbit accumulation
+//  Buddhabrot Nebula
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven,
 //            temporal, procedural, animated-accumulation
-//  Upgraded: 2026-05-02 (Tier-1 integration pass)
-//  Optimizer pass: 2026-07-26 (Batch 18)
-//    - FIXED double-tonemap feedback: dataTextureA now stores LINEAR
-//      pre-tonemap accumulation; ACES applies only to display output
-//    - Added OOB bounds guard for rounded-up dispatch
-//    - Gliding navigation: spring-damped center/zoom (extraBuffer[133..136])
-//    - Click ripples re-target the zoom center to the click point
-//    - Spectral stars: per-bin FFT (plasmaBuffer[1..8]) drives star density
-//  Creative additions: bass-breathing sample count, orbital rainbow trails
+//  Upgraded: 2026-09-06
+//  Ideas: Mandelbrot body under escaping orbits; dwell iso-bands on c_pixel
+//  A packing: linear RGB accumulation + presence (ACES display only)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -232,9 +226,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     rainbow = rainbow / max(f32(sample_count) * 8.0, 1.0);
 
+    // Idea 1+2 — Mandelbrot body + dwell bands for this pixel's c (not a new map)
+    var zPix = vec2<f32>(0.0);
+    var dwell = 0u;
+    var escapedPix = false;
+    for (var k: u32 = 0u; k < 64u; k = k + 1u) {
+        zPix = cmul(zPix, zPix) + c_pixel;
+        dwell = dwell + 1u;
+        if (dot(zPix, zPix) > 4.0) {
+            escapedPix = true;
+            break;
+        }
+    }
+    let setBody = select(1.0, 0.0, escapedPix);
+    let dwellBand = 0.5 + 0.5 * sin(f32(dwell) * 0.42 + t);
+
     // Mids drive nebula palette hue shift
     var color = nebula_color(density, t, mids * 0.5);
     color = color + rainbow * 0.6;
+    color = mix(color, vec3<f32>(0.04, 0.02, 0.08), setBody * 0.55);
+    color = color + vec3<f32>(0.08, 0.18, 0.32) * dwellBand * select(0.22, 0.0, !escapedPix) * (0.4 + mids * 0.4);
 
     // ─── Spectral stars: per-bin FFT drives star density per band ───
     // Each star is assigned one of 8 spectrum bands (plasmaBuffer[1..8]);

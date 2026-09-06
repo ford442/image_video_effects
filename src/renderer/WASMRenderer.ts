@@ -238,6 +238,15 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     return this.inputSource;
   }
 
+  getCpuInputBitmap(): HTMLCanvasElement | HTMLImageElement | HTMLVideoElement | null {
+    if (this.inputSource === 'generative') return null;
+    if (this.usesVideoInput() && this.video) return this.video;
+    if (this.offscreenCanvas && this.offscreenCanvas.width > 0 && this.offscreenCanvas.height > 0) {
+      return this.offscreenCanvas;
+    }
+    return this.video;
+  }
+
   addRipple(x: number, y: number): void {
     WasmBridge.addRipple(x, y);
   }
@@ -399,16 +408,40 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   }
 
   /**
-   * Load an image from a URL into the C++ renderer's read texture.
+   * Copy an already-decoded canvas/image into the C++ read texture (same path as first load).
    */
-  async loadImageFromURL(url: string): Promise<void> {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = url;
-    await img.decode();
+  loadImageFromElement(
+    element: HTMLCanvasElement | HTMLImageElement,
+  ): { width: number; height: number } | null {
+    const w = element instanceof HTMLImageElement
+      ? (element.naturalWidth || element.width)
+      : element.width;
+    const h = element instanceof HTMLImageElement
+      ? (element.naturalHeight || element.height)
+      : element.height;
+    if (!w || !h) return null;
 
-    const w = img.naturalWidth;
-    const h = img.naturalHeight;
+    const data = this.rasterizeToRgba(element, w, h);
+    if (!data) return null;
+    WasmBridge.uploadImageData(data, w, h);
+    console.log(`[WASM] Input upload ran: ${w}×${h} (image)`);
+    this.logNextInputUpload = false;
+    return { width: w, height: h };
+  }
+
+  private rasterizeToRgba(
+    source: CanvasImageSource,
+    w: number,
+    h: number,
+  ): Uint8ClampedArray | null {
+    if (
+      source === this.offscreenCanvas
+      && this.offscreenCtx
+      && this.offscreenCanvas.width === w
+      && this.offscreenCanvas.height === h
+    ) {
+      return this.offscreenCtx.getImageData(0, 0, w, h).data;
+    }
 
     if (!this.offscreenCanvas || this.offscreenCanvas.width !== w || this.offscreenCanvas.height !== h) {
       this.offscreenCanvas = document.createElement('canvas');
@@ -416,14 +449,21 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       this.offscreenCanvas.height = h;
       this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
     }
+    if (!this.offscreenCtx) return null;
+    this.offscreenCtx.clearRect(0, 0, w, h);
+    this.offscreenCtx.drawImage(source, 0, 0, w, h);
+    return this.offscreenCtx.getImageData(0, 0, w, h).data;
+  }
 
-    if (!this.offscreenCtx) return;
-
-    this.offscreenCtx.drawImage(img, 0, 0, w, h);
-    const imageData = this.offscreenCtx.getImageData(0, 0, w, h);
-    WasmBridge.uploadImageData(imageData.data, w, h);
-    console.log(`[WASM] Input upload ran: ${w}×${h} (image)`);
-    this.logNextInputUpload = false;
+  /**
+   * Load an image from a URL into the C++ renderer's read texture.
+   */
+  async loadImageFromURL(url: string): Promise<void> {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = url;
+    await img.decode();
+    this.loadImageFromElement(img);
   }
 
   /** Renderer interface alias — matches WebGPURenderer.loadImage signature. */

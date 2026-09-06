@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Retro Game Boy
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-06
+//  Ideas: round LCD dots in each block; honest A/C palette ghosting
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -110,12 +119,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Map to palette
     let paletteColor = get_palette(finalLum, paletteShift);
 
-    // Pixel grid
+    // Pixel grid + round LCD dots (dot-matrix, not only square cells)
     var grid = 1.0;
     if (blockSize > 1.5 && gridStrength > 0.0) {
         let border = step(blockSize - 1.0, pixelPos.x) + step(blockSize - 1.0, pixelPos.y);
         grid = 1.0 - clamp(border, 0.0, 1.0) * gridStrength * 0.5;
     }
+    let local = pixelPos / max(blockSize, 1.0) - 0.5;
+    let lcd = 1.0 - smoothstep(0.36, 0.48, length(local));
+    grid *= mix(0.18, 1.0, lcd);
 
     // Scanline modulation from audio mids
     let scanLine = sin(f32(global_id.y) * 3.14159 / blockSize) * 0.5 + 0.5;
@@ -133,5 +145,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = mix(0.55, 1.0, depth) * grid;
 
     textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: mathematical, chaos, visualization, audio-parameter, mouse-exploration, temporal-evolution, density-color
 //  Complexity: Medium
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish pass — richer color, motion, and interactive depth)
+//  Upgraded: 2026-09-06
+//  Ideas: continuous color-scheme mix; period-window ridges at lyap≈0
+//  A packing: HDR density RGB + alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -134,7 +135,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rPosition = mix(2.8, 4.0, u.zoom_params.x);
     let zoomLevel = mix(1.0, 50.0, u.zoom_params.y * u.zoom_params.y);
     let iterationCount = i32(mix(50.0, 200.0, u.zoom_params.z));
-    let colorScheme = i32(u.zoom_params.w * 3.99);
+    let colorBlend = clamp(u.zoom_params.w * 3.0, 0.0, 2.999);
+    let schemeA = i32(floor(colorBlend));
+    let schemeT = fract(colorBlend);
     
     // R range with zoom and pan
     let rCenter = rPosition;
@@ -194,13 +197,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = vec3<f32>(0.0);
     
     if (density > 0.01) {
-        switch (colorScheme) {
-            case 0: { col = colorThermal(density); }
-            case 1: { col = colorRainbow(density); }
-            case 2: { col = colorOcean(density); }
-            case 3: { col = colorFire(density); }
-            default: { col = colorThermal(density); }
-        }
+        let pal0 = colorThermal(density);
+        let pal1 = colorRainbow(density);
+        let pal2 = colorOcean(density);
+        let pal3 = colorFire(density);
+        var pal = pal0;
+        pal = select(pal, mix(pal0, pal1, schemeT), schemeA == 0);
+        pal = select(pal, mix(pal1, pal2, schemeT), schemeA == 1);
+        pal = select(pal, mix(pal2, pal3, schemeT), schemeA == 2);
+        pal = select(pal, pal3, schemeA >= 3);
+        col = pal;
         
         // Audio-reactive color and brightness
         let audioBoost = 0.7 + 0.6 * density + bass * 0.4 + mids * 0.25;
@@ -217,14 +223,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Highlight periodic windows
     if (lyap < 0.0) {
-        // Periodic region - subtle glow
         let periodGlow = smoothstep(0.0, -0.5, lyap) * 0.1;
         col = col + vec3<f32>(0.2, 0.3, 0.5) * periodGlow;
     } else {
-        // Chaotic region - warm tint
         let chaosTint = smoothstep(0.0, 0.5, lyap) * 0.1;
         col = col + vec3<f32>(0.5, 0.2, 0.1) * chaosTint;
     }
+    // Idea 2 — period-doubling ridge where lyap crosses zero
+    let windowRidge = exp(-abs(lyap) * 14.0) * density;
+    col += vec3<f32>(0.95, 0.9, 0.45) * windowRidge * 0.55;
 
     // A fast chaos scanner races through the parameter axis, illuminating
     // derivative-rich branches without changing the logistic-map geometry.

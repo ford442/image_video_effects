@@ -62,5 +62,10 @@
   "updated": true,
   "id": "gen-fourier-epicycles",
   "url": "shaders/gen-fourier-epicycles.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba",
+    "mouse-driven",
+    "temporal"
+  ]
 }

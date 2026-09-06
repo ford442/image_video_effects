@@ -71,7 +71,8 @@
     "fft-reactive-halo",
     "mouse-driven",
     "click-reactive",
-    "semantic-alpha"
+    "semantic-alpha",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = final ACES display RGBA; exact dragon-curve persistence history"
 }

@@ -1,11 +1,13 @@
 # PLAN.md — Weekly Shader Upgrade Agent Swarm
 
-> **Mission**: Keep the image_video_effects / Pixelocity library evolving at the cutting edge of real-time WebGPU visuals.  
-> This plan turns Grok, Kimi Code CLI, Jules, Claude, and other agents into a coordinated **weekly upgrade swarm** that adds new shaders, optimizes existing ones, maintains hot-swap reliability, and ships polished PRs.
+> **Mostly historical (new-shader weekly cadence).** For **upgrading existing catalog shaders**, use [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md) — incremental ideas, not new files, not hygiene-only.
+> New-shader hot-swap rules below still apply when you are asked to **create** an effect.
+
+**Mission (then)**: Keep the library evolving via weekly new shaders + optimizations.
 
 **Live Demo**: https://go.1ink.us/pixelocity/index.html  
 **Repo**: https://github.com/ford442/image_video_effects  
-**Companion Guides**: `grok.md`, `AGENTS.md`, `README.md`
+**Companion Guides**: `docs/SHADER_UPGRADE_BATCH.md`, `grok.md`, `AGENTS.md`, `README.md`
 
 ---
 

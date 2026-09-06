@@ -64,6 +64,7 @@
   "id": "gen-cycloid-bloom",
   "url": "shaders/gen-cycloid-bloom.wgsl",
   "features": [
+    "upgraded-rgba",
     "audio-reactive",
     "mouse-driven",
     "click-reactive",

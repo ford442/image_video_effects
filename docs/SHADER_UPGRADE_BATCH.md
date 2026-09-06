@@ -165,3 +165,223 @@ At 8–12 shaders per agent task and a few agents in parallel, raw throughput ca
 - **Real-GPU visual QA and thumbnails** (~26% healthy coverage) remain the discoverability bottleneck. Do not let Cloud-VM Naga green substitute for looking at the effect.
 
 When in doubt, ship a smaller batch with real ideas rather than a twelve-file overlay.
+
+---
+
+## 7. Worked Idea Cards
+
+**Shipped reference batch (2026-09-06):** photo / print / grade eight. Cards in [`agents/swarm-outputs/grok-2026-09-06-photo-eight/BRIEFS.md`](../agents/swarm-outputs/grok-2026-09-06-photo-eight/BRIEFS.md). Open the WGSL and grep `Ideas:`.
+
+| ID | Native ideas actually in the file | Path |
+|---|---|---|
+| `pp-bloom` | hue-preserving extract; horizontal anamorphic streak | `public/shaders/pp-bloom.wgsl` |
+| `pp-tone-map` | continuous curve mix; hue-preserving contrast | `public/shaders/pp-tone-map.wgsl` |
+| `analog-film-degrade` | per-channel grain; continuous hairline; C print-through | `public/shaders/analog-film-degrade.wgsl` |
+| `color-blindness` | matrix interpolation; unused param as confusion hatch | `public/shaders/color-blindness.wgsl` |
+| `crumpled-paper` | fibre along crease tangent; ironing memory in C.a | `public/shaders/crumpled-paper.wgsl` |
+| `retro-gameboy` | round LCD dots; honest A/C ghost | `public/shaders/retro-gameboy.wgsl` |
+| `conv-bilateral-dream` | joint depth range; luma-range weights | `public/shaders/conv-bilateral-dream.wgsl` |
+| `tilt-shift` | hex CoC aperture; defocus specular bloom | `public/shaders/tilt-shift.wgsl` |
+
+None of these files got a spring+ripple overlay. That is the point.
+
+### Good — post-process stays post-process (from that batch)
+
+```
+SHADER: pp-bloom
+IDENTITY: HDR threshold bloom added onto the source photo, with optional anamorphic Y stretch
+KEEP VERBATIM: intensity / anamorphic / threshold / quality tap-count; soft-knee extract; additive composite
+ADD:
+  1. hue-preserving bright extract — keep highlight tint
+  2. horizontal anamorphic streak along the already-stretched axis
+FORBID: springs, click shockwaves, IQ palettes
+A PACKING: ACES display RGBA (HEAD stored the blur in A)
+```
+
+See also `pp-tone-map` in the same batch: four curves kept, slider now *mixes* them.
+
+### Bad — same filename, different effect
+
+```
+SHADER: pp-sharpen
+ADD:
+  1. spring-damper cursor in extraBuffer[133..138]
+  2. click ripple shockwaves
+  3. holographic neon edge pop (IQ palette)
+  4. ACES + plasmaBuffer
+```
+
+That is the generic overlay. Modes survive as comments. The picture is a scanner. **Reject.**
+
+### Good — interactive effect that already owns the pointer
+
+```
+SHADER: brush-strokes
+IDENTITY: wet brush that paints the photo under the cursor
+KEEP VERBATIM: brush radius / texture / color / speed params, distance-to-mouse stroke, existing trail if any
+ADD:
+  1. bristle offset along the stroke tangent (this is a brush)
+  2. wet-edge accumulation from exact C history (paint, not a new sim)
+FORBID: replacing the brush with a particle galaxy or a liquid solver
+A PACKING: display RGBA with paint in the RGB; do not pack velocity into A unless HEAD already did
+```
+
+### Good — liquid that already has a solver
+
+```
+SHADER: liquid-jelly
+IDENTITY: wobbly mass with finite-speed shear
+KEEP VERBATIM: height/velocity (or display-history) packing already documented, saved viscosity/size params
+ADD:
+  1. jiggle overshoot streaks along existing shear
+  2. arrival-gated wave so distant pixels wait for the front
+FORBID: Gray-Scott, IQ candy palette as the whole look, extraBuffer springs if the mass is not pointer-tethered
+A PACKING: keep HEAD's packing (raw or display) — do not "promote" to display history if it was a sim
+```
+
+If you cannot fill KEEP VERBATIM from the current file, you have not read it. Stop.
+
+---
+
+## 8. Header, JSON, and packing (tell the truth)
+
+### WGSL header
+
+The 7-line banner is not the upgrade. When you do add it, **name the ideas**:
+
+```wgsl
+// ═══════════════════════════════════════════════════════════════════
+//  Analog Film Degrade
+//  Category: image
+//  Features: audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-06
+//  Ideas: per-channel grain; continuous gate-weave hairlines; C print-through
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+```
+
+Copy the `Ideas:` / `A packing:` lines from a shipped file (`public/shaders/analog-film-degrade.wgsl`), not a blank template.
+
+Do not put `fast-motion` in Features unless this file actually opted into a fast-motion brief. Do not date-stamp `Upgraded:` for a metadata-only pass.
+
+### JSON
+
+- Saved `params` (ids, names, defaults, min/max/step, mapping onto `zoom_params.xyzw`) stay **byte-exact**.
+- `updatedParams` may be added or aligned. Do not rename or re-default `params`.
+- `"upgraded-rgba"` in `features` only when **ACES is in WGSL and the Idea Card is implemented**. Tag-without-ideas is the 2026-06 metadata-drift bug.
+- `"audio-reactive"` only when `plasmaBuffer[0].xyz` actually modulates something visible.
+- `"mouse-driven"` only when the pointer changes the picture. A unused `zoom_config` read is not mouse-driven.
+- Document A packing in a short `feedback` / notes field if the definition already has one; do not invent new schema keys.
+
+### A / B / C packing
+
+| Write | Meaning |
+|---|---|
+| `dataTextureA` | Next frame's `dataTextureC`. Must match how **this** shader reads C. |
+| Display RGBA in A | Only if C is read as color/history. |
+| Raw sim in A | Only if C is read as fields (height, velocity, RD, occupancy). **Do not ACES the stored fields.** Tone-map on `writeTexture` only. |
+| `dataTextureB` | Do not start using it. Keep it if HEAD already owns it for a documented reason. |
+| Depth | Geometry or a truthful relief derived from the effect. Not a place to hide sim state. |
+
+HEAD packing wins when it is already consistent. If HEAD stored a mask in A and read C as color, that is a packing lie — fix it to display RGBA **and say so in the Idea Card**, not in silence.
+
+### Springs and ripples
+
+`extraBuffer[133..138]` springs and `u.ripples[]` shockwaves are **tools for effects that already live under the pointer**. They are not part of the floor.
+
+- Brush, drag, lens, magnet: yes, if HEAD already tracks the mouse.
+- Sharpen, vignette, levels, a still photographic grade: no, unless the original already used the pointer as a local amount.
+- Do not add a spring “for contract completeness.”
+
+---
+
+## 9. Notes, MEMORY.md, and coordinator review
+
+### Where to write the batch
+
+`agents/swarm-outputs/<agent>-YYYY-MM-DD-<batch-id>/`
+
+Required files:
+
+- `BRIEFS.md` — every Idea Card, written **before** WGSL
+- `NOTES.md` — per shader: kept verbatim, packing, which ideas are in the diff
+- `COORDINATOR_REVIEW.md` — pass/fail per file against the cards
+
+Do not skip briefs because Naga is green.
+
+### MEMORY.md / USER.md closeout (required shape)
+
+Do **not** list the plumbing floor as the upgrade. That is how the 2026-09-06 ten-pack closeout read: 13 bindings, ACES, springs, ripples — and one named idea.
+
+Write:
+
+```
+## YYYY-MM-DD — <batch name> (<N> shaders)
+
+- IDs: …
+- Per shader, the ideas actually added:
+  - pp-sharpen: bilateral range-weight; unsharp coring. Modes kept. No spring.
+  - brush-strokes: bristle tangent; wet-edge C accumulation. Radius param kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact.
+- Gates: Naga N/N, extraBuffer, dead sliders, catalogs, Jest, SKIP_WASM_BUILD=1 build.
+- Real-GPU visual QA: external.
+```
+
+If a file only received the floor, say **hygiene, not upgraded** and do not bump `Upgraded:`.
+
+### Coordinator checklist (fail the file)
+
+- [ ] Idea Card exists and was written before the diff
+- [ ] Each numbered idea is pointable in the WGSL
+- [ ] KEEP VERBATIM still holds (modes, kernel family, param roles)
+- [ ] Diff is not ≥70% header / ACES / spring / ripple boilerplate
+- [ ] No generic overlay shared with the previous file in the batch
+- [ ] A packing matches how C is read
+- [ ] Saved `params` unchanged
+- [ ] Springs/ripples only if native
+- [ ] Naga + extraBuffer + dead sliders on this file
+
+A batch with 10/10 Naga and 0 Idea Cards is **incomplete**.
+
+---
+
+## 10. Live vs historical docs (agents: read the live column)
+
+Future agents land in this repo and open the first markdown hit. **These files disagree.** Use this map.
+
+| File | Status | Role |
+|---|---|---|
+| **`docs/SHADER_UPGRADE_BATCH.md`** | **LIVE** | Creative contract. Idea Cards, anti-patterns, batch size, timeframe. |
+| **`agents/WGSL_BUILTINS_GENERATIVE.md`** | **LIVE** | Bindings, uniforms, extraBuffer map, naga-safe builtins. |
+| **`docs/BINDING_CONTRACT.md`** | **LIVE** | Engine bind group, uniforms, feedback copy order. |
+| **`scripts/AUTHORING.md`** | **LIVE** | Scaffold, gates, audits. |
+| **`agents/CLOUD_UPGRADE.md`** | **LIVE plumbing** | Floor snippets (ACES, alpha, audio). Creative law is this file, not CLOUD §4–§10 examples. |
+| `agents/weekly_upgrade_swarm.md` | **Historical log** | Completed-batch diary. Do not copy its overlay themes onto a new family. |
+| `agents/upgrade_swarm.md` | **Historical (2026-04)** | Size-expansion ideas. Do not treat target line counts as success. |
+| `agents/GENERATIVE_UPGRADE_SWARM.md` | **Historical (2026-04)** | Same. |
+| `agents/4_AGENT_SWARM_PROMPT.md` | **Historical** | Role split. Do not “replace primitive noise with a masterpiece.” |
+| `agents/grok_build_upgrade.md` | **Historical weekly new-shader plan** | For **new** shaders, not upgrades. Upgrades use this file. |
+| `composer.md` | **Historical (2026-06)** | `upgraded-rgba` hygiene sprint. ACES-only batches are not upgrades. |
+| `notes/SHADER_UPGRADE_MANIFEST.md` | **Historical** | 16-shader April initiative. |
+| `notes/shaders_upgrade_plan.md` | **Historical queue** | Size tiers only. First principle now points here. |
+| `agents/prompt-templates/*.md` | **LIVE roles** | Toolkits. Identity-preserving rules at the top of each. Do not apply a whole toolkit to every file. |
+| `scripts/run-upgrade-swarm.js` | **LIVE generator** | Must emit Idea Cards. Ignore any leftover `target_lines ±20%` folklore in old queue JSON. |
+
+If two docs conflict, **this file wins on what an upgrade is.** BINDING_CONTRACT / WGSL_BUILTINS win on what the engine does.
+
+---
+
+## 11. Paste block for a new agent task
+
+```
+Read docs/SHADER_UPGRADE_BATCH.md first (especially §0, §2, §7, §9).
+You are upgrading these existing catalog shaders: <id list>.
+For each: write an Idea Card, then add 2–4 native ideas in the existing main path.
+Do not reimagine. Do not treat ACES/bindings/updatedParams/springs as the upgrade.
+Do not stamp a spring+ripple+IQ overlay across the batch.
+Saved params stay byte-exact. Document A packing. Naga each file.
+Write agents/swarm-outputs/<you>-<date>-<batch>/BRIEFS.md before WGSL.
+Cloud VM has no GPU — structural gates only; do not claim visual QA.
+```
+

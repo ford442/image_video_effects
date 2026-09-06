@@ -4,8 +4,9 @@
 //  Features: cellular-automata, neon, audio-reactive, mouse-interactive,
 //    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration, generation-counter, hue-preserve-clamp, ign-dither
 //  Complexity: High
-//  Created: 2026-05-31
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-09-06
+//  Ideas: neighbor-count heat; still-life amber on low-activity survivors
+//  A packing: raw alive, generation, activity, alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -142,6 +143,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += vec3<f32>(1.0, 0.12, 0.82) * survival;
   color += vec3<f32>(1.0, 0.85, 0.12) * deathEvent * 0.4;
   color += vec3<f32>(0.6, 0.2, 1.0) * mids * activity * 0.35;
+  // Idea 1 — neighbor heat
+  let crowd = clamp(neighbors / 8.0, 0.0, 1.0);
+  color += vec3<f32>(0.15, 0.85, 0.35) * newState * crowd * 0.28;
+  color += vec3<f32>(0.95, 0.45, 0.12) * newState * (1.0 - crowd) * 0.18;
+  // Idea 2 — still-life amber (survivors with almost no Δ)
+  let stillLife = survival * (1.0 - smoothstep(0.0, 0.15, activity));
+  color += vec3<f32>(1.0, 0.72, 0.22) * stillLife * 0.22;
 
   let fadeDecay = 0.88 + p4 * 0.08;
   let fadeColor = prev.rgb * fadeDecay;

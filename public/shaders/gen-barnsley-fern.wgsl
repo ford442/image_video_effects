@@ -1,12 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Barnsley Fern IFS — Batch 61 (fast motion / psychedelic / mouse spring)
-//  Combined techniques: Barnsley IFS + Voronoi displacement +
-//                       SDF vignette mask + audio-driven palette +
-//                       domain-warped FBM + chromatic aberration +
-//                       temporal feedback echo
+//  Barnsley Fern IFS
 //  Category: generative
-//  Complexity: High
-//  Updated: 2026-07-08
+//  Features: barnsley-ifs, audio-reactive, upgraded-rgba, mouse-driven
+//  Upgraded: 2026-09-06
+//  Ideas: last-affine tint (stem vs leaflets); stem-rib density from idx 0
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -180,24 +178,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let baseIdx = u32(gid.x) * 73u + u32(gid.y) * 131u + u32(time * 60.0);
   let numPaths = i32(mix(2.0, 5.0, depth + bass * 0.3));
   var density = 0.0;
+  var stemHits = 0.0;
+  var leafletMix = 0.0;
 
   for (var path = 0; path < numPaths; path = path + 1) {
-    var q = p; var valid = 1.0;
+    var q = p; var valid = 1.0; var lastIdx = 1;
     for (var i = 0; i < 7; i = i + 1) {
       let h = halton(baseIdx + u32(path) * 7u + u32(i), 2u);
       var idx = pickIFS(h);
       if idx == 0 && abs(q.x) > 0.18 { idx = 1; }
       q = barnsleyInv(q, idx);
+      lastIdx = idx;
       let outside = q.x < -3.2 || q.x > 3.2 || q.y < -0.5 || q.y > 12.0;
       if outside { valid = 0.0; break; }
     }
     density += valid;
+    stemHits += valid * select(0.0, 1.0, lastIdx == 0);
+    leafletMix += valid * f32(lastIdx) / 3.0;
   }
   density /= f32(numPaths);
+  stemHits /= max(f32(numPaths), 1.0);
+  leafletMix /= max(f32(numPaths), 1.0);
 
   // Multi-scale detail noise modulated by treble
   let detail = fbm(p * 6.0 + vec2<f32>(time * 0.1), 3) * (0.08 + treble * 0.12);
   density = saturate(density * (1.0 + detail) - detail * 0.3);
+  // Idea 2 — stem rib from the stem affine
+  density = saturate(density + stemHits * 0.22);
 
   // SDF vignette mask — preserves semantic alpha falloff at edges
   let vignette = 1.0 - smoothstep(0.35, 0.85, length(uv));
@@ -206,6 +213,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Natural + audio-driven fern palette by height
   let fy = clamp((p.y + 3.0) / 10.0, 0.0, 1.0);
   var color = audioPalette(fy, bass, mids, treble);
+  // Idea 1 — last-affine tint: stem brown vs leaflet greens
+  let stemCol = vec3<f32>(0.22, 0.14, 0.04);
+  let leafletCol = vec3<f32>(0.12, 0.55, 0.18);
+  color = mix(color, mix(stemCol, leafletCol, leafletMix), 0.28);
 
   // Sunlight filtering through fronds
   let sun = 0.3 + 0.7 * smoothstep(0.2, 0.9, density);
