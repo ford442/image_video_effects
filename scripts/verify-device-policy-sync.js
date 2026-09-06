@@ -487,6 +487,8 @@ function verifyWasmRuntimeInvariants() {
         );
       }
     }
+    const rungsBlock = probe.match(/export\s+const\s+HISTORY_PROBE_RUNGS(?:\s*:\s*[^=]+)?\s*=\s*\[([\s\S]*?)\];/m);
+    if (!rungsBlock) {
     if (ladder.defaultWorkingSize != null) {
       if (!safe || parseInt(safe[1], 10) !== ladder.defaultWorkingSize) {
         fail(
@@ -510,10 +512,23 @@ function verifyWasmRuntimeInvariants() {
     }
     if (!probe.includes('HISTORY_PROBE_RUNGS')) {
       fail('historyTexProbe.ts must export HISTORY_PROBE_RUNGS');
-    }
-    const rungCount = (probe.match(/size:\s*HISTORY_(FULL|SAFE)_WORKING_SIZE/g) || []).length;
-    if (rungCount !== 4) {
-      fail(`historyTexProbe.ts HISTORY_PROBE_RUNGS must have 4 rungs (found ${rungCount} size: assignments)`);
+    } else {
+      const normalized = rungsBlock[1].replace(/\s+/g, ' ');
+      const expectedRungs = [
+        '{ size: HISTORY_FULL_WORKING_SIZE, layers: HISTORY_DEPTH }',
+        '{ size: HISTORY_SAFE_WORKING_SIZE, layers: HISTORY_DEPTH }',
+        '{ size: HISTORY_SAFE_WORKING_SIZE, layers: 4 }',
+        '{ size: HISTORY_SAFE_WORKING_SIZE, layers: 1 }',
+      ];
+      for (const rung of expectedRungs) {
+        if (!normalized.includes(rung)) {
+          fail(`historyTexProbe.ts HISTORY_PROBE_RUNGS missing expected rung ${rung}`);
+        }
+      }
+      const actualRungs = normalized.match(/\{\s*size:\s*[^}]+?\}/g) || [];
+      if (actualRungs.length !== expectedRungs.length) {
+        fail(`historyTexProbe.ts HISTORY_PROBE_RUNGS must have ${expectedRungs.length} rungs (found ${actualRungs.length})`);
+      }
     }
   }
 

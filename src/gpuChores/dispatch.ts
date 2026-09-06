@@ -14,13 +14,21 @@ export function clampWorkgroupCount(
   return Math.min(Math.floor(count), maxPerDim);
 }
 
+function assertPositiveWorkgroupSize(size: number, axis: string): number {
+  if (!Number.isFinite(size) || size <= 0) {
+    throw new Error(`${axis} workgroup size must be > 0`);
+  }
+  return size;
+}
+
 /** Safety net for a flattened 1D dispatch. Caps X; does not invent a Y. */
 export function workgroups1d(
   elementCount: number,
   workgroupSize = 64,
   maxPerDim = DEFAULT_MAX_WORKGROUPS_PER_DIMENSION,
 ): number {
-  return clampWorkgroupCount(Math.ceil(elementCount / workgroupSize), maxPerDim);
+  const size = assertPositiveWorkgroupSize(workgroupSize, '1D');
+  return clampWorkgroupCount(Math.ceil(elementCount / size), maxPerDim);
 }
 
 /** Coverage-preserving path for @workgroup_size(8, 8) image kernels. */
@@ -31,8 +39,10 @@ export function workgroups2d(
   workgroupY = 8,
   maxPerDim = DEFAULT_MAX_WORKGROUPS_PER_DIMENSION,
 ): { x: number; y: number } {
+  const xSize = assertPositiveWorkgroupSize(workgroupX, 'X');
+  const ySize = assertPositiveWorkgroupSize(workgroupY, 'Y');
   return {
-    x: clampWorkgroupCount(Math.ceil(width / workgroupX), maxPerDim),
-    y: clampWorkgroupCount(Math.ceil(height / workgroupY), maxPerDim),
+    x: clampWorkgroupCount(Math.ceil(width / xSize), maxPerDim),
+    y: clampWorkgroupCount(Math.ceil(height / ySize), maxPerDim),
   };
 }

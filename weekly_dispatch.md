@@ -273,27 +273,109 @@ re-deriving anything.
   - Zero edits under `wasm_renderer/` and `public/wasm/`.
 ```
 
-## B. GitHub issue — FILED as #1195
+---
 
-**[#1195 — Catalog count SoT: assert the derivable invariant, alias legacy IDs, split the extraBuffer baseline](https://github.com/ford442/image_video_effects/issues/1195)**
+## B. GitHub issue — EXPANDED AND FILED AS #1223
 
-Expanded 2026-08-29 from the section-B draft using the Gemini / Kimi / Grok reviews **plus a verification pass against `a27a627`**. The verification overturned part of #1184's premise, so the filed issue differs materially from the draft. Full text also saved at `weekly_issue_catalog_sot.md`.
+> **Update, later on 2026-09-05.** The draft below was expanded through C1–C3 and filed as **issue #1223**. Point Copilot at #1223, not at this draft.
+>
+> **Three tree-verified corrections came out of the expansion, and they changed the design:**
+>
+> 1. **The remote window has no canvas.** `RemoteApp.tsx` renders the header plus `<div className="remote-content"><Controls …/></div>` — nothing else. #1201's "expand canvas" means the scrollable control area, so there is no resize observer to notify and no canvas z-index hazard.
+> 2. **The remote is the operator's control surface, not the output** — a 420×900 popup they are looking at. There is no blind-control scenario, which is the deciding argument for keeping the hidden flag local rather than syncing it.
+> 3. **`go.1ink.us` is already gated.** `publicHost.ts` `shouldMountRemoteApp()` returns `false` there and `AppShell` hides the "Open Remote" button. This work does **not** lift that hold, contrary to one model's answer.
+>
+> Two further claims were fabricated and are not in the filed issue: this project has **no Redux/Zustand** (so no "200 KB of selectors" cost), and the host does **not** share one injected `<link>` with the remote — they are separate documents loading the same bundle, so there is no cross-window cascade.
+>
+> **Decisions locked in #1223:** hidden flag local to the remote, never in `SyncMessage`/`FullState` (syncing it would make the restore path depend on the same channel that hid it — and `RemoteApp` already has a `LOST CONNECTION` state); persistence via a `chrome` URL param with `history.replaceState`; a **sticky restore strip, not** a copy of `.show-controls-overlay`, because the remote is a dense scrolling control panel rather than a canvas; plus a keyboard restore; scoped plain CSS in `style.css` (the project has zero CSS modules); and no extraction from `AppShell`, which stays untouched.
 
-**What the verification changed:**
+Decoupled from A by construction: A lives in `src/contracts/`, `scripts/`, `src/gpuChores/`, `tests/` and docs; B lives entirely in the remote-control UI surface. No shared file.
 
-- **The "13 ID-vs-filename mismatches, mostly graph parents" premise is wrong.** There are **33** mismatches and **zero** are graph parents (all 7 `multipass.graph` definitions have `id == filename`). 31 are the cosmetic inverse case — underscore *filename*, hyphenated *ID*. The "whitelist graph parents" step all three reviews built a plan around is a **no-op** and was dropped.
-- **The 13-count gap is real but differently caused:** it is exactly the 13 definitions with `multipass.pass > 1` (`vortex-pass2`, `quantum-foam-pass2/3`, `rd-on-video-pass2/3`, …) — secondary passes correctly excluded from the user-facing catalog.
-- **The catalog is structurally healthy.** 0 duplicate IDs, 0 orphans. `generate_shader_lists.js` already computes and logs `skippedMultipassSecondaries` and `skippedDuplicates`; it just never asserts or exports them. The fix is far smaller than #1184 assumed.
-- **Verified invariant:** `definitions − secondaries − duplicates == list entries == manifest total` → `1362 − 13 − 0 == 1349 == 1349`.
-- **Gemini's file names were wrong:** the auditors are Python (`scripts/audit_extrabuffer.py`), not `audit-extrabuffer.mjs`.
+Original first-pass draft, kept for reference:
 
-**Design calls where the three reviews disagreed:**
+```
+Title: remote: complete #1201 — hide-controls must collapse the remote's own titlebar,
+       and harden the remote surface with regression coverage
 
-- **README gate.** Kimi's churn objection wins on the *gate*; Gemini/Grok win on *generation*. Resolution: assert only the **derivable** invariant in CI — it needs no committed artifact, so it cannot red-build the daily generative PRs. `git diff --exit-code README.md` as a PR gate is explicitly rejected. The README drops to a rounded `1,300+`.
-- **Alias map.** All three agree docs-only is useless. This issue ships the generated map (build-side); a named follow-up ships the runtime resolver, carrying Gemini's blast-radius list (share links, localStorage VJ stacks, FastAPI validation, WASM string identity).
-- **Canonical count.** Definitions are the source of truth, manifest is derived — per Gemini and Grok, against Kimi.
-- **Dynamic-index triage.** Machine-readable JSON the auditor consumes; unanimous.
-- **Ajv schema validation** is included as an explicitly optional stretch, since it needs a devDependency the Copilot brief otherwise forbids.
+## Context / motivation
+
+Issue #1201 (filed during the 2026-08-30 real-GPU session) asked for two things on the
+remote-control window: a random-image control, and for "hide controls" to also hide the
+titlebar and random-image button so the canvas can expand.
+
+Half of it landed in commit `ac253e0`:
+
+  - `src/RemoteControlHeader.tsx` now renders a "Random Image" button, disabled unless
+    `inputSource === 'image'`, with `src/RemoteControlHeader.test.tsx` alongside it.
+  - The MAIN app's hide-chrome path works: `src/components/app/AppShell.tsx` computes
+    `chromeHidden = !showSidebar && activeTab === 'main'`, suppresses the `<header>`,
+    adds a `fullscreen` class to `.main-container`, and renders a `show-controls-overlay`
+    button over the canvas so the chrome can be brought back.
+
+What did NOT land is the remote window's own half. `RemoteControlHeader` renders an
+unconditional `<h2 className="remote-app-header">` with inline styles and has no hide
+behaviour at all — the remote's titlebar and random button are always visible, which is
+exactly the fullscreen complaint in the issue.
+
+This matters beyond aesthetics: per #1201 the remote is a HOLD item for the public
+`go.1ink.us` build ("no remote on public build"). Making the remote surface complete and
+tested is on the path to lifting that hold.
+
+Relates to the active focus areas: the VJ/live-performance control surface, and the
+public-audience polish bar.
+
+## Proposed approach — first pass, to be expanded
+
+1. Give the remote its own chrome-hidden state, mirroring `AppShell`'s `chromeHidden`
+   rather than inventing a second pattern. When hidden: suppress the
+   `remote-app-header` (titlebar text + random-image button) and expand the remote's
+   content area.
+2. Provide an always-reachable way back — an overlay button equivalent to
+   `show-controls-overlay`, so a user cannot strand themselves in a chromeless remote
+   with no control.
+3. Decide and document where the hidden state lives: local component state, a URL
+   parameter, or synced through `src/hooks/useRemoteSync.ts` so the host and remote
+   agree. This is the main open design question (see below).
+4. Move the inline styles in `RemoteControlHeader.tsx` into `src/style.css` alongside
+   the `.show-controls-overlay` / `.main-container.fullscreen` rules added in `ac253e0`,
+   so both surfaces are themed from one place.
+5. Add regression coverage: extend `src/RemoteControlHeader.test.tsx` and
+   `src/hooks/useRemoteSync.test.ts` for the hidden/shown transitions and for the
+   random-image button's `inputSource` gating.
+
+## Acceptance criteria — rough, to be refined
+
+  - Hiding controls on the remote hides the titlebar AND the random-image button, and
+    the canvas/content area expands to fill the space.
+  - There is always a visible affordance to restore the chrome. No dead end.
+  - The random-image button keeps its existing `inputSource !== 'image'` disabled state.
+  - `RemoteControlHeader.tsx` carries no inline layout styles; they live in `style.css`.
+  - Jest covers hidden/shown transitions and the disabled-state gating.
+  - `npx tsc --noEmit` clean, `CI=true npx craco test --watchAll=false` green,
+    `SKIP_WASM_BUILD=1 npm run build` compiles.
+  - No files touched under `src/contracts/`, `src/gpuChores/`, `src/renderer/`,
+    `wasm_renderer/`, `scripts/`, or `tests/` — those belong to a concurrent track.
+
+## Open questions for the maintainer
+
+  1. Should the hidden state sync between host and remote via `useRemoteSync`, or stay
+     local to the remote window? Syncing is more coherent but widens the blast radius
+     into the sync protocol.
+  2. Should it persist across reloads (URL param or localStorage), or reset each time?
+  3. #1201 mentions a mouse-XY-reverse report but explicitly says it was NOT
+     re-confirmed and should be omitted unless reproduced. Confirming: out of scope here?
+  4. Does completing this actually lift the "no remote on public build" hold for
+     `go.1ink.us`, or is that gated on something else as well?
+```
+
+
+### Related filed issue from `main`
+
+- **[#1195 — Catalog count SoT: assert the derivable invariant, alias legacy IDs, split the extraBuffer baseline](https://github.com/ford442/image_video_effects/issues/1195)** was filed from the earlier section-B draft on 2026-08-29; the full issue text is also saved in `weekly_issue_catalog_sot.md`.
+- Tree verification corrected the original premise: there are **33** ID-vs-filename mismatches, **0** graph-parent mismatches, and the **13-count** catalog gap is exactly the set of `multipass.pass > 1` secondary definitions.
+- The verified invariant is `definitions - secondaries - duplicates == list entries == manifest total`, and the design call is to gate only that derivable invariant in CI — aliases only, no shader-file renames, and no stale-README diff gate.
+
+---
 
 ## C. Three chat-model prompts targeting the issue from B
 
@@ -412,38 +494,32 @@ Here is the issue describing what I plan to build:
 ## D. Copilot Agent handoff
 
 ```
-Implement GitHub issue #1195 in the Pixelocity repo (ford442/image_video_effects).
+Implement the issue below in the Pixelocity repo (React 19 + TypeScript, Create React App
+with CRACO, Jest).
 
-{{EXPANDED_ISSUE}}
+Scope is strict. You may touch ONLY these files:
+  src/RemoteApp.tsx
+  src/RemoteControlHeader.tsx
+  src/RemoteControlHeader.test.tsx
+  src/RemoteApp.test.tsx              (new, if the toggle path needs its own suite)
+  src/style.css
 
-Read the issue's "Corrections to the original premise" section first and take it literally. Two
-plausible-sounding steps from the parent issue are no-ops and must NOT be implemented: whitelisting
-multipass.graph parents (zero of the 33 ID/filename mismatches are graph parents), and renaming the
-31 underscore filenames. The auditors are Python (scripts/audit_extrabuffer.py,
-scripts/audit_dead_sliders.py) - there is no audit-extrabuffer.mjs.
+Do NOT touch anything under src/contracts/, src/gpuChores/, src/renderer/,
+wasm_renderer/, public/wasm/, scripts/, tests/, public/shaders/, or storage_manager/.
+Another agent is working in those directories concurrently and any overlap will conflict.
 
-Constraints — these are hard:
+Also do NOT touch `src/hooks/useRemoteSync.ts`, `src/syncTypes.ts`, or
+`src/components/app/AppShell.tsx`. The issue explains why: the hidden flag is deliberately
+LOCAL to the remote window and must not enter the `SyncMessage` union or `FullState`, and
+the host's chrome handling stays exactly as it is.
 
-- Touch ONLY: scripts/, .github/workflows/, README.md, reports/, and package.json's scripts block.
-- Do NOT touch: src/**, wasm_renderer/**, public/shaders/**, shader_definitions/**,
-  shader_plans/**, storage_manager/**.
-- Do NOT touch scripts/verify-device-policy-sync.js. Another change is actively extending it and
-  you will collide.
-- Do not rename any shader file or any shader ID. Aliases only.
-- Do not add an npm dependency UNLESS Noah has approved the ajv devDependency for work package E.
-  If he has not, skip E entirely rather than adding the dep.
-- Do NOT add a CI step that fails on a stale committed artifact (no `git diff --exit-code README.md`
-  gate). The count check must assert the derivable invariant only, so content PRs are never
-  red-built by it. This is a hard design constraint, not a preference.
+The issue's "Design decisions" section is decided, not advisory. In particular: do NOT
+copy `.show-controls-overlay` — the remote is a dense scrolling control panel, not a
+canvas, and a floating button would sit on top of sliders. Use the sticky restore strip
+the issue specifies. Do NOT introduce CSS modules; this project has none.
 
-Verify before you open the PR:
-
-  npm ci --ignore-scripts        # plain `npm ci` fails: the sharp postinstall is proxy-blocked
-  SKIP_WASM_BUILD=1 npm run build
-  npm run verify:shader-list-urls
-  npm run verify:dependency-boundaries
-  npm run audit:extrabuffer      # must still exit 0
-  npm run audit:dead-sliders     # must still exit 0
+Before you open a PR, all of these must pass:
+  npx tsc --noEmit
   CI=true npx craco test --watchAll=false
   SKIP_WASM_BUILD=1 npm run build
 

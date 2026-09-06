@@ -388,7 +388,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let semanticAlpha = clamp(max(alpha, previous.a * 0.9), 0.0, 0.65);
     let outRGB = acesToneMap(display);
 
-    textureStore(dataTextureA, pixel, vec4<f32>(outRGB, semanticAlpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(display, semanticAlpha));
     textureStore(writeTexture, pixel, vec4<f32>(outRGB, semanticAlpha));
 
     // Ray distance is generated scene depth

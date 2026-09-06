@@ -122,8 +122,6 @@
     "wgsl-without-definition|ripple-tank-pass3|ripple-tank-pass3.wgsl",
     "wgsl-without-definition|wave-inject|wave-inject.wgsl",
     "wgsl-without-definition|wave-render|wave-render.wgsl"
-  ]
-}
   ],
   "id_filename_oddities": {
     "description": "Genuine ID/filename mismatches that are intentionally kept as-is (not cosmetic underscore->hyphen). These are documented quirks, not bugs.",

@@ -164,6 +164,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let outCol = vec4<f32>(finalRGB, semanticAlpha);
 
   textureStore(writeTexture, coord, outCol);
-  textureStore(dataTextureA, coord, outCol);
+  textureStore(dataTextureA, coord, vec4<f32>(hdr, semanticAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth * depthFactor + length(slideVec) * 0.5, 0.0, 1.0), 0.0, 0.0, 0.0));
 }
