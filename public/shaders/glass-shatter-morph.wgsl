@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Glass Shatter Morph — Voronoi Shards & Morphological Edge Scrape
+//  Glass Shatter Morph
 //  Category: advanced-hybrid
-//  Features: mouse-driven, audio-reactive, voronoi-shards, morphological,
-//            chromatic-aberration, fresnel, semantic-alpha, ACES
+//  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Very High
+//  Upgraded: 2026-09-06
+//  Ideas: sub-cellular micro-fracture spiderweb cracks; grazing prismatic TIR facet glints; photoelastic stress birefringence fringes
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -194,6 +196,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let glassTint = vec3<f32>(0.94, 0.98, 0.96);
   var color = vec3<f32>(r, g, b) * glassTint;
 
+  // ─── Native Idea 1: Sub-Cellular Micro-Fracture Spiderweb Cracks ───
+  let subUv = aspectUV * shardScale * 2.5;
+  let subCell = floor(subUv);
+  let subFract = fract(subUv) - vec2<f32>(0.5);
+  let crackNoise = hash22(subCell + v.id * 13.0);
+  let crackDir = normalize(crackNoise - vec2<f32>(0.5) + vec2<f32>(1e-4));
+  let crackLine = abs(dot(subFract, crackDir));
+  let microCracks = smoothstep(0.05, 0.008, crackLine) * smoothstep(0.05, 0.25, v.dist) * (0.35 + displaceParam * 0.45);
+  color = mix(color, vec3<f32>(0.98, 1.0, 1.0), microCracks * 0.6);
+
   // Shard crack edge proximity
   let edgeProx = smoothstep(0.0, 0.12, v.dist) * (1.0 - smoothstep(0.12, 0.3, v.dist));
   color = mix(color, morphRGB + morphGradient * 0.35, edgeProx * 0.5);
@@ -201,19 +213,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Facet specular glint
   let lightDir = normalize(vec2<f32>(0.6, -0.6));
   let specular = pow(max(dot(shardTilt, lightDir), 0.0), 12.0) * fresnel * 2.0;
+
+  // ─── Native Idea 2: Grazing Prismatic TIR Facet Glints ───
+  let tirAngle = acos(clamp(normal.z, 0.0, 1.0));
+  let tirCondition = smoothstep(0.65, 0.95, tirAngle / 1.570796);
+  let tirSpectrum = vec3<f32>(
+    sin(tirAngle * 7.0) * 0.5 + 0.5,
+    sin(tirAngle * 7.0 + 2.094) * 0.5 + 0.5,
+    sin(tirAngle * 7.0 + 4.189) * 0.5 + 0.5
+  );
+  let tirGlint = tirSpectrum * tirCondition * (specular * 1.5 + 0.2) * (1.0 + treble * 0.6);
+  color += tirGlint;
   color += vec3<f32>(1.0, 0.98, 0.95) * specular;
+
+  // ─── Native Idea 3: Photoelastic Stress Birefringence Fringes ───
+  let stress = (edgeProx + microCracks * 0.9) * (displaceStr * 3.5 + bass * 0.65);
+  let retardance = stress * 16.0 - time * 2.2;
+  let isochromaticFringe = vec3<f32>(
+    sin(retardance) * 0.5 + 0.5,
+    sin(retardance + 2.094) * 0.5 + 0.5,
+    sin(retardance + 4.189) * 0.5 + 0.5
+  );
+  color = mix(color, isochromaticFringe * 1.25, clamp(stress * 0.38, 0.0, 0.7));
 
   // Exact dataTextureC shard trail persistence
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
   color = mix(color, prev, 0.08 + held * 0.06);
 
-  // ACES Tonemap
   let finalRGB = aces(color);
 
   // Semantic transmittance alpha
   let transmission = (1.0 - fresnel) * 0.85;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let alpha = clamp(mix(srcA, transmission + edgeProx * 0.3, 0.8) + specular * 0.2, 0.25, 1.0);
+  let alpha = clamp(mix(srcA, transmission + edgeProx * 0.3 + microCracks * 0.2, 0.8) + specular * 0.2, 0.25, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, pixel, finalPixel);

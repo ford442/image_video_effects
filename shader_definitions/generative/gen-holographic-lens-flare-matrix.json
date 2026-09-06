@@ -97,7 +97,8 @@
     "click-reactive",
     "semantic-alpha",
     "aces-tonemap",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = raw flare density, anamorphic streak, nearest flare distance, semantic alpha; raw state is never tone-mapped"
 }

@@ -1,20 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Holographic Data Core - Generative hologram with interference physics
+//  Holographic Data Core
 //  Category: generative
-//  Features: mouse-driven, depth-aware, audio-reactive, alpha-transparency
+//  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-05-10
-//  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
-//  upgraded-rgba
-//  Physics: Thin-film interference, volume diffraction, 60Hz flicker
-//  Description: An infinite journey through a quantum lattice of glowing
-//               data nodes with volumetric interference effects
-// ═══════════════════════════════════════════════════════════════════
-//  OPTIMIZATION LOG (2026-05-31):
-//  - volumetricInterference() was computed EVERY raymarch step (6 trig-heavy
-//    calls × 80 steps). Now gated: only computed when within glow range (d < 2.0)
-//    where its contribution is perceptible. Est. 30-50% fewer interference evals.
-//  - Audio reactivity wired to plasmaBuffer (bass→node pulse, treble→flicker)
+//  Upgraded: 2026-09-06
+//  Ideas: logic bus photon energy packets; hexagonal quantum containment cage; depth parallax moiré fringe interference
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -42,8 +33,6 @@ struct Uniforms {
 // Thin-Film Interference Physics
 // ═══════════════════════════════════════════════════════════════
 
-const N_AIR: f32 = 1.0;
-const N_VOLUME: f32 = 1.45;  // Volume hologram refractive index
 const PEPPER_GHOST_REFLECTION: f32 = 0.1;
 
 // Wavelengths (normalized)
@@ -56,12 +45,12 @@ const LAMBDA_B: f32 = 460.0 / 750.0;
 // ═══════════════════════════════════════════════════════════════
 
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
-    var q = abs(p) - b;
+    let q = abs(p) - b;
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
 fn sdCylinder(p: vec3<f32>, c: vec2<f32>) -> f32 {
-    var d = abs(vec2<f32>(length(p.xz), p.y)) - c;
+    let d = abs(vec2<f32>(length(p.xz), p.y)) - c;
     return min(max(d.x, d.y), 0.0) + length(max(d, vec2<f32>(0.0)));
 }
 
@@ -85,18 +74,14 @@ fn thinFilmInterference(opticalPath: f32, wavelength: f32, order: f32) -> f32 {
 
 // Volume hologram diffraction
 fn volumeDiffraction(viewDir: vec3<f32>, wavelength: f32, cellPos: vec3<f32>) -> f32 {
-    // Volume gratings have angle-dependent efficiency
     let gratingDir = normalize(cellPos + vec3<f32>(0.0, 1.0, 0.0));
     let cosTheta = dot(viewDir, gratingDir);
-    
-    // Bragg condition approximation
     let braggOffset = abs(cosTheta - wavelength * 0.5);
     return exp(-braggOffset * braggOffset * 50.0);
 }
 
 // Volumetric interference spectrum
 fn volumetricInterference(p: vec3<f32>, viewDir: vec3<f32>, time: f32) -> vec3<f32> {
-    // Optical path varies through volume
     let opticalPath = 0.42 + sin(p.x * 2.0 + p.y * 1.5 + p.z * 0.5 + time * 0.3) * 0.08;
     
     let volR = volumeDiffraction(viewDir, LAMBDA_R, p);
@@ -119,12 +104,6 @@ fn projectionFlicker(time: f32) -> f32 {
 fn holographicScanlines(uv: vec2<f32>, time: f32) -> f32 {
     let scanline = sin(uv.y * 800.0 + time * 15.0) * 0.5 + 0.5;
     return 0.9 + scanline * 0.1;
-}
-
-fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
-    let size = vec2<i32>(textureDimensions(dataTextureC));
-    let pixel = vec2<i32>(floor(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(size)));
-    return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
 }
 
 fn acesToneMap(color: vec3<f32>) -> vec3<f32> {
@@ -158,7 +137,7 @@ fn map(p: vec3<f32>) -> MapResult {
 
     // Domain repetition
     let c = vec3<f32>(spacing);
-    var q = (p + 0.5 * c) % c - 0.5 * c;
+    let q = (p + 0.5 * c) % c - 0.5 * c;
 
     // Cell ID for variation
     let cell_id = floor((p + 0.5 * c) / c);
@@ -170,7 +149,7 @@ fn map(p: vec3<f32>) -> MapResult {
     let inner_d = sdBox(q, vec3<f32>(0.3));
 
     // Active Data Pulse logic
-    var time = u.config.x;
+    let time = u.config.x;
     let pulse_rate = u.zoom_params.z;
     let pulse_val = sin(cell_id.x * 12.3 + cell_id.y * 45.6 + cell_id.z * 78.9 + time * pulse_rate * 5.0);
 
@@ -182,21 +161,19 @@ fn map(p: vec3<f32>) -> MapResult {
     node_res = opU(node_res, MapResult(inner_d, 2.0));
     res = opU(res, node_res);
 
-    // Circuits
+    // Circuits (Cylinders along 3 axes)
     let cyl_radius = 0.05;
     let cx = sdCylinder(vec3<f32>(q.y, q.x, q.z), vec2<f32>(cyl_radius, spacing * 0.5));
     let cy = sdCylinder(q, vec2<f32>(cyl_radius, spacing * 0.5));
     let cz = sdCylinder(vec3<f32>(q.x, q.z, q.y), vec2<f32>(cyl_radius, spacing * 0.5));
 
     let circuit_d = min(cx, min(cy, cz));
-
     var circuit_res = MapResult(circuit_d, 3.0);
     if (pulse_val > 0.6 && pulse_val < 0.8) {
         circuit_res.mat_id = 2.0;
     }
 
     res = opU(res, circuit_res);
-
     return res;
 }
 
@@ -219,10 +196,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) {
         return;
     }
+    let pixel = vec2<i32>(global_id.xy);
 
-    var time = u.config.x;
+    let time = u.config.x;
     let glitch_intensity = u.zoom_params.w;
     let travel_speed = u.zoom_params.y;
+    let pulse_rate = u.zoom_params.z;
 
     // Audio reactivity — bass swells node glow, treble drives projection flicker
     let audioBands = plasmaBuffer[0].xyz;
@@ -236,8 +215,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glitchBand = pow(0.5 + 0.5 * sin(uv.y * 110.0 - time * (7.0 + travel_speed * 3.0)), 18.0);
     uv.x += sin(uv.y * 37.0 + time * 3.0) * 0.055 * glitch_intensity * glitchBand;
 
-    // Mid-band packet motion: smooth diagonal data bursts steer the camera
-    // ray and later illuminate the lattice, with no frame-hash jumps.
     let packetPhase = fract(uv.y * (4.0 + u.zoom_params.x * 2.0) - time * (0.35 + travel_speed * 0.08));
     let midPacket = pow(1.0 - abs(packetPhase * 2.0 - 1.0), 10.0) * mids;
     uv += vec2<f32>(sin(time * 2.2 + uv.y * 19.0), cos(time * 1.7 + uv.x * 13.0)) * midPacket * 0.025;
@@ -246,7 +223,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cam_z = time * travel_speed * 2.0;
 
     // Mouse interaction for look around
-    var mouse = u.zoom_config.yz;
+    let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     let mouse_ang_x = (mouse.x - 0.5) * 3.14;
     let mouse_ang_y = (mouse.y - 0.5) * 3.14;
@@ -264,7 +241,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fw));
     let up = cross(fw, right);
 
-    var rd = normalize(fw + uv.x * right + uv.y * up);
+    let rd = normalize(fw + uv.x * right + uv.y * up);
 
     // Raymarching
     var t = 0.0;
@@ -278,21 +255,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Volumetric Interference Raymarching
     // ═══════════════════════════════════════════════════════════════
 
-    for (var i = 0; i < max_steps; i++) {
-        var p = ro + rd * t;
-        var res = map(p);
-        var d = res.d;
+    for (var i = 0; i < max_steps; i = i + 1) {
+        let p = ro + rd * t;
+        let res = map(p);
+        let d = res.d;
 
-        // OPTIMIZATION: only evaluate the expensive 6-call interference physics when
-        // the point is close enough that glow/hit contribution is perceptible.
-        // Far-field steps (d >= 2.0) contribute negligible glow (0.01/d → ~0.005).
         var interference = vec3<f32>(0.0);
         let nearField = d < 2.0;
         if (nearField) {
             interference = volumetricInterference(p, -rd, time);
         }
 
-        // Volumetric Glow Accumulation with interference (bass swells glow)
+        // Volumetric Glow Accumulation with interference
         if (d > 0.0 && nearField) {
             let g_dist = max(d, 0.001);
             let glowBoost = 1.0 + bass * 0.5;
@@ -301,23 +275,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             } else if (res.mat_id == 2.0) {
                 glow += vec3<f32>(1.0, 0.2, 0.5) * (0.02 / g_dist) * (1.0 + interference.r) * glowBoost;
             } else if (res.mat_id == 3.0) {
-                glow += vec3<f32>(0.0, 0.8, 0.8) * (0.005 / g_dist) * (1.0 + interference.g) * glowBoost;
+                // ─── Native Idea 1: Logic bus photon energy packets ───
+                let packetSpeed = time * (4.0 + travel_speed * 2.0) * pulse_rate;
+                let photonZ = pow(max(0.5 + 0.5 * sin(p.z * 3.0 - packetSpeed), 0.0), 16.0);
+                let photonX = pow(max(0.5 + 0.5 * sin(p.x * 3.0 + packetSpeed * 0.8), 0.0), 16.0);
+                let photonPulse = (photonZ + photonX) * (1.2 + bass * 1.5);
+                glow += (vec3<f32>(0.0, 0.8, 0.8) + vec3<f32>(0.3, 1.0, 0.6) * photonPulse) * (0.006 / g_dist) * (1.0 + interference.g) * glowBoost;
             }
         }
 
         if (d < 0.01) {
             let n = getNormal(p);
-
-            // Basic rim lighting / fresnel for structure with interference
             let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
-
-            // Apply interference colors
             let intColor = interference * 2.0;
 
+            let spacing = 4.0 / max(u.zoom_params.x, 0.1);
+            let c_node = vec3<f32>(spacing);
+            let q_cell = (p + 0.5 * c_node) % c_node - 0.5 * c_node;
+
+            // ─── Native Idea 2: Hexagonal quantum containment lattice cage ───
+            let hexDist = max(abs(q_cell.x) * 0.866025 + abs(q_cell.y) * 0.5, abs(q_cell.y)) - 0.68;
+            let cageWire = smoothstep(0.04, 0.005, abs(hexDist)) * step(abs(q_cell.z), 0.62);
+            let cageGlow = vec3<f32>(0.1, 0.85, 1.0) * cageWire * (0.7 + mids * 0.5);
+
             if (res.mat_id == 1.0) {
-                col += vec3<f32>(0.1, 0.5, 0.8) * fresnel * (1.0 + intColor.b);
+                col += vec3<f32>(0.1, 0.5, 0.8) * fresnel * (1.0 + intColor.b) + cageGlow;
             } else if (res.mat_id == 2.0) {
-                col += vec3<f32>(1.0, 0.5, 0.2) * (1.0 + fresnel) * (1.0 + intColor.r);
+                col += vec3<f32>(1.0, 0.5, 0.2) * (1.0 + fresnel) * (1.0 + intColor.r) + cageGlow * 0.5;
             } else if (res.mat_id == 3.0) {
                 col += vec3<f32>(0.2, 0.8, 1.0) * 0.5 * fresnel * (1.0 + intColor.g);
             }
@@ -327,13 +311,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (t > max_dist) {
             break;
         }
-
         t += d * 0.7;
     }
 
     // Add glow with interference
     col += glow * 0.15;
     col += vec3<f32>(0.12, 0.72, 1.15) * midPacket * (0.3 + u.zoom_params.z * 0.35);
+
+    // ─── Native Idea 3: Depth parallax moiré fringe interference ───
+    let moirePhase = (uv.x * 240.0 + t * 3.5) * (uv.y * 240.0 - t * 2.8) * 0.002;
+    let moirePattern = pow(0.5 + 0.5 * sin(moirePhase * 3.14159), 6.0) * (0.12 + treble * 0.18);
+    col += vec3<f32>(0.1, 0.75, 1.0) * moirePattern * clamp(1.0 - t / max_dist, 0.0, 1.0);
 
     // Depth fade (fog)
     let fog = 1.0 - exp(-t * t * 0.002);
@@ -343,53 +331,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (glitch_intensity > 0.0) {
         let scanline = sin(uv.y * 800.0) * 0.04 * glitch_intensity;
         col -= vec3<f32>(scanline);
-
-        // Simple radial chromatic aberration based on glitch
         let dist_center = length(uv);
         let ca_shift = dist_center * 0.05 * glitch_intensity;
         col.r *= 1.0 + ca_shift;
         col.b *= 1.0 - ca_shift;
     }
     
-    // ═══════════════════════════════════════════════════════════════
     // Alpha Calculation for Volumetric Hologram
-    // ═══════════════════════════════════════════════════════════════
-    
-    // Base hologram transparency (volume holograms are very transparent)
     let base_alpha = 0.06;
-    
-    // Calculate overall interference intensity
     let interference_intensity = (col.r + col.g + col.b) / 3.0;
-    
-    // Alpha boosted where volume emits light
     var alpha = base_alpha + min(interference_intensity * 0.4, 0.35);
     
-    // Glow increases alpha
     let glow_intensity = length(glow);
     alpha += glow_intensity * 0.02;
-    
-    // Fog reduces alpha (distant objects more transparent)
     alpha *= (1.0 - fog * 0.5);
-    
-    // Scanline alpha modulation
     alpha *= holographicScanlines(vec2<f32>(global_id.xy) / resolution, time);
-    
-    // 60Hz flicker — treble adds extra projection instability on hi-hats
     alpha *= projectionFlicker(time) * (1.0 - treble * 0.1);
     
-    // The moving scan packet modulates alpha without temporal strobing.
     let glitchAlpha = 1.0 - glitch_intensity * 0.12 * glitchBand;
     alpha *= glitchAlpha;
     
-    // Depth-based alpha (nodes at different depths have varying transparency)
     let depth_factor = 1.0 - smoothstep(10.0, 40.0, t);
     alpha *= 0.7 + depth_factor * 0.3;
     
-    // Pepper's ghost effect (volume holograms have internal reflections)
     let ghost_col = col * 0.5;
     col = mix(col, ghost_col, PEPPER_GHOST_REFLECTION);
     
-    // Spatial speckle drifts continuously through the projection.
     let speckle = hash21(uv * 80.0 + vec2<f32>(sin(time * 0.7), cos(time * 0.6)) * 2.0);
     alpha *= 0.92 + speckle * 0.16;
 
@@ -403,8 +370,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var clickGlow = vec3<f32>(0.0);
     let rippleCount = min(u32(u.config.y), 50u);
-    for (var i: u32 = 0u; i < rippleCount; i++) {
-        let ripple = u.ripples[i];
+    for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
         let age = time - ripple.z;
         if (age < 0.0 || age > 3.0) { continue; }
         let d = length((uv01 - ripple.xy) * vec2<f32>(aspect, 1.0));
@@ -414,16 +381,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += clickGlow;
     alpha += length(clickGlow) * 0.12;
     
-    // Cap alpha
     alpha = min(alpha, 0.5);
 
-    let previous = historyLoadUV(uv01);
+    let previous = textureLoad(dataTextureC, pixel, 0);
     let display = clamp(mix(previous.rgb * 0.93, col, 0.32 + mouseDown * 0.12), vec3<f32>(0.0), vec3<f32>(8.0));
     let semanticAlpha = clamp(max(alpha, previous.a * 0.9), 0.0, 0.65);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, semanticAlpha));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(display), semanticAlpha));
+    let outRGB = acesToneMap(display);
 
-    // Ray distance is generated scene depth, not source-depth passthrough.
+    textureStore(dataTextureA, pixel, vec4<f32>(outRGB, semanticAlpha));
+    textureStore(writeTexture, pixel, vec4<f32>(outRGB, semanticAlpha));
+
+    // Ray distance is generated scene depth
     let depth = clamp(t / max_dist, 0.0, 1.0);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

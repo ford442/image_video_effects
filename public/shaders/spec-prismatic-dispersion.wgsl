@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  spec-prismatic-dispersion — 4-Band Spectral Cauchy Dispersion
+//  Prismatic Dispersion
 //  Category: advanced-hybrid
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
-//            spectral-rendering, physical-dispersion, semantic-alpha, ACES
+//  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-06
+//  Ideas: internal double-refraction caustic rings; anti-reflective purplish-amber lens sheen; astigmatic chromatic radial streaks
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -139,6 +141,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalColor += wavelengthToRGB(WAVELENGTHS[i]) * bandIntensity * spectralSat;
   }
 
+  // ─── Native Idea 1: Internal Double-Refraction Caustic Rings ───
+  let distToLens = length((uv - lensCenter) * vec2<f32>(aspect, 1.0));
+  let causticRingDist = abs(distToLens - 0.28 * glassCurvature);
+  let causticRing = exp(-pow(causticRingDist * 28.0, 2.0)) * (0.35 + bass * 0.45);
+  let causticColor = vec3<f32>(1.0, 0.96, 0.82) * causticRing * spectralSat;
+  finalColor += causticColor;
+
+  // ─── Native Idea 2: Anti-Reflective Lens Coating Purplish-Amber Sheen ───
+  let viewAngle = acos(clamp(1.0 - distToLens * 0.75, 0.0, 1.0));
+  let arFresnel = pow(sin(viewAngle), 3.2);
+  let arSheen = mix(vec3<f32>(0.28, 0.12, 0.65), vec3<f32>(0.65, 0.38, 0.12), sin(viewAngle * 3.5) * 0.5 + 0.5) * arFresnel * 0.42;
+  finalColor += arSheen;
+
+  // ─── Native Idea 3: Astigmatic Chromatic Radial Streaks ───
+  let radDir = normalize((uv - lensCenter) * vec2<f32>(aspect, 1.0) + vec2<f32>(1e-4));
+  let streakOffset = radDir * 0.012 * glassCurvature * (1.0 + treble * 0.5);
+  let streakSample = textureSampleLevel(readTexture, u_sampler, clamp(uv + streakOffset, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+  let streakHighlight = max(streakSample - vec3<f32>(0.62), vec3<f32>(0.0)) * 1.6;
+  finalColor += streakHighlight * spectralSat * 0.32;
+
   // Chromatic glow
   let glowRadius = glassCurvature * 0.02;
   var glowColor = vec3<f32>(0.0);
@@ -158,8 +180,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let finalRGB = aces(finalColor);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let distToLens = length((uv - lensCenter) * vec2<f32>(aspect, 1.0));
-  let alpha = clamp(0.4 + glassThickness * 0.3 + exp(-distToLens * 4.0) * 0.25 + held * 0.1, 0.15, 1.0);
+  let alpha = clamp(0.4 + glassThickness * 0.3 + exp(-distToLens * 4.0) * 0.25 + causticRing * 0.2 + held * 0.1, 0.15, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, pixel, finalPixel);

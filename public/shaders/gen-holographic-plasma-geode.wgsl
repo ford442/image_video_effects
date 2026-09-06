@@ -1,10 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Plasma-Geode
 //  Category: generative
-//  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
+//  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-09-06
+//  Ideas: crystal Cauchy facet dispersion & TIR; dielectric plasma arc filaments; agate mineral growth banding
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -18,7 +21,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
@@ -111,7 +113,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(id.xy) * 2.0 - dims) / min(dims.x, dims.y);
     let res = u.config.zw;
     let time = u.config.x;
-    let audio = plasmaBuffer[0].x;
+    let bass = plasmaBuffer[0].x;
+    let audio = bass;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
@@ -168,15 +171,32 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let n = calcNormal(p, time, audio);
 
             if (matId > 0.5) {
-                // Holographic crystals
-                let viewAngle = dot(n, -rd);
-                let holoColor = palette(viewAngle + u.zoom_params.z + treble * 0.15);
+                // ─── Native Idea 1: Crystal Cauchy Facet Dispersion & TIR ───
+                let viewAngle = max(dot(n, -rd), 0.0);
+                let cauchySpread = 0.06 + treble * 0.12;
+                let colR = palette(viewAngle * (1.0 + cauchySpread) + u.zoom_params.z);
+                let colG = palette(viewAngle + u.zoom_params.z);
+                let colB = palette(viewAngle * (1.0 - cauchySpread) + u.zoom_params.z);
+                let dispersedHolo = vec3<f32>(colR.r, colG.g, colB.b);
+
+                // Internal total internal reflection glint
+                let tirFresnel = pow(1.0 - viewAngle, 4.0);
+                let tirGlint = vec3<f32>(1.0, 0.95, 0.85) * tirFresnel * 1.8;
+
                 // Subsurface scattering approximation
                 let sss = smoothstep(0.0, 1.0, map(p + rd * 0.1, time, audio).x);
-                col = holoColor * (0.5 + 0.5 * sss) * (1.0 + shellShock * 0.7 + mids * 0.15);
+                col = (dispersedHolo * (0.5 + 0.5 * sss) + tirGlint) * (1.0 + shellShock * 0.7 + mids * 0.15);
             } else {
-                // Rocky exterior
-                let rockyColor = vec3<f32>(0.05, 0.05, 0.08);
+                // ─── Native Idea 3: Agate Mineral Growth Banding ───
+                let rimDist = length(p);
+                let mineralNoise = sin(p.x * 12.0) * sin(p.y * 12.0);
+                let bandFreq = rimDist * 26.0 + mineralNoise * 4.0;
+                let agateBands = sin(bandFreq);
+                let baseRock = mix(vec3<f32>(0.04, 0.04, 0.07), vec3<f32>(0.15, 0.11, 0.18), smoothstep(-0.3, 0.3, agateBands));
+                // Chalcedony quartz hairline ring
+                let fineLine = smoothstep(0.75, 0.95, sin(bandFreq * 2.5)) * 0.18;
+                let rockyColor = baseRock + vec3<f32>(fineLine * 0.9, fineLine * 0.7, fineLine * 0.5);
+
                 let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
                 let diff = max(dot(n, l), 0.0);
                 let spec = pow(max(dot(reflect(-l, n), -rd), 0.0), 16.0);
@@ -190,7 +210,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         t += d;
     }
 
-    // Volumetric Plasma Core
+    // ─── Volumetric Plasma Core & Native Idea 2: Dielectric Discharge Arcs ───
     var plasma = vec3<f32>(0.0);
     let coreRotationSpeed = u.zoom_params.w;
     let plasmaIntensity = u.zoom_params.x;
@@ -219,7 +239,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 sin(time + dist * 5.0) * 0.5 + 0.5
             ) * vec3<f32>(noiseVal * plasmaIntensity * (1.0 - dist) * (1.0 + audio + coreShock * 1.8));
 
-            plasma += emission * 0.15;
+            // Idea 2: Dielectric discharge filament arcs branching between crystals
+            let arcField = sin(vortexP.x * 12.0 + time * 6.0) * cos(vortexP.y * 12.0 - time * 5.0) * sin(vortexP.z * 12.0);
+            let arcLine = smoothstep(0.06, 0.01, abs(arcField)) * step(0.18, dist) * (1.0 - dist);
+            let arcEmission = vec3<f32>(0.75, 0.9, 1.0) * arcLine * (1.4 + bass * 1.8) * plasmaIntensity;
+
+            plasma += (emission + arcEmission) * 0.15;
         }
     }
     col += plasma;

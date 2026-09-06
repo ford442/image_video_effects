@@ -91,6 +91,6 @@
   "updated": true,
   "id": "gen-holographic-bismuth-core-reactor",
   "url": "shaders/gen-holographic-bismuth-core-reactor.wgsl",
-  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal", "semantic-alpha", "aces-tonemap", "generated-depth"],
-  "feedbackPacking": "A/C = linear HDR display RGBA history; exact same-pixel temporal load"
+  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal", "semantic-alpha", "aces-tonemap", "generated-depth", "upgraded-rgba"],
+  "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load"
 }

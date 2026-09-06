@@ -1,6 +1,59 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-06 (10-shader interactive/post-processing/image upgrade cohort)
+**Last updated:** 2026-09-06 (Optical / Glass / Holographic ten)
+
+## 2026-09-06 — Optical / Glass / Holographic (10 shaders)
+
+- IDs: `gen-holographic-lens-flare-matrix`, `gen-holographic-plasma-geode`, `gen-holographic-rainbow-surface`, `gen-holographic-data-core`, `gen-holographic-bismuth-core-reactor`, `chromatic-folds-bilateral`, `aero-chromatics-prismatic`, `glass-shatter-morph`, `frosted-glass-lens-iridescence`, `spec-prismatic-dispersion`.
+- Per shader, the ideas actually added:
+  - gen-holographic-lens-flare-matrix: conjugate optical reflection ghosts; 6-blade hexagonal iris diffraction; Newton-ring thin-film interference fringes. Raw sim state in A/C.
+  - gen-holographic-plasma-geode: crystal Cauchy facet dispersion & TIR; dielectric breakdown plasma arc filaments; agate mineral growth banding.
+  - gen-holographic-rainbow-surface: Marangoni stress flow advection; drainage-gradient multilayer interference; anisotropic micro-groove diffraction grating.
+  - gen-holographic-data-core: logic bus photon energy packets; hexagonal quantum containment lattice cage; depth parallax moiré fringe interference.
+  - gen-holographic-bismuth-core-reactor: hopper-step terrace edge diffraction glints; multi-order oxide thin-film interference; magnetic containment field flux lines.
+  - chromatic-folds-bilateral: multi-spectral split hue folding; joint depth-bilateral edge preservation; contour standing resonance waves. Exact-C load.
+  - aero-chromatics-prismatic: aerodynamic vortex shedding plumes; Schlieren velocity gradient refraction; wavelength-differential feedback decay trails. Exact-C load.
+  - glass-shatter-morph: sub-cellular micro-fracture spiderweb cracks; grazing prismatic TIR facet glints; photoelastic stress birefringence fringes.
+  - frosted-glass-lens-iridescence: microscopic condensation droplet beads; pointer-drag moisture wipe path; lens bevel Cauchy prism dispersion.
+  - spec-prismatic-dispersion: internal double-refraction caustic cusp rings; anti-reflective purplish-amber lens sheen; astigmatic chromatic radial streaks.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. Springs kept only on moving lenses/shards (`glass-shatter-morph`, `frosted-glass-lens-iridescence`, `spec-prismatic-dispersion`).
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0 (10 defs), catalog 1,359, SKIP_WASM_BUILD=1 build green.
+- Notes: `agents/swarm-outputs/gemini-2026-09-06-optical-ten/`.
+
+## 2026-09-06 — Grok simpler generative / kinetic (10 shaders)
+
+- IDs: `gen-grid`, `gen-grok4-life`, `gen-grok4-perlin`, `gen-grok41-mandelbrot`, `gen-grok41-plasma`, `gen-grokcf-interference`, `gen-grokcf-voronoi`, `gen-fourier-epicycles`, `gen-dragon-curve`, `gen-de-jong-attractor`.
+- Per shader, the ideas actually added:
+  - gen-grid: anisotropic H/V lines from warp Jacobian; intersection phosphor from C. Identity kept (warped lattice).
+  - gen-grok4-life: hunt fronts on predator gradient; prey-edge activity flash. SmoothLife packing kept.
+  - gen-grok4-perlin: bedding terraces (display); shoreline foam. File stays stratified erosion, not a Perlin rewrite.
+  - gen-grok41-mandelbrot: Mandelbrot body under Buddhabrot; dwell iso-bands on `c_pixel`.
+  - gen-grok41-plasma: zonal jets in SH pattern; storm-eye from existing Worley mask.
+  - gen-grokcf-interference: radial vs azimuthal Chladni tint; Lambert from signed `u`. Stays a Bessel drum.
+  - gen-grokcf-voronoi: F1 nucleus; F2−F1 crack ridge.
+  - gen-fourier-epicycles: hub→next arm glow; pen ink into existing trail pack.
+  - gen-dragon-curve: paper crease at closest fold; generation thickness.
+  - gen-de-jong-attractor: local stretch tint; dwell rings from iteration index.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0 (10 defs), catalog 1,359, SKIP_WASM_BUILD=1 build green. Jest 623 pass / 6 fail (pre-existing WASM `bridge/api.js` + unrelated performanceStatus/WebGPUCanvas). Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-06-gen-kinetic-ten/`.
+
+## 2026-09-06 — Photo / print / grade eight (example batch)
+
+- IDs: `pp-bloom`, `pp-tone-map`, `analog-film-degrade`, `color-blindness`, `crumpled-paper`, `retro-gameboy`, `conv-bilateral-dream`, `tilt-shift`.
+- Ideas actually added: hue-preserving bloom extract + anamorphic streak; continuous tone-curve mix + luma contrast; per-channel grain + hairline + C print-through; matrix interpolation + unused-param hatch; fibre grain + ironing memory; round LCD dots + honest A/C ghost; joint/luma bilateral range + A write; hex CoC + defocus bloom.
+- Floor only where needed. No springs. Saved params exact. Naga 8/8, extraBuffer 0, dead sliders 0, catalog 1,359.
+- Notes: `agents/swarm-outputs/grok-2026-09-06-photo-eight/`. Cited from `docs/SHADER_UPGRADE_BATCH.md` §7. Real-GPU QA external.
+
+## 2026-09-06 — Shader upgrade batches: incremental ideas
+
+- User wants each batch to **add 2–4 named visual ideas to the existing effect**, not reimagine it and not stop at formatting / uniform alignment / ACES / bindings.
+- Live SoT: `docs/SHADER_UPGRADE_BATCH.md` (expanded with worked good/bad Idea Cards, header `Ideas:` + A packing, JSON tag rules, notes/MEMORY closeout shape, coordinator fail-list, live-vs-historical doc map, paste block).
+- Entry points now point at it: `AGENTS.md`, `grok.md` (CRA not Vite), `WGSL_BUILTINS_GENERATIVE.md`, `BINDING_CONTRACT.md`, `CREATIVE_VISION.md`, prompt templates, `scripts/run-upgrade-swarm.js` (killed `target_lines ±20%`).
+- Historical stamps (do not follow as law): `weekly_upgrade_swarm.md`, `upgrade_swarm.md`, `GENERATIVE_UPGRADE_SWARM.md`, `EFFECT_UPGRADE_SWARM.md`, `4_AGENT_SWARM_PROMPT.md`, `composer.md`, `grok_build_upgrade.md`, April manifests, swarm OVERVIEW/LAUNCH.
+- `CLOUD_UPGRADE.md` workflow now starts with Idea Card; discovery score is hygiene debt; “completion pass” is not an upgrade.
+- Batch size: Flash 6–8, Opus/Grok 8–10, never >12.
+- Library clock: ~593 shaders (Mar) → ~1,407 WGSL / ~1,372 defs (Sep). August was peak volume. Remaining value is distinct ideas on hundreds of files, not another hygiene month. Real-GPU QA + thumbs (~26%) stay the visual bottleneck.
 
 ## 2026-09-06 — 10-Shader Interactive / Post-Processing / Image Upgrade Cohort
 
@@ -21,6 +74,14 @@
 - Successful WASM init with `Input source set to 1` still shows no photo: JS device (and `historyTex`) died on exclusive switch; WASM never got pixels.
 - Rebind after `initWasmRenderer`: upload current image/video, then `resyncShaderStack`. Tag/show `#pixelocity-wasm-canvas-N`. Log `Input upload ran: w×h`.
 - Watch on JS WebGPU until deploy. Hard-reload before WASM. No GPUValidationError ⇒ this bug, not #1205.
+
+## 2026-09-06 — #1205 residual (JS error scope + WaitAny + invariant lock)
+
+- C++ already preferred probed rgba16float, rewrote storage decls, skipped invalid pipelines, and set CopySrc on depth write. Residual: JS `createComputePipeline` could still cache a non-null invalid object (Dawn does not throw) → SetPipeline every frame; WaitAny no-op could store invalid C++ pipelines; verifier did not lock CopySrc/BGL.
+- JS `compileShader` now `pushErrorScope('validation')`; never caches on scope error; fallback only if its scope is clean; else banner + skip.
+- C++ LoadShader treats WaitAny != Success (and missing instance) as invalid — do not store.
+- `verify:wasm-invariants` greps BGL `RgbaStorageFormat(colorFormat_)`, rewrite+hadError+waitFailed, Depth Texture Write CopySrc, frame depth CopyTex.
+- Catalog WGSL still authored rgba32float. Rebuild wasm artifacts if emcc 6.0.3 is available; real-GPU Pascal confirm still external.
 
 ## 2026-08-31 — #1205 format/usage mismatch (live pipeline)
 

@@ -103,7 +103,8 @@
     "temporal-feedback",
     "semantic-alpha",
     "aces-tonemap",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = exact ACES display RGBA; alpha is holographic surface coverage"
 }

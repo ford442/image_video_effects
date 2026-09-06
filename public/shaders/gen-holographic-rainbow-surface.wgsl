@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Holographic Rainbow Surface — UPGRADED
+//  Holographic Rainbow Surface
 //  Category: generative
-//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven, holographic, rainbow, thin-film-interference
-//  Complexity: Medium-High
-//  Created: 2026-05-31
-//  Updated: 2026-06-07
-//  Wolfram Data: Thin-film interference 2nd cos(θ) = mλ, n=1.33, d=500nm
-//  By: Kimi Agent
+//  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-06
+//  Ideas: Marangoni stress flow advection; drainage-gradient multilayer interference; anisotropic micro-groove diffraction
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,6 +29,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530717958647692;
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -42,12 +43,6 @@ fn hash2(p: vec2<f32>) -> f32 {
     return fract((h.x + h.y) * h.z);
 }
 
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-    let p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
-    let h = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((h.xx + h.yz) * h.zy);
-}
-
 fn hash12(p: vec3<f32>) -> f32 {
     let p3 = fract(p * 0.1031);
     let h = p3 + dot(p3, p3.yzx + 33.33);
@@ -57,18 +52,18 @@ fn hash12(p: vec3<f32>) -> f32 {
 fn vnoise2(p: vec2<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
+    let u_val = f * f * (3.0 - 2.0 * f);
     return mix(
-        mix(hash2(i), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
-        mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
-        u.y
+        mix(hash2(i), hash2(i + vec2<f32>(1.0, 0.0)), u_val.x),
+        mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u_val.x),
+        u_val.y
     );
 }
 
 fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
     var v = 0.0;
     var a = 0.5;
-    var shift = vec2<f32>(100.0);
+    let shift = vec2<f32>(100.0);
     var pp = p;
     for (var i: i32 = 0; i < octaves; i = i + 1) {
         v += a * vnoise2(pp);
@@ -95,23 +90,17 @@ fn computeNormal(p: vec2<f32>, t: f32, eps: f32) -> vec3<f32> {
     return normalize(vec3<f32>(hL - hR, hD - hU, 2.0 * eps));
 }
 
-// ═══ CHUNK: thin-film interference (Wolfram Alpha optics) ═══
+// ═══ Thin-film interference (Wolfram optics) ═══
 // Constructive interference: 2 n d cos(θ) = m λ
-// For soap film (n=1.33, d=500nm): λ_visible ≈ 400-700 nm
-// Color shifts with viewing angle due to cos(θ) term
 fn thinFilmIridescence(viewAngle: f32, filmThickness: f32, n: f32) -> vec3<f32> {
-    // Visible wavelength sampling: R=650nm, G=530nm, B=460nm
     let wavelengths = vec3<f32>(650.0, 530.0, 460.0);
-    // Phase = 2 * n * d * cos(θ) / λ
     let phase = 2.0 * n * filmThickness * cos(viewAngle) / wavelengths;
-    // Constructive interference intensity
-    let intensity = 0.5 + 0.5 * cos(phase * 6.28318530718);
-    // Boost for holographic vibrancy
+    let intensity = 0.5 + 0.5 * cos(phase * TAU);
     return pow(intensity, vec3<f32>(0.8)) * 2.0;
 }
 
 fn holographicColor(theta: f32, shift: f32) -> vec3<f32> {
-    let t = theta * 6.0 + shift * 6.28318530718;
+    let t = theta * 6.0 + shift * TAU;
     let r = 0.5 + 0.5 * sin(t + 0.0);
     let g = 0.5 + 0.5 * sin(t + 2.094);
     let b = 0.5 + 0.5 * sin(t + 4.189);
@@ -132,7 +121,6 @@ fn spectralDiffraction(normal: vec3<f32>, lightDir: vec3<f32>, viewDir: vec3<f32
     let NdotH = max(dot(normal, H), 0.0);
     let spec = pow(NdotH, 128.0);
     let diffAngle = acos(clamp(NdotH, 0.0, 1.0));
-    let waveLength = 380.0 + 400.0 * fract(diffAngle * 3.0 + time * 0.3);
     let diffColor = holographicColor(fract(diffAngle * 2.0 + time * 0.15), time * 0.1);
     return diffColor * spec * 8.0;
 }
@@ -207,16 +195,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let NdotL2 = max(dot(normal, lightDir2), 0.0);
     let NdotL3 = max(dot(normal, lightDir3), 0.0);
 
-    // Thin-film interference enrichment
-    // n = 1.33 (soap film), d = 500nm + bass * 200nm
-    let filmThickness = 500.0 + bass * 200.0;
+    // ─── Native Idea 2: Drainage-gradient multilayer interference ───
+    // Physical gravity/drainage thickness variation (top thinner, bottom thicker)
+    let drainage = clamp((centeredUV.y + h * 0.25) * 0.8 + 0.2, 0.08, 1.2);
+    let filmThickness = (480.0 + bass * 220.0) * drainage;
     let nSoap = 1.33;
     let viewAngle = acos(clamp(dot(normal, viewDir), 0.0, 1.0));
     let interferenceColor = thinFilmIridescence(viewAngle, filmThickness, nSoap);
 
+    // ─── Native Idea 1: Marangoni stress flow advection ───
+    // Surface tension gradient induces tangential swirl whorls along height contours
+    let tangentFlow = vec2<f32>(-normal.y, normal.x) * (0.2 + bass * 0.3);
+    let marangoniP = scaledP + tangentFlow * sin(t * 1.4 + h * 5.0);
+    let marangoniWhorl = fbm(marangoniP * 3.2 + t * 0.3, 3);
+    let marangoniColor = holographicColor(marangoniWhorl * 2.0, colorShift + time * 0.12 + mids * 0.3) * 0.45 * intensity;
+
     // Base color now driven by thin-film interference + holographic
     let hueBase = h * 2.0 + colorShift * 3.0 + time * 0.15 + mids * 0.5;
-    let baseColor = holographicColor(h * 0.5, hueBase) * interferenceColor;
+    let baseColor = holographicColor(h * 0.5, hueBase) * interferenceColor + marangoniColor;
 
     let diffraction1 = spectralDiffraction(normal, lightDir1, viewDir, time);
     let diffraction2 = spectralDiffraction(normal, lightDir2, viewDir, time + 1.047);
@@ -231,6 +227,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseColor = holographicColor(mouseWave * 0.5 + 0.5, time * 0.5 + colorShift) * mouseWave * 2.0;
     let rippleColor = holographicColor(rippleDistort * 2.0, time * 0.3 + colorShift) * rippleDistort * 1.5;
 
+    // ─── Native Idea 3: Anisotropic micro-groove diffraction grating ───
+    // Razor-sharp rainbow sheen streaks perpendicular to surface slopes
+    let slopeDir = normalize(normal.xy + vec2<f32>(1e-4, 0.0));
+    let groovePhase = dot(centeredUV * res.y, slopeDir) * 0.15;
+    let grooveDiffraction = pow(0.5 + 0.5 * cos(groovePhase * TAU + time * 2.0), 28.0);
+    let grooveRainbow = holographicColor(groovePhase * 0.25, time * 0.2 + colorShift);
+    let grooveSheen = grooveRainbow * grooveDiffraction * fresnel * 1.6 * intensity;
+
     var color = baseColor * (NdotL1 * 0.5 + NdotL2 * 0.3 + NdotL3 * 0.2 + 0.3);
     color += diffraction1 * intensity * 1.5;
     color += diffraction2 * intensity * 0.8;
@@ -239,6 +243,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += edgeColor * fresnel * 1.5;
     color += mouseColor;
     color += rippleColor;
+    color += grooveSheen;
 
     let microDetail = fbm(scaledP * 20.0 + t * 0.5, 3);
     color += holographicColor(microDetail, time * 0.1 + colorShift) * microDetail * 0.15 * intensity;

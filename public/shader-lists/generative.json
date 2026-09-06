@@ -11928,7 +11928,8 @@
       "fft-reactive-halo",
       "mouse-driven",
       "click-reactive",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact dragon-curve persistence history"
   },
@@ -16818,7 +16819,12 @@
     "updated": true,
     "id": "gen-fourier-epicycles",
     "url": "shaders/gen-fourier-epicycles.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba",
+      "mouse-driven",
+      "temporal"
+    ]
   },
   {
     "name": "Fractal Bioluminescence Spore-Network",
@@ -18538,9 +18544,10 @@
       "temporal",
       "semantic-alpha",
       "aces-tonemap",
-      "generated-depth"
+      "generated-depth",
+      "upgraded-rgba"
     ],
-    "feedbackPacking": "A/C = linear HDR display RGBA history; exact same-pixel temporal load"
+    "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load"
   },
   {
     "name": "Holographic Data Core",
@@ -18650,7 +18657,8 @@
       "volumetric",
       "semantic-alpha",
       "aces-tonemap",
-      "generated-depth"
+      "generated-depth",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = linear HDR display RGBA history; exact bounded temporal loads"
   },
@@ -18866,7 +18874,8 @@
       "click-reactive",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw flare density, anamorphic streak, nearest flare distance, semantic alpha; raw state is never tone-mapped"
   },
@@ -19078,7 +19087,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = exact ACES display RGBA with shell/core shock persistence"
   },
@@ -19187,7 +19197,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = exact ACES display RGBA; alpha is holographic surface coverage"
   },
@@ -33803,7 +33814,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",

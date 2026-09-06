@@ -1,15 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  chromatic-folds-bilateral
+//  Chromatic Folds Bilateral
 //  Category: advanced-hybrid
-//  Features: chromatic-folds, bilateral-dream, hue-manipulation
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Chunks From: chromatic-folds, conv-bilateral-dream
-//  Created: 2026-04-18
-//  By: Agent CB-12 — Chroma & Spectral Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Psychedelic hue folding blended with edge-preserving bilateral
-//  dream smoothing. Folds occur on the bilateral-filtered image,
-//  producing smooth yet deeply warped chromatic topology.
+//  Upgraded: 2026-09-06
+//  Ideas: multi-spectral split hue folding; joint depth-bilateral edge preservation; contour standing resonance waves
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,6 +28,15 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
@@ -71,11 +76,16 @@ fn hash2(p: vec2<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
+    let pixel = vec2<i32>(gid.xy);
 
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let pixelSize = 1.0 / res;
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
+
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let foldStrength = u.zoom_params.x * 1.5 + 0.5;
     let pivotHue = u.zoom_params.y;
@@ -93,7 +103,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Ripple shockwaves
     var rippleSharpness = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -107,22 +117,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     let finalSigma = max(spatialSigma * (1.0 - rippleSharpness * 0.8), 0.02);
 
-    // Bilateral filter
+    // ─── Native Idea 2: Joint Depth-Bilateral Preservation ───
     let center = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let centerDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
     var accumColor = vec3<f32>(0.0);
     var accumWeight = 0.0;
     let radius = i32(ceil(finalSigma * 2.5));
     let maxRadius = min(radius, 5);
 
-    for (var dy = -maxRadius; dy <= maxRadius; dy++) {
-        for (var dx = -maxRadius; dx <= maxRadius; dx++) {
+    for (var dy = -maxRadius; dy <= maxRadius; dy = dy + 1) {
+        for (var dx = -maxRadius; dx <= maxRadius; dx = dx + 1) {
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
             let neighbor = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0);
+            let neighborDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + offset, 0.0).r;
+
             let spatialDist = length(vec2<f32>(f32(dx), f32(dy)));
             let spatialWeight = exp(-spatialDist * spatialDist / (2.0 * finalSigma * finalSigma + 0.001));
             let colorDist = length(neighbor.rgb - center.rgb);
             let rangeWeight = exp(-colorDist * colorDist / (2.0 * colorSigma * colorSigma + 0.001));
-            let weight = spatialWeight * rangeWeight;
+
+            // Joint depth range term preserves physical depth boundaries
+            let depthDist = abs(neighborDepth - centerDepth);
+            let depthWeight = exp(-depthDist * depthDist / (0.04 * (depthInfluence + 0.1) + 0.001));
+
+            let weight = spatialWeight * rangeWeight * depthWeight;
             accumColor += neighbor.rgb * weight;
             accumWeight += weight;
         }
@@ -133,10 +152,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         srcColor = accumColor / accumWeight;
     }
 
-    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthVal = centerDepth;
 
     // Hue gradient on bilateral-smoothed image
-    let h = rgb2hsv(srcColor).x;
     let hR = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb).x;
     let hL = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).rgb).x;
     let hU = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).rgb).x;
@@ -145,13 +163,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gradX = fract(hR - hL + 1.5) - 0.5;
     let gradY = fract(hU - hD + 1.5) - 0.5;
     let hueGrad = vec2<f32>(gradX, gradY);
+    let gradMagnitude = length(hueGrad);
 
     let curvature = pow(depthVal, 2.0) * depthInfluence;
     let dispBase = hueGrad * foldStrength * 0.05 * (1.0 + curvature);
 
     let noise = hash2(uv * 100.0 + time);
     let noiseDisp = vec2<f32>(sin(time + noise * 6.28318), cos(time + noise * 6.28318)) * 0.003;
-    var totalDisp = dispBase + noiseDisp;
+
+    // ─── Native Idea 3: Contour Standing Resonance Waves ───
+    let resonancePhase = gradMagnitude * 38.0 - time * 3.5 + depthVal * 8.0;
+    let resonance = sin(resonancePhase) * (0.006 + bass * 0.012) * foldStrength;
+    let resonanceDisp = normalize(hueGrad + vec2<f32>(1e-4, 0.0)) * resonance;
+
+    var totalDisp = dispBase + noiseDisp + resonanceDisp;
 
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let r = u.ripples[i];
@@ -169,13 +194,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let displacedUV = clamp(uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
     let displacedColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
+    // ─── Native Idea 1: Multi-Spectral Split Hue Folding ───
     var hsv = rgb2hsv(displacedColor);
-    hsv.x = foldHue(hsv.x, pivotHue, foldStrength);
-    hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
-    let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
+    let splitDelta = 0.035 * (1.0 + treble * 0.35);
+    let foldR = foldHue(hsv.x, fract(pivotHue + splitDelta), foldStrength);
+    let foldG = foldHue(hsv.x, pivotHue, foldStrength);
+    let foldB = foldHue(hsv.x, fract(pivotHue - splitDelta), foldStrength);
+    let foldedSat = clamp(hsv.y * satScale, 0.0, 1.0);
 
-    // Feedback blend
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let colR = hsv2rgb(foldR, foldedSat, hsv.z).r;
+    let colG = hsv2rgb(foldG, foldedSat, hsv.z).g;
+    let colB = hsv2rgb(foldB, foldedSat, hsv.z).b;
+    let foldedColor = vec3<f32>(colR, colG, colB);
+
+    // Exact dataTextureC feedback blend
+    let prev = textureLoad(dataTextureC, pixel, 0).rgb;
     let feedbackStrength = 0.85;
     var finalColor = mix(foldedColor, prev, feedbackStrength);
 
@@ -186,9 +219,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         finalColor = hsv2rgb(newHue, hsv2.y, hsv2.z);
     }
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(finalColor, 1.0));
+    let outDisplay = acesToneMap(finalColor);
+    let alpha = clamp(center.a * 0.8 + gradMagnitude * 0.4 + resonance * 5.0, 0.2, 1.0);
+    let outRGBA = vec4<f32>(outDisplay, alpha);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, outRGBA);
+    textureStore(dataTextureA, pixel, outRGBA);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }
