@@ -277,7 +277,7 @@ export async function loadShaderOnSlot(
       if (!ok) {
         const diags = api.renderer?.getDiagnostics?.();
         const lastErr = diags?.wasm?.lastLoadError || 'Unknown (check console)';
-        throw new Error(`loadShader failed for ${s.id}: ${lastErr}`);
+        return false;
       }
       api.setSlotShader(s.slot ?? 0, s.id);
       return true;
