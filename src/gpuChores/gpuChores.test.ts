@@ -20,6 +20,8 @@ import {
   shrinkCpuSource,
   sourceGainStatus,
   unpackClassifyRgba8,
+  workgroups1d,
+  workgroups2d,
 } from './index';
 
 function solidRgba(w: number, h: number, r: number, g: number, b: number, a = 1): Float32Array {
@@ -60,7 +62,7 @@ function stubBuffer(): GPUBuffer {
 }
 
 /** Minimal adopted device so GpuChoresHost.createGpu succeeds in Jest. */
-function stubAdoptedGpuDevice(): GPUDevice {
+function stubAdoptedGpuDevice(withLimits = true): GPUDevice {
   const g = globalThis as Record<string, unknown>;
   if (!g.GPUShaderStage) g.GPUShaderStage = { COMPUTE: 4 };
   if (!g.GPUBufferUsage) {
@@ -97,6 +99,7 @@ function stubAdoptedGpuDevice(): GPUDevice {
       writeBuffer() {},
       submit() {},
     },
+    ...(withLimits ? { limits: { maxComputeWorkgroupsPerDimension: 65535 } } : {}),
   } as unknown as GPUDevice;
 }
 
@@ -127,6 +130,21 @@ function spyEncoder(labels: string[], dispatches?: DispatchRecord[]) {
     copyTextureToBuffer() {},
   } as unknown as GPUCommandEncoder;
 }
+
+describe('gpu-chores workgroup dispatch helpers', () => {
+  it('keeps 2048² as a 2D 256×256 grid, not a 1D flatten', () => {
+    expect(workgroups2d(2048, 2048)).toEqual({ x: 256, y: 256 });
+  });
+
+  it('caps a flattened 2048² / 64 dispatch at 65535, never 65536', () => {
+    expect(workgroups1d(2048 * 2048, 64)).toBe(65535);
+    expect(workgroups1d(2048 * 2048, 64)).toBeLessThan(65536);
+  });
+
+  it('caps both 2D axes at the supplied per-dimension max', () => {
+    expect(workgroups2d(2048, 2048, 8, 8, 10)).toEqual({ x: 10, y: 10 });
+  });
+});
 
 describe('gpu-chores CPU goldens (Chromashift-shaped BT.709)', () => {
   it('maps luma to 256 bins with BT.709 weights', () => {
@@ -395,6 +413,126 @@ describe('GpuChoresHost', () => {
     expect(reduce!.y).toBe(270);
     expect(reduce!.x).toBeLessThanOrEqual(65535);
     expect(reduce!.y).toBeLessThanOrEqual(65535);
+    host.destroy();
+    delete window.webgpuProbe;
+  });
+
+  it('keeps 2048² hist and reduce as a 2D 256×256 grid', () => {
+    probeOk();
+    const labels: string[] = [];
+    const dispatches: DispatchRecord[] = [];
+    const host = new GpuChoresHost();
+    host.attach(stubAdoptedGpuDevice());
+    host.encodePreFx(spyEncoder(labels, dispatches), stubTexture(), 2048, 2048);
+    const hist = dispatches.find((d) => d.label === 'gpu-chores-histogram');
+    const reduce = dispatches.find((d) => d.label === 'gpu-chores-reduce');
+    expect(hist).toEqual(expect.objectContaining({ x: 256, y: 256 }));
+    expect(reduce).toEqual(expect.objectContaining({ x: 256, y: 256 }));
+    expect(hist!.x).toBeLessThanOrEqual(65535);
+    expect(hist!.y).toBeLessThanOrEqual(65535);
+    expect(reduce!.x).toBeLessThanOrEqual(65535);
+    expect(reduce!.y).toBeLessThanOrEqual(65535);
+    host.destroy();
+    delete window.webgpuProbe;
+  });
+
+  it('dispatches apply-gain at 2048² as 256×256', () => {
+    probeOk();
+    const labels: string[] = [];
+    const dispatches: DispatchRecord[] = [];
+    const host = new GpuChoresHost();
+    host.attach(stubAdoptedGpuDevice());
+    host.setSourceNormalizeEnabled(true);
+    const encoded = host.encodeSourceGainForTest(
+      spyEncoder(labels, dispatches),
+      stubTexture(),
+      stubTexture(),
+      2048,
+      2048,
+    );
+    expect(encoded).toBe(true);
+    const gain = dispatches.find((d) => d.label === 'gpu-chores-apply-gain');
+    expect(gain).toEqual(expect.objectContaining({ x: 256, y: 256 }));
+    host.destroy();
+    delete window.webgpuProbe;
+  });
+
+  const CHORE_PASS_LABELS = [
+    'gpu-chores-histogram',
+    'gpu-chores-reduce',
+    'gpu-chores-apply-gain',
+    'gpu-chores-lut',
+    'gpu-chores-downsample',
+  ] as const;
+
+  it('clamps all five chore dispatches at 2048² and stays 2D', () => {
+    probeOk();
+    const labels: string[] = [];
+    const dispatches: DispatchRecord[] = [];
+    const host = new GpuChoresHost();
+    host.attach(stubAdoptedGpuDevice());
+    host.setSourceNormalizeEnabled(true);
+    host.encodePreFx(spyEncoder(labels, dispatches), stubTexture(), 2048, 2048, stubTexture());
+    for (const label of CHORE_PASS_LABELS) {
+      const d = dispatches.find((row) => row.label === label);
+      expect(d).toBeDefined();
+      expect(d!.x).toBeLessThanOrEqual(65535);
+      expect(d!.y).toBeLessThanOrEqual(65535);
+      expect(d!.x).toBeGreaterThanOrEqual(1);
+      expect(d!.y).toBeGreaterThanOrEqual(1);
+    }
+    expect(dispatches.find((d) => d.label === 'gpu-chores-histogram')).toEqual(
+      expect.objectContaining({ x: 256, y: 256 }),
+    );
+    expect(dispatches.find((d) => d.label === 'gpu-chores-reduce')).toEqual(
+      expect.objectContaining({ x: 256, y: 256 }),
+    );
+    expect(dispatches.find((d) => d.label === 'gpu-chores-apply-gain')).toEqual(
+      expect.objectContaining({ x: 256, y: 256 }),
+    );
+    host.destroy();
+    delete window.webgpuProbe;
+  });
+
+  it('clamps all five chore dispatches for a deliberately oversized source', () => {
+    probeOk();
+    const dispatches: DispatchRecord[] = [];
+    const host = new GpuChoresHost();
+    host.attach(stubAdoptedGpuDevice());
+    host.setSourceNormalizeEnabled(true);
+    host.encodePreFx(
+      spyEncoder([], dispatches),
+      stubTexture(),
+      600000,
+      600000,
+      stubTexture(),
+    );
+    for (const label of CHORE_PASS_LABELS) {
+      const d = dispatches.find((row) => row.label === label);
+      expect(d).toBeDefined();
+      expect(d!.x).toBeLessThanOrEqual(65535);
+      expect(d!.y).toBeLessThanOrEqual(65535);
+      expect(d!.x).not.toBe(65536);
+      expect(d!.y).not.toBe(65536);
+    }
+    const hist = dispatches.find((d) => d.label === 'gpu-chores-histogram');
+    const reduce = dispatches.find((d) => d.label === 'gpu-chores-reduce');
+    const gain = dispatches.find((d) => d.label === 'gpu-chores-apply-gain');
+    expect(hist).toEqual(expect.objectContaining({ x: 65535, y: 65535 }));
+    expect(reduce).toEqual(expect.objectContaining({ x: 65535, y: 65535 }));
+    expect(gain).toEqual(expect.objectContaining({ x: 65535, y: 65535 }));
+    host.destroy();
+    delete window.webgpuProbe;
+  });
+
+  it('falls back to 65535 when the adopted device has no limits', () => {
+    probeOk();
+    const dispatches: DispatchRecord[] = [];
+    const host = new GpuChoresHost();
+    host.attach(stubAdoptedGpuDevice(false));
+    host.encodePreFx(spyEncoder([], dispatches), stubTexture(), 2048, 2048);
+    const reduce = dispatches.find((d) => d.label === 'gpu-chores-reduce');
+    expect(reduce).toEqual(expect.objectContaining({ x: 256, y: 256 }));
     host.destroy();
     delete window.webgpuProbe;
   });

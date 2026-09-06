@@ -96,6 +96,6 @@
   "updated": true,
   "id": "gen-holographic-data-core",
   "url": "shaders/gen-holographic-data-core.wgsl",
-  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "volumetric", "semantic-alpha", "aces-tonemap", "generated-depth"],
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "volumetric", "semantic-alpha", "aces-tonemap", "generated-depth", "upgraded-rgba"],
   "feedbackPacking": "A/C = linear HDR display RGBA history; exact bounded temporal loads"
 }

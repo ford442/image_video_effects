@@ -7,6 +7,8 @@
 
 import type { InternalColorFormat } from '../config/formatPolicy';
 import { rewriteWgslStorageFormats } from '../renderer/wgslFormatRewrite';
+import { DEFAULT_MAX_WORKGROUPS_PER_DIMENSION, maxWorkgroupsPerDimension, workgroups2d } from './dispatch';
+import { assertDispatchWithinLimits } from './dispatchLimits';
 import { downsample2d } from './downsample';
 import { autoExposureFromHistogram, clampExposureGain } from './exposure';
 import { lumaHistogramBt709 } from './histogram';
@@ -100,6 +102,7 @@ export class GpuChoresHost {
   private sourceNormalizeEnabled = false;
   private physicsPinned = false;
   private colorFormat: InternalColorFormat = 'rgba32float';
+  private maxWorkgroups = DEFAULT_MAX_WORKGROUPS_PER_DIMENSION;
 
   getBreadcrumbs(): GpuChoresBreadcrumbs {
     return {
@@ -178,6 +181,7 @@ export class GpuChoresHost {
   ): void {
     this.releaseGpu();
     this.device = null;
+    this.maxWorkgroups = DEFAULT_MAX_WORKGROUPS_PER_DIMENSION;
     this.colorFormat = colorFormat;
 
     if (!isWebGpuProbeOk()) {
@@ -195,6 +199,8 @@ export class GpuChoresHost {
       this.setStatus(false, reasonIfMissing, 'ts', null);
       return;
     }
+
+    this.maxWorkgroups = maxWorkgroupsPerDimension(device);
 
     if (!deviceCanCompile(device)) {
       this.setStatus(false, 'adopted device cannot compile compute', 'ts', null);
@@ -216,6 +222,7 @@ export class GpuChoresHost {
   detach(reason = 'detached'): void {
     this.releaseGpu();
     this.device = null;
+    this.maxWorkgroups = DEFAULT_MAX_WORKGROUPS_PER_DIMENSION;
     this.setStatus(false, reason, 'ts', this.breadcrumbs.lastOp);
   }
 
@@ -291,7 +298,8 @@ export class GpuChoresHost {
     const histPass = encoder.beginComputePass({ label: 'gpu-chores-histogram' });
     histPass.setPipeline(gpu.histPipeline);
     histPass.setBindGroup(0, histBg);
-    histPass.dispatchWorkgroups(Math.ceil(srcW / 8), Math.ceil(srcH / 8));
+    const wg = workgroups2d(srcW, srcH, 8, 8, this.maxWorkgroups);
+    this.dispatchWorkgroupsSafe(histPass, wg.x, wg.y);
     histPass.end();
 
     const reduceBg = device.createBindGroup({
@@ -304,7 +312,7 @@ export class GpuChoresHost {
     const reducePass = encoder.beginComputePass({ label: 'gpu-chores-reduce' });
     reducePass.setPipeline(gpu.reducePipeline);
     reducePass.setBindGroup(0, reduceBg);
-    reducePass.dispatchWorkgroups(Math.ceil(srcW / 8), Math.ceil(srcH / 8));
+    this.dispatchWorkgroupsSafe(reducePass, wg.x, wg.y);
     reducePass.end();
 
     this.encodeDownsampleAndLut(encoder, gpu, device, source, srcW, srcH);
@@ -465,7 +473,8 @@ export class GpuChoresHost {
     const pass = encoder.beginComputePass({ label: 'gpu-chores-apply-gain' });
     pass.setPipeline(gpu.gainPipeline);
     pass.setBindGroup(0, bg);
-    pass.dispatchWorkgroups(Math.ceil(srcW / 8), Math.ceil(srcH / 8));
+    const wg = workgroups2d(srcW, srcH, 8, 8, this.maxWorkgroups);
+    this.dispatchWorkgroupsSafe(pass, wg.x, wg.y);
     pass.end();
     encoder.copyTextureToTexture({ texture: dest }, { texture: source }, [srcW, srcH, 1]);
     this.noteOp('apply_gain_2d', 'webgpu');
@@ -513,7 +522,8 @@ export class GpuChoresHost {
     const lutPass = encoder.beginComputePass({ label: 'gpu-chores-lut' });
     lutPass.setPipeline(gpu.lutPipeline);
     lutPass.setBindGroup(0, lutBg);
-    lutPass.dispatchWorkgroups(Math.ceil(PREVIEW_SIZE / 8), Math.ceil(PREVIEW_SIZE / 8));
+    const preview = workgroups2d(PREVIEW_SIZE, PREVIEW_SIZE, 8, 8, this.maxWorkgroups);
+    this.dispatchWorkgroupsSafe(lutPass, preview.x, preview.y);
     lutPass.end();
   }
 
@@ -549,7 +559,8 @@ export class GpuChoresHost {
     const dsPass = encoder.beginComputePass({ label: 'gpu-chores-downsample' });
     dsPass.setPipeline(gpu.downsamplePipeline);
     dsPass.setBindGroup(0, dsBg);
-    dsPass.dispatchWorkgroups(Math.ceil(destW / 8), Math.ceil(destH / 8));
+    const ds = workgroups2d(destW, destH, 8, 8, this.maxWorkgroups);
+    this.dispatchWorkgroupsSafe(dsPass, ds.x, ds.y);
     dsPass.end();
   }
 
@@ -839,6 +850,18 @@ export class GpuChoresHost {
   private noteOp(op: GpuChoresOp, backend: GpuChoresBackend): void {
     this.breadcrumbs.lastOp = op;
     this.breadcrumbs.backend = backend;
+  }
+
+  private dispatchWorkgroupsSafe(
+    pass: GPUComputePassEncoder,
+    x: number,
+    y: number,
+    z = 1,
+  ): void {
+    const d = assertDispatchWithinLimits(x, y, z, {
+      maxComputeWorkgroupsPerDimension: this.maxWorkgroups,
+    });
+    pass.dispatchWorkgroups(d.x, d.y, d.z);
   }
 }
 

@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Lens-Flare Matrix
 //  Category: generative
-//  Features: anamorphic-flare, blue-noise, fast-approximations,
-//            mouse-spin, audio-reactive, palette-tinted,
-//            chromatic-dispersion, temporal-flare-persistence, depth-aware
-//  Complexity: Medium
-//  Phase B / Optimizer
-//  Upgraded: 2026-06-28 — Optimizer Batch (blue noise + fast approximations)
+//  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-06
+//  Ideas: conjugate optical reflection ghosts; 6-blade hexagonal iris diffraction; Newton-ring interference fringes
+//  A packing: raw sim state (persistentDensity, persistentStreak, persistentDistance, stateAlpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -29,6 +28,7 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 const PHI: f32 = 1.61803398874989484820;
@@ -75,6 +75,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5;
     let mouse_p = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
+
     let intensityControl = clamp(u.zoom_params.x, 0.0, 1.0);
     let speedControl = clamp(u.zoom_params.y, 0.0, 1.0);
     let scaleControl = clamp(u.zoom_params.z, 0.0, 1.0);
@@ -126,7 +127,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Core: fast approximation using smoothstep instead of exp for small distances
     let core = exp(-dist * dist / max(size * size, 1e-6));
     let starMod = 0.5 + 0.5 * fastSin(angle * 4.0 + time * 5.0);
-    var density = core * starMod + streak * (0.3 + mids * 0.18) + clickBurst * 0.75;
+
+    // ─── Native Idea 1: Conjugate optical reflection ghosts ───
+    // Flare conjugate ghost forms on the opposite side of cell center along the optical axis
+    let ghostPos1 = -flarePos * 0.62;
+    let ghostDist1 = length(ghostPos1);
+    let ghost1 = exp(-ghostDist1 * ghostDist1 / max(size * size * 2.2, 1e-6)) * 0.38;
+    let ghostPos2 = -flarePos * 1.35;
+    let ghostDist2 = length(ghostPos2);
+    let ghost2 = exp(-ghostDist2 * ghostDist2 / max(size * size * 4.0, 1e-6)) * 0.22;
+    let ghostTotal = ghost1 + ghost2;
+
+    // ─── Native Idea 2: 6-blade hexagonal aperture iris diffraction ───
+    // Hexagonal iris diffraction rays intersecting the anamorphic streak
+    let hexRay1 = exp(-abs(flarePos.y) * 42.0);
+    let hexRay2 = exp(-abs(flarePos.y * 0.5 + flarePos.x * 0.866025) * 42.0);
+    let hexRay3 = exp(-abs(flarePos.y * 0.5 - flarePos.x * 0.866025) * 42.0);
+    let irisDiffraction = (hexRay1 + hexRay2 + hexRay3) * 0.3333 * (0.35 + treble * 0.45);
+
+    // ─── Native Idea 3: Newton-ring thin-film interference fringes ───
+    let ringPhase = dist / max(size * 1.4, 0.01) * 36.0 - phaseTime * 2.5;
+    let ringIntensity = (cos(ringPhase) * 0.5 + 0.5) * exp(-dist * 10.0) * (0.35 + bass * 0.3);
+    let newtonColor = vec3<f32>(
+        0.5 + 0.5 * cos(ringPhase),
+        0.5 + 0.5 * cos(ringPhase + 2.094),
+        0.5 + 0.5 * cos(ringPhase + 4.189)
+    ) * ringIntensity;
+
+    var density = core * starMod + streak * (0.3 + mids * 0.18) + irisDiffraction + ghostTotal + clickBurst * 0.75;
 
     // Chromatic dispersion per flare: RGB stars at different angular offsets
     let chromaOff = 0.04 + treble * 0.22;
@@ -134,15 +162,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let angleB = angle - chromaOff;
     let starR = 0.5 + 0.5 * fastSin(angleR * 4.0 + time * 5.0);
     let starB = 0.5 + 0.5 * fastSin(angleB * 4.0 + time * 5.0);
-    let densityR = core * starR + streak * 0.4;
+    let densityR = core * starR + streak * 0.4 + ghost1 * 1.2;
     let densityG = density;
-    let densityB = core * starB + streak * 0.4;
+    let densityB = core * starB + streak * 0.4 + ghost2 * 1.2;
 
     // Fast plasma color lookup with blue noise jitter
     let plasmaIdx = u32(abs(fract(bn + time * 0.1)) * 256.0);
     let pColor = plasmaBuffer[plasmaIdx % 256u].rgb;
     let brightness = mix(0.55, 2.4, intensityControl) * (1.0 + bass * 0.45);
     var col = vec3<f32>(pColor.r * densityR, pColor.g * densityG, pColor.b * densityB) * brightness;
+    col += newtonColor * brightness * 0.8;
 
     let motion = textureLoad(readTexture, coords, 0).rgb;
     col = motion * (1.0 - density * 0.6) + col;
@@ -151,7 +180,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Keep it un-tone-mapped and use exact history loads.
     let prev = textureLoad(dataTextureC, coords, 0);
     let persistentDensity = max(density, prev.r * mix(0.86, 0.95, speedControl));
-    let persistentStreak = max(streak + clickBurst * 0.35, prev.g * 0.91);
+    let persistentStreak = max(streak + clickBurst * 0.35 + irisDiffraction * 0.25, prev.g * 0.91);
     let persistentDistance = mix(dist, prev.b, 0.18);
     density = persistentDensity;
 
