@@ -301,7 +301,7 @@ function verifyEmptyPlaceholder() {
   const tsPath = path.join(ROOT, ph.tsFile || 'src/renderer/webgpu/resources.ts');
   const tsSrc = fs.readFileSync(tsPath, 'utf8');
   const emptyTexBlock = tsSrc.match(
-    /const emptyTex = device\.createTexture\(\{[\s\S]*?writeTexture\([\s\S]*?\[1,\s*1\],/,
+    /const emptyTex = track\(device.createTexture\(\{[\s\S]*?writeTexture\([\s\S]*?\[1,\s*1\],/,
   );
   if (!emptyTexBlock) {
     fail('resources.ts emptyTex createTexture + writeTexture block not found');
@@ -489,6 +489,8 @@ function verifyWasmRuntimeInvariants() {
     }
     const rungsBlock = probe.match(/export\s+const\s+HISTORY_PROBE_RUNGS(?:\s*:\s*[^=]+)?\s*=\s*\[([\s\S]*?)\];/m);
     if (!rungsBlock) {
+      fail('historyTexProbe.ts missing HISTORY_PROBE_RUNGS');
+    }
     if (ladder.defaultWorkingSize != null) {
       if (!safe || parseInt(safe[1], 10) !== ladder.defaultWorkingSize) {
         fail(
