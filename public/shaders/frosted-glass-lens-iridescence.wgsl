@@ -1,14 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Frosted Glass Lens Iridescence
 //  Category: advanced-hybrid
-//  Features: frosted-glass, thin-film-interference, depth-aware,
-//            mouse-driven, audio-reactive, exact-feedback
+//  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Very High
-// ═══════════════════════════════════════════════════════════════════
-//  Physical frosted glass transmission with thin-film iridescence
-//  on the glass surface. Multi-tap microfacet scattering and Beer-
-//  Lambert absorption blend with soap-bubble Fresnel interference
-//  and an interactive chromatic magnifying lens.
+//  Upgraded: 2026-09-06
+//  Ideas: microscopic condensation droplet beads; pointer-drag moisture wipe; lens bevel Cauchy prism dispersion
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,7 +29,6 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
 fn acesToneMap(color: vec3<f32>) -> vec3<f32> {
@@ -83,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isMouseDown = u.zoom_config.w > 0.5;
     let mouseUV = u.zoom_config.yz;
 
-    // Persistent single-writer state management
+    // Persistent single-writer state management in extraBuffer[133..138]
     if (global_id.x == 0u && global_id.y == 0u) {
         var targetPos = mouseUV;
         if (!isMouseDown && extraBuffer[137] < 0.5) {
@@ -125,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Sliders
-    let frostAmt = clamp(u.zoom_params.x, 0.0, 1.0);
+    let rawFrost = clamp(u.zoom_params.x, 0.0, 1.0);
     let lensRadius = mix(0.12, 0.72, u.zoom_params.y);
     let edgeSoftness = mix(0.02, 0.28, u.zoom_params.z);
     let filmIOR = mix(1.2, 2.4, u.zoom_params.w);
@@ -133,6 +129,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distVec = (uv - smoothMouse) * aspectVec;
     let dist = length(distVec);
     let holdEffect = smoothstep(0.35, 0.0, dist) * select(0.3, 1.0, isMouseDown);
+
+    // ─── Native Idea 2: Pointer-Drag Moisture Wipe ───
+    // Held pointer clears frost and condensation, creating a clean glass trail
+    let wipeFactor = smoothstep(lensRadius * 0.85, 0.0, dist) * select(0.4, 0.95, isMouseDown);
+    let frostAmt = rawFrost * (1.0 - wipeFactor * 0.85);
 
     // Capped click ripple fronts
     var rippleDistortion = 0.0;
@@ -155,6 +156,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let magStrength = (0.25 + holdEffect * 0.35 + bass * 0.15) * lensMask;
     let lensOffset = -normalize(distVec + vec2<f32>(0.0001)) * lensBulge * magStrength;
 
+    // ─── Native Idea 1: Microscopic Condensation Droplet Beads ───
+    let dropGrid = uv * 36.0;
+    let dropId = floor(dropGrid);
+    let dropFract = fract(dropGrid) - vec2<f32>(0.5);
+    let dropSeed = hash12(dropId);
+    let dropRadius = 0.22 * (0.5 + dropSeed * 0.5);
+    let dropDist = length(dropFract);
+    let dropMask = smoothstep(dropRadius, dropRadius * 0.6, dropDist) * step(0.68, dropSeed) * frostAmt;
+    let dropRefract = dropFract * dropMask * 0.018;
+
     // Multi-tap microfacet frost scattering
     let noiseVal = hash12(uv * 180.0 + vec2<f32>(time * 0.05, -time * 0.03));
     let noiseAngle = hash12(uv * 90.0 - time * 0.02) * TAU;
@@ -164,7 +175,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let caStrength = (0.006 * frostAmt + 0.012 * lensMask + treble * 0.004) * smoothstep(0.0, lensRadius, dist);
     let caDir = normalize(distVec + vec2<f32>(0.0001));
 
-    let baseUV = uv + lensOffset + frostOffset;
+    let baseUV = uv + lensOffset + frostOffset + dropRefract;
     let uvR = clamp(baseUV + caDir * caStrength, vec2<f32>(0.0), vec2<f32>(1.0));
     let uvG = clamp(baseUV, vec2<f32>(0.0), vec2<f32>(1.0));
     let uvB = clamp(baseUV - caDir * caStrength * 0.8, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -172,7 +183,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
     let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
-    let scatteredColor = vec3<f32>(colR, colG, colB);
+    var scatteredColor = vec3<f32>(colR, colG, colB);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvG, 0.0).r;
 
@@ -200,11 +211,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var finalColor = scatteredColor * absorption * glassTint;
     finalColor = mix(finalColor, iridescent, edgeIridescence * 0.65);
 
-    // Lens bevel specular highlight
+    // Lens bevel specular highlight & Native Idea 3: Bevel Prism Dispersion
     let bevelMask = smoothstep(lensRadius - 0.02, lensRadius, dist) * (1.0 - smoothstep(lensRadius, lensRadius + edgeSoftness, dist));
-    let specLight = normalize(vec3<f32>(0.5, 0.8, -0.6));
     let normalBevel = normalize(vec3<f32>(distVec * 15.0, 1.0));
+    let specLight = normalize(vec3<f32>(0.5, 0.8, -0.6));
     let spec = pow(max(dot(normalBevel, specLight), 0.0), 40.0) * bevelMask * (1.0 + treble);
+
+    // Idea 3: Bevel Cauchy spectral separation
+    let bevelDispersion = normalBevel.xy * (0.014 + treble * 0.012) * bevelMask;
+    let prismR = textureSampleLevel(readTexture, u_sampler, clamp(baseUV + bevelDispersion, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let prismB = textureSampleLevel(readTexture, u_sampler, clamp(baseUV - bevelDispersion * 0.8, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    finalColor = mix(finalColor, vec3<f32>(prismR, finalColor.g, prismB), bevelMask * 0.6);
     finalColor = finalColor + vec3<f32>(spec * 0.8);
 
     // Exact temporal feedback from dataTextureC
@@ -212,7 +229,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = mix(finalColor, prev, 0.1 + mids * 0.08);
 
     let tonemapped = acesToneMap(finalColor * (1.0 + treble * 0.1));
-    let alpha = clamp(transmission * 0.6 + edgeIridescence * 0.3 + bevelMask * 0.3 + holdEffect * 0.15, 0.2, 0.98);
+    let alpha = clamp(transmission * 0.6 + edgeIridescence * 0.3 + bevelMask * 0.3 + holdEffect * 0.15 + dropMask * 0.2, 0.2, 0.98);
     let outputRGBA = vec4<f32>(tonemapped, alpha);
 
     textureStore(writeTexture, pixel, outputRGBA);

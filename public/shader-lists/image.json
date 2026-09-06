@@ -4674,9 +4674,23 @@
   {
     "id": "pixel-scattering",
     "name": "Pixel Scattering",
-    "url": "/shaders/pixel-scattering.wgsl",
-    "category": "distortion",
-    "description": "Velocity-field advection using curl noise and Fibonacci spiral patterns. Motion blur trails, chromatic separation along velocity vectors, and HDR accumulation. Bass triggers explosive scatter events.",
+    "category": "image",
+    "url": "shaders/pixel-scattering.wgsl",
+    "description": "Physical velocity-field advection combining divergence-free curl noise, Fibonacci golden spiral dispersal, vortex drag wakes, spring cursor dynamics, click shockwaves, exact-C temporal streak advection, and ACES tonemapping.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "depth-aware",
+      "fast-motion",
+      "spring-cursor",
+      "held-drag",
+      "bounded-click-ripples",
+      "aces-tone-map",
+      "temporal-feedback",
+      "semantic-alpha",
+      "exact-c-history"
+    ],
     "params": [
       {
         "id": "radius",
@@ -4707,19 +4721,50 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba",
-      "velocity-field"
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scatter Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Scatter Distance",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Chaos",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ],
     "tags": [
-      "distortion",
+      "image",
       "scatter",
       "velocity",
       "curl-noise",
-      "chromatic",
-      "audio-reactive"
+      "fast-motion",
+      "audio-reactive",
+      "aces"
     ]
   },
   {

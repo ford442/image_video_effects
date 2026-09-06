@@ -368,6 +368,13 @@ public-audience polish bar.
      `go.1ink.us`, or is that gated on something else as well?
 ```
 
+
+### Related filed issue from `main`
+
+- **[#1195 — Catalog count SoT: assert the derivable invariant, alias legacy IDs, split the extraBuffer baseline](https://github.com/ford442/image_video_effects/issues/1195)** was filed from the earlier section-B draft on 2026-08-29; the full issue text is also saved in `weekly_issue_catalog_sot.md`.
+- Tree verification corrected the original premise: there are **33** ID-vs-filename mismatches, **0** graph-parent mismatches, and the **13-count** catalog gap is exactly the set of `multipass.pass > 1` secondary definitions.
+- The verified invariant is `definitions - secondaries - duplicates == list entries == manifest total`, and the design call is to gate only that derivable invariant in CI — aliases only, no shader-file renames, and no stale-README diff gate.
+
 ---
 
 ## C. Three chat-model prompts targeting the issue from B
