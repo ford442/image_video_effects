@@ -1,10 +1,12 @@
 # Shader Upgrade Manifest
 
+> **Historical (2026-04-12).** Sixteen-shader initiative. **LIVE upgrade law:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+
 ## WebGPU Compute Shader Enhancement Initiative
 
 **Version:** 1.0  
 **Date:** April 12, 2026  
-**Status:** Complete  
+**Status:** Complete (historical)  
 
 ---
 

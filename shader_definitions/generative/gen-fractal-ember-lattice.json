@@ -65,6 +65,7 @@
   "id": "gen-fractal-ember-lattice",
   "url": "shaders/gen-fractal-ember-lattice.wgsl",
   "features": [
+    "upgraded-rgba",
     "rigid-shard-state",
     "three-band-audio-reactive",
     "mouse-shatter-reform",

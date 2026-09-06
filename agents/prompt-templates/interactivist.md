@@ -98,6 +98,7 @@ Reactive patterns:
 - [ ] Alpha encodes interaction intensity or trail age
 
 ## Output Rules
+- **Upgrade = add 2–4 native ideas.** Pointer/audio/click must belong on *this* effect. Do not stamp a spring + ripple overlay onto vignettes and sharpen filters. Bindings/ACES are the floor. See `docs/SHADER_UPGRADE_BATCH.md`.
 - Keep the original "soul" of the shader while making it alive and reactive.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.

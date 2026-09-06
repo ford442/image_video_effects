@@ -5,8 +5,9 @@
 //            chromatic-layer-separation, depth-output, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  Upgraded: 2026-08-23 — exact feedback loads, held-cursor lens,
-//            three-band petal voices, finite click waves
+//  Upgraded: 2026-09-06
+//  Ideas: hypotrochoid parameter vein; origin stamen
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Nested hypotrochoid and epicycloid curves layered to form a
 //  blooming flower/mandala. Multiple gear-ratio pairs evolve slowly,
@@ -145,12 +146,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shimmer = 0.78 + spectralVoice * 0.42 + treble * 0.08;
     let g    = (smoothstep(w * 3.5, 0.0, minDist) + smoothstep(w * 7.0, 0.0, minDist) * 0.3)
       * shimmer;
+    // Idea 1 — petal midrib along curve parameter
+    let vein = g * (0.55 + 0.45 * (0.5 + 0.5 * sin(bestT * (3.0 + lf))));
     let hue  = fract(lf / f32(LAYERS) + time * spinSpeed * 0.09 + bestT * 0.04
       + mids * 0.2 + spectralVoice * 0.035);
     let sat  = 0.82 + treble * 0.18;
-    colorAcc = colorAcc + hsv2rgb(vec3<f32>(hue, sat, 1.0)) * g;
-    glowAcc  = glowAcc + g;
+    colorAcc = colorAcc + hsv2rgb(vec3<f32>(hue, sat, 1.0)) * (g + vein * 0.35);
+    glowAcc  = glowAcc + g + vein * 0.15;
   }
+
+  // Idea 2 — stamen: tight hypotrochoid at the origin
+  let stam = hypotrochoid(time * spinSpeed * 2.2, 1.0, 0.22, 0.08) * 0.12;
+  let stamG = exp(-distance(p, stam) * 90.0) + exp(-length(p) * 14.0) * 0.35;
+  colorAcc += hsv2rgb(vec3<f32>(fract(0.12 + time * 0.08), 0.7, 1.0)) * stamG;
+  glowAcc += stamG;
 
   // Chromatic layer separation: R from outer layers, B from inner
   let chromaR = colorAcc * vec3<f32>(1.1, 0.95, 0.85);

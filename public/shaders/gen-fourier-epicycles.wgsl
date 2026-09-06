@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Fourier Epicycles - Harmonic rotating wheels tracing curves
+//  Fourier Epicycles
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, temporal, mouse-driven, feedback-loop
 //  Complexity: Medium
-//  Created: 2026-05-30
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-09-06
+//  Ideas: arm-segment glow hub→next; pen ink into existing C trail pack
+//  A packing: bassEnv, trail.r, trail.g, alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -119,6 +120,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rimGlow = rimIntensity * 0.015 / (rimDist * rimDist + 0.0003);
     accum = accum + wCol * rimGlow;
 
+    // Idea 1 — arm segment from hub to next hub
+    let ab = nextCenter - center;
+    let ap = p - center;
+    let ah = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-5), 0.0, 1.0);
+    let armDist = length(ap - ab * ah);
+    accum = accum + wCol * (0.006 * rimIntensity) / (armDist * armDist + 0.00018);
+
     let spokeDist = length(p - nextCenter);
     accum = accum + wCol * 0.004 / (spokeDist * spokeDist + 0.00015);
 
@@ -148,8 +156,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Temporal feedback with motion-blur decay
   let decayed = vec3<f32>(prevState.g, prevState.b, prevState.g * 0.5 + prevState.b * 0.5) * trailPersist * (1.0 - mids * 0.05);
-  let newTrail = max(decayed, generatedColor * 0.85);
-  generatedColor = max(generatedColor, decayed * 0.6);
+  // Idea 2 — pen ink writes the trail pack harder than rims
+  let ink = chroma * (1.4 + bassEnv * 0.4);
+  let newTrail = max(decayed, generatedColor * 0.85 + ink * 0.55);
+  generatedColor = max(generatedColor, decayed * 0.6 + ink * 0.25);
 
   generatedColor = acesToneMapping(generatedColor * (1.2 + bassEnv * 0.3));
 

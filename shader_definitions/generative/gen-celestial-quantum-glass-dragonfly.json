@@ -7,9 +7,10 @@
     "fractal",
     "audio-reactive",
     "raymarching",
-    "crystalline"
+    "crystalline",
+    "iridescent"
   ],
-  "description": "A hyper-dimensional, biomechanical dragonfly forged from ethereal quantum-glass and liquid starlight, its intricate fractal wings constantly refracting cosmic energy and beating in synchronous rhythm with ambient audio frequencies inside a volumetric plasma storm.",
+  "description": "A hyper-dimensional biomechanical dragonfly forged from quantum glass with Cauchy thin-film wing iridescence, starlight caustic core emission, acoustic wing-tip vortex trails, and spring-guided flight dynamics.",
   "workgroup_size": [
     16,
     16,
@@ -54,7 +55,15 @@
   "updated": true,
   "id": "gen-celestial-quantum-glass-dragonfly",
   "url": "shaders/gen-celestial-quantum-glass-dragonfly.wgsl",
-  "features": [],
+  "features": [
+    "raymarched",
+    "fractal-venation",
+    "cauchy-thin-film",
+    "spring-dynamics",
+    "audio-reactive",
+    "mouse-driven",
+    "aces-tone-mapping"
+  ],
   "params": [
     {
       "id": "wing_frequency",

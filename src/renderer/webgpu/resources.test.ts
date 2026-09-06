@@ -134,4 +134,13 @@ describe('WebGPUResourcePool', () => {
     const hist = createTexture.mock.calls.find((call) => call[0]?.label === 'historyTex');
     expect(hist?.[0].size?.depthOrArrayLayers).toBe(4);
   });
+
+  it('createTextures allocates historyTex before ping-pong / data targets', () => {
+    const device = makeMockDevice();
+    createTextures(device, 1024, 1024, 1024, 1024, 'rgba16float', 8);
+    const createTexture = device.createTexture as unknown as {
+      mock: { calls: Array<[{ label?: string }]> };
+    };
+    expect(createTexture.mock.calls[0][0]?.label).toBe('historyTex');
+  });
 });

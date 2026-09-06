@@ -4,9 +4,9 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Curl-noise cloud advection with vorticity confinement, buoyant convection, Mie silver lining, and rain-sheet transport
-//  Upgraded: 2026-07-26 (Batch 17) — click storm gusts into sim velocity,
-//            per-bin rain audio (mids intensity / treble streak texture),
-//            long-session noise-time wrap, spring-damped mouse gust center.
+//  Upgraded: 2026-09-06
+//  Ideas: anvil deck at cloud top; virga (rain fading before ground)
+//  A packing: raw density, velocity.xy, moisture
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -194,6 +194,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseMask = (1.0 - smoothstep(0.0, 0.16, distance(uv, mouse))) * (0.18 + u.zoom_config.w * 1.25);
 
   var density = mix(advected.r, baseCloud, 0.06 + coverage * 0.06);
+  // Idea 1 — anvil: spread / flatten near the top of the deck
+  let anvil = smoothstep(0.22, 0.08, uv.y) * coverage;
+  density = saturate(density + anvil * 0.08 * (0.65 + fbm(uv * 6.0 + vec2<f32>(noiseTime * 0.04, 0.0))));
+  density = mix(density, density * 0.92 + 0.08, anvil * 0.35);
   var moisture = mix(advected.a, baseCloud * (0.45 + rainIntensity * 0.5), 0.045);
 
   let curl = curlNoise(uv * mix(1.5, 4.8, coverage) + vec2<f32>(noiseTime * 0.02, -noiseTime * 0.016), noiseTime, pixel * 5.0);
@@ -243,6 +247,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rainCore = smoothstep(0.45, 0.88, aboveState.r) * smoothstep(0.25, 0.95, aboveState.a) * rainAudio;
   let rainNoise = fbm(vec2<f32>(uv.x * 72.0 + windX * 100.0, uv.y * 160.0 - noiseTime * 6.0));
   let rain = rainCore * smoothstep(streakLo, 0.92, rainNoise) * smoothstep(0.18, 0.92, uv.y);
+  // Idea 2 — virga: evaporate before the ground
+  let virga = rain * (1.0 - smoothstep(0.72, 0.98, uv.y));
   moisture = saturate(moisture - rain * 0.09);
   density = saturate(density - rain * 0.025);
 
@@ -269,11 +275,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   cloudColor = mix(cloudColor, vec3<f32>(0.18, 0.20, 0.25), shadow * density * 0.75);
   cloudColor += vec3<f32>(1.0, 0.98, 0.96) * lightning * 1.8;
 
-  let rainColor = vec3<f32>(0.70, 0.82, 1.0) * rain * (0.35 + density * 0.8);
-  let generatedColor = mix(skyColor, cloudColor + rainColor, saturate(density * 0.95 + rain * 0.45));
+  let rainColor = vec3<f32>(0.70, 0.82, 1.0) * virga * (0.35 + density * 0.8);
+  let generatedColor = mix(skyColor, cloudColor + rainColor, saturate(density * 0.95 + virga * 0.45));
   let finalColor = mix(inputColor.rgb, generatedColor, 0.94);
-  let finalAlpha = max(inputColor.a, saturate(0.42 + density * 0.55 + rain * 0.12 + lightning * 0.2));
-  let finalDepth = mix(inputDepth, saturate(0.18 + density * 0.64 + rain * 0.18 + lightning * 0.16), 0.92);
+  let finalAlpha = max(inputColor.a, saturate(0.42 + density * 0.55 + virga * 0.12 + lightning * 0.2));
+  let finalDepth = mix(inputDepth, saturate(0.18 + density * 0.64 + virga * 0.18 + lightning * 0.16), 0.92);
 
   // Channel packing contract (vorticity-confinement neighbor reads depend on
   // .gb = velocity layout — do NOT repack; sim state stays raw, never toned):

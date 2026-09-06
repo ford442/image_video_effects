@@ -1,4 +1,7 @@
 // Hyperbolic Tessellation Engine — recursive Poincare-disk geometry
+// Upgraded: 2026-09-06
+// Ideas: kaleidoscope ideal vertices; horocycles of constant hyperbolic radius
+// A packing: HDR tessellation RGBA
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -75,6 +78,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var z = disk;
   var recursiveDepth = 0.0;
   var edge = 0.0;
+  var vertexGlow = 0.0;
   for (var i = 0; i < 8; i++) {
     let angle = atan2(z.y, z.x);
     let foldedAngle = abs((fract(angle / sectorAngle + 0.5) - 0.5) * sectorAngle);
@@ -82,6 +86,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lineDist = abs(z.y);
     let lineWidth = mix(0.027, 0.009, f32(i) / 7.0) * (1.0 + treble * 0.28);
     edge = max(edge, 1.0 - smoothstep(lineWidth, lineWidth * 2.7, lineDist));
+    // Idea 1 — ideal vertices at kaleidoscope corners
+    let cornerA = 1.0 - smoothstep(0.0, sectorAngle * 0.07, foldedAngle);
+    let cornerB = 1.0 - smoothstep(0.0, sectorAngle * 0.07, abs(foldedAngle - sectorAngle * 0.5));
+    vertexGlow = max(vertexGlow, max(cornerA, cornerB) * (1.0 - smoothstep(lineWidth * 2.0, lineWidth * 6.0, lineDist)));
     let scale = 1.36 + symmetryCtl * 0.28;
     z = z * scale - vec2<f32>(0.44 + bass * 0.025, 0.0);
     recursiveDepth += 1.0;
@@ -96,6 +104,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   raw *= (0.18 + tilePulse * 0.82) * diskMask * (0.85 + bass * 0.35);
   raw += palette(depthPhase + 0.33 + treble * 0.05) * edge * (0.85 + treble * 1.1) * diskMask;
   raw += vec3<f32>(0.4, 0.72, 1.35) * boundary * boundaryGlowCtl * (1.0 + treble * 0.7);
+  raw += vec3<f32>(1.0, 0.92, 0.65) * vertexGlow * diskMask * (0.45 + treble * 0.35);
+  // Idea 2 — horocycles: constant hyperbolic radius from the origin
+  let safeR = clamp(originalRadius, 0.0, 0.985);
+  let hypR = 0.5 * log((1.0 + safeR) / max(1.0 - safeR, 0.002));
+  let horo = exp(-abs(fract(hypR * 2.4) - 0.5) * 18.0) * diskMask * (1.0 - smoothstep(0.92, 1.0, originalRadius));
+  raw += palette(depthPhase + 0.18) * horo * (0.22 + bass * 0.2);
 
   var clickGlow = 0.0;
   let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);

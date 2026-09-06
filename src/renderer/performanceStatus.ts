@@ -156,7 +156,7 @@ export function buildPerformanceStatus(
   backend: RendererType,
   getFps: () => number,
   scaleInfo: { scale: number; scaled: { w: number; h: number } },
-  extras?: { historyLayers?: number },
+  extras?: { historyLayers?: number; workingSizeCap?: number },
 ): RendererPerformanceStatus {
   const historyLayers = extras?.historyLayers ?? HISTORY_DEPTH;
   return {
@@ -182,7 +182,7 @@ export function buildPerformanceStatus(
     fp32PinnedBy: state.fp32Pin.pinnedBy,
     maxPassesPerFrame: state.performancePolicy.maxPassesPerFrame,
     historyLayers,
-    workingSizeCap: getHistoryWorkingSizeCap(),
+    workingSizeCap: extras?.workingSizeCap ?? getHistoryWorkingSizeCap(),
   };
 }
 

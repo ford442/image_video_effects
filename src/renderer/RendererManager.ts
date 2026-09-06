@@ -61,6 +61,12 @@ export class RendererManager {
   private lastFailedWasmRenderer: WASMRenderer | null = null;
   private lastImageUrl: string | null = null;
   private lastInputSource: InputSource = 'image';
+  private lastShaderStack: {
+    modes: RenderMode[];
+    slotParams: SlotParams[];
+    resolveShader: (shaderId: string) => ShaderEntry | undefined;
+    inputSource?: InputSource;
+  } | null = null;
   private readonly config: RendererConfig;
   private canvas: HTMLCanvasElement | null = null;
   private webGpuHandoff: WebGpuProbeHandoff | undefined;
@@ -142,8 +148,14 @@ export class RendererManager {
 
   async switchRenderer(type: RendererType): Promise<boolean> {
     if (!this.canvas) return false;
+    const cpuBitmap = inputBridge.readCpuInputBitmap(this.currentRenderer);
     const handoff = type === 'webgpu' ? this.webGpuHandoff : undefined;
     releaseAdoptedDeviceIfLeavingWebGpu(this.currentType, type);
+    if (type === 'wasm') {
+      console.warn(
+        '[RendererManager] Exclusive JS→WASM switch: hard-reload if this tab already allocated a 2048² historyTex (~512MB) before a second device',
+      );
+    }
     const outcome = await performBackendSwitch({
       targetType: type,
       canvas: this.canvas,
@@ -168,7 +180,13 @@ export class RendererManager {
         await inputBridge.rebindMediaAfterBackendSwitch(this.currentRenderer, {
           inputSource: this.lastInputSource,
           imageUrl: this.lastImageUrl,
+          bitmap: cpuBitmap,
+          presentCanvas: this.canvas,
+          logUpload: type === 'wasm',
         });
+        if (this.lastShaderStack) {
+          await this.resyncShaderStack(this.lastShaderStack);
+        }
       }
       return true;
     }
@@ -234,6 +252,7 @@ export class RendererManager {
     resolveShader: (shaderId: string) => ShaderEntry | undefined;
     inputSource?: InputSource;
   }): Promise<void> {
+    this.lastShaderStack = options;
     return resyncShaderStack(
       this.backend(),
       this.slotPolicy(),
@@ -363,12 +382,14 @@ export class RendererManager {
     const shader = this.shaderRenderer();
     const historyLayers =
       shader instanceof WebGPURenderer ? shader.getHistoryLayers() : undefined;
+    const workingSizeCap =
+      shader instanceof WebGPURenderer ? shader.getWorkingSizeCap() : undefined;
     return buildPerformanceStatus(
       this.perfState,
       this.getActiveRendererType(),
       () => this.getCurrentFPS(),
       readResolutionScale(this.perfState, this.config, shader),
-      { historyLayers },
+      { historyLayers, workingSizeCap },
     );
   }
   getAudioData() {

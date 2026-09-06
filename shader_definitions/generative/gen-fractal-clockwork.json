@@ -68,6 +68,7 @@
   "id": "gen-fractal-clockwork",
   "url": "shaders/gen-fractal-clockwork.wgsl",
   "features": [
+    "upgraded-rgba",
     "raymarched-gears",
     "sprung-orbit-camera",
     "click-torque-waves",

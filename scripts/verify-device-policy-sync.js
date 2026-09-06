@@ -489,6 +489,28 @@ function verifyWasmRuntimeInvariants() {
     }
     const rungsBlock = probe.match(/export\s+const\s+HISTORY_PROBE_RUNGS(?:\s*:\s*[^=]+)?\s*=\s*\[([\s\S]*?)\];/m);
     if (!rungsBlock) {
+    if (ladder.defaultWorkingSize != null) {
+      if (!safe || parseInt(safe[1], 10) !== ladder.defaultWorkingSize) {
+        fail(
+          `historyTex defaultWorkingSize: contract ${ladder.defaultWorkingSize} vs HISTORY_SAFE_WORKING_SIZE ${safe && safe[1]}`,
+        );
+      }
+      if (!/function getHistoryWorkingSizeCap[\s\S]*return HISTORY_SAFE_WORKING_SIZE/.test(vram)) {
+        fail('vramBudget.ts getHistoryWorkingSizeCap() must default to HISTORY_SAFE_WORKING_SIZE (1024)');
+      }
+    }
+    if (ladder.minMaxBufferSizeForFull != null) {
+      const minBuf = vram.match(/MIN_MAX_BUFFER_SIZE_FOR_FULL\s*=\s*(\d+)/);
+      if (!minBuf || parseInt(minBuf[1], 10) !== ladder.minMaxBufferSizeForFull) {
+        fail(
+          `MIN_MAX_BUFFER_SIZE_FOR_FULL must be ${ladder.minMaxBufferSizeForFull} (working-size heuristic only — not maxTextureDimension2D)`,
+        );
+      }
+      if (!vram.includes('function allowsFullWorkingSize')) {
+        fail('vramBudget.ts must export allowsFullWorkingSize for the 2048 upgrade gate');
+      }
+    }
+    if (!probe.includes('HISTORY_PROBE_RUNGS')) {
       fail('historyTexProbe.ts must export HISTORY_PROBE_RUNGS');
     } else {
       const normalized = rungsBlock[1].replace(/\s+/g, ' ');
@@ -526,6 +548,61 @@ function verifyWasmRuntimeInvariants() {
     }
     if (fmt.rewriteStorageDeclsToActiveColorFormat && !cppRewrite.includes('texture_storage_2d')) {
       fail(`${fmt.cppRewriteFile} must rewrite texture_storage_2d declarations to the active colour format`);
+    }
+
+    const pipelineFile = fmt.pipelineFile || 'wasm_renderer/pipeline.cpp';
+    const pipelineCpp = fs.readFileSync(path.join(ROOT, pipelineFile), 'utf8');
+    const bglPat = new RegExp(fmt.bglStorageFormatPattern || 'RgbaStorageFormat\\(colorFormat_\\)', 'g');
+    const bglHits = pipelineCpp.match(bglPat) || [];
+    const wantBgl = fmt.bglStorageBindingCount != null ? fmt.bglStorageBindingCount : 3;
+    if (bglHits.length < wantBgl) {
+      fail(
+        `${pipelineFile} must set storage texture format via RgbaStorageFormat(colorFormat_) ` +
+          `at least ${wantBgl} times (bindings 2/7/8); found ${bglHits.length}`,
+      );
+    }
+    const rewriteCall = new RegExp(fmt.loadShaderRewriteCall || 'RewriteWgslStorageFormats\\s*\\(');
+    if (!rewriteCall.test(pipelineCpp)) {
+      fail(`${pipelineFile} LoadShader must call RewriteWgslStorageFormats`);
+    }
+    if (fmt.loadShaderErrorScope && !pipelineCpp.includes(fmt.loadShaderErrorScope)) {
+      fail(`${pipelineFile} LoadShader must PushErrorScope around CreateComputePipeline`);
+    }
+    if (fmt.loadShaderSkipHadError && !pipelineCpp.includes(fmt.loadShaderSkipHadError)) {
+      fail(`${pipelineFile} LoadShader must skip storing the pipeline when pop.hadError`);
+    }
+    if (fmt.loadShaderWaitAnyFailSoft && !pipelineCpp.includes(fmt.loadShaderWaitAnyFailSoft)) {
+      fail(`${pipelineFile} LoadShader must treat WaitAny failure as invalid (waitFailed)`);
+    }
+
+    const resourcesFile = fmt.resourcesFile || 'wasm_renderer/resources.cpp';
+    const resourcesCpp = fs.readFileSync(path.join(ROOT, resourcesFile), 'utf8');
+    const depthLabel = fmt.depthWriteLabel || 'Depth Texture Write';
+    const copySrc = fmt.copySrcUsage || 'WGPUTextureUsage_CopySrc';
+    const labelIdx = [];
+    let searchFrom = 0;
+    while (true) {
+      const i = resourcesCpp.indexOf(depthLabel, searchFrom);
+      if (i < 0) break;
+      labelIdx.push(i);
+      searchFrom = i + depthLabel.length;
+    }
+    if (labelIdx.length < 2) {
+      fail(`${resourcesFile} must create "${depthLabel}" in CreateResources and RecreateTextures (found ${labelIdx.length})`);
+    }
+    for (const idx of labelIdx) {
+      const windowStart = Math.max(0, idx - 400);
+      const before = resourcesCpp.slice(windowStart, idx);
+      if (!before.includes(copySrc)) {
+        fail(`${resourcesFile} "${depthLabel}" usage must include ${copySrc} (feedback CopyTextureToTexture)`);
+      }
+    }
+
+    const frameFile = fmt.frameFile || 'wasm_renderer/frame.cpp';
+    const frameCpp = fs.readFileSync(path.join(ROOT, frameFile), 'utf8');
+    const copyPat = new RegExp(fmt.depthFeedbackCopyPattern || 'CopyTex\\s*\\([^;]*depthTextureWrite_');
+    if (!copyPat.test(frameCpp)) {
+      fail(`${frameFile} must CopyTex depthTextureWrite_ → depthTextureRead_ (keep in sync with CopySrc on the write texture)`);
     }
   }
 

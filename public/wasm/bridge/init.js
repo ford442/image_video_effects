@@ -16,15 +16,16 @@ async function initWasmRenderer(canvasElement) {
     return true;
   }
   wasmRef.canvas = canvasElement;
-  let sizeFallback = 2048;
+  const sizeFallback = 1024;
+  let cap = sizeFallback;
   try {
     if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("px_history_oom_cap") === "1024") {
-      sizeFallback = 1024;
+      cap = 1024;
     }
   } catch {
   }
-  state.canvasWidth = wasmRef.canvas.width || sizeFallback;
-  state.canvasHeight = wasmRef.canvas.height || sizeFallback;
+  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeFallback, cap);
+  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeFallback, cap);
   state.initStartTime = performance.now();
   return new Promise((resolve) => {
     const pathname = window.location.pathname;
@@ -164,7 +165,7 @@ function isInitialized() {
   return state.initialized;
 }
 function ensureWasmCanvasId(canvas) {
-  if (canvas.id) return canvas.id;
+  if (/^pixelocity-wasm-canvas-\d+$/.test(canvas.id)) return canvas.id;
   wasmRef.canvasIdCounter += 1;
   canvas.id = "pixelocity-wasm-canvas-" + wasmRef.canvasIdCounter;
   return canvas.id;
@@ -190,8 +191,20 @@ function promoteWasmCanvasVisible(canvas) {
   }
   return tagged;
 }
+function getPresentCanvas() {
+  return wasmRef.canvas;
+}
+function getPresentCanvasId() {
+  const tagged = wasmRef.canvas;
+  if (tagged?.id && /^pixelocity-wasm-canvas-\d+$/.test(tagged.id)) return tagged.id;
+  if (typeof document === "undefined") return tagged?.id ?? "";
+  const found = document.querySelector('[id^="pixelocity-wasm-canvas-"]');
+  return found?.id ?? tagged?.id ?? "";
+}
 export {
   ensureWasmCanvasId,
+  getPresentCanvas,
+  getPresentCanvasId,
   initWasmRenderer,
   isInitialized,
   promoteWasmCanvasVisible,

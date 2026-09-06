@@ -62,6 +62,7 @@
   "id": "gen-barnsley-fern",
   "url": "shaders/gen-barnsley-fern.wgsl",
   "features": [
+    "upgraded-rgba",
     "barnsley-ifs",
     "voronoi-displacement",
     "sdf-mask",

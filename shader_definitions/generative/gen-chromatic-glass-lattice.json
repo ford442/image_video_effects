@@ -1,21 +1,35 @@
 {
+  "id": "gen-chromatic-glass-lattice",
   "name": "Chromatic Glass Lattice",
   "category": "generative",
-  "tags": [
-    "glass",
-    "crystal",
-    "refraction",
-    "chromatic-aberration",
-    "audio-reactive",
-    "raymarched",
-    "dispersion"
-  ],
-  "description": "A crystalline, infinite lattice of dispersing glass that refracts background light into separating RGB spectrums, shattered dynamically by sound frequencies.",
+  "url": "shaders/gen-chromatic-glass-lattice.wgsl",
+  "description": "Raymarched 3D chromatic glass lattice with Cauchy multi-order dispersion, internal TIR caustic ribs, acoustic resonance stress birefringence, and micro-fracture edge sparkle glints.",
   "workgroup_size": [
     16,
     16,
     1
   ],
+  "tags": [
+    "raymarched",
+    "glass",
+    "lattice",
+    "chromatic-dispersion",
+    "audio-reactive",
+    "birefringence",
+    "shatter"
+  ],
+  "features": [
+    "raymarched",
+    "cauchy-dispersion",
+    "internal-tir-caustics",
+    "stress-birefringence",
+    "spring-dynamics",
+    "audio-reactive",
+    "mouse-driven",
+    "aces-tone-mapping"
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
   "updatedParams": [
     {
       "index": 0,
@@ -50,12 +64,6 @@
       "step": 0.01
     }
   ],
-  "supportsDepth": true,
-  "supportsDof": false,
-  "updated": true,
-  "id": "gen-chromatic-glass-lattice",
-  "url": "shaders/gen-chromatic-glass-lattice.wgsl",
-  "features": [],
   "params": [
     {
       "id": "refraction_index",

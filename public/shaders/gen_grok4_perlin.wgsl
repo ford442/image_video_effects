@@ -4,7 +4,9 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, procedural, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Sediment-transport terrain with hydraulic incision, wind abrasion, layered hardness, seismic uplift, and reflective water-table basins
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-06
+//  Ideas: bedding-plane terraces (display); shoreline foam at waterMask × slope
+//  A packing: raw erosion, sediment, water, uplift
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -219,6 +221,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let height = clamp(base + newUplift - newErosion, 0.0, 1.0);
   let waterMask = saturate(pondDepth * 5.0 + basin * 0.35 + newWater * 0.45);
 
+  // Idea 1 — bedding terraces (display shelves; solver height stays continuous)
+  let terraceSteps = 12.0;
+  let terrace = floor(height * terraceSteps + 1e-4) / terraceSteps;
+  let shelf = 1.0 - smoothstep(0.0, 0.08, abs(fract(height * terraceSteps) - 0.5));
+  let heightLook = mix(height, terrace, 0.38 + shelf * 0.22);
+
   let normal = normalize(vec3<f32>(-(hR - hL) * 10.0, 1.0, -(hU - hD) * 10.0));
   let lightDir = normalize(vec3<f32>(0.58, 0.75, -0.32));
   let diffuse = clamp(dot(normal, lightDir), 0.0, 1.0);
@@ -229,11 +237,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let strata = 0.5 + 0.5 * sin((height - newErosion * 0.35 + newSediment * 0.15) * 95.0 + fbm(uv * 18.0, 3) * 6.0);
 
   var landColor = vec3<f32>(0.16, 0.14, 0.12);
-  landColor = mix(landColor, vec3<f32>(0.52, 0.44, 0.30), smoothstep(waterTable - 0.02, waterTable + 0.08, height));
-  landColor = mix(landColor, vec3<f32>(0.20, 0.36, 0.22), smoothstep(waterTable + 0.04, waterTable + 0.24, height));
-  landColor = mix(landColor, vec3<f32>(0.43, 0.38, 0.32), smoothstep(0.55, 0.8, height));
-  landColor = mix(landColor, vec3<f32>(0.92, 0.94, 0.98), smoothstep(0.82, 0.98, height));
+  landColor = mix(landColor, vec3<f32>(0.52, 0.44, 0.30), smoothstep(waterTable - 0.02, waterTable + 0.08, heightLook));
+  landColor = mix(landColor, vec3<f32>(0.20, 0.36, 0.22), smoothstep(waterTable + 0.04, waterTable + 0.24, heightLook));
+  landColor = mix(landColor, vec3<f32>(0.43, 0.38, 0.32), smoothstep(0.55, 0.8, heightLook));
+  landColor = mix(landColor, vec3<f32>(0.92, 0.94, 0.98), smoothstep(0.82, 0.98, heightLook));
   landColor += vec3<f32>(0.10, 0.08, 0.05) * (strata - 0.5) * 0.55;
+  landColor += vec3<f32>(0.08, 0.07, 0.05) * shelf * 0.35;
   landColor += vec3<f32>(0.20, 0.14, 0.09) * windAbrasion * 1.8;
   landColor += vec3<f32>(0.12, 0.09, 0.05) * newSediment * (0.5 + mids * 0.8);
 
@@ -245,6 +254,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   generatedColor *= ambient + diffuse * 0.95;
   generatedColor += vec3<f32>(1.0) * reflective;
   generatedColor += vec3<f32>(0.08, 0.10, 0.12) * pow(1.0 - clamp(normal.y, 0.0, 1.0), 2.0) * 0.35;
+
+  // Idea 2 — shoreline foam where the water table meets slope
+  let foam = waterMask * (1.0 - waterMask) * (0.25 + slope * 3.2) * (0.7 + treble * 0.5);
+  generatedColor += vec3<f32>(0.88, 0.93, 0.98) * clamp(foam, 0.0, 0.55);
 
   let valleyFog = smoothstep(0.0, 0.4, 1.0 - height + waterMask * 0.25);
   let fogColor = mix(vec3<f32>(0.62, 0.72, 0.82), vec3<f32>(0.92, 0.95, 0.98), uv.y);

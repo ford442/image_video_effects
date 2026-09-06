@@ -57,6 +57,7 @@
   "id": "gen-bifurcation-diagram",
   "url": "shaders/gen-bifurcation-diagram.wgsl",
   "features": [
+    "upgraded-rgba",
     "audio-reactive",
     "mouse-driven",
     "click-reactive",

@@ -193,7 +193,41 @@ export function clearFormatRewriteWarnings(): void {
   formatRewriteWarnings.clear();
 }
 
-export function compileShader(
+/**
+ * Dawn / Chrome often returns a non-null invalid GPUComputePipeline on a
+ * layout vs shader storage-format mismatch without throwing. Cache that object
+ * and every frame SetPipeline+Submit logs GPUValidationError (#1205).
+ * Capture Validation on create; never return an invalid pipeline.
+ */
+export async function createComputePipelineWithValidationScope(
+  device: GPUDevice,
+  descriptor: GPUComputePipelineDescriptor,
+): Promise<{ pipeline: GPUComputePipeline | null; error: GPUError | Error | null }> {
+  const hasScope =
+    typeof device.pushErrorScope === 'function' && typeof device.popErrorScope === 'function';
+  if (hasScope) {
+    device.pushErrorScope('validation');
+  }
+  try {
+    const pipeline = device.createComputePipeline(descriptor);
+    const scoped = hasScope ? await device.popErrorScope() : null;
+    if (scoped) {
+      return { pipeline: null, error: scoped };
+    }
+    return { pipeline, error: null };
+  } catch (e) {
+    if (hasScope) {
+      try {
+        await device.popErrorScope();
+      } catch {
+        /* scope already closed or device lost */
+      }
+    }
+    return { pipeline: null, error: e instanceof Error ? e : new Error(String(e)) };
+  }
+}
+
+export async function compileShader(
   device: GPUDevice,
   pipelineLayout: GPUPipelineLayout,
   id: string,
@@ -202,7 +236,7 @@ export function compileShader(
   pipelineHashes: Map<string, string>,
   workgroupSizes: Map<string, { x: number; y: number }>,
   colorFormat: InternalColorFormat = 'rgba32float',
-): boolean {
+): Promise<boolean> {
   const cacheKey = pipelineCacheKey(wgsl, colorFormat);
   // Fast path: shader already cached AND content unchanged
   if (pipelines.has(id) && pipelineHashes.get(id) === cacheKey) {
@@ -242,58 +276,73 @@ export function compileShader(
   // entry point the renderer dispatches)
   const wgSize = parseWorkgroupSize(wgsl, 'main');
 
+  const bannerSkip = (detail: string) => {
+    reportError({
+      type: 'shader-compile',
+      message: `Shader "${id}" failed to compile. ${detail}`,
+      recoverable: true,
+    });
+  };
+
   // Try to compile the requested shader only if validation passed
   if (validation.valid) {
     try {
       const module = device.createShaderModule({ label: id, code: compiledWgsl });
 
-      // Check for compilation errors using compilationInfo
-      module.getCompilationInfo().then((info) => {
-        const errors = info.messages.filter((m) => m.type === 'error');
-        if (errors.length > 0) {
-          console.warn(`[WebGPU] Shader '${id}' compilation warnings:`, errors);
-        }
-      });
+      if (typeof module.getCompilationInfo === 'function') {
+        module.getCompilationInfo().then((info) => {
+          const errors = info.messages.filter((m) => m.type === 'error');
+          if (errors.length > 0) {
+            console.warn(`[WebGPU] Shader '${id}' compilation warnings:`, errors);
+          }
+        }).catch(() => { /* device lost / test mocks */ });
+      }
 
-      const pipeline = device.createComputePipeline({
+      const created = await createComputePipelineWithValidationScope(device, {
         label: id,
         layout: pipelineLayout,
         compute: { module, entryPoint: 'main' },
       });
 
-      pipelines.set(id, pipeline);
-      pipelineHashes.set(id, cacheKey);
-      workgroupSizes.set(id, wgSize);
-      return true;
+      if (created.pipeline) {
+        pipelines.set(id, created.pipeline);
+        pipelineHashes.set(id, cacheKey);
+        workgroupSizes.set(id, wgSize);
+        return true;
+      }
+
+      console.warn(`[WebGPU] Shader compile failed (${id}):`, created.error);
+      bannerSkip('Trying fallback pass-through shader.');
     } catch (e) {
       console.warn(`[WebGPU] Shader compile failed (${id}):`, e);
-
-      reportError({
-        type: 'shader-compile',
-        message: `Shader "${id}" failed to compile. Using fallback pass-through shader.`,
-        recoverable: true,
-      });
+      bannerSkip('Trying fallback pass-through shader.');
     }
   }
 
-  // Try to use fallback shader (reached on validation failure OR pipeline creation failure)
+  // Fallback only if its Validation scope is clean — never cache an invalid pipeline.
   try {
     const fallbackModule = device.createShaderModule({
       label: `${id}-fallback`,
       code: fallbackWgsl,
     });
-    const fallbackPipeline = device.createComputePipeline({
+    const created = await createComputePipelineWithValidationScope(device, {
       label: `${id}-fallback`,
       layout: pipelineLayout,
       compute: { module: fallbackModule, entryPoint: 'main' },
     });
-    pipelines.set(id, fallbackPipeline);
-    pipelineHashes.set(id, cacheKey);
-    workgroupSizes.set(id, parseWorkgroupSize(FALLBACK_WGSL, 'main'));
-    console.log(`[WebGPU] Using fallback shader for '${id}'`);
-    return true;
+    if (created.pipeline) {
+      pipelines.set(id, created.pipeline);
+      pipelineHashes.set(id, cacheKey);
+      workgroupSizes.set(id, parseWorkgroupSize(FALLBACK_WGSL, 'main'));
+      console.log(`[WebGPU] Using fallback shader for '${id}'`);
+      return true;
+    }
+    console.error(`[WebGPU] Fallback shader also failed:`, created.error);
+    bannerSkip('Slot skipped — pipeline not submitted.');
+    return false;
   } catch (fallbackError) {
     console.error(`[WebGPU] Fallback shader also failed:`, fallbackError);
+    bannerSkip('Slot skipped — pipeline not submitted.');
     return false;
   }
 }

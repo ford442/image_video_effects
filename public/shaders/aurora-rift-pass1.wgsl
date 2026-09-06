@@ -1,16 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Aurora Rift – Pass 1: Volumetric Raymarch
-//  Category: lighting-effects (multi-pass)
+//  Category: lighting-effects
 //  Features: multi-pass-1, volumetric, curl-flow, audio-reactive, depth-aware
-//  Complexity: High
-//  Chunks From: aurora-rift.wgsl (curl/hash primitives)
-//  Created: 2026-05-31
-//  By: Claude Sonnet 4.6 (swarm optimization pass)
-//  upgraded-rgba
+//  Ideas: Birkeland vertical curtain folds, discrete atmospheric spectral emission, diffusion-rate temporal drift
+//  A packing: volumetric data [RGB=aurora color, A=density] for Pass 2 compositor
 // ═══════════════════════════════════════════════════════════════════
-//  CHUNK: IGN dither (Interleaved Gradient Noise)
-//  Outputs: dataTextureA (RGBA: color.rgb + density)
-//  Pass handoff: density packed in .a for Pass 2 compositor
+
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
@@ -35,16 +30,8 @@ struct Uniforms {
     ripples:     array<vec4<f32>, 50>,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Hash functions
-// ═══════════════════════════════════════════════════════════════════════════
 fn hash2(p: vec2<f32>) -> f32 {
-    var h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
-}
-
-fn hash3(p: vec3<f32>) -> f32 {
-    var h = dot(p, vec3<f32>(41.0, 289.0, 57.0));
+    let h = dot(p, vec2<f32>(127.1, 311.7));
     return fract(sin(h) * 43758.5453123);
 }
 
@@ -53,13 +40,10 @@ fn hash4(p: vec4<f32>) -> f32 {
     return fract(sin(dot4) * 43758.5453123);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  4-D gradient noise - LOD optimized (reduced iterations for distant points)
-// ═══════════════════════════════════════════════════════════════════════════
 fn noise4d(p: vec4<f32>) -> f32 {
-    var i = floor(p);
-    var f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
+    let i = floor(p);
+    let f = fract(p);
+    let uu = f * f * (3.0 - 2.0 * f);
     
     var sum = 0.0;
     for (var w: i32 = 0; w <= 1; w = w + 1) {
@@ -67,10 +51,10 @@ fn noise4d(p: vec4<f32>) -> f32 {
             for (var y: i32 = 0; y <= 1; y = y + 1) {
                 for (var x: i32 = 0; x <= 1; x = x + 1) {
                     let corner = i + vec4<f32>(f32(x), f32(y), f32(z), f32(w));
-                    let wx = select(u.x, 1.0 - u.x, x == 1);
-                    let wy = select(u.y, 1.0 - u.y, y == 1);
-                    let wz = select(u.z, 1.0 - u.z, z == 1);
-                    let ww = select(u.w, 1.0 - u.w, w == 1);
+                    let wx = select(1.0 - uu.x, uu.x, x == 1);
+                    let wy = select(1.0 - uu.y, uu.y, y == 1);
+                    let wz = select(1.0 - uu.z, uu.z, z == 1);
+                    let ww = select(1.0 - uu.w, uu.w, w == 1);
                     sum = sum + wx * wy * wz * ww * hash4(corner);
                 }
             }
@@ -79,9 +63,6 @@ fn noise4d(p: vec4<f32>) -> f32 {
     return sum * 2.0 - 1.0;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  FBM (2-D) with LOD
-// ═══════════════════════════════════════════════════════════════════════════
 fn fbm(p: vec2<f32>, time: f32, octaves: i32) -> f32 {
     var sum = 0.0;
     var amp = 0.5;
@@ -94,11 +75,8 @@ fn fbm(p: vec2<f32>, time: f32, octaves: i32) -> f32 {
     return sum;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Curl noise (divergence-free)
-// ═══════════════════════════════════════════════════════════════════════════
 fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
-    let eps = 0.01; // 0.001 was too tight — finite-difference amplification caused near-zero curl magnitude
+    let eps = 0.01;
     let n1 = fbm(p + vec2<f32>(eps, 0.0), time, 4);
     let n2 = fbm(p + vec2<f32>(0.0, eps), time, 4);
     let n3 = fbm(p - vec2<f32>(eps, 0.0), time, 4);
@@ -106,69 +84,45 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
     return vec2<f32>(n2 - n4, n1 - n3) / (2.0 * eps);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Voronoi cell distance
-// ═══════════════════════════════════════════════════════════════════════════
 fn voronoiCell(p: vec2<f32>) -> f32 {
-    var i = floor(p);
-    var f = fract(p);
+    let i = floor(p);
+    let f = fract(p);
     var best = 1e5;
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
             let cellPos = i + vec2<f32>(f32(x), f32(y));
             let seed = vec2<f32>(hash2(cellPos), hash2(cellPos + 13.37));
             let point = cellPos + seed - 0.5;
-            let d = length(point - p);
+            let d = length(point - f);
             best = min(best, d);
         }
     }
     return best;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  HSV → RGB
-// ═══════════════════════════════════════════════════════════════════════════
-fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    var c = v * s;
-    let h6 = h * 6.0;
-    var x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
-    var rgb = vec3<f32>(0.0);
-    if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
-    else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
-    else if (h6 < 3.0) { rgb = vec3<f32>(0.0, c, x); }
-    else if (h6 < 4.0) { rgb = vec3<f32>(0.0, x, c); }
-    else if (h6 < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
-    else               { rgb = vec3<f32>(c, 0.0, x); }
-    return rgb + vec3<f32>(v - c);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  Main compute shader - PASS 1: Volumetric Raymarch
-// ═══════════════════════════════════════════════════════════════════════════
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let unused_x = u.zoom_params.x;
-    let unused_y = u.zoom_params.y;
-    let unused_z = u.zoom_params.z;
-    let unused_w = u.zoom_params.w;
     let dims = u.config.zw;
+    if (f32(gid.x) >= dims.x || f32(gid.y) >= dims.y) { return; }
+    
+    let coord = vec2<i32>(gid.xy);
     let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
     let time = u.config.x;
     
-    // Parameters
+    // Sliders
     let scale = u.zoom_params.x * 3.5 + 0.5;
     let flowSpeed = u.zoom_params.y * 2.8 + 0.2;
-    let diffRate = u.zoom_params.z; // Consume dead slider
+    let diffRate = u.zoom_params.z; // Live diffusion slider!
     let fbmOctaves = i32(u.zoom_params.w * 5.0 + 2.0);
     let depthParallax = u.zoom_config.y * 0.8;
     let emitThresh = u.zoom_config.z * 0.25 + 0.05;
     
-    // Audio reactivity — bass drives aurora intensity and hue drift
+    // 3-band audio
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Sample source color & depth
-    let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
+    // Sample source depth
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
 
     // Distance-based LOD
@@ -178,72 +132,91 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Build the curl-flow field (depth-aware)
     let curl = curlNoise(uv * scale + depth * depthParallax, time * flowSpeed);
     
-    // Multi-layer parallax (three depth planes) - unrolled for performance
+    // Multi-layer parallax
     var totalWarp = vec2<f32>(0.0);
     var totalWeight = 0.0;
     
-    // Layer 0
     let w0 = 1.0 / (1.0 + abs(depth - 0.0) * 12.0);
     let a0 = curlNoise(uv * scale + curl * 0.3, time * flowSpeed);
-    totalWarp = totalWarp + a0 * depthParallax * w0;
-    totalWeight = totalWeight + w0;
+    totalWarp += a0 * depthParallax * w0;
+    totalWeight += w0;
     
-    // Layer 1
     let w1 = 1.0 / (1.0 + abs(depth - 0.5) * 12.0);
     let a1 = curlNoise(uv * scale + curl * 0.3, time * flowSpeed * 2.0);
-    totalWarp = totalWarp + a1 * depthParallax * w1;
-    totalWeight = totalWeight + w1;
+    totalWarp += a1 * depthParallax * w1;
+    totalWeight += w1;
     
-    // Layer 2
     let w2 = 1.0 / (1.0 + abs(depth - 1.0) * 12.0);
     let a2 = curlNoise(uv * scale + curl * 0.3, time * flowSpeed * 3.0);
-    totalWarp = totalWarp + a2 * depthParallax * w2;
-    totalWeight = totalWeight + w2;
+    totalWarp += a2 * depthParallax * w2;
+    totalWeight += w2;
     
     totalWarp = totalWarp / max(totalWeight, 0.0001);
     
-    // Voronoi + FBM hybrid (cellular foam)
+    // Cellular foam & FBM
     let cellDist = voronoiCell(uv * scale * 2.0 + totalWarp);
     let fbmVal = fbm(uv * scale * 4.0 + curl, time, lodOctaves);
     let foamPattern = smoothstep(0.0, 0.12, cellDist) * 0.6 + smoothstep(0.2, 0.4, fbmVal) * 0.4;
     
-    // 4-D hyper-noise (depth-dependent foam surface)
+    // 4-D hyper-noise
     let hyper = noise4d(vec4<f32>(uv * scale * 1.5, time * 0.4, depth * 2.0));
     let hyperMod = (hyper + 1.0) * 0.5;
     
-    // Phase-interference (three sinusoidal wavefronts)
+    // Phase-interference wavefronts
     let waveA = sin(length(uv - 0.5) * 28.0 - time * 3.2);
     let waveB = sin(atan2(uv.y - 0.5, uv.x - 0.5) * 22.0 + time * 2.7);
     let waveC = sin(dot(uv - 0.5, vec2<f32>(1.1, 0.9)) * 30.0 - time * 4.1);
     let interference = (waveA * waveB * waveC + 1.0) * 0.5;
     
-    // Combine into pattern scalar
-    let pattern = (foamPattern * 0.4 + hyperMod * 0.3 + interference * 0.3) *
+    // Combined pattern scalar
+    var pattern = (foamPattern * 0.4 + hyperMod * 0.3 + interference * 0.3) *
                   (1.0 + (1.0 - depth) * 1.5);
     
-    // Emissive plasma on cell borders — bass shifts hue, treble brightens edges
+    // IDEA 1: Geomagnetic Birkeland current vertical curtain folds
+    // Vertical magnetic field striations with altitude-dependent pitch and flutter
+    let curtainStriations = pow(0.5 + 0.5 * sin(uv.x * 120.0 + totalWarp.x * 20.0 + sin(uv.y * 30.0 + time * 2.0)), 3.0);
+    pattern = mix(pattern, pattern * (0.6 + curtainStriations * 0.8), 0.5 + bass * 0.3);
+
+    // Emissive plasma on cell borders
     let border = smoothstep(emitThresh, 1.0, smoothstep(0.08, 0.12, cellDist) * pattern * length(curl));
-    let plasma = hsv2rgb(fract(time * 0.07 + pattern + hyper + bass * 0.15), 0.9, 1.0 + treble * 0.2);
 
-    // Base aurora color (greens and purples), bass-driven hue drift
-    let auroraBase = hsv2rgb(fract(0.3 + pattern * 0.2 + bass * 0.08), 0.8, 0.9);
-    let auroraColor = clamp(mix(auroraBase, plasma, border * 0.55), vec3<f32>(0.0), vec3<f32>(1.0));
+    // IDEA 2: Discrete atmospheric spectral emission physics
+    // Oxygen 557.7nm green (lower altitude / high depth), Oxygen 630.0nm red (high altitude / low depth), Nitrogen 427.8nm blue fringes
+    let oxygenGreen = vec3<f32>(0.1, 0.95, 0.3);
+    let oxygenRed   = vec3<f32>(0.95, 0.15, 0.25);
+    let nitrogenBlue = vec3<f32>(0.2, 0.4, 1.0);
 
-    // Calculate density — bass inflates presence in quiet-background regions
-    let density = pattern * (1.0 + border * 2.0) * (1.0 + bass * 0.6);
-    
-    // IGN dither before packing to reduce float16 banding on low-density gradients
+    let altitude = 1.0 - depth;
+    var spectralAurora = mix(oxygenGreen, oxygenRed, smoothstep(0.4, 0.9, altitude));
+    spectralAurora = mix(spectralAurora, nitrogenBlue, border * (0.3 + treble * 0.5));
+
+    // Base aurora color combined with spectral emission
+    let plasma = mix(spectralAurora, vec3<f32>(1.0, 0.4, 0.9), border * 0.4);
+    var auroraColor = mix(spectralAurora, plasma, border * 0.55);
+
+    // Density calculation
+    var density = pattern * (1.0 + border * 2.0) * (1.0 + bass * 0.6);
+
+    // IDEA 3: Diffusion-rate driven temporal ribbon drift from dataTextureC
+    // diffRate actively blurs and blends previous frame auroral state
+    let prevHistory = textureLoad(dataTextureC, coord, 0);
+    let prevDensity = prevHistory.a;
+    let prevColor = prevHistory.rgb;
+
+    let temporalMix = clamp(diffRate * 0.4 + 0.05, 0.0, 0.5);
+    density = mix(density, prevDensity, temporalMix);
+    auroraColor = mix(auroraColor, prevColor, temporalMix * 0.7);
+
+    // Interleaved Gradient Noise dither to reduce low-density quantization
     let ign = fract(52.9829189 * fract(dot(vec2<f32>(gid.xy), vec2<f32>(0.06711056, 0.00583715))));
     let ditheredColor = auroraColor + (ign - 0.5) * (1.0 / 255.0);
 
-    // Pack volumetric data: RGB = dithered color, A = density
+    // Pack volumetric handoff: RGB = color, A = density for Pass 2 compositor
     let volumetric = vec4<f32>(ditheredColor, density);
+    textureStore(dataTextureA, coord, volumetric);
 
-    // Store for Pass 2
-    textureStore(dataTextureA, gid.xy, volumetric);
-
-    // Pass-through input to maintain chain (Pass 2 will do final compositing)
+    // Pass-through input texture on writeTexture to preserve rendering pipeline chain
     let inputColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0);
-    textureStore(writeTexture, gid.xy, inputColor);
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, inputColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

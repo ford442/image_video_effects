@@ -43,7 +43,7 @@ describe('performanceStatus', () => {
     expect(status.backend).toBe('webgpu');
     expect(status.maxPassesPerFrame).toBeGreaterThan(0);
     expect(status.historyLayers).toBe(8);
-    expect(status.workingSizeCap).toBe(2048);
+    expect(status.workingSizeCap).toBe(1024);
     expect(status.requestedColorFormat).toBeDefined();
     expect(status.colorFormat).toBeDefined();
   });

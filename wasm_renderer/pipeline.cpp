@@ -624,20 +624,29 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
             }
         }
     };
+    bool waitFailed = false;
     if (instance_.get()) {
         WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
             nullptr, WGPUCallbackMode_WaitAnyOnly, popCb, &pop, nullptr
         });
         WGPUFutureWaitInfo popWait = {};
         popWait.future = popFuture;
-        wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+        const WGPUWaitStatus waitStatus =
+            wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+        if (waitStatus != WGPUWaitStatus_Success) {
+            waitFailed = true;
+            printf("[WASM] CreateComputePipeline error-scope WaitAny status=%d — treat as invalid\n",
+                   (int)waitStatus);
+        }
     } else {
+        waitFailed = true;
         wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
             nullptr, WGPUCallbackMode_AllowSpontaneous, popCb, &pop, nullptr
         });
+        printf("[WASM] CreateComputePipeline: no instance for WaitAny — treat as invalid\n");
     }
 
-    if (!pipeline.get() || pop.hadError) {
+    if (!pipeline.get() || pop.hadError || waitFailed) {
         printf("❌ CreateComputePipeline invalid for '%s' — skip slot, do not submit\n", id);
         lastError_ = std::string("CreateComputePipeline invalid: ") + id
             + " (storage format vs bind-group layout). Slot skipped.";

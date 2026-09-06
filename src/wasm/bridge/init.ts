@@ -18,16 +18,18 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
 
   wasmRef.canvas = canvasElement;
   // Keep key in sync with src/config/vramBudget.ts HISTORY_OOM_CAP_KEY (#1204).
-  let sizeFallback = 2048;
+  // Default working size is 1024; never pass 2048 as the first WASM committed resource.
+  const sizeFallback = 1024;
+  let cap = sizeFallback;
   try {
     if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('px_history_oom_cap') === '1024') {
-      sizeFallback = 1024;
+      cap = 1024;
     }
   } catch {
     /* private mode */
   }
-  state.canvasWidth = wasmRef.canvas.width || sizeFallback;
-  state.canvasHeight = wasmRef.canvas.height || sizeFallback;
+  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeFallback, cap);
+  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeFallback, cap);
   state.initStartTime = performance.now();
 
   return new Promise((resolve) => {
@@ -199,7 +201,7 @@ export function isInitialized(): boolean {
 
 /** Stable CSS id so C++ `JS_CreateSurfaceFromCanvas` and the visible node agree. */
 export function ensureWasmCanvasId(canvas: HTMLCanvasElement): string {
-  if (canvas.id) return canvas.id;
+  if (/^pixelocity-wasm-canvas-\d+$/.test(canvas.id)) return canvas.id;
   wasmRef.canvasIdCounter += 1;
   canvas.id = 'pixelocity-wasm-canvas-' + wasmRef.canvasIdCounter;
   return canvas.id;
@@ -230,4 +232,16 @@ export function promoteWasmCanvasVisible(canvas: HTMLCanvasElement): HTMLCanvasE
     /* non-browser / tests */
   }
   return tagged;
+}
+
+export function getPresentCanvas(): HTMLCanvasElement | null {
+  return wasmRef.canvas;
+}
+
+export function getPresentCanvasId(): string {
+  const tagged = wasmRef.canvas;
+  if (tagged?.id && /^pixelocity-wasm-canvas-\d+$/.test(tagged.id)) return tagged.id;
+  if (typeof document === 'undefined') return tagged?.id ?? '';
+  const found = document.querySelector<HTMLCanvasElement>('[id^="pixelocity-wasm-canvas-"]');
+  return found?.id ?? tagged?.id ?? '';
 }

@@ -62,7 +62,11 @@
   "updated": true,
   "id": "gen-conway-game-of-life",
   "url": "shaders/gen-conway-game-of-life.wgsl",
-  "features": [],
+  "features": [
+    "upgraded-rgba",
+    "audio-reactive",
+    "cellular-automata"
+  ],
   "params": [
     {
       "id": "seed_density",

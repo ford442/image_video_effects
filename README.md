@@ -1,7 +1,7 @@
 # WebGPU Shader Effects & Visual Library
 
 <!-- catalog-counts:intro:begin -->
-A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,353** compute shaders across 14 categories.
+A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,359** compute shaders across 14 categories.
 <!-- catalog-counts:intro:end -->
 
 ## Documentation map
@@ -11,6 +11,7 @@ A React + WebGPU app for real-time GPU shader effects — fluids, generative art
 | [**Add a shader (5 min)**](#quick-start-add-a-shader-5-minutes) | Below — WGSL + JSON + manifest |
 | [`WASM_BACKEND_POLICY.md`](WASM_BACKEND_POLICY.md) | **Dual-renderer policy** — TS Tier A vs WASM Tier B |
 | [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) | JSON/WGSL conventions, multipass, `-sg` variants |
+| [`docs/SHADER_UPGRADE_BATCH.md`](docs/SHADER_UPGRADE_BATCH.md) | **Batch upgrades** — incremental ideas, not rewrites / not hygiene-only |
 | [`agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md) | Agent preamble — bindings, naga-safe builtins |
 | [`notes/CREATIVE_VISION.md`](notes/CREATIVE_VISION.md) | Artistic direction (psychedelic / beautiful / strange) |
 | [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) | App, Controls panels, hook map |
@@ -58,7 +59,7 @@ More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts
 ## Features
 
 <!-- catalog-counts:features:begin -->
-- **1,353 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
+- **1,359 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
 <!-- catalog-counts:features:end -->
 - **Dual renderer** — TypeScript WebGPU (default) + experimental C++/WASM backend
 - **Multipass & slot stacks** — chained/parallel layers, ping-pong feedback (`docs/PARALLEL_SLOTS.md`)
@@ -124,7 +125,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 <!-- catalog-counts:table:begin -->
 | Category | Count | Description |
 |----------|------:|-------------|
-| **generative** | 458 | Procedural art, fractals, generative patterns |
+| **generative** | 464 | Procedural art, fractals, generative patterns |
 | **interactive-mouse** | 239 | Mouse and touch-driven interactions |
 | **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
 | **artistic** | 98 | Creative and artistic visual effects |
@@ -138,7 +139,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 | **hybrid** | 18 | Combined technique shaders |
 | **geometric** | 16 | Geometric patterns and tessellations |
 | **lighting-effects** | 15 | Volumetric lighting and glow |
-| **Total** | **1,353** | 14 canonical categories |
+| **Total** | **1,359** | 14 canonical categories |
 <!-- catalog-counts:table:end -->
 
 Legacy list files (`interactive.json`, `liquid.json`) were removed — use `interactive-mouse.json` and `liquid-effects.json`.
@@ -153,7 +154,7 @@ Legacy list files (`interactive.json`, `liquid.json`) were removed — use `inte
 image_video_effects/
 ├── public/
 <!-- catalog-counts:structure:begin -->
-│   ├── shaders/                    # WGSL compute shaders (1,353 catalog ids; more pass files on disk)
+│   ├── shaders/                    # WGSL compute shaders (1,359 catalog ids; more pass files on disk)
 <!-- catalog-counts:structure:end -->
 │   ├── shader-lists/               # Generated category JSON (14 files)
 │   ├── shader-manifest-unified.json

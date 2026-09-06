@@ -1,5 +1,8 @@
 # 🚀 Shader Upgrade Swarm - Complete Launch Guide
 
+> **Historical Phase A/B/C launch.** **LIVE upgrade law:** [`docs/SHADER_UPGRADE_BATCH.md`](../../docs/SHADER_UPGRADE_BATCH.md).
+> Do not launch a hygiene-only `upgraded-rgba` wave from this file.
+
 ## Quick Start
 
 ```bash

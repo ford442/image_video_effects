@@ -55,7 +55,12 @@
   "updated": true,
   "id": "gen-apollonian-gasket",
   "url": "shaders/gen-apollonian-gasket.wgsl",
-  "features": [],
+  "features": [
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven",
+    "aces-tonemap"
+  ],
   "params": [
     {
       "id": "recursion_depth",

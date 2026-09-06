@@ -1,17 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Spherical Harmonics Plasma v3 - Audio-reactive gas giant
+//  Spherical Harmonics Plasma
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven,
 //            spherical-harmonics, animated
-//  Upgraded: 2026-05-02 (Tier-1 integration pass)
-//  Upgraded: 2026-07-26 (Batch 18 swarm pass)
-//  Batch 18 fixes: Hue Shift slider was DEAD (shiftMat built but never
-//            applied) -> now a true grey-axis hue rotation applied to the
-//            banded color; added missing out-of-bounds guard.
-//  Batch 18 additions: band-specific harmonics (per-bin FFT: l1<-bass
-//            bins 1..3, l2<-mid bins 4..6, l3<-treble bins 7..8) and a
-//            subtle animated Worley storm-cell overlay (<20% mix).
-//  Creative additions: lightning tendrils on treble, Rayleigh limb scattering
+//  Upgraded: 2026-09-06
+//  Ideas: zonal jet stripes in the harmonic pattern; storm-eye vortex from Worley mask
+//  A packing: raw pattern, stormMask, limbT, validity
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -242,6 +236,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         pattern = pattern + Y2n2(theta, phi) * cos(time * 0.25) * l2 * 0.4;
         pattern = pattern + Y30(theta, phi) * sin(time * 0.7 + phi) * l3 * 0.5;
 
+        // Idea 1 — zonal jets: latitude stripes folded into the existing SH field
+        let jets = sin(theta * 18.0 + time * 0.35 + pattern * 0.4) * (0.07 + l2 * 0.05);
+        pattern = pattern + jets;
+
         // Exact prior A telemetry damps harmonic jumps without reinterpreting
         // the packed channels as display colour.
         pattern = mix(pattern, previousTelemetry.r * 0.97, telemetryValid * 0.32);
@@ -276,6 +274,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // the band palette slightly off-pattern — subtle, capped at 18% mix.
         let stormTint = gasGiantColor(pattern + stormF1 * 0.6 - 0.3, time, hueShift) * (1.1 * bassStorm);
         baseColor = mix(baseColor, stormTint, stormMask * 0.18);
+
+        // Idea 2 — storm eye: warm vortex from existing Worley mask × latitude well
+        let eyeLat = exp(-pow(theta - 1.15, 2.0) * 7.0);
+        let eyeLon = exp(-pow(sin(phi * 0.5 + time * 0.08), 2.0) * 6.0);
+        let stormEye = stormMask * eyeLat * eyeLon;
+        baseColor = mix(baseColor, vec3<f32>(0.95, 0.38, 0.18), clamp(stormEye * 0.45, 0.0, 0.4));
 
         // HDR accumulation (boost before tone map)
         var litColor = baseColor * (diff * 1.1 + ambient) * 1.4 + vec3<f32>(spec) * 1.5;

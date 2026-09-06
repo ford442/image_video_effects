@@ -1,9 +1,11 @@
 # Generative Shader Upgrade Manifest
 
-> **Project**: Image Video Effects - Generative Shader Upgrade Swarm  
-> **Date**: 2026-04-12  
-> **Status**: Planning Complete / Ready for Implementation  
-> **Document Version**: 1.0
+> **Historical (2026-04-12).** **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+
+**Project**: Image Video Effects - Generative Shader Upgrade Swarm  
+**Date**: 2026-04-12  
+**Status**: Historical  
+**Document Version**: 1.0
 
 ---
 

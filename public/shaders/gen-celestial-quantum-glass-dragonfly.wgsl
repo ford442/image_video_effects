@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Celestial Quantum-Glass Dragonfly
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  gen-celestial-quantum-glass-dragonfly
+//  Category: generative
+//  Features: dragonfly, quantum, fractal, audio-reactive, raymarching, crystalline
+//  Ideas: Cauchy thin-film wing iridescence, quantum glass caustic core & photon emission, acoustic wing-tip vortex trails
+//  A packing: display RGBA (RGB=ACES tone-mapped dragonfly scene, A=semantic wing/body alpha)
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,12 +27,6 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-// --- CORE UTILITIES ---
-fn rot2d(a: f32) -> mat2x2<f32> {
-    let s = sin(a); let c = cos(a);
-    return mat2x2<f32>(c, -s, s, c);
-}
-
 fn rot3x(a: f32) -> mat3x3<f32> {
     let s = sin(a); let c = cos(a);
     return mat3x3<f32>(1.0, 0.0, 0.0, 0.0, c, -s, 0.0, s, c);
@@ -44,7 +42,6 @@ fn rot3z(a: f32) -> mat3x3<f32> {
     return mat3x3<f32>(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0);
 }
 
-// Noise / Hash
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var p3 = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
     p3 = p3 + dot(p3, p3.yxz + 33.33);
@@ -80,7 +77,6 @@ fn fbm(p: vec3<f32>) -> f32 {
     return f;
 }
 
-// SDF Helpers
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
@@ -105,11 +101,9 @@ fn mapWings(p: vec3<f32>, audio_mod: f32) -> f32 {
     let wing_freq = u.zoom_params.x;
     let time = u.config.x * wing_freq * (1.0 + audio_mod * 0.5);
 
-    // Flapping
     p_w.y -= sin(time + abs(p_w.x) * 1.5) * 0.4 * abs(p_w.x);
     p_w.z += cos(time + abs(p_w.x) * 1.5) * 0.2 * abs(p_w.x);
 
-    // Fractal Wing venation
     let fractal_density = u.zoom_params.y;
     var p_f = p_w;
     var scale = 1.0;
@@ -128,18 +122,15 @@ fn mapWings(p: vec3<f32>, audio_mod: f32) -> f32 {
 }
 
 fn mapBody(p: vec3<f32>, audio_mod: f32) -> f32 {
-    // Thorax
     var p_thorax = p;
     p_thorax.y += sin(p.z * 1.5) * 0.1;
     let thorax = sdCappedCylinder(p_thorax.xzy, 0.8, 0.3);
 
-    // Head
     let head = sdSphere(p - vec3<f32>(0.0, 0.1, 1.0), 0.35);
 
-    // Tail (Segmented)
     var p_tail = p;
     p_tail.z -= -1.0;
-    p_tail.y += sin(p_tail.z * 2.0 + u.config.x * 2.0) * 0.2; // Wiggle
+    p_tail.y += sin(p_tail.z * 2.0 + u.config.x * 2.0) * 0.2;
     let tail_base = sdCappedCylinder(p_tail.xzy, 1.5, 0.15 - p_tail.z * 0.05);
     let tail_segments = cos(p_tail.z * 15.0) * 0.05;
     let tail = tail_base + tail_segments;
@@ -149,15 +140,9 @@ fn mapBody(p: vec3<f32>, audio_mod: f32) -> f32 {
     return body;
 }
 
-fn map(p: vec3<f32>) -> f32 {
+fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec2<f32> {
     var p_mod = p;
     let time = u.config.x;
-    let audio = u.config.y * 2.0;
-
-    // Mouse Interaction (Gravity Vortex)
-    let mx = (u.zoom_config.y / u.config.z - 0.5) * 10.0;
-    let my = (u.zoom_config.z / u.config.w - 0.5) * 10.0;
-    let mouse_pos = vec3<f32>(mx, my, 0.0);
 
     let dist_mouse = length(p_mod - mouse_pos);
     let vortex_strength = 2.0;
@@ -165,12 +150,10 @@ fn map(p: vec3<f32>) -> f32 {
         p_mod -= normalize(p_mod - mouse_pos) * exp(-dist_mouse * 2.0) * vortex_strength;
     }
 
-    // Creature orientation
     p_mod = rot3x(-0.3 + sin(time * 0.5) * 0.1) * rot3y(sin(time * 0.2) * 0.2) * p_mod;
 
     let body = mapBody(p_mod, audio);
 
-    // Wings
     var p_wings1 = p_mod;
     p_wings1.z -= 0.2;
     var p_wings2 = p_mod;
@@ -178,111 +161,174 @@ fn map(p: vec3<f32>) -> f32 {
 
     let wings1 = mapWings(p_wings1, audio);
     let wings2 = mapWings(p_wings2, audio * 0.8);
+    let wings = min(wings1, wings2);
 
-    return min(body, min(wings1, wings2));
+    let isWing = select(0.0, 1.0, wings < body);
+    return vec2<f32>(min(body, wings), isWing);
 }
 
-fn getNormal(p: vec3<f32>) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        map(p + e.xyy) - map(p - e.xyy),
-        map(p + e.yxy) - map(p - e.yxy),
-        map(p + e.yyx) - map(p - e.yyx)
+        mapScene(p + e.xyy, mouse_pos, audio).x - mapScene(p - e.xyy, mouse_pos, audio).x,
+        mapScene(p + e.yxy, mouse_pos, audio).x - mapScene(p - e.yxy, mouse_pos, audio).x,
+        mapScene(p + e.yyx, mouse_pos, audio).x - mapScene(p - e.yyx, mouse_pos, audio).x
     ));
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
-    let coord = vec2<f32>(f32(id.x), f32(id.y));
-    if (coord.x >= res.x || coord.y >= res.y) { return; }
+    let coord = vec2<i32>(id.xy);
+    if (f32(coord.x) >= res.x || f32(coord.y) >= res.y) { return; }
 
-    let uv = (coord - 0.5 * res) / res.y;
+    let uv = (vec2<f32>(coord) - 0.5 * res) / res.y;
     let time = u.config.x;
-    let audio = u.config.y * 2.0;
+    
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio  = bass * 1.2 + mids * 0.6;
+
+    // Single-writer spring-damper cursor for dragonfly agility in extraBuffer[133..138]
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var sprungMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) {
+        sprungMouse = rawMouse;
+        mouseVel = vec2<f32>(0.0);
+    }
+    let dt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let omega = 8.5;
+    mouseVel += ((rawMouse - sprungMouse) * (omega * omega) - mouseVel * (2.0 * omega)) * dt;
+    sprungMouse += mouseVel * dt;
+
+    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = sprungMouse.x;
+        extraBuffer[134] = sprungMouse.y;
+        extraBuffer[135] = mouseVel.x;
+        extraBuffer[136] = mouseVel.y;
+        extraBuffer[137] = 1.0;
+        extraBuffer[138] = time;
+    }
+
+    let mx = (sprungMouse.x - 0.5) * 6.0;
+    let my = (sprungMouse.y - 0.5) * 4.0;
+    let mouse_pos = vec3<f32>(mx, my, 0.0);
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(uv, 1.0));
 
-    // Volumetric Plasma Storm (Background)
+    // Volumetric Plasma Storm (Background) + IDEA 3: Acoustic wing-tip vortex trails
     var fog_col = vec3<f32>(0.0);
     var t_fog = 0.0;
-    let fog_steps = 30;
+    let fog_steps = 28;
     for (var i = 0; i < fog_steps; i = i + 1) {
         let p_fog = ro + rd * t_fog;
         let d = fbm(p_fog * 0.5 + vec3<f32>(time * 0.2, 0.0, time * 0.1)) * 0.5 + 0.5;
         let fog_density = smoothstep(0.4, 0.8, d) * 0.05;
 
+        // Wingtip vortex swirls in the plasma
+        let vortexWave = sin(length(p_fog.xy - mouse_pos.xy) * 4.0 - time * 8.0 * u.zoom_params.x);
+        let vortexEmission = pow(max(vortexWave, 0.0), 6.0) * (0.4 + treble * 1.5);
+
         let pollen = pow(abs(sin(p_fog.x * 5.0 + time) * cos(p_fog.y * 5.0) * sin(p_fog.z * 5.0 - time)), 20.0);
-        let glow = vec3<f32>(0.1, 0.5, 0.8) * fog_density + vec3<f32>(0.8, 0.2, 0.9) * pollen * audio;
+        let glow = vec3<f32>(0.1, 0.5, 0.8) * fog_density
+                 + vec3<f32>(0.8, 0.2, 0.9) * pollen * audio
+                 + vec3<f32>(0.2, 0.9, 1.4) * vortexEmission * 0.08;
 
         fog_col += glow * exp(-t_fog * 0.1);
-        t_fog += 0.5;
+        t_fog += 0.55;
     }
 
     // Raymarching Object
     var t = 0.0;
-    var d = 0.0;
     let max_steps = 80;
     var hit = false;
+    var hitMat = 0.0;
     var p = ro;
 
     for (var i = 0; i < max_steps; i = i + 1) {
         p = ro + rd * t;
-        d = map(p);
-        if (d < 0.001) { hit = true; break; }
+        let res = mapScene(p, mouse_pos, audio);
+        let d = res.x;
+        if (d < 0.001) { hit = true; hitMat = res.y; break; }
         if (t > 15.0) { break; }
         t += d * 0.8;
     }
 
     var col = fog_col;
+    var semanticAlpha = 0.0;
 
     if (hit) {
-        let n = getNormal(p);
+        let n = getNormal(p, mouse_pos, audio);
         let v = -rd;
 
-        // Lighting
         let l1 = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let l2 = normalize(vec3<f32>(-1.0, -0.5, -0.5));
 
         let dif1 = max(dot(n, l1), 0.0);
         let dif2 = max(dot(n, l2), 0.0);
-        let fre = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+        let ndotv = max(dot(n, v), 0.0);
+        let fre = pow(1.0 - ndotv, 3.0);
 
-        // Quantum Glass Shading
+        // IDEA 1: Cauchy thin-film dragonfly wing iridescence
         let refr_idx = u.zoom_params.z;
-        let refr_dir = refract(rd, n, 1.0 / refr_idx);
+        let etaR = refr_idx;
+        let etaG = refr_idx * 1.08;
+        let etaB = refr_idx * 1.16;
+
+        let refr_dir_r = refract(rd, n, 1.0 / etaR);
+        let refr_dir_g = refract(rd, n, 1.0 / etaG);
+        let refr_dir_b = refract(rd, n, 1.0 / etaB);
+
         let refr_col = vec3<f32>(
-            fbm(p + refr_dir * 0.5 + vec3<f32>(time, 0.0, 0.0)),
-            fbm(p + refr_dir * 0.6 + vec3<f32>(0.0, time, 0.0)),
-            fbm(p + refr_dir * 0.7 + vec3<f32>(0.0, 0.0, time))
+            fbm(p + refr_dir_r * 0.5 + vec3<f32>(time, 0.0, 0.0)),
+            fbm(p + refr_dir_g * 0.6 + vec3<f32>(0.0, time, 0.0)),
+            fbm(p + refr_dir_b * 0.7 + vec3<f32>(0.0, 0.0, time))
         );
 
-        // Base color
+        let wingThinFilm = 0.5 + 0.5 * cos(ndotv * 16.0 + vec3<f32>(0.0, 2.094, 4.188));
+
         var mat_col = mix(vec3<f32>(0.05, 0.1, 0.2), vec3<f32>(0.2, 0.8, 0.9), fre);
         mat_col += refr_col * 0.5;
+        mat_col = mix(mat_col, mat_col + wingThinFilm * 0.8, hitMat * (0.8 + treble * 0.4));
 
-        // Specular
         let h1 = normalize(l1 + v);
         let spec = pow(max(dot(n, h1), 0.0), 64.0) * 2.0;
 
-        // Bioluminescent Pulse (Tail / Body)
+        // IDEA 2: Quantum glass caustic core & bioluminescent photon emission
         let glow_int = u.zoom_params.w;
-        let pulse = sin(p.z * 5.0 - time * 10.0) * 0.5 + 0.5;
-        let lum = vec3<f32>(0.1, 0.8, 0.9) * pulse * audio * glow_int * smoothstep(0.5, 1.0, p.z);
+        let pulse = sin(p.z * 6.0 - time * 12.0 * u.zoom_params.x) * 0.5 + 0.5;
+        let lum = vec3<f32>(0.1, 0.85, 1.1) * pulse * audio * glow_int * smoothstep(0.3, 1.0, abs(p.z));
+        let eyeGlow = vec3<f32>(1.2, 0.3, 0.9) * smoothstep(0.8, 1.1, p.z) * glow_int;
 
-        col = mat_col * (dif1 * vec3<f32>(1.0) + dif2 * vec3<f32>(0.2, 0.3, 0.5)) + spec + lum;
+        col = mat_col * (dif1 * vec3<f32>(1.0) + dif2 * vec3<f32>(0.2, 0.3, 0.5)) + spec + lum + eyeGlow;
+        col = mix(col, fog_col, smoothstep(6.0, 15.0, t));
 
-        // Distance fog
-        col = mix(col, fog_col, smoothstep(5.0, 15.0, t));
+        semanticAlpha = mix(0.95, 0.65, hitMat); // Body is solid 0.95, wing is glass 0.65
+    } else {
+        semanticAlpha = clamp(length(fog_col) * 0.3, 0.0, 0.4);
     }
 
-    col = pow(col, vec3<f32>(0.4545)); // Gamma correction
+    // Exact-integer textureLoad from dataTextureC previous frame feedback
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
+    let blended = mix(col, prev, 0.06);
 
-    let prev_col = textureLoad(readTexture, vec2<i32>(id.xy), 0).rgb;
-    let final_col = mix(prev_col, col, 0.5); // Temporal smoothing
+    let displayRGB = acesFilm(max(blended, vec3<f32>(0.0)));
+    let normDepth = select(1.0, clamp(t / 15.0, 0.0, 0.99), hit);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(final_col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, vec4<f32>(displayRGB, semanticAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(normDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(displayRGB, semanticAlpha));
 }

@@ -484,6 +484,62 @@ describe('RendererManager shader forwarding', () => {
     expect(wasm.loadImage).toHaveBeenCalledWith('https://example.com/webgpu.png');
   });
 
+  it('re-uploads a live CPU canvas after switching to WASM without a URL refetch', async () => {
+    const offscreen = document.createElement('canvas');
+    offscreen.width = 16;
+    offscreen.height = 8;
+    const webgpu = makeMockWebGPU();
+    (webgpu as unknown as { getCpuInputBitmap: () => HTMLCanvasElement }).getCpuInputBitmap = () => offscreen;
+    const wasm = makeMockWASM();
+    (wasm as unknown as { loadImageFromElement: jest.Mock }).loadImageFromElement = jest
+      .fn()
+      .mockReturnValue({ width: 16, height: 8 });
+    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    wasm.loadImage.mockClear();
+
+    await manager.switchRenderer('wasm');
+
+    expect((wasm as unknown as { loadImageFromElement: jest.Mock }).loadImageFromElement).toHaveBeenCalledWith(offscreen);
+    expect(wasm.loadImage).not.toHaveBeenCalled();
+  });
+
+  it('resyncs the stored shader stack as part of switchRenderer (#1206)', async () => {
+    const webgpu = makeMockWebGPU();
+    const wasm = makeMockWASM();
+    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    await manager.resyncShaderStack({
+      modes: ['rain', 'none', 'liquid'],
+      slotParams: [defaultSlotParams, defaultSlotParams, defaultSlotParams],
+      resolveShader: (id) =>
+        id === 'rain'
+          ? { id: 'rain', name: 'Rain', url: '/rain.wgsl', category: 'image' }
+          : id === 'liquid'
+            ? { id: 'liquid', name: 'Liquid', url: '/liquid.wgsl', category: 'image' }
+            : undefined,
+      inputSource: 'image',
+    });
+    wasm.loadShader.mockClear();
+    wasm.setSlotShader.mockClear();
+
+    await manager.switchRenderer('wasm');
+
+    expect(wasm.loadShader).toHaveBeenCalledWith('rain', '/rain.wgsl');
+    expect(wasm.setSlotShader).toHaveBeenCalledWith(0, 'rain');
+    expect(wasm.setSlotShader).toHaveBeenCalledWith(1, '');
+    expect(wasm.loadShader).toHaveBeenCalledWith('liquid', '/liquid.wgsl');
+    expect(wasm.setSlotShader).toHaveBeenCalledWith(2, 'liquid');
+  });
+
   it('reloadShader prefers reloadShaderFromURL on shader backends', async () => {
     const wasm = makeMockWASM();
     (WASMRenderer as jest.Mock).mockImplementation(() => wasm);

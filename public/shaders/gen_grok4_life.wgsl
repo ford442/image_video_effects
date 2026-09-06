@@ -18,7 +18,9 @@
 //                the Lotka-Volterra coupling (bass zone / mid zone / treble zone)
 //              - Age-based prey ramp: young colonies cyan-white → old deep green
 //              - Extinction bloom pulse when smoothed global population crashes
-//  Upgraded: Phase B+
+//  Upgraded: 2026-09-06
+//  Ideas: hunt fronts on predator gradient; prey-edge activity flash
+//  A packing: raw prey/predator/age/activity (never ACES)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0)  var u_sampler: sampler;
@@ -148,6 +150,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nA  = nbA.x; let mA = nbA.y;   // inner/outer averages for A
     let nB  = nbB.x;                    // inner average for B (predator density)
 
+    // Idea 1 — hunt fronts: extra Lotka–Volterra at the spatial gradient of B
+    let sizeI = vec2<i32>(i32(resolution.x), i32(resolution.y));
+    let bL = textureLoad(dataTextureC, wrap_px(px + vec2<i32>(-1, 0), sizeI), 0).g;
+    let bR = textureLoad(dataTextureC, wrap_px(px + vec2<i32>(1, 0), sizeI), 0).g;
+    let bD = textureLoad(dataTextureC, wrap_px(px + vec2<i32>(0, -1), sizeI), 0).g;
+    let bU = textureLoad(dataTextureC, wrap_px(px + vec2<i32>(0, 1), sizeI), 0).g;
+    let predGrad = length(vec2<f32>(bR - bL, bU - bD));
+
     // ─── Zoned coupling: local FFT biome modulates interaction strength ───
     let zoneE    = zoneEnergy(uv.x);
     let coupling = mix(0.0, 0.6, mids) * mix(0.6, 1.5, clamp(zoneE, 0.0, 1.0));
@@ -164,10 +174,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     transA       += mA * 0.05 * (0.5 - stateA);
     // Predation pressure: predator suppresses prey locally (zone-scaled)
     transA       -= nB * stateA * coupling;
+    transA       -= predGrad * stateA * coupling * 0.55;
 
     // ─── SmoothLife update for Species B (predator) ───
     // Predator grows proportional to prey density (Lotka-Volterra)
-    let predGrowth   = nA * stateB * coupling;             // α·A·B growth
+    let predGrowth   = nA * stateB * coupling + predGrad * nA * coupling * 0.35;
     let trebleDecay  = 0.05 * (1.0 + treble * 0.5);       // intrinsic decay
     var transB       = predGrowth - stateB * trebleDecay;
     // Also needs prey neighbourhood to establish
@@ -215,7 +226,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Age & activity (Colour Speed also sets generational tempo) ───
     var newAge  = fract(age + (0.01 + colSpeed * 0.03) * (newA - 0.1));
-    let newAct  = mix(activity, abs(newA - stateA) + abs(newB - stateB) + clickActivity * 0.35, 0.1);
+    // Idea 2 — prey-edge activity: fronts of ΔA/ΔB light the display, packed in A.a
+    let edgeFlash = abs(newA - stateA) + abs(newB - stateB);
+    let newAct  = mix(activity, edgeFlash + clickActivity * 0.35 + predGrad * 0.4, 0.1);
 
     // ─── Extinction-event detection (single-thread population monitor) ───
     // extraBuffer[133] = smoothed global population, [134] = bloom pulse.
@@ -265,6 +278,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coExist = newA * newB;
     color = mix(color, vec3<f32>(1.0, 1.0, 0.7), smoothstep(0.4, 0.9, coExist));
     color += actColor;
+    color += vec3<f32>(1.0, 0.95, 0.55) * smoothstep(0.04, 0.18, edgeFlash) * 0.28;
     // Extinction bloom: brief global warm flash when population crashes
     color += vec3<f32>(0.9, 0.75, 0.5) * bloomPulse * 0.35;
     // Vignette

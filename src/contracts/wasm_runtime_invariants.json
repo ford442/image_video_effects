@@ -28,6 +28,8 @@
   },
   "historyTexLadder": {
     "rungs": [[2048, 8], [1024, 8], [1024, 4], [1024, 1]],
+    "defaultWorkingSize": 1024,
+    "minMaxBufferSizeForFull": 1073741824,
     "sessionStorageKey": "px_history_oom_cap",
     "tsFiles": [
       "src/config/vramBudget.ts",
@@ -35,7 +37,7 @@
     ],
     "issue": 1204,
     "tracker": "memory/2026-08-31.md",
-    "rationale": "2048² × 8 rgba-float historyTex hit a D3D12 committed-heap GPUOutOfMemoryError on Pascal; never retry 2048 in the same tab after OOM."
+    "rationale": "2048² × 8 rgba-float historyTex hit a D3D12 committed-heap GPUOutOfMemoryError on Pascal. Default working size is 1024; 2048 is an upgrade only after a fat discrete gate. Never retry 2048 in the same tab after OOM."
   },
   "storageFormatRewrite": {
     "catalogWgslFormat": "rgba32float",
@@ -44,9 +46,21 @@
     "tsFile": "src/renderer/wgslFormatRewrite.ts",
     "cppRewriteFile": "wasm_renderer/wasm_internal.cpp",
     "cppProbeFile": "wasm_renderer/device.cpp",
+    "pipelineFile": "wasm_renderer/pipeline.cpp",
+    "bglStorageFormatPattern": "RgbaStorageFormat\\(colorFormat_\\)",
+    "bglStorageBindingCount": 3,
+    "loadShaderRewriteCall": "RewriteWgslStorageFormats\\s*\\(",
+    "loadShaderErrorScope": "wgpuDevicePushErrorScope",
+    "loadShaderSkipHadError": "pop.hadError",
+    "loadShaderWaitAnyFailSoft": "waitFailed",
+    "resourcesFile": "wasm_renderer/resources.cpp",
+    "depthWriteLabel": "Depth Texture Write",
+    "copySrcUsage": "WGPUTextureUsage_CopySrc",
+    "frameFile": "wasm_renderer/frame.cpp",
+    "depthFeedbackCopyPattern": "CopyTex\\s*\\([^;]*depthTextureWrite_",
     "issue": 1205,
     "tracker": "memory/2026-08-31.md",
-    "rationale": "BGL RGBA32Float vs rewritten shader RGBA16Float produced an invalid pipeline submitted every frame. Catalog WGSL stays rgba32float; LoadShader rewrites storage decls."
+    "rationale": "BGL RGBA32Float vs rewritten shader RGBA16Float produced an invalid pipeline submitted every frame. Catalog WGSL stays rgba32float; LoadShader rewrites storage decls. Depth write must include CopySrc because Feedback Encoder copies it to depth read."
   },
   "maxComputeWorkgroupsPerDimension": {
     "value": 65535,
