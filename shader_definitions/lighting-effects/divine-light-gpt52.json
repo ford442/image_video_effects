@@ -2,7 +2,46 @@
   "id": "divine-light-gpt52",
   "name": "Divine Light Cathedral gpt52",
   "url": "shaders/divine-light-gpt52.wgsl",
-  "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
+  "description": "Expanded volumetric rays with dust motes, Cauchy ray dispersion, rose-window stained-glass projections, and Airy disk diffraction halos.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Ray Intensity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ray Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Ray Density",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Brightness Filter",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "params": [
     {
       "id": "intensity",
@@ -35,16 +74,19 @@
   ],
   "features": [
     "mouse-driven",
+    "spring-dynamics",
     "volumetric",
     "atmospheric",
     "audio-reactive",
-    "upgraded-rgba"
+    "cauchy-dispersion",
+    "aces-tone-mapping"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio-reactive",
     "god-rays",
-    "cinematic"
+    "cinematic",
+    "stained-glass"
   ]
 }

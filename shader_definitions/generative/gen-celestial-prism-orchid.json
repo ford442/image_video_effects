@@ -11,7 +11,7 @@
     "iridescent",
     "atmospheric"
   ],
-  "description": "An infinite expanse of refractive crystalline petals that fold under audio and drag-driven pollinator wind, then scatter click-launched prism petals through bounded display history.",
+  "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, and pollinator spring dynamics.",
   "workgroup_size": [
     16,
     16,
@@ -58,6 +58,8 @@
   "url": "shaders/gen-celestial-prism-orchid.wgsl",
   "features": [
     "procedural",
+    "cauchy-dispersion",
+    "spring-dynamics",
     "audio-reactive",
     "mouse-driven",
     "drag-reactive",
@@ -65,6 +67,7 @@
     "temporal",
     "raymarching",
     "semantic-alpha",
+    "aces-tone-mapping",
     "generated-depth"
   ],
   "params": [

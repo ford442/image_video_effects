@@ -96,12 +96,20 @@
     "id": "aurora-rift-2-pass1",
     "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
     "url": "shaders/aurora-rift-2-pass1.wgsl",
-    "description": "Enhanced volumetric aurora with improved flow dynamics. First pass of 2-pass system.",
+    "description": "Enhanced volumetric aurora with Birkeland plasma vortex tubes, ionospheric geomagnetic substorm flash bursts, and multi-scale temporal diffusion. First pass of 2-pass system.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "multi-pass-1",
       "compute-shader",
       "volumetric",
-      "raymarch"
+      "raymarch",
+      "plasma-vortex",
+      "substorm-flashes",
+      "temporal-diffusion"
     ],
     "multipass": {
       "pass": 1,
@@ -113,6 +121,40 @@
       "volumetric",
       "lighting",
       "enhanced"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Diffusion Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "FBM Octaves",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -153,12 +195,20 @@
     "id": "aurora-rift-pass1",
     "name": "Aurora Rift (Pass 1: Volumetric)",
     "url": "shaders/aurora-rift-pass1.wgsl",
-    "description": "Raymarches volumetric aurora with curl-driven flow. First pass of 2-pass system.",
+    "description": "Raymarches volumetric aurora with curl-driven flow, geomagnetic Birkeland curtain folds, discrete atmospheric spectral emission, and temporal diffusion. First pass of 2-pass system.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "multi-pass-1",
       "compute-shader",
       "volumetric",
-      "raymarch"
+      "raymarch",
+      "birkeland-currents",
+      "spectral-emission",
+      "temporal-diffusion"
     ],
     "multipass": {
       "pass": 1,
@@ -170,6 +220,40 @@
       "volumetric",
       "lighting",
       "atmospheric"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Diffusion Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "FBM Octaves",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -394,7 +478,46 @@
     "id": "divine-light-gpt52",
     "name": "Divine Light Cathedral gpt52",
     "url": "shaders/divine-light-gpt52.wgsl",
-    "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
+    "description": "Expanded volumetric rays with dust motes, Cauchy ray dispersion, rose-window stained-glass projections, and Airy disk diffraction halos.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ray Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ray Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ray Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Brightness Filter",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "params": [
       {
         "id": "intensity",
@@ -427,17 +550,20 @@
     ],
     "features": [
       "mouse-driven",
+      "spring-dynamics",
       "volumetric",
       "atmospheric",
       "audio-reactive",
-      "upgraded-rgba"
+      "cauchy-dispersion",
+      "aces-tone-mapping"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio-reactive",
       "god-rays",
-      "cinematic"
+      "cinematic",
+      "stained-glass"
     ]
   },
   {

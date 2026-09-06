@@ -3053,6 +3053,7 @@
     "supportsDof": false,
     "updated": true,
     "features": [
+      "upgraded-rgba",
       "audio-reactive",
       "mouse-gravity",
       "click-burst",
@@ -3602,7 +3603,12 @@
     "updated": true,
     "id": "gen-apollonian-gasket",
     "url": "shaders/gen-apollonian-gasket.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven",
+      "aces-tonemap"
+    ],
     "params": [
       {
         "id": "recursion_depth",
@@ -4158,6 +4164,7 @@
     "id": "gen-audio-spirograph",
     "url": "shaders/gen-audio-spirograph.wgsl",
     "features": [
+      "upgraded-rgba",
       "sampled-spirograph-trails",
       "musical-ratio-harmonics",
       "sprung-mouse-lens",
@@ -4674,6 +4681,7 @@
     "id": "gen-barnsley-fern",
     "url": "shaders/gen-barnsley-fern.wgsl",
     "features": [
+      "upgraded-rgba",
       "barnsley-ifs",
       "voronoi-displacement",
       "sdf-mask",
@@ -4878,6 +4886,7 @@
     "id": "gen-bifurcation-diagram",
     "url": "shaders/gen-bifurcation-diagram.wgsl",
     "features": [
+      "upgraded-rgba",
       "audio-reactive",
       "mouse-driven",
       "click-reactive",
@@ -6746,7 +6755,7 @@
       "click-reactive",
       "depth-aware"
     ],
-    "description": "A raymarched celestial glass tornado with sprung orbit and attraction, crystalline KIFS debris, audio-driven turbulence, click-shattered rings, temporal polish, and real hit depth.",
+    "description": "Raymarched celestial glass tornado featuring Cauchy prismatic facet TIR glints, helical plasma funnel discharge arcs, centrifugal glass dust accretion disk, sprung mouse orbit, and true hit depth.",
     "workgroup_size": [
       16,
       16,
@@ -6793,10 +6802,10 @@
     "url": "shaders/gen-celestial-glass-tornado.wgsl",
     "features": [
       "raymarched-glass-vortex",
-      "kifs-crystal-debris",
+      "cauchy-prismatic-glints",
+      "helical-plasma-discharge",
+      "centrifugal-accretion-disk",
       "sprung-mouse-attractor",
-      "click-glass-rings",
-      "temporal-feedback",
       "depth-output"
     ],
     "params": [
@@ -6946,7 +6955,7 @@
       "iridescent",
       "atmospheric"
     ],
-    "description": "An infinite expanse of refractive crystalline petals that fold under audio and drag-driven pollinator wind, then scatter click-launched prism petals through bounded display history.",
+    "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, and pollinator spring dynamics.",
     "workgroup_size": [
       16,
       16,
@@ -6993,6 +7002,8 @@
     "url": "shaders/gen-celestial-prism-orchid.wgsl",
     "features": [
       "procedural",
+      "cauchy-dispersion",
+      "spring-dynamics",
       "audio-reactive",
       "mouse-driven",
       "drag-reactive",
@@ -7000,6 +7011,7 @@
       "temporal",
       "raymarching",
       "semantic-alpha",
+      "aces-tone-mapping",
       "generated-depth"
     ],
     "params": [
@@ -7050,9 +7062,10 @@
       "fractal",
       "audio-reactive",
       "raymarching",
-      "crystalline"
+      "crystalline",
+      "iridescent"
     ],
-    "description": "A hyper-dimensional, biomechanical dragonfly forged from ethereal quantum-glass and liquid starlight, its intricate fractal wings constantly refracting cosmic energy and beating in synchronous rhythm with ambient audio frequencies inside a volumetric plasma storm.",
+    "description": "A hyper-dimensional biomechanical dragonfly forged from quantum glass with Cauchy thin-film wing iridescence, starlight caustic core emission, acoustic wing-tip vortex trails, and spring-guided flight dynamics.",
     "workgroup_size": [
       16,
       16,
@@ -7097,7 +7110,15 @@
     "updated": true,
     "id": "gen-celestial-quantum-glass-dragonfly",
     "url": "shaders/gen-celestial-quantum-glass-dragonfly.wgsl",
-    "features": [],
+    "features": [
+      "raymarched",
+      "fractal-venation",
+      "cauchy-thin-film",
+      "spring-dynamics",
+      "audio-reactive",
+      "mouse-driven",
+      "aces-tone-mapping"
+    ],
     "params": [
       {
         "id": "wing_frequency",
@@ -7483,6 +7504,7 @@
     "id": "gen-chaos-game-ifs",
     "url": "shaders/gen-chaos-game-ifs.wgsl",
     "features": [
+      "upgraded-rgba",
       "sdf-orbit-sculpture",
       "raymarch",
       "audio-reactive",
@@ -7629,23 +7651,37 @@
     ]
   },
   {
+    "id": "gen-chromatic-glass-lattice",
     "name": "Chromatic Glass Lattice",
     "category": "generative",
-    "tags": [
-      "glass",
-      "crystal",
-      "refraction",
-      "chromatic-aberration",
-      "audio-reactive",
-      "raymarched",
-      "dispersion"
-    ],
-    "description": "A crystalline, infinite lattice of dispersing glass that refracts background light into separating RGB spectrums, shattered dynamically by sound frequencies.",
+    "url": "shaders/gen-chromatic-glass-lattice.wgsl",
+    "description": "Raymarched 3D chromatic glass lattice with Cauchy multi-order dispersion, internal TIR caustic ribs, acoustic resonance stress birefringence, and micro-fracture edge sparkle glints.",
     "workgroup_size": [
       16,
       16,
       1
     ],
+    "tags": [
+      "raymarched",
+      "glass",
+      "lattice",
+      "chromatic-dispersion",
+      "audio-reactive",
+      "birefringence",
+      "shatter"
+    ],
+    "features": [
+      "raymarched",
+      "cauchy-dispersion",
+      "internal-tir-caustics",
+      "stress-birefringence",
+      "spring-dynamics",
+      "audio-reactive",
+      "mouse-driven",
+      "aces-tone-mapping"
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
     "updatedParams": [
       {
         "index": 0,
@@ -7680,12 +7716,6 @@
         "step": 0.01
       }
     ],
-    "supportsDepth": true,
-    "supportsDof": false,
-    "updated": true,
-    "id": "gen-chromatic-glass-lattice",
-    "url": "shaders/gen-chromatic-glass-lattice.wgsl",
-    "features": [],
     "params": [
       {
         "id": "refraction_index",
@@ -9132,7 +9162,11 @@
     "updated": true,
     "id": "gen-conway-game-of-life",
     "url": "shaders/gen-conway-game-of-life.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "cellular-automata"
+    ]
   },
   {
     "name": "Coral Reef Colony",
@@ -11156,6 +11190,7 @@
     "id": "gen-cycloid-bloom",
     "url": "shaders/gen-cycloid-bloom.wgsl",
     "features": [
+      "upgraded-rgba",
       "audio-reactive",
       "mouse-driven",
       "click-reactive",
@@ -12129,6 +12164,7 @@
     "id": "gen-echo-dunes",
     "url": "shaders/gen-echo-dunes.wgsl",
     "features": [
+      "upgraded-rgba",
       "audio-reactive",
       "mouse-interactive",
       "ripple-reactive",
@@ -12853,7 +12889,12 @@
     "updated": true,
     "id": "gen-erosion-strata",
     "url": "shaders/gen-erosion-strata.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven",
+      "aces-tonemap"
+    ]
   },
   {
     "name": "Ethereal Anemone Bloom",
@@ -17130,6 +17171,7 @@
     "id": "gen-fractal-clockwork",
     "url": "shaders/gen-fractal-clockwork.wgsl",
     "features": [
+      "upgraded-rgba",
       "raymarched-gears",
       "sprung-orbit-camera",
       "click-torque-waves",
@@ -17238,6 +17280,7 @@
     "id": "gen-fractal-ember-lattice",
     "url": "shaders/gen-fractal-ember-lattice.wgsl",
     "features": [
+      "upgraded-rgba",
       "rigid-shard-state",
       "three-band-audio-reactive",
       "mouse-shatter-reform",
@@ -17604,6 +17647,7 @@
     "id": "gen-fractured-monolith",
     "url": "shaders/gen-fractured-monolith.wgsl",
     "features": [
+      "upgraded-rgba",
       "raymarched-fractured-monolith",
       "three-band-audio-reactive",
       "mouse-orbit",
@@ -17814,6 +17858,7 @@
     "id": "gen-ghost-flame",
     "url": "shaders/gen-ghost-flame.wgsl",
     "features": [
+      "upgraded-rgba",
       "advected-flame-state",
       "three-band-audio-reactive",
       "mouse-and-click-heat",
@@ -19735,6 +19780,7 @@
     "id": "gen-hyper-labyrinth",
     "url": "shaders/gen-hyper-labyrinth.wgsl",
     "features": [
+      "upgraded-rgba",
       "hdr",
       "aces-tonemap",
       "3-point-lighting",
@@ -19846,6 +19892,7 @@
     "id": "gen-hyper-rainbow-vortex",
     "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
     "features": [
+      "upgraded-rgba",
       "rankine-vortex",
       "audio-reactive",
       "mouse-interactive",
@@ -20172,6 +20219,7 @@
     "id": "gen-hyperbolic-tessellation",
     "url": "shaders/gen-hyperbolic-tessellation.wgsl",
     "features": [
+      "upgraded-rgba",
       "hyperbolic-geometry",
       "recursive",
       "audio-reactive",

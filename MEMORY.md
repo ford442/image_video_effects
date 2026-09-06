@@ -1,6 +1,62 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-06 (Optical / Glass / Holographic ten)
+**Last updated:** 2026-09-06 (Optical / Glass / Holographic / Prism ten)
+
+## 2026-09-06 — Optical / Glass / Holographic / Prism (10 shaders)
+
+- IDs: `chromatic-crawler-structure`, `chromatic-reaction-diffusion`, `chroma-vortex-coupled`, `divine-light-gpt52`, `aurora-rift-pass1`, `aurora-rift-2-pass1`, `gen-chromatic-glass-lattice`, `gen-celestial-prism-orchid`, `gen-celestial-quantum-glass-dragonfly`, `gen-celestial-glass-tornado`.
+- Per shader, the ideas actually added:
+  - chromatic-crawler-structure: Cauchy chromatic tendril bifurcation; photoelastic fringe birefringence; bioluminescent streamline photon pulses. Exact-C load, ACES display.
+  - chromatic-reaction-diffusion: Turing morphogen cross-gradient wave dispersion; interfacial Marangoni surface tension shear; chemiluminescent boundary emission. Raw sim state in A, exact C loads, ACES on display.
+  - chroma-vortex-coupled: Cauchy prismatic dispersion streamline ribbons; acoustic vortex cavitation glints; fluid rate-of-strain birefringence fringes. Bilinear over exact integer C load; spring in `extraBuffer[133..138]`.
+  - divine-light-gpt52: Cauchy crepuscular ray dispersion; cathedral rose-window stained-glass chromatic projection; Airy disk multi-ring diffraction halo. Exact-C load; spring in `extraBuffer[133..138]`.
+  - aurora-rift-pass1: Geomagnetic Birkeland current vertical curtain folds; atmospheric discrete spectral emission physics; live diffusion-rate temporal ribbon drift from exact-C loads.
+  - aurora-rift-2-pass1: Birkeland current plasma vortex tubes; ionospheric geomagnetic substorm flash bursts; multi-scale layer diffusion coupling from exact-C loads.
+  - gen-chromatic-glass-lattice: Cauchy multi-order dispersion with internal TIR caustic ribs; acoustic resonance stress birefringence; micro-fracture edge sparkle glints. Live refraction index; exact-C load; spring in `extraBuffer[133..138]`.
+  - gen-celestial-prism-orchid: Cauchy prismatic petal-edge dispersion; micro-venation bioluminescent nutrient flow; starlight corona diffraction starburst. Exact-C load; spring in `extraBuffer[133..138]`.
+  - gen-celestial-quantum-glass-dragonfly: Cauchy thin-film wing iridescence; quantum glass internal caustic core & photon emission; acoustic wing-tip vortex trails. Exact-C load; spring in `extraBuffer[133..138]`; normalized depth output.
+  - gen-celestial-glass-tornado: Cauchy prismatic glass facet TIR glints; helical plasma funnel discharge arcs; centrifugal glass dust accretion disk. Preserved spring in `extraBuffer[133..138]`; exact-C load; ACES display.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. Springs kept only on moving centers/masses (`chroma-vortex-coupled`, `divine-light-gpt52`, `gen-chromatic-glass-lattice`, `gen-celestial-prism-orchid`, `gen-celestial-quantum-glass-dragonfly`, `gen-celestial-glass-tornado`).
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0 (10 defs), catalog 1,359, SKIP_WASM_BUILD=1 build green.
+- Notes: `agents/swarm-outputs/gemini-2026-09-06-optical-prism-ten/`.
+
+## 2026-09-06 — Grok simpler generative / kinetic ten C
+
+- IDs: `gen-echo-dunes`, `gen-erosion-strata`, `gen-ghost-flame`, `gen-fractured-monolith`, `gen-fractal-clockwork`, `gen-fractal-ember-lattice`, `gen-hyper-labyrinth`, `gen-hyper-warp`, `gen-hyper-rainbow-vortex`, `gen-hyperbolic-tessellation`.
+- Underscore WGSL: `gen_hyper_warp.wgsl` (catalog id `gen-hyper-warp`).
+- Per shader, the ideas actually added:
+  - gen-echo-dunes: leeward slipface shade; along-wind sand streaks. Bass envelope at extraBuffer[133] kept.
+  - gen-erosion-strata: bedding-contact highlights; intra-layer cross-beds.
+  - gen-ghost-flame: base wick column; ignition chemiluminescence. A stays T/fuel/vx/age.
+  - gen-fractured-monolith: per-cell shard tint; fracture-plane glint.
+  - gen-fractal-clockwork: tooth-crest sparks; inter-gear mesh line. Existing orbit spring kept.
+  - gen-fractal-ember-lattice: triple-junction glow; cell-core heat. Shard packing kept.
+  - gen-hyper-labyrinth: gyroid zero ridge; W-slice hue. Neon history packing kept.
+  - gen-hyper-warp: first-warp fold caustics; second-layer flow stretch.
+  - gen-hyper-rainbow-vortex: Rankine core/irrotational seam; counter-arm braid beads.
+  - gen-hyperbolic-tessellation: kaleidoscope ideal vertices; horocycles.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0 (10 defs), catalog 1,359, SKIP_WASM_BUILD=1 build green. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-06-gen-kinetic-ten-c/`.
+
+## 2026-09-06 — Grok simpler generative / kinetic ten B
+
+- IDs: `gen-barnsley-fern`, `gen-apollonian-gasket`, `gen-conway-game-of-life`, `gen-cyclic-automaton`, `gen-chaos-game-ifs`, `gen-bifurcation-diagram`, `gen-acid-lissajous`, `gen-audio-spirograph`, `gen-cycloid-bloom`, `gen-fluffy-raincloud`.
+- Underscore WGSL: `gen_cyclic_automaton.wgsl`, `gen_fluffy_raincloud.wgsl`. Cyclic file is Greenberg–Hastings, not classic k-cyclic CA.
+- Per shader, the ideas actually added:
+  - gen-barnsley-fern: last-affine tint (stem vs leaflets); stem rib from IFS idx 0.
+  - gen-apollonian-gasket: packing rims on seed circles; Descartes curvature tint from last inverted k.
+  - gen-conway-game-of-life: neighbor-count heat; still-life amber. A stays alive/generation/activity.
+  - gen-cyclic-automaton: cardinal chirality on firing; just-fired halo. Existing extraBuffer spring kept.
+  - gen-chaos-game-ifs: last-vertex occupancy tint; Sierpinski hole. Existing SDF sculpture kept (no second raymarcher).
+  - gen-bifurcation-diagram: continuous Color Scheme mix; period-window ridge at lyap≈0.
+  - gen-acid-lissajous: origin-crossing beads; glow waist when freqX≈freqY.
+  - gen-audio-spirograph: additive gear glow; rolling-center hubs.
+  - gen-cycloid-bloom: hypotrochoid `bestT` vein; origin stamen. No extraBuffer spring.
+  - gen-fluffy-raincloud: anvil deck; virga. A packing unchanged (density, vx, vy, moisture).
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0 (10 defs), catalog 1,359, SKIP_WASM_BUILD=1 build green. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-06-gen-kinetic-ten-b/`.
 
 ## 2026-09-06 — Optical / Glass / Holographic (10 shaders)
 

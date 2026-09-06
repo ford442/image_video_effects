@@ -11,7 +11,7 @@
     "click-reactive",
     "depth-aware"
   ],
-  "description": "A raymarched celestial glass tornado with sprung orbit and attraction, crystalline KIFS debris, audio-driven turbulence, click-shattered rings, temporal polish, and real hit depth.",
+  "description": "Raymarched celestial glass tornado featuring Cauchy prismatic facet TIR glints, helical plasma funnel discharge arcs, centrifugal glass dust accretion disk, sprung mouse orbit, and true hit depth.",
   "workgroup_size": [
     16,
     16,
@@ -58,10 +58,10 @@
   "url": "shaders/gen-celestial-glass-tornado.wgsl",
   "features": [
     "raymarched-glass-vortex",
-    "kifs-crystal-debris",
+    "cauchy-prismatic-glints",
+    "helical-plasma-discharge",
+    "centrifugal-accretion-disk",
     "sprung-mouse-attractor",
-    "click-glass-rings",
-    "temporal-feedback",
     "depth-output"
   ],
   "params": [
