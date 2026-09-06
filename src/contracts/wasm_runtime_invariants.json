@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "description": "Runtime invariants from the 2026-08-30/31 Pascal/Chrome real-GPU session. Keep in sync with wasm_renderer C++ (source scan only — do not rebuild artifacts here), GpuChoresHost dispatch, historyTex probe ladder, and the shipped public/wasm/pixelocity_wasm.wasm import table. Validated by scripts/verify-device-policy-sync.js.",
+  "forbiddenCppSymbols": [
+    {
+      "symbol": "wgpuSurfacePresent",
+      "callPattern": "wgpuSurfacePresent\\s*\\(",
+      "reason": "emdawnwebgpu browser stub aborts: use requestAnimationFrame via html5.h instead. JS rAF already drives ccall('updateUniforms') → Render().",
+      "alternative": "Acquire surface texture, blit, wgpuQueueSubmit, return. Do not present.",
+      "globs": ["wasm_renderer/**/*.cpp"],
+      "wasmImportNames": ["wgpuSurfacePresent", "_wgpuSurfacePresent"],
+      "wasmArtifact": "public/wasm/pixelocity_wasm.wasm",
+      "issue": null,
+      "tracker": "memory/2026-08-31.md",
+      "rationale": "PresentToSurface calling wgpuSurfacePresent hard-aborted the module after a successful adapter+device on Pascal/Chrome."
+    }
+  ],
+  "requiredSamplerDefaults": {
+    "maxAnisotropy": 1,
+    "appliesTo": ["filtering", "non-filtering", "comparison"],
+    "cppFile": "wasm_renderer/resources.cpp",
+    "assignmentPattern": "samplerDesc.maxAnisotropy\\s*=\\s*1",
+    "createSamplerPattern": "wgpuDeviceCreateSampler\\s*\\(",
+    "createSamplerCount": 3,
+    "issue": null,
+    "tracker": "memory/2026-08-31.md",
+    "rationale": "WGPUSamplerDescriptor {} leaves maxAnisotropy at 0; Dawn rejects < 1 for every sampler type, including comparison."
+  },
+  "historyTexLadder": {
+    "rungs": [[2048, 8], [1024, 8], [1024, 4], [1024, 1]],
+    "sessionStorageKey": "px_history_oom_cap",
+    "tsFiles": [
+      "src/config/vramBudget.ts",
+      "src/renderer/webgpu/historyTexProbe.ts"
+    ],
+    "issue": 1204,
+    "tracker": "memory/2026-08-31.md",
+    "rationale": "2048² × 8 rgba-float historyTex hit a D3D12 committed-heap GPUOutOfMemoryError on Pascal; never retry 2048 in the same tab after OOM."
+  },
+  "storageFormatRewrite": {
+    "catalogWgslFormat": "rgba32float",
+    "wasmPrefersAfterSuccessfulProbe": "rgba16float",
+    "rewriteStorageDeclsToActiveColorFormat": true,
+    "tsFile": "src/renderer/wgslFormatRewrite.ts",
+    "cppRewriteFile": "wasm_renderer/wasm_internal.cpp",
+    "cppProbeFile": "wasm_renderer/device.cpp",
+    "issue": 1205,
+    "tracker": "memory/2026-08-31.md",
+    "rationale": "BGL RGBA32Float vs rewritten shader RGBA16Float produced an invalid pipeline submitted every frame. Catalog WGSL stays rgba32float; LoadShader rewrites storage decls."
+  },
+  "maxComputeWorkgroupsPerDimension": {
+    "value": 65535,
+    "choresWorkgroup": [8, 8, 1],
+    "dispatchMustBe2d": true,
+    "hostFile": "src/gpuChores/GpuChoresHost.ts",
+    "issue": 1200,
+    "tracker": "memory/2026-08-30.md",
+    "rationale": "Flattened ceil(w*h/64) at 2048² is DispatchWorkgroups(65536,1,1), one over the WebGPU base per-dimension limit; 2D 8×8 stays 256×256."
+  },
+  "mediaRebindAfterBackendSwitch": {
+    "tsFile": "src/renderer/inputSourceBridge.ts",
+    "function": "rebindMediaAfterBackendSwitch",
+    "managerFile": "src/renderer/RendererManager.ts",
+    "issue": 1206,
+    "tracker": "memory/2026-08-31.md",
+    "rationale": "Exclusive JS→WASM switch destroys the device that owned the photo; WASM must re-upload the current image/video then resyncShaderStack."
+  }
+}

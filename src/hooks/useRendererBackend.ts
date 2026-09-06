@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, RefObject } from 'react';
 import { RendererManager, RendererType } from '../renderer/RendererManager';
 import { RenderMode, InputSource, SlotParams } from '../renderer/types';
 import { ShaderEntry } from '../renderer/types';
+import { resolveShaderId } from '../utils/resolveShaderId';
 
 export interface UseRendererBackendOptions {
     rendererRef: RefObject<RendererManager | null>;
@@ -62,7 +63,7 @@ export function useRendererBackend({
                 await manager.resyncShaderStack({
                     modes: modesRef.current,
                     slotParams: slotParamsRef.current,
-                    resolveShader: (shaderId) => availableModesRef.current.find(s => s.id === shaderId),
+                    resolveShader: (shaderId) => availableModesRef.current.find(s => s.id === resolveShaderId(shaderId)),
                     inputSource: inputSourceRef.current,
                 });
             }

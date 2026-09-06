@@ -180,6 +180,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lowAmp  = max(u.zoom_params.z, 0.0);  // low-freq amplitude
   let roiRadius = max(u.zoom_params.w, 0.0); // pass parameter (for completeness)
 
+  // Evaluate unused param
+  let unused_w = u.zoom_params.w;
+
   // ── Audio reactivity (plasmaBuffer[0] = bass/mid/treble) ────────────────
   let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
   let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);

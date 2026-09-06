@@ -120,7 +120,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
   let traceScale = mix(5.0, 40.0, zp.x);
   let pulseRate = mix(0.2, 3.0, zp.y);
   let iridescence = mix(0.1, 2.0, zp.z);

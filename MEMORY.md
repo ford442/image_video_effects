@@ -1,6 +1,117 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-30 (Fast-Motion Shader Upgrade Ten)
+**Last updated:** 2026-09-06 (Optical / Glass / Holographic ten)
+
+## 2026-09-06 — Optical / Glass / Holographic (10 shaders)
+
+- IDs: `gen-holographic-lens-flare-matrix`, `gen-holographic-plasma-geode`, `gen-holographic-rainbow-surface`, `gen-holographic-data-core`, `gen-holographic-bismuth-core-reactor`, `chromatic-folds-bilateral`, `aero-chromatics-prismatic`, `glass-shatter-morph`, `frosted-glass-lens-iridescence`, `spec-prismatic-dispersion`.
+- Per shader, the ideas actually added:
+  - gen-holographic-lens-flare-matrix: conjugate optical reflection ghosts; 6-blade hexagonal iris diffraction; Newton-ring thin-film interference fringes. Raw sim state in A/C.
+  - gen-holographic-plasma-geode: crystal Cauchy facet dispersion & TIR; dielectric breakdown plasma arc filaments; agate mineral growth banding.
+  - gen-holographic-rainbow-surface: Marangoni stress flow advection; drainage-gradient multilayer interference; anisotropic micro-groove diffraction grating.
+  - gen-holographic-data-core: logic bus photon energy packets; hexagonal quantum containment lattice cage; depth parallax moiré fringe interference.
+  - gen-holographic-bismuth-core-reactor: hopper-step terrace edge diffraction glints; multi-order oxide thin-film interference; magnetic containment field flux lines.
+  - chromatic-folds-bilateral: multi-spectral split hue folding; joint depth-bilateral edge preservation; contour standing resonance waves. Exact-C load.
+  - aero-chromatics-prismatic: aerodynamic vortex shedding plumes; Schlieren velocity gradient refraction; wavelength-differential feedback decay trails. Exact-C load.
+  - glass-shatter-morph: sub-cellular micro-fracture spiderweb cracks; grazing prismatic TIR facet glints; photoelastic stress birefringence fringes.
+  - frosted-glass-lens-iridescence: microscopic condensation droplet beads; pointer-drag moisture wipe path; lens bevel Cauchy prism dispersion.
+  - spec-prismatic-dispersion: internal double-refraction caustic cusp rings; anti-reflective purplish-amber lens sheen; astigmatic chromatic radial streaks.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. Springs kept only on moving lenses/shards (`glass-shatter-morph`, `frosted-glass-lens-iridescence`, `spec-prismatic-dispersion`).
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0 (10 defs), catalog 1,359, SKIP_WASM_BUILD=1 build green.
+- Notes: `agents/swarm-outputs/gemini-2026-09-06-optical-ten/`.
+
+## 2026-09-06 — Grok simpler generative / kinetic (10 shaders)
+
+- IDs: `gen-grid`, `gen-grok4-life`, `gen-grok4-perlin`, `gen-grok41-mandelbrot`, `gen-grok41-plasma`, `gen-grokcf-interference`, `gen-grokcf-voronoi`, `gen-fourier-epicycles`, `gen-dragon-curve`, `gen-de-jong-attractor`.
+- Per shader, the ideas actually added:
+  - gen-grid: anisotropic H/V lines from warp Jacobian; intersection phosphor from C. Identity kept (warped lattice).
+  - gen-grok4-life: hunt fronts on predator gradient; prey-edge activity flash. SmoothLife packing kept.
+  - gen-grok4-perlin: bedding terraces (display); shoreline foam. File stays stratified erosion, not a Perlin rewrite.
+  - gen-grok41-mandelbrot: Mandelbrot body under Buddhabrot; dwell iso-bands on `c_pixel`.
+  - gen-grok41-plasma: zonal jets in SH pattern; storm-eye from existing Worley mask.
+  - gen-grokcf-interference: radial vs azimuthal Chladni tint; Lambert from signed `u`. Stays a Bessel drum.
+  - gen-grokcf-voronoi: F1 nucleus; F2−F1 crack ridge.
+  - gen-fourier-epicycles: hub→next arm glow; pen ink into existing trail pack.
+  - gen-dragon-curve: paper crease at closest fold; generation thickness.
+  - gen-de-jong-attractor: local stretch tint; dwell rings from iteration index.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0 (10 defs), catalog 1,359, SKIP_WASM_BUILD=1 build green. Jest 623 pass / 6 fail (pre-existing WASM `bridge/api.js` + unrelated performanceStatus/WebGPUCanvas). Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-06-gen-kinetic-ten/`.
+
+## 2026-09-06 — Photo / print / grade eight (example batch)
+
+- IDs: `pp-bloom`, `pp-tone-map`, `analog-film-degrade`, `color-blindness`, `crumpled-paper`, `retro-gameboy`, `conv-bilateral-dream`, `tilt-shift`.
+- Ideas actually added: hue-preserving bloom extract + anamorphic streak; continuous tone-curve mix + luma contrast; per-channel grain + hairline + C print-through; matrix interpolation + unused-param hatch; fibre grain + ironing memory; round LCD dots + honest A/C ghost; joint/luma bilateral range + A write; hex CoC + defocus bloom.
+- Floor only where needed. No springs. Saved params exact. Naga 8/8, extraBuffer 0, dead sliders 0, catalog 1,359.
+- Notes: `agents/swarm-outputs/grok-2026-09-06-photo-eight/`. Cited from `docs/SHADER_UPGRADE_BATCH.md` §7. Real-GPU QA external.
+
+## 2026-09-06 — Shader upgrade batches: incremental ideas
+
+- User wants each batch to **add 2–4 named visual ideas to the existing effect**, not reimagine it and not stop at formatting / uniform alignment / ACES / bindings.
+- Live SoT: `docs/SHADER_UPGRADE_BATCH.md` (expanded with worked good/bad Idea Cards, header `Ideas:` + A packing, JSON tag rules, notes/MEMORY closeout shape, coordinator fail-list, live-vs-historical doc map, paste block).
+- Entry points now point at it: `AGENTS.md`, `grok.md` (CRA not Vite), `WGSL_BUILTINS_GENERATIVE.md`, `BINDING_CONTRACT.md`, `CREATIVE_VISION.md`, prompt templates, `scripts/run-upgrade-swarm.js` (killed `target_lines ±20%`).
+- Historical stamps (do not follow as law): `weekly_upgrade_swarm.md`, `upgrade_swarm.md`, `GENERATIVE_UPGRADE_SWARM.md`, `EFFECT_UPGRADE_SWARM.md`, `4_AGENT_SWARM_PROMPT.md`, `composer.md`, `grok_build_upgrade.md`, April manifests, swarm OVERVIEW/LAUNCH.
+- `CLOUD_UPGRADE.md` workflow now starts with Idea Card; discovery score is hygiene debt; “completion pass” is not an upgrade.
+- Batch size: Flash 6–8, Opus/Grok 8–10, never >12.
+- Library clock: ~593 shaders (Mar) → ~1,407 WGSL / ~1,372 defs (Sep). August was peak volume. Remaining value is distinct ideas on hundreds of files, not another hygiene month. Real-GPU QA + thumbs (~26%) stay the visual bottleneck.
+
+## 2026-09-06 — 10-Shader Interactive / Post-Processing / Image Upgrade Cohort
+
+- Cohort: `kinetic_tiles`, `sliding-tile-glitch`, `pp-sharpen`, `pp-vignette`, `pixel-scattering`, `refraction-shards`, `pixelate-blast`, `double-exposure`, `brush-strokes`, `voronoi-light`.
+- Contract: 13 bindings, `@workgroup_size(16, 16, 1)`, exact `textureLoad` C, A-only writes (`dataTextureA`), ACES display, semantic alpha, 3-band audio (`plasmaBuffer[0].xyz`), single-writer spring-damper cursor `extraBuffer[133..138]` at (0,0), held pointer drag + capped click ripples (`min(u32(u.config.y), 50u)`), byte-exact saved params + aligned `updatedParams`.
+- Refraction Shards: replaced discrete time-quantized hashing (`floor(time * 0.2)`) with smooth continuous sinusoidal orbital drift to eliminate visual pop artifacts.
+- Gates passed: Naga 10/10; `audit:extrabuffer` 0 new writes; `audit:dead-sliders` 0 new dead sliders (40/40 live); `prestart` 1,359 catalog shaders; `verify:shader-list-urls` green; `verify:uniforms` green; `verify:catalog-counts` green; `typecheck` green; `SKIP_WASM_BUILD=1 npm run build` green; `verify:bundle-size` green; `verify:toolchain-foundation` green. Real-GPU visual QA external.
+
+## 2026-09-06 — #1204 residual Pascal-safe working budget
+
+- Default working size is **1024**, not 2048. Probing/creating `historyTex` at 2048²×8 first still device-removed Pascal before the ladder ran.
+- `allowsFullWorkingSize`: discrete + `maxBufferSize >= 1 GiB` + not Pascal/GTX 10xx/MX1xx + not fallback + no OOM cap. Then destroy the 1024 pool and allocate 2048 (full pool, history first). OOM → persist 1024, never retry 2048.
+- WASM init clamps canvas to 1024 (JS SoT + emitted bridge). C++ unchanged; no wasm artifact rebuild.
+- `maxBufferSize` is a working-size heuristic only — `maxTextureDimension2D` need stays 8192.
+
+## 2026-08-31 — #1206 empty WASM input after successful boot
+
+- Successful WASM init with `Input source set to 1` still shows no photo: JS device (and `historyTex`) died on exclusive switch; WASM never got pixels.
+- Rebind after `initWasmRenderer`: upload current image/video, then `resyncShaderStack`. Tag/show `#pixelocity-wasm-canvas-N`. Log `Input upload ran: w×h`.
+- Watch on JS WebGPU until deploy. Hard-reload before WASM. No GPUValidationError ⇒ this bug, not #1205.
+
+## 2026-09-06 — #1205 residual (JS error scope + WaitAny + invariant lock)
+
+- C++ already preferred probed rgba16float, rewrote storage decls, skipped invalid pipelines, and set CopySrc on depth write. Residual: JS `createComputePipeline` could still cache a non-null invalid object (Dawn does not throw) → SetPipeline every frame; WaitAny no-op could store invalid C++ pipelines; verifier did not lock CopySrc/BGL.
+- JS `compileShader` now `pushErrorScope('validation')`; never caches on scope error; fallback only if its scope is clean; else banner + skip.
+- C++ LoadShader treats WaitAny != Success (and missing instance) as invalid — do not store.
+- `verify:wasm-invariants` greps BGL `RgbaStorageFormat(colorFormat_)`, rewrite+hadError+waitFailed, Depth Texture Write CopySrc, frame depth CopyTex.
+- Catalog WGSL still authored rgba32float. Rebuild wasm artifacts if emcc 6.0.3 is available; real-GPU Pascal confirm still external.
+
+## 2026-08-31 — #1205 format/usage mismatch (live pipeline)
+
+- Pascal: BGL binding(2) `RGBA32Float` vs rewritten WGSL `rgba16float` → invalid `CreateComputePipeline`, then `SetPipeline`+`Submit` every frame. Feedback encoder `CopyTextureToTexture` on depth write missing `CopySrc`.
+- Fix: after rgba16float storage probe, WASM `colorFormat_` is 16 before BGL/textures. C++ `RewriteWgslStorageFormats` forces write-only rgba storage onto the allocated format (JS rewrite is bidirectional too). Validation error scope on pipeline create → skip slot, banner, no submit. Depth read/write get `CopySrc`. Artifacts rebuilt emcc 6.0.3.
+- Watch shaders on JS WebGPU until deploy; catalog WGSL stays authored `rgba32float`.
+
+## 2026-08-31 — #1204 historyTex D3D12 committed-heap OOM
+
+- Pascal/Chrome: JS probe OK, then `CreateTexture("historyTex")` OOM at 2048²×8 float layers. WASM after a one-rAF teardown OOMs on the next committed resource.
+- Probe ladder 2048×8 → 1024×8 → 1024×4 → 1024×1. Session cap 1024; never retry 2048. WASM blocked until hard reload after OOM.
+- JS→WASM: destroy working textures, `device.destroy()`, **await** `device.lost`, then `requestDevice`.
+- C++ fail-soft history before ping-pong. WASM rebuilt emcc 6.0.3. Real-GPU Pascal confirm after deploy.
+
+## 2026-08-31 — WASM sampler maxAnisotropy
+
+- Dawn rejects `maxAnisotropy < 1`. C++ `{}` left 0 on filtering / non-filtering / comparison samplers; bind group became invalid.
+- SoT: `wasm_renderer/resources.cpp` `CreateResources()` sets `maxAnisotropy = 1` once. Artifacts rebuilt 2026-09-06 with emcc 6.0.3 (`public/wasm/pixelocity_wasm.{js,wasm}`). Real-GPU confirm after deploy + hard-reload.
+
+## 2026-08-31 — WASM present abort on emdawn browser WebGPU
+
+- Init now succeeds (8192 2D-max contract). Next crash: `wgpuSurfacePresent` abort in emdawn's JS stub, 10 consecutive rAF errors, loop stop.
+- Web present is acquire (`getCurrentTexture`) + blit + `queue.submit`; JS `requestAnimationFrame` drives the next `updateUniforms` ccall. Native swapchain present is unsupported on this target.
+- SoT: `wasm_renderer/device.cpp` `PresentToSurface()`. Artifacts rebuilt (emcc 6.0.3). Real-GPU Pascal confirm after deploy.
+
+## 2026-08-31 — WASM adapter gate rejected valid GPUs
+
+- `need=79984` was a UTF-8 heap pointer from reversed `initWasmRenderer` ccall args (`selector,w,h` vs C++ `w,h,selector`), not a WebGPU 2D max.
+- Policy: `maxTextureDimension2D` need/requiredLimits = **8192** (`src/contracts/webgpu_limits.json`); never canvas dim / maxBufferSize / pixel count. Pascal `have=16384` must pass.
+- SoT edits: `src/wasm/bridge/init.ts`, `wasm_renderer/device.cpp`, `webgpuDevicePolicy.ts`, contract + BINDING_CONTRACT. WASM artifacts rebuilt. Workaround until deploy: `?renderer=webgpu`.
 
 ## 2026-08-30 — Fast-Motion Shader Upgrade Ten
 
@@ -810,8 +921,9 @@
 
 - Shared pre-FX kit in `src/gpuChores/`: BT.709 histogram, reduce_f32, lut_u8_map,
   downsample_2d. Adopts the renderer `GPUDevice` — never `requestDevice()`.
-- Live path: auto-exposure from the histogram **normalizes the 64×64 preview**,
-  not catalog FX. Kill switch `?no_gpu_compute`. Breadcrumbs in Dev Tools.
+- Live path: opt-in **source** auto-exposure (`apply_gain_2d` onto `readTex`,
+  default off). Preview hist still runs. Kill switch `?no_gpu_compute`.
+  Physics-pinned graphs skip source gain. EV is host-only (not extraBuffer).
 - CPU goldens are the Chromashift-shaped parity SoT on the headless VM.
 - Docs: `docs/GPU_CHORES.md` (Tier 4a = domain FX, Tier 4b = chores).
 - Device-init policy and feedback B→C / A→C copy order untouched.
@@ -1498,12 +1610,14 @@
 
 - Confirmed the app engine is the full-catalog/multipass path and constrained the
   minimal engine/package command to generative-only captures.
-- Added `thumbs:check-regression`, a PR check that compares healthy coverage with
-  the base git ref and fails new shader definitions without healthy PNGs.
+- Added `thumbs:check-regression`, a PR check that fails newly eligible shaders
+  without a healthy PNG or unexpired deferral (no global %/count gate). Sticky
+  coverage comments stay reporting-only until healthy eligible ≥ 50%.
 - `thumbs:status` now reports curated attract + Physics Lab priority coverage and
   accepts `--require-priority` for GPU-workstation enforcement.
-- Current VM proof: nominal 349/1,324 (26.4%), healthy 272/1,323 (20.6%),
-  priority 20/21 (95.2%); capture remains blocked until discrete-GPU access.
+- 2026-08-30 #1185: 1,069 deferrals (`expires` 2026-09-29), attract-first generate,
+  `hasHealthyThumbnail` + `public/thumbnails/unhealthy.json`. Nominal 360/1,353
+  (26.6%); integrity audit is stale (349 scanned). Capture remains discrete-GPU.
 
 ## Shader upgrade Batches 53–54 (2026-08-21)
 

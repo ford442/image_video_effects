@@ -1,12 +1,22 @@
 {
   "id": "double-exposure",
   "name": "Double Exposure Warp",
+  "category": "interactive-mouse",
   "url": "shaders/double-exposure.wgsl",
-  "description": "Blends the image with a domain-warped, zoomed and rotated version of itself. Voronoi cellular ridges modulate the overlay intensity. Reacts to audio bass.",
+  "description": "Photographic double exposure combining source imagery with a domain-warped, rotated, and scaled secondary exposure. Features spring-damper transform pivot dynamics, rotational ripple shockwaves, exact-C ghost trails, and ACES tonemapping.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "depth-aware",
+    "fast-motion",
+    "spring-cursor",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "semantic-alpha",
+    "exact-c-history"
   ],
   "params": [
     {
@@ -38,12 +48,49 @@
       "max": 1
     }
   ],
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Zoom Level",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Rotation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Opacity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
   "tags": [
     "filter",
-    "image-processing",
+    "double-exposure",
     "zoom",
     "overlay",
-    "organic",
-    "abstract"
+    "fast-motion",
+    "audio-reactive",
+    "aces"
   ]
 }

@@ -71,7 +71,23 @@ test('shows a WASM init error while running on the WebGPU fallback', () => {
     expect(block).toHaveTextContent('wasm error: wgpuSurfaceConfigure failed');
 });
 
-test('omits the diagnostics block when no diagnostics are provided', () => {
-    render(<AdvancedDebugPanel onOpenCoordinateBrowser={() => {}} />);
-    expect(screen.queryByTestId('renderer-diagnostics')).toBeNull();
+test('shows gpu-chores sourceGain and LUT classify toggle', () => {
+    render(
+        <AdvancedDebugPanel
+            onOpenCoordinateBrowser={() => {}}
+            onOpenShaderScanner={() => {}}
+            diagnostics={{
+                backend: 'webgpu',
+                gpuComputeAvailable: true,
+                gpuChoresBackend: 'webgpu',
+                gpuChoresLastOp: 'apply_gain_2d',
+                gpuChoresEv: 1.25,
+                gpuChoresSourceGain: 'on',
+                gpuChoresClassify: { width: 2, height: 1, bands: [0, 7] },
+            }}
+        />,
+    );
+    fireEvent.click(screen.getByTestId('lut-classify-preview-toggle'));
+    expect(screen.getByTestId('gpu-chores-breadcrumbs')).toHaveTextContent('sourceGain: on');
+    expect(screen.getByTestId('lut-classify-preview')).toBeInTheDocument();
 });

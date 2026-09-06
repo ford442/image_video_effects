@@ -164,8 +164,9 @@ void WebGPURenderer::Render() {
     int firstEnabled = -1;
     int lastEnabled  = -1;
     for (int i = 0; i < MAX_SHADER_SLOTS; i++) {
+        auto itSlot = shaders_.find(slots_[i].shaderId);
         if (slots_[i].enabled && !slots_[i].shaderId.empty() &&
-            shaders_.find(slots_[i].shaderId) != shaders_.end()) {
+            itSlot != shaders_.end() && itSlot->second.pipeline.get()) {
             if (firstEnabled < 0) firstEnabled = i;
             lastEnabled = i;
         }
@@ -192,7 +193,7 @@ void WebGPURenderer::Render() {
     if (firstEnabled < 0) {
         if (!activeShaderId_.empty()) {
             auto it = shaders_.find(activeShaderId_);
-            if (it != shaders_.end()) {
+            if (it != shaders_.end() && it->second.pipeline.get()) {
                 // Single pass: readTexture_ -> writeTexture_
                 WriteSlotParams(zoomParams_);
                 WGPUBindGroup bg = CreateComputeBindGroup(readTexture_.get(), writeTexture_.get());
@@ -226,7 +227,7 @@ void WebGPURenderer::Render() {
                 if (anyReadsC && anyWritesDataA) {
                     CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
                 }
-                if (anyUsesHistory) {
+                if (anyUsesHistory && historyLayerCount_ > 1) {
                     WGPUTexelCopyTextureInfo src = {};
                     src.texture = writeTexture_.get();
                     src.mipLevel = 0;
@@ -239,7 +240,7 @@ void WebGPURenderer::Render() {
                     dst.aspect = WGPUTextureAspect_All;
                     WGPUExtent3D ext = { W, H, 1 };
                     wgpuCommandEncoderCopyTextureToTexture(enc, &src, &dst, &ext);
-                    historyHead_ = (historyHead_ + 1) % HISTORY_DEPTH;
+                    historyHead_ = (historyHead_ + 1) % historyLayerCount_;
                 }
 
                 WGPUCommandBufferDescriptor cbDesc = {};
@@ -258,7 +259,7 @@ void WebGPURenderer::Render() {
         for (int i = 0; i < MAX_SHADER_SLOTS; i++) {
             if (!slots_[i].enabled || slots_[i].shaderId.empty()) continue;
             auto it = shaders_.find(slots_[i].shaderId);
-            if (it == shaders_.end()) continue;
+            if (it == shaders_.end() || !it->second.pipeline.get()) continue;
 
             // Which texture does this slot read from?
             WGPUTexture readFrom = (slots_[i].mode == SlotMode::Parallel)
@@ -359,7 +360,7 @@ void WebGPURenderer::Render() {
             if (anyReadsC && anyWritesDataA) {
                 CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
             }
-            if (anyUsesHistory) {
+            if (anyUsesHistory && historyLayerCount_ > 1) {
                 WGPUTexelCopyTextureInfo src = {};
                 src.texture = writeTexture_.get();
                 src.mipLevel = 0;
@@ -372,7 +373,7 @@ void WebGPURenderer::Render() {
                 dst.aspect = WGPUTextureAspect_All;
                 WGPUExtent3D ext = { W, H, 1 };
                 wgpuCommandEncoderCopyTextureToTexture(enc, &src, &dst, &ext);
-                historyHead_ = (historyHead_ + 1) % HISTORY_DEPTH;
+                historyHead_ = (historyHead_ + 1) % historyLayerCount_;
             }
             WGPUCommandBufferDescriptor cbDesc = {};
             cbDesc.label = MakeStringView("Feedback CmdBuf");

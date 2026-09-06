@@ -3103,6 +3103,50 @@
     ]
   },
   {
+    "id": "gen-aetherial-plasma-loom",
+    "name": "Aetherial Plasma Loom",
+    "url": "/shaders/gen-aetherial-plasma-loom.wgsl",
+    "category": "generative",
+    "params": [
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "twist",
+        "name": "Twist",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "coreBrightness",
+        "name": "Core Brightness",
+        "default": 1.2,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "id": "gen-alien-flora-ecosystem",
     "name": "Gen Alien Flora Ecosystem",
     "url": "shaders/gen-alien-flora-ecosystem.wgsl",
@@ -5616,6 +5660,51 @@
         "max": 3,
         "step": 0.05,
         "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
+    "id": "gen-bioluminescent-neural-lattice",
+    "name": "Bioluminescent Neural Lattice",
+    "description": "A mesmerizing, pulsating web of deep-sea neural pathways that crackles with bioluminescent energy.",
+    "category": "generative",
+    "url": "/shaders/gen-bioluminescent-neural-lattice.wgsl",
+    "params": [
+      {
+        "id": "synapse_density",
+        "name": "Synapse Density",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "mapping": "zoom_params.y",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "mapping": "zoom_params.z",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "mapping": "zoom_params.w",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -11839,7 +11928,8 @@
       "fft-reactive-halo",
       "mouse-driven",
       "click-reactive",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact dragon-curve persistence history"
   },
@@ -16729,7 +16819,12 @@
     "updated": true,
     "id": "gen-fourier-epicycles",
     "url": "shaders/gen-fourier-epicycles.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba",
+      "mouse-driven",
+      "temporal"
+    ]
   },
   {
     "name": "Fractal Bioluminescence Spore-Network",
@@ -18449,9 +18544,10 @@
       "temporal",
       "semantic-alpha",
       "aces-tonemap",
-      "generated-depth"
+      "generated-depth",
+      "upgraded-rgba"
     ],
-    "feedbackPacking": "A/C = linear HDR display RGBA history; exact same-pixel temporal load"
+    "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load"
   },
   {
     "name": "Holographic Data Core",
@@ -18561,7 +18657,8 @@
       "volumetric",
       "semantic-alpha",
       "aces-tonemap",
-      "generated-depth"
+      "generated-depth",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = linear HDR display RGBA history; exact bounded temporal loads"
   },
@@ -18777,7 +18874,8 @@
       "click-reactive",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw flare density, anamorphic streak, nearest flare distance, semantic alpha; raw state is never tone-mapped"
   },
@@ -18989,7 +19087,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = exact ACES display RGBA with shell/core shock persistence"
   },
@@ -19098,7 +19197,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = exact ACES display RGBA; alpha is holographic surface coverage"
   },
@@ -21877,6 +21977,53 @@
       "raymarching",
       "semantic-alpha",
       "generated-depth"
+    ]
+  },
+  {
+    "id": "gen-liquid-metal-cymatic-resonator",
+    "name": "Liquid-Metal Cymatic Resonator",
+    "description": "A hyper-reflective pool of ferromagnetic liquid that dances and crystallizes into complex geometric mandala patterns driven by simulated acoustic resonances.",
+    "category": "generative",
+    "url": "/shaders/gen-liquid-metal-cymatic-resonator.wgsl",
+    "audioReactive": true,
+    "mouseReactive": true,
+    "params": [
+      {
+        "id": "resonance",
+        "name": "Resonance",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "mapping": "zoom_params.z",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "mapping": "zoom_params.w",
+        "default": 3,
+        "min": 1,
+        "max": 10,
+        "step": 1
+      }
     ]
   },
   {
@@ -25400,6 +25547,50 @@
       "aces-tonemap"
     ],
     "feedbackPacking": "A/C = linear HDR display RGBA history; exact torque-advected loads"
+  },
+  {
+    "id": "gen-neutron-star-magnetic-spindle",
+    "name": "Neutron-Star Magnetic Spindle",
+    "category": "generative",
+    "url": "/shaders/gen-neutron-star-magnetic-spindle.wgsl",
+    "params": [
+      {
+        "id": "core_density",
+        "name": "Core Density",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "spin_rate",
+        "name": "Spin Rate",
+        "mapping": "zoom_params.y",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "jet_intensity",
+        "name": "Jet Intensity",
+        "mapping": "zoom_params.z",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "disk_scale",
+        "name": "Disk Scale",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
   },
   {
     "id": "gen-newton-fractal",
@@ -29614,6 +29805,50 @@
     "features": []
   },
   {
+    "id": "gen-sentient-bismuth-hypercrystal",
+    "name": "Sentient Bismuth Hypercrystal",
+    "category": "generative",
+    "url": "/shaders/gen-sentient-bismuth-hypercrystal.wgsl",
+    "params": [
+      {
+        "id": "growth",
+        "name": "Growth",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "audio_react",
+        "name": "Audio React",
+        "mapping": "zoom_params.y",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "twist",
+        "name": "Twist",
+        "mapping": "zoom_params.z",
+        "default": 0,
+        "min": -2,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "name": "Sentient Cyber-Aurora Void-Owl",
     "category": "generative",
     "tags": [
@@ -33579,7 +33814,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",

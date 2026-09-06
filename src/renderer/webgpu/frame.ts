@@ -20,7 +20,6 @@ import {
 } from './slotDispatch';
 import {
   AUDIO_FFT_BINS,
-  HISTORY_DEPTH,
   WG_SIZE_X,
   WG_SIZE_Y,
 } from './webgpuConstants';
@@ -85,7 +84,9 @@ export class WebGPUFrameRenderer {
     state.encodePreFxChores?.(encoder);
     const dispatch = dispatchFrameSlots(state, encoder, slotPlan);
 
-    if (slotPlan.anyUsesHistory) {
+    const historyLayers = state.historyLayers;
+    const useHistoryRing = slotPlan.anyUsesHistory && historyLayers > 1;
+    if (useHistoryRing) {
       encoder.copyTextureToTexture(
         { texture: state.blitReadTex },
         { texture: state.historyTex, origin: [0, 0, state.audioDepth.historyHead] },
@@ -104,8 +105,8 @@ export class WebGPUFrameRenderer {
       state.timestampRuntime.gpuTimings.totalTime = performance.now() - dispatch.wallStart;
     }
 
-    if (slotPlan.anyUsesHistory) {
-      state.audioDepth.historyHead = (state.audioDepth.historyHead + 1) % HISTORY_DEPTH;
+    if (useHistoryRing) {
+      state.audioDepth.historyHead = (state.audioDepth.historyHead + 1) % historyLayers;
     }
 
     this.updateFPS(state);

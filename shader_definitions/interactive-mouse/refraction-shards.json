@@ -3,7 +3,21 @@
   "name": "Refraction Shards",
   "category": "interactive-mouse",
   "url": "shaders/refraction-shards.wgsl",
-  "description": "Voronoi crystal shards refract and prism-split the source image, with extra sparkle near the cursor.",
+  "description": "Voronoi crystalline shards refract and Cauchy-disperse the source image. Features continuous orbital facet drift, acoustic stress birefringence, spring cursor deflection, click fracture wavefronts, exact-C temporal persistence, and ACES tonemapping.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "depth-aware",
+    "fast-motion",
+    "spring-cursor",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "semantic-alpha",
+    "exact-c-history"
+  ],
   "params": [
     {
       "id": "scale",
@@ -34,17 +48,49 @@
       "max": 1
     }
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "upgraded-rgba",
-    "chromatic-aberration"
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Shard Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Refraction",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Roughness",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Prism Effect",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
   ],
   "tags": [
     "crystal",
     "shards",
     "refraction",
     "prismatic",
-    "audio-reactive"
+    "fast-motion",
+    "audio-reactive",
+    "aces"
   ]
 }

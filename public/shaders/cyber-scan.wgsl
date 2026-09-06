@@ -136,7 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let depthColorize = mix(0.5, 1.5, depth);
 
-    let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
     let scanSpeed = zp.x * bass_env(bass, mids);
     let trailLength = zp.y;
     let scanWidth = zp.z;

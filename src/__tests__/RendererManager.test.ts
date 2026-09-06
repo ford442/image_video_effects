@@ -8,6 +8,10 @@ import { SlotParams } from '../renderer/types';
 jest.mock('../renderer/WebGPURenderer');
 jest.mock('../renderer/WASMRenderer');
 jest.mock('../renderer/JSRenderer');
+jest.mock('../wasm/wasm_bridge', () => ({
+  initWasmRenderer: jest.fn().mockResolvedValue(true),
+  shutdownWasmRenderer: jest.fn(),
+}));
 
 const defaultSlotParams: SlotParams = {
   zoomParam1: 0.1,
@@ -44,6 +48,8 @@ function makeMockWebGPU(): jest.Mocked<WebGPURenderer> {
     getFPS: jest.fn().mockReturnValue(60),
     loadImage: jest.fn().mockResolvedValue('https://example.com/webgpu.png'),
     reloadShaderFromURL: jest.fn().mockResolvedValue(true),
+    setVideo: jest.fn(),
+    getVideo: jest.fn().mockReturnValue(null),
   } as unknown as jest.Mocked<WebGPURenderer>;
 }
 
@@ -77,6 +83,8 @@ function makeMockWASM(): jest.Mocked<WASMRenderer> {
     stopRecording: jest.fn(),
     loadImage: jest.fn().mockResolvedValue('https://example.com/img.png'),
     reloadShaderFromURL: jest.fn().mockResolvedValue(true),
+    setVideo: jest.fn(),
+    getVideo: jest.fn().mockReturnValue(null),
     getFPS: jest.fn().mockReturnValue(55),
     getDiagnostics: jest.fn().mockReturnValue({ initialized: true }),
   } as unknown as jest.Mocked<WASMRenderer>;
@@ -456,6 +464,24 @@ describe('RendererManager shader forwarding', () => {
     const url = await manager.loadImage('https://example.com/b.png');
     expect(webgpu.loadImage).toHaveBeenCalledWith('https://example.com/b.png');
     expect(url).toBe('https://example.com/webgpu.png');
+  });
+
+  it('re-uploads the current image after switching to WASM (#1206)', async () => {
+    const webgpu = makeMockWebGPU();
+    const wasm = makeMockWASM();
+    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    await manager.loadImage('https://example.com/photo.png');
+    wasm.loadImage.mockClear();
+
+    await manager.switchRenderer('wasm');
+
+    expect(wasm.setInputSource).toHaveBeenCalledWith('image');
+    expect(wasm.loadImage).toHaveBeenCalledWith('https://example.com/webgpu.png');
   });
 
   it('reloadShader prefers reloadShaderFromURL on shader backends', async () => {

@@ -5,18 +5,31 @@
 
 const fs = require('fs');
 const path = require('path');
-const { describe, it, before, after } = require('node:test');
+const { describe, it } = require('node:test');
 const assert = require('node:assert');
 
 const ROOT = path.join(__dirname, '..');
+const DEFERRAL_PATH = path.join(ROOT, 'reports', 'thumbnail_deferrals.json');
 
-// Import functions from the main module
 const module_ = require('./check-thumbnail-coverage.js');
 const {
   healthyIds,
   loadCurrentCatalog,
   loadDeferralEntries,
+  evaluateNewlyEligible,
+  deferralExpiry,
 } = module_;
+
+function withDeferrals(entries, fn) {
+  const backup = fs.existsSync(DEFERRAL_PATH) ? fs.readFileSync(DEFERRAL_PATH, 'utf8') : null;
+  fs.writeFileSync(DEFERRAL_PATH, JSON.stringify({ entries }, null, 2));
+  try {
+    return fn();
+  } finally {
+    if (backup !== null) fs.writeFileSync(DEFERRAL_PATH, backup);
+    else fs.unlinkSync(DEFERRAL_PATH);
+  }
+}
 
 describe('Thumbnail Coverage Check', () => {
   describe('healthyIds', () => {
@@ -27,7 +40,7 @@ describe('Thumbnail Coverage Check', () => {
       const flagged = new Set(['id2']);
 
       const result = healthyIds(catalog, pngs, manifest, flagged);
-      
+
       assert.strictEqual(result.size, 1);
       assert.ok(result.has('id1'));
       assert.ok(!result.has('id2'));
@@ -41,7 +54,7 @@ describe('Thumbnail Coverage Check', () => {
       const flagged = new Set();
 
       const result = healthyIds(catalog, pngs, manifest, flagged);
-      
+
       assert.strictEqual(result.size, 1);
       assert.ok(result.has('id1'));
     });
@@ -53,7 +66,7 @@ describe('Thumbnail Coverage Check', () => {
       const flagged = new Set();
 
       const result = healthyIds(catalog, pngs, manifest, flagged);
-      
+
       assert.strictEqual(result.size, 1);
       assert.ok(result.has('id1'));
     });
@@ -65,94 +78,104 @@ describe('Thumbnail Coverage Check', () => {
       const flagged = new Set(['id1']);
 
       const result = healthyIds(catalog, pngs, manifest, flagged);
-      
+
       assert.strictEqual(result.size, 1);
       assert.ok(!result.has('id1'));
       assert.ok(result.has('id2'));
     });
   });
 
+  describe('evaluateNewlyEligible', () => {
+    it('passes when newly eligible has a healthy thumb', () => {
+      const offending = evaluateNewlyEligible(
+        new Set(['new-a']),
+        new Set(['new-a']),
+        new Set(),
+      );
+      assert.deepStrictEqual(offending, []);
+    });
+
+    it('passes when newly eligible has an unexpired deferral', () => {
+      const offending = evaluateNewlyEligible(
+        new Set(['new-a']),
+        new Set(),
+        new Set(['new-a']),
+      );
+      assert.deepStrictEqual(offending, []);
+    });
+
+    it('fails when newly eligible has neither thumb nor deferral', () => {
+      const offending = evaluateNewlyEligible(
+        new Set(['new-a', 'new-b']),
+        new Set(['new-a']),
+        new Set(),
+      );
+      assert.deepStrictEqual(offending, ['new-b']);
+    });
+
+    it('does not fail on global healthy-count drop', () => {
+      const offending = evaluateNewlyEligible(new Set(), new Set(['a']), new Set());
+      assert.deepStrictEqual(offending, []);
+    });
+  });
+
   describe('loadDeferralEntries', () => {
     it('should load valid, non-expired deferral entries', () => {
-      const deferralPath = path.join(ROOT, 'reports', 'thumbnail_deferrals.json');
-      
-      // Create a test deferral with an entry far in the future
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 15);
       const futureStr = futureDate.toISOString().split('T')[0];
-      
-      const testData = {
-        entries: [
-          {
-            id: 'test-shader-1',
-            added_by: 'test',
-            pr: 9999,
-            deferred_at: new Date().toISOString().split('T')[0],
-            expires: futureStr,
-            reason: 'test deferral'
-          }
-        ]
-      };
-      
-      fs.writeFileSync(deferralPath, JSON.stringify(testData, null, 2));
-      
-      try {
+
+      withDeferrals([{
+        id: 'test-shader-1',
+        added_by: 'test',
+        pr: 9999,
+        deferred_at: new Date().toISOString().split('T')[0],
+        expires: futureStr,
+        reason: 'test deferral',
+      }], () => {
         const deferrals = loadDeferralEntries();
         assert.ok(deferrals.valid.has('test-shader-1'));
-      } finally {
-        fs.writeFileSync(deferralPath, JSON.stringify({ entries: [] }, null, 2));
-      }
+      });
+    });
+
+    it('honors until as an alias of expires', () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 10);
+      const futureStr = futureDate.toISOString().split('T')[0];
+
+      withDeferrals([{
+        id: 'until-shader',
+        until: futureStr,
+        reason: 'gpu-capture pending',
+      }], () => {
+        assert.strictEqual(deferralExpiry({ until: futureStr }), futureStr);
+        const deferrals = loadDeferralEntries();
+        assert.ok(deferrals.valid.has('until-shader'));
+      });
     });
 
     it('should exclude expired deferral entries', () => {
-      const deferralPath = path.join(ROOT, 'reports', 'thumbnail_deferrals.json');
-      
-      // Create a test deferral with an expired date
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 5);
       const pastStr = pastDate.toISOString().split('T')[0];
-      
-      const testData = {
-        entries: [
-          {
-            id: 'expired-shader',
-            added_by: 'test',
-            pr: 9999,
-            deferred_at: '2026-01-01',
-            expires: pastStr,
-            reason: 'expired deferral'
-          }
-        ]
-      };
-      
-      fs.writeFileSync(deferralPath, JSON.stringify(testData, null, 2));
-      
-      try {
+
+      withDeferrals([{
+        id: 'expired-shader',
+        added_by: 'test',
+        pr: 9999,
+        deferred_at: '2026-01-01',
+        expires: pastStr,
+        reason: 'expired deferral',
+      }], () => {
         const deferrals = loadDeferralEntries();
         assert.ok(!deferrals.valid.has('expired-shader'));
-      } finally {
-        fs.writeFileSync(deferralPath, JSON.stringify({ entries: [] }, null, 2));
-      }
-    });
-
-    it('should return empty set when no deferrals file exists', () => {
-      const deferralPath = path.join(ROOT, 'reports', 'thumbnail_deferrals.json');
-      const backup = fs.existsSync(deferralPath) 
-        ? fs.readFileSync(deferralPath, 'utf8')
-        : null;
-      
-      try {
-        if (fs.existsSync(deferralPath)) {
-          fs.unlinkSync(deferralPath);
-        }
-        
-        // This will be called when the file doesn't exist
-        // The script should handle this gracefully
-      } finally {
-        if (backup) {
-          fs.writeFileSync(deferralPath, backup);
-        }
-      }
+        const offending = evaluateNewlyEligible(
+          new Set(['expired-shader']),
+          new Set(),
+          deferrals.valid,
+        );
+        assert.deepStrictEqual(offending, ['expired-shader']);
+      });
     });
   });
 
@@ -160,11 +183,7 @@ describe('Thumbnail Coverage Check', () => {
     it('should load all catalog IDs from shader-lists', () => {
       const catalog = loadCurrentCatalog();
       assert.ok(catalog.size > 0, 'Catalog should not be empty');
-      
-      // Check that we have the expected structure
       assert.ok([...catalog].every(id => typeof id === 'string'), 'All IDs should be strings');
     });
   });
 });
-
-console.log('✓ Thumbnail coverage check tests completed');

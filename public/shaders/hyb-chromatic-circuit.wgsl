@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Normalize zoom_params
     let time = u.config.x;
-    let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
     let gridScale = mix(4.0, 32.0, zp.x);
     let traceWidth = mix(0.02, 0.12, zp.y);
     let chromaSpread = mix(0.0, 0.05, zp.z);

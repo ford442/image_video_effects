@@ -21,6 +21,14 @@ describe('rewriteWgslStorageFormats', () => {
     expect(out).not.toContain('rgba32float');
     expect(out).toContain('texture_storage_2d<r32float, write>');
   });
+
+  it('rewrites authored rgba16float storage up to ultra rgba32float', () => {
+    const fp16 = SAMPLE.replaceAll('rgba32float', 'rgba16float');
+    const out = rewriteWgslStorageFormats(fp16, 'rgba32float');
+    expect(out).toContain('texture_storage_2d<rgba32float, write>');
+    expect(out).not.toContain('rgba16float');
+    expect(out).toContain('texture_storage_2d<r32float, write>');
+  });
 });
 
 describe('rewriteWgslStorageFormatsChecked (fail-soft)', () => {

@@ -55,6 +55,7 @@ function parseArgs(argv) {
     quality: DEFAULT_QUALITY,
     report: DEFAULT_REPORT,
     time: DEFAULT_TIME,
+    priority: null,
   };
   for (const arg of argv) {
     const eq = arg.indexOf('=');
@@ -73,6 +74,7 @@ function parseArgs(argv) {
     else if (key === 'quality') out.quality = val;
     else if (key === 'report') out.report = val;
     else if (key === 'time') out.time = parseFloat(val);
+    else if (key === 'priority') out.priority = val;
     else if (key === 'shard') {
       const [idx, count] = val.split('/').map(s => parseInt(s, 10));
       out.shardIndex = idx;
@@ -107,6 +109,42 @@ function loadShaderList(category) {
     throw new Error(`No shader list found for category "${category}" (expected ${file})`);
   }
   return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+function loadAttractPriorityIds() {
+  const attractPath = path.join(ROOT, 'src', 'app', 'constants', 'attractShowcasePool.ts');
+  if (!fs.existsSync(attractPath)) return [];
+  const source = fs.readFileSync(attractPath, 'utf8');
+  const ids = [];
+  for (const block of source.matchAll(/export const ATTRACT_(?:SHOWCASE|PHYSICS_LAB)_IDS[^[]*\[([\s\S]*?)\];/g)) {
+    for (const match of block[1].matchAll(/'([^']+)'/g)) ids.push(match[1]);
+  }
+  return [...new Set(ids)];
+}
+
+function hasFourLiveParams(shader) {
+  const params = shader.params || [];
+  if (params.length < 4) return false;
+  const mappings = ['zoom_params.x', 'zoom_params.y', 'zoom_params.z', 'zoom_params.w'];
+  return mappings.every((m, i) => params[i]?.mapping === m);
+}
+
+function applyAttractPriority(shaders) {
+  const byId = new Map(shaders.map(s => [s.id, s]));
+  const used = new Set();
+  const ordered = [];
+  for (const id of loadAttractPriorityIds()) {
+    const shader = byId.get(id);
+    if (shader) {
+      ordered.push(shader);
+      used.add(id);
+    }
+  }
+  const rest = shaders.filter(s => !used.has(s.id));
+  const genFour = rest.filter(s => s.category === 'generative' && hasFourLiveParams(s));
+  const genFourIds = new Set(genFour.map(s => s.id));
+  const tail = rest.filter(s => !genFourIds.has(s.id));
+  return [...ordered, ...genFour, ...tail];
 }
 
 function extractDefaultParams(shader) {
@@ -512,6 +550,7 @@ async function runAppEngine(args, shaders, manifest) {
       }
 
       const pngB64 = await harness.captureThumbnailPng(page, args.size);
+      // app engine: gpu-chores downsample_2d when WebGPU is live; canvas fallback otherwise.
       if (!pngB64) {
         summary.failed++;
         console.log(`${progress} ${shader.id}: FAIL (capture failed)`);
@@ -555,6 +594,9 @@ async function main() {
     );
   }
   let shaders = loadShaderList(args.category);
+  if (args.priority === 'attract') {
+    shaders = applyAttractPriority(shaders);
+  }
   const skipIds = loadThumbnailSkipIds();
   shaders = shaders.filter(s => !skipIds.has(s.id));
   if (args.ids) shaders = shaders.filter(s => args.ids.includes(s.id));
@@ -646,4 +688,7 @@ module.exports = {
   warmupFramesForShader,
   emptySummary,
   WARMUP_SHADER_IDS,
+  applyAttractPriority,
+  hasFourLiveParams,
+  loadAttractPriorityIds,
 };

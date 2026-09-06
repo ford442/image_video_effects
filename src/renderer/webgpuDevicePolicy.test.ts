@@ -59,7 +59,7 @@ describe('webgpuDevicePolicy', () => {
     it('always includes explicit requiredLimits matching C++ CreateDevice policy', () => {
       const limits = buildRequiredLimits(1920);
       expect(limits).toMatchObject({
-        maxTextureDimension2D: 1920,
+        maxTextureDimension2D: 8192,
         maxBindingsPerBindGroup: 14,
         maxSampledTexturesPerShaderStage: 3,
         maxSamplersPerShaderStage: 3,
@@ -72,6 +72,14 @@ describe('webgpuDevicePolicy', () => {
         maxComputeInvocationsPerWorkgroup: 256,
       });
       expect(limits!.maxUniformBufferBindingSize).toBe(MINIMUM_COMPUTE_LIMITS.maxUniformBufferBindingSize);
+      expect(limits!.maxTextureDimension2D).toBe(MINIMUM_COMPUTE_LIMITS.maxTextureDimension2D);
+    });
+
+    it('does not canvas-scale maxTextureDimension2D (no pointer / pixel-count need)', () => {
+      // Regression: mis-ordered initWasmRenderer args once fed a heap pointer (~79984)
+      // into the WASM CheckLimit need. The JS mirror must stay on the named 8192 floor.
+      expect(buildRequiredLimits(79984)!.maxTextureDimension2D).toBe(8192);
+      expect(buildRequiredLimits(2048)!.maxTextureDimension2D).toBe(8192);
     });
   });
 
@@ -79,6 +87,13 @@ describe('webgpuDevicePolicy', () => {
     it('returns ok when adapter limits are sufficient', () => {
       const adapter = makeAdapter();
       const result = assertAdapterMeetsContract(adapter, { maxCanvasDim: 1024 });
+      expect(result.ok).toBe(true);
+      expect(result.failures).toHaveLength(0);
+    });
+
+    it('returns ok for NVIDIA Pascal-class maxTextureDimension2D=16384', () => {
+      const adapter = makeAdapter({ maxTextureDimension2D: 16384 });
+      const result = assertAdapterMeetsContract(adapter, { maxCanvasDim: 79984 });
       expect(result.ok).toBe(true);
       expect(result.failures).toHaveLength(0);
     });
@@ -91,11 +106,11 @@ describe('webgpuDevicePolicy', () => {
       expect(result.failures.some((f) => f.includes('maxBindingsPerBindGroup'))).toBe(true);
     });
 
-    it('checks maxTextureDimension2D against canvas dimension', () => {
-      const adapter = makeAdapter({ maxTextureDimension2D: 512 });
+    it('checks maxTextureDimension2D against the named 8192 floor, not canvas dim', () => {
+      const adapter = makeAdapter({ maxTextureDimension2D: 4096 });
       const result = assertAdapterMeetsContract(adapter, { maxCanvasDim: 1024 });
       expect(result.ok).toBe(false);
-      expect(result.failures.some((f) => f.includes('maxTextureDimension2D'))).toBe(true);
+      expect(result.failures.some((f) => f.includes('maxTextureDimension2D') && f.includes('8192'))).toBe(true);
     });
   });
 

@@ -2,6 +2,7 @@
 
 #include <webgpu/webgpu.h>
 #include <cstdint>
+#include <string>
 
 // WGPU_DEPTH_SLICE_UNDEFINED was added in the 2024 WebGPU spec update; provide
 // a fallback if the installed header predates the addition.
@@ -35,6 +36,8 @@ uint32_t AlignUp(uint32_t value, uint32_t align);
 bool CheckLimit(const char* name, uint64_t have, uint64_t need, bool& ok);
 void ParseWorkgroupSize(const char* wgslCode, uint32_t& x, uint32_t& y);
 ShaderBindingUsage AnalyzeShaderBindings(const char* wgslCode);
+/** Force write-only rgba storage decls onto the allocated BGL format (rgba16float or rgba32float). */
+std::string RewriteWgslStorageFormats(const char* wgsl, const char* colorFormat);
 
 } // namespace wasm_internal
 } // namespace pixelocity

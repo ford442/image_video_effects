@@ -20,6 +20,9 @@ import { UNIFORM_BUFFER_LAYOUT } from './types';
 /**
  * Minimum limits implied by the 14-entry compute bind group (bindings 0–13).
  * Source of truth: src/contracts/webgpu_limits.json (sync-checked in CI).
+ *
+ * maxTextureDimension2D is the comfortable floor (8192), never derived from
+ * canvas max(w,h), maxBufferSize, pixel count, or a mis-ordered init pointer.
  */
 export const MINIMUM_COMPUTE_LIMITS = {
   ...webgpuLimitsContract.minimumComputeLimits,
@@ -28,6 +31,7 @@ export const MINIMUM_COMPUTE_LIMITS = {
 } as const;
 
 export type AdapterContractOptions = {
+  /** @deprecated Unused for maxTextureDimension2D (fixed 8192 floor). Kept for call-site compat. */
   maxCanvasDim: number;
 };
 
@@ -54,11 +58,10 @@ export const ADAPTER_ATTEMPT_LADDER: readonly AdapterAttempt[] = [
 type LimitCheck = {
   name: keyof GPUSupportedLimits;
   required: number;
-  canvasScaled?: boolean;
 };
 
 const LIMIT_CHECKS: LimitCheck[] = [
-  { name: 'maxTextureDimension2D', required: 0, canvasScaled: true },
+  { name: 'maxTextureDimension2D', required: MINIMUM_COMPUTE_LIMITS.maxTextureDimension2D },
   { name: 'maxBindingsPerBindGroup', required: MINIMUM_COMPUTE_LIMITS.maxBindingsPerBindGroup },
   { name: 'maxSampledTexturesPerShaderStage', required: MINIMUM_COMPUTE_LIMITS.maxSampledTexturesPerShaderStage },
   { name: 'maxSamplersPerShaderStage', required: MINIMUM_COMPUTE_LIMITS.maxSamplersPerShaderStage },
@@ -72,16 +75,13 @@ const LIMIT_CHECKS: LimitCheck[] = [
 
 /**
  * Build requiredLimits for requestDevice() — mirrors device.cpp requiredLimits seeding.
+ * `maxCanvasDim` is accepted for call-site compatibility but does not drive
+ * maxTextureDimension2D (fixed comfortable floor from the contract).
  */
-export function buildRequiredLimits(maxCanvasDim: number): GPUDeviceDescriptor['requiredLimits'] {
+export function buildRequiredLimits(_maxCanvasDim?: number): GPUDeviceDescriptor['requiredLimits'] {
   return {
-    maxTextureDimension2D: maxCanvasDim,
     ...MINIMUM_COMPUTE_LIMITS,
   };
-}
-
-function requiredForCheck(check: LimitCheck, maxCanvasDim: number): number {
-  return check.canvasScaled ? maxCanvasDim : check.required;
 }
 
 /**
@@ -90,16 +90,15 @@ function requiredForCheck(check: LimitCheck, maxCanvasDim: number): number {
  */
 export function assertAdapterMeetsContract(
   adapter: GPUAdapter,
-  opts: AdapterContractOptions,
+  _opts?: AdapterContractOptions,
 ): AdapterContractResult {
   const failures: string[] = [];
   const limits = adapter.limits;
 
   for (const check of LIMIT_CHECKS) {
-    const required = requiredForCheck(check, opts.maxCanvasDim);
     const actual = limits[check.name] as number;
-    if (actual < required) {
-      failures.push(`${check.name}: need >= ${required}, adapter has ${actual}`);
+    if (actual < check.required) {
+      failures.push(`${check.name}: need >= ${check.required}, adapter has ${actual}`);
     }
   }
 

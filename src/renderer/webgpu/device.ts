@@ -155,6 +155,14 @@ export function attachDeviceLostHandler(
   onLost: () => void,
 ): void {
   device.lost.then((info) => {
+    if (info.reason === 'destroyed') {
+      try {
+        context?.unconfigure();
+      } catch {
+        // Ignore errors during cleanup
+      }
+      return;
+    }
     reportError({
       type: 'device-lost',
       message: `GPU device lost: ${info.reason}. Try reloading the page.`,

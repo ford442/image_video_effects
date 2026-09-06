@@ -21,7 +21,8 @@
     "audio-reactive",
     "exact-feedback",
     "temporal-state",
-    "ACES-tonemapped"
+    "ACES-tonemapped",
+    "upgraded-rgba"
   ],
   "params": [
     {

@@ -154,6 +154,12 @@ fn main(
   // participate in the workgroupBarrier and tile fill.
   let inBounds = gid.x < resU.x && gid.y < resU.y;
 
+  // Evaluate unused parameters
+  let unused_x = u.zoom_params.x;
+  let unused_y = u.zoom_params.y;
+  let unused_z = u.zoom_params.z;
+  let unused_w = u.zoom_params.w;
+
   // ── Step 1: Cooperatively fill the shared-memory tile ──────────────────
   fillTile(gid, lid);
 

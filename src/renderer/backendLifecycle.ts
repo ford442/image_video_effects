@@ -5,11 +5,13 @@
  * Mirrors the lifecycle split in webgpu/device.ts — RendererManager stays a thin facade.
  */
 
+import { isWasmBlockedAfterOom } from '../config/vramBudget';
 import { Renderer, RendererConfig } from './Renderer';
 import { JSRenderer } from './JSRenderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
+import { readRendererVideo } from './inputSourceBridge';
 
 export type { WebGpuProbeHandoff };
 
@@ -98,6 +100,21 @@ export interface BackendSwitchResult {
 export async function performBackendSwitch(input: BackendSwitchInput): Promise<BackendSwitchResult> {
   const { targetType, canvas, config, previousType, previousRenderer } = input;
 
+  if (targetType === 'wasm' && isWasmBlockedAfterOom()) {
+    console.warn(
+      '[RendererManager] WASM blocked after GPUOutOfMemoryError this tab — hard reload before switching backends',
+    );
+    return {
+      success: false,
+      renderer: previousRenderer,
+      type: previousType,
+      canvas,
+      isWASM: false,
+      failedWasmRenderer: null,
+      restoreType: null,
+    };
+  }
+
   const mustReleaseFirst =
     usesExclusiveWebGpu(targetType) &&
     previousRenderer != null &&
@@ -109,8 +126,13 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
       `[RendererManager] Releasing ${previousType} before switching to ${targetType} ` +
         '(exclusive WebGPU adapter/device ownership)',
     );
-    previousRenderer!.destroy();
-    await yieldForGpuRelease();
+    const exclusive = previousRenderer as Renderer & { releaseExclusiveGpu?: () => Promise<void> };
+    if (typeof exclusive.releaseExclusiveGpu === 'function') {
+      await exclusive.releaseExclusiveGpu();
+    } else {
+      previousRenderer!.destroy();
+      await yieldForGpuRelease();
+    }
   }
 
   const renderer = createRendererForType(targetType, config);
@@ -132,7 +154,7 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
       if (replaced) nextCanvas = replaced;
     }
 
-    const video = (previousRenderer as { video?: HTMLVideoElement } | null)?.video;
+    const video = readRendererVideo(previousRenderer) ?? readRendererVideo(renderer);
     if (video) renderer.setVideo(video);
 
     return {

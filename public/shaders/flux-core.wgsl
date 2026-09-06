@@ -57,6 +57,12 @@ fn fbm(p: vec2<f32>) -> f32 {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    // Evaluate unused parameters
+    let unused_x = u.zoom_params.x;
+    let unused_y = u.zoom_params.y;
+    let unused_z = u.zoom_params.z;
+    let unused_w = u.zoom_params.w;
+
     let dims = vec2<i32>(textureDimensions(writeTexture));
     if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
         return;

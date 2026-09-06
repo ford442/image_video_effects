@@ -76,6 +76,14 @@ describe('formatPolicy', () => {
     const fp16 = estimateInternalTextureMiB(2048, 2048, 'rgba16float');
     expect(fp16).toBeLessThan(fp32);
     expect(fp16 / fp32).toBeCloseTo(0.5, 1);
+    // 6 2D targets + 8 history layers at 64 MiB/layer FP32
+    expect(fp32).toBe(896);
+  });
+
+  it('counts history layers separately from 2D targets', () => {
+    const eight = estimateInternalTextureMiB(1024, 1024, 'rgba32float', 6, 8);
+    const one = estimateInternalTextureMiB(1024, 1024, 'rgba32float', 6, 1);
+    expect(eight).toBeGreaterThan(one);
   });
 
   it('infers FP32 only from the JSON flag or the state-shader allowlist', () => {

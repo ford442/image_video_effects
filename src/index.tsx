@@ -3,11 +3,12 @@ import ReactDOM from 'react-dom/client';
 import MainApp from './App';
 import RemoteApp from './RemoteApp';
 import ShaderValidator from './components/ShaderValidator';
+import { shouldMountRemoteApp } from './utils/publicHost';
 
 // Check URL parameters to determine which app to render
 const urlParams = new URLSearchParams(window.location.search);
-const mode = urlParams.get('mode');
 const isValidator = urlParams.has('validator');
+const mountRemote = shouldMountRemoteApp(window.location.search, window.location.hostname);
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -15,6 +16,6 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    {isValidator ? <ShaderValidator /> : mode === 'remote' ? <RemoteApp /> : <MainApp />}
+    {isValidator ? <ShaderValidator /> : mountRemote ? <RemoteApp /> : <MainApp />}
   </React.StrictMode>
 );

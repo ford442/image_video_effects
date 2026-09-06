@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 THUMB_DIR = ROOT / "public" / "thumbnails"
 MANIFEST_PATH = THUMB_DIR / "manifest.json"
 REPORT_PATH = ROOT / "reports" / "thumbnail_integrity_audit.json"
+UNHEALTHY_PATH = THUMB_DIR / "unhealthy.json"
 
 # Match scripts/lib/thumbnailFrameAnalysis.js thresholds
 MIN_ACTIVE = 0.02
@@ -201,6 +202,10 @@ def main() -> int:
     }
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    UNHEALTHY_PATH.write_text(
+        json.dumps({"ids": [entry["id"] for entry in flagged]}, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     print(f"Thumbnail integrity: scanned {scanned}, flagged {len(flagged)}")
     if flagged:

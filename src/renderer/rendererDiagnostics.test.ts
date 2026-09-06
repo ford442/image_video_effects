@@ -52,6 +52,8 @@ describe('buildRendererDiagnostics', () => {
         reason: 'kill switch ?no_gpu_compute',
         lastOp: 'auto_exposure' as const,
         backend: 'ts' as const,
+        sourceGain: 'skipped-physics' as const,
+        classifyPreview: null,
         autoUniforms: {
           lumaMin: 0.1,
           lumaMax: 0.9,
@@ -70,6 +72,7 @@ describe('buildRendererDiagnostics', () => {
     expect(diags.webgpu?.gpuChores?.gpuComputeAvailable).toBe(false);
     expect(diags.webgpu?.gpuChores?.reason).toContain('no_gpu_compute');
     expect(diags.webgpu?.gpuChores?.backend).toBe('ts');
+    expect(diags.webgpu?.gpuChores?.sourceGain).toBe('skipped-physics');
     expect(diags.webgpuProbe?.ok).toBe(true);
     delete window.webgpuProbe;
   });

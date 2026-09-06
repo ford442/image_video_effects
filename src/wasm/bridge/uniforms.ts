@@ -224,6 +224,10 @@ export function getSupportsDeepWorkgroup(): boolean {
 }
 
 export function getColorFormat(): 0 | 1 {
+  if (state.initialized && wasmRef.module) {
+    const v = Number(wasmRef.module.ccall('getColorFormat', 'number', [], []) ?? state.colorFormat);
+    state.colorFormat = v === 1 ? 1 : 0;
+  }
   return state.colorFormat;
 }
 

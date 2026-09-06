@@ -33,6 +33,7 @@ export interface WebGPUFrameState {
   dataTexB: GPUTexture;
   dataTexC: GPUTexture;
   historyTex: GPUTexture;
+  historyLayers: number;
   blitReadTex: GPUTexture;
 
   uniformBuf: GPUBuffer;
@@ -113,6 +114,7 @@ export interface WebGPUFrameHost {
   dataTexB: GPUTexture;
   dataTexC: GPUTexture;
   historyTex: GPUTexture;
+  historyLayers: number;
   blitReadTex: GPUTexture;
   uniformBuf: GPUBuffer;
   extraBuf: GPUBuffer;
@@ -240,6 +242,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     get dataTexB() { return d.resources.dataTexB; },
     get dataTexC() { return d.resources.dataTexC; },
     get historyTex() { return d.resources.historyTex; },
+    get historyLayers() { return d.resources.historyLayers; },
     get blitReadTex() { return d.blitReadTex; },
     set blitReadTex(v) { d.blitReadTex = v; },
     get uniformBuf() { return d.resources.uniformBuf; },
@@ -329,6 +332,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get dataTexB() { return h.dataTexB; },
     get dataTexC() { return h.dataTexC; },
     get historyTex() { return h.historyTex; },
+    get historyLayers() { return h.historyLayers; },
     get blitReadTex() { return h.blitReadTex; },
     set blitReadTex(v) { h.blitReadTex = v; },
     get uniformBuf() { return h.uniformBuf; },

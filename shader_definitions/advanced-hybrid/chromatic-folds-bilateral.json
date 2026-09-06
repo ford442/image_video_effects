@@ -11,7 +11,10 @@
   "features": [
     "chromatic-folds",
     "bilateral-dream",
-    "hue-manipulation"
+    "hue-manipulation",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -51,5 +54,43 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Fold Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Pivot Hue",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Sat Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Depth Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "feedbackPacking": "A/C = ACES display RGBA; exact integer textureLoad feedback",
   "_seeded_by": "scripts/seed_orphan_shader_defs.py"
 }

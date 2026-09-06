@@ -21,6 +21,8 @@ export interface WebGPUTextureSet {
   dataTexB: GPUTexture;
   dataTexC: GPUTexture;
   historyTex: GPUTexture;
+  /** Actual history ring layers (≤ HISTORY_DEPTH). */
+  historyLayers: number;
   depthRead: GPUTexture;
   depthWrite: GPUTexture;
   emptyTex: GPUTexture;
@@ -45,6 +47,7 @@ export function createTextures(
   scaledW: number,
   scaledH: number,
   colorFormat: InternalColorFormat = 'rgba32float',
+  historyLayers: number = HISTORY_DEPTH,
 ): WebGPUTextureSet {
   const fullW = canvasW;
   const fullH = canvasH;
@@ -112,9 +115,10 @@ export function createTextures(
     usage: USAGE_STANDARD,
   });
 
+  const layers = Math.max(1, Math.min(HISTORY_DEPTH, historyLayers | 0));
   const historyTex = device.createTexture({
     label: 'historyTex',
-    size: { width: sw, height: sh, depthOrArrayLayers: HISTORY_DEPTH },
+    size: { width: sw, height: sh, depthOrArrayLayers: layers },
     format: rgbaFormat,
     usage:
       GPUTextureUsage.TEXTURE_BINDING |
@@ -159,6 +163,7 @@ export function createTextures(
     dataTexB,
     dataTexC,
     historyTex,
+    historyLayers: layers,
     depthRead,
     depthWrite,
     emptyTex,
@@ -218,6 +223,7 @@ export class WebGPUResourcePool {
   dataTexB!: GPUTexture;
   dataTexC!: GPUTexture;
   historyTex!: GPUTexture;
+  historyLayers = HISTORY_DEPTH;
   depthRead!: GPUTexture;
   depthWrite!: GPUTexture;
   emptyTex!: GPUTexture;
@@ -239,9 +245,12 @@ export class WebGPUResourcePool {
     scaledW: number,
     scaledH: number,
     colorFormat: InternalColorFormat = 'rgba32float',
+    historyLayers: number = HISTORY_DEPTH,
   ): void {
     this.colorFormat = colorFormat;
-    const textures = createTextures(device, canvasW, canvasH, scaledW, scaledH, colorFormat);
+    const textures = createTextures(
+      device, canvasW, canvasH, scaledW, scaledH, colorFormat, historyLayers,
+    );
     this.applyTextureSet(textures);
 
     const samplers = createSamplers(device);
@@ -263,6 +272,7 @@ export class WebGPUResourcePool {
     this.dataTexB = tex.dataTexB;
     this.dataTexC = tex.dataTexC;
     this.historyTex = tex.historyTex;
+    this.historyLayers = tex.historyLayers;
     this.depthRead = tex.depthRead;
     this.depthWrite = tex.depthWrite;
     this.emptyTex = tex.emptyTex;
@@ -278,6 +288,7 @@ export class WebGPUResourcePool {
       dataTexB: this.dataTexB,
       dataTexC: this.dataTexC,
       historyTex: this.historyTex,
+      historyLayers: this.historyLayers,
       depthRead: this.depthRead,
       depthWrite: this.depthWrite,
       emptyTex: this.emptyTex,
@@ -316,10 +327,13 @@ export class WebGPUResourcePool {
     scaledW: number,
     scaledH: number,
     colorFormat: InternalColorFormat = this.colorFormat,
+    historyLayers: number = this.historyLayers,
   ): WebGPUTextureSet {
     this.colorFormat = colorFormat;
     this.destroyWorkingTextures();
-    const textures = createTextures(device, canvasW, canvasH, scaledW, scaledH, colorFormat);
+    const textures = createTextures(
+      device, canvasW, canvasH, scaledW, scaledH, colorFormat, historyLayers,
+    );
     this.applyTextureSet(textures);
     return textures;
   }

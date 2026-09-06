@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ShadertoyImportPanel } from './ShadertoyImportPanel';
+import { classifyBandsToRgba } from '../../../gpuChores/lut';
 
 /** Backend health shown in the debug panel — see WASM_BACKEND_POLICY.md (Tier B triage). */
 export interface RendererDiagnosticsSummary {
@@ -24,6 +25,8 @@ export interface RendererDiagnosticsSummary {
     gpuChoresLastOp?: string | null;
     gpuChoresBackend?: string;
     gpuChoresEv?: number;
+    gpuChoresSourceGain?: 'on' | 'off' | 'skipped-physics';
+    gpuChoresClassify?: { width: number; height: number; bands: number[] } | null;
 }
 
 export interface AdvancedDebugPanelProps {
@@ -49,6 +52,17 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
     diagnostics,
 }) => {
     const [devToolsOpen, setDevToolsOpen] = useState(false);
+    const [lutPreviewOpen, setLutPreviewOpen] = useState(false);
+
+    const lutPreview = useMemo(() => {
+        const preview = diagnostics?.gpuChoresClassify;
+        if (!lutPreviewOpen || !preview || preview.width <= 0 || preview.height <= 0) return null;
+        return {
+            width: preview.width,
+            height: preview.height,
+            rgba: classifyBandsToRgba(preview.bands, preview.width, preview.height),
+        };
+    }, [lutPreviewOpen, diagnostics?.gpuChoresClassify]);
 
     return (
         <>
@@ -174,6 +188,54 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
                             </div>
                             {diagnostics.gpuChoresEv !== undefined && Number.isFinite(diagnostics.gpuChoresEv) && (
                                 <div>auto-exposure EV: {diagnostics.gpuChoresEv.toFixed(2)}</div>
+                            )}
+                            {diagnostics.gpuChoresSourceGain && (
+                                <div>sourceGain: {diagnostics.gpuChoresSourceGain}</div>
+                            )}
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={lutPreviewOpen}
+                                    onChange={(e) => setLutPreviewOpen(e.target.checked)}
+                                    data-testid="lut-classify-preview-toggle"
+                                />
+                                LUT classify preview
+                            </label>
+                            {lutPreviewOpen && lutPreview && (
+                                <div
+                                    data-testid="lut-classify-preview"
+                                    role="img"
+                                    aria-label="LUT classify false-color"
+                                    style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: `repeat(${lutPreview.width}, 4px)`,
+                                        marginTop: '4px',
+                                        border: '1px solid #444',
+                                        width: lutPreview.width * 4,
+                                    }}
+                                >
+                                    {Array.from({ length: lutPreview.width * lutPreview.height }, (_, i) => {
+                                        const o = i * 4;
+                                        const r = lutPreview.rgba[o];
+                                        const g = lutPreview.rgba[o + 1];
+                                        const b = lutPreview.rgba[o + 2];
+                                        return (
+                                            <div
+                                                key={i}
+                                                style={{
+                                                    width: 4,
+                                                    height: 4,
+                                                    background: `rgb(${r},${g},${b})`,
+                                                }}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            {lutPreviewOpen && !lutPreview && (
+                                <div style={{ fontSize: '10px', color: '#808098' }}>
+                                    no classify map (load an image)
+                                </div>
                             )}
                             {diagnostics.gpuChoresReason && (
                                 <div>reason: {diagnostics.gpuChoresReason}</div>

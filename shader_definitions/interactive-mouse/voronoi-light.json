@@ -1,8 +1,24 @@
 {
   "id": "voronoi-light",
   "name": "Voronoi Light",
+  "category": "interactive-mouse",
   "url": "shaders/voronoi-light.wgsl",
-  "description": "Voronoi cells light up and react when the mouse is near.",
+  "description": "Voronoi cellular lattice illuminated by an interactive spring cursor lantern. Features cybernetic neon tech mode, stained-glass facet refraction mode, bass ember border ignition, click ripple photon bursts, exact-C phosphorescence, and ACES tonemapping.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "depth-aware",
+    "voronoi-cells",
+    "fast-motion",
+    "spring-cursor",
+    "held-drag",
+    "bounded-click-ripples",
+    "aces-tone-map",
+    "temporal-feedback",
+    "semantic-alpha",
+    "exact-c-history"
+  ],
   "params": [
     {
       "id": "density",
@@ -33,13 +49,49 @@
       "max": 1
     }
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "upgraded-rgba"
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Cell Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Light Radius",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Mode (Tech/Glass)",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "voronoi",
+    "lighting",
+    "cellular",
+    "interactive",
+    "fast-motion",
+    "audio-reactive",
+    "aces"
   ]
 }

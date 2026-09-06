@@ -148,6 +148,10 @@ void WebGPURenderer::Shutdown() {
 }
 
 void WebGPURenderer::SetActiveShader(const char* id) {
+    if (id && *id && shaders_.find(id) == shaders_.end()) {
+        printf("[WASM] Skip active shader '%s': no valid pipeline — not submitted\n", id);
+        return;
+    }
     activeShaderId_ = id;
     // Also configure slot 0 for backwards compatibility with callers that
     // still use the single-shader API.
@@ -162,6 +166,13 @@ void WebGPURenderer::SetActiveShader(const char* id) {
 void WebGPURenderer::SetSlotShader(int slotIndex, const char* id) {
     if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return;
     if (id && *id) {
+        if (shaders_.find(id) == shaders_.end()) {
+            printf("[WASM] Skip slot %d: shader '%s' has no valid pipeline — not submitted\n",
+                   slotIndex, id);
+            slots_[slotIndex].shaderId.clear();
+            slots_[slotIndex].enabled = false;
+            return;
+        }
         slots_[slotIndex].shaderId = id;
         slots_[slotIndex].enabled  = true;
     } else {

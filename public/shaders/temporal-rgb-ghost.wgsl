@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Clamp params
-  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
   let ageG = 1u + u32(zp.x * 7.0);
   let ageB = 1u + u32(zp.y * 7.0);
   let blendAmt   = clamp(zp.z * (1.0 + bass * 0.4), 0.0, 1.0);

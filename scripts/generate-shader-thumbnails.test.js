@@ -10,6 +10,9 @@ const {
   extractDefaultParams,
   warmupFramesForShader,
   WARMUP_SHADER_IDS,
+  applyAttractPriority,
+  hasFourLiveParams,
+  loadAttractPriorityIds,
 } = require('./generate-shader-thumbnails');
 const frameAnalysis = require('./lib/thumbnailFrameAnalysis');
 
@@ -21,6 +24,11 @@ describe('generate-shader-thumbnails', () => {
     assert.equal(args.frames, 60);
     assert.equal(args.size, 256);
     assert.equal(args.quality, 'battery');
+  });
+
+  it('parseArgs --priority=attract', () => {
+    const args = parseArgs(['--priority=attract']);
+    assert.equal(args.priority, 'attract');
   });
 
   it('parseArgs --missing sets skipExisting', () => {
@@ -100,6 +108,30 @@ describe('generate-shader-thumbnails', () => {
       false,
       'intentional partial magenta palettes are not error frames',
     );
+  });
+
+  it('applyAttractPriority puts attract pool ids first', () => {
+    const priority = loadAttractPriorityIds();
+    assert.ok(priority.length > 0);
+    const shaders = [
+      { id: 'long-tail-z', category: 'image', params: [] },
+      { id: priority[0], category: 'generative', params: [] },
+      {
+        id: 'gen-four-params-example',
+        category: 'generative',
+        params: [
+          { mapping: 'zoom_params.x' },
+          { mapping: 'zoom_params.y' },
+          { mapping: 'zoom_params.z' },
+          { mapping: 'zoom_params.w' },
+        ],
+      },
+    ];
+    const ordered = applyAttractPriority(shaders);
+    assert.equal(ordered[0].id, priority[0]);
+    assert.equal(ordered[1].id, 'gen-four-params-example');
+    assert.equal(ordered[2].id, 'long-tail-z');
+    assert.equal(hasFourLiveParams(shaders[2]), true);
   });
 
   it('extractDefaultParams reads zoom_params mappings', () => {

@@ -48,7 +48,9 @@ const TAU: f32 = 6.28318530718;
 **extraBuffer index map (2026-07-22, do NOT guess):**
 - `[0..4]` — engine-reserved (CPU-written). Never write these from WGSL.
 - `[5..132]` — **engine FFT bins** (128 bins, bin 0 at [5]). Read-only for shaders; any state you store here gets stomped every frame audio is active.
-- `[133..255]` — **safe zone for persistent shader state** (spring-dampers, click rising-edge trackers, ring origins). Buffer is 256 floats; guard with `arrayLength(&extraBuffer)` and write from a single thread (e.g. `gid.x == 0u && gid.y == 0u`).
+- `[133..255]` — **safe zone for persistent shader state** (spring-dampers, click rising-edge trackers, ring origins). Buffer is 256 floats; guard with `arrayLength(&extraBuffer)` and write from a single thread (e.g. `gid.x == 0u && gid.y == 0u`). **`[139]` is not engine-owned** — some shaders already store phase there.
+
+> **Auto-exposure EV is host-only** (gpu-chores `autoUniforms` / breadcrumbs). Catalog source gain is a texture pass (`apply_gain_2d`) when the user opts in. Do **not** read EV from `extraBuffer`. Do not write EV into `[0..2]`, FFT `[5..132]`, or `[139]`.
 
 > **Guardrail:** run `npm run audit:extrabuffer` (or `wgsl_precommit_gate.py --files …`) before committing stateful shaders — writes to `[0..132]` fail CI unless grandfathered in the triage baseline.
 

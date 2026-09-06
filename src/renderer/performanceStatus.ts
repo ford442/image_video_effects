@@ -25,6 +25,8 @@ import { RendererConfig } from './Renderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import type { RendererType } from './backendLifecycle';
+import { HISTORY_DEPTH } from './webgpu/webgpuConstants';
+import { getHistoryWorkingSizeCap } from '../config/vramBudget';
 
 export interface RendererPerformanceStatus {
   qualityMode: RenderQualityMode;
@@ -46,6 +48,10 @@ export interface RendererPerformanceStatus {
   fp32PinnedBy: string[];
   /** Graph dispatch cap for this tier (Tier C multipass). */
   maxPassesPerFrame: number;
+  /** Allocated historyTex array layers (≤ 8). */
+  historyLayers: number;
+  /** Session working-size cap after OOM (1024) or 2048. */
+  workingSizeCap: number;
 }
 
 export interface PerformancePolicyState {
@@ -150,7 +156,9 @@ export function buildPerformanceStatus(
   backend: RendererType,
   getFps: () => number,
   scaleInfo: { scale: number; scaled: { w: number; h: number } },
+  extras?: { historyLayers?: number },
 ): RendererPerformanceStatus {
+  const historyLayers = extras?.historyLayers ?? HISTORY_DEPTH;
   return {
     qualityMode: state.qualityMode,
     backend,
@@ -166,11 +174,15 @@ export function buildPerformanceStatus(
       scaleInfo.scaled.w,
       scaleInfo.scaled.h,
       state.performancePolicy.colorFormat,
+      undefined,
+      historyLayers,
     ),
     requestedColorFormat: state.requestedColorFormat,
     fp32Pinned: state.fp32Pin.pinned,
     fp32PinnedBy: state.fp32Pin.pinnedBy,
     maxPassesPerFrame: state.performancePolicy.maxPassesPerFrame,
+    historyLayers,
+    workingSizeCap: getHistoryWorkingSizeCap(),
   };
 }
 

@@ -1,0 +1,197 @@
+{
+  "description": "Triaged dynamic-index extraBuffer writes. Verified bounded to safe zone via const SPRING_* / HALO_* at 133+.",
+  "entries": [
+    {
+      "file": "public/shaders/gen-percolation-threshold.wgsl",
+      "line": 83,
+      "expr": "gid.y",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-percolation-threshold.wgsl",
+      "line": 84,
+      "expr": "u32(latticeH) + gid.y",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
+      "line": 138,
+      "expr": "agentIdx * 4u + 0u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
+      "line": 139,
+      "expr": "agentIdx * 4u + 1u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
+      "line": 140,
+      "expr": "agentIdx * 4u + 2u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
+      "line": 141,
+      "expr": "agentIdx * 4u + 3u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
+      "line": 191,
+      "expr": "agentIdx * 4u + 0u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
+      "line": 192,
+      "expr": "agentIdx * 4u + 1u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
+      "line": 193,
+      "expr": "agentIdx * 4u + 2u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+      "line": 97,
+      "expr": "bufBase + 0u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+      "line": 98,
+      "expr": "bufBase + 1u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+      "line": 99,
+      "expr": "bufBase + 2u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+      "line": 100,
+      "expr": "bufBase + 3u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+      "line": 152,
+      "expr": "bufBase + 0u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+      "line": 153,
+      "expr": "bufBase + 1u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+      "line": 154,
+      "expr": "bufBase + 2u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/neon-cursor-trace.wgsl",
+      "line": 113,
+      "expr": "bufOff",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/neon-cursor-trace.wgsl",
+      "line": 114,
+      "expr": "bufOff + 1u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/neon-cursor-trace.wgsl",
+      "line": 115,
+      "expr": "bufOff + 2u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/neon-cursor-trace.wgsl",
+      "line": 116,
+      "expr": "bufOff + 3u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/neon-cursor-trace.wgsl",
+      "line": 117,
+      "expr": "bufOff + 4u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum-gemini.wgsl",
+      "line": 158,
+      "expr": "idx * 4u + 0u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum-gemini.wgsl",
+      "line": 159,
+      "expr": "idx * 4u + 1u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum-gemini.wgsl",
+      "line": 160,
+      "expr": "idx * 4u + 2u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum-gemini.wgsl",
+      "line": 161,
+      "expr": "idx * 4u + 3u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum-grokcf1.wgsl",
+      "line": 158,
+      "expr": "idx * 4u + 0u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum-grokcf1.wgsl",
+      "line": 159,
+      "expr": "idx * 4u + 1u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum-grokcf1.wgsl",
+      "line": 160,
+      "expr": "idx * 4u + 2u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum-grokcf1.wgsl",
+      "line": 161,
+      "expr": "idx * 4u + 3u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum.wgsl",
+      "line": 131,
+      "expr": "idx * 3u + 0u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum.wgsl",
+      "line": 132,
+      "expr": "idx * 3u + 1u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    },
+    {
+      "file": "public/shaders/physarum.wgsl",
+      "line": 133,
+      "expr": "idx * 3u + 2u",
+      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
+    }
+  ]
+}

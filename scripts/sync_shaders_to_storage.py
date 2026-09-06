@@ -37,9 +37,12 @@ API_BASE_URL = os.environ.get("STORAGE_API_URL", "https://storage.noahcohn.com")
 UPLOAD_ENDPOINT = f"{API_BASE_URL}/api/shaders/upload"
 CHECK_ENDPOINT = f"{API_BASE_URL}/api/shaders"  # GET /api/shaders/{id}
 
-SHADER_DEFINITIONS_DIR = Path("shader_definitions")
-SHADERS_DIR = Path("public/shaders")
-MANIFEST_FILE = Path(".shader_sync_manifest.json")
+# Resolve paths from the repo root so the script works when run from scripts/
+# or from the project root (usage: python scripts/sync_shaders_to_storage.py).
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SHADER_DEFINITIONS_DIR = REPO_ROOT / "shader_definitions"
+SHADERS_DIR = REPO_ROOT / "public" / "shaders"
+MANIFEST_FILE = REPO_ROOT / ".shader_sync_manifest.json"
 
 DEFAULT_WORKERS = 5
 DEFAULT_BATCH_SIZE = 50

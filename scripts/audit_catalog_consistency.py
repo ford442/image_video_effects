@@ -236,6 +236,11 @@ def audit_catalog(
         if sid in ALLOWLIST_IDS:
             continue
 
+        mp = data.get("multipass") or {}
+        if mp.get("graph"):
+            # Graph parent catalog ids intentionally differ from pass entry filenames.
+            continue
+
         if wgsl_stem != sid and sid not in secondary_ids:
             violations.append({
                 "type": "id-filename-mismatch",

@@ -217,7 +217,7 @@ export function createComputeBindGroupForRoles(
         resource: textures.historyTex.createView({
           dimension: '2d-array',
           baseArrayLayer: 0,
-          arrayLayerCount: HISTORY_DEPTH,
+          arrayLayerCount: textures.historyLayers ?? HISTORY_DEPTH,
         }),
       },
     ],

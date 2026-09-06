@@ -267,6 +267,14 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
     }
     console.log("\nDone.");
 
+    try {
+        const { execSync } = require('child_process');
+        execSync('node scripts/generate-shader-id-aliases.mjs', { stdio: 'inherit' });
+    } catch (e) {
+        console.error('Failed to generate shader id aliases:', e.message);
+        process.exit(1);
+    }
+
 } else {
     console.log("No shader_definitions directory found.");
 }
