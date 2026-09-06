@@ -8672,6 +8672,70 @@
     ]
   },
   {
+    "id": "gen-chronomorphic-glass-tesseract",
+    "name": "Chronomorphic Glass Tesseract",
+    "category": "generative",
+    "tags": [
+      "3d",
+      "raymarching",
+      "glass",
+      "tesseract",
+      "iridescent",
+      "refraction"
+    ],
+    "description": "A hyper-dimensional glass structure that continuously folds through time and space, refracting shifting iridescent cosmic energies. Features chronomorphic spatial distortion and raymarched chromatic dispersion.",
+    "url": "/shaders/gen-chronomorphic-glass-tesseract.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "fold_speed",
+        "name": "Fold Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.2,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "refraction_ior",
+        "name": "Refraction IOR",
+        "default": 1.33,
+        "min": 1,
+        "max": 2.5,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gravity",
+        "name": "Gravity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "features": [
+      "4d-tesseract",
+      "raymarching",
+      "audio-reactive",
+      "mouse-interaction"
+    ]
+  },
+  {
     "id": "gen-chronos-biomechanical-void-leviathan",
     "name": "Chronos Biomechanical Void-Leviathan",
     "url": "shaders/gen-chronos-biomechanical-void-leviathan.wgsl",
@@ -11928,8 +11992,7 @@
       "fft-reactive-halo",
       "mouse-driven",
       "click-reactive",
-      "semantic-alpha",
-      "upgraded-rgba"
+      "semantic-alpha"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact dragon-curve persistence history"
   },
@@ -16819,12 +16882,7 @@
     "updated": true,
     "id": "gen-fourier-epicycles",
     "url": "shaders/gen-fourier-epicycles.wgsl",
-    "features": [
-      "audio-reactive",
-      "upgraded-rgba",
-      "mouse-driven",
-      "temporal"
-    ]
+    "features": []
   },
   {
     "name": "Fractal Bioluminescence Spore-Network",
@@ -33814,8 +33872,7 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal",
-      "upgraded-rgba"
+      "temporal"
     ],
     "tags": [
       "procedural",
