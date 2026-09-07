@@ -1,0 +1,14 @@
+{
+  "id": "gen-liquid-neon-topography",
+  "name": "Liquid Neon Topography",
+  "author": "Jules",
+  "description": "A mesmerizing descent into a hyper-fluid, self-illuminating digital landscape where neon currents carve through shifting, organic terrain.",
+  "category": "generative",
+  "url": "/shaders/gen-liquid-neon-topography.wgsl",
+  "params": [
+    { "id": "ridgeHeight", "name": "Ridge Height", "mapping": "zoom_params.x", "default": 1.0, "min": 0.1, "max": 5.0, "step": 0.1 },
+    { "id": "flowSpeed", "name": "Flow Speed", "mapping": "zoom_params.y", "default": 1.0, "min": 0.0, "max": 3.0, "step": 0.1 },
+    { "id": "emissiveGlow", "name": "Emissive Glow", "mapping": "zoom_params.z", "default": 1.5, "min": 0.5, "max": 4.0, "step": 0.1 },
+    { "id": "contourDetail", "name": "Contour Detail", "mapping": "zoom_params.w", "default": 4.0, "min": 1.0, "max": 8.0, "step": 1.0 }
+  ]
+}
