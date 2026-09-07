@@ -494,11 +494,6 @@
       "filename": "2026-09-05_chronomorphic-glass-tesseract.md",
       "title": "Chronomorphic Glass Tesseract",
       "added": "2026-09-05T15:33:03.442448"
-    },
-    {
-      "filename": "2026-09-06_liquid-neon-topography.md",
-      "title": "Liquid Neon Topography",
-      "added": "2026-09-06T15:29:54.004264"
     }
   ],
   "current": null,
@@ -718,6 +713,13 @@
     }
   ],
   "completed": [
+    {
+      "filename": "2026-09-06_liquid-neon-topography.md",
+      "title": "Liquid Neon Topography",
+      "added": "2026-09-06T15:29:54.004264",
+      "status": "completed",
+      "completed_at": "2026-09-07T08:21:34.733298+00:00"
+    },
     {
       "filename": "2026-08-17_chrono-kinetic-fractal-engine.md",
       "title": "Chrono-Kinetic Fractal Engine",
