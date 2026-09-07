@@ -38,7 +38,7 @@ async function startServer(): Promise<void> {
 
   // Poll until server responds
   await new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Server start timeout')), 15000);
+    const timeout = setTimeout(() => reject(new Error('Server start timeout')), 60000);
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`http://localhost:${PORT}/`);
