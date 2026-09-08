@@ -1,16 +1,16 @@
 # Catalog drift audit
 
-Generated: 2026-09-06T08:49:00.763909+00:00
+Generated: 2026-09-08T08:35:54.524016+00:00
 
 Source of truth: `shader_definitions/** (id + url path)`
 Lists regenerated this run: True
 
 ## Summary
 
-- Definitions scanned: 1373
-- Valid definitions: 1373
-- WGSL files on disk: 1408
-- Shader list ids: 1360
+- Definitions scanned: 1375
+- Valid definitions: 1375
+- WGSL files on disk: 1410
+- Shader list ids: 1362
 - Violations: **105**
 
 | Type | Count |
