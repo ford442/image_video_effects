@@ -544,19 +544,11 @@
       "filename": "2026-09-03_bioluminescent-void-orchid.md",
       "title": "Bioluminescent Void-Orchid",
       "added": "2026-09-03T15:24:12.972347"
-      "filename": "2026-09-05_chronomorphic-glass-tesseract.md",
-      "title": "Chronomorphic Glass Tesseract",
-      "added": "2026-09-05T15:33:03.442448"
     },
     {
       "filename": "2026-09-06_liquid-neon-topography.md",
       "title": "Liquid Neon Topography",
       "added": "2026-09-06T15:29:54.004264"
-    },
-    {
-      "filename": "2026-09-07_hyperdimensional-plasma-loom.md",
-      "title": "Hyperdimensional Plasma Loom",
-      "added": "2026-09-07T15:32:08.806601"
     }
   ],
   "current": null,
@@ -1013,6 +1005,13 @@
       "added": "2026-09-05T15:33:03.442448",
       "status": "completed",
       "completed_at": "2026-09-06T08:20:01.771465+00:00"
+    },
+    {
+      "filename": "2026-09-07_hyperdimensional-plasma-loom.md",
+      "title": "Hyperdimensional Plasma Loom",
+      "added": "2026-09-07T15:32:08.806601",
+      "status": "completed",
+      "completed_at": "2026-09-08T07:54:05.507408+00:00"
     }
   ],
   "rejected": [],
