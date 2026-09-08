@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Non-Local Means
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Convolution Type: non-local-means
 //  Complexity: Very High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: luma-weighted patch SSD; gradient-aligned search
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -58,10 +59,12 @@ fn patchDistance(uv1: vec2<f32>, uv2: vec2<f32>, patchRadius: i32, pixelSize: ve
     for (var dy = -patchRadius; dy <= patchRadius; dy++) {
         for (var dx = -patchRadius; dx <= patchRadius; dx++) {
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-            let p1 = textureSampleLevel(readTexture, u_sampler, uv1 + offset, 0.0).rgb;
-            let p2 = textureSampleLevel(readTexture, u_sampler, uv2 + offset, 0.0).rgb;
+            let p1 = textureSampleLevel(readTexture, u_sampler, clamp(uv1 + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+            let p2 = textureSampleLevel(readTexture, u_sampler, clamp(uv2 + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
             let diff = p1 - p2;
-            dist += dot(diff, diff);
+            let lumaDiff = dot(diff, vec3<f32>(0.299, 0.587, 0.114));
+            let chroma = diff - vec3<f32>(lumaDiff);
+            dist += lumaDiff * lumaDiff + dot(chroma, chroma) * 0.35;
         }
     }
     return dist;
@@ -101,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Ripple echo bursts
     var rippleEcho = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -115,7 +118,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     let effectiveH = max(hParam * (1.0 + rippleEcho * 3.0), 0.0001);
     
-    let center = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let center = src.rgb;
+    let lumaC = dot(center, vec3<f32>(0.299, 0.587, 0.114));
+    let lumaN = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, pixelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let lumaE = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(pixelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let grad = vec2<f32>(lumaE - lumaC, lumaN - lumaC);
+    let tangent = vec2<f32>(-grad.y, grad.x);
+    let tangentLen = max(length(tangent), 0.0001);
+    let tangentN = tangent / tangentLen;
+
     var accumColor = vec3<f32>(0.0);
     var accumWeight = 0.0;
     var similaritySum = 0.0;
@@ -128,10 +140,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (dx == 0 && dy == 0) { continue; }
             
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-            let neighborUV = uv + offset;
+            let neighborUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+            let offsetDir = vec2<f32>(f32(dx), f32(dy));
+            let alongEdge = abs(dot(normalize(offsetDir + vec2<f32>(0.0001)), tangentN));
             
             let pd = patchDistance(uv, neighborUV, patchRadius, pixelSize);
-            let weight = exp(-pd / effectiveH);
+            let weight = exp(-pd / effectiveH) * (1.0 + alongEdge * 0.55);
             
             let neighborColor = textureSampleLevel(readTexture, u_sampler, neighborUV, 0.0).rgb;
             accumColor += neighborColor * weight;
@@ -175,10 +189,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     result = mix(result, prevColor * decay, 0.1 + bass * 0.2);
     
     // Semantic alpha: self-similarity importance modulated by depth and audio
-    let importance = (1.0 - avgSimilarity) * (0.5 + depth * 0.5) * (0.6 + treble * 0.4);
+    let importance = clamp((1.0 - avgSimilarity) * (0.5 + depth * 0.5) * (0.6 + treble * 0.4) + src.a * 0.25, 0.0, 1.0);
+    let packed = vec4<f32>(result, importance);
     
-    textureStore(writeTexture, global_id.xy, vec4<f32>(result, importance));
-    
-    // Depth pass-through
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

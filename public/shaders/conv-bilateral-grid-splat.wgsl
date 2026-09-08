@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware, temporal
 //  Convolution Type: bilateral-grid-fast-approximate
 //  Complexity: High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: joint depth range; adjacent luma-bin slice
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -94,7 +95,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Ripple grid distortions
     var rippleDistort = vec2<f32>(0.0);
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -121,30 +122,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var dy = -maxRadius; dy <= maxRadius; dy++) {
         for (var dx = -maxRadius; dx <= maxRadius; dx++) {
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize + rippleDistort * pixelSize * 10.0;
-            let sample = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0);
+            let sample = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
             let sampleLuma = dot(sample.rgb, vec3<f32>(0.299, 0.587, 0.114));
+            let neighborDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+            let depthDist = abs(neighborDepth - depth);
+            let depthWeight = exp(-depthDist * depthDist / 0.04);
 
-            // Spatial Gaussian
             let spatialDist = length(vec2<f32>(f32(dx), f32(dy)));
             let spatialWeight = exp(-spatialDist * spatialDist / (2.0 * effectiveSpatialSigma * effectiveSpatialSigma + 0.001));
 
-            // Intensity Gaussian (bilateral term)
             let intensityDist = abs(sampleLuma - centerLuma);
             let intensityWeight = exp(-intensityDist * intensityDist / (2.0 * effectiveIntensitySigma * effectiveIntensitySigma + 0.001));
 
-            // Grid quantization
             let gridBin = floor(sampleLuma * gridQuant) / gridQuant;
             let binCenter = (gridBin + 0.5 / gridQuant);
             let binDist = abs(sampleLuma - binCenter);
             let binWeight = exp(-binDist * binDist * gridQuant * gridQuant * 2.0);
+            let neighborBin = gridBin + select(-1.0, 1.0, sampleLuma >= binCenter) / gridQuant;
+            let binMix = mix(binWeight, exp(-pow(sampleLuma - neighborBin - 0.5 / gridQuant, 2.0) * gridQuant * gridQuant * 2.0), 0.35);
 
-            let weight = spatialWeight * intensityWeight * binWeight;
+            let weight = spatialWeight * intensityWeight * binMix * depthWeight;
             accumColor += sample.rgb * weight;
             accumWeight += weight;
-
-            // Depth discontinuity accumulator for chromatic aberration
-            let neighborDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + offset, 0.0).r;
-            depthDiscontinuity += abs(neighborDepth - depth);
+            depthDiscontinuity += depthDist;
         }
     }
 
@@ -184,8 +184,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeConfidence = clamp(depthDiscontinuity * 2.0 + (1.0 - accumWeight / f32((maxRadius * 2 + 1) * (maxRadius * 2 + 1))), 0.0, 1.0);
     let semanticAlpha = mix(edgeConfidence, 0.25, depthFactor * 0.4);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(result, semanticAlpha));
-
-    // Depth pass-through
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(result, semanticAlpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(result, semanticAlpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

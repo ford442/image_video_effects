@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-06T04:52:10.156469",
+  "timestamp": "2026-09-08T07:10:31.147135",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-echo-dunes.wgsl",
+      "file": "public/shaders/chromatic-swirl.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-erosion-strata.wgsl",
+      "file": "public/shaders/elastic-surface.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fractal-clockwork.wgsl",
+      "file": "public/shaders/infinite-zoom.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fractal-ember-lattice.wgsl",
+      "file": "public/shaders/interactive-rgb-split.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fractured-monolith.wgsl",
+      "file": "public/shaders/parallax-shift.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-ghost-flame.wgsl",
+      "file": "public/shaders/perspective-tilt.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-hyper-labyrinth.wgsl",
+      "file": "public/shaders/pixel-storm.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-hyper-rainbow-vortex.wgsl",
+      "file": "public/shaders/radial-rgb.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-hyperbolic-tessellation.wgsl",
+      "file": "public/shaders/sine-wave.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen_hyper_warp.wgsl",
+      "file": "public/shaders/vortex-distortion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

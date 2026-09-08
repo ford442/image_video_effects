@@ -1,7 +1,7 @@
 {
-  "generated": "2026-09-06T08:02:16.275726+00:00",
-  "defs_scanned": 1201,
-  "defs_with_params": 1201,
+  "generated": "2026-09-08T05:13:56.592179+00:00",
+  "defs_scanned": 1203,
+  "defs_with_params": 1203,
   "new_dead_sliders": [],
   "known_dead_sliders": [
     {
@@ -65,13 +65,6 @@
       "category": "artistic",
       "param_id": "flowStrength",
       "name": "Flow Strength",
-      "field": "w"
-    },
-    {
-      "id": "color-blindness",
-      "category": "image",
-      "param_id": "unused",
-      "name": "Unused",
       "field": "w"
     },
     {

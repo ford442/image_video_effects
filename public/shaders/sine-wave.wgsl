@@ -3,9 +3,9 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Chunks From: sine-wave
-//  Created: 2026-05-30
-//  By: 4-Agent Upgrade Swarm
+//  Upgraded: 2026-09-08
+//  Ideas: standing-wave nodes around the pointer; Stokes second-order drift
+//  A packing: telemetry (offset.xy, crest, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -87,8 +87,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let waveX = sin(phase + clickWave * 2.2) * groupVel * (0.55 + packetX * 0.9);
-  let waveY = cos(phase2 - clickWave * 1.7) * (1.0 - groupVel * 0.3) * (0.60 + packetY * 0.75);
+  // Standing-wave nodes: concentric zeros around the pointer (this is a wave).
+  let node = 0.28 + 0.72 * abs(sin(mouseDist * scale * 2.4 + time * speed * 0.15));
+
+  let waveX = sin(phase + clickWave * 2.2) * groupVel * (0.55 + packetX * 0.9) * node;
+  let waveY = cos(phase2 - clickWave * 1.7) * (1.0 - groupVel * 0.3) * (0.60 + packetY * 0.75) * node;
 
   // Amplitude modulation from audio + mouse
   let am = 1.0 + bass * 0.5 + mouseMask * 0.8;
@@ -97,10 +100,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Depth controls wave attenuation
   let depthAtten = mix(1.0, 0.2, depth);
 
+  // Stokes drift: second-order mass transport along the first-harmonic crest.
+  let stokesAmp = (waveX * waveX + waveY * waveY) * intensity * 0.22;
+  let stokes = vec2<f32>(waveX, waveY) * stokesAmp;
+
   let offset = vec2<f32>(
     (waveX + waveY * 0.45) * intensity * am + micro,
     (waveY - waveX * 0.35) * intensity * 0.45 * (1.0 + mouseMask)
-  ) * depthAtten;
+  ) * depthAtten + stokes * depthAtten;
 
   let coord = vec2<i32>(gid.xy);
   let maxCoord = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));

@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware, temporal
 //  Convolution Type: logarithmic-spiral-convolution
 //  Complexity: High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: golden-ratio arm spacing; Archimedean/log spiral mix
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -90,7 +91,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Ripple spiral distortions
     var rippleTwist = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -117,11 +118,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depthBlurFactor = mix(1.0, 0.3, depthFactor);
 
     for (var arm = 0; arm < i32(numArms); arm++) {
-        let armOffset = f32(arm) * 6.28318 / numArms + bass * 0.2;
+        let armOffset = f32(arm) * 6.28318 / numArms * PHI + bass * 0.2;
 
         for (var s = 0; s < maxSamples; s++) {
             let t = f32(s) / f32(maxSamples);
-            let spiralR = t * 0.15 * exp(spiralTightness * 3.0) * depthBlurFactor;
+            let logR = t * 0.15 * exp(spiralTightness * 3.0) * depthBlurFactor;
+            let archR = t * 0.18 * depthBlurFactor;
+            let spiralR = mix(archR, logR, clamp(spiralTightness * 2.0, 0.0, 1.0));
             let spiralTheta = theta + armOffset + t * 6.28318 * 2.0 + rippleTwist * t + time * 0.1 * (1.0 + bass);
 
             let sampleOffset = vec2<f32>(
@@ -129,8 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 spiralR * sin(spiralTheta)
             );
 
-            let sampleUV = uv + sampleOffset;
-            if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) { continue; }
+            let sampleUV = clamp(uv + sampleOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
             let w = exp(-t * 3.0) * (1.0 - t * 0.5);
             let sample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
@@ -181,8 +183,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spiralEnergy = clamp(coverageFactor * 1.5 + maxArmDist * 0.5, 0.0, 1.0);
     let semanticAlpha = mix(spiralEnergy, 0.2, depthFactor * 0.5);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(result, semanticAlpha));
-
-    // Depth pass-through
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(result, semanticAlpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(result, semanticAlpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Engraving Stipple v2
+//  Engraving Stipple
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, line-art
 //  Complexity: High
-//  Chunks From: engraving-stipple
-//  Created: 2026-05-31
-//  By: 4-Agent Shader Upgrade Swarm
+//  Upgraded: 2026-09-08
+//  Ideas: roulette-wheel stipple; burin taper from |grad|
+//  A packing: telemetry RGBA (ink, hatch, burin, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -90,15 +90,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let densityMask = smoothstep(0.0, 0.35, gradMag);
   let hatchMix = mix(hatchLine, contourLine, densityMask);
+  let taper = mix(0.72, 1.42, smoothstep(0.0, 0.35, gradMag));
   let lineRunner = pow(max(0.0, sin(dot(uv * vec2<f32>(aspect, 1.0), hatchDir) * lineDensity * 1.7 - time * 14.0)), 14.0);
-  let combinedHatch = clamp(hatchMix * 0.55 + crossLine * 0.3 + lineRunner * (0.12 + audio.z * 0.12), 0.0, 1.5);
+  let combinedHatch = clamp((hatchMix * 0.55 + crossLine * 0.3 + lineRunner * (0.12 + audio.z * 0.12)) * taper, 0.0, 1.5);
 
   let burrUV = uv * stippleScale * 60.0;
   let stipple = hash12(floor(burrUV));
   let burr = smoothstep(0.45, 0.55, sin(dot(uv, hatchDir) * lineDensity * 2.0) * sin(dot(uv, crossDir) * lineDensity * 1.4));
+  let rouletteCell = fract(uv * vec2<f32>(aspect, 1.0) * stippleScale * 28.0) - vec2<f32>(0.5);
+  let roulette = (1.0 - smoothstep(0.18, 0.42, length(rouletteCell))) * smoothstep(0.15, 0.7, 1.0 - luma);
 
   let pressure = 1.0 + audio.x * 0.5;
-  let ink = clamp((1.0 - luma) * pressure * 1.15 + combinedHatch * 0.28 - stipple * 0.5 + burr * 0.08, 0.0, 1.0);
+  let ink = clamp((1.0 - luma) * pressure * 1.15 + combinedHatch * 0.28 - stipple * 0.5 + burr * 0.08 + roulette * 0.22, 0.0, 1.0);
 
   let mouseDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let burin = 1.0 - smoothstep(0.0, 0.5, length(mouseDelta));

@@ -5,7 +5,8 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "temporal"
+    "temporal",
+    "upgraded-rgba"
   ],
   "description": "Lamb-Oseen vortex fluid dynamics with Kelvin-Helmholtz shear instability at vortex boundaries. Multiple interacting vortices from ripple history, velocity-magnitude and vorticity colour coding with chromatic aberration.",
   "params": [
@@ -45,5 +46,39 @@
     "physics",
     "vortex",
     "reactive"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Circulation Γ",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Viscosity ν",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "KH Instability",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Chromatic Aber",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ]
 }

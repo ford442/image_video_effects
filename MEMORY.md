@@ -1,6 +1,60 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-06 (Optical / Glass / Holographic / Prism ten)
+**Last updated:** 2026-09-08 (Distortion / warp ten)
+
+## 2026-09-08 — Distortion / warp ten (10 shaders)
+
+- IDs: `sine-wave`, `parallax-shift`, `perspective-tilt`, `interactive-rgb-split`, `radial-rgb`, `elastic-surface`, `vortex-distortion`, `chromatic-swirl`, `infinite-zoom`, `pixel-storm`.
+- Per shader, the ideas actually added:
+  - sine-wave: standing-wave nodes around the pointer; Stokes second-order drift. Packets kept.
+  - parallax-shift: occlusion peel; focus-plane CoC along the ray. Layer loop kept.
+  - perspective-tilt: vanishing falloff; grazing Scheimpflug soften. Ray–plane kept.
+  - interactive-rgb-split: wavelength-scaled R/G/B along the field; lateral vs longitudinal mix. Modes kept.
+  - radial-rgb: radial chromatic k1; mustache k3 r^6. Brown k1/k2 kept.
+  - elastic-surface: Poisson contraction; exact C neighbors. A stays disp/vel.
+  - vortex-distortion: streamline smear; source-tied vorticity. Lamb-Oseen + KH kept.
+  - chromatic-swirl: angular chromatic; animate as continuous spin. percent² kept.
+  - infinite-zoom: mouse as Möbius pole; log-polar seam. Möbius/hyperbolic kept.
+  - pixel-storm: luma debris; exact-C trail. Existing spring eye kept.
+- Floor: bindings / 16×16 / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, catalog 1,361, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-08-distort-ten/`.
+
+## 2026-09-08 — Convolution ten B (10 shaders)
+
+- IDs: `conv-guided-video-filter`, `conv-stochastic-stipple`, `conv-structure-tensor-flow`, `conv-spiral-blur`, `conv-steerable-pyramid`, `conv-reaction-convolution`, `conv-guided-filter-depth`, `conv-bilateral-grid-splat`, `conv-frequency-domain-notch`, `conv-fractal-kernel`.
+- Per shader, the ideas actually added:
+  - conv-guided-video-filter: depth-augmented guide; exact integer C loads for P. He linear model kept.
+  - conv-stochastic-stipple: paper ground; gradient-stretched ellipses. Cell/threshold kept.
+  - conv-structure-tensor-flow: minor-eigenvector LIC; source-luma tint. Tensor + palette kept.
+  - conv-spiral-blur: φ-spaced arms; Archimedean/log mix. Mouse center kept.
+  - conv-steerable-pyramid: H2 quadrature energy (HEAD’s unused `h2Basis`); source-tied reconstruct.
+  - conv-reaction-convolution: C.rg chemical persistence; Pearson F/k from feed. A,B,blue store kept.
+  - conv-guided-filter-depth: joint luma range; photo-edge hold when depth misses.
+  - conv-bilateral-grid-splat: joint depth range; adjacent luma-bin slice.
+  - conv-frequency-domain-notch: oriented cosine notch; residual cut mix.
+  - conv-fractal-kernel: boundary vs interior weight; distance-estimator glint.
+- Floor: bindings / 16×16 / exact C where history / A packing as documented / saved params exact. No springs. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, catalog 1,361, SKIP_WASM_BUILD=1 build green. Jest 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-08-conv-ten-b/`.
+
+## 2026-09-08 — Print / paint / convolution (10 shaders)
+
+- IDs: `conv-non-local-means`, `conv-anisotropic-diffusion`, `conv-difference-of-gaussians-cascade`, `conv-morphological-erosion-dilation`, `conv-gabor-texture-analyzer`, `watercolor-bloom`, `film-cross-process`, `engraving-stipple`, `rotoscope-ink`, `encaustic-wax`.
+- Per shader, the ideas actually added:
+  - conv-non-local-means: luma-weighted patch SSD; gradient-aligned search. Modes kept. No spring. A write fixed (HEAD read C, never wrote A).
+  - conv-anisotropic-diffusion: Tukey biweight conductivity; 4-neighbor coherence boost. PM kernel kept. No spring.
+  - conv-difference-of-gaussians-cascade: Marr–Hildreth zero-crossing ridges; source-tied XDoG tanh. 4-scale DoG + palette kept.
+  - conv-morphological-erosion-dilation: black-hat beside top-hat; SE-axis ridge skeleton. Min/max SE kept.
+  - conv-gabor-texture-analyzer: even/odd quadrature energy; dominant-orientation grain. 4-orientation bank kept.
+  - watercolor-bloom: pigment granulation in paper valleys; C-history backrun cauliflower. 13-tap bloom / dry advection kept. No spring.
+  - film-cross-process: per-channel grain; highlight cyan-green XPro crossover. S-curves kept. Existing enlarger spring kept (HEAD).
+  - engraving-stipple: roulette-wheel stipple; burin taper from |grad|. Hatch family kept. Telemetry A kept.
+  - rotoscope-ink: edge-magnitude ink weight; cel hold-flats. Posterize + Sobel kept. Telemetry A kept.
+  - encaustic-wax: cooling wax bloom; held-mouse iron scrape. 3-strata melt kept. Telemetry A kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0 (10 defs + full-tree 0 new), catalog 1,361 (README/manifest synced after origin’s two new generative IDs), SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail (pre-existing WASM `bridge/api.js`). Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-08-print-paint-conv-ten/`.
 
 ## 2026-09-06 — Optical / Glass / Holographic / Prism (10 shaders)
 

@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Rotoscope Ink v2
+//  Rotoscope Ink
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, edge-stylization
 //  Complexity: High
-//  Chunks From: rotoscope-ink
-//  Created: 2026-05-31
-//  By: 4-Agent Shader Upgrade Swarm
+//  Upgraded: 2026-09-08
+//  Ideas: edge-magnitude ink weight; cel hold-flats
+//  A packing: telemetry RGBA (outline, motion, mouse, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -81,6 +81,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let temporalNoise = hash12(floor(uv * 80.0) + vec2<f32>(time * 8.0, time * 5.0));
   let motionStrength = smoothstep(edgeThreshold, edgeThreshold + 0.18, edge) * (0.7 + temporalNoise * 0.3);
+  let inkWeight = mix(0.68, 1.48, smoothstep(edgeThreshold, edgeThreshold + 0.28, edge));
 
   let brushAngle = edgeDir + temporalNoise * 0.4 * (1.0 + audio.x);
   let brushUV = vec2<f32>(
@@ -88,7 +89,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     -uv.x * sin(brushAngle) + uv.y * cos(brushAngle)
   );
   let brushStroke = smoothstep(0.0, 0.5, sin(brushUV.x * 120.0)) * smoothstep(0.0, 0.15, abs(sin(brushUV.y * 60.0)));
-  let taperedLine = brushStroke * motionStrength * (0.6 + 0.4 * sin(brushUV.x * 30.0 + time * 3.0));
+  let taperedLine = brushStroke * motionStrength * inkWeight * (0.6 + 0.4 * sin(brushUV.x * 30.0 + time * 3.0));
 
   let posterized = floor(src.rgb * levels) / max(levels - 1.0, 1.0);
   let mouseMask = 1.0 - smoothstep(0.0, 0.5, length((uv - mouse) * vec2<f32>(aspect, 1.0)));
@@ -107,6 +108,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let chromaticSrc = vec3<f32>(chromaSepR, src.g, chromaSepB);
 
   var toon = mix(chromaticSrc, posterized, shadeMix);
+  let holdFlat = 1.0 - smoothstep(0.0, edgeThreshold * 2.2, edge);
+  toon = mix(toon, posterized, holdFlat * shadeMix * 0.55);
   let bleedEdge = smoothstep(0.02, 0.08, edge) * (1.0 - smoothstep(0.08, 0.18, edge));
   toon = mix(toon, toon * (1.0 - inkDensity * 0.22) + inkTint * 0.12, bleedEdge * 0.4);
 

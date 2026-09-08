@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Difference of Gaussians Cascade
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Convolution Type: multi-scale-DoG
 //  Complexity: High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: Marr-Hildreth zero-crossing ridges; source-tied XDoG tanh
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -66,7 +67,7 @@ fn gaussianSample(uv: vec2<f32>, pixelSize: vec2<f32>, sigma: f32) -> f32 {
             let d = length(vec2<f32>(f32(dx), f32(dy)));
             let w = exp(-d * d / (2.0 * sigma * sigma + 0.001));
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-            let lum = dot(textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+            let lum = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
             accum += lum * w;
             weightSum += w;
         }
@@ -115,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Ripple scale bursts
     var rippleBurst = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -159,6 +160,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Boost edges
     color = color * (1.0 + length(vec3<f32>(rResponse, gResponse, bResponse)) * 0.5);
     
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let srcLuma = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let xd = tanh((dog0 - 0.04) * (4.0 + contrast));
+    let ink = clamp(0.5 - 0.5 * xd, 0.0, 1.0);
+    color = mix(color, src.rgb * (0.55 + ink * 0.7), 0.28 * clamp(contrast * 0.25, 0.0, 1.0) * (0.65 + srcLuma * 0.35));
+
+    let dogN = dog(clamp(uv + vec2<f32>(0.0, pixelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), pixelSize, s0, s0 * 1.6) * contrast;
+    let dogE = dog(clamp(uv + vec2<f32>(pixelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), pixelSize, s0, s0 * 1.6) * contrast;
+    let zeroCross = select(0.0, 1.0, (dog0 * dogN) < 0.0 || (dog0 * dogE) < 0.0);
+    color = mix(color, color * vec3<f32>(0.12, 0.10, 0.08), zeroCross * 0.55 * (0.5 + treble * 0.4));
+    
     // Chromatic aberration on detected edges
     let edgeStrength = clamp(length(vec3<f32>(dog0, dog1, dog2)) * 0.05, 0.0, 1.0);
     let caOffset = pixelSize * edgeStrength * (1.0 + mids * 0.6);
@@ -177,10 +189,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, prevColor * decay, 0.12 + bass * 0.18);
     
     // Semantic alpha: ultra-coarse DoG weighted by depth and audio
-    let alpha = clamp(abs(aResponse) * (0.4 + depth * 0.4) * (0.6 + treble * 0.4), 0.0, 1.0);
+    let alpha = clamp(abs(aResponse) * (0.4 + depth * 0.4) * (0.6 + treble * 0.4) + zeroCross * 0.2 + src.a * 0.15, 0.0, 1.0);
+    let packed = vec4<f32>(color, alpha);
     
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));
-    
-    // Depth pass-through
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

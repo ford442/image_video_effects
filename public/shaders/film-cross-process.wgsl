@@ -3,13 +3,9 @@
 //  Category: artistic
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Low
-//  Description: Simulates E6 slide film developed in C41 negative chemistry.
-//    Each channel is passed through a different S-curve (lifted shadows,
-//    crushed mids, or blown highlights depending on channel), the colour
-//    gamut is skewed (greens shift cyan, reds shift orange-yellow), grain
-//    is added, and the result is pushed toward the iconic high-contrast
-//    vivid-yet-desaturated cross-processed look. Bass boosts contrast;
-//    mids shift the colour skew; treble increases grain texture.
+//  Upgraded: 2026-09-08
+//  Ideas: per-channel grain; highlight cyan-green XPro crossover
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=contrast, y=color_skew, z=grain, w=vignette
 
@@ -50,6 +46,10 @@ fn scurve(t: f32, pivot: f32, slope: f32) -> f32 {
 
 fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -141,19 +141,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     g = mix(g, luma, shadowMix);
     b = mix(b, luma, shadowMix);
 
-    // Film grain (denser with treble)
+    // Film grain (denser with treble) — per-channel stock
     let grainAmt  = (u.zoom_params.z * 0.08 + treble * 0.04) * (1.0 + regionVoice * 0.3);
     let grainSeed = uv * 3791.3 + vec2<f32>(fract(time * 0.1), fract(time * 0.17 + 0.3));
-    let grain     = (hash21(grainSeed) - 0.5) * grainAmt;
-    r = clamp(r + grain, 0.0, 1.0);
-    g = clamp(g + grain * 0.8, 0.0, 1.0);
-    b = clamp(b + grain * 1.1, 0.0, 1.0);
+    let gR = (hash21(grainSeed) - 0.5);
+    let gG = (hash21(grainSeed * vec2<f32>(1.17, 0.91) + vec2<f32>(17.1, 9.3)) - 0.5);
+    let gB = (hash21(grainSeed * vec2<f32>(0.83, 1.29) + vec2<f32>(3.7, 28.4)) - 0.5);
+    r = clamp(r + gR * grainAmt, 0.0, 1.0);
+    g = clamp(g + gG * grainAmt * 0.85, 0.0, 1.0);
+    b = clamp(b + gB * grainAmt * 1.12, 0.0, 1.0);
 
     // Vignette
     let vigStrength = u.zoom_params.w * 1.2;
     let vigDist     = length((uv - 0.5) * aspectVec);
     let vig         = 1.0 - smoothstep(0.4, 0.9, vigDist) * vigStrength;
     var finalRGB    = clamp(vec3<f32>(r, g, b) * vig, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    let hi = smoothstep(0.55, 0.92, luma);
+    let xproHi = vec3<f32>(0.92, 1.05, 1.10);
+    finalRGB = mix(finalRGB, clamp(finalRGB * xproHi, vec3<f32>(0.0), vec3<f32>(1.0)), hi * (0.35 + skew * 0.8));
 
     // Local enlarger exposure: hover gives a subtle warm lift, holding the
     // mouse develops harder, and click rings leave short chemical flashes.
@@ -165,8 +171,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let crossLuma = dot(finalRGB, vec3<f32>(0.299, 0.587, 0.114));
     let alpha     = clamp(src.a * 0.7 + crossLuma * 0.4 + bass * 0.08, 0.0, 1.0);
 
+    let packed = vec4<f32>(acesToneMap(finalRGB), alpha);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeTexture, coord, vec4<f32>(finalRGB, alpha));
-    textureStore(dataTextureA, coord, vec4<f32>(finalRGB, alpha));
+    textureStore(writeTexture, coord, packed);
+    textureStore(dataTextureA, coord, packed);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware, temporal
 //  Convolution Type: gray-scott-reaction-diffusion-filter
 //  Complexity: High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: C.rg chemical persistence; Pearson F/k from feed slider
+//  A packing: A, B, mixed-blue, activity (C.rg = chemicals)
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -91,11 +92,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let inputLuma = dot(inputColor, vec3<f32>(0.299, 0.587, 0.114));
 
-    let centerA = inputLuma;
-    let dx = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(scaledPixelSize.x, 0.0), 0.0).rgb;
+    let prevChem = textureLoad(dataTextureC, pixel, 0);
+    let centerA = mix(inputLuma, clamp(prevChem.r, 0.0, 1.0), 0.82);
+    let dx = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(scaledPixelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let dy = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, scaledPixelSize.y), 0.0).rgb;
     let edge = length(dx - inputColor) + length(dy - inputColor);
-    let centerB = edge * 2.0;
+    let centerB = mix(edge * 2.0, clamp(prevChem.g, 0.0, 1.0), 0.82);
 
     let n = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, scaledPixelSize.y), 0.0);
     let s = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -scaledPixelSize.y), 0.0);
@@ -120,7 +122,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseB = mouseFactor * (1.0 + mouseDown * 2.0);
 
     var rippleFeed = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -134,7 +136,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let effectiveFeed = feedBase + rippleFeed + mouseFactor * 0.03;
-    let kill = effectiveFeed * 0.5 + mouseFactor * 0.02;
+    let pearsonK = mix(effectiveFeed + 0.04, effectiveFeed * 0.5, u.zoom_params.z);
+    let kill = pearsonK + mouseFactor * 0.02;
     let reaction = centerA * centerB * centerB;
 
     let newA = centerA + (diffA * lapA - reaction + effectiveFeed * (1.0 - centerA)) * 0.5;
@@ -163,9 +166,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = mix(finalColor, chromatic, clamp(caStrength * 30.0, 0.0, 0.4));
 
     // Temporal feedback: blend with previous frame
-    let prevFrame = textureLoad(dataTextureC, pixel, 0);
     let temporalDecay = mix(0.5, 0.85, depthFactor);
-    finalColor = mix(finalColor, prevFrame.rgb, temporalDecay * 0.12);
+    finalColor = mix(finalColor, vec3<f32>(prevChem.r, prevChem.g, prevChem.b), temporalDecay * 0.12);
 
     // ACES tone mapping
     finalColor = acesToneMap(finalColor * (1.0 + mids * 0.25));
@@ -174,8 +176,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let reactionActivity = clamp(abs(newA - centerA) + abs(newB - centerB) * 2.0, 0.0, 1.0);
     let semanticAlpha = mix(reactionActivity, 0.15, depthFactor * 0.3);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(clampedA, clampedB, finalColor.b, semanticAlpha));
-
-    // Depth pass-through
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let packed = vec4<f32>(clampedA, clampedB, finalColor.b, semanticAlpha);
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

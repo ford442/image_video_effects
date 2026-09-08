@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware
 //  Convolution Type: spatial-frequency-notch-approximation
 //  Complexity: High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: oriented cosine notch; residual cut mix
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -94,10 +95,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseDist = length(uv - mousePos);
     let mouseFreq = mouseDist * 2.0;
     let mouseFactor = exp(-mouseDist * mouseDist * 4.0) * mouseInfluence;
+    let mouseDir = normalize((uv - mousePos) + vec2<f32>(0.0001));
     
     // Ripple frequency sweeps
     var rippleFreq = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -131,10 +133,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             for (var dx = -maxRadius; dx <= maxRadius; dx++) {
                 let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
                 let d = length(vec2<f32>(f32(dx), f32(dy)));
-                let sample = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
+                let dOriented = abs(dot(vec2<f32>(f32(dx), f32(dy)), mouseDir));
+                let dUse = mix(d, dOriented, mouseFactor);
+                let sample = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
                 
-                // Cosine kernel at target frequency
-                let kernel = cos(d * targetFreq * 6.28318) * exp(-d * d * 0.05);
+                let kernel = cos(dUse * targetFreq * 6.28318) * exp(-d * d * 0.05);
                 bandAccum += sample * kernel;
                 bandWeight += abs(kernel);
             }
@@ -159,6 +162,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let responseNorm = clamp(totalResponse / f32(numBands), 0.0, 1.0);
     let freqColor = palette(responseNorm + time * 0.05, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
     var finalColor = mix(filtered, filtered * freqColor * 1.5, abs(boostCut) * 0.3);
+    let residual = inputColor - filtered;
+    let cutAmt = (1.0 - step(0.0, boostCut)) * abs(boostCut);
+    finalColor = mix(finalColor, inputColor - residual * (0.55 + cutAmt), cutAmt);
     
     // Chromatic aberration on filtered bands
     let caStrength = responseNorm * (1.0 + mids * 0.5) * 0.6;
@@ -180,8 +186,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Semantic alpha: spectral response modulated by depth and audio
     let alpha = responseNorm * (0.5 + depth * 0.5) * (0.6 + bass * 0.4);
     
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
-    
-    // Depth pass-through
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

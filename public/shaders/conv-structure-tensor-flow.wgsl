@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven
 //  Convolution Type: structure-tensor + LIC
 //  Complexity: Very High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: minor-eigenvector LIC; source-luma tint
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -53,7 +54,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 
 fn sampleLuma(uv: vec2<f32>, pixelSize: vec2<f32>, dx: i32, dy: i32) -> f32 {
     let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-    return dot(textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    return dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
 }
 
 fn structureTensor(uv: vec2<f32>, pixelSize: vec2<f32>) -> vec4<f32> {
@@ -104,6 +105,7 @@ fn lic(uv: vec2<f32>, direction: vec2<f32>, pixelSize: vec2<f32>, steps: i32, st
         accum += lum * w;
         weight += w;
         pos += direction * stepSize * pixelSize;
+        pos = clamp(pos, vec2<f32>(0.0), vec2<f32>(1.0));
     }
     
     pos = uv;
@@ -113,6 +115,7 @@ fn lic(uv: vec2<f32>, direction: vec2<f32>, pixelSize: vec2<f32>, steps: i32, st
         accum += lum * w;
         weight += w;
         pos -= direction * stepSize * pixelSize;
+        pos = clamp(pos, vec2<f32>(0.0), vec2<f32>(1.0));
     }
     
     return accum / max(weight, 0.001);
@@ -120,6 +123,10 @@ fn lic(uv: vec2<f32>, direction: vec2<f32>, pixelSize: vec2<f32>, steps: i32, st
 
 fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
     return a + b * cos(6.28318 * (c * t + d));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -131,7 +138,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixelSize = 1.0 / res;
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let pixel = vec2<i32>(global_id.xy);
     
     // Parameters
     let licSteps = i32(mix(8.0, 32.0, u.zoom_params.x));
@@ -171,7 +181,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Ripple turbulence
     var rippleTurb = vec2<f32>(0.0);
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -187,26 +197,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     eigenvec = normalize(eigenvec + rippleTurb * 2.0);
     
     // Animate flow direction over time
+    let flowDir = vec2<f32>(-eigenvec.y, eigenvec.x);
     let rotAngle = time * 0.2 * flowSpeed;
     let cosR = cos(rotAngle);
     let sinR = sin(rotAngle);
     let animatedDir = vec2<f32>(
-        eigenvec.x * cosR - eigenvec.y * sinR,
-        eigenvec.x * sinR + eigenvec.y * cosR
+        flowDir.x * cosR - flowDir.y * sinR,
+        flowDir.x * sinR + flowDir.y * cosR
     );
     
     // LIC along the flow
     let licValue = lic(uv, animatedDir, pixelSize, licSteps, 1.5);
     
     // Color by direction and coherency
-    let flowAngle = atan2(eigenvec.y, eigenvec.x) * 0.15915 + 0.5; // normalize to 0-1
+    let flowAngle = atan2(eigenvec.y, eigenvec.x) * 0.15915 + 0.5;
     let color = palette(flowAngle, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
-    let finalColor = color * (0.3 + 0.7 * boostedCoherency) * (0.5 + 0.5 * licValue);
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let srcLuma = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    var finalColor = color * (0.3 + 0.7 * boostedCoherency) * (0.5 + 0.5 * licValue);
+    finalColor = mix(finalColor, src.rgb * (0.45 + licValue * 0.8), 0.32 * (0.5 + srcLuma));
+    finalColor = acesToneMap(finalColor * (1.0 + mids * 0.2));
+
+    let alpha = clamp(licValue * (0.5 + boostedCoherency * 0.5) * (0.6 + treble * 0.3), 0.0, 1.0);
+    let packed = vec4<f32>(finalColor, alpha);
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
     
-    // Store: RGB = flow-colored LIC, Alpha = LIC intensity
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, licValue));
-    
-    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware
 //  Convolution Type: steerable-pyramid-decomposition
 //  Complexity: High
-//  Created: 2026-04-18
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-08
+//  Ideas: H2 quadrature energy; source-tied reconstruction
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -57,7 +58,8 @@ fn h2Basis(x: f32, y: f32, sigma: f32) -> vec3<f32> {
 }
 
 fn steerableFilter(uv: vec2<f32>, theta: f32, sigma: f32, pixelSize: vec2<f32>) -> f32 {
-    var response = 0.0;
+    var evenR = 0.0;
+    var oddR = 0.0;
     let radius = i32(ceil(sigma * 3.0));
     let maxRadius = min(radius, 5);
 
@@ -70,15 +72,18 @@ fn steerableFilter(uv: vec2<f32>, theta: f32, sigma: f32, pixelSize: vec2<f32>) 
         for (var dx = -maxRadius; dx <= maxRadius; dx++) {
             let x = f32(dx);
             let y = f32(dy);
-            let basis = g2Basis(x, y, sigma);
-            let kernel = basis.x * cos2T + basis.y * sin2T + basis.z * (-cos2T);
+            let g2 = g2Basis(x, y, sigma);
+            let h2 = h2Basis(x, y, sigma);
+            let kEven = g2.x * cos2T + g2.y * sin2T + g2.z * (-cos2T);
+            let kOdd = h2.x * cos2T + h2.y * sin2T + h2.z * (-cos2T);
 
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-            let lum = dot(textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-            response += lum * kernel;
+            let lum = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+            evenR += lum * kEven;
+            oddR += lum * kOdd;
         }
     }
-    return response;
+    return sqrt(evenR * evenR + oddR * oddR);
 }
 
 fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
@@ -118,7 +123,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Ripple orientation bursts
     var rippleSteer = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -158,6 +163,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color.r = mix(color.r, caColorR.r, caStrength * 2.0);
     color.b = mix(color.b, caColorB.b, caStrength * 2.0);
 
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    color = mix(color, src.rgb * (0.55 + totalResponse * 0.35), 0.28);
     color = color * colorBoost * (1.0 + treble * 0.3);
 
     // Temporal feedback: pyramid blending
@@ -171,8 +178,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color *= depthFactor;
 
     // Semantic alpha: 135° sub-band signed response modulated by depth and total energy
-    let alpha = clamp(abs(b135) * depthFactor * (1.0 + bass), 0.0, 1.0);
-
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let alpha = clamp(abs(b135) * depthFactor * (1.0 + bass) + src.a * 0.2, 0.0, 1.0);
+    let packed = vec4<f32>(color, alpha);
+    let pixel = vec2<i32>(global_id.xy);
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chromatic Swirl
 //  Category: distortion
-//  Features: mouse-driven, audio-reactive, rich-chromatic-aberration, volumetric-swirl, depth-falloff
+//  Features: mouse-driven, audio-reactive, rich-chromatic-aberration, volumetric-swirl, depth-falloff, upgraded-rgba
 //  Complexity: Medium
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish — deeper color, better motion, atmospheric depth)
+//  Upgraded: 2026-09-08
+//  Ideas: angular chromatic (R/G/B at different swirl angles); animate as continuous spin
+//  A packing: telemetry (dist/radius, angle, aberration, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -97,42 +98,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Calculate Swirl Angle
     var angle = 0.0;
+    var percent = 0.0;
     if (dist < radius) {
-        let percent = (radius - dist) / radius;
+        percent = (radius - dist) / radius;
         angle = percent * percent * swirlStrength;
-        if (animate > 0.5) {
-            angle += sin(time) * 2.0 * percent;
-        }
+        // Animate as continuous spin when the toggle is on (not a sin pulse).
+        angle += select(0.0, time * (1.4 + mids) * percent, animate > 0.5);
         if (mouseDown > 0.5) {
             angle *= 2.0;
         }
     }
 
-    // Rotate UV
-    let sinA = sin(angle);
-    let cosA = cos(angle);
+    let swirlSpeed = 1.0 + mids * 1.8;
+    let extraTwist = sin(time * swirlSpeed + dist * 18.0) * (0.3 + treble * 0.6);
+    let baseAngle = angle + extraTwist;
+
     let offset = uv - center;
     let x_corr = offset.x * aspect;
     let y_corr = offset.y;
-
-    let rotatedX = x_corr * cosA - y_corr * sinA;
-    let rotatedY = x_corr * sinA + y_corr * cosA;
-
-    // === Visual Flourish: Richer swirling with audio texture ===
-    let swirlSpeed = 1.0 + mids * 1.8;
-    let extraTwist = sin(time * swirlSpeed + dist * 18.0) * (0.3 + treble * 0.6);
-    let finalAngle = angle + extraTwist;
-
-    let finalUV_center = vec2<f32>(rotatedX / aspect, rotatedY) + center;
-
-    // Chromatic Aberration
-    let dirVec = finalUV_center - center;
-    let dirLen = max(length(dirVec), 0.0001);
-    let dir = dirVec / dirLen;
-
-    let uvR = clamp(finalUV_center + dir * aberration * dist, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
-    let uvG = clamp(finalUV_center, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
-    let uvB = clamp(finalUV_center - dir * aberration * dist, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    let angR = baseAngle * (1.0 + aberration * 2.8);
+    let angG = baseAngle;
+    let angB = baseAngle * (1.0 - aberration * 2.2);
+    let uvR = clamp(vec2<f32>(
+        (x_corr * cos(angR) - y_corr * sin(angR)) / aspect,
+        x_corr * sin(angR) + y_corr * cos(angR)
+    ) + center, vec2<f32>(0.001), vec2<f32>(0.999));
+    let uvG = clamp(vec2<f32>(
+        (x_corr * cos(angG) - y_corr * sin(angG)) / aspect,
+        x_corr * sin(angG) + y_corr * cos(angG)
+    ) + center, vec2<f32>(0.001), vec2<f32>(0.999));
+    let uvB = clamp(vec2<f32>(
+        (x_corr * cos(angB) - y_corr * sin(angB)) / aspect,
+        x_corr * sin(angB) + y_corr * cos(angB)
+    ) + center, vec2<f32>(0.001), vec2<f32>(0.999));
 
     let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;

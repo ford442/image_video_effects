@@ -3,15 +3,12 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Phase A Upgrade Swarm
-//  Created: 2026-05-10
-//  Upgraded: Alpha translucency blending with smooth displacement field
+//  Upgraded: 2026-09-08
+//  Ideas: wavelength-scaled R/G/B split along the existing offset; lateral vs longitudinal mix
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-//  Computes a single smooth displacement field driven by mouse
-//  position. Spectral variation is applied via mix() with
-//  wavelengthToRGB, never per-channel UV sampling. Alpha encodes
-//  displacement magnitude for translucency-aware compositing.
-//  Depth-aware blending attenuates the effect on distant geometry.
+//  Mouse-localized chromatic split. Mode < 0.5 is radial (longitudinal);
+//  mode >= 0.5 is directional (lateral). Ripples perturb the field.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -59,6 +56,10 @@ fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
 
 fn gaussianMask(dist: f32, sigma: f32) -> f32 {
   return exp(-dist * dist / (2.0 * sigma * sigma));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -123,22 +124,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Apply time-based micro-jitter for living glass feel
   let jitter = vec2<f32>(sin(time * 2.0 + uv.y * 10.0), cos(time * 1.7 + uv.x * 10.0)) * amount * 0.05;
-  let displacedUV = uv + smoothOffset + rippleOffset + jitter;
-
-  // Sample FULL RGB from single displaced UV — no channel splitting
+  let field = smoothOffset + rippleOffset + jitter;
+  // Wavelength-scaled split along the existing field. Radial mode stays
+  // longitudinal (along the offset); directional mode is already lateral.
+  let longW = select(1.0, 0.55, mode >= 0.5);
+  let latDir = vec2<f32>(-field.y, field.x);
+  let latLen = max(length(latDir), 0.0001);
+  let lateral = (latDir / latLen) * length(field) * (1.0 - longW);
+  let splitAxis = field * longW + lateral;
+  let uvR = clamp(uv + splitAxis * 1.15, vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvG = clamp(uv + splitAxis * 0.70, vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvB = clamp(uv + splitAxis * 1.35, vec2<f32>(0.0), vec2<f32>(1.0));
+  let splitColor = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
+  );
+  let displacedUV = clamp(uv + field, vec2<f32>(0.0), vec2<f32>(1.0));
   let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+  let splitMix = clamp(length(field) * 8.0, 0.0, 1.0);
+  let sampled = mix(baseColor, splitColor, splitMix);
 
-  // Alpha encodes displacement magnitude for translucency blending
   let displacementMagnitude = length(smoothOffset + rippleOffset);
-  let luma = dot(baseColor, vec3<f32>(0.299, 0.587, 0.114));
+  let luma = dot(sampled, vec3<f32>(0.299, 0.587, 0.114));
   let falloffAlpha = tentAlpha(displacementMagnitude * 4.0);
   let alpha = clamp(displacementMagnitude * 5.0 + luma * 0.4 + falloffAlpha * 0.3, 0.0, 1.0);
 
-  // Optional spectral tint via mix(), NOT per-channel sampling
   let wavelength = mix(380.0, 780.0, angleOffset + displacementMagnitude * 2.0);
   let spectralTint = wavelengthToRGB(wavelength);
   let tintStrength = displacementMagnitude * 2.0;
-  let color = mix(baseColor, baseColor * spectralTint, alpha * tintStrength);
+  let color = mix(sampled, sampled * spectralTint, alpha * tintStrength);
 
   // Depth-aware compositing: blend with original based on depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -149,10 +164,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Vignette darkening at screen edges for dramatic focus
   let vignette = 1.0 - smoothstep(0.4, 1.2, length(uv - vec2<f32>(0.5)) * 1.2);
-  let vignettedColor = finalColor * mix(0.85, 1.0, vignette);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(vignettedColor, finalAlpha));
+  let vignettedColor = acesToneMap(finalColor * mix(0.85, 1.0, vignette));
+  let pixel = vec2<i32>(global_id.xy);
+  let outColor = vec4<f32>(vignettedColor, finalAlpha);
+  textureStore(writeTexture, pixel, outColor);
+  textureStore(dataTextureA, pixel, outColor);
 
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

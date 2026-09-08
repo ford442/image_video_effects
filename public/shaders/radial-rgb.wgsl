@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Radial RGB — Upgraded with Alpha-Channel Translucency Blending
+//  Radial RGB
 //  Category: distortion
-//  Features: mouse-driven, chromatic-aberration, upgraded-rgba
+//  Features: mouse-driven, chromatic-aberration, upgraded-rgba, audio-reactive
 //  Complexity: Medium
-//  Created: 2026-04-25
-//  Upgraded: 2026-05-17
+//  Upgraded: 2026-09-08
+//  Ideas: radial chromatic (R/B at different k1); mustache k3 r^6 Brown term
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -55,12 +56,17 @@ fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
   return clamp(vec3(r, g, b) * intensity, vec3(0.0), vec3(1.0));
 }
 
-fn lensDistort(uv: vec2<f32>, center: vec2<f32>, k1: f32, k2: f32) -> vec2<f32> {
+fn lensDistort(uv: vec2<f32>, center: vec2<f32>, k1: f32, k2: f32, k3: f32) -> vec2<f32> {
   let d = uv - center;
   let r2 = dot(d, d);
   let r4 = r2 * r2;
-  let dist = 1.0 + k1 * r2 + k2 * r4;
+  let r6 = r4 * r2;
+  let dist = 1.0 + k1 * r2 + k2 * r4 + k3 * r6;
   return center + d * dist;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
@@ -115,23 +121,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let anamorphic = 1.0 + u.zoom_params.z * 2.0;
   let dispersion = u.zoom_params.w * 0.05;
 
-  // ── Single smooth displacement field ──
-  var distortedUV = lensDistort(uv, center, k1, k2);
-  distortedUV.y = (distortedUV.y - 0.5) / anamorphic + 0.5;
+  let k3 = k1 * k2 * 0.35;
+  // Radial chromatic: R/B at slightly different barrel coefficients.
+  let k1R = k1 * (1.0 + dispersion * 10.0);
+  let k1B = k1 * (1.0 - dispersion * 10.0);
+  var uvG = lensDistort(uv, center, k1, k2, k3);
+  var uvR = lensDistort(uv, center, k1R, k2, k3);
+  var uvB = lensDistort(uv, center, k1B, k2, k3);
+  uvG.y = (uvG.y - 0.5) / anamorphic + 0.5;
+  uvR.y = (uvR.y - 0.5) / anamorphic + 0.5;
+  uvB.y = (uvB.y - 0.5) / anamorphic + 0.5;
+  uvG = clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0));
+  uvR = clamp(uvR, vec2<f32>(0.0), vec2<f32>(1.0));
+  uvB = clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let mouseDir = normalize(u.zoom_config.yz - 0.5 + vec2(0.0001));
+  let distortedUV = uvG;
   let displacementMag = length(distortedUV - uv);
-  let smoothOffset = (distortedUV - uv) * (1.0 + dispersion * 2.0);
-  let displacedUV = uv + smoothOffset;
-
-  // Single RGB sample at displaced UV — no per-channel splitting
-  let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+  let splitColor = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
+  );
+  let baseColor = textureSampleLevel(readTexture, u_sampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let sampled = mix(baseColor, splitColor, clamp(dispersion * 14.0, 0.0, 1.0));
 
   // Spectral tint derived from displacement magnitude via wavelength mapping
   let wavelength = mix(520.0, 680.0, clamp(displacementMag * 20.0, 0.0, 1.0));
   let spectralTint = wavelengthToRGB(wavelength);
   let tintStrength = tentAlpha(displacementMag * 8.0) * dispersion * 10.0;
-  var color = mix(baseColor, baseColor * spectralTint, tintStrength);
+  var color = mix(sampled, sampled * spectralTint, tintStrength);
 
   // Audio-reactive pulse from plasmaBuffer: bass drives brightness, treble adds sparkle
   let audio = plasmaBuffer[0];
@@ -147,7 +166,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthFade = smoothstep(0.0, 0.5, depth);
   let depthMid = smoothstep(0.2, 0.6, depth);
-  color = mix(color, baseColor, depthFade * 0.35);
+  color = mix(color, sampled, depthFade * 0.35);
   color = mix(color, color * 1.15, depthMid * mids * 0.5);
 
   // Multi-zone vignette falloff with smooth inner/outer curves
@@ -169,8 +188,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lensAlpha = smoothFalloff(displacementMag, 0.0, 0.08) * 0.6;
   let alpha = clamp((transmission + lensAlpha) * (1.0 + displacementMag * 4.0) * (1.0 - fresnel * 0.25), 0.25, 0.95);
 
-  textureStore(writeTexture, global_id.xy, vec4(color, alpha));
+  let outColor = vec4<f32>(acesToneMap(color), alpha);
+  textureStore(writeTexture, global_id.xy, outColor);
   textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, global_id.xy, vec4(color, alpha));
+  textureStore(dataTextureA, global_id.xy, outColor);
   textureStore(dataTextureB, global_id.xy, vec4(displacementMag, bass, depth, alpha));
 }

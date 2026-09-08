@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Perspective Tilt
+//  Category: distortion
+//  Features: mouse-driven, upgraded-rgba
+//  Upgraded: 2026-09-08
+//  Ideas: vanishing falloff with hit distance; grazing Scheimpflug soften
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -21,10 +28,9 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Perspective Tilt
-// Implements a simple 3D plane rotation.
-// Mouse X controls Yaw (rotation around Y axis).
-// Mouse Y controls Pitch (rotation around X axis).
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -133,29 +139,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let texV = -v_plane * u.zoom_params.w + 0.5; // Flip Y back
 
             if (texU >= 0.0 && texU <= 1.0 && texV >= 0.0 && texV <= 1.0) {
-                color = textureSampleLevel(readTexture, u_sampler, vec2<f32>(texU, texV), 0.0);
-
-                // Depth writing
-                // We should write the depth of the plane.
-                // t is the distance from camera to hit point.
-                // But depth buffer usually expects 0..1 where 0 is far? Or linear?
-                // The engine uses 0=background, 1=foreground logic often, or raw depth.
-                // Let's sample the original depth? No, the geometry changed.
-                // We should create new depth.
-                // Let's just output 1.0/t or something if we want Z-sorting,
-                // but for single layer simple shader, we can just pass through 0.0 or 1.0.
-                // However, to allow "Depth of Field" effects later, we might want real depth.
-                // Let's sample the texture's depth at that point?
-                // Yes, if the image has depth information (from depth estimation), we should map it onto the plane.
-
-                let texDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(texU, texV), 0.0).r;
-                // Modulate it by the plane's Z position?
-                // This is getting complex. Let's just use the texture depth.
-                depth_val = texDepth;
+                let texUV = vec2<f32>(texU, texV);
+                let hit = textureSampleLevel(readTexture, u_sampler, texUV, 0.0);
+                // Vanishing falloff: farther plane hits dim like aerial perspective.
+                let vanish = mix(1.0, 0.42, smoothstep(dist * 0.6, dist * 2.4, t));
+                // Grazing Scheimpflug: near-parallel rays soften along the plane.
+                let graze = 1.0 - abs(denom);
+                let smear = vec2<f32>(planeRight.x, -planeUp.y) * graze * 0.012;
+                let softA = textureSampleLevel(readTexture, u_sampler, clamp(texUV + smear, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+                let softB = textureSampleLevel(readTexture, u_sampler, clamp(texUV - smear, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+                let rgb = mix(hit.rgb, (softA.rgb + softB.rgb) * 0.5, clamp(graze * 1.4, 0.0, 0.75)) * vanish;
+                let cover = 0.55 + vanish * 0.45;
+                color = vec4<f32>(acesToneMap(rgb), clamp(cover * hit.a + graze * 0.15, 0.12, 1.0));
+                let texDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, texUV, 0.0).r;
+                depth_val = mix(texDepth, clamp(1.0 / max(t, 0.001) * 0.35, 0.0, 1.0), 0.35);
             }
         }
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_val, 0.0, 0.0, 0.0));
+    let pixel = vec2<i32>(global_id.xy);
+    textureStore(writeTexture, pixel, color);
+    textureStore(dataTextureA, pixel, color);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth_val, 0.0, 0.0, 0.0));
 }

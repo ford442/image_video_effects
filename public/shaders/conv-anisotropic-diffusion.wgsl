@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Anisotropic Diffusion
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Convolution Type: perona-malik-anisotropic-diffusion
 //  Complexity: High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: Tukey biweight conductivity; 4-neighbor coherence boost
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -58,6 +59,13 @@ fn diffusionCoefficient(gradientMag: f32, kappa: f32) -> f32 {
     return exp(-(gradientMag * gradientMag) / (kappa * kappa + 0.0001));
 }
 
+fn tukeyConductivity(gradientMag: f32, kappa: f32) -> f32 {
+    let x = gradientMag / max(kappa, 0.0001);
+    let inside = x < 1.0;
+    let t = 1.0 - x * x;
+    return select(0.0, t * t, inside);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
@@ -99,17 +107,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let gradE = length(e - current);
         let gradW = length(w - current);
         
-        let cN = diffusionCoefficient(gradN, depthKappa);
-        let cS = diffusionCoefficient(gradS, depthKappa);
-        let cE = diffusionCoefficient(gradE, depthKappa);
-        let cW = diffusionCoefficient(gradW, depthKappa);
+        let cNexp = diffusionCoefficient(gradN, depthKappa);
+        let cSexp = diffusionCoefficient(gradS, depthKappa);
+        let cEexp = diffusionCoefficient(gradE, depthKappa);
+        let cWexp = diffusionCoefficient(gradW, depthKappa);
+        let cN = mix(cNexp, tukeyConductivity(gradN, depthKappa), 0.45);
+        let cS = mix(cSexp, tukeyConductivity(gradS, depthKappa), 0.45);
+        let cE = mix(cEexp, tukeyConductivity(gradE, depthKappa), 0.45);
+        let cW = mix(cWexp, tukeyConductivity(gradW, depthKappa), 0.45);
         
         let mouseDist = length(uv - mousePos);
         let mouseFactor = exp(-mouseDist * mouseDist * 10.0) * mouseInfluence;
         let mouseBoost = 1.0 + mouseFactor * 5.0;
         
         var rippleFront = 0.0;
-        let rippleCount = u32(u.config.y);
+        let rippleCount = min(u32(u.config.y), 50u);
         for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
             let ripple = u.ripples[i];
             let rPos = ripple.xy;
@@ -123,10 +135,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
         let rippleBoost = 1.0 + rippleFront * 3.0;
         
-        let fluxN = cN * (n - current);
-        let fluxS = cS * (s - current);
-        let fluxE = cE * (e - current);
-        let fluxW = cW * (w - current);
+        let horiz = gradE + gradW;
+        let vert = gradN + gradS;
+        let followH = 1.0 + 0.35 * step(horiz, vert);
+        let followV = 1.0 + 0.35 * step(vert, horiz);
+        
+        let fluxN = cN * (n - current) * followV;
+        let fluxS = cS * (s - current) * followV;
+        let fluxE = cE * (e - current) * followH;
+        let fluxW = cW * (w - current) * followH;
         
         let effectiveDt = audioDt * mouseBoost * rippleBoost;
         current = current + effectiveDt * (fluxN + fluxS + fluxE + fluxW);
@@ -153,7 +170,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Semantic alpha: diffusion coefficient modulated by depth (foreground = sharper = lower alpha)
     let alpha = clamp(avgCoeff * (1.0 - depth * 0.4), 0.0, 1.0);
+    let packed = vec4<f32>(finalColor, alpha);
     
-    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

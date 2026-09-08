@@ -1768,6 +1768,40 @@
         "min": 0,
         "max": 1
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Melt Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Pigment Deposit",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Relief",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -5484,6 +5518,40 @@
         "default": 0.55,
         "min": 0,
         "max": 1
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Edge Threshold",
+        "default": 0.32,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Posterize Levels",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ink Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Shade Mix",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },

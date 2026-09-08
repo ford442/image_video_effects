@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven
 //  Convolution Type: fractal-shaped-kernel
 //  Complexity: High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: boundary vs interior kernel weight; distance-estimator glint
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -45,6 +46,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn mandelbrotMember(c: vec2<f32>, maxIter: i32) -> f32 {
     var z = vec2<f32>(0.0);
     var iter = 0;
@@ -76,10 +81,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixelSize = 1.0 / res;
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let pixel = vec2<i32>(global_id.xy);
     
     // Parameters
-    let kernelRadius = mix(0.02, 0.08, u.zoom_params.x);
+    let kernelRadius = mix(0.02, 0.08, u.zoom_params.x) * (1.0 + bass * 0.2);
     let fractalZoom = mix(0.5, 4.0, u.zoom_params.y);
     let maxIter = i32(mix(10.0, 40.0, u.zoom_params.z));
     let mouseInfluence = u.zoom_params.w;
@@ -92,7 +100,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Ripple Julia perturbations
     var juliaC = vec2<f32>(0.0);
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -123,20 +131,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             ) + juliaC;
             
             let fractalVal = mandelbrotMember(c, maxIter);
-            
-            // Use fractal membership as kernel weight
-            // Inside set (high iteration count) = sample more
-            let weight = pow(fractalVal, 2.0) + 0.05;
-            
-            let offset = vec2<f32>(relX, relY) / pixelSize * pixelSize;
-            let sampleUV = uv + vec2<f32>(f32(dx), f32(dy)) * pixelSize * (kernelRadius / 0.08);
-            
-            if (sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
-                let sample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-                accumColor += sample * weight;
-                accumWeight += weight;
-                avgFractalDepth += fractalVal;
-            }
+            let boundary = 4.0 * fractalVal * (1.0 - fractalVal);
+            let weight = pow(fractalVal, 2.0) * 0.45 + boundary * 0.7 + 0.05;
+            let glint = pow(clamp(boundary, 0.0, 1.0), 6.0);
+            let sampleUV = clamp(uv + vec2<f32>(f32(dx), f32(dy)) * pixelSize * (kernelRadius / 0.08), vec2<f32>(0.0), vec2<f32>(1.0));
+            let sample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+            accumColor += (sample + vec3<f32>(glint) * 0.35 * (0.5 + treble)) * weight;
+            accumWeight += weight;
+            avgFractalDepth += fractalVal;
         }
     }
     
@@ -150,11 +152,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Psychedelic colorization based on fractal depth
     let depthColor = palette(fractalDepth + time * 0.05, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
     result = mix(result, result * depthColor * 2.0, fractalDepth * 0.4);
+    result = acesToneMap(result * (1.0 + mids * 0.2));
     
-    // Store: RGB = fractal-blurred color, Alpha = fractal iteration depth
-    textureStore(writeTexture, global_id.xy, vec4<f32>(result, fractalDepth));
-    
-    // Depth pass-through
+    let packed = vec4<f32>(result, fractalDepth);
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

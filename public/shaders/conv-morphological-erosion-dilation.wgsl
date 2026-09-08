@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Morphological Erosion Dilation
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware, temporal
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Convolution Type: morphological
 //  Complexity: Medium
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: black-hat beside top-hat; SE-axis ridge skeleton
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -92,7 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Ripple dilation explosions
     var rippleExplosion = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -129,8 +130,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
             if (dxF*dxF + dyF*dyF > f32(maxRadius*maxRadius)) { continue; }
 
-            let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-            let sample = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
+            let offset = vec2<f32>(dxF, dyF) * pixelSize;
+            let sample = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
             let luma = dot(sample, vec3<f32>(0.299, 0.587, 0.114));
 
             minVal = min(minVal, sample);
@@ -144,13 +145,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dilation = maxVal;
     let gradient = (dilation - erosion) * gradientBoost;
     let topHat = center.rgb - erosion;
+    let blackHat = dilation - center.rgb;
+    let hatMix = mix(topHat, blackHat, erosionDilationBlend);
 
     let gradientLuma = dot(gradient, vec3<f32>(0.299, 0.587, 0.114));
     let topHatLuma = dot(topHat, vec3<f32>(0.299, 0.587, 0.114));
+    let blackHatLuma = dot(blackHat, vec3<f32>(0.299, 0.587, 0.114));
+
+    let seAxis = vec2<f32>(cos(mouseAngle), sin(mouseAngle));
+    let ridgeN = textureSampleLevel(readTexture, u_sampler, clamp(uv + seAxis * pixelSize * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let ridgeP = textureSampleLevel(readTexture, u_sampler, clamp(uv - seAxis * pixelSize * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let ridgeLumaN = length(max(ridgeN, ridgeP) - min(ridgeN, ridgeP));
+    let skeleton = select(0.0, 1.0, gradientLuma > ridgeLumaN * 0.92 && gradientLuma > 0.04);
 
     // Blend erosion <-> dilation via param, edge-highlight in between
     let blendRGB = mix(erosion, dilation, erosionDilationBlend);
-    var baseResult = blendRGB + gradient * 0.3;
+    var baseResult = blendRGB + gradient * 0.3 + hatMix * 0.22;
+    baseResult = mix(baseResult, baseResult * vec3<f32>(0.18, 0.16, 0.14), skeleton * 0.4);
 
     // Chromatic aberration on morphological boundaries
     let caStrength = gradientLuma * 0.02 + bass * 0.005;
@@ -174,11 +185,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     baseResult = acesToneMap(baseResult * (1.0 + mids * 0.3));
 
     // Semantic alpha: edge confidence modulated by depth
-    let edgeConfidence = clamp(gradientLuma + abs(topHatLuma) * 0.5, 0.0, 1.0);
+    let edgeConfidence = clamp(gradientLuma + abs(topHatLuma) * 0.5 + abs(blackHatLuma) * 0.25 + skeleton * 0.2, 0.0, 1.0);
     let semanticAlpha = mix(edgeConfidence, 0.2, depthFactor * 0.5);
+    let packed = vec4<f32>(baseResult, semanticAlpha);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(baseResult, semanticAlpha));
-
-    // Depth pass-through
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
