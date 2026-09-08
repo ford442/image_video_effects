@@ -81,6 +81,12 @@ export interface Renderer {
   updateDepthMap?: (data: Float32Array, width: number, height: number) => void;
   getAvailableModes?: () => any[];
   loadImage?: (url: string) => Promise<string>;
+  /** CPU-side photo/video still held after exclusive GPU teardown (#1206). */
+  getCpuInputBitmap?: () => HTMLCanvasElement | HTMLImageElement | HTMLVideoElement | null;
+  /** Upload an already-decoded canvas/image without a network re-fetch. */
+  loadImageFromElement?: (
+    element: HTMLCanvasElement | HTMLImageElement,
+  ) => Promise<{ width: number; height: number } | null> | { width: number; height: number } | null;
   getFrameImage?: () => string;
   applyMask?: (maskType: string) => void;
   setMaskEnabled?: (enabled: boolean) => void;

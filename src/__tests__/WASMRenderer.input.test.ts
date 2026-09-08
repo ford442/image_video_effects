@@ -57,6 +57,7 @@ describe('WASMRenderer input sources', () => {
     jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage: jest.fn(),
       getImageData: jest.fn().mockReturnValue({ data: fakeImageData, width: 640, height: 480 }),
+      clearRect: jest.fn(),
     } as unknown as GPUCanvasContext);
 
     for (const source of ['video', 'webcam', 'live'] as const) {
@@ -81,6 +82,7 @@ describe('WASMRenderer input sources', () => {
     jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage,
       getImageData,
+      clearRect: jest.fn(),
     } as unknown as GPUCanvasContext);
 
     const decode = jest.fn().mockResolvedValue(undefined);
@@ -109,6 +111,7 @@ describe('WASMRenderer input sources', () => {
         width: 8,
         height: 4,
       }),
+      clearRect: jest.fn(),
     } as unknown as GPUCanvasContext);
 
     jest.spyOn(global, 'Image').mockImplementation(() => {
@@ -121,6 +124,30 @@ describe('WASMRenderer input sources', () => {
 
     await renderer.loadImageFromURL('https://example.com/rebind.png');
     expect(log).toHaveBeenCalledWith('[WASM] Input upload ran: 8×4 (image)');
+    log.mockRestore();
+  });
+
+  it('loadImageFromElement uploads decoded RGBA and logs w×h', () => {
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const fakeImageData = new Uint8ClampedArray(4 * 2 * 4);
+    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: jest.fn(),
+      clearRect: jest.fn(),
+      getImageData: jest.fn().mockReturnValue({
+        data: fakeImageData,
+        width: 4,
+        height: 2,
+      }),
+    } as unknown as GPUCanvasContext);
+
+    const src = document.createElement('canvas');
+    src.width = 4;
+    src.height = 2;
+
+    const size = renderer.loadImageFromElement(src);
+    expect(size).toEqual({ width: 4, height: 2 });
+    expect(WasmBridge.uploadImageData).toHaveBeenCalledWith(fakeImageData, 4, 2);
+    expect(log).toHaveBeenCalledWith('[WASM] Input upload ran: 4×2 (image)');
     log.mockRestore();
   });
 });

@@ -9,7 +9,13 @@ import {
   uploadVideoFrame
 } from "./capture.js";
 import { getDiagnostics } from "./diagnostics.js";
-import { initWasmRenderer, isInitialized, shutdownWasmRenderer } from "./init.js";
+import {
+  getPresentCanvas,
+  getPresentCanvasId,
+  initWasmRenderer,
+  isInitialized,
+  shutdownWasmRenderer
+} from "./init.js";
 import {
   isRecordingActive,
   recordAndDownload,
@@ -50,6 +56,8 @@ import {
 const wasmBridge = {
   getDiagnostics,
   initWasmRenderer,
+  getPresentCanvas,
+  getPresentCanvasId,
   shutdownWasmRenderer,
   loadShader,
   reloadShader,

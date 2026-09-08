@@ -114,7 +114,7 @@ function MainApp() {
         fp32PinnedBy: [],
         maxPassesPerFrame: 12,
         historyLayers: 8,
-        workingSizeCap: 2048,
+        workingSizeCap: 1024,
     });
 
     const [rendererDiagnostics, setRendererDiagnostics] =

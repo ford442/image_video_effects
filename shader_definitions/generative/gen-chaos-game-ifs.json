@@ -59,6 +59,7 @@
   "id": "gen-chaos-game-ifs",
   "url": "shaders/gen-chaos-game-ifs.wgsl",
   "features": [
+    "upgraded-rgba",
     "sdf-orbit-sculpture",
     "raymarch",
     "audio-reactive",

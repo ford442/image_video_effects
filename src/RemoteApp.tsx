@@ -3,6 +3,7 @@ import Controls from './components/Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { RemoteControlHeader } from './RemoteControlHeader';
+import { isRemoteChromeHidden, writeRemoteChromeParam } from './utils/remoteChrome';
 
 // Default State (matches App.tsx defaults roughly, but will be overwritten by sync)
 const DEFAULT_SLOT_PARAMS: SlotParams = {
@@ -29,6 +30,7 @@ const RemoteApp: React.FC = () => {
     const [videoList, setVideoList] = useState<VideoRecord[]>([]);
     const [selectedVideo, setSelectedVideo] = useState<string>('');
     const [isMuted, setIsMuted] = useState(true);
+    const [chromeHidden, setChromeHidden] = useState(() => isRemoteChromeHidden());
 
     const channelRef = useRef<BroadcastChannel | null>(null);
     const heartbeatTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -163,6 +165,30 @@ const RemoteApp: React.FC = () => {
         sendMessage('CMD_SET_AUTO_CHANGE_DELAY', delay);
     };
 
+    const handleSetChromeHidden = useCallback((hidden: boolean) => {
+        setChromeHidden(hidden);
+        writeRemoteChromeParam(hidden);
+    }, []);
+
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (!chromeHidden || event.key !== 'Escape') {
+                return;
+            }
+            const target = event.target;
+            if (target instanceof HTMLElement) {
+                const tag = target.tagName;
+                if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) {
+                    return;
+                }
+            }
+            event.preventDefault();
+            handleSetChromeHidden(false);
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [chromeHidden, handleSetChromeHidden]);
+
     const handleLoadRandom = () => {
         sendMessage('CMD_LOAD_RANDOM_IMAGE');
     };
@@ -228,8 +254,24 @@ const RemoteApp: React.FC = () => {
     }
 
     return (
-        <div className="remote-app">
-            <RemoteControlHeader inputSource={inputSource} onLoadRandom={handleLoadRandom} />
+        <div className={`remote-app${chromeHidden ? ' chrome-hidden' : ''}`}>
+            {chromeHidden && (
+                <button
+                    type="button"
+                    className="remote-chrome-restore"
+                    onClick={() => handleSetChromeHidden(false)}
+                    title="Show controls"
+                    aria-label="Show controls"
+                >
+                    ▾
+                </button>
+            )}
+            <RemoteControlHeader
+                inputSource={inputSource}
+                onLoadRandom={handleLoadRandom}
+                hidden={chromeHidden}
+                onHide={() => handleSetChromeHidden(true)}
+            />
 
             {/* Hidden Inputs */}
             <input

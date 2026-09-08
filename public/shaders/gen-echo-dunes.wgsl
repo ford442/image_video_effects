@@ -6,7 +6,9 @@
 //            ridge-sdf-shadows, sunset-palette
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-09-06
+//  Ideas: leeward slipface shade; along-wind sand streaks
+//  A packing: HDR display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -127,6 +129,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ridgeC = sin((warpedP.x + warpedP.y * 0.25) * duneScale * 7.0 + time * 0.3);
   let dunes = ridgeA * 0.5 + ridgeB * 0.35 + ridgeC * 0.15;
   let duneHeight = sat(0.5 + 0.5 * dunes);
+  // Idea 1 — slipface: leeward (negative d(ridgeA)/dx) is the steep dark face
+  let ridgePhase = warpedP.x * duneScale * 5.0 + time * windSpeed * (1.0 + smoothBass);
+  let slipface = sat(-cos(ridgePhase));
+  // Idea 2 — wind streaks along +x (grain varies in y)
+  let windStreaks = pow(abs(sin(warpedP.y * 42.0 + warp.x * 6.0)), 8.0) * duneHeight * (0.35 + 0.65 * sat(dunes));
 
   // ═══ Ridge SDF shadows: march toward the light, occluded by ridge height ═══
   let lightDir = normalize(vec2<f32>(0.7, 0.5));
@@ -172,6 +179,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let horizon = smoothstep(-0.1, 0.35, p.y);
   var color = mix(skyColor, sandColor, horizon);
   color = color * (0.55 + 0.45 * shadow);
+  color = color * (1.0 - slipface * 0.28 * horizon);
+  color = color + vec3<f32>(1.0, 0.82, 0.45) * slipface * horizon * 0.06;
+  color = color + vec3<f32>(0.92, 0.78, 0.48) * windStreaks * 0.14 * horizon;
   color = color + vec3<f32>(1.0, 0.85, 0.55) * shimmer * 0.18;
   color = color + vec3<f32>(0.4, 0.7, 1.0) * warped * mirage * 0.35 * (1.0 + treble * 0.15);
   color = color + vec3<f32>(0.65, 0.9, 1.0) * echoField * (0.4 + treble * 0.9);

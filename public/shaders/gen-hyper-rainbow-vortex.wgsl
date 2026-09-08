@@ -4,7 +4,9 @@
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: Medium-High
 //  Created: 2026-05-31
-//  Updated: 2026-06-07
+//  Updated: 2026-09-06
+//  Ideas: Rankine core/irrotational seam; counter-arm braid beads
+//  A packing: HDR vortex RGBA
 //  By: Kimi Agent
 // ═══════════════════════════════════════════════════════════════════
 //  Wolfram Rankine Vortex Enrichment:
@@ -182,6 +184,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Additive interference at spiral crossings
   let interference = spiral1 * spiral2 * spiral3 * 2.0;
   color += vec3<f32>(1.0, 1.0, 1.0) * interference * 0.3;
+  // Idea 1 — Rankine seam at r = a
+  let rankineSeam = exp(-abs(r - coreR) * 42.0) * (0.55 + intensity * 0.45);
+  color += neonRainbow(swirlAngle / TAU + colorShift) * rankineSeam * (0.7 + vorticityMag * 0.15);
+  // Idea 2 — braid beads where counter-rotating arms cross
+  let braid = pow(clamp(spiral1 * spiral2, 0.0, 1.0), 1.6);
+  color += vec3<f32>(1.0, 0.95, 1.0) * braid * (0.35 + mids * 0.25);
 
   // Clicks launch bounded vortex-energy fronts without auxiliary state.
   var clickEnergy = 0.0;

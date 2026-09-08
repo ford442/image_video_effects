@@ -2,10 +2,9 @@
 // Hyper Labyrinth - 4D Maze Visualization
 // Category: generative
 // Features: 4D geometry, raymarching, neon aesthetics
-// Upgrade (Batch 36 / Visualist): 3-point lighting with dynamic
-// key temperature, volumetric proximity glow, HDR neon veins +
-// ACES grade, emissive persistence in dataTextureA, audio-
-// reactive veins / rim / shimmer, near-is-one depth.
+// Upgrade (2026-09-06): gyroid zero-set ridge; W-slice hue
+// Ideas: maze midline glow; 4th-coordinate neon tint
+// A packing: persisted neon RGB + alpha
 // ═══════════════════════════════════════════════════════════════
 
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
@@ -250,6 +249,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // HDR raw emissive veins; mids modulate topology brightness.
         neon = glowCol * patternFactor * glowIntensity * pulse * (1.0 + mids * 0.45);
         neon += mix(vec3<f32>(0.15, 0.9, 1.4), vec3<f32>(1.4, 0.2, 0.85), veinPulse) * veinPulse * (0.8 + glowIntensity * 0.35);
+        // Idea 1 — gyroid zero ridge (maze midline)
+        let gyroidVal = sin(q.x * 0.5) * cos(q.y * 0.5) + sin(q.y * 0.5) * cos(q.z * 0.5)
+                      + sin(q.z * 0.5) * cos(q.w * 0.5) + sin(q.w * 0.5) * cos(q.x * 0.5);
+        let zeroRidge = exp(-abs(gyroidVal) * 10.0);
+        neon += glowCol * zeroRidge * glowIntensity * 0.28;
+        // Idea 2 — W-slice hue from the rotated 4th coordinate
+        let wHue = 0.5 + 0.5 * sin(p4.w * 2.4);
+        neon = mix(neon, neon.bgr * vec3<f32>(0.85 + wHue * 0.4, 1.0, 1.25 - wHue * 0.35), 0.22);
 
         // Cyber Fresnel rim, treble-reactive, cool electric tint
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);

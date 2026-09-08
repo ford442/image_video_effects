@@ -1,4 +1,4 @@
-import { loadImage, setInputSource, getInputSource, rebindMediaAfterBackendSwitch, readRendererVideo } from './inputSourceBridge';
+import { loadImage, setInputSource, getInputSource, rebindMediaAfterBackendSwitch, readRendererVideo, readPresentCanvasId } from './inputSourceBridge';
 
 describe('inputSourceBridge', () => {
   it('forwards setInputSource and getInputSource', () => {
@@ -50,11 +50,49 @@ describe('inputSourceBridge', () => {
     const result = await rebindMediaAfterBackendSwitch(renderer as never, {
       inputSource: 'image',
       imageUrl: 'https://cdn/photo.png',
+      logUpload: false,
     });
     expect(setSource).toHaveBeenCalledWith('image');
     expect(loadImageFn).toHaveBeenCalledWith('https://cdn/photo.png');
     expect(renderer.updateVideoFrame).not.toHaveBeenCalled();
     expect(result.uploaded).toBe(true);
+  });
+
+  it('rebind uploads from a live canvas when there is no URL (#1206)', async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 8;
+    const loadImageFromElement = jest.fn().mockReturnValue({ width: 16, height: 8 });
+    const loadImageFn = jest.fn();
+    const renderer = {
+      setInputSource: jest.fn(),
+      loadImage: loadImageFn,
+      loadImageFromElement,
+      updateVideoFrame: jest.fn(),
+    };
+    const result = await rebindMediaAfterBackendSwitch(renderer as never, {
+      inputSource: 'image',
+      bitmap: canvas,
+    });
+    expect(loadImageFromElement).toHaveBeenCalledWith(canvas);
+    expect(loadImageFn).not.toHaveBeenCalled();
+    expect(result).toEqual({ uploaded: true, width: 16, height: 8, source: 'image' });
+  });
+
+  it('rebind warns when image source has no bitmap and no URL', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const renderer = {
+      setInputSource: jest.fn(),
+      loadImage: jest.fn(),
+      updateVideoFrame: jest.fn(),
+    };
+    const result = await rebindMediaAfterBackendSwitch(renderer as never, {
+      inputSource: 'image',
+    });
+    expect(renderer.loadImage).not.toHaveBeenCalled();
+    expect(result.uploaded).toBe(false);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('uploaded=false'));
+    warn.mockRestore();
   });
 
   it('rebind uploads a video frame and does not reload an image', async () => {
@@ -71,6 +109,7 @@ describe('inputSourceBridge', () => {
     const result = await rebindMediaAfterBackendSwitch(renderer as never, {
       inputSource: 'video',
       imageUrl: 'https://cdn/photo.png',
+      logUpload: false,
     });
     expect(renderer.setInputSource).toHaveBeenCalledWith('video');
     expect(renderer.setVideo).toHaveBeenCalledWith(video);
@@ -88,9 +127,18 @@ describe('inputSourceBridge', () => {
     const result = await rebindMediaAfterBackendSwitch(renderer as never, {
       inputSource: 'generative',
       imageUrl: 'https://cdn/photo.png',
+      logUpload: false,
     });
     expect(renderer.setInputSource).toHaveBeenCalledWith('generative');
     expect(renderer.loadImage).not.toHaveBeenCalled();
     expect(result.uploaded).toBe(false);
+  });
+
+  it('readPresentCanvasId prefers #pixelocity-wasm-canvas-N', () => {
+    const canvas = document.createElement('canvas');
+    canvas.id = 'pixelocity-wasm-canvas-1';
+    document.body.appendChild(canvas);
+    expect(readPresentCanvasId()).toBe('pixelocity-wasm-canvas-1');
+    canvas.remove();
   });
 });

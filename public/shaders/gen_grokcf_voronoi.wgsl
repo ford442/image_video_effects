@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Worley Cellular v2 - Audio-reactive cellular fields
+//  Worley Cellular
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, procedural,
 //            organic-cellular, animated
-//  Scientific: Worley noise (F1, F2) with FBM layering
-//  Upgraded: 2026-05-02 (Tier-1 integration pass)
-//  Creative additions: micro-cosmic starfields inside cells,
-//                      thin-film interference (oil-slick) edge glow
+//  Upgraded: 2026-09-06
+//  Ideas: cell nucleus at primary F1; F2−F1 crack ridge
+//  A packing: cell id xy, edge mask, F1 (telemetry)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -217,6 +216,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var final_color = mix(inner_color * depth_shading, edge_color, edgeAfterglow);
     let glow = pow(edge_value, 2.0) * edgeGlowP * 0.5 + clickEdgeRing * edgeAfterglow;
     final_color = final_color + edge_color * glow;
+
+    // Idea 1 — nucleus at the Worley site (primary F1)
+    let nucleus = exp(-primary.f1 * primary.f1 * 48.0) * (1.0 - edge_mask);
+    final_color = final_color + inner_color * nucleus * (1.4 + bass * 0.5);
+
+    // Idea 2 — crack ridge from true F2−F1 (Voronoi wall)
+    let crack = smoothstep(0.06, 0.0, abs((primary.f2 - primary.f1) - 0.03));
+    final_color = final_color + edge_color * crack * (0.35 + edgeGlowP * 0.25);
 
     // ─── Creative: micro-cosmic starfield inside each cell ───
     // Independent rotation per cell, hashed offset

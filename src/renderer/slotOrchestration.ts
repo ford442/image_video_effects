@@ -200,6 +200,9 @@ export async function resyncShaderStack(
     setInputSource(options.inputSource);
   }
 
+  let loaded = 0;
+  let attempted = 0;
+
   for (let i = 0; i < Math.min(SLOT_COUNT, options.modes.length); i++) {
     const mode = options.modes[i];
     if (!mode || mode === 'none') {
@@ -207,6 +210,7 @@ export async function resyncShaderStack(
       continue;
     }
 
+    attempted += 1;
     const entry = options.resolveShader(resolveShaderId(mode));
     if (!entry) {
       console.warn(`[RendererManager] resyncShaderStack: no entry for "${mode}" on slot ${i}`);
@@ -220,12 +224,19 @@ export async function resyncShaderStack(
     });
     if (ok) {
       setSlotShader(backend, policy, i, entry.id);
+      loaded += 1;
     } else {
-      console.warn(`[RendererManager] resyncShaderStack: failed to load "${entry.id}" for slot ${i}`);
+      console.warn(`[RendererManager] resyncShaderStack: failed to load "${entry.id}" for slot ${i} — slot skipped`);
     }
   }
 
   syncAllSlotParams(backend, options.slotParams);
+
+  if (attempted > 0 && loaded === 0) {
+    console.warn('[RendererManager] resyncShaderStack: no slots loaded — pipeline empty');
+  } else if (loaded > 0) {
+    console.log(`[RendererManager] resyncShaderStack: ${loaded} slot(s) loaded`);
+  }
 }
 
 export function setSlotMode(

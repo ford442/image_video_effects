@@ -12,7 +12,7 @@ Memory sketch (order of magnitude, 2048²):
 | 6× 2D (source/read/write/A/B/C) | ~384 MiB | ~192 MiB |
 | history 8-layer 2D-array | ~512 MiB | ~256 MiB |
 
-`historyTex` is the largest single `CreateCommittedResource`. After OOM, working size is capped at 1024 and history layers may drop to 4 or 1 (#1204). Do not retry 2048 in the same tab.
+`historyTex` is the largest single `CreateCommittedResource`. **Default working size is 1024.** 2048 is an upgrade only on a fat discrete adapter (`maxBufferSize >= 1 GiB`, not Pascal / GTX 10-series, no OOM this tab) after a successful 1024 pool. After OOM, working size stays capped at 1024 and history layers may drop to 4 or 1 (#1204). Do not retry 2048 in the same tab.
 
 Adaptive resolution scaling alone cannot save integrated GPUs when format bandwidth dominates.
 
@@ -105,7 +105,7 @@ Resolved in [`src/config/formatPolicy.ts`](../src/config/formatPolicy.ts).
 
 ## C++ WASM parity
 
-[`wasm_renderer/resources.cpp`](../wasm_renderer/resources.cpp) and [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) use the same tier mapping via [`wasm_renderer/performance_policy.h`](../wasm_renderer/performance_policy.h). After the 1×1 storage probe, WASM prefers **`rgba16float`** when the probe succeeded so the bind-group layout is not left at `RGBA32Float` while rewritten WGSL is `rgba16float` (#1205). `LoadShader` rewrites write-only `rgba*` storage decls onto `colorFormat_` in C++ (JS `rewriteWgslStorageFormats` does the same before `ccall`). A Validation error on `CreateComputePipeline` is fail-soft: the slot is not stored, a banner is raised, and the frame loop does not `SetPipeline`/`Submit` that encoder.
+[`wasm_renderer/resources.cpp`](../wasm_renderer/resources.cpp) and [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) use the same tier mapping via [`wasm_renderer/performance_policy.h`](../wasm_renderer/performance_policy.h). After the 1×1 storage probe, WASM prefers **`rgba16float`** when the probe succeeded so the bind-group layout is not left at `RGBA32Float` while rewritten WGSL is `rgba16float` (#1205). `LoadShader` rewrites write-only `rgba*` storage decls onto `colorFormat_` in C++ (JS `rewriteWgslStorageFormats` does the same before `ccall`). A Validation error on `CreateComputePipeline` is fail-soft: the slot is not stored, a banner is raised, and the frame loop does not `SetPipeline`/`Submit` that encoder. If `wgpuInstanceWaitAny` on that error scope is not `Success`, treat the pipeline as invalid (do not store). JS `compileShader` uses `pushErrorScope('validation')` the same way — Dawn may return a non-null invalid pipeline without throwing.
 
 Depth feedback copies `Depth Texture Write` → `Depth Texture Read`. Those textures include **`CopySrc`** (Dawn does not infer copy-src from StorageBinding).
 

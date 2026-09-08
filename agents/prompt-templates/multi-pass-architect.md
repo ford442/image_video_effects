@@ -22,6 +22,8 @@ Each pass must still write a valid `writeTexture` (even if just `vec4<f32>(0.0)`
 - Branchless: replace `if/else` with `select()` or `mix(a, b, f32(cond))`.
 - Precompute loop invariants outside loops.
 
+> Live upgrade law: [`docs/SHADER_UPGRADE_BATCH.md`](../../docs/SHADER_UPGRADE_BATCH.md). Do not invent a graph to reimagine a single-pass effect.
+
 ## Output Rules
 - Keep the original shader's "soul".
 - Do NOT modify the 13-binding header or `Uniforms` struct.

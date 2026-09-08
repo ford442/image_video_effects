@@ -10,6 +10,7 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 - Optional features: [`src/contracts/webgpu_optional_features.json`](../src/contracts/webgpu_optional_features.json) ↔ [`collectOptionalDeviceFeatures`](../src/renderer/webgpu/device.ts) ↔ `device.cpp` `requiredFeatures[3]`
 - WASM exports: [`src/contracts/wasm_exports.json`](../src/contracts/wasm_exports.json) (build.sh + CMake)
 - WGSL authoring: [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md)
+- Shader **upgrades** (ideas, not hygiene): [`docs/SHADER_UPGRADE_BATCH.md`](SHADER_UPGRADE_BATCH.md)
 - Uniforms layout: [`src/contracts/uniforms_layout.json`](../src/contracts/uniforms_layout.json) ↔ [`src/renderer/UniformBuffer.ts`](../src/renderer/UniformBuffer.ts) ↔ [`wasm_renderer/renderer.h`](../wasm_renderer/renderer.h)
 - CI sync checks: `npm run verify:device-policy`, `npm run verify:uniforms`
 - Pre-FX analysis (not this bind group): [`docs/GPU_CHORES.md`](GPU_CHORES.md) — Tier 4b gpu-chores on the **same** `GPUDevice`
@@ -117,7 +118,7 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 ## History ring (binding 13)
 
 - **Depth:** 8 layers (`HISTORY_DEPTH`) is the **maximum**. Runtime may allocate 8, 4, or 1 after a `historyTex` VRAM probe (#1204). Bind-group `arrayLayerCount` must match the allocated texture. At 1 layer the ring copy is skipped (fail-soft graph history).
-- **VRAM:** 2048² × 8 × rgba32float is ~512 MiB — Pascal/Chrome D3D12 often OOMs. Probe-allocate; on `GPUOutOfMemoryError` drop to 1024 and **do not retry 2048** this tab. JS→WASM must `device.destroy()` and **await** `device.lost` before the next `requestDevice`.
+- **VRAM:** Default working size is **1024**. 2048² × 8 × rgba32float is ~512 MiB — Pascal/Chrome D3D12 often OOMs, so 2048 is an upgrade only after a discrete + `maxBufferSize >= 1 GiB` + non-Pascal gate and a full-pool allocate. On `GPUOutOfMemoryError` stay at 1024 and **do not retry 2048** this tab. JS→WASM must `device.destroy()` and **await** `device.lost` before the next `requestDevice`.
 - **Catalog metadata:** `requiresHistoryRing: true` in shader JSON for temporal effects
 - **CPU:** `historyHead` written to `extraBuffer[4]` when any enabled shader uses binding 13
 - **GPU:** after each frame, copy presented color into `historyTexture[historyHead]`, then `historyHead = (historyHead + 1) % 8`

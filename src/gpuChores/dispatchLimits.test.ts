@@ -2,7 +2,11 @@ import {
   assertDispatchWithinLimits,
   clampDispatchToLimits,
 } from './dispatchLimits';
-import { DEFAULT_MAX_WORKGROUPS_PER_DIMENSION, workgroups2d } from './dispatch';
+import {
+  DEFAULT_MAX_WORKGROUPS_PER_DIMENSION,
+  workgroups1d,
+  workgroups2d,
+} from './dispatch';
 
 describe('assertDispatchWithinLimits', () => {
   const limits = { maxComputeWorkgroupsPerDimension: DEFAULT_MAX_WORKGROUPS_PER_DIMENSION };
@@ -30,5 +34,16 @@ describe('clampDispatchToLimits', () => {
     expect(
       clampDispatchToLimits(65536, 70000, 1, { maxComputeWorkgroupsPerDimension: 65535 }),
     ).toEqual({ x: 65535, y: 65535, z: 1 });
+  });
+});
+
+
+describe('workgroup helpers', () => {
+  it('rejects non-positive 1D workgroup sizes', () => {
+    expect(() => workgroups1d(1024, 0)).toThrow(/workgroup size must be > 0/);
+  });
+
+  it('rejects non-positive 2D workgroup sizes', () => {
+    expect(() => workgroups2d(256, 256, 8, 0)).toThrow(/workgroup size must be > 0/);
   });
 });

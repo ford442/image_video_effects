@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Celestial Glass-Tornado
+//  gen-celestial-glass-tornado
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: High
-//  Upgraded: 2026-08-03 (Batch 34)
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, spring-dynamics, depth-aware
+//  Ideas: Cauchy prismatic facet TIR glints, helical plasma funnel discharge arcs, centrifugal glass dust accretion disk
+//  A packing: display RGBA (RGB=ACES tone-mapped glass tornado, A=glow opacity)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -19,12 +19,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // UI Sliders mapped here
+    zoom_params: vec4<f32>,  // x=Vortex Twist, y=Debris Density, z=Chromatic Split, w=Audio Reactivity
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -33,20 +32,17 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-fn map(p: vec3<f32>) -> f32 {
+fn map(p: vec3<f32>, mouse: vec2<f32>) -> f32 {
     var q = p;
     let t = u.config.x * 0.5;
 
-    // Mouse anomaly
-    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    let mouse = select(rawMouse, vec2<f32>(extraBuffer[133], extraBuffer[134]), extraBuffer[137] > 0.5);
     let mx = (mouse.x - 0.5) * 5.0;
     let my = (mouse.y - 0.5) * 5.0;
     let warp_dist = length(q.xy - vec2<f32>(mx, my));
     let pull = exp(-warp_dist * 1.5) * 2.0;
 
-    // Audio reactive turbulence (bass drives the twist intensity)
-    let audio_twist = u.zoom_params.w * plasmaBuffer[0].x;
+    // Audio reactive turbulence
+    let audio_twist = u.zoom_params.w * plasmaBuffer[0].x * 0.8;
     let base_twist = u.zoom_params.x;
 
     // Twist the tornado
@@ -60,11 +56,11 @@ fn map(p: vec3<f32>) -> f32 {
     q.y = q_xy.y;
 
     // Tornado core
-    var tornado = length(q.xz) - (1.0 + q.y * 0.2 + sin(q.y * 4.0 + t) * 0.2);
+    let tornado = length(q.xz) - (1.0 + q.y * 0.2 + sin(q.y * 4.0 + t) * 0.2);
 
-    // KIFS Debris
+    // KIFS Crystalline Debris
     var k = p;
-    k.y += t * 2.0; // debris falling/rising
+    k.y += t * 2.0;
     let k_xz = rot(t * 0.5) * k.xz;
     k.x = k_xz.x;
     k.z = k_xz.y;
@@ -79,10 +75,16 @@ fn map(p: vec3<f32>) -> f32 {
     }
     let debris = length(k) - 0.1;
 
-    // Blend debris into the tornado but keep it separate further out
-    let final_dist = min(tornado, debris);
+    return min(tornado, debris);
+}
 
-    return final_dist;
+fn calcNormal(p: vec3<f32>, mouse: vec2<f32>) -> vec3<f32> {
+    let e = vec2<f32>(0.001, 0.0);
+    return normalize(vec3<f32>(
+        map(p + e.xyy, mouse) - map(p - e.xyy, mouse),
+        map(p + e.yxy, mouse) - map(p - e.yxy, mouse),
+        map(p + e.yyx, mouse) - map(p - e.yyx, mouse)
+    ));
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -103,10 +105,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let nuv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
     let time = u.config.x;
 
-    // Audio reactivity: mids feed glow accumulation, treble adds star twinkle
-    let mids = plasmaBuffer[0].y;
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    // Single-writer spring-damper cursor in extraBuffer[133..138]
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
     var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
@@ -147,10 +150,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     for (var i = 0; i < 80; i++) {
         let p = ro + rd * t;
-        d = map(p);
+        d = map(p, mouse);
         if (d < 0.001) { hit = true; break; }
         if (t > 40.0) { break; }
-        t += max(abs(d) * 0.6, 0.002); // Never march backward inside glass folds.
+        t += max(abs(d) * 0.6, 0.002);
         glow += 0.005 / (0.01 + abs(d)) * (1.0 + mids * u.zoom_params.w);
     }
 
@@ -158,29 +161,53 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var alpha = 0.0;
     if (hit) {
         let p = ro + rd * t;
-        // Simulating chromatic split
-        let split = u.zoom_params.z * 0.1;
-        let r_d = map(p + vec3<f32>(split, 0.0, 0.0));
-        let g_d = map(p + vec3<f32>(0.0, split, 0.0));
-        let b_d = map(p + vec3<f32>(0.0, 0.0, split));
+        let n = calcNormal(p, mouse);
+        let v = -rd;
+        let cosi = max(dot(n, v), 0.0);
+
+        // IDEA 1: Cauchy prismatic glass facet TIR glints
+        let split = u.zoom_params.z * 0.15;
+        let r_d = map(p + n * split, mouse);
+        let g_d = map(p, mouse);
+        let b_d = map(p - n * split, mouse);
 
         let rgb = vec3<f32>(
             mix(0.1, 1.0, 1.0 / (1.0 + r_d * 50.0)),
             mix(0.1, 1.0, 1.0 / (1.0 + g_d * 50.0)),
             mix(0.1, 1.0, 1.0 / (1.0 + b_d * 50.0))
         );
-        col = rgb * glow;
-        // Alpha: glass tornado opacity from accumulated glow
-        alpha = clamp(0.3 + glow * 0.5, 0.0, 1.0);
+
+        let fresnel = pow(1.0 - cosi, 3.0);
+        let reflDir = reflect(rd, n);
+        let glint = pow(max(dot(reflDir, normalize(vec3<f32>(0.0, 1.0, -0.5))), 0.0), 32.0);
+        let thinFilm = 0.5 + 0.5 * cos(cosi * 12.0 + vec3<f32>(0.0, 2.094, 4.188));
+
+        col = rgb * glow + thinFilm * fresnel * 0.6 + vec3<f32>(1.2, 1.3, 1.5) * glint * (1.0 + treble * 1.5);
+        alpha = clamp(0.35 + glow * 0.5 + fresnel * 0.3, 0.0, 1.0);
     } else {
-        // Stellar background
         let bg = fract(sin(dot(rd, vec3<f32>(12.9898, 78.233, 45.164))) * 43758.5453);
-        let star = step(0.995, bg) * bg * (1.0 + treble * 1.5); // treble twinkle
+        let star = step(0.995, bg) * bg * (1.0 + treble * 1.5);
         col = vec3<f32>(star) + vec3<f32>(0.02, 0.01, 0.05) * glow;
-        // Alpha: faint stars + glow haze, never flat 1.0
         alpha = clamp(star + glow * 0.1, 0.0, 1.0);
     }
 
+    // IDEA 2: Helical plasma funnel discharge arcs
+    // Arcs spiral down the tornado center driven by bass
+    let funnelRadius = length(nuv);
+    let funnelAngle = atan2(nuv.y, nuv.x);
+    let helicalArc = sin(funnelAngle * 3.0 + funnelRadius * 20.0 - time * 8.0);
+    let arcDischarge = pow(max(helicalArc, 0.0), 16.0) * exp(-funnelRadius * 2.5) * bass * u.zoom_params.w;
+    col += vec3<f32>(0.4, 0.85, 1.4) * arcDischarge * 2.0;
+
+    // IDEA 3: Centrifugal glass dust accretion disk
+    // Equatorial disc at the bottom of the vortex scattering starlight
+    let diskDist = abs(nuv.y + 0.35);
+    let diskRing = smoothstep(0.08, 0.0, diskDist) * smoothstep(0.1, 0.6, abs(nuv.x));
+    let dustNoise = fract(sin(dot(uv * 180.0, vec2<f32>(37.1, 89.3))) * 43758.5453);
+    let accretionDust = dustNoise * diskRing * (0.3 + mids * 0.4);
+    col += vec3<f32>(0.7, 0.5, 0.9) * accretionDust;
+
+    // Click glass shatter rings
     var clickGlass = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -201,8 +228,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let prev = textureLoad(dataTextureC, coord, 0);
     col = mix(col, prev.rgb * 0.9, clamp(0.025 + mids * 0.01, 0.0, 0.06));
     let out = vec4<f32>(acesToneMap(max(col, vec3<f32>(0.0)) * 1.1), clamp(alpha, 0.0, 0.96));
-    // Depth: tornado hit distance; background sits at far plane
     let depth = select(0.0, clamp(1.0 - t / 40.0, 0.0, 1.0), hit);
+
     textureStore(writeTexture, coord, out);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, out);

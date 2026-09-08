@@ -3,7 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Low
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-06
+//  Ideas: continuous type mix; confusion-axis assist from unused param
+//  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -19,135 +21,83 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Type, y=Severity, z=SplitMode, w=Unused
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn mixMat(a: mat3x3<f32>, b: mat3x3<f32>, t: f32) -> mat3x3<f32> {
+  return mat3x3<f32>(
+    mix(a[0], b[0], t),
+    mix(a[1], b[1], t),
+    mix(a[2], b[2], t)
+  );
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
-    // Audio reactivity: bass intensifies the simulation severity, mids add shimmer
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let coord = vec2<i32>(gid.xy);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
 
-    // Params
-    let cb_type_param = u.zoom_params.x; // 0-0.33 Protan, 0.33-0.66 Deutan, 0.66-1 Tritan
-    let severity = clamp(u.zoom_params.y * (1.0 + bass * 0.4), 0.0, 1.0);
-    let split_mode = u.zoom_params.z > 0.5; // If true, use mouse X as split line
+  let typeParam = clamp(u.zoom_params.x, 0.0, 1.0);
+  let severity = clamp(u.zoom_params.y * (1.0 + bass * 0.4), 0.0, 1.0);
+  let splitMode = u.zoom_params.z > 0.5;
+  let assist = clamp(u.zoom_params.w, 0.0, 1.0);
 
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let color = original.rgb;
+  let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let color = original.rgb;
 
-    // Select matrix based on type
-    var m = mat3x3<f32>(
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0
-    );
+  let protan = mat3x3<f32>(
+    vec3<f32>(0.567, 0.558, 0.0),
+    vec3<f32>(0.433, 0.442, 0.242),
+    vec3<f32>(0.0, 0.0, 0.758)
+  );
+  let deutan = mat3x3<f32>(
+    vec3<f32>(0.625, 0.7, 0.0),
+    vec3<f32>(0.375, 0.3, 0.3),
+    vec3<f32>(0.0, 0.0, 0.7)
+  );
+  let tritan = mat3x3<f32>(
+    vec3<f32>(0.95, 0.0, 0.0),
+    vec3<f32>(0.05, 0.433, 0.475),
+    vec3<f32>(0.0, 0.567, 0.525)
+  );
 
-    if (cb_type_param < 0.33) {
-        // Protanopia (Red blind)
-        m = mat3x3<f32>(
-            0.567, 0.558, 0.0,
-            0.433, 0.442, 0.242,
-            0.0, 0.0, 0.758
-        );
-    } else if (cb_type_param < 0.66) {
-        // Deuteranopia (Green blind)
-        m = mat3x3<f32>(
-            0.625, 0.7, 0.0,
-            0.375, 0.3, 0.3,
-            0.0, 0.0, 0.7
-        );
-    } else {
-        // Tritanopia (Blue blind)
-        m = mat3x3<f32>(
-            0.95, 0.0, 0.0,
-            0.05, 0.433, 0.475,
-            0.0, 0.567, 0.525
-        );
-    }
+  let t = typeParam * 2.0;
+  var m = mixMat(protan, deutan, clamp(t, 0.0, 1.0));
+  m = mixMat(m, tritan, clamp(t - 1.0, 0.0, 1.0));
 
-    // Note: GLSL/WGSL matrices are column-major constructed.
-    // The matrix multiply `m * v` treats v as a column vector.
-    // The above values are transposed if copying from row-major text.
-    // Standard def:
-    // | R' |   | .567 .433 0 | | R |
-    // | G' | = | .558 .442 0 | | G |
-    // | B' |   | 0 .242 .758 | | B |
-    //
-    // In WGSL `mat3x3(c0, c1, c2)` where cN are columns.
-    // So Col 0 = (.567, .558, 0).
-    // The code above:
-    // Col 0 = (.567, .433, 0.0) -> Wait, I swapped them in my head or code?
-    // Let's check Protan definition carefully.
-    // R_new = .567*R + .433*G + 0*B
-    // G_new = .558*R + .442*G + 0*B
-    // B_new = 0*R + .242*G + .758*B
-    //
-    // Matrix multiplication `m * color` does:
-    // x = dot(row0, color)
-    // y = dot(row1, color)
-    // z = dot(row2, color)
-    //
-    // WGSL `m * v` means `v` is column vector. `m` columns multiply components of `v`.
-    // result = v.x * col0 + v.y * col1 + v.z * col2.
-    // So if I want result.x = .567*R + .433*G + 0*B
-    // Then Row 0 of the matrix (conceptually) should be (.567, .433, 0).
-    //
-    // In WGSL `mat3x3<f32>(c0, c1, c2)`
-    // c0 = (m00, m10, m20)
-    // c1 = (m01, m11, m21)
-    // c2 = (m02, m12, m22)
-    //
-    // So result.x = m00*R + m01*G + m02*B
-    // result.y = m10*R + m11*G + m12*B
-    // result.z = m20*R + m21*G + m22*B
-    //
-    // My previous code:
-    // m = mat3x3(
-    //    0.567, 0.558, 0.0,   <- Col 0 (m00, m10, m20)
-    //    0.433, 0.442, 0.242, <- Col 1 (m01, m11, m21)
-    //    0.0, 0.0, 0.758      <- Col 2 (m02, m12, m22)
-    // )
-    // result.x = .567*R + .433*G + 0*B -> Correct.
-    // result.y = .558*R + .442*G + 0*B -> Correct.
-    // result.z = 0*R + .242*G + .758*B -> Correct.
-    //
-    // So my code construction was actually correct for the values I wrote down!
+  var simulated = mix(color, m * color, severity);
 
-    var simulated = m * color;
+  let showOriginal = splitMode && (uv.x < u.zoom_config.y);
+  var finalColor = select(simulated, color, showOriginal);
 
-    // Mix based on severity
-    simulated = mix(color, simulated, severity);
+  let seamDist = abs(uv.x - u.zoom_config.y);
+  let seam = select(0.0, smoothstep(0.004, 0.0, seamDist) * mids, splitMode);
+  finalColor = clamp(finalColor + seam, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    // Split-screen comparison: left of the mouse shows the original (branchless).
-    let showOriginal = split_mode && (uv.x < u.zoom_config.y);
-    var final_color = select(simulated, color, showOriginal);
+  let shift = length(simulated - color);
+  let hatch = step(0.55, fract((uv.x + uv.y) * 90.0));
+  finalColor = mix(finalColor, mix(finalColor, vec3<f32>(shift), hatch * 0.65), assist * smoothstep(0.04, 0.18, shift));
 
-    // Mid-frequency shimmer along the split seam
-    let seamDist = abs(uv.x - u.zoom_config.y);
-    let seam = select(0.0, smoothstep(0.004, 0.0, seamDist) * mids, split_mode);
-    final_color = clamp(final_color + seam, vec3<f32>(0.0), vec3<f32>(1.0));
+  let display = acesToneMap(finalColor);
+  let alpha = clamp(original.a * 0.6 + shift + seam, 0.0, 1.0);
+  let outCol = vec4<f32>(display, alpha);
 
-    // Alpha encodes how much the perceived color was altered by the simulation.
-    let shift = length(final_color - color);
-    let alpha = clamp(original.a * 0.6 + shift + seam, 0.0, 1.0);
-    let out = vec4<f32>(final_color, alpha);
-
-    let coord = vec2<i32>(global_id.xy);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeTexture, coord, out);
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, out);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, outCol);
+  textureStore(dataTextureA, coord, outCol);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

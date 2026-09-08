@@ -155,6 +155,18 @@ export class JSRenderer implements Renderer {
     return this.inputSource;
   }
 
+  getCpuInputBitmap(): HTMLCanvasElement | HTMLImageElement | HTMLVideoElement | null {
+    if (this.inputSource === 'generative') return null;
+    if (
+      (this.inputSource === 'video' || this.inputSource === 'webcam' || this.inputSource === 'live')
+      && this.video
+    ) {
+      return this.video;
+    }
+    if (this.image && this.image.complete) return this.image;
+    return this.video;
+  }
+
   render = (): void => {
     if (!this.ctx || !this.canvas) {
       console.warn('🚨 JSRenderer.render: Missing context or canvas!', {

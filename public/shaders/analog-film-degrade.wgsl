@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Analog Film Degrade
 //  Category: image
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-31
-//  By: Grok (visual flourish — richer filmic texture, audio-reactive grain, atmospheric degradation)
-// ═══════════════════════════════════════════════════════════════════
-//  Created: 2026-05-23
-//  By: Copilot CLI (tactical swarm)
+//  Upgraded: 2026-09-06
+//  Ideas: per-channel grain; continuous gate-weave hairlines; C print-through
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,121 +23,83 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
 fn hash21(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
 fn hash11(p: f32) -> f32 {
-    return fract(sin(p * 12.9898) * 43758.5453);
+  return fract(sin(p * 12.9898) * 43758.5453);
 }
 
-fn valueNoise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let a = hash21(i);
-    let b = hash21(i + vec2<f32>(1.0, 0.0));
-    let c = hash21(i + vec2<f32>(0.0, 1.0));
-    let d = hash21(i + vec2<f32>(1.0, 1.0));
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
-
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-    var sum = 0.0;
-    var amp = 0.5;
-    var freq = 1.0;
-    for (var i = 0; i < octaves; i = i + 1) {
-        sum = sum + amp * valueNoise(p * freq);
-        freq = freq * 2.0;
-        amp = amp * 0.5;
-    }
-    return sum;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let res = vec2<f32>(u.config.zw);
-    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
 
-    let coords = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(global_id.xy) / res;
-    let time = u.config.x;
+  let coords = vec2<i32>(gid.xy);
+  let uv = vec2<f32>(gid.xy) / res;
+  let time = u.config.x;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // Audio reactivity: bass = heavy print-through, treble = fine scratches/weave
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
-    let filmPulse = 1.0 + bass * 0.3 + treble * 0.5;
+  let grainIntensity = u.zoom_params.x * (1.0 + treble * 0.45);
+  let fadeAmount = u.zoom_params.y;
+  let scratchFreq = u.zoom_params.z;
+  let vignetteStrength = u.zoom_params.w;
 
-    let grainIntensity = u.zoom_params.x * filmPulse;
-    let fadeAmount = u.zoom_params.y;
-    let scratchFreq = u.zoom_params.z;
-    let vignetteStrength = u.zoom_params.w;
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  var rgb = src.rgb;
 
-    var col = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let originalAlpha = col.a;
+  let grainSeed = uv * vec2<f32>(512.0, 480.0) + vec2<f32>(time * 11.0, time * 7.3);
+  let gR = (hash21(grainSeed) - 0.5);
+  let gG = (hash21(grainSeed * vec2<f32>(1.17, 0.91) + vec2<f32>(17.1, 9.3)) - 0.5);
+  let gB = (hash21(grainSeed * vec2<f32>(0.83, 1.29) + vec2<f32>(3.7, 28.4)) - 0.5);
+  rgb += vec3<f32>(gR, gG, gB) * grainIntensity;
 
-    // Film grain
-    let grainSeed = uv * 512.0 + fract(time * 24.0) * 100.0;
-    let grain = (hash21(grainSeed) - 0.5) * grainIntensity;
-    col = col + vec4<f32>(grain, grain, grain, 0.0);
+  let weave = sin(uv.y * (res.y * 0.55) + time * 2.4) * 0.0018 * scratchFreq;
+  let weaveUV = clamp(uv + vec2<f32>(weave, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let weaveSample = textureSampleLevel(readTexture, u_sampler, weaveUV, 0.0).rgb;
+  rgb = mix(rgb, weaveSample, 0.12 * scratchFreq * (0.4 + treble * 0.6));
 
-    // Dust and scratches
-    let scratchTime = floor(time * 8.0);
-    let scratchLine = hash11(uv.y * 100.0 + scratchTime) < scratchFreq * 0.02;
-    let scratchBright = hash11(uv.x * 200.0 + scratchTime * 1.7) * 0.4;
-    let dust = hash21(uv * 300.0 + scratchTime) < scratchFreq * 0.005;
-    let dustBright = hash21(uv * 400.0 + scratchTime * 2.3) * 0.3;
-    col = col + vec4<f32>(select(0.0, scratchBright, scratchLine));
-    col = col + vec4<f32>(select(0.0, dustBright, dust));
+  let lineId = uv.x * 90.0 + sin(time * 0.37) * 4.0;
+  let hair = smoothstep(0.992, 1.0, hash11(lineId)) * scratchFreq;
+  let hairBright = hash11(uv.y * 200.0 + time * 0.11) * 0.35;
+  rgb += vec3<f32>(hair * hairBright);
 
-    // === Visual Flourish: Richer, more alive film degradation ===
-    let luma = dot(col.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let sepia = vec3<f32>(luma * 1.2, luma * 0.9, luma * 0.6);
-    col = vec4<f32>(mix(col.rgb, sepia, fadeAmount * 0.5), col.a);
+  let dust = hash21(uv * 280.0 + vec2<f32>(time * 0.05, 2.2));
+  rgb += vec3<f32>(select(0.0, dust * 0.25, dust < scratchFreq * 0.006));
 
-    // Saturation reduction
-    let gray = vec3<f32>(luma);
-    col = vec4<f32>(mix(col.rgb, gray, fadeAmount * 0.3), col.a);
+  let luma = dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let sepia = vec3<f32>(luma * 1.2, luma * 0.9, luma * 0.6);
+  rgb = mix(rgb, sepia, fadeAmount * 0.5);
+  rgb = mix(rgb, vec3<f32>(luma), fadeAmount * 0.3);
+  rgb = mix(rgb, rgb * 0.6, bass * 0.15 * fadeAmount);
 
-    // Audio-reactive film artifacts
-    // Bass adds heavy contrast and "print through"
-    // Treble adds fine scratches and gate weave
-    let heavyDamage = bass * 0.15;
-    let fineDamage = treble * 0.08;
-    
-    // Extra vignette and contrast from bass
-    col = vec4<f32>(mix(col.rgb, col.rgb * 0.6, heavyDamage * fadeAmount), col.a);
+  let prev = textureLoad(dataTextureC, coords, 0);
+  rgb = mix(rgb, prev.rgb, 0.10 * fadeAmount);
 
-    // Fine jitter / weave from treble
-    let weave = sin(uv.y * 120.0 + time * 40.0) * fineDamage * fadeAmount * 0.03;
-    let weaveUV = clamp(uv + vec2<f32>(weave * 0.5, weave), vec2<f32>(0.0), vec2<f32>(1.0));
-    let weaveSample = textureSampleLevel(readTexture, u_sampler, weaveUV, 0.0).rgb;
-    col = vec4<f32>(mix(col.rgb, weaveSample, fineDamage * 0.4), col.a);
+  let centerDist = length(uv - vec2<f32>(0.5));
+  let vignette = smoothstep(0.5, 0.5 - vignetteStrength * 0.5, centerDist);
+  rgb *= vignette;
 
-    // Vignette
-    let centerDist = length(uv - vec2<f32>(0.5));
-    let vignette = smoothstep(0.5, 0.5 - vignetteStrength * 0.5, centerDist);
-    col = col * vignette;
+  let display = acesToneMap(clamp(rgb, vec3<f32>(0.0), vec3<f32>(1.4)));
+  let damage = clamp(abs(gR) + (1.0 - vignette) + hair, 0.0, 1.0);
+  let alpha = clamp(src.a * (1.0 - damage * 0.45) + treble * 0.08, 0.0, 1.0);
+  let outCol = vec4<f32>(display, alpha);
 
-    // Clamp
-    col = clamp(col, vec4<f32>(0.0), vec4<f32>(1.0));
-
-    // Alpha encodes accumulated film damage (grain + vignette darkening + audio),
-    // blended over the source alpha so compositing can soften degraded frames.
-    let damage = clamp(abs(grain) + (1.0 - vignette) + heavyDamage * fadeAmount, 0.0, 1.0);
-    let alpha = clamp(originalAlpha * (1.0 - damage * 0.5) + treble * 0.1, 0.0, 1.0);
-    let out = vec4<f32>(col.rgb, alpha);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeTexture, coords, out);
-    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, out);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coords, outCol);
+  textureStore(dataTextureA, coords, outCol);
+  textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

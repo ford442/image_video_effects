@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Crumpled Paper
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-06
+//  Ideas: fibre grain along crease tangent; ironing memory via exact C
+//  A packing: display RGB + height in alpha
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,162 +21,125 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time
-  zoom_config: vec4<f32>,  // y=MouseX, z=MouseY
-  zoom_params: vec4<f32>,  // x=Scale, y=Depth, z=SmoothRadius, w=LightStrength
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// --- Noise Functions ---
-
 fn hash21(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
 fn valueNoise2D(p: vec2<f32>) -> f32 {
-    var i = floor(p);
-    let f = fract(p);
-
-    // Four corners
-    let a = hash21(i + vec2<f32>(0.0, 0.0));
-    let b = hash21(i + vec2<f32>(1.0, 0.0));
-    let c = hash21(i + vec2<f32>(0.0, 1.0));
-    let d = hash21(i + vec2<f32>(1.0, 1.0));
-
-    // Smooth interpolation
-    let u = f * f * (3.0 - 2.0 * f);
-
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  let i = floor(p);
+  let f = fract(p);
+  let a = hash21(i);
+  let b = hash21(i + vec2<f32>(1.0, 0.0));
+  let c = hash21(i + vec2<f32>(0.0, 1.0));
+  let d = hash21(i + vec2<f32>(1.0, 1.0));
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-// 5-Octave FBM
 fn fbm5(p: vec2<f32>) -> f32 {
-    var sum = 0.0;
-    var amp = 1.0;
-    var freq = 1.0;
-    var maxAmp = 0.0;
+  var sum = 0.0;
+  var amp = 1.0;
+  var freq = 1.0;
+  var maxAmp = 0.0;
+  for (var i: i32 = 0; i < 5; i = i + 1) {
+    sum = sum + amp * valueNoise2D(p * freq);
+    maxAmp = maxAmp + amp;
+    freq = freq * 2.0;
+    amp = amp * 0.5;
+  }
+  return sum / maxAmp;
+}
 
-    for (var i: i32 = 0; i < 5; i = i + 1) {
-        sum = sum + amp * valueNoise2D(p * freq);
-        maxAmp = maxAmp + amp;
-        freq = freq * 2.0;
-        amp = amp * 0.5; // persistence
-    }
+fn paperHeight(uv: vec2<f32>, scale: f32, depthAmt: f32) -> vec2<f32> {
+  let noiseVal = fbm5(uv * scale + vec2<f32>(12.3, 45.6));
+  let ridge = pow(1.0 - abs(noiseVal - 0.5) * 2.0, 2.0);
+  let h = mix(noiseVal, ridge, 0.6) * depthAmt;
+  return vec2<f32>(h, ridge);
+}
 
-    return sum / maxAmp;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz; // 0..1
+  let coord = vec2<i32>(gid.xy);
+  var uv = vec2<f32>(gid.xy) / resolution;
+  let aspect = resolution.x / resolution.y;
+  let mouse = u.zoom_config.yz;
+  let treble = plasmaBuffer[0].z;
 
-    // Params
-    let scale = mix(2.0, 10.0, u.zoom_params.x); // Crumple frequency
-    let depth = u.zoom_params.y;                 // Crumple amplitude
-    let smoothRadius = u.zoom_params.z * 0.5;    // Mouse ironing radius
-    let lightStrength = u.zoom_params.w;
+  let scale = mix(2.0, 10.0, u.zoom_params.x);
+  let depthAmt = u.zoom_params.y;
+  let smoothRadius = u.zoom_params.z * 0.5;
+  let lightStrength = u.zoom_params.w;
+  let sr = max(0.001, smoothRadius);
 
-    // Calculate Height Map
-    // We use FBM noise.
-    let noiseVal = fbm5(uv * scale + vec2<f32>(12.3, 45.6));
+  let hr = paperHeight(uv, scale, depthAmt);
+  var height = hr.x;
+  let ridge = hr.y;
 
-    // Crumple Logic:
-    // Crumpled paper has sharp creases. We can map the noise to create ridges.
-    // 1.0 - abs(noise - 0.5) * 2.0 creates ridges.
-    let ridge = pow(1.0 - abs(noiseVal - 0.5) * 2.0, 2.0);
+  let dist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  let smoothFactor = 1.0 - smoothstep(0.0, sr, dist);
+  height = height * (1.0 - smoothFactor);
 
-    // Combine base noise and ridges
-    var height = mix(noiseVal, ridge, 0.6) * depth;
+  let prev = textureLoad(dataTextureC, coord, 0);
+  let ironed = mix(height, prev.a * 0.88, 0.45 * smoothFactor + 0.12);
+  height = ironed;
 
-    // Mouse Interaction (Smoothing/Ironing)
-    // Distance to mouse
-    let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
-    // Fix: smoothstep edges must be e0 < e1. We want 1.0 when dist=0, 0.0 when dist=radius.
-    // Use 1.0 - smoothstep(0, radius, dist).
-    // Ensure smoothRadius is > 0 to avoid undefined behavior.
-    let sr = max(0.001, smoothRadius);
-    let smoothFactor = 1.0 - smoothstep(0.0, sr, dist);
+  let eps = 0.005;
+  let hR = paperHeight(uv + vec2<f32>(eps, 0.0), scale, depthAmt).x;
+  let distR = length(((uv + vec2<f32>(eps, 0.0)) - mouse) * vec2<f32>(aspect, 1.0));
+  let finalHR = hR * (1.0 - (1.0 - smoothstep(0.0, sr, distR)));
+  let hU = paperHeight(uv + vec2<f32>(0.0, eps), scale, depthAmt).x;
+  let distU = length(((uv + vec2<f32>(0.0, eps)) - mouse) * vec2<f32>(aspect, 1.0));
+  let finalHU = hU * (1.0 - (1.0 - smoothstep(0.0, sr, distU)));
 
-    // Reduce height where mouse is (flatten the paper)
-    height = height * (1.0 - smoothFactor);
+  let dX = (finalHR - height) / eps;
+  let dY = (finalHU - height) / eps;
+  let normal = normalize(vec3<f32>(-dX, -dY, 1.0));
 
-    // Calculate Normal
-    // Since we don't have analytical derivative easily, we sample neighboring heights.
-    // However, recalculating FBM 2 more times per pixel is expensive.
-    // A cheaper way is to assume the derivative of noise is somewhat related to its value or use a cheaper noise for derivative.
-    // But for quality, let's recalculate FBM for neighbors.
-    // Wait, let's optimize: only 1 sample if we assume lighting comes from top-left constant?
-    // No, we need normals for dynamic lighting.
+  let lightDir = normalize(vec3<f32>(0.5, -0.5, 1.0));
+  let diffuse = max(dot(normal, lightDir), 0.0);
+  let ao = mix(0.55, 1.0, clamp(height * 1.4 + 0.3, 0.0, 1.0));
+  let ambient = (0.5 + 0.5 * height) * ao;
+  let lighting = ambient * 0.5 + diffuse * 0.8;
 
-    let eps = 0.005; // sampling step
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let halfDir = normalize(lightDir + viewDir);
+  let creaseSteep = clamp(length(normal.xy) * 2.2, 0.0, 1.0);
+  let specular = pow(max(dot(normal, halfDir), 0.0), 48.0) * creaseSteep * 0.6;
+  let creaseWear = pow(ridge, 3.0) * smoothstep(0.25, 0.6, depthAmt);
 
-    // Helper to get height at offset
-    // (Inlined for simplicity or we define function but requires passing uniforms)
-    // We just reuse logic approx.
-    let nR = fbm5((uv + vec2<f32>(eps, 0.0)) * scale + vec2<f32>(12.3, 45.6));
-    let rR = pow(1.0 - abs(nR - 0.5) * 2.0, 2.0);
-    let hR = mix(nR, rR, 0.6) * depth;
-    // Apply smoothing to neighbor too
-    let distR = length(((uv + vec2<f32>(eps, 0.0)) - mouse) * vec2<f32>(aspect, 1.0));
-    let smoothR = 1.0 - smoothstep(0.0, sr, distR);
-    let finalHR = hR * (1.0 - smoothR);
+  let tangent = normalize(vec2<f32>(-normal.y, normal.x) + vec2<f32>(1e-4, 0.0));
+  let fibre = (hash21(uv * 420.0 + tangent * 90.0) - 0.5) * creaseSteep * (0.10 + treble * 0.08);
 
-    let nU = fbm5((uv + vec2<f32>(0.0, eps)) * scale + vec2<f32>(12.3, 45.6));
-    let rU = pow(1.0 - abs(nU - 0.5) * 2.0, 2.0);
-    let hU = mix(nU, rU, 0.6) * depth;
-    let distU = length(((uv + vec2<f32>(0.0, eps)) - mouse) * vec2<f32>(aspect, 1.0));
-    let smoothU = 1.0 - smoothstep(0.0, sr, distU);
-    let finalHU = hU * (1.0 - smoothU);
+  let distortStr = 0.02 * depthAmt;
+  let finalUV = clamp(uv + normal.xy * distortStr, vec2<f32>(0.0), vec2<f32>(1.0));
+  let texColor = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
 
-    let dX = (finalHR - height) / eps;
-    let dY = (finalHU - height) / eps;
+  var finalColor = texColor * mix(1.0, lighting, lightStrength);
+  finalColor = finalColor + vec3<f32>(specular) * lightStrength;
+  finalColor = mix(finalColor, vec3<f32>(0.96, 0.96, 0.93), creaseWear * 0.5 * lightStrength);
+  finalColor += vec3<f32>(fibre) * lightStrength;
 
-    let normal = normalize(vec3<f32>(-dX, -dY, 1.0));
+  let display = acesToneMap(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.6)));
+  let alpha = clamp(0.55 + creaseSteep * 0.35 + (1.0 - smoothFactor) * 0.1, 0.0, 1.0);
+  let packed = vec4<f32>(display, clamp(height, 0.0, 1.0));
 
-    // Lighting
-    let lightDir = normalize(vec3<f32>(0.5, -0.5, 1.0)); // Top-right light
-    let diffuse = max(dot(normal, lightDir), 0.0);
-
-    // ═══ UNIQUE VISUAL IDEA: physical crease response ═══
-    // (1) Valley ambient occlusion — light is trapped in folds, so low height darkens.
-    let ao = mix(0.55, 1.0, clamp(height * 1.4 + 0.3, 0.0, 1.0));
-    let ambient = (0.5 + 0.5 * height) * ao;
-    let lighting = ambient * 0.5 + diffuse * 0.8;
-
-    // (2) Anisotropic crease sheen — paper isn't fully matte; sharp folds catch a
-    //     glint. Blinn-Phong specular concentrated on the steep crease faces.
-    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-    let halfDir = normalize(lightDir + viewDir);
-    let creaseSteep = clamp(length(normal.xy) * 2.2, 0.0, 1.0); // steeper face = sharper crease
-    let specular = pow(max(dot(normal, halfDir), 0.0), 48.0) * creaseSteep * 0.6;
-
-    // (3) Worn-fibre whitening — the apex of each fold is mechanically stressed and
-    //     the fibres blanch white (the classic pale lines on crumpled paper).
-    let creaseWear = pow(ridge, 3.0) * smoothstep(0.25, 0.6, depth);
-
-    // Apply texture distortion (refraction along the surface normal)
-    let distortStr = 0.02 * depth;
-    let finalUV = uv + normal.xy * distortStr;
-
-    let texColor = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-
-    // Modulate by lighting, then add sheen and the worn white fold-lines.
-    var finalColor = texColor * mix(1.0, lighting, lightStrength);
-    finalColor = finalColor + vec3<f32>(specular) * lightStrength;
-    finalColor = mix(finalColor, vec3<f32>(0.96, 0.96, 0.93), creaseWear * 0.5 * lightStrength);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
-
-    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+  let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, vec4<f32>(display, alpha));
+  textureStore(dataTextureA, coord, packed);
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depthVal + height * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

@@ -7,6 +7,9 @@
 //  Created: 2026-05-30
 //  Upgraded: 2026-06-06
 //  Optimized: 2026-07-22 — feedback stabilization + real slider wiring
+//  Upgraded: 2026-09-06
+//  Ideas: first-warp fold caustics; second-layer flow stretch
+//  A packing: raw HDR history RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -179,6 +182,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let color1 = palette(palT, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.0, 0.1, 0.2));
     let color2 = palette(palT + hueShift, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 0.5), vec3<f32>(0.8, 0.9, 0.3));
     var color = mix(color1, color2, smoothstep(0.4, 0.6, final_val));
+
+    // Idea 1 — warp folds where the first fBm layer sits mid-range
+    let foldAmt = smoothstep(0.28, 0.48, length(q - vec2<f32>(0.5)))
+                * (1.0 - smoothstep(0.52, 0.82, length(q - vec2<f32>(0.5))));
+    color += color * foldAmt * (0.22 + intensity * 0.18);
+    // Idea 2 — flow stretch from second-layer shear
+    let stretch = clamp(length(r - q), 0.0, 1.4);
+    color += mix(color1, color2, 0.5) * stretch * 0.16 * (0.6 + treble * 0.5);
 
     // Boost brightness and contrast for intensity
     color = pow(color, vec3<f32>(0.8)) * 1.5;

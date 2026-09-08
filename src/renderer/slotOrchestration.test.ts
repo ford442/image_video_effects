@@ -1,5 +1,6 @@
 import {
   resolveShaderBackend,
+  resyncShaderStack,
   setSlotParams,
   syncAllSlotParams,
   SLOT_COUNT,
@@ -87,5 +88,39 @@ describe('slotOrchestration', () => {
       expect.objectContaining({ zoomParam1: 0.11 }),
       0,
     );
+  });
+
+  it('resyncShaderStack skips a failed slot without clearing later successes', async () => {
+    const backend = {
+      loadShader: jest.fn(),
+      setActiveShader: jest.fn(),
+      setSlotShader: jest.fn(),
+      updateSlotParams: jest.fn(),
+      setSlotMode: jest.fn(),
+      addRipple: jest.fn(),
+      clearRipples: jest.fn(),
+    };
+    const loadOne = jest.fn(async (id: string) => id !== 'broken');
+    await resyncShaderStack(
+      backend,
+      { maxActiveSlots: 3, preferNonDeepVariants: false },
+      { onFp32Required: jest.fn() },
+      loadOne,
+      jest.fn(),
+      {
+        modes: ['broken', 'none', 'liquid'],
+        slotParams: [defaultSlotParams, defaultSlotParams, defaultSlotParams],
+        resolveShader: (id) =>
+          id === 'broken'
+            ? { id: 'broken', name: 'Broken', url: '/broken.wgsl', category: 'image' }
+            : id === 'liquid'
+              ? { id: 'liquid', name: 'Liquid', url: '/liquid.wgsl', category: 'image' }
+              : undefined,
+      },
+    );
+    expect(backend.setSlotShader).not.toHaveBeenCalledWith(0, '');
+    expect(backend.setSlotShader).not.toHaveBeenCalledWith(0, 'broken');
+    expect(backend.setSlotShader).toHaveBeenCalledWith(1, '');
+    expect(backend.setSlotShader).toHaveBeenCalledWith(2, 'liquid');
   });
 });

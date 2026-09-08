@@ -4,8 +4,9 @@
 //  Features: generative, audio-reactive, upgraded-rgba, temporal-ghosting, chromatic-attractors,
 //            bass-scale-pulse, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
-//  Created: 2026-05-23
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-06
+//  Ideas: last-vertex occupancy tint; Sierpinski hole
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -96,11 +97,12 @@ fn hue2rgb(h: f32) -> vec3<f32> {
     return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec2<f32> {
+fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec3<f32> {
     var p = uv * 2.0 - 1.0;
     let rot = time * 0.1 + bass * 0.5;
     let c = cos(rot);
     let s = sin(rot);
+    var lastPick = 0.0;
     
     for (var i: i32 = 0; i < iter; i = i + 1) {
         let fi = f32(i);
@@ -110,6 +112,7 @@ fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec2<f32> {
         
         let h = hash12(p + vec2<f32>(fi * 0.1, time * 0.01));
         let scale = 0.5 + bass * 0.1;
+        lastPick = select(0.0, select(1.0, 2.0, h > 0.66), h >= 0.33);
         
         p = select(
             select(
@@ -121,7 +124,7 @@ fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec2<f32> {
             h < 0.33
         );
     }
-    return p;
+    return vec3<f32>(p, lastPick);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -163,9 +166,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let iterations = i32(mix(3.0, 12.0, clamp(param1 + bass * 0.3, 0.0, 1.0)));
     
     // Chromatic attractor separation: R/B use different attractor offsets
-    let p_r = ifsPoint(uv + vec2<f32>(param4 * 0.01 * bass, 0.0) - mousePull, iterations, time, bass);
-    let p_b = ifsPoint(uv - vec2<f32>(param4 * 0.01 * treble, 0.0) - mousePull, iterations, time, bass);
-    let p_g = ifsPoint(uv - mousePull, iterations, time, bass);
+    let pr = ifsPoint(uv + vec2<f32>(param4 * 0.01 * bass, 0.0) - mousePull, iterations, time, bass);
+    let pb = ifsPoint(uv - vec2<f32>(param4 * 0.01 * treble, 0.0) - mousePull, iterations, time, bass);
+    let pg = ifsPoint(uv - mousePull, iterations, time, bass);
+    let p_r = pr.xy;
+    let p_b = pb.xy;
+    let p_g = pg.xy;
+    let lastPick = pg.z;
     
     let d_r = length(p_r);
     let d_g = length(p_g);
@@ -186,6 +193,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat);
     var finalRGB = vec3<f32>(rgb.r * val_r, rgb.g * val_g, rgb.b * val_b);
+    // Idea 1 — vertex occupancy tint
+    let occ = vec3<f32>(
+      select(0.0, 1.0, lastPick < 0.5),
+      select(0.0, 1.0, lastPick >= 0.5 && lastPick < 1.5),
+      select(0.0, 1.0, lastPick >= 1.5)
+    );
+    finalRGB = mix(finalRGB, finalRGB * (0.55 + occ * 0.7), 0.35);
+    // Idea 2 — Sierpinski hole (far from last iterate origin)
+    let hole = smoothstep(0.35, 1.2, d_g);
+    finalRGB *= 1.0 - hole * 0.28;
 
     // Raymarched orbit sculpture layered over the 2D chaos-game field.
     let aspect = resolution.x / resolution.y;

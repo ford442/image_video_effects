@@ -153,13 +153,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Tangential vortex rotation around pointer
   let tangent = select(vec2<f32>(0.0), vec2<f32>(-toSpring.y, toSpring.x) / max(distSpring, 0.001), distSpring > 0.001);
 
-  // Combined physical velocity vector
-  let mouseWind = tangent / aspectVec * mouseInteraction * (0.02 + scatterDistance * 0.6);
+  // Combined physical velocity vector in aspect-corrected space; convert back to UV once for sampling.
+  let mouseWind = tangent * mouseInteraction * (0.02 + scatterDistance * 0.6);
   let bassKick = 1.0 + bass * 0.7 + binA * 0.35;
-  let shockKick = rippleDir / aspectVec * (0.03 + scatterDistance * 0.8);
+  let shockKick = rippleDir * (0.03 + scatterDistance * 0.8);
+  let curlVelAspect = curlVel * aspectVec;
+  let fibDrift = fibDir * (chaos * 0.015) * aspectVec;
 
-  let velocity = (mouseWind + curlVel + fibDir * (chaos * 0.015) + shockKick) * bassKick * depthFactor;
-  let velMag = length(velocity);
+  let velocityAspect = (mouseWind + curlVelAspect + fibDrift + shockKick) * bassKick * depthFactor;
+  let velocity = velocityAspect / aspectVec;
+  let velMag = length(velocityAspect);
 
   // Multi-tap advection accumulation
   var accum = vec3<f32>(0.0);
@@ -199,7 +202,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let outCol = vec4<f32>(finalRGB, semanticAlpha);
 
   textureStore(writeTexture, coord, outCol);
-  textureStore(dataTextureA, coord, outCol);
+  textureStore(dataTextureA, coord, vec4<f32>(hdr, semanticAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth + velMag * 2.0, 0.0, 1.0), 0.0, 0.0, 0.0));
 }
 

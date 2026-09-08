@@ -1,7 +1,10 @@
 # WGSL Shader Upgrade Swarm Plan
 
-> **Generated**: 2026-04-12  
-> **Objective**: Identify and expand the smallest WGSL shaders with mathematical complexity, RGBA enhancements, and geometric sophistication
+> **Historical (2026-04-12).** Size-expansion brainstorm. Target line counts are **not** success.
+> **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+
+**Generated**: 2026-04-12  
+**Objective (then)**: Identify and expand the smallest WGSL shaders with mathematical complexity, RGBA enhancements, and geometric sophistication
 
 ---
 

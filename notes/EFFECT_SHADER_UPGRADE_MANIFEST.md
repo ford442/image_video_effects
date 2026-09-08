@@ -1,8 +1,10 @@
 # Effect Shader Upgrade Manifest
 
+> **Historical (2026-04-12).** **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+
 **Document Version:** 1.0  
 **Date:** 2026-04-12  
-**Status:** Complete
+**Status:** Complete (historical)
 
 ---
 

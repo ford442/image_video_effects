@@ -1,8 +1,11 @@
-// ===============================================================
-// Aurora Rift 2 – Pass 1: Volumetric Raymarch (Enhanced)
-// Enhanced volumetric aurora with improved flow dynamics
-// Outputs: dataTextureA (RGBA: color + density)
-// ===============================================================
+// ═══════════════════════════════════════════════════════════════════
+//  aurora-rift-2-pass1
+//  Category: lighting-effects
+//  Features: multi-pass-1, volumetric, curl-flow, audio-reactive, depth-aware
+//  Ideas: Birkeland plasma vortex tubes, ionospheric substorm flash bursts, multi-scale layer diffusion coupling
+//  A packing: volumetric data [RGB=aurora color, A=density] for Pass 2 compositor
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
@@ -27,16 +30,8 @@ struct Uniforms {
     ripples:     array<vec4<f32>, 50>,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Hash functions
-// ═══════════════════════════════════════════════════════════════════════════
 fn hash2(p: vec2<f32>) -> f32 {
     var h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
-}
-
-fn hash3(p: vec3<f32>) -> f32 {
-    var h = dot(p, vec3<f32>(41.0, 289.0, 57.0));
     return fract(sin(h) * 43758.5453123);
 }
 
@@ -45,9 +40,6 @@ fn hash4(p: vec4<f32>) -> f32 {
     return fract(sin(dot4) * 43758.5453123);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  4-D gradient noise - LOD optimized
-// ═══════════════════════════════════════════════════════════════════════════
 fn noise4d(p: vec4<f32>) -> f32 {
     var i = floor(p);
     var f = fract(p);
@@ -63,8 +55,7 @@ fn noise4d(p: vec4<f32>) -> f32 {
                     let wy = select(1.0 - uu.y, uu.y, y == 1);
                     let wz = select(1.0 - uu.z, uu.z, z == 1);
                     let ww = select(1.0 - uu.w, uu.w, w == 1);
-                    let finalW = wx * wy * wz * ww;
-                    sum = sum + finalW * hash4(corner);
+                    sum = sum + (wx * wy * wz * ww) * hash4(corner);
                 }
             }
         }
@@ -72,9 +63,6 @@ fn noise4d(p: vec4<f32>) -> f32 {
     return sum * 2.0 - 1.0;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  FBM (2-D) with LOD
-// ═══════════════════════════════════════════════════════════════════════════
 fn fbm(p: vec2<f32>, time: f32, octaves: i32) -> f32 {
     var sum = 0.0;
     var amp = 0.5;
@@ -87,11 +75,8 @@ fn fbm(p: vec2<f32>, time: f32, octaves: i32) -> f32 {
     return sum;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Curl noise (divergence-free)
-// ═══════════════════════════════════════════════════════════════════════════
 fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
-    let eps = 0.001;
+    let eps = 0.01;
     let n1 = fbm(p + vec2<f32>(eps, 0.0), time, 4);
     let n2 = fbm(p + vec2<f32>(0.0, eps), time, 4);
     let n3 = fbm(p - vec2<f32>(eps, 0.0), time, 4);
@@ -99,28 +84,22 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
     return vec2<f32>(n2 - n4, n1 - n3) / (2.0 * eps);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Voronoi cell distance
-// ═══════════════════════════════════════════════════════════════════════════
 fn voronoiCell(p: vec2<f32>) -> f32 {
-    var i = floor(p);
-    var f = fract(p);
+    let i = floor(p);
+    let f = fract(p);
     var best = 1e5;
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
             let cellPos = i + vec2<f32>(f32(x), f32(y));
             let seed = vec2<f32>(hash2(cellPos), hash2(cellPos + 13.37));
             let point = cellPos + seed - 0.5;
-            let d = length(point - p);
+            let d = length(point - f);
             best = min(best, d);
         }
     }
     return best;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  HSV → RGB
-// ═══════════════════════════════════════════════════════════════════════════
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     var c = v * s;
     let h6 = h * 6.0;
@@ -135,29 +114,30 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     return rgb + vec3<f32>(v - c);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Main compute shader - PASS 1: Volumetric Raymarch (Enhanced)
-// ═══════════════════════════════════════════════════════════════════════════
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let unused_x = u.zoom_params.x;
-    let unused_y = u.zoom_params.y;
-    let unused_z = u.zoom_params.z;
-    let unused_w = u.zoom_params.w;
     let dims = u.config.zw;
+    if (f32(gid.x) >= dims.x || f32(gid.y) >= dims.y) { return; }
+    
+    let coord = vec2<i32>(gid.xy);
     let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
     let time = u.config.x;
+    let aspect = dims.x / max(dims.y, 1.0);
     
-    // Enhanced parameters for version 2
+    // Enhanced parameters
     let scale = u.zoom_params.x * 3.0 + 1.0;
     let flowSpeed = u.zoom_params.y * 2.0 + 0.5;
-    let diffRate = u.zoom_params.z; // Consume dead slider
+    let diffRate = u.zoom_params.z; // Live diffusion slider!
     let fbmOctaves = i32(u.zoom_params.w * 5.0 + 2.0);
     let depthParallax = u.zoom_config.y * 0.6 + 0.1;
     let emitThresh = u.zoom_config.z * 0.3 + 0.1;
     
-    // Sample source color & depth
-    let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
+    // 3-band audio
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Sample depth
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
     
     // Distance-based LOD
@@ -171,23 +151,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var totalWarp = vec2<f32>(0.0);
     var totalWeight = 0.0;
     
-    // Layer 0 - foreground
     let w0 = 1.0 / (1.0 + abs(depth - 0.0) * 12.0);
     let a0 = curlNoise(uv * scale + curl * 0.3, time * flowSpeed);
-    totalWarp = totalWarp + a0 * depthParallax * w0;
-    totalWeight = totalWeight + w0;
+    totalWarp += a0 * depthParallax * w0;
+    totalWeight += w0;
     
-    // Layer 1 - midground
     let w1 = 1.0 / (1.0 + abs(depth - 0.5) * 12.0);
     let a1 = curlNoise(uv * scale + curl * 0.3, time * flowSpeed * 2.0);
-    totalWarp = totalWarp + a1 * depthParallax * w1;
-    totalWeight = totalWeight + w1;
+    totalWarp += a1 * depthParallax * w1;
+    totalWeight += w1;
     
-    // Layer 2 - background
     let w2 = 1.0 / (1.0 + abs(depth - 1.0) * 12.0);
     let a2 = curlNoise(uv * scale + curl * 0.3, time * flowSpeed * 3.0);
-    totalWarp = totalWarp + a2 * depthParallax * w2;
-    totalWeight = totalWeight + w2;
+    totalWarp += a2 * depthParallax * w2;
+    totalWeight += w2;
     
     totalWarp = totalWarp / max(totalWeight, 0.0001);
     
@@ -196,39 +173,68 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fbmVal = fbm(uv * scale * 4.0 + curl, time, lodOctaves);
     let foamPattern = smoothstep(0.0, 0.12, cellDist) * 0.6 + smoothstep(0.2, 0.4, fbmVal) * 0.4;
     
-    // 4-D hyper-noise (depth-dependent foam surface)
+    // 4-D hyper-noise
     let hyper = noise4d(vec4<f32>(uv * scale * 1.5, time * 0.4, depth * 2.0));
     let hyperMod = (hyper + 1.0) * 0.5;
     
-    // Phase-interference (three sinusoidal wavefronts)
+    // Phase-interference wavefronts
     let waveA = sin(length(uv - 0.5) * 28.0 - time * 3.2);
     let waveB = sin(atan2(uv.y - 0.5, uv.x - 0.5) * 22.0 + time * 2.7);
     let waveC = sin(dot(uv - 0.5, vec2<f32>(1.1, 0.9)) * 30.0 - time * 4.1);
     let interference = (waveA * waveB * waveC + 1.0) * 0.5;
     
-    // Combine into pattern scalar
-    let pattern = (foamPattern * 0.4 + hyperMod * 0.3 + interference * 0.3) *
+    var pattern = (foamPattern * 0.4 + hyperMod * 0.3 + interference * 0.3) *
                   (1.0 + (1.0 - depth) * 1.5);
     
-    // Enhanced emissive plasma on cell borders
+    // IDEA 1: Birkeland current plasma vortex tubes
+    // Paired magnetic vortex sheaths along auroral ribbons with high-speed helical spinning
+    let vortexAngle = atan2(totalWarp.y, totalWarp.x);
+    let vortexTube = sin(vortexAngle * 4.0 + length(totalWarp) * 35.0 - time * 6.0);
+    let vortexSheath = smoothstep(0.3, 0.9, abs(vortexTube)) * length(curl);
+    pattern += vortexSheath * (0.4 + mids * 0.4);
+
+    // Emissive plasma on cell borders
     let border = smoothstep(emitThresh, 1.0, smoothstep(0.08, 0.12, cellDist) * pattern * length(curl));
-    let plasma = hsv2rgb(fract(time * 0.07 + pattern + hyper), 0.9, 1.0);
+    let plasma = hsv2rgb(fract(time * 0.07 + pattern + hyper + bass * 0.1), 0.9, 1.0);
     
-    // Enhanced aurora color with more purple/pink tones
+    // Enhanced aurora color with violet / magenta ionospheric glow
     let auroraBase = hsv2rgb(fract(0.25 + pattern * 0.25), 0.85, 0.92);
-    let auroraColor = mix(auroraBase, plasma, border * 0.6);
+    var auroraColor = mix(auroraBase, plasma, border * 0.6);
+
+    // IDEA 2: Ionospheric geomagnetic substorm flash bursts
+    // Treble and click ripples ignite localized geomagnetic substorm flares with intense N2+ violet boundary glow
+    var substormGlow = vec3<f32>(0.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let elapsed = time - ripple.z;
+        if (elapsed > 0.0 && elapsed < 2.5) {
+            let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+            let rFlare = exp(-abs(rDist - elapsed * 0.3) * 30.0) * exp(-elapsed * 1.4);
+            substormGlow += vec3<f32>(0.6, 0.2, 0.9) * rFlare * (1.0 + treble * 1.5);
+        }
+    }
+    auroraColor += substormGlow;
+
+    var density = pattern * (1.0 + border * 2.5) + length(substormGlow) * 0.5;
+
+    // IDEA 3: Multi-scale layer diffusion coupling
+    // diffRate actively diffuses density and blends temporal state from dataTextureC
+    let prevHistory = textureLoad(dataTextureC, coord, 0);
+    let prevDensity = prevHistory.a;
+    let prevColor = prevHistory.rgb;
+
+    let temporalMix = clamp(diffRate * 0.45 + 0.05, 0.0, 0.6);
+    density = mix(density, prevDensity, temporalMix);
+    auroraColor = mix(auroraColor, prevColor, temporalMix * 0.65);
     
-    // Enhanced density calculation
-    let density = pattern * (1.0 + border * 2.5);
+    let ign = fract(52.9829189 * fract(dot(vec2<f32>(gid.xy), vec2<f32>(0.06711056, 0.00583715))));
+    let ditheredColor = auroraColor + (ign - 0.5) * (1.0 / 255.0);
+
+    let volumetric = vec4<f32>(ditheredColor, density);
+    textureStore(dataTextureA, coord, volumetric);
     
-    // Pack volumetric data: RGB = color, A = density
-    let volumetric = vec4<f32>(auroraColor, density);
-    
-    // Store for Pass 2
-    textureStore(dataTextureA, gid.xy, volumetric);
-    
-    // Pass-through input to maintain chain (Pass 2 will do final compositing)
     let inputColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0);
-    textureStore(writeTexture, gid.xy, inputColor);
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, inputColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

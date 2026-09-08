@@ -4,24 +4,20 @@ import { InputSource } from './renderer/types';
 export function RemoteControlHeader({
     inputSource,
     onLoadRandom,
+    hidden,
+    onHide,
 }: {
     inputSource: InputSource;
     onLoadRandom: () => void;
+    hidden: boolean;
+    onHide: () => void;
 }) {
+    if (hidden) {
+        return null;
+    }
+
     return (
-        <h2 className="remote-app-header" style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '16px',
-            flexWrap: 'wrap',
-            textAlign: 'center',
-            padding: '16px 12px',
-            margin: 0,
-            backgroundColor: '#2a2a2a',
-            borderBottom: '1px solid #444',
-            flexShrink: 0
-        }}>
+        <h2 className="remote-app-header">
             Remote Control
             <button
                 type="button"
@@ -31,6 +27,14 @@ export function RemoteControlHeader({
                 disabled={inputSource !== 'image'}
             >
                 🎲 Random Image
+            </button>
+            <button
+                type="button"
+                className="toggle-sidebar-btn"
+                onClick={onHide}
+                title="Hide titlebar and random-image control"
+            >
+                Hide Controls
             </button>
         </h2>
     );

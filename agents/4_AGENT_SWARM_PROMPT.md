@@ -1,8 +1,11 @@
 # 4-Agent Shader Upgrade Swarm - Prompt Package
 
+> **Historical role split.** Do **not** “transform into a masterpiece” or replace the algorithm.
+> **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md). Role toolkits: `agents/prompt-templates/`.
+
 ## Mission Brief
 
-**Objective:** Upgrade low-rated shaders (≤3.0 stars) to 4.5+ star quality using the Pixelocity WebGPU pipeline.
+**Objective (then):** Upgrade low-rated shaders (≤3.0 stars) to 4.5+ star quality using the Pixelocity WebGPU pipeline.
 
 **Agents:** 4 specialized shader architects working in parallel
 

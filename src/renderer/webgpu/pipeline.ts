@@ -84,13 +84,13 @@ export class WebGPUShaderManager {
     this.bindingUsages.clear();
   }
 
-  compile(
+  async compile(
     device: GPUDevice,
     pipelineLayout: GPUPipelineLayout,
     id: string,
     wgsl: string,
-  ): boolean {
-    const ok = compileShader(
+  ): Promise<boolean> {
+    const ok = await compileShader(
       device,
       pipelineLayout,
       id,

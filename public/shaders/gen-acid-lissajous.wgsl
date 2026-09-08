@@ -5,7 +5,9 @@
 //            luma-spawn, depth-aware, temporal-feedback, chromatic-aberration,
 //            aces-tone-map, emergent-trails
 //  Complexity: Medium
-//  Updated: 2026-06-29
+//  Upgraded: 2026-09-06
+//  Ideas: origin-crossing beads; glow waist when freqX≈freqY
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Lissajous figures drawn as glowing neon tubes with acid-trip color
 //  cycling. This upgrade makes the curves live: a mouse gravity well bends
@@ -194,11 +196,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let minDist = sqrt(minDistSq);
 
     let gw = glowWidth * (1.0 + bass * 0.6);
-    let core  = smoothstep(gw, 0.0, minDist);
-    let bloom = smoothstep(gw * 4.0, 0.0, minDist) * 0.35;
+    // Idea 2 — near 1:1 ratio waist
+    let ratioClose = 1.0 - smoothstep(0.0, 2.2, abs(freqX - freqY));
+    let gwUse = gw * (1.0 - ratioClose * 0.22);
+    let core  = smoothstep(gwUse, 0.0, minDist);
+    let bloom = smoothstep(gwUse * 4.0, 0.0, minDist) * 0.35;
     let glow = core + bloom;
+    // Idea 1 — Lissajous node beads at origin crossings
+    let node = exp(-minDist / max(gwUse, 0.0008)) * exp(-dot(p, p) * 7.0);
     let sat = clamp(0.8 + treble * 0.2, 0.0, 1.0);
-    let val = glow * (1.5 + mids * 0.8);
+    let val = glow * (1.5 + mids * 0.8) + node * 1.4;
     let rgb = hsv2rgb(vec3<f32>(hueBase, sat, 1.0)) * val;
 
     totalColor = totalColor + rgb;

@@ -93,6 +93,7 @@
   "id": "gen-echo-dunes",
   "url": "shaders/gen-echo-dunes.wgsl",
   "features": [
+    "upgraded-rgba",
     "audio-reactive",
     "mouse-interactive",
     "ripple-reactive",

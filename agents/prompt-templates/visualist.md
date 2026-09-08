@@ -154,7 +154,8 @@ Other useful alpha encodings:
 - [ ] Premultiplied-alpha writeback (`vec4(rgb * a, a)`) when alpha < 1
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it visually stunning.
+- **Upgrade = add 2–4 native visual ideas to this effect.** Write them down first. Keep the existing algorithm, modes, and saved params. Do not reimagine the shader as a different look. ACES / alpha / bindings are the floor, not the upgrade. See `docs/SHADER_UPGRADE_BATCH.md`.
+- Keep the original "soul" of the shader while making it visually stunning. Color and lighting must serve *this* identity (sharpen stays sharpen; a brush stays a brush).
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.
 - **Alpha must carry semantic meaning** — bloom weight, depth, or Fresnel reflectance.

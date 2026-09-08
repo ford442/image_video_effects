@@ -9,6 +9,9 @@
 //  release to watch them drift back and reform over ~1.5s.
 //  Audio drives glow pulse, lattice breathing, and spark frequency.
 //  Created: 2026-06-06
+//  Upgraded: 2026-09-06
+//  Ideas: triple-junction glow; cell-core heat
+//  A packing: displacement.xy, seed, reform
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -47,12 +50,16 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
-// Triangular lattice distance (3 directions at 60°)
-fn triLatticeDist(p: vec2<f32>) -> f32 {
+fn triLatticeDist3(p: vec2<f32>) -> vec3<f32> {
   let d1 = abs(fract(p.x) - 0.5);
   let d2 = abs(fract(p.x * 0.5 + p.y * 0.866025) - 0.5);
   let d3 = abs(fract(p.x * 0.5 - p.y * 0.866025) - 0.5);
-  return min(d1, min(d2, d3));
+  return vec3<f32>(d1, d2, d3);
+}
+
+fn triLatticeDist(p: vec2<f32>) -> f32 {
+  let d = triLatticeDist3(p);
+  return min(d.x, min(d.y, d.z));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -144,7 +151,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let p = sampleUV * scale;
 
   // Triangular lattice distance
-  let dist = triLatticeDist(p);
+  let d3 = triLatticeDist3(p);
+  let dist = min(d3.x, min(d3.y, d3.z));
+  // Idea 1 — triple junctions (all three lattice lines meet)
+  let junc = (1.0 - smoothstep(0.0, 0.045, d3.x))
+           * (1.0 - smoothstep(0.0, 0.045, d3.y))
+           * (1.0 - smoothstep(0.0, 0.045, d3.z));
+  // Idea 2 — cell-core heat (far from all three lines)
+  let coreHeat = smoothstep(0.12, 0.28, dist);
 
   // Edge glow (hot edges, cool centers)
   let edgeRaw = 1.0 - smoothstep(0.0, 0.06, dist);
@@ -160,6 +174,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = mix(col, EMBER_DEEP, hot * 0.7);
   col = mix(col, EMBER_HOT, hot * hot * 0.8);
   col = mix(col, EMBER_CORE, pow(hot, 4.0) * 2.5);
+  col = mix(col, EMBER_HOT, coreHeat * 0.22 * (0.7 + bass * 0.4));
+  col = col + EMBER_CORE * junc * glowIntensity * (0.55 + treble * 0.5);
 
   // ── Shatter visual flair ──
   // Shard boundary glow

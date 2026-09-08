@@ -5,7 +5,9 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-06
+//  Ideas: bedding-contact highlights; intra-layer cross-beds
+//  A packing: ACES display RGBA
 //  By: Kimi Code CLI
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -139,6 +141,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += vec3<f32>(0.05, 0.08, 0.12) * wet;
   let striation = sin(lf * freq * 18.84956 + li * 2.0) * 0.5 + 0.5;
   col *= 0.9 + striation * 0.2 * exposed;
+  // Idea 1 — bedding contacts at layer floors/ceilings
+  let contact = smoothstep(0.055, 0.0, min(lf, 1.0 - lf)) * exposed;
+  col += vec3<f32>(0.92, 0.78, 0.52) * contact * (0.22 + treble * 0.12);
+  // Idea 2 — cross-beds: diagonal foresets inside a bed
+  let crossBed = 0.5 + 0.5 * sin((wuv.x * freq * 2.4 + lf * 14.0 + li * 1.7));
+  col *= 1.0 + (crossBed - 0.5) * 0.18 * exposed * (1.0 - contact);
   let fossil = smoothstep(0.12, 0.0, length(fract(wuv * 15.0 + li * 4.0) - vec2<f32>(h12(vec2<f32>(li, 3.0)), h12(vec2<f32>(li, 4.0))))) * smoothstep(0.7, 1.0, h12(vec2<f32>(li, 2.0))) * exposed;
   col *= 1.0 - fossil * 0.4;
   col += vec3<f32>(0.08, 0.06, 0.04) * fossil;

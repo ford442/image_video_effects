@@ -40,6 +40,20 @@ export interface WebGPUBufferSet {
   plasmaBuf: GPUBuffer;
 }
 
+export function destroyTextureSet(tex: Partial<WebGPUTextureSet> | null | undefined): void {
+  if (!tex) return;
+  for (const t of [
+    tex.historyTex, tex.sourceTex, tex.readTex, tex.writeTex,
+    tex.dataTexA, tex.dataTexB, tex.dataTexC, tex.depthRead, tex.depthWrite, tex.emptyTex,
+  ]) {
+    try {
+      t?.destroy();
+    } catch {
+      /* already invalid */
+    }
+  }
+}
+
 export function createTextures(
   device: GPUDevice,
   canvasW: number,
@@ -72,102 +86,119 @@ export function createTextures(
     USAGE_STANDARD | GPUTextureUsage.RENDER_ATTACHMENT;
 
   const rgbaFormat = colorFormat;
-
-  const sourceTex = device.createTexture({
-    label: 'sourceTex',
-    size: [fullW, fullH],
-    format: rgbaFormat,
-    usage: USAGE_SOURCE,
-  });
-
-  const readTex = device.createTexture({
-    label: 'readTex',
-    size: [sw, sh],
-    format: rgbaFormat,
-    usage: USAGE_READ,
-  });
-
-  const writeTex = device.createTexture({
-    label: 'writeTex',
-    size: [sw, sh],
-    format: rgbaFormat,
-    usage: USAGE_STANDARD,
-  });
-
-  const dataTexA = device.createTexture({
-    label: 'dataTexA',
-    size: [sw, sh],
-    format: rgbaFormat,
-    usage: USAGE_STANDARD,
-  });
-
-  const dataTexB = device.createTexture({
-    label: 'dataTexB',
-    size: [sw, sh],
-    format: rgbaFormat,
-    usage: USAGE_STANDARD,
-  });
-
-  const dataTexC = device.createTexture({
-    label: 'dataTexC',
-    size: [sw, sh],
-    format: rgbaFormat,
-    usage: USAGE_STANDARD,
-  });
-
   const layers = Math.max(1, Math.min(HISTORY_DEPTH, historyLayers | 0));
-  const historyTex = device.createTexture({
-    label: 'historyTex',
-    size: { width: sw, height: sh, depthOrArrayLayers: layers },
-    format: rgbaFormat,
-    usage:
-      GPUTextureUsage.TEXTURE_BINDING |
-      GPUTextureUsage.STORAGE_BINDING |
-      GPUTextureUsage.COPY_DST |
-      GPUTextureUsage.COPY_SRC,
-  });
-
-  const depthRead = device.createTexture({
-    label: 'depthRead',
-    size: [fullW, fullH],
-    format: 'r32float',
-    usage: USAGE_SOURCE,
-  });
-
-  const depthWrite = device.createTexture({
-    label: 'depthWrite',
-    size: [sw, sh],
-    format: 'r32float',
-    usage: USAGE_STANDARD,
-  });
-
-  const emptyTex = device.createTexture({
-    label: 'emptyTex',
-    size: [1, 1],
-    format: 'r32float',
-    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-  });
-
-  device.queue.writeTexture(
-    { texture: emptyTex },
-    new Float32Array([0]),
-    { bytesPerRow: 4 },
-    [1, 1],
-  );
-
-  return {
-    sourceTex,
-    readTex,
-    writeTex,
-    dataTexA,
-    dataTexB,
-    dataTexC,
-    historyTex,
-    historyLayers: layers,
-    depthRead,
-    depthWrite,
-    emptyTex,
+  const created: GPUTexture[] = [];
+  const track = (tex: GPUTexture): GPUTexture => {
+    created.push(tex);
+    return tex;
   };
+
+  try {
+    // Largest committed resource first (#1204). Do not create ping-pong before history.
+    const historyTex = track(device.createTexture({
+      label: 'historyTex',
+      size: { width: sw, height: sh, depthOrArrayLayers: layers },
+      format: rgbaFormat,
+      usage:
+        GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.STORAGE_BINDING |
+        GPUTextureUsage.COPY_DST |
+        GPUTextureUsage.COPY_SRC,
+    }));
+
+    const sourceTex = track(device.createTexture({
+      label: 'sourceTex',
+      size: [fullW, fullH],
+      format: rgbaFormat,
+      usage: USAGE_SOURCE,
+    }));
+
+    const readTex = track(device.createTexture({
+      label: 'readTex',
+      size: [sw, sh],
+      format: rgbaFormat,
+      usage: USAGE_READ,
+    }));
+
+    const writeTex = track(device.createTexture({
+      label: 'writeTex',
+      size: [sw, sh],
+      format: rgbaFormat,
+      usage: USAGE_STANDARD,
+    }));
+
+    const dataTexA = track(device.createTexture({
+      label: 'dataTexA',
+      size: [sw, sh],
+      format: rgbaFormat,
+      usage: USAGE_STANDARD,
+    }));
+
+    const dataTexB = track(device.createTexture({
+      label: 'dataTexB',
+      size: [sw, sh],
+      format: rgbaFormat,
+      usage: USAGE_STANDARD,
+    }));
+
+    const dataTexC = track(device.createTexture({
+      label: 'dataTexC',
+      size: [sw, sh],
+      format: rgbaFormat,
+      usage: USAGE_STANDARD,
+    }));
+
+    const depthRead = track(device.createTexture({
+      label: 'depthRead',
+      size: [fullW, fullH],
+      format: 'r32float',
+      usage: USAGE_SOURCE,
+    }));
+
+    const depthWrite = track(device.createTexture({
+      label: 'depthWrite',
+      size: [sw, sh],
+      format: 'r32float',
+      usage: USAGE_STANDARD,
+    }));
+
+    const emptyTex = track(device.createTexture({
+      label: 'emptyTex',
+      size: [1, 1],
+      format: 'r32float',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+    }));
+
+    device.queue.writeTexture(
+      { texture: emptyTex },
+      new Float32Array([0]),
+      { bytesPerRow: 4 },
+      [1, 1],
+    );
+
+    return {
+      sourceTex,
+      readTex,
+      writeTex,
+      dataTexA,
+      dataTexB,
+      dataTexC,
+      historyTex,
+      historyLayers: layers,
+      depthRead,
+      depthWrite,
+      emptyTex,
+    };
+  } catch (err) {
+    for (const t of created) {
+      try {
+        t.destroy();
+      } catch {
+        /* ignore */
+      }
+    }
+    throw err;
+  }
 }
 
 export function createSamplers(device: GPUDevice): WebGPUSamplerSet {
@@ -252,16 +283,22 @@ export class WebGPUResourcePool {
       device, canvasW, canvasH, scaledW, scaledH, colorFormat, historyLayers,
     );
     this.applyTextureSet(textures);
+    this.ensureSamplersAndBuffers(device);
+  }
 
-    const samplers = createSamplers(device);
-    this.filterSampler = samplers.filterSampler;
-    this.nearestSampler = samplers.nearestSampler;
-    this.compSampler = samplers.compSampler;
-
-    const buffers = createBuffers(device);
-    this.uniformBuf = buffers.uniformBuf;
-    this.extraBuf = buffers.extraBuf;
-    this.plasmaBuf = buffers.plasmaBuf;
+  ensureSamplersAndBuffers(device: GPUDevice): void {
+    if (!this.filterSampler) {
+      const samplers = createSamplers(device);
+      this.filterSampler = samplers.filterSampler;
+      this.nearestSampler = samplers.nearestSampler;
+      this.compSampler = samplers.compSampler;
+    }
+    if (!this.uniformBuf) {
+      const buffers = createBuffers(device);
+      this.uniformBuf = buffers.uniformBuf;
+      this.extraBuf = buffers.extraBuf;
+      this.plasmaBuf = buffers.plasmaBuf;
+    }
   }
 
   applyTextureSet(tex: WebGPUTextureSet): void {
@@ -312,12 +349,7 @@ export class WebGPUResourcePool {
   }
 
   destroyWorkingTextures(): void {
-    for (const t of [
-      this.sourceTex, this.readTex, this.writeTex, this.dataTexA, this.dataTexB,
-      this.dataTexC, this.historyTex, this.depthRead, this.depthWrite, this.emptyTex,
-    ]) {
-      t?.destroy();
-    }
+    destroyTextureSet(this.getTextureSet());
   }
 
   recreateScaleTextures(

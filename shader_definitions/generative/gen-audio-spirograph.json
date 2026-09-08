@@ -57,6 +57,7 @@
   "id": "gen-audio-spirograph",
   "url": "shaders/gen-audio-spirograph.wgsl",
   "features": [
+    "upgraded-rgba",
     "sampled-spirograph-trails",
     "musical-ratio-harmonics",
     "sprung-mouse-lens",

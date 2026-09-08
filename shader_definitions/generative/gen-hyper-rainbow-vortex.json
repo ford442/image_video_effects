@@ -62,6 +62,6 @@
   "updated": true,
   "id": "gen-hyper-rainbow-vortex",
   "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
-  "features": ["rankine-vortex", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "features": ["upgraded-rgba", "rankine-vortex", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
   "feedbackPacking": "A/C = raw HDR vortex display RGBA history"
 }

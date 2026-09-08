@@ -1,8 +1,11 @@
 # Generative Shader Upgrade Swarm Analysis
 
-> **Generated**: 2026-04-12  
-> **Target**: 8 smallest generative shaders  
-> **Line Count Range**: 83-113 lines → Target: 150-180 lines
+> **Historical (2026-04-12).** Line-count expansion of eight generative shaders. **Not** the live law.
+> **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+
+**Generated**: 2026-04-12  
+**Target (then)**: 8 smallest generative shaders  
+**Line Count Range**: 83-113 lines → Target: 150-180 lines (folklore — do not chase ±20% lines)
 
 ---
 

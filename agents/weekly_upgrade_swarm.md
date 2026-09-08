@@ -1,6 +1,6 @@
-# Weekly Shader Upgrade Swarm — Batch 1
+# Weekly Shader Upgrade Swarm — historical batch log
 
-> **Goal:** Upgrade WGSL shaders to fix undersized generative effects, replace naive RGB-only patterns with RGBA-aware blending, and add meaningful alpha, audio reactivity, and missing params.
+> **LIVE process:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md). This file is a **diary of completed batches**, not the upgrade law. Do not copy a past overlay (fast-motion conveyors, IQ palettes, springs on every file) onto a new family.
 > **Constraint:** Do NOT modify `Renderer.ts`, `types.ts`, or bind groups. Do NOT install new npm packages.
 
 ---

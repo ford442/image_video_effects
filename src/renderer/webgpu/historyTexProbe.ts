@@ -8,8 +8,10 @@ import {
   getHistoryWorkingSizeCap,
   HISTORY_FULL_WORKING_SIZE,
   HISTORY_SAFE_WORKING_SIZE,
+  isGpuOutOfMemoryError,
   persistHistoryOomCap,
 } from '../../config/vramBudget';
+import { createTextures, destroyTextureSet, type WebGPUTextureSet } from './resources';
 import { HISTORY_DEPTH } from './webgpuConstants';
 
 export interface HistoryProbeRung {
@@ -40,16 +42,6 @@ function historyUsage(): GPUTextureUsageFlags {
     GPUTextureUsage.COPY_DST |
     GPUTextureUsage.COPY_SRC
   );
-}
-
-function isOutOfMemoryError(err: unknown): boolean {
-  if (!err) return false;
-  if (typeof GPUOutOfMemoryError !== 'undefined' && err instanceof GPUOutOfMemoryError) {
-    return true;
-  }
-  const name = (err as { name?: string }).name;
-  const msg = err instanceof Error ? err.message : String(err);
-  return name === 'GPUOutOfMemoryError' || /out of memory|GPUOutOfMemory/i.test(msg);
 }
 
 export function rungsForRequest(requestedWorkingSize: number, cap: number): HistoryProbeRung[] {
@@ -102,7 +94,7 @@ async function tryHistoryAlloc(
     }
     persistHistoryOomCap(HISTORY_SAFE_WORKING_SIZE);
     const lost = await deviceAlreadyLost(device);
-    return { oom: isOutOfMemoryError(err) || true, lost };
+    return { oom: isGpuOutOfMemoryError(err) || true, lost };
   }
 
   let oom = false;
@@ -111,7 +103,7 @@ async function tryHistoryAlloc(
       const scoped = await device.popErrorScope();
       if (scoped) oom = true;
     } catch (err) {
-      oom = isOutOfMemoryError(err) || true;
+      oom = isGpuOutOfMemoryError(err) || true;
     }
   }
 
@@ -128,16 +120,110 @@ async function tryHistoryAlloc(
   return { oom, lost };
 }
 
+export interface WorkingPoolAllocResult {
+  ok: boolean;
+  set?: WebGPUTextureSet;
+  workingSize: number;
+  layers: number;
+  deviceLost: boolean;
+  oom: boolean;
+}
+
+/**
+ * Allocate the real working pool (history first) under an out-of-memory scope.
+ * On OOM the partial set is destroyed and the session cap is persisted at 1024.
+ */
+export async function allocateWorkingPool(
+  device: GPUDevice,
+  canvasW: number,
+  canvasH: number,
+  size: number,
+  layers: number,
+  format: InternalColorFormat,
+): Promise<WorkingPoolAllocResult> {
+  if (await deviceAlreadyLost(device)) {
+    persistHistoryOomCap(HISTORY_SAFE_WORKING_SIZE);
+    return {
+      ok: false,
+      workingSize: HISTORY_SAFE_WORKING_SIZE,
+      layers,
+      deviceLost: true,
+      oom: true,
+    };
+  }
+
+  const hasScopes =
+    typeof device.pushErrorScope === 'function' && typeof device.popErrorScope === 'function';
+  if (hasScopes) {
+    device.pushErrorScope('out-of-memory');
+  }
+
+  let set: WebGPUTextureSet | undefined;
+  try {
+    set = createTextures(device, canvasW, canvasH, size, size, format, layers);
+  } catch (err) {
+    if (hasScopes) {
+      try {
+        await device.popErrorScope();
+      } catch {
+        /* ignore */
+      }
+    }
+    persistHistoryOomCap(HISTORY_SAFE_WORKING_SIZE);
+    const lost = await deviceAlreadyLost(device);
+    return {
+      ok: false,
+      workingSize: HISTORY_SAFE_WORKING_SIZE,
+      layers,
+      deviceLost: lost,
+      oom: isGpuOutOfMemoryError(err) || true,
+    };
+  }
+
+  let oom = false;
+  if (hasScopes) {
+    try {
+      const scoped = await device.popErrorScope();
+      if (scoped) oom = true;
+    } catch (err) {
+      oom = isGpuOutOfMemoryError(err) || true;
+    }
+  }
+
+  const lost = await deviceAlreadyLost(device);
+  if (oom || lost) {
+    destroyTextureSet(set);
+    persistHistoryOomCap(HISTORY_SAFE_WORKING_SIZE);
+    return {
+      ok: false,
+      workingSize: HISTORY_SAFE_WORKING_SIZE,
+      layers,
+      deviceLost: lost,
+      oom: true,
+    };
+  }
+
+  return {
+    ok: true,
+    set,
+    workingSize: size,
+    layers,
+    deviceLost: false,
+    oom: false,
+  };
+}
+
 /**
  * Find the largest historyTex (size × layers) that fits.
- * Destroys each probe texture. Caller then allocates the real pool at the result.
+ * Destroys each probe texture. Prefer allocateWorkingPool for the real pool.
  */
 export async function probeHistoryTex(
   device: GPUDevice,
   requestedWorkingSize: number,
   format: InternalColorFormat,
+  capOverride?: number,
 ): Promise<HistoryProbeResult> {
-  const cap = getHistoryWorkingSizeCap();
+  const cap = capOverride ?? getHistoryWorkingSizeCap();
   const rungs = rungsForRequest(requestedWorkingSize, cap);
   if (rungs.length === 0) {
     return {

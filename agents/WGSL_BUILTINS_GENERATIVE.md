@@ -1,6 +1,7 @@
 # WGSL Built-ins & Patterns Reference for Generative Shaders
 
 > **Audience**: Swarm agents writing or upgrading generative shaders for Pixelocity.  
+> **Upgrades**: creative contract is [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md) — add 2–4 native ideas; this file is the binding/builtin floor.  
 > **Rule**: Every function here is valid in a `@compute` shader. Functions marked ⛔ are fragment-only and will cause a naga validation error in compute.
 
 ---

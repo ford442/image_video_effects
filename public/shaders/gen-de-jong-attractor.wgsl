@@ -11,10 +11,9 @@
 //    gallery of intricate lace-work patterns — butterflies, snowflakes,
 //    spirographs — as the attractor topology continuously transforms.
 //    Temporal Monte Carlo builds density per frame; bass warps geometry.
-//    b32 geometry pass: a 3D-lifted hero orbit is embodied as a
-//    smooth-union tube SDF and sphere-traced with cone-grown LOD
-//    radius; treble folds the splat plane into a kaleidoscope.
-//  Upgraded: 2026-06-06 / geometry b32: 2026-08-03
+//  Upgraded: 2026-09-06
+//  Ideas: local stretch tint from |p'−p|; dwell rings from iteration index
+//  A packing: accumulated density, hue phase, tube depth, alpha (raw)
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=speed_a, y=speed_b, z=glow_radius(+tube radius), w=decay
 
@@ -171,10 +170,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Chromatic parameter separation: R uses a+b offset, B uses c+d offset
     var contribR = 0.0;
     var contribB = 0.0;
+    var stretchAccum = 0.0;
+    var dwellAccum = 0.0;
     let invR2   = 1.0 / (glowR * glowR);
 
     for (var i = 0u; i < 128u; i = i + 1u) {
+        let p0 = p;
         p = de_jong(p, a, b, c, d);
+        let stretch = length(p - p0);
         let ddx = p.x - splatPos.x;
         let ddy = p.y - splatPos.y;
         let d2 = ddx * ddx + ddy * ddy;
@@ -182,9 +185,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Parameter-channel split
         contribR += g * (1.0 + sin(f32(i) * 0.1 + a) * 0.3);
         contribB += g * (1.0 + cos(f32(i) * 0.1 + c) * 0.3);
+        // Idea 1 — local stretch; Idea 2 — dwell weight
+        stretchAccum += g * stretch;
+        dwellAccum += g * (f32(i) / 127.0);
     }
     contribR *= (1.0 / 128.0);
     contribB *= (1.0 / 128.0);
+    stretchAccum *= (1.0 / 128.0);
+    dwellAccum *= (1.0 / 128.0);
 
     let prevDensity = textureLoad(dataTextureC, coord, 0).r;
     let accumulated = mix(contribR + contribB, prevDensity, clamp(decay, 0.0, 0.999));
@@ -246,6 +254,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let coolCol = palette(density, hueOff + 0.2);
     let chromaMix = smoothstep(0.0, 1.0, contribR - contribB + 0.5);
     var col     = mix(coolCol, warmCol, chromaMix);
+    col += palette(hueOff + 0.12, 0.0) * clamp(stretchAccum * 6.0, 0.0, 0.45);
+    col += palette(dwellAccum + hueOff, 0.25) * clamp(dwellAccum * 1.8, 0.0, 0.35) * (0.5 + mids * 0.4);
     col += palette(hueOff + 0.6, 0.1) * glow3d * (1.0 + bass);   // tube aura bleed
     col = mix(col, tubeCol * 1.4, select(0.0, 0.85, hit));       // branchless composite
     col += palette(hueOff + clickEnergy * 0.35, 0.3) * clickEnergy * (0.25 + treble * 0.45);

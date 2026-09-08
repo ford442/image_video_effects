@@ -61,6 +61,7 @@
   "supportsDof": false,
   "updated": true,
   "features": [
+    "upgraded-rgba",
     "audio-reactive",
     "mouse-gravity",
     "click-burst",

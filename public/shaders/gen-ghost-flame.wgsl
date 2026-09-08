@@ -3,6 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba, aces-tone-map
 //  Complexity: High
+//  Upgraded: 2026-09-06
+//  Ideas: base wick column; ignition chemiluminescence
+//  A packing: temperature, fuel, vx, age
 //  Description: Fluid advection flame simulation with temperature-based
 //    alpha translucency. Hot regions are bright and slightly translucent,
 //    cool regions fade to transparent. Simplex noise advection drives
@@ -253,6 +256,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Fuel replenishment at bottom
   let bottomProximity = smoothstep(0.15, 0.0, uv.y);
   fuel = fuel + bottomProximity * 0.02 * (1.0 + smoothBass * 0.3);
+  // Idea 1 — wick: thin fuel stem at the base center
+  let wick = exp(-pow((uv.x - 0.5) / 0.018, 2.0)) * bottomProximity;
+  fuel = fuel + wick * 0.018 * (1.0 + smoothBass * 0.25);
 
   // Age tracking
   age = age + burning * 0.3 + 0.01;
@@ -285,6 +291,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ═══ VISUALIZATION ═══
   let tempNorm = clamp(temperature / 1.5, 0.0, 1.0);
   var flameColor = ghostFlameColor(tempNorm);
+
+  // Idea 2 — chemiluminescence at the ignition band
+  let igniteEdge = smoothstep(0.08, 0.16, tempNorm) * (1.0 - smoothstep(0.16, 0.32, tempNorm));
+  flameColor = flameColor + vec3<f32>(0.22, 0.48, 1.05) * igniteEdge * (0.55 + wick * 0.8);
 
   // Ghostly glow from high temps
   let glow = smoothstep(0.4, 0.9, tempNorm) * 0.3;

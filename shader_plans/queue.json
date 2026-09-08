@@ -544,6 +544,19 @@
       "filename": "2026-09-03_bioluminescent-void-orchid.md",
       "title": "Bioluminescent Void-Orchid",
       "added": "2026-09-03T15:24:12.972347"
+      "filename": "2026-09-05_chronomorphic-glass-tesseract.md",
+      "title": "Chronomorphic Glass Tesseract",
+      "added": "2026-09-05T15:33:03.442448"
+    },
+    {
+      "filename": "2026-09-06_liquid-neon-topography.md",
+      "title": "Liquid Neon Topography",
+      "added": "2026-09-06T15:29:54.004264"
+    },
+    {
+      "filename": "2026-09-07_hyperdimensional-plasma-loom.md",
+      "title": "Hyperdimensional Plasma Loom",
+      "added": "2026-09-07T15:32:08.806601"
     }
   ],
   "current": null,
@@ -764,6 +777,13 @@
   ],
   "completed": [
     {
+      "filename": "2026-09-06_liquid-neon-topography.md",
+      "title": "Liquid Neon Topography",
+      "added": "2026-09-06T15:29:54.004264",
+      "status": "completed",
+      "completed_at": "2026-09-07T08:21:34.733298+00:00"
+    },
+    {
       "filename": "2026-08-17_chrono-kinetic-fractal-engine.md",
       "title": "Chrono-Kinetic Fractal Engine",
       "added": "2026-08-17T15:12:31.089564",
@@ -923,13 +943,6 @@
       "added": "2026-08-13T15:13:28.701419",
       "status": "completed",
       "completed_at": "2026-08-16T08:04:46.785845+00:00"
-    },
-    {
-      "filename": "2026-08-17_chrono-kinetic-fractal-engine.md",
-      "title": "Chrono-Kinetic Fractal Engine",
-      "added": "2026-08-17T15:12:31.089564",
-      "status": "completed",
-      "completed_at": "2026-08-18T08:03:46.946672+00:00"
     },
     {
       "filename": "2026-08-20_luminescent-silica-diatom-swarm.md",

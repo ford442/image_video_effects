@@ -37,18 +37,19 @@ import {
   createMediaInputState,
   updateVideoFrame as mediaUpdateVideoFrame,
   loadImage as mediaLoadImage,
+  uploadRGBA8,
   clearSourceTexture,
   restoreSourceFromOffscreen,
   WebGPUMediaInputContext,
 } from './webgpu/WebGPUMediaInput';
-import { ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
+import { HISTORY_DEPTH, ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
 import type { InternalColorFormat } from '../config/formatPolicy';
 import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, inferRequiresRgba32Float } from '../config/formatPolicy';
-import { getHistoryWorkingSizeCap, persistHistoryOomCap } from '../config/vramBudget';
+import { allowsFullWorkingSize, HISTORY_FULL_WORKING_SIZE, HISTORY_SAFE_WORKING_SIZE, persistHistoryOomCap } from '../config/vramBudget';
 import { graphRunner } from './GraphRunner';
 import { GpuChoresHost } from '../gpuChores';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
-import { probeHistoryTex } from './webgpu/historyTexProbe';
+import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private device: GPUDevice | null = null;
@@ -83,6 +84,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private resolutionScale = 1.0;
   private scaledW = 0;
   private scaledH = 0;
+  private workingSizeCap = HISTORY_SAFE_WORKING_SIZE;
 
   private supportsTimestampQuery = false;
   private timestampRuntime: WebGPUTimestampQueries = createDisabledTimestampQueries();
@@ -119,7 +121,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   getColorFormat(): InternalColorFormat { return this.colorFormat; }
   getFormatCapabilities(): DeviceFormatCapabilities { return this.formatCapabilities; }
   getHistoryLayers(): number { return this.resources.historyLayers; }
-  getWorkingSizeCap(): number { return getHistoryWorkingSizeCap(); }
+  getWorkingSizeCap(): number { return this.workingSizeCap; }
 
   async init(canvas: HTMLCanvasElement, webGpuHandoff?: WebGpuProbeHandoff): Promise<boolean> {
     if (this.initialized) return true;
@@ -160,6 +162,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       if (resourcesResult !== 'ok') {
         if (resourcesResult === 'lost' && attempt === 0) {
           persistHistoryOomCap();
+          this.workingSizeCap = HISTORY_SAFE_WORKING_SIZE;
           this.teardownGpuHandles(false);
           handoff = undefined;
           continue;
@@ -191,10 +194,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private bindOutOfMemoryHandler(device: GPUDevice): void {
     const onOom = () => {
       persistHistoryOomCap();
-      if (this.scaledW > 1024) {
+      this.workingSizeCap = HISTORY_SAFE_WORKING_SIZE;
+      if (this.scaledW > HISTORY_SAFE_WORKING_SIZE) {
         console.warn('[WebGPU] GPUOutOfMemoryError — capping working size at 1024, not retrying 2048');
         this.updateScaledDimensions();
-        if (this.device && this.initialized) {
+        if (this.device && this.initialized && this.scaledW <= HISTORY_SAFE_WORKING_SIZE) {
           this.resources.recreateScaleTextures(
             this.device, this.canvasW, this.canvasH, this.scaledW, this.scaledH,
             this.colorFormat, this.resources.historyLayers,
@@ -239,28 +243,57 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.colorFormat = colorFormat;
     this.pipeline.setupComputeLayout(d, hasF32Filt, colorFormat);
 
+    this.updateScaledDimensions();
     const requested = Math.max(this.scaledW, this.scaledH);
-    const probe = await probeHistoryTex(d, requested, colorFormat);
-    if (probe.deviceLost) {
-      console.error('[WebGPU] historyTex probe: device lost during OOM — will requestDevice at 1024');
-      return 'lost';
+    let bootRungs = rungsForRequest(requested, this.workingSizeCap);
+    if (bootRungs.length === 0) {
+      const size = Math.max(1, Math.min(requested, this.workingSizeCap));
+      bootRungs = [
+        { size, layers: HISTORY_DEPTH },
+        { size, layers: 4 },
+        { size, layers: 1 },
+      ];
     }
-    if (!probe.ok) {
-      console.error(`[WebGPU] historyTex probe failed (oom=${probe.oom})`);
+    let allocated: Awaited<ReturnType<typeof allocateWorkingPool>> | null = null;
+    for (const rung of bootRungs) {
+      const result = await allocateWorkingPool(
+        d, this.canvasW, this.canvasH, rung.size, rung.layers, colorFormat,
+      );
+      if (result.deviceLost) {
+        console.error('[WebGPU] working pool: device lost during OOM — will requestDevice at 1024');
+        return 'lost';
+      }
+      if (result.ok && result.set) {
+        allocated = result;
+        console.log(`[WebGPU] working pool OK ${rung.size}²×hist${rung.layers} (${colorFormat})`);
+        break;
+      }
+      console.warn(
+        `[WebGPU] working pool OOM at ${rung.size}²×${rung.layers} — dropping (do not retry 2048)`,
+      );
+    }
+    if (!allocated?.set) {
+      console.error('[WebGPU] working pool failed at 1024');
       return 'oom';
     }
-    if (probe.workingSize < requested) {
-      persistHistoryOomCap();
-    }
-    this.updateScaledDimensions();
-    if (this.scaledW > probe.workingSize) {
-      this.scaledW = probe.workingSize;
-      this.scaledH = probe.workingSize;
+
+    this.scaledW = allocated.workingSize;
+    this.scaledH = allocated.workingSize;
+    this.resources.colorFormat = colorFormat;
+    this.resources.applyTextureSet(allocated.set);
+    this.resources.ensureSamplersAndBuffers(d);
+
+    const gate = {
+      maxBufferSize: d.limits?.maxBufferSize ?? 0,
+      adapterGpuType: this.formatCapabilities.adapterGpuType,
+      adapterSummary: this.adapterSummary,
+      isFallbackAdapter: (this.adapterAttemptLabel ?? '').includes('forceFallback'),
+    };
+    if (allowsFullWorkingSize(gate)) {
+      const upgraded = await this.tryUpgradeToFullWorkingSize(d, colorFormat, allocated.layers);
+      if (upgraded === 'lost') return 'lost';
     }
 
-    this.resources.setup(
-      d, this.canvasW, this.canvasH, this.scaledW, this.scaledH, colorFormat, probe.layers,
-    );
     this.rebuildComputeBindGroup();
     this.pipeline.setupBlitPipelines(d, this.canvasFormat, this.blitReadTex, colorFormat);
     this.lastBlitReadTex = this.blitReadTex;
@@ -272,6 +305,40 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.supportsTimestampQuery = timing.supportsTimestampQuery;
     this.gpuTimings = timing.gpuTimings;
     return 'ok';
+  }
+
+  private async tryUpgradeToFullWorkingSize(
+    device: GPUDevice,
+    colorFormat: InternalColorFormat,
+    bootLayers: number,
+  ): Promise<'ok' | 'lost' | 'kept'> {
+    const full = HISTORY_FULL_WORKING_SIZE;
+    console.log(`[WebGPU] attempting ${full} working-pool upgrade (fat discrete adapter)`);
+    this.resources.destroyWorkingTextures();
+    const up = await allocateWorkingPool(
+      device, this.canvasW, this.canvasH, full, bootLayers, colorFormat,
+    );
+    if (up.ok && up.set) {
+      this.scaledW = full;
+      this.scaledH = full;
+      this.workingSizeCap = full;
+      this.resources.applyTextureSet(up.set);
+      console.log(`[WebGPU] working pool upgraded to ${full}²×hist${bootLayers}`);
+      return 'ok';
+    }
+    persistHistoryOomCap();
+    this.workingSizeCap = HISTORY_SAFE_WORKING_SIZE;
+    console.warn('[WebGPU] 2048 upgrade OOM — staying at 1024, not retrying 2048');
+    if (up.deviceLost) return 'lost';
+    const restore = await allocateWorkingPool(
+      device, this.canvasW, this.canvasH, HISTORY_SAFE_WORKING_SIZE, bootLayers, colorFormat,
+    );
+    if (restore.deviceLost) return 'lost';
+    if (!restore.ok || !restore.set) return 'lost';
+    this.scaledW = HISTORY_SAFE_WORKING_SIZE;
+    this.scaledH = HISTORY_SAFE_WORKING_SIZE;
+    this.resources.applyTextureSet(restore.set);
+    return 'kept';
   }
 
   private getMediaContext(): WebGPUMediaInputContext {
@@ -483,7 +550,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   private updateScaledDimensions(): void {
     const dims = computeScaledDimensions(this.canvasW, this.canvasH, this.resolutionScale);
-    const cap = getHistoryWorkingSizeCap();
+    const cap = this.workingSizeCap;
     this.scaledW = Math.min(dims.scaledW, cap);
     this.scaledH = Math.min(dims.scaledH, cap);
   }
@@ -573,6 +640,50 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   getInputSource() { return this.inputSource; }
+
+  getCpuInputBitmap(): HTMLCanvasElement | HTMLImageElement | HTMLVideoElement | null {
+    if (this.inputSource === 'generative') return null;
+    if (
+      (this.inputSource === 'video' || this.inputSource === 'webcam' || this.inputSource === 'live')
+      && this.mediaState.video
+    ) {
+      return this.mediaState.video;
+    }
+    const off = this.mediaState.offscreen;
+    if (off && off.width > 0 && off.height > 0) return off;
+    return this.mediaState.video;
+  }
+
+  loadImageFromElement(
+    element: HTMLCanvasElement | HTMLImageElement,
+  ): { width: number; height: number } | null {
+    const w = element instanceof HTMLImageElement
+      ? (element.naturalWidth || element.width)
+      : element.width;
+    const h = element instanceof HTMLImageElement
+      ? (element.naturalHeight || element.height)
+      : element.height;
+    if (!w || !h) return null;
+    const dstW = this.canvasW || w;
+    const dstH = this.canvasH || h;
+    if (
+      !this.mediaState.offscreen
+      || this.mediaState.offscreen.width !== dstW
+      || this.mediaState.offscreen.height !== dstH
+    ) {
+      this.mediaState.offscreen = document.createElement('canvas');
+      this.mediaState.offscreen.width = dstW;
+      this.mediaState.offscreen.height = dstH;
+      this.mediaState.offCtx = this.mediaState.offscreen.getContext('2d', { willReadFrequently: true });
+    }
+    if (!this.mediaState.offCtx) return null;
+    this.mediaState.offCtx.fillStyle = 'black';
+    this.mediaState.offCtx.fillRect(0, 0, dstW, dstH);
+    this.mediaState.offCtx.drawImage(element, 0, 0, dstW, dstH);
+    const imageData = this.mediaState.offCtx.getImageData(0, 0, dstW, dstH);
+    uploadRGBA8(this.getMediaContext(), imageData.data, dstW, dstH);
+    return { width: dstW, height: dstH };
+  }
   render(): void {}
 
   setMaxPassesPerFrame(cap: number): void {

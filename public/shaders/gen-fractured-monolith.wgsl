@@ -1,3 +1,7 @@
+// Fractured Monolith — levitating cell-fractured slab over liquid floor
+// Upgraded: 2026-09-06
+// Ideas: per-shard identity tint; fracture-plane glints
+// A packing: ACES display RGBA
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -231,7 +235,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         } else if (m == 2.0) {
             // Monolith Material
             var matCol = vec3<f32>(0.05, 0.05, 0.06);
+            // Idea 1 — shard identity from the same cell grid as the fracture
+            let cellId = floor(p / 1.5);
+            let shardHue = hash31(cellId);
+            matCol = mix(matCol, vec3<f32>(0.04 + shardHue * 0.08, 0.05, 0.07 + (1.0 - shardHue) * 0.06), 0.85);
             col = matCol * dif + fre * vec3<f32>(0.1, 0.2, 0.3);
+            // Idea 2 — glint on fracture planes (crack noise already carves the SDF)
+            let crackGlint = noise(p * 3.0);
+            col += vec3<f32>(0.55, 0.82, 1.0) * pow(fre, 2.2) * crackGlint * (0.35 + u.zoom_params.z * 0.4);
         }
     }
 

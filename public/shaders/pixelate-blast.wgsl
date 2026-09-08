@@ -134,7 +134,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depthFade = mix(0.7, 1.35, depth);
 
   // Epicenter distance
-  let toSpring = (uv - spring) * aspectVec;
+  let toSpringUv = uv - spring;
+  let toSpring = toSpringUv * aspectVec;
   let dist = length(toSpring);
   let blastFade = smoothstep(blastRadius, 0.0, dist);
 
@@ -156,10 +157,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Domain warped Voronoi cells
   let warpedUV = domainWarp(uv * cellDensity, time * (0.4 + mids * 0.3));
-  let v = voronoi(warpedUV + toSpring * blastEnergy * 0.4, time * 0.5);
+  let v = voronoi(warpedUV + toSpringUv * blastEnergy * 0.4, time * 0.5);
 
   let cellCenter = floor(warpedUV) + 0.5;
-  let cellUV = clamp((cellCenter + 0.5) / cellDensity, vec2<f32>(0.0), vec2<f32>(1.0));
+  let cellUV = clamp(cellCenter / cellDensity, vec2<f32>(0.0), vec2<f32>(1.0));
 
   // Cauchy chromatic sampling across blast direction
   let blastDir = select(vec2<f32>(1.0, 0.0), toSpring / max(dist, 1e-4), dist > 0.001);
@@ -192,7 +193,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let outCol = vec4<f32>(finalRGB, semanticAlpha);
 
   textureStore(writeTexture, coord, outCol);
-  textureStore(dataTextureA, coord, outCol);
+  textureStore(dataTextureA, coord, vec4<f32>(hdr, semanticAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(mix(depth, 0.3 + blastEnergy * 0.5, 0.3), 0.0, 1.0), 0.0, 0.0, 0.0));
 }
 

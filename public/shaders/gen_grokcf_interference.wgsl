@@ -17,7 +17,9 @@
 //  State:    dataTextureA = (u_total, r, phi/2π, blendAlpha) — raw sim state,
 //            never tone-mapped; extraBuffer is declared but never written
 //            (all persistent data lives in the uniform ripple ring buffer).
-//  Upgraded: Phase B → Batch 17 (honest sliders, live strikes, FFT weights)
+//  Upgraded: 2026-09-06
+//  Ideas: radial vs azimuthal Chladni tint; Lambert from signed displacement
+//  A packing: raw u_total, r, phi/2π, blendAlpha
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0)  var u_sampler: sampler;
@@ -174,25 +176,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // which eigenmodes are excited — the same way a loudspeaker under a
     // sand-covered plate picks out resonant patterns.
     var u_total = 0.0;
+    var u_radial = 0.0;
+    var u_az = 0.0;
 
     // Bass → (0,1) and (0,2) radially symmetric modes
-    u_total += drumMode(r, phi, time, 0, 2.4048, 2.4048 * 0.5, 0.0) * (0.5 + bass * 0.5) * fftModeWeight(0u);
+    let m01 = drumMode(r, phi, time, 0, 2.4048, 2.4048 * 0.5, 0.0) * (0.5 + bass * 0.5) * fftModeWeight(0u);
+    u_total += m01;
+    u_radial += m01;
     if (modeCount >= 3.0) {
-        u_total += drumMode(r, phi, time, 0, 5.5201, 5.5201 * 0.5, 0.0) * (0.3 + bass * 0.3) * fftModeWeight(1u);
+        let m02 = drumMode(r, phi, time, 0, 5.5201, 5.5201 * 0.5, 0.0) * (0.3 + bass * 0.3) * fftModeWeight(1u);
+        u_total += m02;
+        u_radial += m02;
     }
 
     // Mids → (1,1) and (2,1)
-    u_total += drumMode(r, phi, time, 1, 3.8317, 3.8317 * 0.5, 0.7) * (0.4 + mids * 0.5) * fftModeWeight(2u);
+    let m11 = drumMode(r, phi, time, 1, 3.8317, 3.8317 * 0.5, 0.7) * (0.4 + mids * 0.5) * fftModeWeight(2u);
+    u_total += m11;
+    u_az += m11;
     if (modeCount >= 4.0) {
-        u_total += drumMode(r, phi, time, 2, 5.1356, 5.1356 * 0.5, 1.2) * (0.3 + mids * 0.4) * fftModeWeight(3u);
+        let m21 = drumMode(r, phi, time, 2, 5.1356, 5.1356 * 0.5, 1.2) * (0.3 + mids * 0.4) * fftModeWeight(3u);
+        u_total += m21;
+        u_az += m21;
     }
 
     // Treble → (1,2) and (3,1)
     if (modeCount >= 5.0) {
-        u_total += drumMode(r, phi, time, 1, 7.0156, 7.0156 * 0.5, 0.3) * (0.2 + treble * 0.5) * fftModeWeight(4u);
+        let m12 = drumMode(r, phi, time, 1, 7.0156, 7.0156 * 0.5, 0.3) * (0.2 + treble * 0.5) * fftModeWeight(4u);
+        u_total += m12;
+        u_az += m12;
     }
     if (modeCount >= 6.0) {
-        u_total += drumMode(r, phi, time, 3, 6.3802, 6.3802 * 0.5, 2.1) * (0.15 + treble * 0.4) * fftModeWeight(5u);
+        let m31 = drumMode(r, phi, time, 3, 6.3802, 6.3802 * 0.5, 2.1) * (0.15 + treble * 0.4) * fftModeWeight(5u);
+        u_total += m31;
+        u_az += m31;
     }
 
     // ─── Membrane strikes: each click injects a decaying drum hit ───
@@ -240,8 +256,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let val = clamp(abs(u_total) * 1.5, 0.0, 1.0) * inside;
     let baseColor = hsv2rgb(hue, sat, val);
 
-    // Nodes → white/gold Chladni lines (hue rotation happens BEFORE this mix)
-    var chladniColor = mix(baseColor, vec3<f32>(1.0, 0.9, 0.7), nodeGlow * 0.7);
+    // Nodes → white/gold Chladni lines; Idea 1 — radial vs azimuthal tint
+    let nodeKind = smoothstep(-0.15, 0.15, abs(u_az) - abs(u_radial));
+    let nodeTint = mix(vec3<f32>(1.0, 0.88, 0.62), vec3<f32>(0.72, 0.9, 1.0), nodeKind);
+    var chladniColor = mix(baseColor, nodeTint, nodeGlow * 0.7);
+
+    // Idea 2 — displacement Lambert (signed u as a drum surface)
+    let lambert = 0.62 + 0.38 * clamp(u_total * 1.8, -1.0, 1.0);
+    chladniColor = chladniColor * lambert;
 
     // Strike flash tints the impact zone hot white while the hit rings down
     chladniColor = mix(chladniColor, vec3<f32>(1.0, 0.98, 0.92), clamp(strikeGlow, 0.0, 1.0) * 0.6);

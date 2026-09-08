@@ -1,5 +1,8 @@
 # Shader Upgrade Swarm — Usage Guide
 
+Live creative contract for batches: [`docs/SHADER_UPGRADE_BATCH.md`](../../docs/SHADER_UPGRADE_BATCH.md).
+Upgrades add 2–4 named ideas to the existing effect. They are not rewrites and not hygiene-only.
+
 ## Quick Start
 
 ```bash

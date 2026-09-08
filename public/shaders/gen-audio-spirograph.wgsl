@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, procedural, epitrochoid curves
 //  Complexity: Medium
-//  Upgraded: 2026-08-03 (Batch 34)
-//  upgraded-rgba
+//  Upgraded: 2026-09-06
+//  Ideas: additive gear glow (all curves); rolling-center hubs
+//  A packing: history RGB + coverage
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -139,18 +140,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var minDist = 1000.0;
     var curveColor = vec3<f32>(0.0);
     var totalIntensity = 0.0;
+    var hubGlow = 0.0;
     
     // Generate multiple spirograph curves
     for (var i: i32 = 0; i < 5; i++) {
         let ratio = ratios[i];
         let harmonic = harmonics[i];
         
-        // Spirograph parameters
         let R = 0.3 * (1.0 + f32(i) * 0.1);
         let r = R / (ratio * harmonic * baseFreq);
         let d = r * 0.8 * audioMod;
         
-        // Animation speed varies by harmonic
         let speed = 0.5 + f32(i) * 0.1;
         let time = t * speed;
         let sweep = 6.28318 * mix(0.2, 1.0, trailLength);
@@ -165,19 +165,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             prevPos = pos;
         }
         
-        // Color based on harmonic
         let hue = fract(f32(i) * 0.2 + t * 0.14 + treble * 0.2);
         let sat = 0.7 + audio * 0.3;
         let light = 0.5 + audio * 0.3;
         let col = hsl2rgb(hue, sat, light);
         
-        // Accumulate minimum distance with intensity
-        let intensity = 1.0 / (1.0 + f32(i) * 0.5);
-        if (dist < minDist) {
-            minDist = dist;
-            curveColor = col * intensity * segmentFade;
-            totalIntensity = intensity * segmentFade;
-        }
+        let intensity = 1.0 / (1.0 + f32(i) * 0.5) * segmentFade;
+        // Idea 1 — additive gears
+        let add = exp(-dist * dist / max(lineThickness * lineThickness * 36.0, 1e-8)) * intensity;
+        curveColor += col * add;
+        totalIntensity += add;
+        minDist = min(minDist, dist);
+        // Idea 2 — rolling-center hub
+        let hub = rot(t * 0.08 + f32(i) * 0.16) * vec2<f32>((R + r) * cos(time), (R + r) * sin(time));
+        hubGlow += exp(-dot(uv - hub, uv - hub) / 0.0009) * 0.45;
     }
     
     // Add secondary harmonics (hypotrochoids)
@@ -201,12 +202,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
         let hue = fract(0.5 + f32(i) * 0.15 - t * 0.03);
         let col = hsl2rgb(hue, 0.8, 0.6);
-        
-        if (dist < minDist) {
-            minDist = dist;
-            curveColor = col * 0.7 * segmentFade;
-            totalIntensity = 0.7 * segmentFade;
-        }
+        let add = exp(-dist * dist / max(lineThickness * lineThickness * 36.0, 1e-8)) * 0.7 * segmentFade;
+        curveColor += col * add;
+        totalIntensity += add;
+        minDist = min(minDist, dist);
     }
     
     // Create glow effect
@@ -215,6 +214,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Final color
     var col = curveColor * glow * (1.0 + mids * 0.35) + vec3<f32>(1.0) * core * (0.45 + treble * 0.35);
+    col += vec3<f32>(1.0, 0.92, 0.75) * clamp(hubGlow, 0.0, 1.2);
 
     let uv01 = (vec2<f32>(global_id.xy) + vec2<f32>(0.5)) / resolution;
     var clickChime = 0.0;

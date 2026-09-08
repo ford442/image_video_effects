@@ -2,14 +2,8 @@
 //  chromatic-crawler-structure
 //  Category: advanced-hybrid
 //  Features: chromatic-crawler, structure-tensor-flow, temporal
-//  Complexity: Very High
-//  Chunks From: chromatic-crawler, conv-structure-tensor-flow
-//  Created: 2026-04-18
-//  By: Agent CB-12 — Chroma & Spectral Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Color-swapping crawling infection guided by image structure tensor
-//  eigenvectors. Tendrils grow along dominant image orientations instead
-//  of random directions, creating organic texture-following chroma vines.
+//  Ideas: Cauchy tendril bifurcation, photoelastic fringe birefringence, bioluminescent pulse waves
+//  A packing: display RGBA (RGB=ACES display color, A=edge coherency confidence)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -80,14 +74,29 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
     return a + b * cos(6.28318 * (c * t + d));
 }
 
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
+    let coord = vec2<i32>(gid.xy);
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let pixelSize = 1.0 / res;
     let time = u.config.x;
+    let aspect = res.x / max(res.y, 1.0);
+
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let crawlSpeed = u.zoom_params.x * 2.0 + 0.5;
     let swapIntensity = u.zoom_params.y;
@@ -97,13 +106,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
+    // Mouse influence
+    let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let toMouse = (uv - mouse) * vec2<f32>(aspect, 1.0);
+    let distMouse = length(toMouse);
+    let mouseAttract = exp(-distMouse * 3.5) * (0.5 + bass * 0.5);
+
     // Structure tensor for flow-guided crawling
     let tensor = smoothTensor(uv, pixelSize);
     let Jxx = tensor.x;
     let Jyy = tensor.y;
     let Jxy = tensor.z;
     let trace = Jxx + Jyy;
-    let det = Jxx * Jyy - Jxy * Jxy;
     let diff = sqrt(max((Jxx - Jyy) * (Jxx - Jyy) + 4.0 * Jxy * Jxy, 0.0));
     let lambda1 = (trace + diff) * 0.5;
     let lambda2 = (trace - diff) * 0.5;
@@ -113,57 +127,104 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     let coherency = select(0.0, (lambda1 - lambda2) / (lambda1 + lambda2 + 0.0001), lambda1 + lambda2 > 0.0001);
 
-    // Flow-guided crawling offset
-    let t = time * crawlSpeed;
+    // Orthogonal normal to flow
+    let eigenNormal = vec2<f32>(-eigenvec.y, eigenvec.x);
+
+    // Flow-guided crawling offset with audio acceleration
+    let t = time * crawlSpeed * (1.0 + bass * 0.35);
     let flowAngle = atan2(eigenvec.y, eigenvec.x);
-    let crawlOffset = vec2<f32>(
+
+    // IDEA 1: Cauchy chromatic tendril bifurcation
+    // Red, green, and blue tendril branches propagate with differential dispersion offsets along flow and normal
+    let crawlOffsetBase = vec2<f32>(
         sin(flowAngle + t * 5.0 + uv.x * 20.0) * 0.06 * coherency,
         cos(flowAngle + t * 3.0 + uv.y * 15.0) * 0.06 * coherency
-    );
+    ) + normalize(select(vec2<f32>(0.0), -toMouse / vec2<f32>(aspect, 1.0), distMouse > 0.001)) * mouseAttract * 0.04;
 
-    let crawledUV = uv + crawlOffset;
-    let region = floor(crawledUV * vec2<f32>(10.0, 8.0));
+    let dispersionScale = 0.015 * (1.0 + treble * 0.8);
+    let crawlOffsetR = crawlOffsetBase + eigenvec * dispersionScale;
+    let crawlOffsetG = crawlOffsetBase;
+    let crawlOffsetB = crawlOffsetBase + eigenNormal * dispersionScale;
+
+    let crawledUVR = clamp(uv + crawlOffsetR, vec2<f32>(0.0), vec2<f32>(1.0));
+    let crawledUVG = clamp(uv + crawlOffsetG, vec2<f32>(0.0), vec2<f32>(1.0));
+    let crawledUVB = clamp(uv + crawlOffsetB, vec2<f32>(0.0), vec2<f32>(1.0));
+
+    let region = floor(crawledUVG * vec2<f32>(10.0, 8.0));
     let hash = hash3(vec3<f32>(region.x * 100.0, region.y * 100.0, time * 2.0));
     let swapPattern = u32(hash.x * 6.0);
 
-    var result = src;
-    if (swapPattern == 0u) { result = vec3<f32>(src.b, src.r, src.g); }
-    else if (swapPattern == 1u) { result = vec3<f32>(src.g, src.b, src.r); }
-    else if (swapPattern == 2u) { result = vec3<f32>(1.0) - src; }
-    else if (swapPattern == 3u) { result = vec3<f32>(src.g, src.r, src.b); }
+    // Multi-spectral chromatic sampling along bifurcated tendrils
+    let sampleR = textureSampleLevel(readTexture, u_sampler, crawledUVR, 0.0).r;
+    let sampleG = textureSampleLevel(readTexture, u_sampler, crawledUVG, 0.0).g;
+    let sampleB = textureSampleLevel(readTexture, u_sampler, crawledUVB, 0.0).b;
+    let chromaticSample = vec3<f32>(sampleR, sampleG, sampleB);
+
+    var swappedColor = chromaticSample;
+    if (swapPattern == 0u) { swappedColor = vec3<f32>(chromaticSample.b, chromaticSample.r, chromaticSample.g); }
+    else if (swapPattern == 1u) { swappedColor = vec3<f32>(chromaticSample.g, chromaticSample.b, chromaticSample.r); }
+    else if (swapPattern == 2u) { swappedColor = vec3<f32>(1.0) - chromaticSample; }
+    else if (swapPattern == 3u) { swappedColor = vec3<f32>(chromaticSample.g, chromaticSample.r, chromaticSample.b); }
     else if (swapPattern == 4u) {
         let channel = u32(hash.y * 3.0);
-        if (channel == 0u) { result = vec3<f32>(src.r * 2.0, src.g, src.b); }
-        else if (channel == 1u) { result = vec3<f32>(src.r, src.g * 2.0, src.b); }
-        else { result = vec3<f32>(src.r, src.g, src.b * 2.0); }
+        if (channel == 0u) { swappedColor = vec3<f32>(chromaticSample.r * 2.0, chromaticSample.g, chromaticSample.b); }
+        else if (channel == 1u) { swappedColor = vec3<f32>(chromaticSample.r, chromaticSample.g * 2.0, chromaticSample.b); }
+        else { swappedColor = vec3<f32>(chromaticSample.r, chromaticSample.g, chromaticSample.b * 2.0); }
     } else {
-        let gray = dot(src, vec3<f32>(0.299, 0.587, 0.114));
-        result = vec3<f32>(gray, gray, gray);
+        let gray = dot(chromaticSample, vec3<f32>(0.299, 0.587, 0.114));
+        swappedColor = vec3<f32>(gray, gray, gray);
     }
-    var swappedColor = mix(src, result, swapIntensity * coherency);
+    swappedColor = mix(src, swappedColor, swapIntensity * coherency);
 
-    // Feedback
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    // IDEA 2: Photoelastic fringe birefringence
+    // Edge stress (principal stress difference lambda1 - lambda2) produces optical retardation fringe bands
+    let stressRetardation = (lambda1 - lambda2) * 28.0;
+    let birefringenceFringes = 0.5 + 0.5 * cos(stressRetardation + vec3<f32>(0.0, 2.094, 4.188));
+    swappedColor += birefringenceFringes * coherency * 0.35 * (0.8 + mids * 0.5);
+
+    // IDEA 3: Bioluminescent streamline pulse waves
+    // High-frequency photon packet pulse propagating along the tensor orientation
+    let pulsePhase = fract(flowAngle * 0.3183 + t * 2.0 + depth * 3.0);
+    let pulseWave = pow(sin(pulsePhase * 3.14159), 16.0) * coherency * (0.6 + treble * 1.2);
+    let pulseColor = vec3<f32>(0.3, 0.8, 1.2) * pulseWave;
+    swappedColor += pulseColor;
+
+    // Exact-integer textureLoad from dataTextureC previous frame feedback
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
     let animatedMix = feedbackMix + sin(time * 3.0 + uv.x * 5.0) * 0.1;
-    swappedColor = mix(swappedColor, prev, animatedMix);
+    swappedColor = mix(swappedColor, prev, clamp(animatedMix, 0.0, 0.95));
 
     // Flow-colored LIC tint
     let flowNorm = flowAngle * 0.15915 + 0.5;
     let flowColor = palette(flowNorm, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
-    swappedColor = mix(swappedColor, flowColor * 0.4 + swappedColor * 0.6, coherency * 0.5);
+    swappedColor = mix(swappedColor, flowColor * 0.4 + swappedColor * 0.6, coherency * 0.4);
 
-    // Flash
-    let flash = step(0.95, fract(time * flashRate + region.x * 10.0 + region.y * 7.0));
+    // Flash modulated by bass
+    let flash = step(0.95 - bass * 0.04, fract(time * flashRate + region.x * 10.0 + region.y * 7.0));
     let flashColor = vec3<f32>(flash, flash * 0.5, flash * 0.8);
-    let flashIntensity = 0.15;
+    let flashIntensity = 0.18;
     var finalColor = mix(swappedColor, flashColor, flash * flashIntensity);
 
-    let crawlGlow = length(crawledUV - uv) * 5.0 * 0.1;
-    let glowColor = vec3<f32>(0.8, 0.4, 1.0) * crawlGlow;
+    // Click ripple wavefronts
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let elapsed = time - ripple.z;
+        if (elapsed > 0.0 && elapsed < 2.5) {
+            let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+            let rWave = sin(rDist * 40.0 - elapsed * 12.0) * exp(-elapsed * 1.5) * exp(-rDist * 3.0);
+            finalColor += vec3<f32>(0.6, 0.3, 0.9) * max(rWave, 0.0) * 0.35;
+        }
+    }
+
+    let crawlGlow = length(crawlOffsetBase) * 6.0;
+    let glowColor = vec3<f32>(0.8, 0.4, 1.0) * crawlGlow * (0.6 + bass * 0.4);
     finalColor = finalColor + glowColor;
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(finalColor, 1.0));
+    let displayColor = acesFilm(max(finalColor, vec3<f32>(0.0)));
+    let confidenceAlpha = clamp(0.7 + coherency * 0.28, 0.0, 1.0);
 
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, vec4<f32>(displayColor, confidenceAlpha));
+    textureStore(dataTextureA, coord, vec4<f32>(displayColor, confidenceAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

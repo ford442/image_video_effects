@@ -197,6 +197,10 @@ then flip to blocking.
 
 ### Generative batch completion checklist
 
+Live upgrade law: [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+Each shader needs an Idea Card (2–4 native visual additions) **before** WGSL
+edits. Bindings / ACES / sliders / naga are the floor, not the upgrade.
+
 After each 8-shader upgrade batch:
 
 1. `python3 scripts/wgsl_precommit_gate.py --files public/shaders/<batch>.wgsl`

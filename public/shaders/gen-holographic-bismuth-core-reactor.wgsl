@@ -240,7 +240,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let controlled = applyGenerativePrimaryControls(vec4<f32>(historyColor, historyAlpha));
 
     textureStore(writeTexture, coord, vec4<f32>(acesToneMap(controlled.rgb), controlled.a));
-    textureStore(dataTextureA, coord, vec4<f32>(acesToneMap(controlled.rgb), controlled.a));
+    textureStore(dataTextureA, coord, controlled);
 
     let depth_val = clamp(dO / MAX_DIST, 0.0, 1.0);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth_val, 0.0, 0.0, 0.0));

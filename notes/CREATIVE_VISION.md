@@ -1,5 +1,7 @@
 # Creative Vision: Psychedelic, Beautiful, and Strange
 
+When **upgrading** an existing catalog effect, keep its identity and add 2–4 native ideas — [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md). Psychedelic / beautiful / strange must land **on this picture**, not as a costume from another shader.
+
 ## Core Artistic Direction
 
 This repository is dedicated to exploring the intersection of **psychedelia**, **beauty**, and the **strange**—three pillars that guide the artistic vision for all shaders and visual effects created within this project.

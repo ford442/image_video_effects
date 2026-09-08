@@ -45,5 +45,39 @@
     "tilt-shift",
     "miniature",
     "depth-of-field"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Blur Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Focus Width",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Saturation",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Tilt Angle",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ]
 }
