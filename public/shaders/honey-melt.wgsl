@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Honey Melt - Image Effect with Viscous Honey Material Properties
+// ═══════════════════════════════════════════════════════════════════
+//  Honey Melt
 //  Category: image
-//  Features: Viscous honey, light transmission, amber translucency
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-08
+//  Ideas: gravity sag on melted cells; comb-wall capillary
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -90,6 +94,15 @@ fn calculateHoneyAlpha(thickness: f32, meltFactor: f32) -> f32 {
     return clamp(finalAlpha, 0.35, 0.92);
 }
 
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -143,10 +156,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Golden rim/highlight for honeycomb look
     let rim = smoothstep(0.4, 0.5, len);
+    let meltHeld = melt * (1.0 - rim * 0.65);
 
-    // 2. Melted State: Fluid distortion
+    // 2. Melted State: Fluid distortion with gravity sag
+    let audio = plasmaBuffer[0].xyz;
     let noiseVal = noise(uv * 10.0 + time * 0.5);
-    let fluidUV = uv + vec2<f32>(noiseVal, -noiseVal) * 0.05 * distortStr;
+    let sag = meltHeld * (0.045 + 0.035 * audio.x) * distortStr;
+    let fluidUV = clamp(uv + vec2<f32>(noiseVal * 0.018 * distortStr, abs(noiseVal) * 0.07 * distortStr + sag), vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Sample colors
     var colSolid = textureSampleLevel(readTexture, u_sampler, solidUV, 0.0);
@@ -166,18 +182,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let honeyColor = honeySSS(viewDir, lightDir, honeyThickness);
     
     // Blend honey color with solid
-    colSolid = mix(colSolid, vec4<f32>(honeyColor, colSolid.a), 0.4 * (1.0 - melt));
+    colSolid = mix(colSolid, vec4<f32>(honeyColor, colSolid.a), 0.4 * (1.0 - meltHeld));
 
-    // Final Mix
-    let finalColor = mix(colSolid, colFluid, melt);
+    // Final Mix — walls hold until meltHeld
+    let finalColor = mix(colSolid, colFluid, meltHeld);
     
     // Calculate honey alpha
-    let honeyAlpha = calculateHoneyAlpha(honeyThickness, melt);
+    let honeyAlpha = calculateHoneyAlpha(honeyThickness, meltHeld);
     
     // Blend alpha between solid (more opaque) and melted (varies)
-    let finalAlpha = mix(honeyAlpha, mix(honeyAlpha, 0.7, 0.3), melt * 0.5);
+    let finalAlpha = mix(honeyAlpha, mix(honeyAlpha, 0.7, 0.3), meltHeld * 0.5);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, finalAlpha));
+    let mapped = acesTonemap(finalColor.rgb);
+    let display = vec4<f32>(mapped, finalAlpha);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), display);
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
 }

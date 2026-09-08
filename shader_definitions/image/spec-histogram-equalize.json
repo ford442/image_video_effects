@@ -15,7 +15,9 @@
     "cooperative-workgroup",
     "histogram",
     "CLAHE",
-    "contrast-enhancement"
+    "contrast-enhancement",
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "params": [
     {

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Wave Halftone v2
+//  Wave Halftone
 //  Category: image
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Chunks From: wave-halftone
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-08
+//  Ideas: elliptical dots along wave gradient; 15-degree hex rosette
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -81,7 +82,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Hexagonal close-packed grid coordinates
   let hexUV = hexCell(uv, gridDensity);
-  let hexDist = length(hexUV);
 
   // 2D wave equation interference from multiple oscillators
   var interference = 0.0;
@@ -129,9 +129,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Paper texture grain
   let paper = hash21(uv * 400.0 + time * 0.1) * 0.06 + 0.94;
 
+  let waveGrad = vec2<f32>(
+    cos(uv.x * 12.0 + time * 2.0) * 12.0 * cos(uv.y * 10.0 - time * 1.5),
+    sin(uv.x * 12.0 + time * 2.0) * (-10.0) * sin(uv.y * 10.0 - time * 1.5)
+  );
+  let gLen = max(length(waveGrad), 0.001);
+  let gN = waveGrad / gLen;
+  let gT = vec2<f32>(-gN.y, gN.x);
+  let stretch = 1.0 + clamp(abs(interference) * 2.4, 0.0, 0.85);
+  let ellip = vec2<f32>(dot(hexUV, gN) * stretch, dot(hexUV, gT) / stretch);
+  let hexDist = length(ellip);
+
+  let c15 = 0.9659258;
+  let s15 = 0.2588190;
+  let uvRosette = vec2<f32>(uv.x * c15 - uv.y * s15, uv.x * s15 + uv.y * c15);
+  let hexUV2 = hexCell(uvRosette, gridDensity);
+  let ellip2 = vec2<f32>(dot(hexUV2, gN) * stretch, dot(hexUV2, gT) / stretch);
+
   // Anti-aliased dot mask
   let edgeWidth = 0.08 * perspective;
-  let mask = smoothstep(radius + edgeWidth, radius - edgeWidth, hexDist);
+  let maskA = smoothstep(radius + edgeWidth, radius - edgeWidth, hexDist);
+  let maskB = smoothstep(radius * 0.82 + edgeWidth, radius * 0.82 - edgeWidth, length(ellip2));
+  let mask = max(maskA, maskB * 0.58);
 
   let dotColor = vec3<f32>(rSample, color.g, bSample) * mask * paper;
   let moireColor = vec3<f32>(0.85, 0.92, 1.0) * moire * mask * (0.5 + treble * 0.5);
@@ -144,7 +163,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dotDensity = mask * luma;
   let alpha = clamp(interferenceIntensity * dotDensity * depth + mask * 0.12, 0.1, 0.9);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+  let display = vec4<f32>(finalColor, alpha);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), display);
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(interference, mask, luma, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
 }

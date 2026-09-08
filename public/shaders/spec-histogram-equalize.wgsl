@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  spec-histogram-equalize
 //  Category: image
-//  Features: cooperative-workgroup, histogram, CLAHE
+//  Features: cooperative-workgroup, histogram, CLAHE, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
-//  b21: real CLAHE clip + redistribute, tile seam blend, mouse
-//       contrast lens, ripple clip pulses, display color -> A slot
+//  Upgraded: 2026-09-08
+//  Ideas: highlight shoulder; exact-C temporal mix
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Real-Time Histogram Equalization via Workgroup Reduction
 //  Computes a local histogram within each 16x16 workgroup tile, clips
@@ -35,6 +34,15 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=ClipLimit, y=Strength, z=TileBlend, w=ColorPreserve
   ripples: array<vec4<f32>, 50>,
 };
+
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 var<workgroup> localHistogram: array<atomic<u32>, 256>;
 
@@ -118,7 +126,8 @@ fn main(
         excess = excess + (cnt - clipped);
     }
     let cdfNorm = (f32(cdfClip) + f32(excess) * f32(bin + 1u) / 256.0) / f32(totalPixels);
-    let equalizedLuma = clamp(cdfNorm, 0.0, 1.0);
+    let shoulder = smoothstep(0.88, 1.0, luma);
+    let equalizedLuma = mix(clamp(cdfNorm, 0.0, 1.0), luma, shoulder);
 
     // Phase 4: Remap using the clipped + redistributed CDF
     let originalLuma = max(luma, 0.001);
@@ -148,16 +157,18 @@ fn main(
         outColor = mix(outColor, neighborAvg * scaleMix, tileBlend * 0.5);
     }
 
-    // Tone map and clamp
     outColor = clamp(outColor, vec3<f32>(0.0), vec3<f32>(3.0));
 
-    // Preserve input alpha. Display color goes to the A slot; the debug
-    // quad (equalizedLuma, luma, scaleFactor, cdfNorm) moves to B.
     if (inBounds) {
-        textureStore(writeTexture, gid.xy, vec4<f32>(outColor, color.a));
-        textureStore(dataTextureA, gid.xy, vec4<f32>(outColor, color.a));
+        let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
+        let hadHistory = f32(prev.r + prev.g + prev.b > 0.001);
+        outColor = mix(outColor, prev.rgb, 0.22 * hadHistory);
+        outColor = acesTonemap(outColor);
+        let display = vec4<f32>(outColor, color.a);
+        textureStore(writeTexture, gid.xy, display);
+        textureStore(dataTextureA, gid.xy, display);
         textureStore(dataTextureB, gid.xy, vec4<f32>(equalizedLuma, luma, scaleFactor, cdfNorm));
         let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-        textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0, 0, 0.0));
+        textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     }
 }

@@ -12027,7 +12027,8 @@
       "fft-reactive-halo",
       "mouse-driven",
       "click-reactive",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact dragon-curve persistence history"
   },
@@ -16923,7 +16924,12 @@
     "updated": true,
     "id": "gen-fourier-epicycles",
     "url": "shaders/gen-fourier-epicycles.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba",
+      "mouse-driven",
+      "temporal"
+    ]
   },
   {
     "name": "Fractal Bioluminescence Spore-Network",
@@ -33966,7 +33972,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
