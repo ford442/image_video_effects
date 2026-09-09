@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  hyb-temporal-fbm-ghost
+//  Temporal FBM Ghost
 //  Category: hybrid
-//  Features: temporal-offset, fbm-displacement, domain-warp, ghost-glow,
-//            palette-color, alpha-passthrough, depth-passthrough
-//  Chunks: fbm2 + domainWarp + glow + palette
+//  Features: audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: per-channel lag from exact C; source-tied ghost
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,14 +29,12 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ── Chunk: hash12 (from gen_grid.wgsl) ──
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
-// ── Chunk: valueNoise (from gen_grid.wgsl) ──
 fn valueNoise(p: vec2<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
@@ -46,7 +46,6 @@ fn valueNoise(p: vec2<f32>) -> f32 {
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-// ── Chunk: fbm2 (from gen_grid.wgsl) ──
 fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
     var value = 0.0;
     var amplitude = 0.5;
@@ -59,7 +58,6 @@ fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
     return value;
 }
 
-// ── Chunk: domainWarp (from gen_grid.wgsl) ──
 fn domainWarp(uv: vec2<f32>, time: f32, scale: f32, amount: f32) -> vec2<f32> {
     let q = vec2<f32>(
         fbm2(uv * scale + vec2<f32>(0.0, time * 0.1), 4),
@@ -69,18 +67,16 @@ fn domainWarp(uv: vec2<f32>, time: f32, scale: f32, amount: f32) -> vec2<f32> {
         fbm2(uv * scale + 4.0 * q + vec2<f32>(1.7 - time * 0.15, 9.2), 4),
         fbm2(uv * scale + 4.0 * q + vec2<f32>(8.3 - time * 0.15, 2.8), 4)
     );
-    let warped = uv + amount * r;
-    return warped;
+    return uv + amount * r;
 }
 
-// ── Chunk: glow (from anamorphic-flare.wgsl) ──
 fn glow(dist: f32, radius: f32, intensity: f32) -> f32 {
     return exp(-dist * dist / (radius * radius)) * intensity;
 }
 
-// ── Chunk: palette (from gen-xeno-botanical-synth-flora.wgsl) ──
-fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
-    return a + b * cos(6.28318 * (c * t + d));
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -88,24 +84,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = textureDimensions(writeTexture);
     let coord = vec2<i32>(gid.xy);
     let dimsI = vec2<i32>(dims);
-
-    if (any(coord >= dimsI)) {
-        return;
-    }
+    if (any(coord >= dimsI)) { return; }
 
     let uv = (vec2<f32>(coord) + 0.5) / vec2<f32>(dims);
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Normalize zoom_params
     let time = u.config.x;
-    let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
-    let temporalShift = mix(0.0, 0.06, zp.x);
+    let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let temporalShift = mix(0.0, 0.06, zp.x) * (1.0 + bass * 0.2);
     let fbmScale = mix(2.0, 20.0, zp.y);
     let warpAmt = mix(0.0, 0.25, zp.z);
     let effectMix = mix(0.0, 1.0, zp.w);
 
-    // Per-channel temporal offset direction (RGB drift apart over time)
     let angleR = time * 0.30;
     let angleG = time * 0.55 + 2.094;
     let angleB = time * 0.80 + 4.189;
@@ -113,11 +108,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dirG = vec2<f32>(cos(angleG), sin(angleG));
     let dirB = vec2<f32>(cos(angleB), sin(angleB));
 
-    // FBM-driven displacement field warps the sampling coordinates
     let warped = domainWarp(uv, time, fbmScale, warpAmt);
     let disp = warped - uv;
 
-    // Sample R/G/B from slightly offset, time-evolved coordinates
     let uvR = clamp(uv + disp + dirR * temporalShift, vec2<f32>(0.0), vec2<f32>(1.0));
     let uvG = clamp(uv + disp * 0.7 + dirG * temporalShift * 0.8, vec2<f32>(0.0), vec2<f32>(1.0));
     let uvB = clamp(uv + disp * 0.4 + dirB * temporalShift * 0.6, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -125,26 +118,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
-    let ghostRGB = vec3<f32>(r, g, b);
+    var ghostRGB = vec3<f32>(r, g, b);
 
-    // Organic color tint from a cosine palette keyed by FBM phase
-    let palettePhase = fbm2(uv * fbmScale * 0.4 + vec2<f32>(time * 0.12), 4);
-    let tint = palette(
-        palettePhase,
-        vec3<f32>(0.5, 0.5, 0.5),
-        vec3<f32>(0.5, 0.5, 0.5),
-        vec3<f32>(1.0, 1.0, 1.0),
-        vec3<f32>(0.0, 0.33, 0.67)
-    );
-    let tintedGhost = mix(ghostRGB, ghostRGB * tint * 2.0, 0.3);
+    // Idea 1 — per-channel lag from exact C (R lags more than B).
+    ghostRGB.r = mix(ghostRGB.r, prev.r, 0.22 + zp.x * 0.25);
+    ghostRGB.g = mix(ghostRGB.g, prev.g, 0.14 + zp.x * 0.18);
+    ghostRGB.b = mix(ghostRGB.b, prev.b, 0.08 + zp.x * 0.12);
 
-    // Soft ghosting halo around bright regions
     let luma = dot(src.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let halo = glow(1.0 - luma, 0.45, 0.4) * tint;
-    let layerRGB = clamp(tintedGhost + halo * 0.25, vec3<f32>(0.0), vec3<f32>(1.0));
+    // Idea 2 — source-tied ghost (halo follows plate luma, not a new palette).
+    let halo = glow(1.0 - luma, 0.45, 0.4) * src.rgb * (1.0 + mids * 0.25);
+    let layerRGB = clamp(ghostRGB + halo * 0.25, vec3<f32>(0.0), vec3<f32>(1.0));
+    let outRGB = aces(mix(src.rgb, layerRGB, effectMix));
+    let alpha = clamp(src.a * 0.4 + luma * 0.35 + effectMix * 0.2 + treble * 0.05, 0.0, 1.0);
+    let outColor = vec4<f32>(outRGB, alpha);
 
-    let outRGB = mix(src.rgb, layerRGB, effectMix);
-
-    textureStore(writeTexture, coord, vec4<f32>(clamp(outRGB, vec3<f32>(0.0), vec3<f32>(1.0)), src.a));
+    textureStore(writeTexture, coord, outColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

@@ -1,7 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  spec-blue-noise-stipple
+//  Blue Noise Stipple
 //  Category: artistic
-//  Features: blue-noise, pointillism, stochastic-sampling
+//  Features: blue-noise, pointillism, stochastic-sampling, mouse-driven,
+//            audio-reactive, click-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: dark-cell packing (jitter shrinks with ink); neighbor occupancy skip
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -42,6 +47,16 @@ fn goldenAngleDisk(index: f32, total: f32) -> vec2<f32> {
     return vec2<f32>(cos(angle), sin(angle)) * radius;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn cellLuma(cellId: vec2<f32>, dotScale: f32) -> f32 {
+    let sampleUV = clamp((cellId + 0.5) / dotScale, vec2<f32>(0.0), vec2<f32>(1.0));
+    let rgb = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+    return dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -49,6 +64,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let held = step(0.5, u.zoom_config.w);
 
@@ -64,28 +80,41 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let cellId = floor(uv * dotScale);
     let cellLocal = fract(uv * dotScale) - 0.5;
 
-    let jitter = blueNoiseOffset(cellId, time * 0.1);
-    let dotCenter = (jitter - 0.5) * 0.8;
-
-    let sampleUV = (cellId + 0.5) / dotScale;
-    let localColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+    let sampleUV = clamp((cellId + 0.5) / dotScale, vec2<f32>(0.0), vec2<f32>(1.0));
+    let localSample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let localColor = localSample.rgb;
     let luma = dot(localColor, vec3<f32>(0.299, 0.587, 0.114));
+    let ink = 1.0 - luma;
+
+    // Idea 1: dark-cell packing — ink-heavy cells jitter less so dots nest.
+    let pack = mix(1.0, 0.35, ink);
+    let jitter = blueNoiseOffset(cellId, time * 0.1);
+    let dotCenter = (jitter - 0.5) * 0.8 * pack;
 
     let dotSize = mix(dotSizeBase * 0.9, dotSizeBase * 0.15, luma) * density;
     let edgeWidth = 0.08;
     let dist = length(cellLocal - dotCenter);
     let dotMask = 1.0 - smoothstep(dotSize - edgeWidth, dotSize + edgeWidth, dist);
 
+    // Idea 2: neighbor occupancy skip — crowded 4-neighbors drop extra dots.
+    let nInk = (
+        (1.0 - cellLuma(cellId + vec2<f32>(1.0, 0.0), dotScale)) +
+        (1.0 - cellLuma(cellId + vec2<f32>(-1.0, 0.0), dotScale)) +
+        (1.0 - cellLuma(cellId + vec2<f32>(0.0, 1.0), dotScale)) +
+        (1.0 - cellLuma(cellId + vec2<f32>(0.0, -1.0), dotScale))
+    ) * 0.25;
+    let skipExtra = 1.0 - smoothstep(0.45, 0.85, nInk) * 0.85;
+
     let jitter2 = blueNoiseOffset(cellId + vec2<f32>(37.0, 17.0), time * 0.1);
-    let dotCenter2 = (jitter2 - 0.5) * 0.6;
+    let dotCenter2 = (jitter2 - 0.5) * 0.6 * pack;
     let dotSize2 = mix(dotSizeBase * 0.5, dotSizeBase * 0.05, luma) * density * 0.7;
     let dist2 = length(cellLocal - dotCenter2);
-    let dotMask2 = 1.0 - smoothstep(dotSize2 - edgeWidth, dotSize2 + edgeWidth, dist2);
+    let dotMask2 = (1.0 - smoothstep(dotSize2 - edgeWidth, dotSize2 + edgeWidth, dist2)) * skipExtra;
 
-    let tertiaryCenter = goldenAngleDisk(luma * 3.0 + 0.5, 4.0) * 0.45;
+    let tertiaryCenter = goldenAngleDisk(luma * 3.0 + 0.5, 4.0) * 0.45 * pack;
     let dotSize3 = dotSizeBase * 0.25 * density;
     let dist3 = length(cellLocal - tertiaryCenter);
-    let dotMask3 = 1.0 - smoothstep(dotSize3 - edgeWidth, dotSize3 + edgeWidth, dist3);
+    let dotMask3 = (1.0 - smoothstep(dotSize3 - edgeWidth, dotSize3 + edgeWidth, dist3)) * skipExtra;
 
     let crawlRunner = pow(max(0.0, sin(dotScale * 0.5 + time * (12.0 + treble * 6.0))), 14.0);
     var combinedMask = max(dotMask, dotMask2 * 0.5);
@@ -105,7 +134,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let paperColor = vec3<f32>(0.95, 0.93, 0.88);
     let chromaticShift = hash22(cellId) - 0.5;
-    let trebleShift = vec3<f32>(treble * 0.08, 0.0, -treble * 0.08) * crawlRunner;
+    let trebleShift = vec3<f32>(treble * 0.08, mids * 0.02, -treble * 0.08) * crawlRunner;
     let dotColor = localColor + chromaticShift.xyx * colorVar + trebleShift;
 
     var outColor = mix(paperColor, dotColor, combinedMask);
@@ -114,8 +143,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     outColor = mix(outColor, dotColor, sharpMask * mouseInfluence * 0.5);
     outColor = mix(outColor, dotColor, combinedMask * mouseInfluence * 0.15 * (1.0 + bass * 0.2));
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(outColor, 1.0));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(localColor, combinedMask));
+    let mapped = acesToneMap(outColor);
+    let alpha = clamp(combinedMask * 0.75 + mouseInfluence * 0.15 + localSample.a * 0.1 + 0.08, 0.0, 1.0);
+    let outCol = vec4<f32>(mapped, alpha);
+    textureStore(writeTexture, gid.xy, outCol);
+    textureStore(dataTextureA, gid.xy, outCol);
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

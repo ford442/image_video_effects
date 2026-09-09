@@ -38,10 +38,42 @@
     "temporal-persistence",
     "interactive",
     "colour-masking",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Displace Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Saturation Threshold",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "Wave Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
   ]
 }

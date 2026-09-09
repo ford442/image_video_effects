@@ -1,37 +1,36 @@
-// ---------------------------------------------------------------
-//  Radiating Displacement – waves emanate from strong colours only
-//  Neutrals (browns, greys, blacks) are left untouched & sharp.
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Radiating Displacement
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: spatial radiate from mouse; phase-split RGB of the same wave
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // optional persistence
-@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC:   texture_2d<f32>;
-
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------------------
 
 struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_params: vec4<f32>,       // x=speed, y=displaceStrength, z=satThresh, w=radius
-  zoom_config: vec4<f32>,       // x=pulseSpeed, y=depthInfluence, z=unused, w=unused
-  ripples:     array<vec4<f32>, 50>,
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
 };
 
-// ---------------------------------------------------------------
-//  Colour classification
-// ---------------------------------------------------------------
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
-    let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
+    let K = vec4<f32>(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
     var p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
     let q = mix(vec4<f32>(p.xyw, c.r), vec4<f32>(c.r, p.yzx), step(p.x, c.r));
     var d = q.x - min(q.w, q.y);
@@ -39,67 +38,53 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     return vec3<f32>(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
-// ---------------------------------------------------------------
-//  Wave generator – returns a vec2 displacement
-// ---------------------------------------------------------------
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn waveDisplacement(uv: vec2<f32>, centre: vec2<f32>, time: f32,
-                    speed: f32, strength: f32, radius: f32) -> vec2<f32> {
-    let dist = length(uv - centre);
-    // outward travelling wave
-    var wave = sin((dist - time * speed) * 20.0) * 0.5 + 0.5;
+                    speed: f32, strength: f32, radius: f32, phase: f32) -> vec2<f32> {
+    let delta = uv - centre;
+    let dist = length(delta);
+    var wave = sin((dist - time * speed) * 20.0 + phase) * 0.5 + 0.5;
     let mask = smoothstep(radius, 0.0, dist) * smoothstep(0.2, 0.8, wave);
-    var dir = normalize(uv - centre);
+    let dir = delta / max(dist, 0.0001);
     return dir * mask * strength * 0.02;
 }
 
-// ---------------------------------------------------------------
-//  Main
-// ---------------------------------------------------------------
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv  = vec2<f32>(gid.xy) / resolution;
-    let time = u.config.x;
-    let texel = 1.0 / resolution;
+    let pixel = vec2<i32>(gid.xy);
+    if (pixel.x >= i32(resolution.x) || pixel.y >= i32(resolution.y)) { return; }
 
-    // -----------------------------------------------------------------
-    //  1️⃣  Read source
-    // -----------------------------------------------------------------
-    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let uv = (vec2<f32>(pixel) + 0.5) / resolution;
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    let src4 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let src = src4.rgb;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // -----------------------------------------------------------------
-    //  2️⃣  Uniforms
-    // -----------------------------------------------------------------
-    let speed      = u.zoom_params.x * 0.5;
-    let strength   = u.zoom_params.y;
-    let satThresh  = u.zoom_params.z * 0.4 + 0.2;
-    let radius     = u.zoom_params.w * 0.15;
-    let pulseSpd   = u.zoom_config.x * 2.0;
-    let depthInf   = u.zoom_config.y;
+    let speed = u.zoom_params.x * 0.5 * (1.0 + bass * 0.2);
+    let strength = u.zoom_params.y;
+    let satThresh = u.zoom_params.z * 0.4 + 0.2;
+    let radius = u.zoom_params.w * 0.15 + 0.08;
+    let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // -----------------------------------------------------------------
-    //  3️⃣  Classify colour (strong vs neutral)
-    // -----------------------------------------------------------------
     let hsv = rgb2hsv(src);
-    let sat = hsv.y;
-    let val = hsv.z;
-    let isNeutral = (sat < satThresh) || (val < 0.15) ||
-                    ((hsv.x > 0.08) && (hsv.x < 0.15) && (sat < 0.5));
+    let isNeutral = (hsv.y < satThresh) || (hsv.z < 0.15) ||
+                    ((hsv.x > 0.08) && (hsv.x < 0.15) && (hsv.y < 0.5));
 
-    // -----------------------------------------------------------------
-    //  4️⃣  Build displacement vector
-    // -----------------------------------------------------------------
     var displacement = vec2<f32>(0.0);
-
-    // --- a) Radiate from strong‑colour regions ---
+    // Idea 1 — real radial wave from the cursor (HEAD used centre=uv so dist=0)
     if (!isNeutral) {
-        // Use the pixel itself as a wave centre
-        displacement += waveDisplacement(uv, uv, time, speed, strength, radius);
+        displacement += waveDisplacement(uv, mouse, time, speed, strength, radius, 0.0);
     }
 
-    // --- b) Mouse‑driven ripples (like the original) ---
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let age = time - ripple.z;
@@ -109,7 +94,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                 let rippleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, ripple.xy, 0.0).r;
                 let depthFactor = 1.0 - rippleDepth;
                 let rippleSpeed = mix(1.0, 2.0, depthFactor);
-                let rippleAmp   = mix(0.005, 0.015, depthFactor);
+                let rippleAmp = mix(0.005, 0.015, depthFactor);
                 var wave = sin(d * 25.0 - age * rippleSpeed);
                 let falloff = 1.0 / (d * 20.0 + 1.0);
                 let atten = 1.0 - smoothstep(0.0, 3.0, age);
@@ -118,7 +103,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
-    // --- c) Depth‑aware ambient drift (subtle background motion) ---
     let bgFactor = 1.0 - smoothstep(0.0, 0.1, depth);
     if (bgFactor > 0.0) {
         let ambient = vec2<f32>(
@@ -128,21 +112,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         displacement += ambient;
     }
 
-    // -----------------------------------------------------------------
-    //  5️⃣  Apply displacement (only where colour is strong)
-    // -----------------------------------------------------------------
-    var finalUV = uv;
-    if (!isNeutral) {
-        finalUV += displacement;
-    }
+    var disp = select(vec2<f32>(0.0), displacement, !isNeutral);
+    // Idea 2 — same wave, tiny RGB phase split
+    let dispR = disp + waveDisplacement(uv, mouse, time, speed, strength * 0.35, radius, mids * 0.6) * select(0.0, 1.0, !isNeutral);
+    let dispB = disp - waveDisplacement(uv, mouse, time, speed, strength * 0.35, radius, -mids * 0.6) * select(0.0, 1.0, !isNeutral);
 
-    // -----------------------------------------------------------------
-    //  6️⃣  Sample & output (image stays sharp – no blur/haze overlay)
-    // -----------------------------------------------------------------
-    let outCol = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    let uvR = clamp(uv + dispR, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvG = clamp(uv + disp, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(uv + dispB, vec2<f32>(0.0), vec2<f32>(1.0));
+    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
+    let ba = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
+    let hdr = vec3<f32>(r, g, ba.b);
+    let mapped = aces(hdr);
+    let mag = length(disp) * 40.0;
+    let alpha = clamp(src4.a * 0.45 + mag * 0.4 + select(0.0, 0.2, !isNeutral), 0.0, 1.0);
+    let outCol = vec4<f32>(mapped, alpha);
 
-    // Depth is also displaced for consistency
-    let outD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + displacement, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outD, 0.0, 0.0, 0.0));
+    let outD = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + disp, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    textureStore(writeTexture, pixel, outCol);
+    textureStore(dataTextureA, pixel, outCol);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(outD, 0.0, 0.0, 0.0));
 }

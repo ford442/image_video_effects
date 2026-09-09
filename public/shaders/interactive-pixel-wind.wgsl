@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Interactive Pixel Wind
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: luma-weighted advection; wind shadow from upwind luma
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +21,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -108,7 +116,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let curlB = fbm(uv.yx * 14.0 + vec2<f32>(-time * 0.55, gust * 1.7));
     let turbOffset = (vec2<f32>(curlA, curlB) - 0.5) * turbulence * 0.075;
 
-    let offset = windDir * strength + turbOffset;
+    let srcHere = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let srcLuma = dot(srcHere.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    // Idea 1 — bright pixels blow farther
+    let lumaW = 0.55 + srcLuma * 0.9;
+    let windN = windDir / max(length(windDir), 0.0001);
+    let upwindUV = clamp(uv - windN * 0.045, vec2<f32>(0.0), vec2<f32>(1.0));
+    let upwindLuma = dot(textureSampleLevel(readTexture, u_sampler, upwindUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    // Idea 2 — wind shadow: occluded pixels get less offset
+    let shadow = 1.0 - smoothstep(0.45, 0.88, upwindLuma) * 0.55;
+    let offset = (windDir * strength * lumaW + turbOffset) * shadow;
 
     // Sample current frame with offset
     let baseUV = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -121,9 +138,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var b = textureSampleLevel(readTexture, u_sampler, clamp(uv - blueOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     color = vec4<f32>(r, color.g, b, color.a);
 
-    // Feedback trail (Wind carries the trails too)
-    let historyUV = clamp(uv - offset * 0.62, vec2<f32>(0.0), vec2<f32>(1.0)); // Trails move slower
-    let history = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0);
+    let histSize = vec2<i32>(textureDimensions(dataTextureC));
+    let historyUV = clamp(uv - offset * 0.62, vec2<f32>(0.0), vec2<f32>(1.0));
+    let histPx = clamp(vec2<i32>(historyUV * vec2<f32>(histSize)), vec2<i32>(0), histSize - vec2<i32>(1));
+    let history = textureLoad(dataTextureC, histPx, 0);
 
     let speedGlow = smoothstep(0.005, 0.12, length(offset));
     let streak = pow(max(0.0, 1.0 - abs(noise(uv * vec2<f32>(60.0, 9.0) + time) - 0.5) * 3.2), 5.0);

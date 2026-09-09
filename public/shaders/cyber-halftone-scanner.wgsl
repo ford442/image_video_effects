@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cyber Halftone Scanner
 //  Category: image
-//  Features: rotated screens, scanline, audio-reactive, plasma-tint, upgraded-rgba
+//  Features: rotated screens, scanline, audio-reactive, plasma-tint,
+//            mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Phase B / Algorithmist — guarded palette read, click scan bursts,
-//  pointer dot bloom, FFT-modulated sweep
+//  Upgraded: 2026-09-09
+//  Ideas: AM circular cells on 15/75/0/45 screens; scanline hard-dot
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,12 +34,18 @@ const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 // (PHI removed — was unused)
 
-fn grid(uv: vec2<f32>, angle: f32, scale: f32) -> f32 {
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Idea 1: AM circular cells under the existing rotated screens (keep angles).
+fn amCell(uv: vec2<f32>, angle: f32, scale: f32) -> f32 {
     let s = sin(angle);
     let c = cos(angle);
     let rot = mat2x2<f32>(c, -s, s, c);
     let st = (rot * uv) * scale;
-    return (sin(st.x) * sin(st.y)) * 0.5 + 0.5;
+    let cell = fract(st) - 0.5;
+    return length(cell) * 1.41421356;
 }
 
 // Small 1D value hash -> [0, 1), used to pick burst sweep directions.
@@ -119,16 +127,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let texG = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
     let texB = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>( sep,  sep), 0.0).b;
 
-    // Canonical CMYK screen angles
-    let patR = grid(uv, 15.0  * PI / 180.0, dotScale);
-    let patG = grid(uv, 75.0  * PI / 180.0, dotScale);
-    let patB = grid(uv,  0.0,                dotScale);
-    let patK = grid(uv, 45.0  * PI / 180.0, dotScale * 1.05);
+    // Canonical CMYK screen angles — AM cells, not sin×sin.
+    let patR = amCell(uv, 15.0  * PI / 180.0, dotScale);
+    let patG = amCell(uv, 75.0  * PI / 180.0, dotScale);
+    let patB = amCell(uv,  0.0,                dotScale);
+    let patK = amCell(uv, 45.0  * PI / 180.0, dotScale * 1.05);
 
-    let r = step(patR, texR * brightness + boost);
-    let g = step(patG, texG * brightness + boost);
-    let b = step(patB, texB * brightness + boost);
-    let k = step(patK, dot(vec3<f32>(texR, texG, texB), vec3<f32>(0.299, 0.587, 0.114)) * brightness + boost);
+    let thrR = texR * brightness + boost;
+    let thrG = texG * brightness + boost;
+    let thrB = texB * brightness + boost;
+    let thrK = dot(vec3<f32>(texR, texG, texB), vec3<f32>(0.299, 0.587, 0.114)) * brightness + boost;
+
+    // Idea 2: scan hard-dot — under the scanline the AM threshold goes binary.
+    let hardAmt = clamp(scanLive + scanGlitch + burstIntensity * 0.5, 0.0, 1.0);
+    let softR = 1.0 - smoothstep(thrR - 0.07, thrR + 0.07, patR);
+    let softG = 1.0 - smoothstep(thrG - 0.07, thrG + 0.07, patG);
+    let softB = 1.0 - smoothstep(thrB - 0.07, thrB + 0.07, patB);
+    let softK = 1.0 - smoothstep(thrK - 0.07, thrK + 0.07, patK);
+    let r = mix(softR, step(patR, thrR), hardAmt);
+    let g = mix(softG, step(patG, thrG), hardAmt);
+    let b = mix(softB, step(patB, thrB), hardAmt);
+    let k = mix(softK, step(patK, thrK), hardAmt);
 
     // Cyber-tinted
     let cyan    = vec3<f32>(0.0, 0.85, 1.0) * r;
@@ -143,16 +162,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let palIdx = (u32(clamp((scanY + time * 0.05 + mids * 0.1) * 255.0, 0.0, 255.0)) % 8u) + 1u;
     let scanTint = plasmaBuffer[palIdx].rgb;
     let tintAmt = scanLive * 0.4 + scanGlitch * 0.3 + burstIntensity * 0.4;
-    let finalColor = halftone + scanTint * tintAmt;
+    let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    let mapped = acesToneMap(halftone + scanTint * tintAmt);
 
     // Semantic alpha
     let coverage = (r + g + b) / 3.0;
-    let alpha = clamp(coverage * 0.6 + scanIntensity * 0.3 + burstIntensity * 0.2 + 0.1, 0.0, 1.0);
+    let alpha = clamp(coverage * 0.6 + scanIntensity * 0.3 + burstIntensity * 0.2 + srcA * 0.1, 0.0, 1.0);
+    let outCol = vec4<f32>(mapped, alpha);
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, coord, outCol);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, coord, outCol);
 }

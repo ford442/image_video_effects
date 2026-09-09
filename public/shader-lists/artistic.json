@@ -17,7 +17,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -56,6 +58,40 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Paint Saturation",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Specular Power",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Drying Rate",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -76,7 +112,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -110,6 +148,40 @@
         "id": "flowStrength",
         "name": "Flow Strength",
         "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Drying Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pigment Deposit",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Water Capacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Flow Strength",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -350,7 +422,9 @@
     "features": [
       "anisotropic",
       "edge-aware",
-      "texture-synthesis"
+      "texture-synthesis",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -386,7 +460,41 @@
         "step": 0.1
       }
     ],
-    "target_rating": 4.5
+    "target_rating": 4.5,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Paint Wetness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Color Levels",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Impasto Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ]
   },
   {
     "id": "astral-kaleidoscope-gemini",
@@ -1370,6 +1478,40 @@
     "tags": [
       "simulation",
       "physics"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Red Viscosity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Green Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Blue Viscosity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Temperature",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1618,6 +1760,40 @@
       "reactive",
       "film",
       "double-exposure"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Zoom Level",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Fade",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Audio Reactivity",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2425,11 +2601,47 @@
       "edge‑glow",
       "film‑grain",
       "depth‑aware",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Trail Length",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glow Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Green Tint",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Film Grain",
+        "default": 0.1,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2476,6 +2688,36 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dot Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Reveal Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Magnify",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
     ],
     "tags": [
       "halftone",
@@ -2653,6 +2895,36 @@
       "sumi-e",
       "hdr-specular",
       "aces-tone-mapping"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Spread Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Ink Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Ink Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -3088,12 +3360,45 @@
       "depth-aware",
       "temporal-persistence",
       "multi-mode",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Beam Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Contour Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Edge Sensitivity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "feedbackPacking": "A/C echo scalar in A.r. Display ACES."
   },
   {
     "id": "liquid-prism-cascade",
@@ -5094,11 +5399,43 @@
       "temporal-persistence",
       "interactive",
       "colour-masking",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Displace Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Wave Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -5140,12 +5477,43 @@
       "depth-aware",
       "temporal-persistence",
       "colour-masking",
-      "multi-mode",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Aura Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Aura Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -5599,7 +5967,9 @@
       "image-processing"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5634,6 +6004,40 @@
         "max": 1,
         "step": 0.01
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wind",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Accumulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -5656,7 +6060,8 @@
       "mouse-driven",
       "audio-reactive",
       "click-reactive",
-      "fast-motion"
+      "fast-motion",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6403,6 +6808,36 @@
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dot Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Wet Ink Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Color Reveal",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
     ],
     "tags": [
       "stylized",

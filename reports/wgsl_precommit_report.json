@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-08T20:41:08.913529",
+  "timestamp": "2026-09-09T04:55:22.076306",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 12,
-  "passed": 12,
+  "total": 10,
+  "passed": 10,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/fabric-step.wgsl",
+      "file": "public/shaders/bubble-wrap.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/honey-melt.wgsl",
+      "file": "public/shaders/interactive-pixel-wind.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/kintsugi-repair.wgsl",
+      "file": "public/shaders/lidar.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/page-curl-interactive.wgsl",
+      "file": "public/shaders/pixel-wind-chimes.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pin-art-3d.wgsl",
+      "file": "public/shaders/radiating-displacement.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/plastic-bricks.wgsl",
+      "file": "public/shaders/radiating-haze.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/polka-wave.wgsl",
+      "file": "public/shaders/rain-lens-wipe.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/slime-drip.wgsl",
+      "file": "public/shaders/raindrop-ripples.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spec-histogram-equalize.wgsl",
+      "file": "public/shaders/sim-smoke-trails.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,37 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/triangle-mosaic.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/velvet-scatter-bloom.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/wave-halftone.wgsl",
+      "file": "public/shaders/snow.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

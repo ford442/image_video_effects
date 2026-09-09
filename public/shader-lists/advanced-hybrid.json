@@ -2134,7 +2134,8 @@
       "upgraded-rgba",
       "mouse-driven",
       "temporal",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -2170,7 +2171,41 @@
         "step": 0.01
       }
     ],
-    "target_rating": 4.5
+    "target_rating": 4.5,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Hardness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Texture Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reveal Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Diffusion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "chroma-depth-tunnel-prismatic",
@@ -5359,7 +5394,9 @@
       "mouse-driven",
       "HDR",
       "bloom",
-      "tone-mapping"
+      "tone-mapping",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -5399,7 +5436,41 @@
       "artistic",
       "ghostly"
     ],
-    "target_rating": 4.5
+    "target_rating": 4.5,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Zoom Level",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Opacity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Saturation",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "dynamic-lens-flares-prismatic",
@@ -9260,7 +9331,9 @@
       "fluid-simulation",
       "ink-diffusion",
       "physical-media",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9300,7 +9373,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ink Hue",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spread Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "ink-dispersion-guided",
@@ -10875,7 +10982,9 @@
       "temporal-echo",
       "luminance-history",
       "rgba-state-machine",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -10915,7 +11024,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Echo Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Lag Offset X",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Lag Offset Y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hue Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "photonic-caustics-iridescence",

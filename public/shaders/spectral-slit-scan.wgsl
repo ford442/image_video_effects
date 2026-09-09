@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Spectral Slit Scan v2
+//  Spectral Slit Scan
 //  Category: artistic
-//  Features: audio-reactive, mouse-driven, temporal, multi-slit
+//  Features: audio-reactive, mouse-driven, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-09
+//  Ideas: wavelength-staggered slits; luma-hold
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -112,18 +114,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let sampleUV = clamp(uv + curveOff + mousePull + parallax + vec2<f32>(slitRunner * 0.012 + clickFront * 0.018, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Spectral decomposition: R/G/B sample at different temporal lags
-    let histR = loadHistory(sampleUV + vec2<f32>(chromaShift, 0.0), resolution);
+    // Idea 1 — wavelength-staggered slits (R/G/B ride neighboring slit offsets).
+    let wr = chromaShift * (1.0 + fi * 0.18);
+    let wb = chromaShift * max(0.35, 1.0 - fi * 0.12);
+    let histR = loadHistory(sampleUV + vec2<f32>(wr, 0.0), resolution);
     let histG = loadHistory(sampleUV, resolution);
-    let histB = loadHistory(sampleUV - vec2<f32>(chromaShift, 0.0), resolution);
+    let histB = loadHistory(sampleUV - vec2<f32>(wb, 0.0), resolution);
 
     let age = clamp(1.0 - (histR.a + histG.a + histB.a) * 0.333, 0.0, 1.0);
     let decay = pow(trailDecay, fi + 1.0);
     let w = decay * (1.0 + bass * 0.5 + slitRunner * 0.25 + clickFront * 0.4);
 
-    accum.r = accum.r + mix(histR.r, histG.r, 0.3) * w;
-    accum.g = accum.g + mix(histG.g, histB.g, 0.3) * w;
-    accum.b = accum.b + mix(histB.b, histR.b, 0.3) * w;
+    // Idea 2 — luma-hold: dark history keeps more of C (slit does not eat shadows).
+    let histLuma = dot(histG.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let hold = 1.0 - smoothstep(0.0, 0.22, histLuma);
+    accum.r = accum.r + mix(mix(histR.r, histG.r, 0.3), histG.r, hold * 0.45) * w;
+    accum.g = accum.g + mix(mix(histG.g, histB.g, 0.3), histG.g, hold * 0.45) * w;
+    accum.b = accum.b + mix(mix(histB.b, histR.b, 0.3), histG.b, hold * 0.45) * w;
     totalWeight = totalWeight + w;
     maxAge = max(maxAge, age);
   }

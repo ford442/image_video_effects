@@ -523,7 +523,8 @@
       "held-drag",
       "click-reactive",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3895,7 +3896,9 @@
       "reaction-diffusion",
       "multi-channel",
       "paper-texture",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3952,7 +3955,41 @@
     },
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Paper Wetness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ink Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Feed Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Mixing",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "sim-sand-dunes-rgba",
@@ -4380,7 +4417,11 @@
       "volumetric-smoke",
       "vorticity",
       "buoyancy",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "upgraded-rgba",
+      "exact-load-feedback",
+      "a-only-feedback"
     ],
     "params": [
       {
@@ -4432,7 +4473,42 @@
     ],
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Smoke Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Rise Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Dissipation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = density, temp, vel.xy (raw). Display ACES."
   },
   {
     "id": "sim-volumetric-fake",

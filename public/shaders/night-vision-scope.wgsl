@@ -1,4 +1,13 @@
-// Night Vision Scope — interactive image intensifier
+// ═══════════════════════════════════════════════════════════════════
+//  Night Vision Scope
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: MCP scintillation; bright-source blooming
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,20 +21,23 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=Ripples, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // Params
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Simple hash for noise
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * .1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -34,24 +46,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+    let aspect = resolution.x / max(resolution.y, 1.0);
 
-    // Audio: bass boosts brightness, mids feeds grain, treble drives scanline shimmer
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Parameters
-    let scope_size = u.zoom_params.x; // Size of the clear area
-    let grain_amt = u.zoom_params.y * (1.0 + mids * 0.6);  // Noise intensity outside scope
-    let brightness = u.zoom_params.z + bass * 0.5; // Brightness boost inside scope
-    let scanline_str = u.zoom_params.w * (1.0 + treble * 0.4); // Scanline intensity
+    let scope_size = u.zoom_params.x;
+    let grain_amt = u.zoom_params.y * (1.0 + mids * 0.6);
+    let brightness = u.zoom_params.z + bass * 0.5;
+    let scanline_str = u.zoom_params.w * (1.0 + treble * 0.4);
 
     let time = u.config.x;
     let rawMouse = u.zoom_config.yz;
 
-    // Critically damped scope tracking, persisted only in safe slots [133..138].
     let hasSpringState = arrayLength(&extraBuffer) > 138u;
     var mouse = rawMouse;
     if (hasSpringState && extraBuffer[138] > 0.5) {
@@ -78,18 +88,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[138] = 1.0;
     }
 
-    // Correct distance for aspect ratio
     let d_vec = uv - mouse;
     let d_aspect = vec2<f32>(d_vec.x * aspect, d_vec.y);
     let dist = length(d_aspect);
 
-    // Scope Mask
-    // radius mapped from parameter 0-1 to reasonable screen size
     let radius = 0.1 + scope_size * 0.4;
-    // Smooth edge for the scope
     let scope_mask = 1.0 - smoothstep(radius - 0.05, radius + 0.05, dist);
 
-    // Clicks produce expanding intensifier flares at their recorded positions.
     var clickFlare = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i++) {
@@ -102,60 +107,55 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         clickFlare = max(clickFlare, ring * exp(-safeAge * 1.5) * live);
     }
 
-    // Image Sample
-    // Maybe zoom in inside the scope?
-    // Lens distortion effect:
-    let distortion_str = -0.2 * scope_mask; // Slight bulge
+    let distortion_str = -0.2 * scope_mask;
     let distorted_uv = uv + d_vec * distortion_str;
-
     var color = textureSampleLevel(readTexture, u_sampler, distorted_uv, 0.0).rgb;
 
-    // Night Vision Green Processing
     let lum = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let nv_color = vec3<f32>(0.0, 1.0, 0.0) * lum * (1.5 + brightness);
 
-    // Noise/Grain
-    let noise = hash12(uv * 100.0 + vec2<f32>(time * 10.0, time * 20.0));
+    // Idea 2 — bright-source blooming: smear neighbors above a luma knee.
+    let texel = 1.0 / resolution;
+    var bloom = 0.0;
+    for (var k = 0; k < 4; k = k + 1) {
+        let a = f32(k) * 1.5708;
+        let nUV = clamp(distorted_uv + vec2<f32>(cos(a), sin(a)) * texel * 3.0, vec2<f32>(0.0), vec2<f32>(1.0));
+        let nLum = dot(textureSampleLevel(readTexture, u_sampler, nUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+        bloom += max(nLum - 0.55, 0.0);
+    }
+    let bloomAmt = (bloom * 0.25) * (0.35 + brightness * 0.25);
+    let nvBloom = nv_color + vec3<f32>(0.05, 0.55, 0.08) * bloomAmt;
 
-    // Scanlines
+    let noise = hash12(uv * 100.0 + vec2<f32>(time * 10.0, time * 20.0));
+    // Idea 1 — MCP scintillation (sparse microchannel sparks).
+    let scint = smoothstep(0.965, 0.995, hash12(uv * 240.0 + vec2<f32>(time * 17.0, 4.2))) * (0.35 + treble * 0.4);
+
     let scanBin = (u32(floor(uv.y * 96.0)) % 8u) + 1u;
     let fftScan = plasmaBuffer[scanBin].x;
     let scanline = sin(uv.y * 800.0 + time * (10.0 + fftScan * 3.0)) * 0.5 + 0.5;
 
-    // Outside scope styling (Darker, noisier, heavy scanlines)
-    let outside_color = nv_color * 0.3 * (0.8 + 0.4 * noise) * (0.8 + 0.2 * scanline);
-
-    // Inside scope styling (Brighter, clearer, less noise)
-    let inside_color = nv_color * (0.9 + 0.1 * noise) * (0.95 + 0.05 * scanline);
-
-    // Mix based on scope mask
+    let outside_color = nvBloom * 0.3 * (0.8 + 0.4 * noise) * (0.8 + 0.2 * scanline);
+    let inside_color = nvBloom * (0.9 + 0.1 * noise) * (0.95 + 0.05 * scanline);
     var final_color = mix(outside_color, inside_color, scope_mask);
+    final_color += vec3<f32>(0.15, 1.0, 0.22) * scint * (0.4 + scope_mask * 0.6);
 
-    // Add vignette to the very edges of screen
     let vign = 1.0 - length((uv - 0.5) * vec2<f32>(aspect, 1.0)) * 0.8;
     final_color = final_color * clamp(vign, 0.0, 1.0);
-
-    // Apply Grain intensity param
     final_color = mix(final_color, vec3<f32>(noise), clamp(grain_amt * 0.2, 0.0, 0.35));
-
-    // Scanline parameter application
     final_color = final_color * (1.0 - scanline_str * (1.0 - scanline) * 0.5);
     final_color += vec3<f32>(0.12, 1.0, 0.25) * clickFlare * (0.35 + treble * 0.25);
 
-    // Preserve phosphor hue while bounding the intensifier's high brightness range.
     final_color = max(final_color, vec3<f32>(0.0));
     let peak = max(max(final_color.r, final_color.g), final_color.b);
     final_color *= min(1.0, 1.7 / max(peak, 0.001));
+    final_color = aces(final_color);
 
-    // Luminance-key alpha (green NV glow is additive over dark scope)
-    let alpha = clamp(dot(final_color, vec3<f32>(0.299, 0.587, 0.114)) + scope_mask * 0.3, 0.0, 1.0);
+    let alpha = clamp(dot(final_color, vec3<f32>(0.299, 0.587, 0.114)) + scope_mask * 0.3 + scint * 0.2, 0.0, 1.0);
     let finalOut = vec4<f32>(final_color, alpha);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalOut);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalOut);
+    textureStore(writeTexture, coord, finalOut);
+    textureStore(dataTextureA, coord, finalOut);
 
-    // Honest scope relief: the intensified lens and click rings sit slightly
-    // forward instead of merely copying an unchanged depth plane.
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthOut = clamp(depth - scope_mask * (0.02 + brightness * 0.015) - clickFlare * 0.025, 0.0, 1.0);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

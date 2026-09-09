@@ -3,8 +3,9 @@
 //  Category: retro-glitch
 //  Features: mouse-focus, screen-rotation, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-05-23
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-09-09
+//  Ideas: highlight skip (newsprint shine); overprint gain on plate overlap
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,6 +33,10 @@ const PI:  f32 = 3.14159265358979323846;
 const PHI: f32 = 1.61803398874989484820;
 
 fn luminance(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)); }
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // ═══ UNIQUE VISUAL IDEA helpers: paper fiber grain ═══
 fn paperHash(p: vec2<f32>) -> f32 {
@@ -99,8 +104,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let sampleColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
+    // Idea 1: highlight skip — specular luma punches a hole in the screen.
+    let hiSkip = 1.0 - smoothstep(0.72, 0.94, luminance(sampleColor));
+    let skipContrast = contrast * mix(0.35, 1.0, hiSkip);
+
     let monoDot = screen_dot(uv, baseScale, baseAngle, sampleColor, vec3<f32>(0.299, 0.587, 0.114),
-                             velAxis, stretch, contrast);
+                             velAxis, stretch, skipContrast);
     let monoPalIdx = u32(clamp(luminance(sampleColor) * 255.0, 0.0, 255.0));
     let bufLen = arrayLength(&plasmaBuffer);
     let monoTint = plasmaBuffer[monoPalIdx % max(1u, bufLen)].rgb;
@@ -120,10 +129,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sampM = textureSampleLevel(readTexture, u_sampler, clamp(uv + regM, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let sampY = textureSampleLevel(readTexture, u_sampler, clamp(uv + regY, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 
-    let cDot = screen_dot(uv, baseScale, baseAngle + 15.0 * PI / 180.0, sampC, vec3<f32>(1.0, 0.0, 0.0), velAxis, stretch, contrast);
-    let mDot = screen_dot(uv, baseScale, baseAngle + 75.0 * PI / 180.0, sampM, vec3<f32>(0.0, 1.0, 0.0), velAxis, stretch, contrast);
-    let yDot = screen_dot(uv, baseScale, baseAngle +  0.0 * PI / 180.0, sampY, vec3<f32>(0.0, 0.0, 1.0), velAxis, stretch, contrast);
-    let kDot = screen_dot(uv, baseScale * 1.05, baseAngle + 45.0 * PI / 180.0, sampleColor, vec3<f32>(0.299, 0.587, 0.114), velAxis, stretch, contrast);
+    let cDot = screen_dot(uv, baseScale, baseAngle + 15.0 * PI / 180.0, sampC, vec3<f32>(1.0, 0.0, 0.0), velAxis, stretch, skipContrast);
+    let mDot = screen_dot(uv, baseScale, baseAngle + 75.0 * PI / 180.0, sampM, vec3<f32>(0.0, 1.0, 0.0), velAxis, stretch, skipContrast);
+    let yDot = screen_dot(uv, baseScale, baseAngle +  0.0 * PI / 180.0, sampY, vec3<f32>(0.0, 0.0, 1.0), velAxis, stretch, skipContrast);
+    let kDot = screen_dot(uv, baseScale * 1.05, baseAngle + 45.0 * PI / 180.0, sampleColor, vec3<f32>(0.299, 0.587, 0.114), velAxis, stretch, skipContrast);
     let cyan    = vec3<f32>(0.0, 0.7, 0.9);
     let magenta = vec3<f32>(0.9, 0.0, 0.6);
     let yellow  = vec3<f32>(0.95, 0.85, 0.0);
@@ -134,6 +143,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     cmykColor *= mix(vec3<f32>(1.0), yellow,  yDot);
     cmykColor *= mix(vec3<f32>(1.0), black,   kDot);
 
+    // Idea 2: overprint gain — dots swell where plates overlap.
+    let overprint = cDot * mDot + mDot * yDot + yDot * kDot + cDot * kDot;
+    cmykColor *= 1.0 - clamp(overprint * 0.12, 0.0, 0.35);
+
     let isMono = select(0.0, 1.0, u.zoom_params.z < 0.5);
     var outColor = mix(cmykColor, monoColor, isMono);
 
@@ -143,8 +156,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     outColor *= 0.92 + grain * 0.12;
 
     let coverage = 1.0 - luminance(outColor);
-    let alpha = clamp(coverage * 0.85 + focus * 0.15 + 0.05, 0.0, 1.0);
-    let finalColor = vec4<f32>(outColor, alpha);
+    let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    let alpha = clamp(coverage * 0.85 + focus * 0.15 + srcA * 0.08 + 0.05, 0.0, 1.0);
+    let finalColor = vec4<f32>(acesToneMap(outColor), alpha);
 
     textureStore(writeTexture, coords, finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);

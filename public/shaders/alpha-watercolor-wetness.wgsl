@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Watercolor Wetness
 //  Category: artistic
-//  Features: mouse-driven, paint, wetness, audio-bleed, depth-paper, pigment-settle, temporal
+//  Features: mouse-driven, paint, wetness, audio-bleed, depth-paper, pigment-settle, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish — richer pigment behavior, audio bleeding, atmospheric paper)
+//  Upgraded: 2026-09-09
+//  Ideas: cockling warp; salt bloom on leaving water
+//  A packing: raw pigment.rgb + water.a
 // ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
 //    R = Pigment red concentration
@@ -43,18 +44,26 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+fn loadC(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+    let hi = vec2<i32>(res) - vec2<i32>(1);
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
     let uv = vec2<f32>(gid.xy) / res;
-    let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
     let time = u.config.x;
 
     // Read previous state
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = loadC(coord, res);
     var pigment = prevState.rgb;
     var water = prevState.a;
 
@@ -74,21 +83,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     pigment = clamp(pigment, vec3<f32>(0.0), vec3<f32>(2.0));
 
     // === WATER GRADIENTS ===
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = loadC(coord + vec2<i32>(-1, 0), res);
+    let right = loadC(coord + vec2<i32>(1, 0), res);
+    let down = loadC(coord + vec2<i32>(0, -1), res);
+    let up = loadC(coord + vec2<i32>(0, 1), res);
 
     let waterGradX = (right.a - left.a) * 0.5;
     let waterGradY = (up.a - down.a) * 0.5 - 0.005; // Gravity bias
     let waterFlow = vec2<f32>(waterGradX, waterGradY);
 
     // === PIGMENT ADVECTION ===
-    // Pigment flows with water (only where wet)
-    let dt = 0.5;
+    // Pigment flows with water (only where wet). flowStrength is saved param w.
+    let dt = mix(0.25, 0.85, u.zoom_params.w);
     let flowStrength = water * dt;
     let advectUV = clamp(uv - waterFlow * flowStrength, vec2<f32>(0.0), vec2<f32>(1.0));
-    let advectedPigment = textureSampleLevel(dataTextureC, u_sampler, advectUV, 0.0).rgb;
+    let advP = vec2<i32>(clamp(round(advectUV * res), vec2<f32>(0.0), res - 1.0));
+    let advectedPigment = loadC(advP, res).rgb;
 
     // Mix advected pigment with current
     pigment = mix(pigment, advectedPigment, min(water * 0.3, 0.5));
@@ -147,10 +157,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     textureStore(dataTextureA, coord, vec4<f32>(pigment, water));
 
     // === VISUALIZATION - Visual Flourish ===
+    // Idea 1 — cockling: wet paper buckles the photo UVs
+    let waterLap = left.a + right.a + down.a + up.a - 4.0 * water;
+    let cockleUV = clamp(uv + vec2<f32>(waterLap, -waterLap) * 0.012, vec2<f32>(0.0), vec2<f32>(1.0));
+    let photo = textureSampleLevel(readTexture, u_sampler, cockleUV, 0.0);
+
     // Paper texture (shows through where dry)
     let paperColor = vec3<f32>(0.96, 0.94, 0.90);
     let wetnessVis = smoothstep(0.0, 0.2, water);
-    var displayColor = mix(paperColor, pigment, wetnessVis * 0.8 + 0.2);
+    var displayColor = mix(paperColor * photo.rgb, pigment, wetnessVis * 0.8 + 0.2);
 
     // Dark edge effect (pigment concentrates at wet boundary)
     let waterEdge = abs(waterGradX) + abs(waterGradY);
@@ -178,11 +193,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Bloom from wetness (enhanced)
     displayColor += vec3<f32>(0.12, 0.18, 0.22) * smoothstep(0.3, 1.0, water) * 0.12;
 
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    // Idea 2 — salt bloom where water is leaving
+    let leaving = max(0.0, prevState.a - water);
+    let saltSeed = hash12(uv * 220.0 + vec2<f32>(17.0, 9.0));
+    let salt = leaving * step(0.82, saltSeed) * smoothstep(0.02, 0.12, leaving);
+    displayColor = mix(displayColor, vec3<f32>(0.97, 0.96, 0.93), salt * 0.7);
 
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, water));
+    displayColor = acesToneMap(clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0)));
 
-    // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, coord, vec4<f32>(displayColor, clamp(water * 0.5 + wetnessVis * 0.3 + photo.a * 0.15, 0.0, 1.0)));
+
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

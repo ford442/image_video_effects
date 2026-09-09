@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Halftone Reveal v2
+//  Halftone Reveal
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: halftone-reveal
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-09
+//  Ideas: per-plate newsprint gain; highlight knockout
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -109,25 +110,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let yDot = 1.0 - smoothstep(0.2, 0.55, length(fract(yGrid) - 0.5)) * cmyk.z;
     let kDot = 1.0 - smoothstep(0.2, 0.55, length(fract(kGrid) - 0.5)) * cmyk.w;
 
-    let dotGain = 0.88 + mids * 0.08;
+    // Idea 1: per-plate newsprint gain — cyan spreads more than black.
+    let gainBase = 0.88 + mids * 0.08;
+    let gainC = gainBase * 1.08;
+    let gainM = gainBase * 1.04;
+    let gainY = gainBase * 1.02;
+    let gainK = gainBase * 0.96;
     let overlap = max(0.0, cDot + mDot - 1.0) * 0.08;
-    let screened = vec4<f32>(
-        clamp(1.0 - (1.0 - cDot) * dotGain, 0.0, 1.0),
-        clamp(1.0 - (1.0 - mDot) * dotGain, 0.0, 1.0),
-        clamp(1.0 - (1.0 - yDot) * dotGain, 0.0, 1.0),
-        clamp(1.0 - (1.0 - kDot) * dotGain, 0.0, 1.0)
+    var screened = vec4<f32>(
+        clamp(1.0 - (1.0 - cDot) * gainC, 0.0, 1.0),
+        clamp(1.0 - (1.0 - mDot) * gainM, 0.0, 1.0),
+        clamp(1.0 - (1.0 - yDot) * gainY, 0.0, 1.0),
+        clamp(1.0 - (1.0 - kDot) * gainK, 0.0, 1.0)
     );
+
+    // Idea 2: highlight knockout — coated-stock specular punches AM holes.
+    let knockout = smoothstep(0.72, 0.94, lum);
+    screened = mix(screened, vec4<f32>(1.0), knockout * 0.85);
+
     let halftone = cmykToRgb(screened) + vec3<f32>(overlap);
 
     let paper = vec3<f32>(1.0, 0.98, 0.94) * (0.06 + hash2(uv * 600.0) * 0.03);
 
+    let srcA = textureSampleLevel(readTexture, u_sampler, mix(uv, zoomedUV, revealMask), 0.0).a;
     let finalColor = acesToneMap(baseColor * (1.0 - revealMask * 0.5) + halftone * revealMask + paper);
 
     let dotDensity = (cmyk.x + cmyk.y + cmyk.z + cmyk.w) * 0.25;
-    let alpha = clamp(revealMask * 0.35 + dotDensity * 0.3 + depth * 0.2 + bass * 0.05, 0.1, 0.92);
+    let alpha = clamp(revealMask * 0.35 + dotDensity * 0.3 + depth * 0.2 + bass * 0.05 + srcA * 0.1, 0.1, 0.92);
     let outDepth = clamp(depth + revealMask * 0.06, 0.0, 1.0);
+    let outCol = vec4<f32>(finalColor, alpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(revealMask, dotDensity, depth, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outCol);
 }

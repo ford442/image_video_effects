@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Crystal Mosaic — Refraction Lighting & Caustics Enhanced
+//  Crystal Mosaic
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, depth-parallax, chromatic-edges,
-//            crystal-refraction, caustics, rim-lighting, subsurface-scattering
+//            crystal-refraction, caustics, rim-lighting, subsurface-scattering,
+//            upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-31
-//  Enhanced: 2026-06-28
+//  Upgraded: 2026-09-09
+//  Ideas: facet crease along u=v; lead came at triangle borders
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +33,10 @@ struct Uniforms {
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash21(p: vec2<f32>) -> f32 {
   let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -206,12 +212,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sparkle = hash21(triID + time * 0.2) * treble * edge * 0.5;
     color = color + vec3<f32>(1.0, 0.95, 0.85) * sparkle;
 
-    // Bloom-weighted alpha
-    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.85 + border * 0.15 + luma * 0.2 + bass * 0.05 + edge * 0.1, 0.0, 1.0);
+    // Idea 1: facet crease — rhombus splits into two flat faces along u=v.
+    let crease = 1.0 - smoothstep(0.0, 0.045, abs(u_frac - v_frac));
+    color = color * (1.0 - crease * 0.28);
 
-    // Premultiplied alpha writeback
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * alpha, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
+    // Idea 2: lead came — dark grout at triangle borders.
+    let came = 1.0 - smoothstep(0.0, 0.07, min(min(u_frac, 1.0 - u_frac), min(v_frac, 1.0 - v_frac)));
+    color = mix(color, color * vec3<f32>(0.12, 0.10, 0.14), came * 0.72);
+
+    let srcA = textureSampleLevel(readTexture, u_sampler, clamp(rotatedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).a;
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.85 + border * 0.15 + luma * 0.2 + bass * 0.05 + edge * 0.1 + srcA * 0.05, 0.0, 1.0);
+    let mapped = acesToneMap(color);
+    let outCol = vec4<f32>(mapped, alpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);
+    textureStore(dataTextureA, global_id.xy, outCol);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

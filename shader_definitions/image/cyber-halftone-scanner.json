@@ -35,6 +35,8 @@
   ],
   "features": [
     "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
     "upgraded-rgba"
   ],
   "tags": [

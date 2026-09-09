@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Posterize Neon Edges v2
+//  Posterize Neon Edges
 //  Category: image
 //  Features: upgraded-rgba, edge-detect, neon, audio-reactive, mouse-driven
 //  Complexity: High
-//  Chunks From: posterize-neon-edges, fbm, aces
-//  Created: 2026-05-31
-//  By: 4-Agent Shader Upgrade Swarm
+//  Upgraded: 2026-09-09
+//  Ideas: band-hold flats; Sobel-ridge neon
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -104,24 +104,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeMag = length(gx) + length(gy);
 
   let lum = dot(mc.rgb, vec3<f32>(0.299, 0.587, 0.114));
-  let noiseBound = fbm(uv * 8.0 + time * 0.2) * 0.08;
+  // Idea 1: band-hold flats — FBM dies in the band interior so cel cells stay flat.
+  let noiseBoundRaw = fbm(uv * 8.0 + time * 0.2) * 0.08;
+  let bandProbe = fract(lum * levels);
+  let holdFlat = smoothstep(0.18, 0.0, abs(bandProbe - 0.5));
+  let noiseBound = noiseBoundRaw * (1.0 - holdFlat);
   let bandEdge = fract(lum * levels + noiseBound);
   let quantize = select(floor(lum * levels) / levels, ceil(lum * levels) / levels, bandEdge > 0.5);
 
   var col = mc.rgb * (quantize / max(lum, 0.001));
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+  let snap = floor(mc.rgb * levels + vec3<f32>(0.0001)) / levels;
+  col = mix(col, snap, holdFlat * 0.45);
 
   let edgeMask = smoothstep(edgeThreshold * 0.4, edgeThreshold, edgeMag);
+  // Idea 2: ridge neon — glow is a thin Sobel-magnitude ridge, not isotropic bloom.
+  let ridge = smoothstep(edgeThreshold, edgeThreshold * 1.7, edgeMag)
+            * (1.0 - smoothstep(edgeThreshold * 1.7, edgeThreshold * 3.2, edgeMag));
   let dynamicHue = fract(hueShift * 0.1 + edgeMag * 0.5 + mids * 0.3);
   let neonColor = neonHue(dynamicHue) * (1.5 + focusFactor * 0.5);
 
   let hdrEdge = neonColor * glowIntensity * (1.0 + treble * 0.6);
-  col = mix(col, hdrEdge, edgeMask * glowIntensity);
+  col = mix(col, hdrEdge, ridge * glowIntensity);
 
   let bright = smoothstep(0.4, 0.9, lum);
-  col = col + neonColor * bright * edgeMask * glowIntensity * 0.4;
+  col = col + neonColor * bright * ridge * glowIntensity * 0.4;
 
-  let sparkle = hash12(uv * 200.0 + time * 30.0) * treble * edgeMask * 2.0;
+  let sparkle = hash12(uv * 200.0 + time * 30.0) * treble * ridge * 2.0;
   col = col + vec3<f32>(sparkle);
 
   let shadow = smoothstep(0.5, 0.0, lum);
@@ -132,7 +141,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = acesToneMap(col * 1.2);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let alpha = edgeMask * (0.6 + 0.4 * depth) + mc.a * 0.3;
+  let alpha = ridge * (0.6 + 0.4 * depth) + mc.a * 0.3 + edgeMask * 0.15;
 
   textureStore(writeTexture, coords, vec4<f32>(col, clamp(alpha, 0.0, 1.0)));
   textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Adaptive Mosaic
 //  Category: geometric
-//  Features: mouse-driven, depth-aware, audio-reactive, temporal
+//  Features: mouse-driven, depth-aware, audio-reactive, temporal, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: local-variance subdivision; mortar mix from neighbor tesserae
+//  A packing: display RGBA (C is color history)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,6 +37,10 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     return fract(sin(q) * 43758.5453);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn voronoi(p: vec2<f32>) -> vec2<f32> {
     let i = floor(p);
     let f = fract(p);
@@ -57,15 +65,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv    = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
     let aspect = resolution.x / resolution.y;
-    let treble = plasmaBuffer[0].z;
     let held = step(0.5, u.zoom_config.w);
 
     let tileSize  = mix(0.01, 0.12, u.zoom_params.x);
     let depthBlend = u.zoom_params.y;
     let bevelW     = u.zoom_params.z * 0.12 + 0.01;
     let audioSens  = u.zoom_params.w;
-
     let bass = plasmaBuffer[0].x * audioSens;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let depth      = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthScale = mix(1.0, 0.3, depth * depthBlend);
@@ -88,9 +96,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mDist       = length((uv - mouse) * vec2<f32>(aspect, 1.0));
     let focusRadius = mix(0.35, 0.55, held);
     let focusFactor = smoothstep(0.0, focusRadius, mDist);
-    let fs          = max(mix(safeSize * 0.2, safeSize, focusFactor), 0.004);
+    var fs          = max(mix(safeSize * 0.2, safeSize, focusFactor), 0.004);
+    let aUV         = uv * vec2<f32>(aspect, 1.0);
 
-    let aUV      = uv * vec2<f32>(aspect, 1.0);
+    // Idea 1: local-variance subdivision — high-contrast coarse cells go finer.
+    let coarse = max(safeSize, 0.005);
+    let coarseId = floor(aUV / coarse);
+    let coarseCenter = (coarseId + 0.5) * coarse;
+    let cUV = clamp(coarseCenter / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let off = vec2<f32>(coarse * 0.28, 0.0);
+    let l0 = dot(textureSampleLevel(readTexture, u_sampler, cUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let l1 = dot(textureSampleLevel(readTexture, u_sampler, clamp((coarseCenter + vec2<f32>(off.x, 0.0)) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let l2 = dot(textureSampleLevel(readTexture, u_sampler, clamp((coarseCenter - vec2<f32>(off.x, 0.0)) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let l3 = dot(textureSampleLevel(readTexture, u_sampler, clamp((coarseCenter + vec2<f32>(0.0, off.x)) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let lMean = (l0 + l1 + l2 + l3) * 0.25;
+    let lVar = ((l0 - lMean) * (l0 - lMean) + (l1 - lMean) * (l1 - lMean) + (l2 - lMean) * (l2 - lMean) + (l3 - lMean) * (l3 - lMean)) * 0.25;
+    let subdivide = smoothstep(0.008, 0.06, lVar);
+    fs = max(mix(fs, fs * 0.5, subdivide), 0.003);
+
     let tileCoord = aUV / fs;
     let tileId    = floor(tileCoord);
     let inCell    = fract(tileCoord);
@@ -108,7 +131,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let groutRunner = pow(max(0.0, sin(edgeSDF * fs * 80.0 - time * (12.0 + bass * 6.0))), 12.0);
     let groutConveyor = pow(max(0.0, sin(dot(tileCoord, vec2<f32>(1.0, 0.7)) * 6.0 - time * 10.0)), 14.0);
-    color = color * bevel + lipLight + vec3<f32>(0.04) * groutRunner * groutConveyor;
+
+    // Idea 2: mortar mix from 4-neighbor tesserae.
+    let nL = textureSampleLevel(readTexture, u_sampler, clamp(((tileId + vec2<f32>(-0.5, 0.5)) * fs) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let nR = textureSampleLevel(readTexture, u_sampler, clamp(((tileId + vec2<f32>(1.5, 0.5)) * fs) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let nU = textureSampleLevel(readTexture, u_sampler, clamp(((tileId + vec2<f32>(0.5, -0.5)) * fs) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let nD = textureSampleLevel(readTexture, u_sampler, clamp(((tileId + vec2<f32>(0.5, 1.5)) * fs) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let mortar = (nL + nR + nU + nD) * 0.25 * (0.55 + mids * 0.15);
+    color = mix(mortar, color, bevel) + lipLight + vec3<f32>(0.04) * groutRunner * groutConveyor;
 
     let voroFlicker = pow(max(0.0, sin(time * (8.0 + treble * 5.0))), 10.0);
     let voro     = voronoi(tileCoord * 0.5);
@@ -122,9 +152,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = mix(color, prev, decay);
 
     let luma  = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luma * 0.5 + 0.5 + depth * 0.15, 0.0, 1.0);
+    let srcA = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).a;
+    let alpha = clamp(luma * 0.5 + 0.5 + depth * 0.15 + srcA * 0.1, 0.0, 1.0);
+    let mapped = acesToneMap(color);
+    let outCol = vec4<f32>(mapped, alpha);
 
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(color, alpha));
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(color, alpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), outCol);
+    textureStore(writeTexture, vec2<i32>(gid.xy), outCol);
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

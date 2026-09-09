@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sim: Smoke Trails
 //  Category: simulation
-//  Features: simulation, volumetric-smoke, vorticity, buoyancy
+//  Features: simulation, volumetric-smoke, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-03-22
-//  By: Agent 3B - Advanced Hybrid Creator
-// ═══════════════════════════════════════════════════════════════════
-//  Volumetric smoke with vorticity confinement
-//  Simplified fluid sim - smoke seeded at bottom/mouse, buoyancy drives up
+//  Upgraded: 2026-09-09
+//  Ideas: vorticity confinement; altitude cooling
+//  A packing: density, temp, vel.xy (raw). Display ACES RGB.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -48,7 +46,6 @@ fn noise(p: vec2<f32>) -> f32 {
     );
 }
 
-// Curl noise for vorticity
 fn curlNoise(p: vec2<f32>) -> vec2<f32> {
     let eps = 0.01;
     let n1 = noise(p + vec2<f32>(eps, 0.0));
@@ -58,57 +55,82 @@ fn curlNoise(p: vec2<f32>) -> vec2<f32> {
     return vec2<f32>((n4 - n3) / (2.0 * eps), (n1 - n2) / (2.0 * eps));
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
-    
-    let uv = vec2<f32>(gid.xy) / resolution;
-    let pixel = 1.0 / resolution;
+    let pixel = vec2<i32>(gid.xy);
+    if (pixel.x >= i32(resolution.x) || pixel.y >= i32(resolution.y)) { return; }
+
+    let uv = (vec2<f32>(pixel) + 0.5) / resolution;
+    let dims = vec2<i32>(resolution);
     let time = u.config.x;
-    
-    // Parameters
-    let densityScale = mix(0.5, 2.0, u.zoom_params.x);   // x: Smoke density
-    let turbulence = mix(0.0, 2.0, u.zoom_params.y);     // y: Turbulence strength
-    let riseSpeed = mix(0.5, 3.0, u.zoom_params.z);      // z: Rise speed
-    let dissipation = mix(0.95, 0.995, u.zoom_params.w); // w: Dissipation rate
-    
-    // Read previous smoke state
-    let prevSmoke = textureLoad(dataTextureC, gid.xy, 0);
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+
+    let densityScale = mix(0.5, 2.0, u.zoom_params.x) * (1.0 + bass * 0.3);
+    let turbulence = mix(0.0, 2.0, u.zoom_params.y);
+    let riseSpeed = mix(0.5, 3.0, u.zoom_params.z);
+    let dissipation = mix(0.95, 0.995, u.zoom_params.w);
+
+    let prevSmoke = stateAt(pixel, dims);
     var smokeDensity = prevSmoke.r;
     var smokeTemp = prevSmoke.g;
     var velX = prevSmoke.b;
     var velY = prevSmoke.a;
-    
-    // Buoyancy force (hot smoke rises)
+
     let buoyancy = smokeTemp * riseSpeed * 0.01;
     velY += buoyancy;
-    
-    // Add turbulence
+
     let curl = curlNoise(uv * 3.0 + time * 0.1);
     velX += curl.x * turbulence * 0.01;
     velY += curl.y * turbulence * 0.005;
-    
-    // Advect smoke
-    let prevUV = uv - vec2<f32>(velX, velY) * pixel * 3.0;
-    let advectedSmoke = textureSampleLevel(dataTextureC, u_sampler, clamp(prevUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+
+    // Idea 1 — vorticity confinement: keep billow spin
+    let left = stateAt(pixel + vec2<i32>(-1, 0), dims);
+    let right = stateAt(pixel + vec2<i32>(1, 0), dims);
+    let up = stateAt(pixel + vec2<i32>(0, -1), dims);
+    let down = stateAt(pixel + vec2<i32>(0, 1), dims);
+    let vort = (right.a - left.a) - (down.b - up.b);
+    let vortL = abs((right.a - stateAt(pixel + vec2<i32>(-2, 0), dims).a) - (down.b - up.b));
+    let vortR = abs((stateAt(pixel + vec2<i32>(2, 0), dims).a - left.a) - (down.b - up.b));
+    let vortU = abs((right.a - left.a) - (down.b - stateAt(pixel + vec2<i32>(0, -2), dims).b));
+    let vortD = abs((right.a - left.a) - (stateAt(pixel + vec2<i32>(0, 2), dims).b - up.b));
+    var nGrad = vec2<f32>(vortR - vortL, vortD - vortU);
+    let nLen = max(length(nGrad), 0.0001);
+    nGrad = nGrad / nLen;
+    // 2D N × omega (out of plane) → in-plane force
+    velX += nGrad.y * vort * 0.015 * turbulence;
+    velY += -nGrad.x * vort * 0.015 * turbulence;
+
+    let advPx = pixel - vec2<i32>(vec2<f32>(velX, velY) * 3.0);
+    let advectedSmoke = stateAt(advPx, dims);
     smokeDensity = advectedSmoke.r * dissipation;
     smokeTemp = advectedSmoke.g * dissipation;
-    
-    // Seed smoke at bottom
+
+    // Idea 2 — altitude cooling (fire tint dies as smoke rises)
+    smokeTemp *= mix(1.0, 0.90, clamp(uv.y, 0.0, 1.0));
+
     let bottomSource = smoothstep(0.05, 0.0, uv.y) * hash12(vec2<f32>(uv.x * 10.0, time * 0.5)) * densityScale;
     smokeDensity += bottomSource * 0.05;
     smokeTemp += bottomSource * 0.1;
-    
-    // Mouse smoke source
-    let mousePos = u.zoom_config.yz;
+
+    let mousePos = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
     let mouseDist = length(uv - mousePos);
-    let mouseSource = smoothstep(0.08, 0.0, mouseDist) * 0.2;
+    let mouseSource = smoothstep(0.08, 0.0, mouseDist) * 0.2 * (1.0 + u.zoom_config.w * 0.8);
     smokeDensity += mouseSource;
     smokeTemp += mouseSource * 1.5;
-    
-    // Ripple smoke sources
-    for (var i = 0; i < 50; i++) {
+
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         if (ripple.z > 0.0) {
             let rippleAge = time - ripple.z;
@@ -120,31 +142,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             }
         }
     }
-    
+
     smokeDensity = clamp(smokeDensity, 0.0, 1.0);
     smokeTemp = clamp(smokeTemp, 0.0, 1.0);
-    
-    // Store state
-    textureStore(dataTextureA, gid.xy, vec4<f32>(smokeDensity, smokeTemp, velX * 0.99, velY * 0.99));
-    
-    // Render smoke
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    
-    // Smoke color - gray with fire tint at high temperature
+    textureStore(dataTextureA, pixel, vec4<f32>(smokeDensity, smokeTemp, velX * 0.99, velY * 0.99));
+
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let smokeGray = vec3<f32>(0.7, 0.7, 0.75);
     let fireColor = vec3<f32>(1.0, 0.4, 0.1);
     let smokeColor = mix(smokeGray, fireColor, smokeTemp * 0.7);
-    
-    // Volumetric-style blending
-    let alpha = 1.0 - exp(-smokeDensity * 3.0);
-    var color = mix(baseColor, smokeColor, alpha * 0.8);
-    
-    // Add glow at hot spots
-    let glow = smokeTemp * smokeDensity * 0.3;
-    color += vec3<f32>(glow * 1.2, glow * 0.5, glow * 0.2);
-    
+    let alphaVol = 1.0 - exp(-smokeDensity * 3.0);
+    var hdr = mix(baseColor.rgb, smokeColor, alphaVol * 0.8);
+    let glow = smokeTemp * smokeDensity * 0.3 * (1.0 + treble * 0.4);
+    hdr += vec3<f32>(glow * 1.2, glow * 0.5, glow * 0.2);
+    let mapped = aces(hdr);
+    let alpha = clamp(baseColor.a * 0.4 + alphaVol * 0.6, 0.0, 1.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
-    textureStore(writeTexture, gid.xy, vec4<f32>(color, mix(0.85, 1.0, alpha)));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - smokeDensity * 0.3), 0.0, 0.0, 0.0));
+
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth * (1.0 - smokeDensity * 0.3), 0.0, 0.0, 0.0));
 }

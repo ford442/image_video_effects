@@ -563,7 +563,9 @@
       "image-distortion",
       "alpha-passthrough",
       "depth-aware",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "tags": [
       "hybrid",
@@ -631,7 +633,41 @@
       "palette (gen-xeno-botanical-synth-flora.wgsl)"
     ],
     "created_by": "Agent 4c - Advanced Hybrid Effect Creator",
-    "updated": true
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Temporal Shift",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "FBM Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Warp Amount",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "hybrid-chromatic-liquid",

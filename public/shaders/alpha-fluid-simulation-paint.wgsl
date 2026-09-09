@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Fluid Simulation Paint
 //  Category: simulation
-//  Features: mouse-as-brush, audio-viscosity, depth-paint-thickness, pressure-dynamics, temporal
+//  Features: mouse-as-brush, audio-viscosity, depth-paint-thickness, pressure-dynamics, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-09
+//  Ideas: dye-front surface tension; impasto lighting from density gradient
+//  A packing: raw vel.xy, pressure, dye density
 //  RGBA Channels:
 //    R = velocity.x (signed f32, left/right flow)
 //    G = velocity.y (signed f32, up/down flow)
@@ -162,6 +165,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     density *= decayRate;
     density = clamp(density, 0.0, 5.0);
 
+    // Idea 1 — dye-front surface tension: velocity pulls toward high density
+    let densGrad = vec2<f32>(right.a - left.a, up.a - down.a);
+    vel += densGrad * 0.012 * smoothstep(0.08, 0.7, density);
+    vel = clamp(vel, vec2<f32>(-maxVel), vec2<f32>(maxVel));
+
     // === STORE SIMULATION STATE ===
     textureStore(dataTextureA, coord, vec4<f32>(vel, pressure, density));
 
@@ -172,6 +180,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let val = density * u.zoom_params.y * (1.5 + bass * 0.5) + 0.15;
     var displayColor = hsv2rgb(vec3<f32>(fract(hue + mids * 0.08), sat, val));
     displayColor += vec3<f32>(0.25, 0.65, 1.0) * abs(curl) * treble * 0.25;
+    // Idea 2 — impasto lighting from density gradient (paint height)
+    let heightN = normalize(vec3<f32>(-densGrad.x, -densGrad.y, 0.35));
+    let spec = pow(max(0.0, heightN.z), 10.0) * smoothstep(0.4, 1.6, density);
+    displayColor += vec3<f32>(1.0, 0.97, 0.9) * spec * 0.22;
     displayColor = acesToneMap(displayColor);
 
     let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;

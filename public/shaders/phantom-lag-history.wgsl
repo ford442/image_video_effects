@@ -1,16 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  phantom-lag-history
+//  Phantom Lag History
 //  Category: advanced-hybrid
-//  Features: temporal-echo, luminance-history, rgba-state-machine, mouse-driven
-//  Complexity: Very High
-//  Chunks From: phantom-lag, alpha-luminance-history
-//  Created: 2026-04-18
-//  By: Agent CB-15 — Visual Effects & Distortion Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Phantom lag temporal echoes combined with rolling luminance history.
-//  Each echo trail carries its own luminance memory, creating persistent
-//  light-painted echoes that fade with physically-inspired decay. The alpha
-//  channel stores the accumulated luminance history for downstream effects.
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-09
+//  Ideas: age-tint; luma-weighted persist
+//  A packing: display RGB + luminance history in A (A.a)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -34,6 +29,11 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -42,6 +42,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / resolution;
   let coord = vec2<i32>(global_id.xy);
   let time = u.config.x;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let maxC = vec2<i32>(resolution) - vec2<i32>(1);
 
   let decayEcho = 0.9 + u.zoom_params.x * 0.09;
   let echoX = (u.zoom_params.y - 0.5) * 0.05;
@@ -56,31 +60,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let currentLuma = dot(current.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-  // ═══ PHANTOM LAG: temporal echo with offset ═══
-  let historyUV = uv - vec2<f32>(echoX, echoY);
-  let history = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0);
-
-  var newHistory = mix(current, history, decayEcho);
-
-  // Hue shift on history
-  if (hueShift > 0.01) {
-    let old = newHistory;
-    newHistory.r = mix(old.r, old.g, hueShift * 0.1);
-    newHistory.g = mix(old.g, old.b, hueShift * 0.1);
-    newHistory.b = mix(old.b, old.r, hueShift * 0.1);
-  }
-
-  // ═══ LUMINANCE HISTORY: rolling average ═══
+  let historyUV = clamp(uv - vec2<f32>(echoX, echoY), vec2<f32>(0.0), vec2<f32>(1.0));
+  let historyCoord = clamp(vec2<i32>(historyUV * resolution), vec2<i32>(0), maxC);
+  let history = textureLoad(dataTextureC, historyCoord, 0);
   let prevState = textureLoad(dataTextureC, coord, 0);
   let prevAvgLuma = prevState.a;
-  let newAvgLuma = mix(prevAvgLuma, currentLuma, decayHistory);
 
-  // Glow where it WAS bright
+  // Idea 2 — luma-weighted persist (brights hang).
+  let persist = mix(decayEcho, min(decayEcho + 0.06, 0.985), smoothstep(0.2, 0.85, prevAvgLuma));
+  var newHistory = mix(current, history, persist);
+
+  let old = newHistory;
+  newHistory.r = mix(old.r, old.g, hueShift * 0.1);
+  newHistory.g = mix(old.g, old.b, hueShift * 0.1);
+  newHistory.b = mix(old.b, old.r, hueShift * 0.1);
+
+  let newAvgLuma = mix(prevAvgLuma, currentLuma, decayHistory);
   let glowAmount = max(0.0, newAvgLuma - currentLuma);
   let glowColor = vec3<f32>(1.0, 0.85, 0.6) * glowAmount * glowIntensity;
 
-  // History tint
   var displayColor = newHistory.rgb + glowColor;
+  // Idea 1 — age-tint: older luma goes cooler.
+  let age = clamp(newAvgLuma - currentLuma, 0.0, 1.0);
+  let cool = vec3<f32>(0.75, 0.88, 1.12);
+  displayColor *= mix(vec3<f32>(1.0), cool, age * 0.45 * (0.6 + treble * 0.3));
   let historyTint = vec3<f32>(
     1.0 + colorShift * 0.3,
     1.0 - colorShift * 0.1,
@@ -88,48 +91,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
   displayColor *= mix(vec3<f32>(1.0), historyTint, smoothstep(0.0, 0.5, newAvgLuma));
 
-  // ═══ MOUSE TRAIL ═══
   let mousePos = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
   let mouseDist = length(uv - mousePos);
   let mouseInfluence = smoothstep(0.15, 0.0, mouseDist) * mouseDown;
   let boostedAvg = mix(newAvgLuma, 1.0, mouseInfluence * 0.5);
 
-  // ═══ RIPPLE FLASH ═══
   let rippleCount = min(u32(u.config.y), 50u);
   var rippleBoost = 0.0;
   for (var i = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
     let rDist = length(uv - ripple.xy);
-    let age = time - ripple.z;
-    if (age < 2.0 && rDist < 0.1) {
-      rippleBoost += smoothstep(0.1, 0.0, rDist) * max(0.0, 1.0 - age * 0.5);
-    }
+    let ageR = time - ripple.z;
+    let live = f32(ageR < 2.0 && rDist < 0.1);
+    rippleBoost += smoothstep(0.1, 0.0, rDist) * max(0.0, 1.0 - ageR * 0.5) * live;
   }
   let finalAvgLuma = mix(boostedAvg, 1.0, rippleBoost * 0.3);
 
-  // ═══ SPATIAL DIFFUSION ═══
-  let ps = 1.0 / resolution;
-  let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let ps = vec2<i32>(1, 0);
+  let left = textureLoad(dataTextureC, clamp(coord - ps, vec2<i32>(0), maxC), 0);
+  let right = textureLoad(dataTextureC, clamp(coord + ps, vec2<i32>(0), maxC), 0);
+  let down = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), vec2<i32>(0), maxC), 0);
+  let up = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), maxC), 0);
   let diffusedAvg = (left.a + right.a + down.a + up.a) * 0.125 + finalAvgLuma * 0.5;
+  let _diff = diffusion;
 
-  // Alpha based on history accumulation
   let luma = dot(displayColor, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = mix(0.75, 1.0, luma * decayEcho);
+  let alpha = mix(0.75, 1.0, luma * persist);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthAlpha = mix(0.6, 1.0, depth);
-  let finalAlpha = (alpha + depthAlpha) * 0.5;
+  let finalAlpha = clamp((alpha + depthAlpha) * 0.5 + bass * 0.05, 0.0, 1.0);
 
   displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(2.0));
   displayColor = displayColor / (1.0 + displayColor * 0.3);
-  displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+  let mapped = aces(max(displayColor, vec3<f32>(0.0)));
 
-  // Store state: RGB = color, A = diffused luminance history
-  textureStore(dataTextureA, coord, vec4<f32>(displayColor, diffusedAvg));
-  textureStore(writeTexture, coord, vec4<f32>(displayColor, finalAlpha));
-
+  textureStore(dataTextureA, coord, vec4<f32>(mapped, diffusedAvg));
+  textureStore(writeTexture, coord, vec4<f32>(mapped, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

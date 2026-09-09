@@ -1,4 +1,12 @@
-// Rain-lens distortion with falling streak packets and click-launched wipe fronts.
+// ═══════════════════════════════════════════════════════════════════
+//  Rain Lens Wipe
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: meniscus ridge at the wipe/wet boundary; bead runoff
+//  A packing: wipe mask in A.r (raw). Display ACES RGB.
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,6 +33,11 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
@@ -100,10 +113,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sampleUV = clamp(uv + finalDistortion, vec2<f32>(0.0), vec2<f32>(1.0));
     let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
     let wetness = clamp(length(finalDistortion) * 18.0 + streakPacket * 0.18, 0.0, 1.0) * (1.0 - newState);
-    let finalColor = vec4<f32>(clamp(color.rgb + vec3<f32>(0.08, 0.11, 0.14) * wetness * (1.0 + audio.z), vec3<f32>(0.0), vec3<f32>(1.0)), clamp(color.a, 0.0, 1.0));
+
+    let py = 1.5 / max(resolution.y, 1.0);
+    let wipeN = historyLoadUV(uv + vec2<f32>(0.0, -py)).r;
+    let wipeS = historyLoadUV(uv + vec2<f32>(0.0, py)).r;
+    // Idea 1 — meniscus ridge at the wipe / wet contact
+    let meniscus = abs(newState - wipeS) * smoothstep(0.12, 0.55, newState);
+    // Idea 2 — beads hang just below a wiped patch
+    let beadCell = floor(uv * vec2<f32>(rainScale * 1.4, rainScale * 2.2));
+    let beadRand = hash22(beadCell).x;
+    let bead = (1.0 - newState) * smoothstep(0.45, 0.85, wipeN) * step(0.72, beadRand) * 0.55;
+
+    var hdr = color.rgb + vec3<f32>(0.08, 0.11, 0.14) * wetness * (1.0 + audio.z);
+    hdr += vec3<f32>(0.85, 0.92, 1.0) * meniscus * 0.55;
+    hdr += vec3<f32>(0.55, 0.72, 0.88) * bead;
+    let mapped = aces(hdr);
+    let alpha = clamp(color.a * 0.4 + wetness * 0.35 + meniscus * 0.3 + bead * 0.25, 0.0, 1.0);
+    let finalColor = vec4<f32>(mapped, alpha);
 
     textureStore(writeTexture, coord, finalColor);
-    textureStore(dataTextureA, coord, vec4<f32>(newState, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(newState, meniscus, bead, 1.0));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
