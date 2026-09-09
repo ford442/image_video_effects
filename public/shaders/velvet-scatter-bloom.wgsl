@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Velvet Scatter Bloom
 //  Category: image
-//  Features: velvet, subsurface-scatter, bloom, audio-breathing, mouse-light, semantic-alpha, atmospheric
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium-High
-//  Chunks From: _hash_library.wgsl (hash21, valueNoise), crystalline-fracture (edge feel)
-//  Created: 2026-06-01
-//  By: Grok (new image/video effect — rich velvet scattering with living audio glow and moving light)
+//  Upgraded: 2026-09-08
+//  Ideas: anisotropic nap sheen; held-pointer nap crush
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -74,6 +74,15 @@ fn velvetScatter(col: vec3<f32>, uv: vec2<f32>, radius: f32, depth: f32) -> vec3
     return scatter / f32((samples * 2 / 2 + 1) * (samples * 2 / 2 + 1));
 }
 
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
@@ -111,12 +120,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Velvet scatter — stronger in darker, less detailed regions (classic velvet look)
     let darkMask = smoothstep(0.65, 0.15, luma);
-    let scatterRadius = scatterAmt * (0.8 + darkMask * 1.4) * (1.0 + mids * 0.3);
+    let held = step(0.5, u.zoom_config.w);
+    let crush = held * smoothstep(0.22, 0.0, mouseDist);
+    let scatterRadius = scatterAmt * (0.8 + darkMask * 1.4) * (1.0 + mids * 0.3) * (1.0 - crush * 0.7);
     let scattered = velvetScatter(input.rgb, uv, scatterRadius, depth);
 
     // Subsurface color shift (warmth in shadows, cool on edges)
     let subColor = mix(vec3<f32>(0.85, 0.6, 0.45), vec3<f32>(0.4, 0.65, 0.95), 0.5 + 0.5 * sin(lightAngle + uv.y * 3.0));
     var velvet = mix(input.rgb, scattered, darkMask * subsurface * 0.85);
+    velvet = mix(velvet, input.rgb, crush * 0.45);
+    let napDir = vec2<f32>(-sin(lightAngle), cos(lightAngle));
+    let napSheen = pow(max(dot(mouseDir, napDir), 0.0), 6.0) * (1.0 - darkMask * 0.3) * (1.0 - crush);
+    velvet += vec3<f32>(0.95, 0.90, 0.85) * napSheen * 0.22;
 
     // Add living subsurface glow
     let subGlow = fbm(uv * 7.0 + time * 0.04, 3) * darkMask * subsurface * 0.6;
@@ -149,14 +164,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let grain = (hash21(uv * 920.0 + time * 19.0) - 0.5) * 0.018 * (0.3 + treble * 0.6);
     col += grain;
 
-    col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    col = acesTonemap(clamp(col, vec3<f32>(0.0), vec3<f32>(4.0)));
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(col, semantic_alpha));
+    let display = vec4<f32>(col, semantic_alpha);
+    textureStore(writeTexture, global_id.xy, display);
 
     // Depth encodes glow energy for downstream effects
     let glowDepth = clamp(0.15 + glowEnergy * 0.55 + (1.0 - depth) * 0.1, 0.0, 0.98);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(glowDepth, 0.0, 0.0, 0.0));
-
-    // Write light state for potential future temporal velvet (dataTextureA)
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(scattered.r, subGlow, mouseLight, semantic_alpha));
+    textureStore(dataTextureA, global_id.xy, display);
 }

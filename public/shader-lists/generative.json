@@ -12027,7 +12027,8 @@
       "fft-reactive-halo",
       "mouse-driven",
       "click-reactive",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact dragon-curve persistence history"
   },
@@ -16923,7 +16924,12 @@
     "updated": true,
     "id": "gen-fourier-epicycles",
     "url": "shaders/gen-fourier-epicycles.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba",
+      "mouse-driven",
+      "temporal"
+    ]
   },
   {
     "name": "Fractal Bioluminescence Spore-Network",
@@ -20350,6 +20356,57 @@
     "id": "gen-hyperbolic-tree",
     "url": "shaders/gen-hyperbolic-tree.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-hyperdimensional-plasma-loom",
+    "name": "Hyperdimensional Plasma Loom",
+    "category": "generative",
+    "url": "/shaders/gen-hyperdimensional-plasma-loom.wgsl",
+    "tags": [
+      "cosmic",
+      "quantum",
+      "abstract",
+      "geometric",
+      "strands"
+    ],
+    "params": [
+      {
+        "id": "weave_density",
+        "name": "Weave Density",
+        "mapping": "zoom_params.x",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "thread_thickness",
+        "name": "Thread Thickness",
+        "mapping": "zoom_params.y",
+        "default": 0.05,
+        "min": 0.01,
+        "max": 0.2,
+        "step": 0.01
+      },
+      {
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
+        "mapping": "zoom_params.z",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "time_speed",
+        "name": "Time Speed",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
   },
   {
     "name": "Hypnotic Vortex Tunnel",
@@ -33966,7 +34023,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",

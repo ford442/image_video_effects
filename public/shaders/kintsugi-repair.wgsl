@@ -1,12 +1,12 @@
-// ================================================================
+// ═══════════════════════════════════════════════════════════════════
 //  Kintsugi Repair
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Chunks From: kintsugi-repair
-//  Created: 2026-05-30
-//  By: Copilot
-// ================================================================
+//  Upgraded: 2026-09-08
+//  Ideas: F2 second-edge T-junction cracks; raised gold meniscus
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -35,12 +35,22 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
   return fract((p3.xx + p3.yz) * p3.zy);
 }
 
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
   let p = uv * scale;
   let i_st = floor(p);
   let f_st = fract(p);
 
   var minDist = 8.0;
+  var secondDist = 8.0;
   var idPoint = vec2<f32>(0.0);
   var cellCenter = vec2<f32>(0.0);
 
@@ -52,9 +62,12 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
       let diff = neighbor + point + anim - f_st;
       let dist = length(diff);
       if (dist < minDist) {
+        secondDist = minDist;
         minDist = dist;
         idPoint = point;
         cellCenter = diff;
+      } else if (dist < secondDist) {
+        secondDist = dist;
       }
     }
   }
@@ -74,7 +87,8 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     }
   }
 
-  return vec4<f32>(minDist, idPoint.x, idPoint.y, minEdgeDist);
+  let f2Ridge = secondDist - minDist;
+  return vec4<f32>(f2Ridge, idPoint.x, idPoint.y, minEdgeDist);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -102,6 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let vor = voronoi(uvCorr, scale);
   let edgeDist = vor.w;
   let id = vor.yz;
+  let f2Ridge = vor.x;
 
   var clickFront = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
@@ -116,7 +131,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let repairRunner = pow(max(0.0, sin(edgeDist * 92.0 + stablePhase - time * (10.0 + audio.y * 7.0))), 14.0);
   let goldRunner = pow(max(0.0, sin((uvCorr.x + uvCorr.y * 0.45) * 48.0 - time * (16.0 + audio.z * 8.0))), 18.0);
 
-  let crack = 1.0 - smoothstep(0.0, crackWidth * (1.0 + audio.z * 0.4 + clickFront * 0.5), edgeDist);
+  let primaryCrack = 1.0 - smoothstep(0.0, crackWidth * (1.0 + audio.z * 0.4 + clickFront * 0.5), edgeDist);
+  let tJunction = 1.0 - smoothstep(0.0, crackWidth * 0.55, f2Ridge);
+  let crack = max(primaryCrack, tJunction * 0.72);
   let halo = 1.0 - smoothstep(0.0, crackWidth * 4.0 + 0.01 + clickFront * 0.012, edgeDist);
   let shift = (id - 0.5) * displacement * (0.70 + 0.60 * interaction + audio.x * 0.35 + clickFront * 0.35);
   let uvDisplaced = clamp(uv + shift, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -132,13 +149,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor = mix(finalColor, lacquer, crack);
   finalColor = finalColor + halo * (0.10 + 0.22 * audio.x + 0.12 * audio.z + 0.12 * interaction) * goldBase;
   finalColor += goldBase * (repairRunner * (0.06 + audio.y * 0.18) + goldRunner * crack * (0.04 + sparkleAmount * 0.15) + clickFront * 0.12);
-  finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  let finalAlpha = clamp(0.88 + crack * 0.10 - displacement * halo * 0.40 + interaction * 0.04, 0.72, 1.0);
+  let meniscus = crack * (1.0 - crack) * 4.0;
+  let meniscusN = normalize(vec3<f32>(0.15, 0.55, 0.8 + meniscus));
+  let goldSpec = pow(max(dot(meniscusN, vec3<f32>(0.25, 0.65, 0.72)), 0.0), 28.0);
+  finalColor += goldBase * meniscus * 0.28 + vec3<f32>(1.0, 0.94, 0.72) * goldSpec * meniscus * 0.55;
+
+  finalColor = acesTonemap(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(4.0)));
+
+  let finalAlpha = clamp(0.88 + crack * 0.10 - displacement * halo * 0.40 + interaction * 0.04 + meniscus * 0.06, 0.72, 1.0);
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let depthOut = clamp(mix(baseDepth, 0.30 + 0.70 * halo, crack * 0.35), 0.0, 1.0);
+  let depthOut = clamp(mix(baseDepth, 0.30 + 0.70 * halo, crack * 0.35 + meniscus * 0.12), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+  let display = vec4<f32>(finalColor, finalAlpha);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), display);
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(crack, halo, sparkle, finalAlpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
 }

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Pin Art 3D
 //  Category: image
-//  Features: 3D-pin-art, specular-lighting, audio-reactive, mouse-interactive, depth-aware
+//  Features: 3D-pin-art, specular-lighting, audio-reactive, mouse-interactive, depth-aware, upgraded-rgba
 //  Complexity: Medium-High
-//  Created: 2026-04-18
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-08
+//  Ideas: neighbor-pin occlusion; pin shaft under the cap
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -89,6 +90,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vibration = bass * 0.08 * sin(u.config.x * 20.0 + f32(cell_id.x) * 3.7 + f32(cell_id.y) * 2.3);
     let height = clamp(luma - push + vibration, 0.0, 1.0);
 
+    let westUv = clamp(sample_uv - vec2<f32>(1.0 / max(density * aspect, 0.001), 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let northUv = clamp(sample_uv + vec2<f32>(0.0, 1.0 / max(density, 0.001)), vec2<f32>(0.0), vec2<f32>(1.0));
+    let hWest = luminance(textureSampleLevel(readTexture, u_sampler, westUv, 0.0).rgb);
+    let hNorth = luminance(textureSampleLevel(readTexture, u_sampler, northUv, 0.0).rgb);
+    let occWest = max(hWest - height, 0.0) * step(cell_local.x, 0.0);
+    let occNorth = max(hNorth - height, 0.0) * step(0.0, cell_local.y);
+    let neighborOcc = clamp(occWest + occNorth, 0.0, 1.0);
+
     let dist_from_center = length(cell_local);
     let pin_radius = 0.5 * pin_radius_factor;
     let aa = 0.02 * density;
@@ -146,6 +155,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ca_pin.b = shaded_pin_b;
 
     final_color = mix(final_color, ca_pin, pin_mask);
+    final_color *= 1.0 - neighborOcc * 0.38;
+
+    let shaftR = pin_radius * 0.38;
+    let shaftMask = (1.0 - smoothstep(shaftR - aa, shaftR + aa, abs(cell_local.x)))
+      * smoothstep(-0.48, -pin_radius * 0.15, cell_local.y)
+      * (1.0 - pin_mask)
+      * smoothstep(0.22, 0.58, height);
+    final_color = mix(final_color, color.rgb * vec3<f32>(0.32, 0.33, 0.36), shaftMask);
 
     // Temporal feedback: pin displacement persistence
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
@@ -158,8 +175,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     final_color *= depthFactor;
 
     // Semantic alpha: pin coverage × specular intensity × depth
-    let alpha = clamp(pin_mask * (1.0 + spec) * depthFactor, 0.0, 1.0);
+    let alpha = clamp(max(pin_mask, shaftMask) * (1.0 + spec) * depthFactor, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
+    let display = vec4<f32>(final_color, alpha);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), display);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
 }

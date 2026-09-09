@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
-//  Fabric of Reality - Mass-Spring Cloth Simulation with Textile Alpha
+//  Fabric of Reality
 //  Category: artistic
-//  Features: Woven textile, thread density, strain-based translucency
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-08
+//  Ideas: warp/weft weave from strain axes; exact integer C load
+//  A packing: raw sim (pos.xy, prevPos.xy)
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -92,19 +96,25 @@ fn calculateFabricAlpha(strain: f32, isTorn: bool, threadDensity: f32) -> f32 {
     var alpha = FABRIC_BASE_ALPHA;
     
     if (isTorn) {
-        // Torn fabric is very transparent
         alpha = TORN_ALPHA;
     } else if (strain > 0.5) {
-        // High strain = stretched = more see-through
         let stretchFactor = smoothstep(0.5, 1.0, strain);
         alpha = mix(FABRIC_BASE_ALPHA, STRAINED_ALPHA, stretchFactor);
     }
     
-    // Thread density affects opacity (Beer-Lambert)
     let densityAlpha = exp(-threadDensity * 0.3);
     alpha = mix(alpha, alpha * 0.85, densityAlpha * 0.3);
     
     return clamp(alpha, 0.2, 0.88);
+}
+
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -124,7 +134,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let damping = mix(0.95, 0.999, u.zoom_params.w);
   
   // Read previous state from dataTextureC
-  let prevState = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let prevState = textureLoad(dataTextureC, vec2<i32>(coord), 0);
   
   var pos = prevState.xy;
   var prevPos = prevState.zw;
@@ -177,20 +187,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let restLen = texelSize.x * REST_LENGTH;
   
-  let leftUV = uv + vec2<f32>(-texelSize.x, 0.0);
-  let rightUV = uv + vec2<f32>(texelSize.x, 0.0);
-  let upUV = uv + vec2<f32>(0.0, -texelSize.y);
-  let downUV = uv + vec2<f32>(0.0, texelSize.y);
-  
-  let leftState = textureSampleLevel(dataTextureC, non_filtering_sampler, leftUV, 0.0);
-  let rightState = textureSampleLevel(dataTextureC, non_filtering_sampler, rightUV, 0.0);
-  let upState = textureSampleLevel(dataTextureC, non_filtering_sampler, upUV, 0.0);
-  let downState = textureSampleLevel(dataTextureC, non_filtering_sampler, downUV, 0.0);
+  let leftCoord = vec2<i32>(max(i32(coord.x) - 1, 0), i32(coord.y));
+  let rightCoord = vec2<i32>(min(i32(coord.x) + 1, i32(size.x) - 1), i32(coord.y));
+  let upCoord = vec2<i32>(i32(coord.x), max(i32(coord.y) - 1, 0));
+  let downCoord = vec2<i32>(i32(coord.x), min(i32(coord.y) + 1, i32(size.y) - 1));
+
+  let leftState = textureLoad(dataTextureC, leftCoord, 0);
+  let rightState = textureLoad(dataTextureC, rightCoord, 0);
+  let upState = textureLoad(dataTextureC, upCoord, 0);
+  let downState = textureLoad(dataTextureC, downCoord, 0);
   
   var leftPos = leftState.xy;
   var rightPos = rightState.xy;
   var upPos = upState.xy;
   var downPos = downState.xy;
+  let leftUV = (vec2<f32>(leftCoord) + 0.5) / vec2<f32>(f32(size.x), f32(size.y));
+  let rightUV = (vec2<f32>(rightCoord) + 0.5) / vec2<f32>(f32(size.x), f32(size.y));
+  let upUV = (vec2<f32>(upCoord) + 0.5) / vec2<f32>(f32(size.x), f32(size.y));
+  let downUV = (vec2<f32>(downCoord) + 0.5) / vec2<f32>(f32(size.x), f32(size.y));
   
   if (length(leftPos) < 0.001) { leftPos = leftUV; }
   if (length(rightPos) < 0.001) { rightPos = rightUV; }
@@ -274,15 +288,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Apply fabric SSS
   let fabricColor = fabricSSS(totalStrain, sourceColor.rgb);
-  
-  // Strain color visualization
+  let warpDir = normalize(rightPos - leftPos + vec2<f32>(0.0001, 0.0));
+  let weftDir = normalize(downPos - upPos + vec2<f32>(0.0, 0.0001));
+  let local = (uv - pos) * 80.0;
+  let warp = abs(sin(dot(local, warpDir) * THREAD_DENSITY * 8.0));
+  let weft = abs(sin(dot(local, weftDir) * THREAD_DENSITY * 8.0));
+  let weave = max(warp, weft * 0.85);
+  var woven = fabricColor * (0.82 + 0.18 * weave);
+  woven = mix(woven, woven * vec3<f32>(0.78, 0.76, 0.72), (1.0 - weave) * 0.35 * (1.0 - totalStrain));
+
   let strainColor = mix(
     vec3<f32>(0.2, 0.4, 0.8),
     vec3<f32>(1.0, 0.3, 0.1),
     totalStrain
   );
   
-  let finalColor = mix(fabricColor, strainColor, totalStrain * 0.3);
+  let finalColor = acesTonemap(mix(woven, strainColor, totalStrain * 0.3));
   
   // Calculate textile alpha
   let threadDensity = calculateFabricDensity(totalStrain, isTorn);

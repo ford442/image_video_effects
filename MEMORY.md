@@ -1,6 +1,26 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-08 (Distortion / warp ten)
+**Last updated:** 2026-09-08 (Tactile twelve)
+
+## 2026-09-08 — Tactile twelve (12 shaders)
+
+- IDs: `kintsugi-repair`, `plastic-bricks`, `wave-halftone`, `spec-histogram-equalize`, `pin-art-3d`, `triangle-mosaic`, `polka-wave`, `honey-melt`, `slime-drip`, `velvet-scatter-bloom`, `page-curl-interactive`, `fabric-step`.
+- Per shader, the ideas actually added:
+  - kintsugi-repair: F2 T-junction cracks; raised gold meniscus. A now display RGBA.
+  - plastic-bricks: hollow underside tubes; injection knit-line.
+  - wave-halftone: elliptical dots along wave gradient; 15° hex rosette. Wave Speed stays chromaticAmt.
+  - spec-histogram-equalize: highlight shoulder; exact-C temporal mix. CLAHE kept.
+  - pin-art-3d: neighbor-pin occlusion; pin shaft. Sphere-cap kept. A now written.
+  - triangle-mosaic: grout on edges; per-facet tilt from centroid.
+  - polka-wave: offset-print dot gain; screen rides the wave. CMYK angles kept.
+  - honey-melt: gravity sag; comb-wall capillary. A now written.
+  - slime-drip: anisotropic gravity stretch; exact-C drip hang. A stays drip fields.
+  - velvet-scatter-bloom: anisotropic nap sheen; held nap crush.
+  - page-curl-interactive: backside peek; paper fiber along curl. Existing shocks kept.
+  - fabric-step: warp/weft weave; exact C load. A stays Verlet pos/prev.
+- Floor: bindings / 16×16 / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0, catalog 1,361, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-08-tactile-twelve/`.
 
 ## 2026-09-08 — Distortion / warp ten (10 shaders)
 
