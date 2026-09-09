@@ -1,6 +1,14 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-09 (Weather / wind / condensation ten)
+**Last updated:** 2026-09-09 (Foundation audit → issues #1234–#1239)
+
+## 2026-09-09 — Foundation audit, not another shader swarm
+
+- Catalog **1,362**. Board was #1080 (WASM evidence), #1182 (VJ audio/OSC), #1228 (CSS split). Healthy thumbs ~26.6%. Jest still carries a WASM `bridge/api.js` fail story.
+- **Yes, foundation before more content.** Device ladder, requiredLimits, dual JS+C++ canvas configure, B→C then A→C, single GPUDevice are load-bearing. Do not rewrite them. CRA→Vite stays deferred. WASM stays Tier B until #1080.
+- Gaps that are real: (1) TS `.js` imports vs Jest for `src/wasm/`; (2) canvas configure has no COPY_SRC / colorSpace / toneMapping contract; (3) CI emsdk `version: latest` vs Noah’s emcc 6.0.3 pin; ASYNCIFY is −31% size vs a broken init; (4) stills still Canvas2D; recording is MediaRecorder + putImageData; (5) GraphRunner + gpu-chores are TS-only; (6) picker cannot find 1,362 shaders.
+- Issues filed: **#1234** Jest bridge, **#1235** canvas configure v2, **#1236** WebCodecs / copyExternalImageToTexture, **#1237** emcc pin + JSPI, **#1238** GraphRunner C++ gated on #1080, **#1239** thumbs 50% + CLIP search (reuse `@xenova/transformers`, no second ML stack).
+- If content resumes after A-motion on thumbs: leftover **small** families (lighting 15, geometric 16, hybrid 18), not another generative optical ten.
 
 ## 2026-09-09 — Weather / wind / condensation ten (10 shaders)
 
