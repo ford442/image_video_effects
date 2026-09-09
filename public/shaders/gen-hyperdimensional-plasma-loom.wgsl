@@ -2,7 +2,6 @@
 // Hyperdimensional Plasma Loom
 // Category: generative
 // ----------------------------------------------------------------
-
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -27,112 +26,143 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
-// ── Helpers ─────────────
-fn rot(a: f32) -> mat2x2<f32> {
-    let s = sin(a);
-    let c = cos(a);
+// Basic 3D rotation functions
+fn rotX(a: f32) -> mat3x3<f32> {
+    let s = sin(a); let c = cos(a);
+    return mat3x3<f32>(1.0, 0.0, 0.0, 0.0, c, -s, 0.0, s, c);
+}
+fn rotY(a: f32) -> mat3x3<f32> {
+    let s = sin(a); let c = cos(a);
+    return mat3x3<f32>(c, 0.0, s, 0.0, 1.0, 0.0, -s, 0.0, c);
+}
+fn rotZ(a: f32) -> mat3x3<f32> {
+    let s = sin(a); let c = cos(a);
+    return mat3x3<f32>(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0);
+}
+fn rot2D(a: f32) -> mat2x2<f32> {
+    let s = sin(a); let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// Polynomial smooth min
+// 4D Simplex-like noise based on IQ's implementation
+fn hash41(p: vec4<f32>) -> f32 {
+    var p4 = fract(p * vec4<f32>(0.1031, 0.1030, 0.0973, 0.1099));
+    p4 += dot(p4, p4.wzxy + 33.33);
+    return fract((p4.x + p4.y) * p4.z + p4.w);
+}
+
 fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-    return mix(b, a, h) - k * h * (1.0 - h);
+    let res = exp(-k * a) + exp(-k * b);
+    return -log(res) / k;
 }
 
-// 4D Simplex-like noise (simplified for speed)
-fn hash4(p: vec4<f32>) -> vec4<f32> {
-    var q = vec4<f32>(dot(p, vec4<f32>(127.1, 311.7, 74.7, 21.1)),
-                      dot(p, vec4<f32>(269.5, 183.3, 246.1, 124.5)),
-                      dot(p, vec4<f32>(113.5, 271.9, 124.6, 98.4)),
-                      dot(p, vec4<f32>(298.4, 211.1, 311.7, 85.3)));
-    return fract(sin(q) * 43758.5453);
+// Map function returning (distance, material_id)
+fn map(p_in: vec3<f32>, time: f32, mouse_pos: vec2<f32>, m_down: f32, bass: f32) -> vec2<f32> {
+    var p = p_in;
+
+    // Mouse Interaction: Gravity well
+    // Map mouse_uv [0, 1] to world-ish coords.
+    // Screen is roughly [-ratio, ratio] in x, [-1, 1] in y at z=0.
+    // Mouse UV y=0 is top.
+    let aspect = u.config.z / u.config.w;
+    var mx = (mouse_pos.x * 2.0 - 1.0) * aspect;
+    var my = -(mouse_pos.y * 2.0 - 1.0); // flip y
+
+    let m_world = vec3<f32>(mx, my, 0.0) * 3.0; // scale to match scene
+
+    let to_mouse = m_world - p;
+    let dist_to_mouse = length(to_mouse);
+
+    // Apply distortion if close and mouse is pressed or always slightly
+    let pull_str = mix(0.2, 1.5, m_down);
+    let pull = pull_str / (1.0 + dist_to_mouse * dist_to_mouse);
+
+    p = p + to_mouse * pull * 0.5;
+
+    // Twist domain
+    let t = time * u.zoom_params.w * 0.5;
+
+    // Apply some 3D rotation
+    p = rotY(t * 0.3) * p;
+    p = rotZ(t * 0.2) * p;
+
+    // Domain repetition for weaving
+    let density = u.zoom_params.x * (1.0 + bass * 0.5); // Bass increases density
+    let spacing = 2.0 / density;
+
+    var q = p;
+
+    // Twist
+    let tw = rot2D(q.z * 0.5 + t);
+    let qxy = tw * q.xy;
+    q.x = qxy.x;
+    q.y = qxy.y;
+
+    // Spatial repetition
+    var r = q;
+    r.x = (fract(q.x / spacing + 0.5) - 0.5) * spacing;
+    r.y = (fract(q.y / spacing + 0.5) - 0.5) * spacing;
+
+    // Strands (helices)
+    let thickness = u.zoom_params.y * (1.0 + bass * 1.5);
+
+    // Strand 1
+    var s1_p = r;
+    let r1 = rot2D(s1_p.z * 2.0 + t * 2.0);
+    let s1_xy = r1 * s1_p.xy;
+    s1_p.x = s1_xy.x; s1_p.y = s1_xy.y;
+    s1_p.x += spacing * 0.2;
+    let d1 = length(s1_p.xy) - thickness;
+
+    // Strand 2
+    var s2_p = r;
+    let r2 = rot2D(s2_p.z * 2.0 - t * 2.5 + PI);
+    let s2_xy = r2 * s2_p.xy;
+    s2_p.x = s2_xy.x; s2_p.y = s2_xy.y;
+    s2_p.x += spacing * 0.2;
+    let d2 = length(s2_p.xy) - thickness * 0.8;
+
+    // Strand 3 (perpendicular-ish cross weave)
+    var s3_p = q; // Use un-repeated space for cross weave? Or repeated?
+    s3_p.z = (fract(q.z / spacing + 0.5) - 0.5) * spacing;
+    let r3 = rot2D(s3_p.x * 2.0 + t);
+    let s3_yz = r3 * s3_p.yz;
+    s3_p.y = s3_yz.x; s3_p.z = s3_yz.y; // map 2d vec to yz
+    let d3 = length(s3_p.yz) - thickness * 0.5;
+
+    var d = smin(d1, d2, 8.0);
+    // Combine with cross weave if we want
+    d = smin(d, d3 + 0.5, 4.0); // push it out a bit
+
+    // Add noise bump
+    let n = sin(p.x * 4.0 + t) * sin(p.y * 4.0 + t) * sin(p.z * 4.0 + t);
+    d += n * 0.05;
+
+    var mat = 0.0;
+    if (d1 < d2) { mat = 1.0; }
+    if (d3 < d) { mat = 2.0; }
+
+    return vec2<f32>(d, mat);
 }
 
-fn noise4D(p: vec4<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (vec4<f32>(3.0) - 2.0 * f);
-
-    let n = i.x + i.y * 157.0 + i.z * 113.0 + i.w * 271.0;
-
-    let a = dot(hash4(i + vec4<f32>(0.0, 0.0, 0.0, 0.0)), f - vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let b = dot(hash4(i + vec4<f32>(1.0, 0.0, 0.0, 0.0)), f - vec4<f32>(1.0, 0.0, 0.0, 0.0));
-    let c = dot(hash4(i + vec4<f32>(0.0, 1.0, 0.0, 0.0)), f - vec4<f32>(0.0, 1.0, 0.0, 0.0));
-    let d = dot(hash4(i + vec4<f32>(1.0, 1.0, 0.0, 0.0)), f - vec4<f32>(1.0, 1.0, 0.0, 0.0));
-    let e = dot(hash4(i + vec4<f32>(0.0, 0.0, 1.0, 0.0)), f - vec4<f32>(0.0, 0.0, 1.0, 0.0));
-    let f1 = dot(hash4(i + vec4<f32>(1.0, 0.0, 1.0, 0.0)), f - vec4<f32>(1.0, 0.0, 1.0, 0.0));
-    let g = dot(hash4(i + vec4<f32>(0.0, 1.0, 1.0, 0.0)), f - vec4<f32>(0.0, 1.0, 1.0, 0.0));
-    let h = dot(hash4(i + vec4<f32>(1.0, 1.0, 1.0, 0.0)), f - vec4<f32>(1.0, 1.0, 1.0, 0.0));
-    let i_a = dot(hash4(i + vec4<f32>(0.0, 0.0, 0.0, 1.0)), f - vec4<f32>(0.0, 0.0, 0.0, 1.0));
-    let j = dot(hash4(i + vec4<f32>(1.0, 0.0, 0.0, 1.0)), f - vec4<f32>(1.0, 0.0, 0.0, 1.0));
-    let k = dot(hash4(i + vec4<f32>(0.0, 1.0, 0.0, 1.0)), f - vec4<f32>(0.0, 1.0, 0.0, 1.0));
-    let l = dot(hash4(i + vec4<f32>(1.0, 1.0, 0.0, 1.0)), f - vec4<f32>(1.0, 1.0, 0.0, 1.0));
-    let m = dot(hash4(i + vec4<f32>(0.0, 0.0, 1.0, 1.0)), f - vec4<f32>(0.0, 0.0, 1.0, 1.0));
-    let n1 = dot(hash4(i + vec4<f32>(1.0, 0.0, 1.0, 1.0)), f - vec4<f32>(1.0, 0.0, 1.0, 1.0));
-    let o = dot(hash4(i + vec4<f32>(0.0, 1.0, 1.0, 1.0)), f - vec4<f32>(0.0, 1.0, 1.0, 1.0));
-    let p1 = dot(hash4(i + vec4<f32>(1.0, 1.0, 1.0, 1.0)), f - vec4<f32>(1.0, 1.0, 1.0, 1.0));
-
-    // Simplification for brevity, we'll use a simpler sine-based domain distortion instead of true 4D noise
-    let val = sin(p.x) * cos(p.y) + sin(p.z) * cos(p.w);
-    return val * 0.5;
-}
-
-// ── Map / SDF ─────────────
-fn map(p: vec3<f32>, time: f32, zp: vec4<f32>) -> f32 {
-    let weave_density = zp.x;
-    let thread_thickness = zp.y;
-
-    var pos = p;
-
-    // Domain distortion based on 4th dimension (time)
-    let n1 = noise4D(vec4<f32>(pos.x, pos.y, pos.z, time * 0.5));
-    let n2 = noise4D(vec4<f32>(pos.y, pos.z, pos.x, time * 0.6));
-
-    pos.x += n1 * 0.5;
-    pos.y += n2 * 0.5;
-
-    // Polar repetition and twisting
-    var q = pos;
-    q.y = p.y;
-
-    let r1 = rot(q.z * weave_density + time);
-    let q_xy = r1 * q.xy;
-    q.x = q_xy.x;
-    q.y = q_xy.y;
-
-    // The "loom threads"
-    let d1 = length(q.xy - vec2<f32>(0.5, 0.0)) - thread_thickness;
-    let d2 = length(q.xy + vec2<f32>(0.5, 0.0)) - thread_thickness;
-
-    let r2 = rot(-q.z * weave_density * 1.5 - time * 1.2);
-    let q_xy2 = r2 * pos.xy;
-    var q2 = pos;
-    q2.x = q_xy2.x;
-    q2.y = q_xy2.y;
-
-    let d3 = length(q2.xy - vec2<f32>(0.0, 0.5)) - thread_thickness;
-    let d4 = length(q2.xy + vec2<f32>(0.0, 0.5)) - thread_thickness;
-
-    // Smooth blending to create junctions
-    var d = smin(d1, d2, 0.2);
-    d = smin(d, d3, 0.2);
-    d = smin(d, d4, 0.2);
-
-    return d;
-}
-
-// ── Normal Calculation ─────────────
-fn calcNormal(p: vec3<f32>, time: f32, zp: vec4<f32>) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, time: f32, mouse_pos: vec2<f32>, m_down: f32, bass: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
-    return normalize(vec3<f32>(
-        map(p + e.xyy, time, zp) - map(p - e.xyy, time, zp),
-        map(p + e.yxy, time, zp) - map(p - e.yxy, time, zp),
-        map(p + e.yyx, time, zp) - map(p - e.yyx, time, zp)
-    ));
+    let d = map(p, time, mouse_pos, m_down, bass).x;
+    let nx = map(p + e.xyy, time, mouse_pos, m_down, bass).x - d;
+    let ny = map(p + e.yxy, time, mouse_pos, m_down, bass).x - d;
+    let nz = map(p + e.yyx, time, mouse_pos, m_down, bass).x - d;
+    return normalize(vec3<f32>(nx, ny, nz));
 }
 
-// Main entry point
+// Iridescent palette
+fn iridescence(t: f32) -> vec3<f32> {
+    let a = vec3<f32>(0.5, 0.5, 0.5);
+    let b = vec3<f32>(0.5, 0.5, 0.5);
+    let c = vec3<f32>(1.0, 1.0, 1.0);
+    let d = vec3<f32>(0.0, 0.33, 0.67);
+    return a + b * cos(TAU * (c * t + d));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<i32>(textureDimensions(writeTexture));
@@ -141,120 +171,92 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let resolution = vec2<f32>(dims);
-    let base_uv = vec2<f32>(coords) / resolution;
-    let uv = (vec2<f32>(coords) - 0.5 * resolution) / resolution.y;
+    let aspect = f32(dims.x) / f32(dims.y);
+    var uv = vec2<f32>(coords) / vec2<f32>(dims);
+    let base_uv = uv; // Keep for reading previous frame
+    uv = uv * 2.0 - 1.0;
+    uv.y = -uv.y;
+    uv.x *= aspect;
 
-    let t = u.config.x;
-    let zp = clamp(u.zoom_params, vec4<f32>(0.001), vec4<f32>(10.0));
+    let time = u.config.x;
+    let mouse_pos = u.zoom_config.yz;
+    let m_down = u.zoom_config.w;
 
-    // Audio Reactivity
-    var bass: f32 = 0.0;
-    var bassSmooth: f32 = 0.0;
-    var fft: f32 = 0.0;
-    if (arrayLength(&extraBuffer) > 133u) {
-        bass = extraBuffer[0];
-        bassSmooth = extraBuffer[133];
-        extraBuffer[133] = mix(bassSmooth, bass, 0.12);
-    }
-    if (arrayLength(&extraBuffer) > 12u) {
-        for (var bin = 1u; bin <= 8u; bin++) {
-            fft += extraBuffer[4u + bin];
-        }
-        fft /= 8.0;
-    }
+    // Audio reactivity
+    let bass = extraBuffer[0];
+    let mid = extraBuffer[133]; // approx mid
 
-    var weave_density = zp.x * (1.0 + bassSmooth * 0.5);
-    let thread_thickness = zp.y;
-    let plasma_intensity = zp.z * (1.0 + fft * 2.0);
-    let time_speed = zp.w;
-
-    let time = t * time_speed * (1.0 + bass * 0.2);
-
-    // Mouse Interaction (Gravity Well)
-    var m = u.zoom_config.yz;
-    if (m.x == 0.0 && m.y == 0.0) {
-        m = vec2<f32>(0.5, 0.5); // Default center
-    }
-    let mouse_uv = (m - 0.5) * vec2<f32>(resolution.x / resolution.y, 1.0);
-    let mouse_down = u.zoom_config.w;
-
-    // Ray setup
-    let ro = vec3<f32>(0.0, 0.0, -3.0);
-    let rd = normalize(vec3<f32>(uv, 1.0));
-
-    // Mouse Distortion Setup (Warping ray direction / origin)
-    var warped_ro = ro;
-    var warped_rd = rd;
-
-    let mouse_dist = length(uv - mouse_uv);
-    let pull_strength = smoothstep(1.0, 0.0, mouse_dist) * (0.5 + mouse_down * 0.5);
-
-    warped_rd.x += (mouse_uv.x - uv.x) * pull_strength * 0.5;
-    warped_rd.y += (mouse_uv.y - uv.y) * pull_strength * 0.5;
-    warped_rd = normalize(warped_rd);
+    // Camera
+    let ro = vec3<f32>(0.0, 0.0, 5.0);
+    let ta = vec3<f32>(0.0, 0.0, 0.0);
+    let cw = normalize(ta - ro);
+    let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
+    let cv = cross(cu, cw);
+    let rd = normalize(uv.x * cu + uv.y * cv + 2.0 * cw);
 
     // Raymarching
-    var p = warped_ro;
-    var d = 0.0;
     var t_dist = 0.0;
-    var i = 0;
-    let max_steps = 100;
-    let max_dist = 10.0;
+    let max_d = 20.0;
+    var col = vec3<f32>(0.0);
+    var d: vec2<f32>;
+    var p = ro;
 
+    // Glow accumulation
     var glow = 0.0;
 
-    for (; i < max_steps; i++) {
-        p = warped_ro + warped_rd * t_dist;
-        d = map(p, time, zp);
+    for (var i = 0; i < 100; i++) {
+        p = ro + rd * t_dist;
+        d = map(p, time, mouse_pos, m_down, bass);
 
-        // Volumetric glow accumulation
-        if (d < 0.1) {
-             glow += 0.01 / (0.01 + d * d);
-        }
+        // Accumulate glow based on proximity to threads
+        glow += 0.01 / (0.01 + abs(d.x));
 
-        if (d < 0.001 || t_dist > max_dist) {
-            break;
-        }
-        t_dist += d * 0.5; // step size reduced for accuracy near thin threads
+        if (d.x < 0.001 || t_dist > max_d) { break; }
+        t_dist += d.x * 0.7; // step slightly smaller for safety with domain warping
     }
 
-    // Coloring
-    var col = vec3<f32>(0.0);
+    if (t_dist < max_d) {
+        let n = calcNormal(p, time, mouse_pos, m_down, bass);
+        let view_dir = normalize(ro - p);
 
-    if (t_dist < max_dist) {
-        let n = calcNormal(p, time, zp);
-
-        // Iridescent Thin-film interference simulation
-        let v = -warped_rd;
-        let ndotv = max(dot(n, v), 0.0);
-
-        // Base iridescent gradient (Bismuth / Quantum colors)
-        let iridescence = 0.5 + 0.5 * cos(TAU * (ndotv * 2.0 - time * 0.2 + vec3<f32>(0.0, 0.33, 0.67)));
-        let base_col = mix(vec3<f32>(0.2, 0.0, 0.5), vec3<f32>(0.0, 0.8, 1.0), ndotv);
-
-        let light_dir = normalize(vec3<f32>(1.0, 1.0, -1.0));
+        // Lighting
+        let light_dir = normalize(vec3<f32>(sin(time), 1.0, cos(time)));
         let diff = max(dot(n, light_dir), 0.0);
-        let spec = pow(max(dot(reflect(-light_dir, n), v), 0.0), 32.0);
 
-        col = base_col * diff + iridescence * 0.5 + spec * 0.5;
+        // Fresnel / Thin-film iridescence
+        let fresnel = pow(1.0 - max(dot(n, view_dir), 0.0), 3.0);
+
+        // Material color base
+        let irid_color = iridescence(p.z * 0.1 + fresnel + time * 0.2 + d.y * 0.3);
+
+        // Ambient + Diffuse
+        let ambient = vec3<f32>(0.05, 0.0, 0.1);
+        col = ambient + irid_color * diff;
+
+        // Specular
+        let h = normalize(light_dir + view_dir);
+        let spec = pow(max(dot(n, h), 0.0), 32.0);
+        col += vec3<f32>(1.0) * spec * fresnel;
+
+        // Distance fog
+        col = mix(col, vec3<f32>(0.0, 0.0, 0.02), smoothstep(10.0, max_d, t_dist));
     }
 
-    // Add Plasma Glow
-    let plasma_col = vec3<f32>(0.8, 0.2, 1.0) * glow * 0.1 * plasma_intensity;
-    col += plasma_col;
+    // Add volumetric plasma glow
+    let intensity = u.zoom_params.z;
+    let plasma_color = iridescence(time * 0.5 + mid * 2.0);
+    col += plasma_color * glow * 0.02 * intensity;
 
-    // Ambient / Fog
-    let fog = 1.0 - exp(-0.1 * t_dist);
-    col = mix(col, vec3<f32>(0.01, 0.01, 0.03), fog);
-
-    // Temporal Blending (Read previous frame)
-    let prev_col = textureSampleLevel(readTexture, non_filtering_sampler, base_uv, 0.0).rgb;
-    let blend_factor = 0.85; // History decay for soft trails
-    col = mix(col, prev_col, blend_factor);
+    // Temporal blending (soft glowing trails)
+    let prev_color = textureSampleLevel(readTexture, non_filtering_sampler, base_uv, 0.0).rgb;
+    let blend_factor = 0.85; // 0.0 means no trail, 1.0 is full persistence
+    col = mix(col, prev_color, blend_factor);
 
     // Tone mapping
     col = col / (1.0 + col);
+
+    // Gamma correction
+    col = pow(col, vec3<f32>(1.0 / 2.2));
 
     textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
 }
