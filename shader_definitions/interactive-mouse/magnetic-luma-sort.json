@@ -41,7 +41,8 @@
     "spring-interaction",
     "click-reactive",
     "aces-tone-map",
-    "semantic-alpha"
+    "semantic-alpha",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

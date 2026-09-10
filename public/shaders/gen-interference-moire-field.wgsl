@@ -1,4 +1,12 @@
-// Interference Moire Field — crossed analytic line waves and circular pulses
+// ═══════════════════════════════════════════════════════════════════
+//  Interference Moire Field
+//  Category: generative
+//  Features: analytic-lines, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: 6.8% density detune beat; two-source Young path-difference
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -49,11 +57,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let phaseWarp = warpStrength * (sin(p.y * 7.0 + time * 0.7 + mids) + cos(p.x * 9.0 - time * 0.5 + bass));
   let q1 = rotate2(p, crossing * 0.5 + pointerWarp * 0.18);
   let q2 = rotate2(p, -crossing * 0.5 - pointerWarp * 0.18);
+  let densB = density * 1.068;
   let lineA = sin(q1.x * density + phaseWarp * density + time * (0.4 + bass * 0.25));
   let lineB = sin(q2.x * density - phaseWarp * density * 0.8 - time * (0.32 + mids * 0.2));
+  let lineA2 = sin(q1.x * densB + phaseWarp * densB + time * (0.4 + bass * 0.25));
+  let lineB2 = sin(q2.x * densB - phaseWarp * densB * 0.8 - time * (0.32 + mids * 0.2));
   let crossed = lineA * lineB;
+  let detuneBeat = lineA * lineA2 * 0.5 + lineB * lineB2 * 0.5;
   let ridges = pow(abs(crossed), mix(0.35, 1.4, clamp(u.zoom_params.x, 0.0, 1.0)));
   let beat = 0.5 + 0.5 * cos((lineA - lineB) * 4.0 + treble * 2.0);
+  let srcB = mix(vec2<f32>(0.18, 0.0), mouse, held);
+  let young = 0.5 + 0.5 * cos((length(p) - length(p - srcB)) * density * 0.32);
 
   var pulse = 0.0;
   let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
@@ -68,11 +82,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let circular = sin(length(p - mouse * held) * density * 0.55 - time * 1.2) * pointerWarp;
   var raw = palette(crossed * 0.18 + colorPhase + time * 0.025 + pulse * 0.12) * (0.16 + ridges * 1.25);
   raw += palette(beat * 0.2 + colorPhase + 0.32) * beat * (0.18 + treble * 0.22);
+  raw += palette(colorPhase + 0.55) * abs(detuneBeat) * 0.42;
+  raw += palette(colorPhase + 0.08) * young * (0.16 + held * 0.12 + treble * 0.08);
   raw += vec3<f32>(1.3 + bass * 0.3, 0.55 + mids * 0.25, 1.6 + treble * 0.45) * (pulse + abs(circular) * 0.28);
   let prev = textureLoad(dataTextureC, pixel, 0);
   raw = clamp(mix(prev.rgb * 0.93, raw, 0.31 + warpStrength * 0.08), vec3<f32>(0.0), vec3<f32>(7.0));
-  let alpha = clamp(0.04 + ridges * 0.62 + beat * 0.12 + pulse * 0.2, 0.04, 0.98);
-  let depth = clamp(ridges * 0.58 + abs(lineA - lineB) * 0.12 + pulse * 0.2, 0.0, 1.0);
+  let alpha = clamp(0.04 + ridges * 0.62 + beat * 0.12 + abs(detuneBeat) * 0.08 + young * 0.08 + pulse * 0.2, 0.04, 0.98);
+  let depth = clamp(ridges * 0.58 + abs(lineA - lineB) * 0.12 + young * 0.1 + pulse * 0.2, 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(raw, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(raw * 1.06), alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

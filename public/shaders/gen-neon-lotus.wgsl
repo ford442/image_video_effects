@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-05-30
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-09
+//  Ideas: vein along petal midline; golden-angle offset between layers
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,13 +23,16 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1(petalCount), y=Param2(bloom), z=Param3(speed), w=Param4(glow)
   ripples: array<vec4<f32>, 50>,
 };
 
 // ACES filmic tonemap
+const TAU: f32 = 6.28318530718;
+const GOLDEN_ANGLE: f32 = 2.399963229728653;
+
 fn aces(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -104,26 +108,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lf = f32(layer);
     let layerScale = 1.0 - lf * 0.3;
     let layerR = r / layerScale;
-    let layerT = theta + lf * 0.4 + t * speed * (1.0 - lf * 0.2);
+    let layerT = theta + lf * GOLDEN_ANGLE + t * speed * (1.0 - lf * 0.2);
     let nP = nPetals + lf * 4.0;
     let petalAngle = 6.28318 / nP;
-    // Find nearest petal
     let sector = floor(layerT / petalAngle + 0.5);
     let localTheta = layerT - sector * petalAngle;
     let phase = sector * 0.1;
     let bloom = bloomAmt * layerScale * (0.8 + 0.2 * sin(t * 0.5 + lf));
     let sdf = petalSdf(layerR, localTheta, phase, bloom);
     let petalMask = smoothstep(0.02, -0.02, sdf);
-    // Neon hue per layer
     let hue = fract(lf * 0.33 + t * 0.05 + bass * 0.15 + sector * 0.07);
     let petalColor = vec3<f32>(
       0.5 + 0.5 * cos(6.2832 * hue),
       0.5 + 0.5 * cos(6.2832 * (hue + 0.33)),
       0.5 + 0.5 * cos(6.2832 * (hue + 0.67))
     );
-    // Edge glow (neon effect)
     let edgeGlow = exp(-abs(sdf) * 30.0) * glowScale * (1.0 + treble * 0.4);
-    col += petalColor * (petalMask * 0.7 + edgeGlow * 0.8);
+    let vein = exp(-abs(localTheta) * 26.0) * petalMask;
+    col += petalColor * (petalMask * 0.7 + edgeGlow * 0.8 + vein * 0.55);
     totalGlow += edgeGlow;
   }
 

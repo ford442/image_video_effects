@@ -2,7 +2,9 @@
 //  Neon Poly Grid
 //  A glowing hexagonal grid that lights up on mouse interaction
 //  and leaves a fading trail.
-//  Upgraded: 2026-08-02 (Batch 30)
+//  Upgraded: 2026-09-10
+//  Ideas: dual-lattice vertex glow; occupied-cell fill from the trail
+//  A packing: trail in A.r (HEAD); ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,16 +40,17 @@ fn hexGrid(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     let h = r * 0.5;
     let a = modulo(uv * scale, r) - h;
     let b = modulo(uv * scale + h, r) - h;
-
-    let gv = select(b, a, length(a) < length(b));
+    let dA = length(a);
+    let dB = length(b);
+    let gv = select(b, a, dA < dB);
 
     let x = hexDist(gv);
     let y = 0.5 - x; // Distance to edge
+    let vertex = 1.0 - smoothstep(0.0, 0.04, abs(dA - dB));
 
-    // Calculate cell center for ID/Noise
     let id = uv * scale - gv;
 
-    return vec4<f32>(x, y, id.x, id.y);
+    return vec4<f32>(y, vertex, id.x, id.y);
 }
 
 // Simple modulo for vec2
@@ -59,6 +62,10 @@ fn soft_ceiling(color: vec3<f32>) -> vec3<f32> {
     let positive = max(color, vec3<f32>(0.0));
     let peak = max(positive.x, max(positive.y, positive.z));
     return positive / (1.0 + max(peak - 1.0, 0.0));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -82,7 +89,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Hex Grid
     let hex = hexGrid(uv_grid, scale);
-    let distToEdge = hex.y;
+    let distToEdge = hex.x;
+    let vertex = hex.y;
 
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
     var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
@@ -119,13 +127,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
             let radius = length(delta);
             let ring = exp(-abs(radius - age * 0.14) * 70.0);
-            let fill = 1.0 - smoothstep(0.0, 0.12, radius);
-            clickTrail = max(clickTrail, max(ring, fill * exp(-age * 3.0)) * exp(-age * 0.8));
+            let clickFill = 1.0 - smoothstep(0.0, 0.12, radius);
+            clickTrail = max(clickTrail, max(ring, clickFill * exp(-age * 3.0)) * exp(-age * 0.8));
         }
     }
 
-    // Persistence Logic (Trail)
-    let historyColor = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let historyColor = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
     let newTrail = clamp(max(historyColor.r * decay, max(activation, clickTrail)), 0.0, 1.0);
 
     // Store new trail state
@@ -147,14 +154,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cellCode = u32(abs(hex.z * 17.0 + hex.w * 31.0));
     let fftVoice = clamp(plasmaBuffer[(cellCode % 8u) + 1u].x, 0.0, 1.0);
     let cyanVoice = vec3<f32>(0.0, 0.75 + fftVoice * 0.25, 1.0);
-    let gridColor = cyanVoice * activeGrid * (0.85 + fftVoice * 0.35) + vec3<f32>(0.2, 0.0, 0.5) * baseGrid;
+    let cellFill = (1.0 - lineGlow) * newTrail * 0.16;
+    let vertexGlow = vertex * newTrail * glowStrength * 0.55;
+    let gridColor = cyanVoice * activeGrid * (0.85 + fftVoice * 0.35)
+        + vec3<f32>(0.2, 0.0, 0.5) * baseGrid
+        + cyanVoice * cellFill
+        + vec3<f32>(0.85, 0.95, 1.0) * vertexGlow;
 
-    // Composite
-    // Add grid on top of source, or multiply?
-    // Let's add it.
-    let finalColor = soft_ceiling(sourceColor.rgb + gridColor);
+    let finalColor = acesToneMap(soft_ceiling(sourceColor.rgb + gridColor));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, sourceColor.a));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, clamp(sourceColor.a + cellFill + vertexGlow * 0.2, 0.0, 1.0)));
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let reliefDepth = clamp(depth_in + lineGlow * newTrail * 0.16, 0.0, 1.0);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(reliefDepth, 0.0, 0.0, 0.0));

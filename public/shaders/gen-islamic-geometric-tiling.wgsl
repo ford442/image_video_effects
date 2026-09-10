@@ -1,4 +1,12 @@
-// Islamic Geometric Tiling — interlaced star polygons, rosettes, and gilded waves
+// ═══════════════════════════════════════════════════════════════════
+//  Islamic Geometric Tiling
+//  Category: generative
+//  Features: star-polygons, rosette, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: over-under strap shadow at crossings; half-angle girih dart
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -49,6 +57,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let starLine = exp(-abs(radius - starRadius) / max(lineWidth, 0.002));
   let interlace = exp(-abs(radius - (0.19 + 0.055 * cos(angle * points * 2.0 + 0.9))) / max(lineWidth * 0.72, 0.0015));
   let crossingMask = 0.58 + 0.42 * step(0.0, sin(angle * points + time * 0.12));
+  let dartR = 0.22 + 0.08 * cos((angle + TAU / max(points * 2.0, 1.0)) * points);
+  let dart = exp(-abs(radius - dartR) / max(lineWidth * 0.85, 0.0015));
+  let overlap = starLine * interlace;
+  let underShadow = overlap * crossingMask;
 
   var rosette = 0.0;
   var depthMoment = 0.0;
@@ -71,16 +83,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       gildedWave += exp(-abs(distance(p, center) - age * 0.24) * 74.0) * exp(-age * 1.25);
     }
   }
-  let geometry = clamp(starLine * crossingMask + interlace * (1.0 - crossingMask * 0.3) + rosette * 0.68, 0.0, 2.5);
+  let starOver = starLine * crossingMask;
+  let laceUnder = interlace * (1.0 - crossingMask * 0.55);
+  let geometry = clamp(starOver + laceUnder * (1.0 - crossingMask * 0.3) + rosette * 0.68 + dart * 0.72, 0.0, 2.5);
   let hue = floor(grid.x + grid.y) * 0.071 + angle / TAU + mids * 0.08;
   var raw = vec3<f32>(0.012, 0.018, 0.035);
   raw += palette(hue) * geometry * (0.55 + bass * 0.3);
   raw += vec3<f32>(1.65 + bass * 0.25, 0.92 + mids * 0.22, 0.25 + treble * 0.15) * (starLine * 0.45 + gildedWave * 1.15);
   raw += palette(hue + 0.42) * interlace * treble * 0.48;
+  raw += vec3<f32>(1.55, 1.05, 0.32) * dart * 0.38;
+  raw *= 1.0 - underShadow * 0.42;
   let prev = textureLoad(dataTextureC, pixel, 0);
   raw = clamp(mix(prev.rgb * 0.94, raw, 0.28 + u.zoom_params.w * 0.06), vec3<f32>(0.0), vec3<f32>(7.0));
-  let alpha = clamp(0.035 + geometry * 0.5 + gildedWave * 0.2, 0.035, 0.98);
-  let depth = clamp(geometry * 0.34 + depthMoment * 0.34 + gildedWave * 0.18, 0.0, 1.0);
+  let alpha = clamp(0.035 + geometry * 0.5 + dart * 0.12 + gildedWave * 0.2, 0.035, 0.98);
+  let depth = clamp(geometry * 0.34 + depthMoment * 0.34 + dart * 0.12 + gildedWave * 0.18, 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(raw, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(raw * 1.08), alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

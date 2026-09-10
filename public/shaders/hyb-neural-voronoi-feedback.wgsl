@@ -2,8 +2,10 @@
 //  hyb-neural-voronoi-feedback
 //  Category: hybrid
 //  Features: voronoi, fbm-noise, feedback-decay, neural-dust,
-//            alpha-passthrough, depth-passthrough
-//  Chunks: voronoi2D + fbm2 + glow + iridescence
+//            alpha-passthrough, depth-passthrough, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-10
+//  Ideas: honest C echo along the FBM drift; F2 synapse glow
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,21 +29,22 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ── Chunk: hash12 (from gen_grid.wgsl) ──
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
-// ── Chunk: hash22 (from voronoi-glass.wgsl) ──
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
 }
 
-// ── Chunk: valueNoise (from gen_grid.wgsl) ──
 fn valueNoise(p: vec2<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
@@ -53,7 +56,6 @@ fn valueNoise(p: vec2<f32>) -> f32 {
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-// ── Chunk: fbm2 (from gen_grid.wgsl) ──
 fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
     var value = 0.0;
     var amplitude = 0.5;
@@ -66,9 +68,9 @@ fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
     return value;
 }
 
-// ── Chunk: voronoi2D (from interactive-voronoi-lens.wgsl) ──
 struct VoronoiResult {
     dist: f32,
+    dist2: f32,
     point: vec2<f32>,
     cell: vec2<f32>,
 };
@@ -76,7 +78,7 @@ struct VoronoiResult {
 fn voronoi2D(st: vec2<f32>, time: f32, chaos: f32) -> VoronoiResult {
     let i_st = floor(st);
     let f_st = fract(st);
-    var result = VoronoiResult(1.0, vec2<f32>(0.0), vec2<f32>(0.0));
+    var result = VoronoiResult(1.0, 1.0, vec2<f32>(0.0), vec2<f32>(0.0));
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
             let neighbor = vec2<f32>(f32(x), f32(y));
@@ -84,65 +86,69 @@ fn voronoi2D(st: vec2<f32>, time: f32, chaos: f32) -> VoronoiResult {
             point = 0.5 + 0.5 * sin(time * chaos + 6.2831 * point);
             let d = length(neighbor + point - f_st);
             if (d < result.dist) {
+                result.dist2 = result.dist;
                 result.dist = d;
                 result.point = point;
                 result.cell = i_st + neighbor;
+            } else if (d < result.dist2) {
+                result.dist2 = d;
             }
         }
     }
     return result;
 }
 
-// ── Chunk: glow (from anamorphic-flare.wgsl) ──
 fn glow(dist: f32, radius: f32, intensity: f32) -> f32 {
-    return exp(-dist * dist / (radius * radius)) * intensity;
+    return exp(-dist * dist / max(radius * radius, 1e-6)) * intensity;
 }
 
-// ── Chunk: iridescence (from gen-holographic-fracture.wgsl) ──
 fn iridescence(theta: f32, shift: f32) -> vec3<f32> {
     let t = theta * 4.0 + shift;
     return 0.5 + 0.5 * cos(vec3<f32>(t, t + 2.094, t + 4.189));
 }
 
+fn historyCoord(uv: vec2<f32>, dimsI: vec2<i32>) -> vec2<i32> {
+    return clamp(vec2<i32>(uv * vec2<f32>(dimsI)), vec2<i32>(0), dimsI - vec2<i32>(1));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dims = textureDimensions(writeTexture);
+    let dims = u.config.zw;
     let coord = vec2<i32>(gid.xy);
-    let dimsI = vec2<i32>(dims);
-
-    if (any(coord >= dimsI)) {
+    if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
         return;
     }
+    let dimsI = vec2<i32>(dims);
 
-    let uv = (vec2<f32>(coord) + 0.5) / vec2<f32>(dims);
+    let uv = (vec2<f32>(coord) + 0.5) / dims;
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Normalize zoom_params
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let cellDensity = mix(4.0, 40.0, clamp(u.zoom_params.x, 0.0, 1.0));
     let drift = mix(0.0, 0.08, clamp(u.zoom_params.y, 0.0, 1.0));
     let dustAmt = mix(0.0, 1.0, clamp(u.zoom_params.z, 0.0, 1.0));
     let effectMix = mix(0.0, 1.0, clamp(u.zoom_params.w, 0.0, 1.0));
 
-    // FBM-driven feedback drift over the input image
     let noiseBase = uv * 8.0 + vec2<f32>(time * 0.12);
     let driftNoiseA = fbm2(noiseBase, 4);
     let driftNoiseB = fbm2(noiseBase + vec2<f32>(5.3, 2.7), 4);
     let driftOffset = (vec2<f32>(driftNoiseA, driftNoiseB) - 0.5) * drift * 2.0;
     let fbUV = clamp(uv + driftOffset, vec2<f32>(0.0), vec2<f32>(1.0));
-    let feedback = textureSampleLevel(readTexture, u_sampler, fbUV, 0.0);
+    let prev = textureLoad(dataTextureC, historyCoord(fbUV, dimsI), 0);
     let decay = mix(0.3, 0.7, clamp(u.zoom_params.y, 0.0, 1.0));
-    let echoRGB = mix(src.rgb, feedback.rgb, decay);
+    let echoRGB = mix(src.rgb, prev.rgb, decay);
 
-    // Animated Voronoi neural-cell pattern
     let voro = voronoi2D(uv * cellDensity, time, 0.7);
     let cellPhase = voro.dist * 6.28318 + time * 0.6 + voro.cell.x * 0.3;
     let cellEdge = 1.0 - smoothstep(0.0, 0.55, voro.dist);
     let cellCol = iridescence(sin(cellPhase) * 0.5 + 0.5, time * 0.4) * cellEdge;
     let cellGlow = glow(voro.dist, 0.22, 0.5) * cellEdge;
+    let synapse = 1.0 - smoothstep(0.0, 0.07 + treble * 0.03, voro.dist2 - voro.dist);
 
-    // Neural dust: sparse glowing particles on a jittered grid
     let dustScale = mix(32.0, 96.0, clamp(u.zoom_params.z, 0.0, 1.0));
     let dustUV = uv * dustScale;
     let dId = floor(dustUV);
@@ -154,10 +160,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dCol = iridescence(dRndX + time * 0.25, dRndY * 6.28318);
     let dustRGB = dCol * dMask * 2.0;
 
-    // Composite hybrid layer over the input
-    let layerRGB = echoRGB + cellCol * 0.25 + cellGlow + dustRGB;
+    let layerRGB = echoRGB + cellCol * 0.25 + cellGlow + dustRGB
+        + vec3<f32>(0.9, 0.7, 1.0) * synapse * (0.22 + bass * 0.25 + mids * 0.1);
     let outRGB = mix(src.rgb, layerRGB, effectMix);
+    let alpha = clamp(src.a + synapse * 0.2 + dMask * 0.15, 0.0, 1.0);
+    let outColor = vec4<f32>(acesToneMap(outRGB), alpha);
 
-    textureStore(writeTexture, coord, vec4<f32>(clamp(outRGB, vec3<f32>(0.0), vec3<f32>(1.0)), src.a));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, outColor);
+    textureStore(dataTextureA, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth + synapse * 0.04, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

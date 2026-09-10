@@ -2,9 +2,9 @@
 //  Neon Light
 //  Category: lighting-effects
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, blackbody-emission, fresnel-edges
-//  Complexity: High
-//  Scientific: Planck-inspired blackbody edge emission with Sobel depth normals and Schlick Fresnel heating.
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-09-10
+//  Ideas: phosphor persist from exact C; tube-axis stretch along Sobel tangent
+//  A packing: raw phosphor RGB in A; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,6 +27,10 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn luminance(color: vec3<f32>) -> f32 {
   return dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
@@ -115,14 +119,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   let base = sampleColor(uv);
   let depth = sampleDepth(uv);
   let colorGrad = sobelLuma(uv, texel);
   let depthGrad = sobelDepth(uv, texel * 1.5);
+  let tangent = normalize(vec2<f32>(-colorGrad.y, colorGrad.x) + vec2<f32>(1e-4, 0.0));
+  let tubeGrad = sobelLuma(uv + tangent * texel * 3.0, texel);
+  let tubeMetric = length(tubeGrad) * 0.9 + length(colorGrad) * 0.35;
+  let tubeStrength = smoothstep(0.05, 0.55, tubeMetric);
 
   let edgeMetric = length(colorGrad) * 0.9 + length(depthGrad) * 2.0;
-  let edgeStrength = smoothstep(0.05, 0.55, edgeMetric);
+  let edgeStrength = max(smoothstep(0.05, 0.55, edgeMetric), tubeStrength * 0.65);
 
   let normal = normalize(vec3<f32>(-depthGrad.x * 3.0, -depthGrad.y * 3.0, 1.0));
   let fresnel = schlickFresnel(clamp(dot(normal, vec3<f32>(0.0, 0.0, 1.0)), 0.0, 1.0), 0.04 + 0.08 * u.zoom_params.y);
@@ -146,13 +155,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fogAmount = u.zoom_params.w * (0.08 + 0.22 * (1.0 - depth)) + mouseHot * 0.12;
 
   let emission = spectral * edgeStrength * edgeGain * (0.35 + 1.65 * fresnel);
+  let tubeGlow = spectral * tubeStrength * edgeGain * 0.35 * (1.0 + treble * 0.25);
   let hotSpot = spectral * mouseHot * (0.08 + 0.24 * u.zoom_params.z);
   let fog = fogSpectral * fogAmount * (0.45 + 0.55 * mids);
+  let prevGlow = textureLoad(dataTextureC, coord, 0).rgb;
+  let phosphor = prevGlow * 0.78 + emission + tubeGlow;
 
-  let finalColor = base.rgb * (1.0 - 0.18 * edgeStrength) + fog + emission + hotSpot;
-  let alpha = clamp(max(base.a, 0.6) + edgeStrength * 0.12 + fogAmount * 0.2, 0.0, 1.0);
+  let finalColor = base.rgb * (1.0 - 0.18 * edgeStrength) + fog + phosphor + hotSpot;
+  let alpha = clamp(max(base.a, 0.6) + edgeStrength * 0.12 + fogAmount * 0.2 + tubeStrength * 0.08, 0.0, 1.0);
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
-  textureStore(dataTextureA, coord, vec4<f32>((temperature - 800.0) / 11200.0, edgeStrength, fresnel, mouseHot));
+  textureStore(writeTexture, coord, vec4<f32>(acesToneMap(finalColor), alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(phosphor, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

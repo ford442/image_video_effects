@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-09T04:55:22.076306",
+  "timestamp": "2026-09-10T00:40:31.380105",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/bubble-wrap.wgsl",
+      "file": "public/shaders/hex-circuit.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/interactive-pixel-wind.wgsl",
+      "file": "public/shaders/hyb-chromatic-circuit.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/lidar.wgsl",
+      "file": "public/shaders/hyb-hex-voronoi-distort.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pixel-wind-chimes.wgsl",
+      "file": "public/shaders/hyb-neural-voronoi-feedback.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/radiating-displacement.wgsl",
+      "file": "public/shaders/hybrid-cyber-organic.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/radiating-haze.wgsl",
+      "file": "public/shaders/hybrid-magnetic-field.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/rain-lens-wipe.wgsl",
+      "file": "public/shaders/hybrid-particle-fluid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/raindrop-ripples.wgsl",
+      "file": "public/shaders/neon-light.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/sim-smoke-trails.wgsl",
+      "file": "public/shaders/neon-poly-grid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/snow.wgsl",
+      "file": "public/shaders/spec-hypercube-projection.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

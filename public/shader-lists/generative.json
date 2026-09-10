@@ -7610,7 +7610,11 @@
     "updated": true,
     "id": "gen-chromatic-acid-drip",
     "url": "shaders/gen-chromatic-acid-drip.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "intensity",
@@ -12544,7 +12548,11 @@
     "updated": true,
     "id": "gen-electric-kaleidoscope-storm",
     "url": "shaders/gen-electric-kaleidoscope-storm.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Emergent Calligraphic Ecosystems",
@@ -14863,7 +14871,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -16714,7 +16723,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -16820,7 +16830,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -17456,7 +17467,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -17608,7 +17620,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -20481,7 +20494,11 @@
     "updated": true,
     "id": "gen-hypnotic-vortex-tunnel",
     "url": "shaders/gen-hypnotic-vortex-tunnel.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-ice-crystal-lattice",
@@ -20586,7 +20603,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR ice and frost display RGBA history"
   },
@@ -20885,7 +20903,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR moire interference display RGBA history"
   },
@@ -21055,7 +21074,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR iris display RGBA history"
   },
@@ -21163,7 +21183,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR interlaced ornament display RGBA history"
   },
@@ -21390,7 +21411,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR Julia display RGBA history"
   },
@@ -24750,7 +24772,49 @@
     "updated": true,
     "id": "gen-neon-acid-geometry",
     "url": "shaders/gen-neon-acid-geometry.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Neon Cyber Mandala",
@@ -24811,7 +24875,49 @@
     "updated": true,
     "id": "gen-neon-cyber-mandala",
     "url": "shaders/gen-neon-cyber-mandala.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "zoom_scale",
+        "name": "Zoom Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Neon Lotus",
@@ -24871,7 +24977,49 @@
     "updated": true,
     "id": "gen-neon-lotus",
     "url": "shaders/gen-neon-lotus.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "petal_count",
+        "name": "Petal Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "bloom",
+        "name": "Bloom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "glow_scale",
+        "name": "Glow Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Neon Neural Network",
@@ -25130,7 +25278,46 @@
       "audio-reactive",
       "mouse-driven",
       "neon",
-      "kaleidoscope"
+      "kaleidoscope",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "star_scale",
+        "name": "Star Scale",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "spin_speed",
+        "name": "Spin Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "neon_power",
+        "name": "Neon Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -26370,7 +26557,49 @@
     "updated": true,
     "id": "gen-plasma-mandala",
     "url": "shaders/gen-plasma-mandala.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "symmetry",
+        "name": "Symmetry",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "spin_speed",
+        "name": "Spin Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "glow_scale",
+        "name": "Glow Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Psychedelic Wormhole",
@@ -26432,7 +26661,49 @@
     "updated": true,
     "id": "gen-plasma-psychedelic-wormhole",
     "url": "shaders/gen-plasma-psychedelic-wormhole.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "travel_speed",
+        "name": "Travel Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "tunnel_scale",
+        "name": "Tunnel Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Polar Rainbow Explosion",
@@ -26493,7 +26764,49 @@
     "updated": true,
     "id": "gen-polar-rainbow-explosion",
     "url": "shaders/gen-polar-rainbow-explosion.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Prism Tide",
@@ -27791,7 +28104,11 @@
     "updated": true,
     "id": "gen-psychedelic-moire-flower",
     "url": "shaders/gen-psychedelic-moire-flower.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Psychedelic Time-Warp Kaleidoscope",
@@ -27848,7 +28165,11 @@
     "updated": true,
     "id": "gen-psychedelic-time-warp-kaleidoscope",
     "url": "shaders/gen-psychedelic-time-warp-kaleidoscope.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Quantum-Acoustic Bioluminescent Void-Urchin",
@@ -29360,7 +29681,46 @@
       "geometry",
       "audio-reactive",
       "mouse-driven",
-      "spectral-color"
+      "spectral-color",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "shell_count",
+        "name": "Shell Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "shell_spacing",
+        "name": "Shell Spacing",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "edge_glow",
+        "name": "Edge Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue_drift",
+        "name": "Hue Drift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {

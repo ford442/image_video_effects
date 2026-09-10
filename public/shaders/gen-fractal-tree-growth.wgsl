@@ -1,4 +1,12 @@
-// Fractal Tree Growth — recursive branching distance field
+// ═══════════════════════════════════════════════════════════════════
+//  Fractal Tree Growth
+//  Category: generative
+//  Features: fractal, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: bark rings from segment h; apical meristem glow on growing tips
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -20,11 +28,11 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-fn sdSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+fn sdSegment2(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
     let pa = p - a;
     let ba = b - a;
     let h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.000001), 0.0, 1.0);
-    return length(pa - ba * h);
+    return vec2<f32>(length(pa - ba * h), h);
 }
 
 fn rotateVector(v: vec2<f32>, angle: f32) -> vec2<f32> {
@@ -62,6 +70,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var branchField = 0.0;
     var leafField = 0.0;
+    var barkRings = 0.0;
     var heightDepth = 0.0;
     var hueMoment = 0.0;
     for (var leafPath = 0; leafPath < 32; leafPath++) {
@@ -78,11 +87,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             direction = normalize(rotateVector(direction, bend));
             let tip = origin + direction * segmentLength * levelGrowth;
             let thickness = mix(0.026, 0.006, f32(level) / 5.0) * (1.0 + audio.x * 0.2);
-            let d = sdSegment(p, origin, tip);
+            let sh = sdSegment2(p, origin, tip);
+            let d = sh.x;
+            let h = sh.y;
             let branch = exp(-d * d / max(thickness * thickness, 0.000001));
+            let rings = branch * exp(-abs(fract(h * 6.5 + f32(level) * 0.17) - 0.5) * 16.0);
             branchField += branch / 32.0;
+            barkRings += rings / 32.0;
             heightDepth = max(heightDepth, branch * (0.35 + f32(level) * 0.11));
             hueMoment += branch * f32(level);
+            let growing = levelGrowth * (1.0 - levelGrowth) * 4.0;
+            let bud = exp(-dot(p - tip, p - tip) / (0.0007 + audio.z * 0.0003)) * growing;
+            leafField += bud / 10.0;
             origin = tip;
             segmentLength *= 0.69;
             if (level == maxDepth - 1 && levelGrowth > 0.75) {
@@ -110,12 +126,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bark = mix(vec3<f32>(0.18, 0.055, 0.018), vec3<f32>(0.58, 0.24, 0.045), audio.x);
     let foliage = palette(hue) * (0.55 + leafGlow + audio.z * 0.6);
     var hdrColor = vec3<f32>(0.006, 0.012, 0.012) + bark * branchField * (1.1 + audio.x * 0.5);
+    hdrColor += vec3<f32>(0.42, 0.22, 0.08) * barkRings * 1.35;
     hdrColor += foliage * leafField * leafGlow;
     hdrColor += vec3<f32>(0.3 + audio.x * 0.25, 0.9 + audio.y * 0.35, 0.45 + audio.z * 0.45) * clickGrowth * 0.34;
     let history = textureLoad(dataTextureC, coord, 0);
     hdrColor = clamp(mix(hdrColor, history.rgb, 0.045 + audio.x * 0.06), vec3<f32>(0.0), vec3<f32>(7.0));
     let mapped = acesToneMap(hdrColor * 1.08);
-    let alpha = clamp(branchField * 0.62 + leafField * 0.32 + clickGrowth * 0.1, 0.02, 0.98);
+    let alpha = clamp(branchField * 0.62 + barkRings * 0.12 + leafField * 0.32 + clickGrowth * 0.1, 0.02, 0.98);
     let depth = clamp(heightDepth, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));

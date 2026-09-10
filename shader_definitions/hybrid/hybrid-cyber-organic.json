@@ -9,7 +9,9 @@
     "organic-growth",
     "neon-glow",
     "hex-grid",
-    "randomization-safe"
+    "randomization-safe",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -59,5 +61,11 @@
     "palette (gen-xeno-botanical-synth-flora.wgsl)"
   ],
   "created_by": "Agent 2A - Shader Surgeon",
-  "created_date": "2026-03-22"
+  "created_date": "2026-03-22",
+  "updatedParams": [
+    { "index": 0, "name": "Circuit Density", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Organic Growth", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Neon Glow", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Randomness", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+  ]
 }

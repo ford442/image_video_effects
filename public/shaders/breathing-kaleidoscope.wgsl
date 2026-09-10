@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Breathing Kaleidoscope v2
+//  Breathing Kaleidoscope
 //  Category: visual-effects
-//  Features: audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: breathing-kaleidoscope
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-09
+//  Ideas: inhale vs exhale petal scale; held-breath freeze
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -72,9 +73,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
+    let coord = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let mouse = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
+    let mouseDown = u.zoom_config.w;
+    let aspect = resolution.x / max(resolution.y, 0.001);
     let time = u.config.x;
     let cycleSpeed = max(u.zoom_params.x, 0.01);
     let baseSegments = mix(3.0, 14.0, u.zoom_params.y);
@@ -85,11 +88,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = audio.y;
     let treble = audio.z;
 
-    let phase = time * cycleSpeed * 6.28318 + bass * 3.0;
-    let breathAmp = (sin(phase) * 0.5 + 0.5) * (1.0 + bass * 0.5);
+    // Idea 2 — held-breath freeze: mouseDown holds phase at rest (no extraBuffer)
+    let liveTime = select(time, 0.0, mouseDown > 0.5);
+    let phase = liveTime * cycleSpeed * 6.28318 + bass * 3.0 * (1.0 - step(0.5, mouseDown));
+    let breathWave = sin(phase);
+    let breathAmp = (breathWave * 0.5 + 0.5) * (1.0 + bass * 0.5);
     let breathe = 0.65 + breathAmp * 0.35;
 
-    let warp = (fbm2(uv * 3.5 + time * 0.15) * 2.0 - 1.0) * 0.4 * breathAmp;
+    let fbmTime = select(time * 0.15, 0.0, mouseDown > 0.5);
+    let warp = (fbm2(uv * 3.5 + fbmTime) * 2.0 - 1.0) * 0.4 * breathAmp;
     let segments = max(2.5, baseSegments + warp);
 
     let center = vec2<f32>(0.5, 0.5) + (mouse - 0.5) * 0.14;
@@ -97,21 +104,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(p);
     let angle = atan2(p.y, p.x);
 
-    let rotation = time * rotationSpeed * (1.0 + treble * 0.4) + (breathe - 0.825) * maxRotation * 6.28318;
+    let rotation = liveTime * rotationSpeed * (1.0 + treble * 0.4) + (breathe - 0.825) * maxRotation * 6.28318;
     let sector = abs(fract((angle + rotation) / 6.28318 * segments) - 0.5) * 2.0;
     let edgeDist = min(sector, 1.0 - sector);
 
-    let petalWarp = breathe * (1.0 + mids * 0.15);
+    // Idea 1 — inhale expands, exhale contracts petalWarp
+    let inhale = select(-1.0, 1.0, breathWave > 0.0);
+    let petalWarp = (0.92 + inhale * breathAmp * 0.18) * (1.0 + mids * 0.15);
     let kaleidoAngle = sector * 3.14159265;
     let dir = vec2<f32>(cos(kaleidoAngle), sin(kaleidoAngle));
     let warped = center + vec2<f32>(dir.x / aspect, dir.y) * dist * petalWarp;
     let sampleUV = clamp(warped, vec2<f32>(0.001), vec2<f32>(0.999));
 
-    let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+    let src = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let baseColor = src.rgb;
     let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r, 0.0, 1.0);
     let depthFade = mix(1.0, 0.5, depth * dist * 1.5);
 
-    let hue = fract(sector * 0.618 + time * 0.03 + bass * 0.1);
+    let hue = fract(sector * 0.618 + liveTime * 0.03 + bass * 0.1);
     let jewel = vec3<f32>(
         0.5 + 0.5 * cos(6.28318 * hue + 0.0),
         0.5 + 0.5 * cos(6.28318 * hue + 2.094),
@@ -128,10 +138,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = finalColor + filmGrain(uv, time) * (1.0 - depth * 0.5);
 
     let lum = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(lum * 0.4 + breathAmp * 0.25 + depth * 0.2 + sparkle * 0.15, 0.1, 0.92);
+    let alpha = clamp(lum * 0.35 + breathAmp * 0.22 + depth * 0.18 + sparkle * 0.15 + src.a * 0.2, 0.1, 0.95);
     let outDepth = clamp(depth + axisGlow * 0.05 + sparkle * 0.03, 0.0, 1.0);
+    let outCol = vec4<f32>(finalColor, alpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(breathAmp, sector, edgeDist, alpha));
+    textureStore(writeTexture, coord, outCol);
+    textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outCol);
 }

@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Electric Kaleidoscope Storm
 //  Category: generative
-//  Features: kaleidoscope, electric, storm, audio-reactive, mouse-driven, semantic-alpha
+//  Features: kaleidoscope, electric, storm, audio-reactive, mouse-driven, semantic-alpha, upgraded-rgba
 //  Complexity: Medium-High
-//  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-09-09
+//  Ideas: Lichtenberg afterimage from exact C along the bolt; leader vs return-stroke
+//  A packing: HDR trail RGB in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -207,7 +207,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01 = vec2<f32>(pixel) / res;
     
     let time = u.config.x;
-    let mousePos = (u.zoom_config.yz - 0.5) * vec2<f32>(res.x / res.y, 1.0);
+    let mousePos = (u.zoom_config.yz - 0.5) * vec2<f32>(res.x, res.y) / min(res.x, res.y);
     let mouseDown = u.zoom_config.w > 0.5;
     let intensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
@@ -256,46 +256,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Generate lightning bolts in folded space
     var boltColor = vec3<f32>(0.0);
+    var boltEnergy = 0.0;
     
-    // Main bolts radiating from center
     let numBolts = 8;
     for (var i = 0; i < numBolts; i++) {
         let fi = f32(i);
         let seed = fi * 37.0 + floor(time * (3.0 + audioSpeed * 5.0)) * 91.0;
         
-        // Each bolt starts near center and goes outward
         let boltAngle = (fi / f32(numBolts)) * (TAU / sectorCount) + hash1(seed) * 0.1;
         let boltLen = 0.6 + hash1(seed * 2.0) * 0.4;
         let startR = 0.02 + hash1(seed * 5.0) * 0.05;
         let start = vec2<f32>(cos(boltAngle), sin(boltAngle)) * startR;
         
-        // Rebranch depth based on intensity
         let depth = 2;
         
         let bolt = branchingBolt(
             kp, start, boltAngle, boltLen,
             seed, time, depth, &boltColor
         );
+        boltEnergy += bolt;
         
-        // Add bolt colors
         let boltHue = fract(fi / f32(numBolts) + colorShift + time * 0.03);
         let boltCol = electricColor(boltHue);
         
-        // Flickering visibility
         let flicker = hash1(seed + time * 25.0);
         let visibility = smoothstep(0.2, 0.5, flicker);
+        let isReturn = hash1(seed + floor(time * 12.0)) > 0.55;
+        let strokeScale = select(0.38, 1.85, isReturn);
         
-        col += boltCol * bolt * visibility * audioIntensity * 2.0;
+        col += boltCol * bolt * visibility * audioIntensity * 2.0 * strokeScale;
         
-        // Secondary smaller bolts
         if (hash1(seed * 11.0) > 0.6) {
             let seed2 = seed + 200.0;
             let bolt2 = branchingBolt(
                 kp, start * 2.0, boltAngle + (hash1(seed2) - 0.5) * 0.5, boltLen * 0.6,
                 seed2, time, 1, &boltColor
             );
+            boltEnergy += bolt2;
             let secCol = electricColor(fract(boltHue + 0.5));
-            col += secCol * bolt2 * visibility * 0.5 * audioIntensity;
+            col += secCol * bolt2 * visibility * 0.5 * audioIntensity * strokeScale;
         }
     }
     
@@ -341,6 +340,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Exact HDR temporal feedback, then ACES display mapping.
     let prev = textureLoad(dataTextureC, pixel, 0);
     let decay = 0.96;
+    let lich = clamp(boltEnergy * 0.22, 0.0, 0.5);
+    col = mix(col, prev.rgb, lich);
     let temporal = mix(prev.rgb * decay, col, 0.25);
     var mapped = acesToneMap(temporal);
     mapped = pow(max(mapped, vec3<f32>(0.0)), vec3<f32>(1.1, 1.0, 0.9));

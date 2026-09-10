@@ -3,11 +3,9 @@
 //  Category: generative
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: High
-//  Wolfram: Blackbody peak wavelength 499.6 nm (5800K) drives plasma color.
-//           Bass drives temperature: higher bass = hotter = bluer.
-//  Created: 2026-05-31
-//  Updated: 2026-06-07
-//  By: Kimi Agent
+//  Upgraded: 2026-09-09
+//  Ideas: contra-rotating inner vs outer plasma octaves; Doppler hue along 1/r travel
+//  A packing: HDR trail RGB in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -119,12 +117,11 @@ fn stars(uv: vec2<f32>, time: f32) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
-    let uvNorm = vec2<f32>(pixel) / res;
 
     let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
-    let mouseNorm = (mousePos - res * 0.5) / min(res.x, res.y);
+    let mouseNorm = (u.zoom_config.yz - 0.5) * vec2<f32>(res.x, res.y) / min(res.x, res.y);
     let mouseDown = u.zoom_config.w > 0.5;
     let intensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
@@ -135,16 +132,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Temporal feedback
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uvNorm, 0.0);
+    let prev = textureLoad(dataTextureC, pixel, 0);
 
     let audioSpeed = speed * (0.85 + bass * 0.8);
     let audioIntensity = intensity * (0.8 + treble * 0.7);
     let audioColor = colorShift + mids * 0.3;
 
-    let aspect = res.x / res.y;
-
-    // Mouse controls tunnel curvature
     var tunnelShift = vec2<f32>(0.0);
     if (mouseDown) {
         tunnelShift = mouseNorm * 0.5;
@@ -166,7 +159,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     for (var i = 0; i < 5; i++) {
         let fi = f32(i);
-        let rotAngle = time * (0.2 + fi * 0.1) * (1.0 + speed);
+        let contra = select(1.0, -1.0, (i & 1) == 0);
+        let rotAngle = time * (0.2 + fi * 0.1) * (1.0 + speed) * contra;
         let cos_r = cos(rotAngle);
         let sin_r = sin(rotAngle);
         let rotMat = mat2x2<f32>(cos_r, -sin_r, sin_r, cos_r);
@@ -199,9 +193,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Bass drives plasma temperature (3000K .. 10000K)
     let plasmaTemp = mix(3000.0, 10000.0, bass);
 
-    // Color from plasma with blackbody temperature
-    let hue1 = fract(plasmaVal * 0.8 + time * 0.06 + audioColor);
-    let hue2 = fract(plasmaVal * 1.2 - time * 0.04 + audioColor + 0.33);
+    // Doppler along the 1/r travel axis: inner (high depth) blueshifts, outer recedes
+    let doppler = clamp((tunnelDepth - 6.0) * 0.035, -0.22, 0.22);
+
+    let hue1 = fract(plasmaVal * 0.8 + time * 0.06 + audioColor + doppler);
+    let hue2 = fract(plasmaVal * 1.2 - time * 0.04 + audioColor + 0.33 + doppler * 0.6);
 
     let col1 = plasmaPalette(hue1, plasmaTemp);
     let col2 = hotPlasmaPalette(hue2, plasmaTemp);
@@ -245,17 +241,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let caStr = 0.003 * (1.0 + bass);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    // ACES tone mapping
-    var finalColor = acesToneMap(col * 1.1);
-
-    // Temporal feedback
     let decay = 0.96;
-    let temporal = mix(prev.rgb * decay, finalColor, 0.25);
-    textureStore(dataTextureA, pixel, vec4<f32>(temporal, 1.0));
-
-    // Semantic alpha
-    let presence = clamp(length(finalColor) * 1.2, 0.0, 1.0);
+    let temporal = mix(prev.rgb * decay, col, 0.25);
+    let presence = clamp(length(temporal) * 1.2, 0.0, 1.0);
     let alpha = clamp(presence * 0.8, 0.2, 0.95);
-    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
+
+    let mapped = acesToneMap(temporal * 1.1);
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - r * 0.55, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

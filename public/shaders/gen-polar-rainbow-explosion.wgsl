@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: Medium
-//  Created: 2026-05-31
-//  Updated: 2026-06-07
-//  By: Kimi Agent
+//  Upgraded: 2026-09-09
+//  Ideas: Mach split ahead vs behind shockR; wavelength-scaled ray width
+//  A packing: HDR display RGBA in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 //  Wolfram Spherical Shock-Wave Enrichment:
 //  Shock front propagates radially: r_shock = r0 + speed*time
@@ -124,9 +124,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
     let time = u.config.x;
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let mouseDown = u.zoom_config.w;
-    let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);
+    let mouseNorm = (u.zoom_config.yz - 0.5) * vec2<f32>(resolution.x, resolution.y) / min(resolution.x, resolution.y);
 
     let intensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
@@ -149,6 +148,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Wolfram Shock-Wave Enrichment ──
     let shockR = fract(time * 0.25 * (1.0 + bass * 2.0)) * 1.5;
     let shockIntensity = exp(-abs(radius - shockR) * 10.0) * (0.5 + bass * 1.5);
+    let ahead = smoothstep(0.0, 0.1, radius - shockR);
+    let behind = smoothstep(0.0, 0.1, shockR - radius);
     let ripple = sin(radius * 50.0 - time * 10.0) * treble;
 
     // ---- RAINBOW RAYS ----
@@ -169,21 +170,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Ray width modulated by radius, noise, and shock wave
         let rayWidth = (0.03 + 0.02 * sin(radius * 8.0 + time * speed + r) * intensity) / (radius * 2.0 + 0.5) * scale;
+        let rayWidthR = rayWidth * 1.14;
+        let rayWidthB = rayWidth * 0.86;
 
-        // Ray intensity falls off with radius; shock wave boosts it
         let radialFalloff = exp(-radius * radius * 1.5) * (1.0 + 2.0 * mouseDown);
         let rayMask = smoothstep(rayWidth, 0.0, distFromRay) * radialFalloff;
+        let rayMaskR = smoothstep(rayWidthR, 0.0, distFromRay) * radialFalloff;
+        let rayMaskB = smoothstep(rayWidthB, 0.0, distFromRay) * radialFalloff;
 
-        // Pulsing ray brightness
         let pulse = 0.6 + 0.4 * sin(time * 3.0 * speed + r * 0.5);
 
-        // Color for this ray
         let hue = fract(rayPhase + time * 0.08 * speed + colorShift + radius * 0.3 + ripple * 0.02);
         let rayColor = neonSpectrum(hue);
 
-        col += rayColor * rayMask * pulse * intensity * 2.5;
-        // Shock-front energy injection
-        col += rayColor * shockIntensity * radialFalloff * 0.8;
+        col += vec3<f32>(rayColor.r * rayMaskR, rayColor.g * rayMask, rayColor.b * rayMaskB) * pulse * intensity * 2.5;
+        col += rayColor * shockIntensity * radialFalloff * mix(0.35, 1.15, behind);
+        col += vec3<f32>(0.55, 0.75, 1.0) * shockIntensity * ahead * radialFalloff * 0.28;
     }
 
     // ---- PARTICLE BURSTS ALONG RAYS ----
@@ -250,19 +252,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vig = 1.0 - dot(uv * 0.65, uv * 0.65);
     col *= clamp(vig, 0.0, 1.0) * 1.4;
 
-    // ── Temporal feedback ──
     let prev = textureLoad(dataTextureC, pixel, 0);
     col = mix(prev.rgb * 0.96, col, 0.25);
-    textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
 
-    // ── Chromatic aberration ──
     let caStr = 0.003 * (1.0 + bass);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    // ── ACES tone mapping + semantic alpha ──
-    col = acesToneMap(col * 1.1);
     let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
-
-    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+    let mapped = acesToneMap(col * 1.1);
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - radius * 0.7, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

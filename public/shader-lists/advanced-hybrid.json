@@ -12171,7 +12171,8 @@
       "fft",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {

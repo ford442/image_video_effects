@@ -1,4 +1,12 @@
-// Ice Crystal Lattice — hexagonal branching frost and fracture fronts
+// ═══════════════════════════════════════════════════════════════════
+//  Ice Crystal Lattice
+//  Category: generative
+//  Features: procedural, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: secondary dendrite teeth on hex arms; plate vs needle habit
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -61,6 +69,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let radius = length(p);
   let angle = atan2(p.y, p.x);
   let branchNeedles = pow(0.5 + 0.5 * cos(angle * 6.0 + sin(radius * density * 0.7) * branching * 2.2), 8.0);
+  let arm = pow(max(cos(angle * 6.0), 0.0), 5.0);
+  let dendrite = arm * pow(0.5 + 0.5 * cos(radius * density * 3.4 + branching * 3.2), 5.0) * branching;
+  let plateHabit = 1.0 - clamp(u.zoom_params.z, 0.0, 1.0);
+  let hexInterior = (1.0 - l0) * (1.0 - l1) * (1.0 - l2);
+  let plateFill = hexInterior * plateHabit * (0.22 + frostGlow * 0.06);
   let growthFront = 1.0 - smoothstep(0.0, 0.085, abs(radius - fract(time * growthSpeed + bass * 0.06) * 0.9));
 
   let mouse = (u.zoom_config.yz - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
@@ -82,14 +95,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let crystal = clamp(hexWeb * (0.35 + branchNeedles * branching) + growthFront * hexWeb * 0.55 + nucleation + localBranches + fracture, 0.0, 2.0);
-  let fresnelFrost = pow(clamp(hexWeb * 0.65 + branchNeedles * 0.25 + fracture * 0.5, 0.0, 1.0), 1.5);
+  let crystal = clamp(hexWeb * (0.35 + branchNeedles * branching) + dendrite * 0.55 + plateFill + growthFront * hexWeb * 0.55 + nucleation + localBranches + fracture, 0.0, 2.0);
+  let fresnelFrost = pow(clamp(hexWeb * 0.65 + branchNeedles * 0.25 + dendrite * 0.2 + fracture * 0.5, 0.0, 1.0), 1.5);
   var raw = vec3<f32>(0.008, 0.025, 0.05);
   raw += palette(radius * 0.25 + mids * 0.08) * crystal * (0.45 + frostGlow * 0.7);
+  raw += vec3<f32>(0.85, 1.05, 1.45) * plateFill * (0.7 + frostGlow * 0.2);
   raw += vec3<f32>(0.7 + bass * 0.2, 1.15 + mids * 0.28, 1.7 + treble * 0.6) * fresnelFrost * frostGlow;
   let prev = textureLoad(dataTextureC, pixel, 0);
   raw = clamp(mix(prev.rgb * 0.945, raw, 0.24 + growthSpeed * 0.12), vec3<f32>(0.0), vec3<f32>(7.0));
-  let alpha = clamp(0.03 + crystal * 0.62 + fresnelFrost * 0.22, 0.03, 0.98);
+  let alpha = clamp(0.03 + crystal * 0.62 + fresnelFrost * 0.22 + plateFill * 0.12, 0.03, 0.98);
   let depth = clamp(crystal * 0.55 + fresnelFrost * 0.32, 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(raw, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(raw * 1.08), alpha));
