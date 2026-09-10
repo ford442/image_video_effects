@@ -135,7 +135,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dimensions = textureDimensions(writeTexture);
+    let dimensions = vec2<i32>(textureDimensions(writeTexture));
     let coord = vec2<i32>(global_id.xy);
 
     if (coord.x >= dimensions.x || coord.y >= dimensions.y) {
