@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-11 (cyber-EM hybrid ten)
+**Last updated:** 2026-09-11 (merged: cyber-EM, geometric, ethereal, leftover batches)
 
 ## 2026-09-11 — Cyber-EM hybrid ten (10 shaders)
 
@@ -39,6 +39,29 @@
 - Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
 - Notes: `agents/swarm-outputs/composer-2026-09-11-geometric-ten/`.
 - Skipped kaleido-scope, time-lag-map, adaptive-mosaic, neon-poly-grid, spec-hypercube-projection, crystal-mosaic (upgraded in prior batches).
+
+## 2026-09-11 — Ethereal generative ten (10 shaders)
+
+- IDs: `gen-ethereal-cyber-chrono-nebula-phoenix`, `gen-ethereal-cyber-chrono-void-whale`, `gen-ethereal-cyber-plasma-void-dragon`, `gen-ethereal-glass-flora-terrarium`, `gen-ethereal-quantum-glass-nautilus`, `gen-ethereal-quantum-hologram-bonsai`, `gen-ethereal-quantum-holographic-fractal-coral`, `gen-ethereal-quantum-medusa`, `gen-ethereal-silk-veil`, `gen-feedback-echo-chamber`.
+- Per shader, the ideas actually added:
+  - gen-ethereal-cyber-chrono-nebula-phoenix: wing feather filaments on SDF edge; tail ember convection. Spring halo [133..137] kept.
+  - gen-ethereal-cyber-chrono-void-whale: baleen comb striations on ribs; bass sonar ping rings from core.
+  - gen-ethereal-cyber-plasma-void-dragon: breath plasma jet along spine; per-segment scale overlap parallax.
+  - gen-ethereal-glass-flora-terrarium: condensation droplets on shell; dew meniscus on leaf tips.
+  - gen-ethereal-quantum-glass-nautilus: chamber septa walls; pearl nacre luster. Full floor added (ACES/dataA/plasmaBuffer/updatedParams).
+  - gen-ethereal-quantum-hologram-bonsai: prune-cut seal rings; north-facing moss lichen. bass_env [133] kept.
+  - gen-ethereal-quantum-holographic-fractal-coral: polyp mouth pits; zooxanthellae symbiont pulse from exact C.
+  - gen-ethereal-quantum-medusa: nematocyst stinger dots; bell contraction wave from bass phase.
+  - gen-ethereal-silk-veil: selvage fray on ribbon edges; held-crease memory from exact C.
+  - gen-feedback-echo-chamber: harmonic echo ladder at 2× spacing; standing-wave nodal interference. bass_env [133] kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM bridge. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/composer-2026-09-11-ethereal-ten/`.
+
+## 2026-09-11 — Leftover branches older than one day
+
+- Inventory after fetch/prune: today's ethereal/lighting/geometric Cursor branches skipped. Mycelium plan and Claude weekly-dispatch already merged. batch-59 empty. batch-60/61 mostly superseded (graphs already on main; WASM JS would regress TS SoT).
+- Landed unique positives: `liquid-swirl` (restore Lamb-Oseen identity), `liquid-tensor-vortex` (spectral tensor + A write), `rgb-glitch-displacement` (Batch 61 persistence, 16×16). Params exact. Naga 3/3. Real-GPU QA external.
 
 ## 2026-09-11 — Fireworks leftover atmospheric six (6 shaders)
 

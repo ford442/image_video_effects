@@ -1541,7 +1541,7 @@
     "id": "liquid-tensor-vortex",
     "name": "Liquid Tensor Vortex",
     "url": "shaders/liquid-tensor-vortex.wgsl",
-    "description": "Source-luma structure-tensor eigenflow advects liquid metal through curl vortices, coherent folds, held-pointer torque, and click-launched metallic fronts.",
+    "description": "Six analytic divergence-free stream-function modes produce an exact velocity-gradient tensor. Q-criterion vortex cores, principal strain, cohesive surface tension, Rankine pointer flow, and FFT energy bands drive liquid-metal refraction and temporal folds.",
     "tags": [
       "liquid",
       "metal",
@@ -1549,18 +1549,22 @@
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "vorticity",
-      "structure-tensor"
+      "vorticity"
     ],
     "features": [
       "mouse-driven",
+      "held-drag",
+      "bounded-click-ripples",
       "audio-reactive",
+      "per-band-fft",
       "depth-aware",
       "tensor-field",
-      "temporal",
-      "click-reactive",
-      "bounded-history",
-      "upgraded-rgba"
+      "analytic-divergence-free-flow",
+      "q-criterion",
+      "principal-strain",
+      "rankine-vortex",
+      "semantic-alpha",
+      "aces"
     ],
     "params": [
       {
@@ -1630,7 +1634,7 @@
         "step": 0.05
       }
     ],
-    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded tensor-flow loads",
+    "feedbackPacking": "A/C = ACES display RGBA; B unwritten; exact textureLoad C",
     "updated": true
   },
   {

@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Ethereal Cyber-Chrono Nebula-Phoenix (upgraded: live audio + HDR tamed)
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Ethereal Cyber-Chrono Nebula-Phoenix
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: wing feather filaments along SDF edge; tail ember convection streaks
+//  A packing: raw telemetry in A (trap, d, nebula, alpha) — C reads fields
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -104,6 +109,35 @@ fn sdPhoenix(p: vec2<f32>, wingspan: f32) -> f32 {
     let tail = length(vec2<f32>(tailUV.x, max(0.0, -tailUV.y))) - 0.1 + 0.08 * sin(p.y * 20.0);
     return min(min(body, wing), tail);
 }
+
+fn sdPhoenixGrad(p: vec2<f32>, wingspan: f32) -> vec2<f32> {
+    let e = vec2<f32>(0.001, 0.0);
+    let dx = sdPhoenix(p + e.xy, wingspan) - sdPhoenix(p - e.xy, wingspan);
+    let dy = sdPhoenix(p + e.yx, wingspan) - sdPhoenix(p - e.yx, wingspan);
+    return normalize(vec2<f32>(dx, dy) + vec2<f32>(0.0001));
+}
+
+// Native idea 1: phoenix plumage filaments along wing SDF edges.
+fn wingFeatherFilaments(p: vec2<f32>, wingspan: f32, edge: f32, t: f32) -> f32 {
+    let onWing = smoothstep(0.0, 0.1, abs(p.x) - 0.05) * smoothstep(-0.15, 0.2, p.y - 0.12);
+    let grad = sdPhoenixGrad(p, wingspan);
+    let tangent = vec2<f32>(-grad.y, grad.x);
+    let featherCoord = dot(p, tangent) * 90.0 + edge * 140.0;
+    let barb = 0.5 + 0.5 * sin(featherCoord + t * 2.2);
+    let barbFine = 0.5 + 0.5 * sin(featherCoord * 3.9 - t * 1.4);
+    let edgeBand = smoothstep(0.1, 0.0, edge);
+    return onWing * edgeBand * barb * barbFine;
+}
+
+// Native idea 2: rising ember convection along the tail SDF axis.
+fn tailEmberConvection(p: vec2<f32>, t: f32, bass: f32) -> f32 {
+    let tailUV = vec2<f32>(p.x * 2.0, p.y + 0.35);
+    let inTail = smoothstep(0.18, 0.0, length(vec2<f32>(tailUV.x, max(0.0, -tailUV.y))));
+    let axisPhase = -tailUV.y * 20.0 - t * (2.8 + bass * 1.8);
+    let streak = 0.5 + 0.5 * sin(axisPhase + sin(tailUV.x * 32.0) * 2.5);
+    let streakFine = pow(0.5 + 0.5 * sin(axisPhase * 2.4 + tailUV.x * 48.0), 3.0);
+    return inTail * streak * streakFine;
+}
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = textureDimensions(writeTexture);
@@ -203,6 +237,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var phoenixColor = pal * (density + shell * 0.6 * wingPulse);
     phoenixColor += vec3<f32>(1.0, 0.4, 0.1) * chronoGlow * plasma;
     phoenixColor += vec3<f32>(1.0, 0.55, 0.2) * rippleFlare * shell * plasma * 1.5;
+
+    let featherFilaments = wingFeatherFilaments(p, wingspan, edge, time);
+    phoenixColor += vec3<f32>(1.0, 0.75, 0.45) * featherFilaments * shell * (0.6 + treble * 0.5);
+
+    let emberStreaks = tailEmberConvection(p, time, bass);
+    phoenixColor += vec3<f32>(1.0, 0.35, 0.05) * emberStreaks * plasma * (0.5 + bass);
 
     // Spring-eased phoenix attention halo (was a snap-to-mouse glow).
     let mouseDist = length(uv01 - mouse);

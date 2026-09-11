@@ -3,9 +3,9 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-08-30
+//  Upgraded: 2026-09-11
+//  Ideas: F2−F1 edge neon rim; bass-driven centroid inflation pulse
 //  A packing: ACES display RGBA (cell agitation in alpha)
-//  Motion: per-cell zoom pulses + site-boundary shear conveyors
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -133,7 +133,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let edge = clamp((second - minDist) * 4.2, 0.0, 1.0);
+  let edgeGap = second - minDist;
+  let edge = clamp(edgeGap * 4.2, 0.0, 1.0);
+  let neonRim = smoothstep(0.09, 0.0, edgeGap) * (0.4 + bass * 0.55 + treble * 0.15);
   let randVal = hash12(cellId);
   let cellTime = time * (0.85 + speed) + randVal * 10.0;
   var zoomFactor = 1.0 + sin(cellTime) * 0.48 * intensity + cos(cellTime * 0.71) * 0.22 * intensity;
@@ -157,7 +159,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   zoomFactor = zoomFactor + pulse * 0.55;
 
-  let offsetFromCenter = -minPoint;
+  let centroidPulse = 1.0 + bass * 0.42 * (0.5 + 0.5 * sin(time * 1.85 + randVal * TAU));
+  let inflatedPoint = minPoint * centroidPulse;
+  let offsetFromCenter = -inflatedPoint;
   let zoomShift = offsetFromCenter * (1.0 / max(zoomFactor, 0.12) - 1.0);
   let shearDir = vec2<f32>(-minPoint.y, minPoint.x);
   let shearLen = max(length(shearDir), 0.001);
@@ -177,6 +181,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hdr = mix(hdr, hdr * palette(hueT), 0.22 + edge * 0.18);
   hdr = hdr + palette(hueT + 0.33) * pulse * 0.35;
   hdr = mix(hdr, hist.rgb, 0.18 + edge * 0.12);
+  hdr = hdr + palette(hueT + 0.62) * neonRim * (1.15 + mids * 0.25);
 
   let rgb = acesToneMap(hdr * 1.08);
   let agitation = clamp(abs(zoomFactor - 1.0) * 0.85 + (1.0 - edge) * 0.35 + pulse * 0.4, 0.08, 0.98);

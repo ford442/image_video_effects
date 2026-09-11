@@ -3,9 +3,9 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-06
+//  Upgraded: 2026-09-11
+//  Ideas: staggered domino row delay; grout mortar compression darkening
 //  A packing: ACES display RGBA
-//  Motion: kinetic traveling wave cascade + rotating bevel tile shear
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -122,8 +122,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let toCenter = (cellCenter - spring) * aspectVec;
   let distCenter = length(toCenter);
 
-  // Kinetic cascade wave
-  let cascadePhase = distCenter * 16.0 - time * (3.5 + bass * 3.0) + sin(cellIndex.x * 0.5 + cellIndex.y * 0.3);
+  // Kinetic cascade wave — domino row delay staggers wave front by floor(cell.y)
+  let rowDelay = cellIndex.y * 0.38;
+  let cascadePhase = distCenter * 16.0 - time * (3.5 + bass * 3.0) + sin(cellIndex.x * 0.5 + cellIndex.y * 0.3) - rowDelay;
   let waveMotion = sin(cascadePhase) * 0.5 + 0.5;
 
   var pct = 0.0;
@@ -160,7 +161,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gCol = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
     let bCol = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     
-    color = vec3<f32>(rCol, gCol, bCol) * (0.75 + 0.25 * bevel);
+    let groutCompress = smoothstep(0.09, 0.0, edgeDist) * totalImpulse * (0.38 + abs(currentAngle) * 0.22);
+    color = vec3<f32>(rCol, gCol, bCol) * (0.75 + 0.25 * bevel) * (1.0 - groutCompress);
     
     // Metallic specular glint based on angle
     let glintAngle = abs(sin(currentAngle * 2.0 + time * 2.0));

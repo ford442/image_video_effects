@@ -1,19 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Hyperbolic Dreamweaver
-//  Category: geometric (distortion)
-//  Features: advanced-alpha, hyperbolic-geometry, depth-aware, audio-reactive, anti-moire
+//  Category: geometric
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, anti-moire
 //  Complexity: Medium
-//  Created: 2026-05-23
-//  By: Claude Sonnet 4.6 (swarm optimization pass 2026-05-31)
-//  upgraded-rgba
-//
-//  OPTIMIZATIONS APPLIED:
-//  - Cached hyperbolic coordinates
-//  - LOD for distance > 0.7
-//  - Branchless hyperbolic calculations
-//  - fwidth-based mip selection for anti-moiré at 2048² (added 2026-05-31)
-//  - Audio reactivity fixed to use plasmaBuffer (was reading zoom_config.x)
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-09-11
+//  Ideas: {7,3} hyperbolic distance band coloring; geodesic thread weave on tile edges
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -72,6 +65,10 @@ fn calculateAdvancedAlpha(
     return clamp(effectAlpha * depthAlpha, 0.0, 1.0);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // OPTIMIZATION: Cached hyperbolic distance calculation
 fn hyperbolicDist(z: vec2<f32>) -> f32 {
     let r2 = dot(z, z);
@@ -127,10 +124,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mid            = plasmaBuffer[0].y;
     let audioReactivity = 1.0 + bass * 0.4 + mid * 0.15;
     
-    // Parameters
+    // Parameters — tileCount/curvature/aberration/glowIntensity from saved sliders
+    let tileCount = 3.0 + u.zoom_params.x * 6.0;
     let intensity = u.zoom_params.x;
     let curvature = u.zoom_params.y * 2.0 + 0.5;
     let depthWeight = u.zoom_params.z;
+    let glowIntensity = u.zoom_params.w;
     let rotation = u.zoom_params.w * 6.28;
     
     // Map to Poincaré disk
@@ -196,11 +195,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = finalResult.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, finalResult.a));
+    // Idea 1 — {7,3} hyperbolic distance band coloring (native Poincaré palette)
+    let hBand = hyperDist * tileCount * 1.6;
+    let angular7 = fract(angle / 6.28318530718 * 7.0);
+    let bandId = floor(hBand * 3.0 + angular7 * 7.0);
+    let bandPalette = 0.55 + 0.45 * cos(6.28318530718 * (vec3<f32>(0.0, 0.17, 0.33) + bandId * 0.143));
+    let bandMix = 0.16 + intensity * 0.24;
+    var shadedRGB = finalResult.rgb * mix(vec3<f32>(1.0), bandPalette, bandMix);
+
+    // Idea 2 — geodesic thread weave along hyperbolic tile edges
+    let tilePhase = hyperDist * tileCount * 4.0 + angle * 7.0;
+    let edgeProximity = abs(fract(tilePhase) - 0.5) * 2.0;
+    let threadMask = smoothstep(0.88, 0.98, 1.0 - edgeProximity) * glowIntensity;
+    let threadGlow = vec3<f32>(0.82, 0.91, 1.0) * threadMask * (0.35 + bass * 0.35);
+    shadedRGB = shadedRGB + threadGlow;
+
+    let tonedRGB = acesToneMap(shadedRGB + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25));
+    let outCol = vec4<f32>(tonedRGB, finalResult.a);
+    let coord = vec2<i32>(global_id.xy);
+    textureStore(writeTexture, coord, outCol);
+    textureStore(dataTextureA, coord, outCol);
     
     // Depth pass-through with hyperbolic modulation (clamped to [0,1] — prevents depth buffer overrun)
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthMod = 1.0 + hyperDist * 0.1 * (1.0 - lodFactor);
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(depth * depthMod, 0.0, 1.0), 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth * depthMod, 0.0, 1.0), 0.0, 0.0, 0.0));
 }
