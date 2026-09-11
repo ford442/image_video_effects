@@ -1,6 +1,25 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-11 (ethereal generative ten)
+**Last updated:** 2026-09-11 (lighting leftover ten)
+
+## 2026-09-11 — Lighting leftover ten (10 shaders)
+
+- IDs: `neon-pulse-edge`, `sim-volumetric-fake-em`, `sim-volumetric-fake`, `volumetric-god-rays`, `neon-flashlight`, `neon-strings`, `neon-edges`, `neon-edge-glow`, `anamorphic-flare`, `neon-echo`.
+- Per shader, the ideas actually added:
+  - neon-pulse-edge: Sobel-tangent tube glow; exact-C edge afterglow. Raw edge field in A.
+  - sim-volumetric-fake-em: Beer–Lambert dust on bent rays; E×B lateral kick. Ripple charges kept. Mouse stash extraBuffer[133..134]. Display RGBA in A.
+  - sim-volumetric-fake: depth occlusion vs the light; discrete dust motes on radial taps.
+  - volumetric-god-rays: photo-luma occluder in the march; sun-disk core. A packing switched to display RGBA.
+  - neon-flashlight: umbra vs penumbra; specular catch on edges inside the cone. JSON slider roles remapped in WGSL.
+  - neon-strings: standing-wave node darkening; nut/bridge end-pins. Packet/click kept.
+  - neon-edges: inverse-square spotlight; Kelvin isotherm bands. Tube-current wave kept. A packing switched to display RGBA.
+  - neon-edge-glow: tube core + dark sheath; 60 Hz mains beat. A packing switched to display RGBA.
+  - anamorphic-flare: threshold-gated highlight streak; blue-line ghost. JSON width/intensity/color/threshold mapped honestly.
+  - neon-echo: exact-C persistence; P7 yellow-green tail. Raw persist in A.
+- Floor: bindings / 16×16 / exact C where C is history / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM/canvas. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-11-lighting-leftover-ten/`.
+- Skipped matrix_digital_rain, aurora pass-2 graphs, Batch 60 neon-pulse, overlay-rich geometric leftovers.
 
 ## 2026-09-11 — Ethereal generative ten (10 shaders)
 
@@ -19,8 +38,6 @@
 - Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
 - Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM bridge. Real-GPU visual QA: external.
 - Notes: `agents/swarm-outputs/composer-2026-09-11-ethereal-ten/`.
-
-**Last updated:** 2026-09-11 (leftover branch union)
 
 ## 2026-09-11 — Leftover branches older than one day
 

@@ -9,7 +9,9 @@
     "mouse-driven",
     "electromagnetic",
     "interactive",
-    "randomization-safe"
+    "randomization-safe",
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "params": [
     {
