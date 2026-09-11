@@ -1,8 +1,28 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-10 (hybrid leftover ten)
+**Last updated:** 2026-09-10 (fireworks shell taxonomy ten)
+
+## 2026-09-10 — Fireworks shell taxonomy ten (10 shaders)
+
+- IDs: `gen-fireworks-chrysanthemum`, `gen-fireworks-dahlia-burst`, `gen-fireworks-crossette`, `gen-fireworks-crackle-palm`, `gen-fireworks-willow-cascade`, `gen-fireworks-horse-tail`, `gen-fireworks-kamuro-gold`, `gen-fireworks-ring-shell`, `gen-fireworks-strobe-shell`, `gen-fireworks-roman-candle`.
+- Per shader, the ideas actually added:
+  - chrysanthemum: pistil heart (inner ring slower/denser); sphere latitude foreshorten.
+  - dahlia-burst: even-row imbrication; petal midrib.
+  - crossette: parent star then four-way fork; split-instant X flash.
+  - crackle-palm: crackle on primary spark positions; opposite leaflet pairs.
+  - willow-cascade: terminal hang at strand tips; leeward curtain lean.
+  - horse-tail: brocade pinch then parallel rain; tip spark-out.
+  - kamuro-gold: per-glitter twinkle; hang plateau then resume fall.
+  - ring-shell: Saturn tilt ellipse; empty core (inner jewels removed).
+  - strobe-shell: per-spark flash phase; true dark interval.
+  - roman-candle: muzzle flash; per-tube starCol sequence. Click ripples kept.
+- Floor: bindings / 16×16 / exact C / ACES display RGBA / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-10-fireworks-ten/`.
+- Skipped audio-symphony, nocturne, wind-ripple, smoke-bloom, comet-trail, fan-shell.
 
 ## 2026-09-10 — Hybrid leftover ten (10 shaders)
+
 
 - IDs: `hyb-hex-voronoi-distort`, `hyb-chromatic-circuit`, `hyb-neural-voronoi-feedback`, `hybrid-particle-fluid`, `hybrid-magnetic-field`, `hybrid-cyber-organic`, `spec-hypercube-projection`, `hex-circuit`, `neon-poly-grid`, `neon-light`.
 - Per shader, the ideas actually added:
