@@ -2306,8 +2306,13 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "spring-damper-pointer",
+      "aces"
     ],
+    "feedbackPacking": "A packs offset.xy + glitchEnergy; writeTexture is ACES display RGBA; spring cursor extraBuffer[133..136]",
     "author": "Kimi",
     "params": [
       {
