@@ -1,5 +1,12 @@
-// Lens Flare Brush — interactive brush igniting anamorphic streaks and multi-element flares from image highlights.
-// A/C stores ACES display RGBA for continuous brush trail persistence; B is unused; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Lens Flare Brush
+//  Category: lighting-effects
+//  Features: audio-reactive, mouse-driven, upgraded-rgba, click-reactive
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: wet smear persistence along drag vector from exact C; caustic sparkle at orbital ghost centers
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -68,6 +75,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hasMouse = rawMouse.x >= 0.0 && rawMouse.x <= 1.0 && rawMouse.y >= 0.0 && rawMouse.y <= 1.0;
   let mouse = select(vec2<f32>(0.5, 0.5), rawMouse, hasMouse);
   let held = u.zoom_config.w > 0.5;
+  let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
+  let dragVec = mouse - prevMouse;
 
   // Click ripple interaction
   var rippleOffset = vec2<f32>(0.0);
@@ -117,6 +126,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Orbital ghost flares around brush
   var ghostAccum = vec3<f32>(0.0);
+  var causticSparkle = 0.0;
   let numGhosts = 5;
   for (var g = 0; g < numGhosts; g = g + 1) {
     let fg = f32(g);
@@ -136,7 +146,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       0.5 + 0.5 * sin(gHue + 4.188)
     );
     ghostAccum += gColor * gGlow * intensity * 0.22 * (0.3 + lumaGate * 0.7);
+
+    // Caustic sparkle glints at orbital ghost centers
+    let sparkleUV = ghostPos * 420.0 + vec2<f32>(fg * 3.7, time * 0.6);
+    let sparkleHash = hash12(sparkleUV);
+    let sparkleGate = smoothstep(0.88, 0.98, sparkleHash) * gGlow * (0.35 + treble * 0.45);
+    causticSparkle += sparkleGate;
   }
+  ghostAccum += vec3<f32>(0.75, 0.95, 1.0) * causticSparkle * intensity * 0.55;
 
   // Diffraction starburst blades at cursor
   let toBrush = (uv - mouse) * aspectVec;
@@ -144,7 +161,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spike = pow(max(0.0, sin(brushAngle * 6.0 + time)), 12.0) * exp(-mouseDist * 14.0) * (0.4 + treble * 0.3);
   let spikeColor = vec3<f32>(1.0, 0.9, 0.75) * spike * intensity;
 
-  let flareTotal = (coreColor + streakColor + ghostAccum + spikeColor + vec3<f32>(ripplePulse)) * brushFalloff;
+  var flareTotal = (coreColor + streakColor + ghostAccum + spikeColor + vec3<f32>(ripplePulse)) * brushFalloff;
+
+  // Wet smear persistence: blend flare with exact C along mouse-drag offset
+  let smearUV = clamp(uv - dragVec * (0.35 + stretch * 0.12), vec2<f32>(0.0), vec2<f32>(1.0));
+  let smearHistory = historyAt(smearUV, resolution);
+  let smearMix = clamp(length(dragVec) * 18.0 * brushFalloff * select(0.35, 0.65, held), 0.0, 0.72);
+  flareTotal = mix(flareTotal, smearHistory.rgb, smearMix);
 
   // Exact previous frame history load for brush strokes
   let history = historyAt(uv - rippleOffset * 0.5, resolution);
@@ -158,6 +181,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), finalAlpha);
 
   textureStore(writeTexture, coord, result);
-  textureStore(dataTextureA, coord, result);
+  textureStore(dataTextureA, coord, select(result, vec4<f32>(mouse, 0.0, 0.0), gid.x == 0u && gid.y == 0u));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

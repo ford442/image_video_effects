@@ -1,5 +1,12 @@
-// Dynamic Lens Flares — optical train ghost elements, internal reflection halo, diffraction rays, and chromatic dispersion.
-// A/C stores ACES display RGBA for continuous phosphor persistence; B is unused; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Dynamic Lens Flares
+//  Category: lighting-effects
+//  Features: audio-reactive, mouse-driven, upgraded-rgba, click-reactive
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: veiling glare along optical axis; ghost aperture breathing from C.a bass envelope
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -63,6 +70,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let bassEnvelope = mix(textureLoad(dataTextureC, coord, 0).a, bass, 0.18);
 
   let rawMouse = u.zoom_config.yz;
   let hasMouse = rawMouse.x >= 0.0 && rawMouse.x <= 1.0 && rawMouse.y >= 0.0 && rawMouse.y <= 1.0;
@@ -99,6 +107,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var flareAccum = vec3<f32>(0.0);
 
+  // Veiling glare along center → mouse axis, weighted by hot source luma
+  let axisLen = max(length(axis * aspectVec), 0.0001);
+  let axisDir = axis / axisLen;
+  let rel = (uv - mouse) * aspectVec;
+  let axisT = clamp(dot(rel, axisDir) / axisLen, 0.0, 1.0);
+  let axisDist = length(rel - axisDir * dot(rel, axisDir));
+  let veilFog = exp(-axisDist * 28.0) * exp(-abs(axisT - 0.5) * 5.5);
+  let veiling = vec3<f32>(1.0, 0.93, 0.78) * veilFog * lumaHot * intensity * 0.42;
+
   // Render optical ghosts along the axis
   let maxGhosts = 8;
   for (var i = 0; i < maxGhosts; i = i + 1) {
@@ -109,7 +126,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let clampedGhostPos = clamp(ghostPos, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let d = length((uv - clampedGhostPos) * aspectVec);
-    let size = (0.04 + 0.06 * sin(fi * 1.8 + time * 0.3)) * (1.0 + mids * 0.25);
+    let breathe = 1.0 + bassEnvelope * 0.35 * sin(time * 2.4 + fi * 0.9);
+    let size = (0.04 + 0.06 * sin(fi * 1.8 + time * 0.3)) * (1.0 + mids * 0.25) * breathe;
     let softness = 0.02 + 0.015 * fi;
     let weight = smoothstep(size + softness, size * 0.2, d);
 
@@ -157,15 +175,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Exact previous frame history load for phosphor decay
   let history = historyAt(uv - rippleOffset * 0.5, resolution);
 
-  var hdr = sourceColor.rgb + flareAccum + vec3<f32>(rippleBurst);
+  var hdr = sourceColor.rgb + flareAccum + veiling + vec3<f32>(rippleBurst);
   hdr += history.rgb * 0.055;
 
-  let flareLuma = dot(flareAccum, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let flareLuma = dot(flareAccum + veiling, vec3<f32>(0.2126, 0.7152, 0.0722));
   let finalAlpha = clamp(sourceColor.a * 0.5 + flareLuma * 0.5 + rippleBurst * 0.1, 0.0, 1.0);
 
   let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), finalAlpha);
+  let packedA = vec4<f32>(result.rgb, bassEnvelope);
 
   textureStore(writeTexture, coord, result);
-  textureStore(dataTextureA, coord, result);
+  textureStore(dataTextureA, coord, packedA);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

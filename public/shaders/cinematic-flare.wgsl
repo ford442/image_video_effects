@@ -1,5 +1,12 @@
-// Cinematic Flare — Cooke triplet ghosts, 6-blade diffraction starburst, anamorphic streaks, and Cauchy dispersion.
-// A/C stores ACES display RGBA for continuous persistence of vision; B is unused; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Cinematic Flare
+//  Category: lighting-effects
+//  Features: audio-reactive, depth-aware, mouse-driven, upgraded-rgba, click-reactive
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: lens dirt speckle occlusion along flare axis; veiling glare bloom between light and center
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -38,6 +45,18 @@ fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
   let hi = vec2<i32>(resolution) - vec2<i32>(1);
   let coord = clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), hi);
   return textureLoad(dataTextureC, coord, 0);
+}
+
+fn lensDirtSpeckle(axisUV: vec2<f32>, time: f32) -> f32 {
+  let speckle1 = hash12(axisUV * 180.0 + time * 0.04);
+  let speckle2 = hash12(axisUV * 420.0 - time * 0.03 + 17.0);
+  let speckle = mix(speckle1, speckle2, 0.5);
+  return mix(0.55, 1.0, smoothstep(0.72, 0.95, speckle));
+}
+
+fn veilingGlare(axisT: f32, lumaHot: f32, intensity: f32) -> f32 {
+  let axisFog = exp(-abs(axisT - 0.5) * 6.5) * (1.0 - abs(axisT - 0.5) * 1.6);
+  return axisFog * lumaHot * intensity * 0.35;
 }
 
 fn diffractionSpike(dir: vec2<f32>, intensity: f32) -> f32 {
@@ -88,6 +107,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lightDir = normalize(toLight + vec2<f32>(0.0001));
 
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let sourceLuma = dot(sourceColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let lumaHot = smoothstep(threshold, threshold + 0.25, sourceLuma);
+
+  // Flare axis parameter: light source → image center (for dirt + veiling glare)
+  let centerAspect = vec2<f32>(0.5, 0.5) * aspectVec;
+  let axisSpan = max(length(centerAspect - lightAspect), 0.0001);
+  let axisT = clamp(dot(uvAspect - lightAspect, centerAspect - lightAspect) / (axisSpan * axisSpan), 0.0, 1.0);
+  let dirtOcclusion = lensDirtSpeckle(vec2<f32>(axisT, lightDist), time);
 
   // Click ripple interaction
   var rippleDeflect = vec2<f32>(0.0);
@@ -130,7 +157,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     streakAccum += dispersed * hot;
     streakWeight += hot;
   }
-  let streak = select(vec3<f32>(0.0), streakAccum / max(streakWeight, 0.0001), streakWeight > 0.0) * flareIntensity * haze;
+  let streak = select(vec3<f32>(0.0), streakAccum / max(streakWeight, 0.0001), streakWeight > 0.0)
+    * flareIntensity * haze * dirtOcclusion;
 
   // Cooke triplet ghosts: 3 elements with anti-reflection coating colors
   var ghosts = vec3<f32>(0.0);
@@ -155,7 +183,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bG = textureSampleLevel(readTexture, u_sampler, clamp(ghostUV - vec2<f32>(ghostDisp, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     let dispersedGhost = vec3<f32>(rG, ghostSample.g, bG);
 
-    ghosts += dispersedGhost * ghostHot * ghostFalloff * ghostColors[g] * flareIntensity * 0.6;
+    ghosts += dispersedGhost * ghostHot * ghostFalloff * ghostColors[g] * flareIntensity * 0.6 * dirtOcclusion;
   }
 
   // 6-blade diffraction starburst from bright light source
@@ -165,8 +193,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let haloRadius = 7.0 / max(0.5 + bass * 0.5, 0.1);
   let halo = exp(-lightDist * lightDist * haloRadius) * flareIntensity * 0.65 * vec3<f32>(1.0, 0.92, 0.8);
 
+  // Veiling glare: axis fog between light source and image center
+  let veil = vec3<f32>(1.0, 0.94, 0.82) * veilingGlare(axisT, lumaHot, flareIntensity) * haze;
+
   // Combine flare components
-  let flareTotal = streak + ghosts + halo + vec3<f32>(spike) + vec3<f32>(rippleLight);
+  let flareTotal = streak + ghosts + halo + vec3<f32>(spike) + vec3<f32>(rippleLight) + veil;
   let goldAtmosphere = vec3<f32>(1.0, 0.85, 0.55) * mids * 0.3 * flareIntensity * haze;
 
   // Exact previous frame history load for persistence of vision
