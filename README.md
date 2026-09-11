@@ -1,7 +1,7 @@
 # WebGPU Shader Effects & Visual Library
 
 <!-- catalog-counts:intro:begin -->
-A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,362** compute shaders across 14 categories.
+A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,363** compute shaders across 14 categories.
 <!-- catalog-counts:intro:end -->
 
 ## Documentation map
@@ -59,7 +59,7 @@ More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts
 ## Features
 
 <!-- catalog-counts:features:begin -->
-- **1,362 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
+- **1,363 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
 <!-- catalog-counts:features:end -->
 - **Dual renderer** — TypeScript WebGPU (default) + experimental C++/WASM backend
 - **Multipass & slot stacks** — chained/parallel layers, ping-pong feedback (`docs/PARALLEL_SLOTS.md`)
@@ -125,7 +125,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 <!-- catalog-counts:table:begin -->
 | Category | Count | Description |
 |----------|------:|-------------|
-| **generative** | 467 | Procedural art, fractals, generative patterns |
+| **generative** | 468 | Procedural art, fractals, generative patterns |
 | **interactive-mouse** | 239 | Mouse and touch-driven interactions |
 | **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
 | **artistic** | 98 | Creative and artistic visual effects |
@@ -139,7 +139,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 | **hybrid** | 18 | Combined technique shaders |
 | **geometric** | 16 | Geometric patterns and tessellations |
 | **lighting-effects** | 15 | Volumetric lighting and glow |
-| **Total** | **1,362** | 14 canonical categories |
+| **Total** | **1,363** | 14 canonical categories |
 <!-- catalog-counts:table:end -->
 
 Legacy list files (`interactive.json`, `liquid.json`) were removed — use `interactive-mouse.json` and `liquid-effects.json`.
@@ -154,7 +154,7 @@ Legacy list files (`interactive.json`, `liquid.json`) were removed — use `inte
 image_video_effects/
 ├── public/
 <!-- catalog-counts:structure:begin -->
-│   ├── shaders/                    # WGSL compute shaders (1,362 catalog ids; more pass files on disk)
+│   ├── shaders/                    # WGSL compute shaders (1,363 catalog ids; more pass files on disk)
 <!-- catalog-counts:structure:end -->
 │   ├── shader-lists/               # Generated category JSON (14 files)
 │   ├── shader-manifest-unified.json

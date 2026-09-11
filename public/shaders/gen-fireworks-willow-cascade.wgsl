@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Willow Cascade
 //  Category: generative
-//  Features: willow-style drooping trails, wind drift, long-exposure
-//            temporal persistence, golden/silver palette, audio-reactive,
-//            mouse command shell, aces-tone-map, semantic alpha
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
+//  Upgraded: 2026-09-10
+//  Ideas: terminal hang at strand tips; leeward lean of the whole curtain
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -62,12 +63,14 @@ fn softGlow(uv: vec2<f32>, c: vec2<f32>, r: f32, i: f32) -> f32 {
   return (exp(-d * d / (r * r * 0.5)) + 0.4 * exp(-d / (r * 4.0))) * i;
 }
 
-// Willow spark: slow fall, wind drift, heavy drag
+// Willow spark: slow fall, wind drift, terminal hang at the tip (no extra accel).
 fn willowPos(origin: vec2<f32>, vel: vec2<f32>, age: f32, droop: f32, wind: f32) -> vec2<f32> {
   let t = age;
   let drag = exp(-0.08 * t);
   let windDrift = wind * t * (1.0 - exp(-t * 0.4));
-  let grav = droop * t * t * 0.5;
+  let hangT = 2.4;
+  let tHang = min(t, hangT);
+  let grav = droop * tHang * tHang * 0.5 + droop * hangT * max(t - hangT, 0.0);
   return origin + vec2<f32>(vel.x * drag + windDrift, vel.y * drag - grav);
 }
 
@@ -148,7 +151,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Willow burst — drooping curtain of sparks
     if (burstAge > 0.0 && burstAge < 8.0) {
-      let burstCenter = vec2<f32>(baseX, baseY + 1.38);
+      let burstLean = vec2<f32>(windAmt * 0.22 * burstAge / (1.0 + burstAge), -abs(windAmt) * 0.05 * burstAge);
+      let burstCenter = vec2<f32>(baseX, baseY + 1.38) + burstLean;
       let burstFade = smoothstep(7.5, 0.5, burstAge);
 
       // Core flash
@@ -163,7 +167,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Upward launch then gravity droop
         let angle = (jf / f32(numStrands)) * TAU + (jSeed - 0.5) * 0.5;
         let upSpeed = (0.35 + jSeed2 * 0.45) * shellEnergy;
-        let vel = vec2<f32>(cos(angle) * upSpeed * 0.6, sin(angle) * upSpeed + 0.25);
+        let vel = vec2<f32>(cos(angle) * upSpeed * 0.6 + windAmt * 0.18, sin(angle) * upSpeed + 0.25);
 
         let wPos = willowPos(burstCenter, vel, burstAge, droopAmt * (0.8 + bass * 0.3), windAmt + jSeed * 0.08);
 

@@ -6,6 +6,8 @@
 //  Chunks From: pixel-drag-smear.wgsl
 //  Created: 2026-05-17
 //  By: WGSL Upgrade Agent
+//  Ideas: bristle streak sampling; treble-split pigment bleed
+//  A packing: display RGBA (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -94,9 +96,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let offset = dir * influence * 0.05 + jitter + curlDisp;
 
-  let historyUV = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
-  let historyCoord = vec2<i32>(clamp(historyUV * resolution, vec2<f32>(0.0), resolution - 1.0));
-  let historyColor = textureLoad(dataTextureC, historyCoord, 0);
+  // Idea 1: bristle streak sampling — average three taps stepped along the drag
+  // offset vector so the smear reads as dragged bristles, not one soft blur tap.
+  let bristleStep = offset * 0.5;
+  let histUV0 = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
+  let histUV1 = clamp(uv - offset + bristleStep, vec2<f32>(0.0), vec2<f32>(1.0));
+  let histUV2 = clamp(uv - offset - bristleStep, vec2<f32>(0.0), vec2<f32>(1.0));
+  let bristle0 = textureLoad(dataTextureC, vec2<i32>(clamp(histUV0 * resolution, vec2<f32>(0.0), resolution - 1.0)), 0);
+  let bristle1 = textureLoad(dataTextureC, vec2<i32>(clamp(histUV1 * resolution, vec2<f32>(0.0), resolution - 1.0)), 0);
+  let bristle2 = textureLoad(dataTextureC, vec2<i32>(clamp(histUV2 * resolution, vec2<f32>(0.0), resolution - 1.0)), 0);
+  let bristled = (bristle0 + bristle1 + bristle2) / 3.0;
+
+  // Idea 2: treble-split pigment bleed — nudge R/B taps apart along the drag
+  // direction by an amount keyed to audioTreble, bleeding chroma at the bristle
+  // edge on treble transients (extends the existing psychedelic-color identity).
+  let bleedDir = select(vec2<f32>(0.0), normalize(offset), length(offset) > 0.0001);
+  let bleedAmt = audioTreble * 0.01;
+  let bleedR = textureLoad(dataTextureC, vec2<i32>(clamp((histUV0 + bleedDir * bleedAmt) * resolution, vec2<f32>(0.0), resolution - 1.0)), 0).r;
+  let bleedB = textureLoad(dataTextureC, vec2<i32>(clamp((histUV0 - bleedDir * bleedAmt) * resolution, vec2<f32>(0.0), resolution - 1.0)), 0).b;
+  let historyColor = vec4<f32>(bleedR, bristled.g, bleedB, bristled.a);
   let videoColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 

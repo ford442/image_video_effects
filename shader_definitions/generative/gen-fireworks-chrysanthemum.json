@@ -73,7 +73,8 @@
     "fast-motion",
     "generated-depth",
     "semantic-alpha",
-    "aces-tone-map"
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

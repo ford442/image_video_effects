@@ -66,5 +66,9 @@
   "updated": true,
   "id": "gen-fireworks-smoke-bloom",
   "url": "shaders/gen-fireworks-smoke-bloom.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }
