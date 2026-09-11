@@ -1,6 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Ferrofluid EM — multipole field lines through conductive liquid
-//  A owns HDR display history; C is exact previous display state.
+//  Ferrofluid EM
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, spring-interaction, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: spike coalescence snap; Earnshaw wobble
+//  A packing: HDR display RGBA (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -124,14 +129,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     + length(p) * spikeFrequency - time * 2.4)), 14.0);
   let poynting = pow(max(0.0, sin(dot(p, tangent) * spikeFrequency * 1.6
     - time * (4.0 + treble * 3.0) + potential * 2.0)), 18.0);
+
+  // Idea 1 — spike coalescence snap: nearby ridge peaks merge with bright bridge
+  let neighborAngle = angle + spikeFrequency * 0.18;
+  let neighborRidge = pow(abs(cos(neighborAngle * (4.0 + u.zoom_params.x * 8.0)
+    + length(p) * spikeFrequency - time * 2.4)), 14.0);
+  let coalesce = smoothstep(0.55, 0.92, directional * neighborRidge)
+    * pow(max(0.0, 1.0 - abs(directional - neighborRidge) * 3.5), 3.0);
+
   let ridge = clamp((equipotential * 0.58 + directional * 0.48 + poynting * 0.35)
-    * smoothstep(0.05, 1.5, magnitude) + clickEnergy * 0.08, 0.0, 2.0);
+    * smoothstep(0.05, 1.5, magnitude) + clickEnergy * 0.08 + coalesce * 0.22, 0.0, 2.0);
   let height = (1.0 - exp(-magnitude * 0.42)) * (0.22 + ridge * 0.78);
 
   // Field-aligned distortion with Hall-like transverse drift.
   let hall = mix(0.08, 0.55, conductivity);
+  // Idea 2 — Earnshaw wobble: treble drives unstable lateral spike tremor
+  let earnshaw = tangent * sin(time * (14.0 + treble * 22.0) + angle * 5.0 + potential * 3.0)
+    * treble * ridge * 0.012 * smoothstep(0.1, 1.2, magnitude);
   let displacementAspect = (direction * height * 0.045 + tangent * height * hall * 0.035
-    + clickField * 0.006) * (0.7 + fieldGain * 0.3);
+    + clickField * 0.006 + earnshaw) * (0.7 + fieldGain * 0.3);
   let displacedUV = clamp(uv - displacementAspect / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999));
   let chroma = tangent * (0.001 + conductivity * 0.008 + treble * 0.003) / aspectVec;
   let srcR = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + chroma, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
@@ -148,7 +164,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.0);
   let fieldColor = max(palette(angle / TAU + potential * 0.08 + colorPhase), vec3<f32>(0.0));
   let darkMetal = source * vec3<f32>(0.08, 0.09, 0.115) + vec3<f32>(0.004, 0.006, 0.01);
-  let emGlow = fieldColor * (ridge * (0.2 + mids * 0.3) + poynting * (0.45 + treble * 0.8));
+  let emGlow = fieldColor * (ridge * (0.2 + mids * 0.3) + poynting * (0.45 + treble * 0.8))
+    + vec3<f32>(0.85, 0.95, 1.0) * coalesce * (0.35 + treble * 0.25);
   let fluid = darkMetal + vec3<f32>(0.95, 1.0, 1.08) * specular * 2.1
     + fieldColor * fresnel * 0.55 + emGlow + vec3<f32>(1.0, 0.45, 0.12) * clickEnergy * 0.018;
   let effectMask = clamp(smoothstep(0.03, 0.9, magnitude) * 0.72 + ridge * 0.28, 0.0, 1.0);
