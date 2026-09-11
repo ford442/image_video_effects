@@ -2598,7 +2598,7 @@
         "id": "hue_shift"
       },
       {
-        "name": "Unused",
+        "name": "Artifact Amount",
         "type": "float",
         "default": 0,
         "min": 0,
@@ -2638,7 +2638,7 @@
       },
       {
         "index": 3,
-        "name": "Unused",
+        "name": "Artifact Amount",
         "default": 0,
         "min": 0,
         "max": 1,

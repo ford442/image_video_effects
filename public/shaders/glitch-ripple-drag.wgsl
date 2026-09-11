@@ -1,5 +1,7 @@
 // Glitch Ripple Drag — Batch 68 exact display-history upgrade.
 // A owns semantic display RGBA; B is intentionally unwritten.
+// Ideas: velocity-scaled chroma spread; held-pointer strobe latch
+// A packing: display RGBA (unchanged)
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -51,7 +53,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let angle = atan2(direction.y, direction.x);
   let quant = 3.14159265 / (4.0 + glitchAmt * 8.0);
   direction = mix(direction, vec2<f32>(cos(floor(angle / quant) * quant), sin(floor(angle / quant) * quant)), clamp(glitchAmt, 0.0, 1.0));
-  let heldWave = smoothstep(0.62, 0.9, sin(mouseDist * waveFreq - time * (5.0 + mids * 2.0))) * smoothstep(0.9, 0.0, mouseDist) * (0.3 + 0.7 * u.zoom_config.w);
+  // Idea 2: held-pointer strobe latch — quantize the wave's time base into short
+  // steps while held, so the drag glitch stutters/freezes instead of flowing smoothly.
+  let isHeld = u.zoom_config.w > 0.5;
+  let strobeRate = 14.0 + treble * 10.0;
+  let waveTime = select(time, floor(time * strobeRate) / strobeRate, isHeld);
+  let heldWave = smoothstep(0.62, 0.9, sin(mouseDist * waveFreq - waveTime * (5.0 + mids * 2.0))) * smoothstep(0.9, 0.0, mouseDist) * (0.3 + 0.7 * u.zoom_config.w);
   var displacement = direction / aspectVec * dragStrength * heldWave + velocity * heldWave * 0.16;
   var clickEnergy = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
@@ -65,10 +72,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     clickEnergy += front;
   }
 
+  // Idea 1: velocity-scaled chroma spread — the spring velocity (already driving
+  // displacement above) also widens the chroma tear, so fast drags rip wider and
+  // slow ones stay tight instead of the spread depending on glitchAmt alone.
+  let chromaSpread = glitchAmt * (0.006 + length(velocity) * 0.05);
   let historyUV = clamp(uv - displacement, vec2<f32>(0.0), vec2<f32>(1.0));
   let history = textureLoad(dataTextureC, historyCoord(historyUV, dims), 0);
-  let redHistory = textureLoad(dataTextureC, historyCoord(clamp(historyUV + vec2<f32>(glitchAmt * 0.006, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), dims), 0).r;
-  let blueHistory = textureLoad(dataTextureC, historyCoord(clamp(historyUV - vec2<f32>(glitchAmt * 0.006, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), dims), 0).b;
+  let redHistory = textureLoad(dataTextureC, historyCoord(clamp(historyUV + vec2<f32>(chromaSpread, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), dims), 0).r;
+  let blueHistory = textureLoad(dataTextureC, historyCoord(clamp(historyUV - vec2<f32>(chromaSpread, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), dims), 0).b;
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let prior = select(source, history, history.a > 0.001);
   var trailRgb = mix(source.rgb, prior.rgb, persistence);

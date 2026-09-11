@@ -2,6 +2,8 @@
 //  Cyber Trace — Batch 59
 //  Spring brush, capped click blooms, exact C history, ACES composite,
 //  semantic alpha, extraBuffer[133..138] at (0,0) only.
+//  Ideas: velocity-oriented arc stamp; treble circuit sparks
+//  A packing: history RGB (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -75,8 +77,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let hasSpringState = arrayLength(&extraBuffer) > 138u;
     var mousePos = rawMouse;
+    var mouseVel = vec2<f32>(0.0);
     if (hasSpringState && extraBuffer[138] > 0.5) {
         mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
     }
     if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
         var springPos = mousePos;
@@ -99,8 +103,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[138] = 1.0;
     }
 
-    let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
-    var brush = smoothstep(brushSize, brushSize * 0.5, dist) * select(0.5, 1.0, isMouseDown);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let toPixel = (uv - mousePos) * vec2<f32>(aspect, 1.0);
+    let dist = length(toPixel);
+
+    // Idea 1: velocity-oriented arc stamp — trail a capsule behind the sprung
+    // cursor along its velocity instead of stamping a plain disc, so fast
+    // drags read as a drawn electric arc rather than a dot.
+    let velMag = length(mouseVel);
+    let arcDir = select(vec2<f32>(1.0, 0.0), mouseVel / max(velMag, 0.0001), velMag > 0.0001);
+    let arcLen = clamp(velMag * 0.05, 0.0, brushSize * 2.5);
+    let segVec = -arcDir * arcLen;
+    let tSeg = clamp(dot(toPixel, segVec) / max(dot(segVec, segVec), 1e-6), 0.0, 1.0);
+    let closest = segVec * tSeg;
+    let capsuleDist = length(toPixel - closest);
+    var brush = smoothstep(brushSize, brushSize * 0.5, capsuleDist) * select(0.5, 1.0, isMouseDown);
+
+    // Idea 2: treble circuit sparks — above a treble threshold, small ticks
+    // branch perpendicular off the arc, hashed by a moving grid cell so they
+    // flicker like circuit-board traces and decay with the rest of history.
+    let sparkPerp = vec2<f32>(-arcDir.y, arcDir.x);
+    let sparkCell = floor(uv * 180.0 + time * 2.0);
+    let sparkHash = fract(sin(dot(sparkCell, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let sparkActive = step(0.982, sparkHash) * clamp((treble - 0.45) * 3.0, 0.0, 1.0);
+    let sparkCenter = closest + sparkPerp * brushSize * (sparkHash - 0.5) * 4.0;
+    let sparkDist = length(toPixel - sparkCenter);
+    let sparkStamp = smoothstep(brushSize * 0.4, 0.0, sparkDist) * sparkActive * smoothstep(brushSize * 4.0, brushSize * 0.5, dist);
+    brush = brush + sparkStamp;
 
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
@@ -111,9 +143,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let stampRadius = brushSize * 1.5;
         brush += smoothstep(stampRadius, stampRadius * 0.5, stampDist) * (1.0 - clamp(age / 1.5, 0.0, 1.0));
     }
-
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
 
     let historyColor = textureLoad(dataTextureC, pixel, 0);
     let colorTick = time * 0.2 * (1.0 + mids * 0.8) + hueShift;
