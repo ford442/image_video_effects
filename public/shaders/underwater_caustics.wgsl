@@ -1,6 +1,12 @@
-// Underwater Caustics — analytic Gerstner derivatives and Jacobian light focusing.
-// A/C stores ACES display RGBA, matching the effect's existing display history role.
-// B is unused. Depth remains caustic/volume coverage as in the original effect.
+// ═══════════════════════════════════════════════════════════════════
+//  Underwater Caustics
+//  Category: lighting-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: dual-frequency caustic beat; suspended particulate glitter
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -109,7 +115,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sun = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
   let held = u.zoom_config.w > 0.5;
 
-  var surface = surfaceAt(uv * aspectVec * 2.7, time, waveScale, audio);
+  let surfaceUV = uv * aspectVec * 2.7;
+  var surface = surfaceAt(surfaceUV, time, waveScale, audio);
+  let surfaceBeat = surfaceAt(surfaceUV, time, waveScale / 0.55, audio);
   let sunDelta = (uv - sun) * aspectVec;
   let sunDistance = length(sunDelta);
   let heldSwell = select(0.0, exp(-sunDistance * sunDistance * 38.0), held);
@@ -139,7 +147,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let j11 = 1.0 - refractiveScale * surface.hyy;
   let jacobianDeterminant = j00 * j11 - j01 * j10;
   let focus = min(7.0, 1.0 / max(abs(jacobianDeterminant), 0.12));
-  let causticRidge = pow(clamp((focus - 0.75) / 5.5, 0.0, 1.0), 1.55);
+
+  // Dual-frequency caustic beat — second surface at 0.55× wavelength, multiply ridges
+  let j00b = 1.0 - refractiveScale * surfaceBeat.hxx;
+  let j01b = -refractiveScale * surfaceBeat.hxy;
+  let j10b = -refractiveScale * surfaceBeat.hxy;
+  let j11b = 1.0 - refractiveScale * surfaceBeat.hyy;
+  let jacobianBeat = j00b * j11b - j01b * j10b;
+  let focusBeat = min(7.0, 1.0 / max(abs(jacobianBeat), 0.12));
+  let ridgePrimary = pow(clamp((focus - 0.75) / 5.5, 0.0, 1.0), 1.55);
+  let ridgeBeat = pow(clamp((focusBeat - 0.75) / 5.5, 0.0, 1.0), 1.55);
+  let causticRidge = ridgePrimary * mix(0.65, ridgeBeat, 0.55);
   let normal = normalize(vec3<f32>(-surface.gradient, 1.0));
   let lightDirection = normalize(vec3<f32>((sun - uv) * aspectVec, 0.7));
   let specular = pow(max(dot(reflect(-lightDirection, normal), vec3<f32>(0.0, 0.0, 1.0)), 0.0), 42.0);
@@ -155,6 +173,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let history = historyAt(uv - surface.gradient / aspectVec * 0.002, resolution);
   var hdr = transmitted + deepWater * (0.45 + waterDepth * 0.18);
   hdr += sunColor * (causticRidge * causticIntensity * (0.7 + audio.y * 0.35) + specular * 0.65 + rippleLight * 0.12);
+
+  // Suspended particulate glitter in high-focus cells
+  let glitterMask = smoothstep(2.6, 4.2, focus * focusBeat);
+  let glitterCell = hash21(floor(uv * vec2<f32>(168.0, 118.0) + time * 0.22));
+  let glitter = glitterMask * pow(glitterCell, 5.5) * (0.3 + audio.z * 0.45);
+  hdr += vec3<f32>(0.78, 0.94, 1.0) * glitter * causticIntensity;
+
   hdr += cyanScatter * rays * (0.65 + causticIntensity * 0.3);
   hdr += history.rgb * clamp(0.018 + causticRidge * 0.045 + rippleLight * 0.012, 0.0, 0.085);
   let volumeCoverage = 1.0 - exp(-waterDepth * (0.28 + clarity * 0.12));

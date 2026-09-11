@@ -1,5 +1,12 @@
-// Divine Light — volumetric Crepuscular god rays with radial ray-marching, Mie scattering, and threshold gating.
-// A/C stores ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Divine Light
+//  Category: lighting-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-11
+//  Ideas: Henyey-Greenstein forward-scatter phase along march; depth-occluded shaft extinction
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -32,6 +39,11 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
                (x * (2.43 * x + 0.59) + 0.14),
                vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hgPhase(cosTheta: f32, g: f32) -> f32 {
+  let gg = g * g;
+  return (1.0 - gg) / max(pow(1.0 + gg - 2.0 * g * cosTheta, 1.5), 1e-6);
 }
 
 fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
@@ -89,6 +101,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Vector from current pixel towards light position
   let deltaToLight = (lightPos - uv + rippleOffset);
   let distToLight = length(deltaToLight * aspectVec);
+  let lightDir = deltaToLight / max(distToLight / max(aspect, 1.0), 0.0001);
   let numSamples = 16;
   let stepDelta = deltaToLight / f32(numSamples) * rayDensity;
 
@@ -106,12 +119,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sampleLuma = dot(sampleCol, vec3<f32>(0.2126, 0.7152, 0.0722));
     let gate = smoothstep(threshold, threshold + 0.22, sampleLuma);
 
+    // Depth-occluded shaft extinction along the march
+    let marchDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampedUV, 0.0).r;
+    let occlusion = smoothstep(depth - 0.03, depth + 0.01, marchDepth);
+
+    // Henyey-Greenstein forward scatter tightens shafts toward the light
+    let stepToLight = normalize((lightPos - clampedUV) * aspectVec);
+    let cosTheta = dot(normalize(lightDir * aspectVec), stepToLight);
+    let phase = hgPhase(cosTheta, 0.72);
+
     // Dust motes turbulence
     let motePos = clampedUV * vec2<f32>(32.0, 18.0) + vec2<f32>(time * 0.2 + mids * 0.1);
     let moteNoise = 0.75 + 0.25 * sin(motePos.x * 3.14 + sin(motePos.y * 2.5));
 
-    rayAccum += sampleCol * gate * currentIllum * moteNoise;
-    currentIllum *= rayDecay;
+    rayAccum += sampleCol * gate * currentIllum * moteNoise * phase * (1.0 - occlusion);
+    currentIllum *= rayDecay * (1.0 - occlusion * 0.35);
   }
 
   let goldenTint = vec3<f32>(1.0, 0.92, 0.74);
