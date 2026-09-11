@@ -14981,7 +14981,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133] = smoothed bass envelope"
   },
@@ -15200,7 +15201,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15639,7 +15641,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15971,7 +15974,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -16302,7 +16306,11 @@
     "updated": true,
     "id": "gen-fireworks-smoke-bloom",
     "url": "shaders/gen-fireworks-smoke-bloom.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "4th of July — Strobe Shell",
@@ -16631,7 +16639,8 @@
       "audio-reactive",
       "mouse-driven",
       "temporal",
-      "fast-motion"
+      "fast-motion",
+      "upgraded-rgba"
     ]
   },
   {

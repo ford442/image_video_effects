@@ -1,21 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Fireworks Nocturne
 //  Category: generative
-//  Features: multi-shell pyrotechnics, gravity physics, audio-reactive,
-//            mouse command bursts, temporal trails, ember persistence,
-//            aces-tone-map, semantic alpha, depth-aware
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  By: Spark Engine (Grok)
-// ═══════════════════════════════════════════════════════════════════
-//  Classic celebration fireworks with:
-//  - Staggered mortar launches from base
-//  - Ascent streaks (comets)
-//  - Timed radial bursts + gravity on sparks
-//  - Secondary crackle + long falling embers
-//  - Soft volumetric smoke + glow accumulation
-//  - Bass = bigger shells + energy, Treble = sparkle/crackle
-//  - Mouse hold/click = personal shell at cursor
+//  Upgraded: 2026-09-11
+//  Ideas: muzzle flash at launchPos; even/odd round-burst vs droop habits
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -134,7 +125,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
   let time = u.config.x;
-  let dt = max(u.config.y, 0.001);
 
   let mouse = vec2<f32>(u.zoom_config.yz);
   let mouseDown = u.zoom_config.w;
@@ -195,6 +185,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Energy from bass + global param
     let shellEnergy = energy * (0.75 + bass * 0.9);
+    // Idea 2 — even shells stay round; odd shells droop
+    let droopHabit = (s % 2) == 1;
+
+    // Idea 1 — muzzle flash at the mortar mouth
+    if (age < 0.12) {
+      let muzzle = exp(-age * 18.0) * shellEnergy;
+      col += vec3<f32>(1.0, 0.72, 0.32) * softGlow(uv, launchPos, 0.024, muzzle * 2.6);
+    }
 
     // Ascent comet phase
     if (age < burstDelay + 0.15) {
@@ -230,9 +228,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let angle = (jf / f32(numSparks)) * TAU + (jSeed - 0.5) * 0.7;
         let speed = (0.55 + jSeed2 * 0.65) * (0.9 + shellEnergy * 0.35);
+        let vyScale = select(1.0, 0.55, droopHabit);
+        let gravBoost = select(0.0, 0.45, droopHabit);
 
-        let vel = vec2<f32>(cos(angle), sin(angle)) * speed;
-        let grav = 1.15 + shellEnergy * 0.15;   // gravity strength
+        let vel = vec2<f32>(cos(angle), sin(angle) * vyScale) * speed;
+        let grav = 1.15 + shellEnergy * 0.15 + gravBoost;   // gravity strength
         let drag = 0.18;
 
         let sp = sparkPos(burstCenter, vel, burstAge, grav, drag);
@@ -277,8 +277,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ef = f32(e);
         let eSeed = hash1(si * 63.0 + ef * 5.3);
         let eAngle = eSeed * TAU + (eSeed - 0.5) * 1.6;
-        let eVel = vec2<f32>(cos(eAngle), sin(eAngle) * 0.6) * (0.28 + eSeed * 0.25);
-        let emberPos = sparkPos(burstCenter, eVel, burstAge * 0.9, 0.72, 0.05);
+        let eVel = vec2<f32>(cos(eAngle), sin(eAngle) * select(0.6, 0.32, droopHabit)) * (0.28 + eSeed * 0.25);
+        let emberGrav = select(0.72, 1.05, droopHabit);
+        let emberPos = sparkPos(burstCenter, eVel, burstAge * 0.9, emberGrav, 0.05);
 
         let eAge = burstAge - 0.7;
         let eFade = smoothstep(5.8, 1.2, eAge);

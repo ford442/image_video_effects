@@ -1,7 +1,13 @@
-// Fan Shell Spread — wide hemisphere fan burst
-// Upgraded (Batch 37, Algorithmist): physically-grounded ballistic + linear-drag
-// spark integration, temporal-coherent wind advection, per-spark flutter noise,
-// twinkling star field, real generated depth from accumulated spark heat.
+// ═══════════════════════════════════════════════════════════════════
+//  Fan Shell Spread
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium-High
+//  Created: 2026-07-05
+//  Upgraded: 2026-09-11
+//  Ideas: peacock eye spots on even fanT; two-row palmette (inner short / outer long)
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -159,7 +165,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let js = hash1(si * 67.0 + jf * 3.1);
         let fanT = jf / f32(n) - 0.5;
         let ang = fanT * halfFan * PI + (js - 0.5) * 0.15;
-        let spd = (0.4 + js * 0.35) * energy;
+        // Idea 2 — two-row palmette: even j = outer long ray, odd j = inner short
+        let palmette = select(0.55, 1.0, (j % 2) == 0);
+        let spd = (0.4 + js * 0.35) * energy * palmette;
         let vel = vec2<f32>(sin(ang) * spd, cos(ang) * spd * 0.7 + 0.15);
         // drag varies per spark: heavy sparks push through, light ones hang
         let dragK = 0.08 + js * 0.30;
@@ -174,6 +182,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let glow = softGlow(uv, sp, 0.005 + js * 0.004, fade * energy * (0.85 + treble * 0.4));
         col += sc * glow;
         heat += glow * 0.35;
+
+        // Idea 1 — peacock eye (ocellus): even rays, cooler node at mid-age
+        let eyeGate = select(0.0, 1.0, (j % 2) == 0) * exp(-abs(bAge - 1.8) * 3.0);
+        let eyeCol = mix(sc, vec3<f32>(0.32, 0.52, 0.95), 0.7);
+        let eyeGlow = softGlow(uv, sp, 0.016, fade * energy * eyeGate * 0.85);
+        col += eyeCol * eyeGlow;
+        heat += eyeGlow * 0.25;
 
         // faint trailing echo, domain-warped by the same flutter field
         let echoAge = max(0.0, bAge - 0.08);
@@ -196,13 +211,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       for (var k: i32 = 0; k < 35; k = k + 1) {
         let fanT = f32(k) / 35.0 - 0.5;
         let ang = fanT * halfF * PI;
-        let vel = vec2<f32>(sin(ang), cos(ang) * 0.6 + 0.2) * power * 0.5;
+        let palmette = select(0.55, 1.0, (k % 2) == 0);
+        let vel = vec2<f32>(sin(ang), cos(ang) * 0.6 + 0.2) * power * 0.5 * palmette;
         var sp = sparkPos(mouseUV, vel, mb, GRAVITY, 0.18);
         sp += mWind * 0.08 * mb * mb;
         let h = fract(f32(k) * 0.1 + hueCycle);
         let mGlow = softGlow(uv, sp, 0.006, mFade * power);
         col += palette(h) * mGlow;
         heat += mGlow * 0.3;
+        let eyeGate = select(0.0, 1.0, (k % 2) == 0) * exp(-abs(mb - 1.4) * 3.0);
+        col += mix(palette(h), vec3<f32>(0.32, 0.52, 0.95), 0.7) * softGlow(uv, sp, 0.014, mFade * power * eyeGate * 0.7);
       }
     }
   }

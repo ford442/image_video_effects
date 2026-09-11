@@ -1,6 +1,21 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-10 (fireworks shell taxonomy ten)
+**Last updated:** 2026-09-11 (fireworks leftover atmospheric six)
+
+## 2026-09-11 — Fireworks leftover atmospheric six (6 shaders)
+
+- IDs: `gen-fireworks-fan-shell`, `gen-fireworks-comet-trail`, `gen-fireworks-smoke-bloom`, `gen-fireworks-wind-ripple`, `gen-fireworks-nocturne`, `gen-fireworks-audio-symphony`.
+- Per shader, the ideas actually added:
+  - fan-shell: peacock eye spots on even rays; two-row palmette (inner 0.55 / outer 1.0). Batch 37 drag/wind/flutter kept.
+  - comet-trail: ion tail along −velocity; coma halo around the hex head.
+  - smoke-bloom: buoyancy (puff rises as sparks fall); burst-lit smoke from local flash.
+  - wind-ripple: altitude shear; leeward streak only downwind. Click-ripple barrages kept.
+  - nocturne: muzzle flash at launchPos; even round vs odd droop habit.
+  - audio-symphony: onset-only primary (bassPulse gates the big shell); band-tinted stars. extraBuffer[133] envelope kept.
+- Floor: bindings / 16×16 / exact C / ACES display RGBA / saved params exact. No new springs. Nocturne no longer treats `config.y` as dt.
+- Gates: Naga 6/6, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-11-fireworks-leftover-six/`.
+- Skipped lighting leftovers (`neon-pulse-edge`, `sim-volumetric-fake-em`) and `matrix_digital_rain` (wrong kernel).
 
 ## 2026-09-10 — Fireworks shell taxonomy ten (10 shaders)
 
