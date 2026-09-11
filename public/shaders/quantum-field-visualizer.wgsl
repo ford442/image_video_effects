@@ -5,7 +5,9 @@
 //  Complexity: High
 //  Chunks From: quantum-field-visualizer
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-11
+//  Ideas: literal two-slit barrier; held-only measurement collapse
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -58,7 +60,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var uv = vec2<f32>(coord) / resolution;
 
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
+  let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+  let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
   let mouse = u.zoom_config.yz;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -87,8 +90,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Real and imaginary wavefunction components
   let phaseA = k0 * slitA.x - t * 3.0;
   let phaseB = k0 * slitB.x - t * 3.0;
-  let realPsi = gaussA * cos(phaseA) + gaussB * cos(phaseB);
-  let imagPsi = gaussA * sin(phaseA) + gaussB * sin(phaseB);
+  let wall = step(abs(p.x), 0.02);
+  let slitGap = step(min(abs(p.y - 0.12), abs(p.y + 0.12)), 0.035);
+  let throughSlit = 1.0 - wall * (1.0 - slitGap);
+  let realPsi = (gaussA * cos(phaseA) + gaussB * cos(phaseB)) * mix(0.15, 1.0, throughSlit);
+  let imagPsi = (gaussA * sin(phaseA) + gaussB * sin(phaseB)) * mix(0.15, 1.0, throughSlit);
 
   // Probability density and phase
   let probDensity = realPsi * realPsi + imagPsi * imagPsi;
@@ -98,7 +104,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let mouseDist = length(mouseVec);
   let measureRadius = mix(0.05, 0.4, obsStrength);
-  let measureCertainty = 1.0 - smoothstep(measureRadius * 0.3, measureRadius, mouseDist);
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  let measureCertainty = (1.0 - smoothstep(measureRadius * 0.3, measureRadius, mouseDist)) * held;
 
   // Collapse localizes probability
   let collapseBoost = exp(-mouseDist * mouseDist / (measureRadius * measureRadius * 0.5));

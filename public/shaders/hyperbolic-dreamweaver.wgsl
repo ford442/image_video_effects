@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Hyperbolic Dreamweaver
-//  Category: geometric
-//  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, anti-moire
+//  Category: geometric (distortion)
+//  Features: hyperbolic-geometry, depth-aware, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Upgraded: 2026-09-11
-//  Ideas: {7,3} hyperbolic distance band coloring; geodesic thread weave on tile edges
+//  Ideas: angular tiling from tile_count; curved-space chroma + geodesic glow
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -65,10 +65,6 @@ fn calculateAdvancedAlpha(
     return clamp(effectAlpha * depthAlpha, 0.0, 1.0);
 }
 
-fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
 // OPTIMIZATION: Cached hyperbolic distance calculation
 fn hyperbolicDist(z: vec2<f32>) -> f32 {
     let r2 = dot(z, z);
@@ -107,117 +103,66 @@ fn rotatePoint(p: vec2<f32>, angle: f32, lodFactor: f32) -> vec2<f32> {
     );
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    
+
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+    let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
+    let audioReactivity = 1.0 + bass * 0.4;
 
-    // ═══ AUDIO REACTIVITY (fixed: plasmaBuffer, not zoom_config.x which is ZoomTime) ═══
-    let bass           = plasmaBuffer[0].x;
-    let mid            = plasmaBuffer[0].y;
-    let audioReactivity = 1.0 + bass * 0.4 + mid * 0.15;
-    
-    // Parameters — tileCount/curvature/aberration/glowIntensity from saved sliders
-    let tileCount = 3.0 + u.zoom_params.x * 6.0;
-    let intensity = u.zoom_params.x;
+    let tileCount = mix(3.0, 9.0, u.zoom_params.x);
     let curvature = u.zoom_params.y * 2.0 + 0.5;
-    let depthWeight = u.zoom_params.z;
+    let aberration = u.zoom_params.z;
     let glowIntensity = u.zoom_params.w;
-    let rotation = u.zoom_params.w * 6.28;
-    
-    // Map to Poincaré disk
+
     let centered = (uv - 0.5) * 2.0;
     let r = length(centered);
-    
-    // OPTIMIZATION: Calculate LOD factor early
     let lodFactor = smoothstep(0.5, 0.95, r);
-    
-    // Early exit for edge artifacts (branchless blend instead of early return)
     let edgeThreshold = step(r, 0.99);
-    
-    // OPTIMIZATION: Cache hyperbolic calculations
     let hyperDist = hyperbolicDist(centered * curvature);
-    let angle = atan2(centered.y, centered.x);
-    
-    // Animated translation in hyperbolic space
     let t = vec2<f32>(
-        cos(time * 0.2 * audioReactivity) * intensity * 0.3,
-        sin(time * 0.3 * audioReactivity) * intensity * 0.3
+        cos(time * 0.2 * audioReactivity) * 0.15,
+        sin(time * 0.3 * audioReactivity) * 0.15
     );
-    
-    // Cache translated coordinate
     let translated = hyperbolicTranslate(centered, t);
-    
-    // Add rotation (LOD-aware)
-    let rotAngle = rotation + time * 0.1 * audioReactivity;
+    let rotAngle = time * 0.1 * audioReactivity;
     let rotated = rotatePoint(translated, rotAngle, lodFactor);
-    
-    // Map back to UV space
-    let warpedUV = rotated * 0.5 + 0.5;
-    
-    // Anti-moiré: compute shaders lack dpdx/dpdy, so estimate mip from lodFactor
-    // (lodFactor grows toward 1.0 as r→disk boundary where hyperbolic compression is worst)
-    let safeWarpedUV = clamp(warpedUV, vec2<f32>(0.0), vec2<f32>(1.0));
-    let mipLevel = lodFactor * 3.0; // 0 at center (full detail) → mip 3 at boundary (suppress moiré)
-    let sample = textureSampleLevel(readTexture, u_sampler, safeWarpedUV, mipLevel);
 
-    // LOD-aware color enhancement with hue_preserve_clamp — avoid hue shift at bright edges
-    let colorEnhancement = 1.0 + hyperDist * 0.2 * (1.0 - lodFactor);
-    let enhanced = sample.rgb * colorEnhancement;
-    // Uniform scale-down if any channel clips — preserves hue ratios exactly
-    let peak = max(max(enhanced.r, enhanced.g), max(enhanced.b, 0.001));
-    let finalColor = enhanced * select(1.0, 1.0 / peak, peak > 1.0);
-    
-    // ═══ ADVANCED ALPHA CALCULATION ═══
-    let alpha = calculateAdvancedAlpha(uv, warpedUV, sample.a, u.zoom_params);
-    
-    // Branchless edge handling
-    let finalResult = mix(vec4<f32>(sample.rgb, sample.a), vec4<f32>(finalColor, alpha), edgeThreshold);
-    
-    
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(vec2<i32>(global_id.xy)) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+    let ang = atan2(rotated.y, rotated.x);
+    let wrapped = fract(ang / 6.28318 * tileCount) / tileCount * 6.28318;
+    let tiled = vec2<f32>(cos(wrapped), sin(wrapped)) * length(rotated);
+    let warpedUV = clamp(tiled * 0.5 + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Idea 1 — {7,3} hyperbolic distance band coloring (native Poincaré palette)
-    let hBand = hyperDist * tileCount * 1.6;
-    let angular7 = fract(angle / 6.28318530718 * 7.0);
-    let bandId = floor(hBand * 3.0 + angular7 * 7.0);
-    let bandPalette = 0.55 + 0.45 * cos(6.28318530718 * (vec3<f32>(0.0, 0.17, 0.33) + bandId * 0.143));
-    let bandMix = 0.16 + intensity * 0.24;
-    var shadedRGB = finalResult.rgb * mix(vec3<f32>(1.0), bandPalette, bandMix);
+    let radial = select(vec2<f32>(0.0), centered / max(r, 0.001), r > 0.001);
+    let split = radial * aberration * 0.04 * (1.0 + hyperDist);
+    let sampleR = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + split, vec2<f32>(0.0), vec2<f32>(1.0)), lodFactor * 3.0);
+    let sampleG = textureSampleLevel(readTexture, u_sampler, warpedUV, lodFactor * 3.0);
+    let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV - split, vec2<f32>(0.0), vec2<f32>(1.0)), lodFactor * 3.0);
+    let chroma = vec3<f32>(sampleR.r, sampleG.g, sampleB.b);
 
-    // Idea 2 — geodesic thread weave along hyperbolic tile edges
-    let tilePhase = hyperDist * tileCount * 4.0 + angle * 7.0;
-    let edgeProximity = abs(fract(tilePhase) - 0.5) * 2.0;
-    let threadMask = smoothstep(0.88, 0.98, 1.0 - edgeProximity) * glowIntensity;
-    let threadGlow = vec3<f32>(0.82, 0.91, 1.0) * threadMask * (0.35 + bass * 0.35);
-    shadedRGB = shadedRGB + threadGlow;
+    let geoRing = abs(sin(hyperDist * 8.0 - time * 1.4));
+    let glow = vec3<f32>(0.35, 0.65, 1.0) * geoRing * glowIntensity * 0.22 * (1.0 - lodFactor);
 
-    let tonedRGB = acesToneMap(shadedRGB + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25));
-    let outCol = vec4<f32>(tonedRGB, finalResult.a);
-    let coord = vec2<i32>(global_id.xy);
-    textureStore(writeTexture, coord, outCol);
-    textureStore(dataTextureA, coord, outCol);
-    
-    // Depth pass-through with hyperbolic modulation (clamped to [0,1] — prevents depth buffer overrun)
+    let peak = max(max(chroma.r, chroma.g), max(chroma.b, 0.001));
+    let enhanced = chroma * (1.0 + hyperDist * 0.2 * (1.0 - lodFactor));
+    let mapped = aces(enhanced * select(1.0, 1.0 / peak, peak > 1.0) + glow);
+    let alpha = calculateAdvancedAlpha(uv, warpedUV, sampleG.a, u.zoom_params);
+    let display = mix(vec4<f32>(aces(sampleG.rgb), sampleG.a), vec4<f32>(mapped, alpha), edgeThreshold);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), display);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthMod = 1.0 + hyperDist * 0.1 * (1.0 - lodFactor);
-    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth * depthMod, 0.0, 1.0), 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(depth * depthMod, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

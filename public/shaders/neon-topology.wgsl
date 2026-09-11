@@ -9,7 +9,9 @@
 //    - Wired the mouse: lens bumps the depth field under the cursor.
 //    - Honest sliders: y = Height Scale (contour field), w = Glow Strength.
 //    - Click contour quakes: ripples[] drop decaying rings into the topology.
-//    - Removed the dead `alpha` variable; folded its terms into finalAlpha.
+//  Upgraded: 2026-09-11
+//  Ideas: slope hachures; hypsometric band fill
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -72,9 +74,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixelSize = 1.0 / resolution;
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
-    let audioBass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+    let audioBass = select(0.0, plasmaBuffer[0].x, hasAudio);
+    let mids = select(0.0, plasmaBuffer[0].y, hasAudio);
+    let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
 
     // ── Honest slider contract (matches JSON param order) ────────────
     let density = u.zoom_params.x;                          // Line Density
@@ -123,6 +126,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Neon color with treble shimmer — hue now on a slow constant drift
     // (time * 0.15 * TAU ~= old 1 rad/s drift), color identity preserved.
+    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    let grad = vec2<f32>(dR - dL, dU - dD);
+    let gLen = max(length(grad), 0.001);
+    let slopeDir = grad / gLen;
+    let hachure = abs(sin(dot(uv * resolution, vec2<f32>(-slopeDir.y, slopeDir.x)) * 0.35));
+    let between = (1.0 - line) * smoothstep(0.08, 0.45, contour);
+    let hach = pow(hachure, 8.0) * between * clamp(gLen * 8.0, 0.0, 1.0);
+    let hypo = 0.5 + 0.5 * sin(vec3<f32>(contourPhase * 0.7, contourPhase * 0.7 + 2.1, contourPhase * 0.7 + 4.2));
+
     let hueDrift = time * 0.15;
     let phase = depth * 10.0 + hueDrift * TAU + PI + treble * 2.0;
     let neonColor = 0.5 + 0.5 * sin(vec3<f32>(phase, phase + 2.094, phase + 4.188));
@@ -136,8 +151,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bgSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let bg = bgSample.rgb;
     let bgGray = vec3<f32>(dot(bg, vec3<f32>(0.299, 0.587, 0.114))) * 0.4;
-    let emission = neonColor * (lineWithMajor + phantomLine + quakeGlow * 0.6 + rim) * intensity;
-    let final_color = mix(bgGray + emission, vec3<f32>(0.1, 0.15, 0.25), haze);
+    let emission = neonColor * (lineWithMajor + phantomLine + quakeGlow * 0.6 + rim + hach) * intensity;
+    let hypoFill = hypo * between * 0.18 * intensity;
+    let final_color_raw = mix(bgGray + emission + hypoFill, vec3<f32>(0.1, 0.15, 0.25), haze);
+    let aa = 2.51; let bb = 0.03; let cc = 2.43; let dd = 0.59; let ee = 0.14;
+    let final_color = clamp((final_color_raw * (aa * final_color_raw + bb)) / (final_color_raw * (cc * final_color_raw + dd) + ee), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Edge-aware alpha: folds in the useful terms of the removed dead `alpha`.
     let edgeMask = edgePreserveAlpha(uv, pixelSize, EDGE_THRESHOLD);
