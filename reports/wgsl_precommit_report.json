@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-10T00:40:31.380105",
-  "naga_bin": "/root/.cargo/bin/naga",
+  "timestamp": "2026-09-11T07:16:09.378389",
+  "naga_bin": "/usr/local/cargo/bin/naga",
   "naga_available": true,
-  "total": 10,
-  "passed": 10,
+  "total": 5,
+  "passed": 5,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/hex-circuit.wgsl",
+      "file": "public/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/hyb-chromatic-circuit.wgsl",
+      "file": "public/shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/hyb-hex-voronoi-distort.wgsl",
+      "file": "public/shaders/gen-ethereal-quantum-medusa.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/hyb-neural-voronoi-feedback.wgsl",
+      "file": "public/shaders/gen-ethereal-silk-veil.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,82 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/hybrid-cyber-organic.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/hybrid-magnetic-field.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/hybrid-particle-fluid.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/neon-light.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/neon-poly-grid.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/spec-hypercube-projection.wgsl",
+      "file": "public/shaders/gen-feedback-echo-chamber.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

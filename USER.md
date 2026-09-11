@@ -6,6 +6,7 @@ _Learn about the person you're helping. Update this as you go._
 - **What to call them:**
 - **Pronouns:** _(optional)_
 - **Timezone:**
+- **Ethereal generative ten (2026-09-11):** Cyber Chrono Nebula Phoenix, Cyber Chrono Void Whale, Cyber Plasma Void Dragon, Glass Flora Terrarium, Quantum Glass Nautilus, Quantum Hologram Bonsai, Quantum Holographic Fractal Coral, Quantum Medusa, Silk Veil, and Feedback Echo Chamber. Two native ethereal/creature/feedback ideas each; identities kept; phoenix spring and bonsai/echo bass_env kept; no new springs. Nautilus floor (ACES/dataA/plasmaBuffer/updatedParams). Naga 10/10, extraBuffer/dead sliders 0, SKIP_WASM_BUILD=1 build green. Real-GPU QA external. Cards: `agents/swarm-outputs/composer-2026-09-11-ethereal-ten/`.
 - **Hybrid leftover ten (2026-09-10):** Hex Voronoi Distort, Chromatic Circuit, Neural Voronoi Feedback, Particle Fluid, Magnetic Field, Cyber-Organic, Hypercube Projection, Hex Circuit, Neon Poly Grid, and Neon Light. Two native hex/field/lattice ideas each; identities kept; poly-grid spring kept; no new springs. Did not take kaleido hybrids or the sdf-plasma/chromatic-liquid ink clones. Naga 10/10, extraBuffer/dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Real-GPU QA external. Cards: `agents/swarm-outputs/grok-2026-09-10-hybrid-lattice-ten/`.
 - **Generative fast-motion / psychedelic ten (2026-09-09):** Psychedelic Wormhole, Neon Acid Geometry, Chromatic Acid Drip, Polar Rainbow Explosion, Neon Cyber Mandala, Plasma Mandala, Neon Lotus, Electric Kaleidoscope Storm, Rainbow Icosahedron Cascade, and Neon Stellated Octahedron. Two native plasma/acid/polar/mandala/solid ideas each; identities kept; no new springs. Did not clone today’s kaleido/tunnel ten. Packing lies fixed on icosa/stellated A writes. Naga 10/10, extraBuffer/dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Real-GPU QA external. Cards: `agents/swarm-outputs/grok-2026-09-09-gen-psychedelic-ten/`.
 - **Fast-motion + psychedelic ten (2026-09-09):** Kaleidoscope Tunnel, Wormhole Lens, Kaleido-Scope, Breathing Kaleidoscope, Hypnotic Spiral, Concentric Spin, Quantum Tunnel, Hypnotic Vortex Tunnel, Psychedelic Time-Warp Kaleidoscope, and Psychedelic Moire Flower. Two native fold/tunnel/spin ideas each; identities kept; quantum spring kept; wormhole mouse stash extraBuffer[133..134]; no new springs. Did not stamp Batch 54–60 kaleido overlay. Naga 10/10, extraBuffer/dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Real-GPU QA external. Cards: `agents/swarm-outputs/grok-2026-09-09-psychedelic-motion-ten/`.
@@ -129,9 +130,7 @@ _Learn about the person you're helping. Update this as you go._
   intentionally moved to documented raw persistent state; nine missing JSONs
   gained four named params. Structural/Jest/build gates are green; real-GPU QA
   remains external.
-- **Current ethereal generative cohort:** Ten real IDs from Cyber Chrono Nebula
-  Phoenix through Feedback Echo Chamber are next under the same canonical
-  shader contract, with four named live JSON params required for each.
+- **Current ethereal generative cohort:** Complete (2026-09-11). Next clean cohort TBD — lighting/geometric leftovers from foundation note remain.
 - **Codex (b) liquid batch (2026-08-23):** Upgraded liquid-jelly,
   liquid-oil, liquid-displacement, liquid-fast, liquid-glitch, liquid-mirror,
   ink-marbling, glass-wipes, kimi_liquid_glass, and liquid-metal under the
