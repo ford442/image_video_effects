@@ -1,4 +1,12 @@
-// Strobe Blink Shell — rhythmic multi-flash bursts (upgraded)
+// ═══════════════════════════════════════════════════════════════════
+//  Strobe Blink Shell
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium-High
+//  Upgraded: 2026-09-10
+//  Ideas: per-spark flash phase; true dark interval (pulse can hit 0)
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -46,10 +54,11 @@ fn starField(uv: vec2<f32>) -> vec3<f32> {
   let id = floor(uv*160.0);
   return vec3<f32>(0.8, 0.9, 1.0)*step(0.992, hash2(id))*0.35;
 }
-fn strobePulse(age: f32, rate: f32, bass: f32) -> f32 {
+fn strobePulse(age: f32, rate: f32, bass: f32, phase: f32) -> f32 {
   let freq = 4.0 + rate * 12.0 + bass * 4.0;
-  let wave = sin(age * freq * TAU) * 0.5 + 0.5;
-  return pow(wave, 3.0);
+  let wave = sin(age * freq * TAU + phase) * 0.5 + 0.5;
+  // True dark interval: most of the cycle is off. No floor(time) hash.
+  return pow(wave, 10.0);
 }
 fn flashColor(t: f32, colorAmt: f32, white: f32) -> vec3<f32> {
   let h = fract(t);
@@ -99,7 +108,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (bAge > 0.0 && bAge < 6.0) {
       let center = vec2<f32>(bx, by+1.22);
       let fade = smoothstep(5.5, 0.3, bAge);
-      let pulse = strobePulse(bAge, flashRate, bass);
+      let pulse = strobePulse(bAge, flashRate, bass, 0.0);
       let flash = pulse * energy * (1.0 + treble * 0.5);
       col += flashColor(seed, colorFlash, flash) * hexBokeh(uv, center, 0.05 + pulse * 0.04, 2.0);
 
@@ -110,7 +119,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ang = jf/f32(n)*TAU + (js-0.5)*0.5;
         let spd = (0.35+js*0.45)*energy;
         let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*spd, bAge, GRAVITY);
-        let sparkFlash = mix(0.3, 1.0, pulse);
+        let sparkFlash = strobePulse(bAge, flashRate, bass, js * TAU);
         col += flashColor(js+time*0.05, colorFlash, sparkFlash) * hexBokeh(uv, sp, 0.005+js*0.003, fade*energy);
       }
 
@@ -132,12 +141,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mAge = fract(time*1.1)*3.5;
     if (mAge > 0.5) {
       let mb = mAge-0.5;
-      let pulse = strobePulse(mb, flashRate, bass);
+      let pulse = strobePulse(mb, flashRate, bass, 0.0);
       col += flashColor(time*0.1, colorFlash, pulse*pulsePow) * hexBokeh(uv, mUV, 0.06+pulse*0.05, 2.0);
       for (var k = 0; k < 25; k = k + 1) {
         let ang = f32(k)/25.0*TAU;
         let sp = sparkPos(mUV, vec2<f32>(cos(ang),sin(ang))*0.4*pulsePow, mb, GRAVITY);
-        col += flashColor(f32(k)*0.1, colorFlash, pulse) * hexBokeh(uv, sp, 0.005, pulsePow);
+        let sparkFlash = strobePulse(mb, flashRate, bass, f32(k) * 0.251327 * TAU);
+        col += flashColor(f32(k)*0.1, colorFlash, sparkFlash) * hexBokeh(uv, sp, 0.005, pulsePow);
       }
     }
   }

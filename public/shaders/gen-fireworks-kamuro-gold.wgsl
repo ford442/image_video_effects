@@ -1,9 +1,7 @@
 // Kamuro Gold — dense slow-falling gold/silver glitter
-// Upgraded (Batch 37, Visualist): HDR white-gold burst cores with quadratic
-// hot-core falloff, audio-reactive color temperature (bass deepens amber,
-// treble shifts silver), golden atmospheric haze with depth fog, split-tone
-// grade (cool shadows / warm highlights), fixed mouse uv space, real
-// generated depth from glitter heat.
+// Upgraded: 2026-09-10
+// Ideas: independent twinkle per glitter; hang plateau then resume fall
+// A packing: ACES display RGBA
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -43,9 +41,16 @@ fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32) -> vec2<f32> {
   return o + v*age - vec2<f32>(0.0, g)*age*age*0.5;
 }
 fn kamuroPos(o: vec2<f32>, v: vec2<f32>, age: f32, fall: f32, hang: f32) -> vec2<f32> {
-  let hover = exp(-age*0.4)*hang*0.15;
-  let drag = exp(-age*0.05);
-  return o + vec2<f32>(v.x*drag + age*0.012, v.y*drag - fall*age*age*0.35 + hover);
+  // Hang plateau: freeze after hang time, then resume fall.
+  let plateauStart = hang * 1.15;
+  let plateauDur = 0.55 + hang * 0.35;
+  let inPlat = step(plateauStart, age) * (1.0 - step(plateauStart + plateauDur, age));
+  let after = step(plateauStart + plateauDur, age);
+  var t = mix(age, plateauStart, inPlat);
+  t = mix(t, plateauStart + (age - plateauStart - plateauDur), after);
+  let hover = exp(-t*0.4)*hang*0.15;
+  let drag = exp(-t*0.05);
+  return o + vec2<f32>(v.x*drag + t*0.012, v.y*drag - fall*t*t*0.35 + hover);
 }
 fn goldCol(gold: f32, seed: f32, temp: f32) -> vec3<f32> {
   // temp: audio color temperature, -1 = deep amber ... +1 = cool silver
@@ -152,7 +157,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         // main glitter spark (audio temperature shifts gold <-> silver)
         let g = softGlow(uv, sp, sz, fade*energy*(0.7 + js2*0.5));
-        col += goldCol(goldMix, js, audioTemp) * g * (0.8 + treble*0.5);
+        // Independent twinkle per glitter (not one shell pulse).
+        let tw = pow(max(0.5 + 0.5 * sin(bAge * mix(7.0, 18.0, js) + js * 17.3), 0.0), 8.0);
+        col += goldCol(goldMix, js, audioTemp) * g * (0.28 + 0.72 * tw) * (0.8 + treble*0.5);
         // white-hot HDR spark core: quadratic falloff pushes brights >1.0
         col += vec3<f32>(1.0, 0.96, 0.82) * g * g * 0.9;
         heat += g * 0.3;

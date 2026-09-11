@@ -1,7 +1,7 @@
 // Horse Tail Brocade — long straight golden streamers
-// Upgraded (Batch 37, Algorithmist): drag-integrated ballistic streamers with
-// terminal-velocity fall, temporal-coherent curl-style sway (replaces fake linear
-// drift), twinkling star field, real generated depth from accumulated heat.
+// Upgraded: 2026-09-10
+// Ideas: brocade pinch then parallel rain; tip spark-out (gold cuts off)
+// A packing: ACES display RGBA
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -159,17 +159,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       for (var j: i32 = 0; j < n; j = j + 1) {
         let js = hash1(si*79.0 + f32(j)*3.3);
         let js2 = hash1(si*23.0 + f32(j)*5.7);
-        let dir = vec2<f32>((js - 0.5)*spread, 0.6 + js2*0.4);
+        // Brocade pinch: tight cluster at launch, then parallel rain (vx dies).
+        let dir = vec2<f32>((js - 0.5)*spread*0.22, 0.6 + js2*0.4);
         let streamLen = 6 + i32(tailLen * 8.0);
 
         // luminous streamer tail
         for (var t: i32 = 0; t < streamLen; t = t + 1) {
           let tf = f32(t) / f32(streamLen);
           let tAge = max(0.0, bAge - tf * 1.2);
-          let sp = tailPos(center, dir, tAge, fall, spread, js, gust);
+          let parallel = smoothstep(0.0, 1.35, tAge);
+          let rainDir = vec2<f32>(dir.x * (1.0 - parallel * 0.82), dir.y);
+          let sp = tailPos(center, rainDir, tAge, fall, spread, js, gust);
           let tFade = fade * (1.0 - tf * 0.6) * (0.5 + js2 * 0.5);
+          // Tip spark-out: gold cuts off at the streamer end.
+          let sparkOut = smoothstep(0.88, 0.58, tf);
           let gc = goldPalette(gold, js);
-          let glow = softGlow(uv, sp, 0.004 + js * 0.002, tFade * energy * 1.3);
+          let glow = softGlow(uv, sp, 0.004 + js * 0.002, tFade * energy * 1.3 * sparkOut);
           col += gc * glow;
           heat += glow * 0.3;
         }
@@ -194,7 +199,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let mGust = shellWind(mouseUV, time, 0.53);
       for (var k: i32 = 0; k < 30; k = k + 1) {
         let ks = hash1(f32(k)*2.1);
-        let dir = vec2<f32>((ks - 0.5)*spread*2.0, 0.7);
+        let pinch = exp(-mb * 1.1);
+        let dir = vec2<f32>((ks - 0.5)*spread*0.22*pinch, 0.7);
         let sp = tailPos(mouseUV, dir, mb, fall, spread, ks, mGust);
         let mGlow = softGlow(uv, sp, 0.005, mFade);
         col += goldPalette(gold, ks) * mGlow;

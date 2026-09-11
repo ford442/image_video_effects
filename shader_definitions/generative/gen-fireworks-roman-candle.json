@@ -68,6 +68,7 @@
     "click-reactive",
     "temporal",
     "semantic-alpha",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba"
   ]
 }

@@ -1,8 +1,7 @@
 // Ring Shell — circular halo/donut burst fireworks
-// Upgraded (Batch 37, Visualist): HDR overbright burst cores with two-layer
-// glow falloff, audio-reactive color temperature (bass warms, treble cools),
-// atmospheric burst haze with depth fog, fixed mouse uv space (zoom_config.yz
-// is 0-1 canvas uv, not pixels), real generated depth from spark heat.
+// Upgraded: 2026-09-10
+// Ideas: Saturn tilt (inclined ellipse); empty core (no inner jewels)
+// A packing: ACES display RGBA
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -137,24 +136,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let jf = f32(j);
         let js = hash1(si*67.0 + jf*3.1);
         let ang = jf / f32(n) * TAU + (js - 0.5)*thick*3.0;
-        let radial = vec2<f32>(cos(ang), sin(ang));
+        // Saturn tilt: ring is an inclined ellipse, not a face-on circle.
+        let tilt = 0.48;
+        let radial = vec2<f32>(cos(ang), sin(ang) * tilt);
         let ringPos = center + radial*expand;
         let vel = radial*(0.15 + js*0.1) + vec2<f32>(0.0, -0.05);
         let sp = sparkPos(ringPos, vel, bAge*0.3, 0.7 + bAge*0.2);
 
+        // Empty core: only sparks on the halo (inside ringR-thick is dark).
+        let coreR = max(expand - thick * 1.8, expand * 0.55);
+        let onHalo = step(coreR, length(sp - center));
+
         // main ring spark (Thickness also widens the glow kernel)
-        let onRing = softGlow(uv, sp, (0.005 + js*0.003) * (0.75 + thick*3.0), fade*energy*1.4);
+        let onRing = softGlow(uv, sp, (0.005 + js*0.003) * (0.75 + thick*3.0), fade*energy*1.4) * onHalo;
         col += palette(js + colorC + time*0.02) * onRing;
         // white-hot HDR spark core: quadratic falloff pushes brights >1.0
         col += vec3<f32>(1.0, 0.96, 0.88) * onRing * onRing * (1.1 + treble*0.5);
         heat += onRing * 0.35;
 
-        // inner jewel sparkle on treble
-        let inner = softGlow(uv, center + radial*expand*0.7, 0.003, treble*fade*0.6);
-        col += palette(js + colorC + 0.33) * inner;
-
-        // faint secondary halo
-        let halo = softGlow(uv, center + radial*expand*1.25, 0.008, fade*energy*0.25);
+        // faint secondary halo (outside only)
+        let halo = softGlow(uv, center + radial*expand*1.25, 0.008, fade*energy*0.25) * onHalo;
         col += palette(js + colorC + 0.66) * halo;
         heat += halo * 0.15;
       }
@@ -171,7 +172,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       for (var k: i32 = 0; k < n; k = k + 1) {
         let ang = f32(k) / f32(n) * TAU;
         let r = ringR * (0.4 + mb * 0.6);
-        let rp = mouseUV + vec2<f32>(cos(ang), sin(ang))*r;
+        let rp = mouseUV + vec2<f32>(cos(ang), sin(ang)*0.48)*r;
         let sp = sparkPos(rp, vec2<f32>(0.0, -0.1), mb, 0.5);
         let mGlow = softGlow(uv, sp, 0.006, mFade);
         col += palette(hash1(f32(k)) + colorC) * mGlow;

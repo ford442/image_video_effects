@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chrysanthemum Burst
 //  Category: generative
-//  Features: dense spherical bursts, concentric ring layers, inner/outer
-//            color variation, multi-stage timing, audio-reactive,
-//            mouse peony shell, aces-tone-map, semantic alpha
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
+//  Upgraded: 2026-09-10
+//  Ideas: pistil heart (inner ring slower/denser); sphere foreshorten via latitude z-phase
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -150,8 +151,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (layerAge <= 0.0 || layerAge > 4.5) { continue; }
 
         let ringT = lf / max(f32(layers) - 0.5, 1.0);
-        let ringSpeed = (0.45 + ringT * 0.55) * energy;
-        let sparksPerRing = i32(24.0 + density * 36.0 + lf * 8.0);
+        // Pistil heart: innermost ring slower and denser than outer rays.
+        let pistil = 1.0 - ringT;
+        let ringSpeed = (0.18 + ringT * 0.82) * energy;
+        let sparksPerRing = i32(24.0 + density * 36.0 + lf * 8.0 + pistil * 20.0);
+        // Sphere foreshorten: this ring is a latitude on a ball, not a flat disk.
+        let lat = (ringT - 0.5) * 1.85;
+        let ringR3 = cos(lat);
+        let yLift = sin(lat) * 0.16 * energy;
 
         for (var j: i32 = 0; j < sparksPerRing; j = j + 1) {
           let jf = f32(j);
@@ -160,9 +167,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
           let angle = (jf / f32(sparksPerRing)) * TAU + (jSeed - 0.5) * 0.4 + lf * 0.15;
           let speed = ringSpeed * (1.05 + jSeed2 * 0.35);
-          let vel = vec2<f32>(cos(angle), sin(angle)) * speed;
+          let vel = vec2<f32>(cos(angle), sin(angle)) * speed * ringR3;
           let grav = 0.85 + ringT * 0.35;
-          let sp = sparkPos(center, vel, layerAge, grav, 0.18 + ringT * 0.08);
+          let sp = sparkPos(center + vec2<f32>(0.0, yLift), vel, layerAge, grav, 0.18 + ringT * 0.08);
 
           let lifeFade = fade * smoothstep(4.0, 0.2, layerAge) * (0.6 + jSeed * 0.4);
           // Radial speed-line stretch along velocity direction.
@@ -208,14 +215,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       for (var ml = 0; ml < mLayers; ml = ml + 1) {
         let mlf = f32(ml);
         let mRingT = mlf / f32(mLayers);
-        let mSparks = i32(30.0 + density * 40.0);
+        let mPistil = 1.0 - mRingT;
+        let mLat = (mRingT - 0.5) * 1.85;
+        let mSparks = i32(30.0 + density * 40.0 + mPistil * 16.0);
         for (var mk = 0; mk < mSparks; mk = mk + 1) {
           let mkf = f32(mk);
           let mks = hash1(mkf * 2.1 + mlf * 5.0);
           let mang = (mkf / f32(mSparks)) * TAU + mks;
-          let mspd = (0.4 + mRingT * 0.6) * mEnergy;
-          let mvel = vec2<f32>(cos(mang), sin(mang)) * mspd;
-          let mpos = sparkPos(mCenter, mvel, mbAge - mlf * 0.05, 0.9, 0.18);
+          let mspd = (0.18 + mRingT * 0.82) * mEnergy;
+          let mvel = vec2<f32>(cos(mang), sin(mang)) * mspd * cos(mLat);
+          let mpos = sparkPos(mCenter + vec2<f32>(0.0, sin(mLat) * 0.16 * mEnergy), mvel, mbAge - mlf * 0.05, 0.9, 0.18);
           let mg = softGlow(uv, mpos, 0.006, mFade * mEnergy);
           col += chrysanthemumColor(mRingT, colorSpread, mks, mbAge) * mg;
         }

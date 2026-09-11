@@ -15092,7 +15092,8 @@
       "fast-motion",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15308,7 +15309,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15415,7 +15417,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15525,7 +15528,8 @@
       "flat-disk-petals",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15745,7 +15749,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15855,7 +15860,8 @@
       "generated-depth",
       "temporal-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -16078,7 +16084,8 @@
       "generated-depth",
       "temporal-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ]
   },
   {
@@ -16187,7 +16194,8 @@
       "click-reactive",
       "temporal",
       "semantic-alpha",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ]
   },
   {
@@ -16398,7 +16406,11 @@
     "updated": true,
     "id": "gen-fireworks-strobe-shell",
     "url": "shaders/gen-fireworks-strobe-shell.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "4th of July — Willow Cascade",
@@ -16508,7 +16520,8 @@
       "audio-reactive",
       "mouse-driven",
       "temporal",
-      "fast-motion"
+      "fast-motion",
+      "upgraded-rgba"
     ]
   },
   {
@@ -32204,6 +32217,65 @@
       "volumetric"
     ],
     "category": "generative"
+  },
+  {
+    "id": "gen-symbiotic-cyber-mycelium",
+    "name": "Symbiotic Cyber-Mycelium",
+    "category": "generative",
+    "tags": [
+      "3d",
+      "raymarching",
+      "organic",
+      "cyberpunk",
+      "mycelium",
+      "neon",
+      "sdf"
+    ],
+    "description": "A mesmerizing descent into a synthetic fungal network where glowing bioluminescent fibers transmit digital pulses between pulsating data-nodes. It bridges the gap between organic growth algorithms and rigid, luminous cybernetic aesthetics.",
+    "url": "/shaders/gen-symbiotic-cyber-mycelium.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "data_speed",
+        "name": "Data Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "network_density",
+        "name": "Network Density",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "growth_twist",
+        "name": "Growth Twist",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "infection_bloom",
+        "name": "Infection Bloom",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Symbiotic Light Networks",
