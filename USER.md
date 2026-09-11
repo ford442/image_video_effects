@@ -6,6 +6,7 @@ _Learn about the person you're helping. Update this as you go._
 - **What to call them:**
 - **Pronouns:** _(optional)_
 - **Timezone:**
+- **Ethereal generative ten (2026-09-11):** Cyber Chrono Nebula Phoenix, Cyber Chrono Void Whale, Cyber Plasma Void Dragon, Glass Flora Terrarium, Quantum Glass Nautilus, Quantum Hologram Bonsai, Quantum Holographic Fractal Coral, Quantum Medusa, Silk Veil, and Feedback Echo Chamber. Two native ethereal/creature/feedback ideas each; identities kept; phoenix spring and bonsai/echo bass_env kept; no new springs. Nautilus floor (ACES/dataA/plasmaBuffer/updatedParams). Naga 10/10, extraBuffer/dead sliders 0, SKIP_WASM_BUILD=1 build green. Real-GPU QA external. Cards: `agents/swarm-outputs/composer-2026-09-11-ethereal-ten/`.
 - **Leftover branch union (2026-09-11):** Branches older than one day. Skipped today's live Cursor batches and already-merged plan/dispatch PRs. Landed three leftover positives from Aug-23 batch-60/61: Liquid Swirl (Lamb-Oseen restore), Liquid Tensor Vortex (A write + spectral tensor), RGB Glitch Displacement (Batch 61, 16×16). Did not take WASM JS, old auto-exposure tests, or later-superseded cyber/heat/liquid overlaps. Params exact, Naga 3/3. Real-GPU QA external.
 - **Fireworks leftover atmospheric six (2026-09-11):** Fan Shell, Comet Trail, Smoke Bloom, Wind & Ripple, Nocturne, and Audio Symphony. Two native atmosphere/conductor ideas each; identities kept; no new springs; audio-symphony extraBuffer[133] envelope kept; wind-ripple click barrages kept. Did not take lighting leftovers or matrix_digital_rain. Naga 6/6, extraBuffer/dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Real-GPU QA external. Cards: `agents/swarm-outputs/grok-2026-09-11-fireworks-leftover-six/`.
 - **Fireworks shell taxonomy ten (2026-09-10):** Chrysanthemum, Dahlia Burst, Crossette, Crackle Palm, Willow Cascade, Horse Tail, Kamuro Gold, Ring Shell, Strobe Shell, and Roman Candle. Two native shell ideas each; identities kept; no new springs; Roman click ripples kept. Did not take audio-symphony / nocturne / wind-ripple / smoke-bloom / comet-trail / fan-shell. Naga 10/10, extraBuffer/dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Real-GPU QA external. Cards: `agents/swarm-outputs/grok-2026-09-10-fireworks-ten/`.
@@ -132,9 +133,7 @@ _Learn about the person you're helping. Update this as you go._
   intentionally moved to documented raw persistent state; nine missing JSONs
   gained four named params. Structural/Jest/build gates are green; real-GPU QA
   remains external.
-- **Current ethereal generative cohort:** Ten real IDs from Cyber Chrono Nebula
-  Phoenix through Feedback Echo Chamber are next under the same canonical
-  shader contract, with four named live JSON params required for each.
+- **Current ethereal generative cohort:** Complete (2026-09-11). Next clean cohort TBD — lighting/geometric leftovers from foundation note remain.
 - **Codex (b) liquid batch (2026-08-23):** Upgraded liquid-jelly,
   liquid-oil, liquid-displacement, liquid-fast, liquid-glitch, liquid-mirror,
   ink-marbling, glass-wipes, kimi_liquid_glass, and liquid-metal under the

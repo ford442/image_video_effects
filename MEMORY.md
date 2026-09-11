@@ -1,5 +1,25 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
+**Last updated:** 2026-09-11 (ethereal generative ten)
+
+## 2026-09-11 — Ethereal generative ten (10 shaders)
+
+- IDs: `gen-ethereal-cyber-chrono-nebula-phoenix`, `gen-ethereal-cyber-chrono-void-whale`, `gen-ethereal-cyber-plasma-void-dragon`, `gen-ethereal-glass-flora-terrarium`, `gen-ethereal-quantum-glass-nautilus`, `gen-ethereal-quantum-hologram-bonsai`, `gen-ethereal-quantum-holographic-fractal-coral`, `gen-ethereal-quantum-medusa`, `gen-ethereal-silk-veil`, `gen-feedback-echo-chamber`.
+- Per shader, the ideas actually added:
+  - gen-ethereal-cyber-chrono-nebula-phoenix: wing feather filaments on SDF edge; tail ember convection. Spring halo [133..137] kept.
+  - gen-ethereal-cyber-chrono-void-whale: baleen comb striations on ribs; bass sonar ping rings from core.
+  - gen-ethereal-cyber-plasma-void-dragon: breath plasma jet along spine; per-segment scale overlap parallax.
+  - gen-ethereal-glass-flora-terrarium: condensation droplets on shell; dew meniscus on leaf tips.
+  - gen-ethereal-quantum-glass-nautilus: chamber septa walls; pearl nacre luster. Full floor added (ACES/dataA/plasmaBuffer/updatedParams).
+  - gen-ethereal-quantum-hologram-bonsai: prune-cut seal rings; north-facing moss lichen. bass_env [133] kept.
+  - gen-ethereal-quantum-holographic-fractal-coral: polyp mouth pits; zooxanthellae symbiont pulse from exact C.
+  - gen-ethereal-quantum-medusa: nematocyst stinger dots; bell contraction wave from bass phase.
+  - gen-ethereal-silk-veil: selvage fray on ribbon edges; held-crease memory from exact C.
+  - gen-feedback-echo-chamber: harmonic echo ladder at 2× spacing; standing-wave nodal interference. bass_env [133] kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM bridge. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/composer-2026-09-11-ethereal-ten/`.
+
 **Last updated:** 2026-09-11 (leftover branch union)
 
 ## 2026-09-11 — Leftover branches older than one day
