@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Crease — Batch 61
-//  Origami folds: spring local crease, held deepen, capped ripples,
-//  exact C fold memory, Kawasaki damping, chromatic folding.
+//  Digital Crease
+//  Category: geometric
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: valley-fold ambient occlusion; wet-glue seam highlight on spring crease
+//  A packing: fold sim in RGBA (C.r fold memory)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -179,7 +183,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Edge glow along crease
   let edgeGlow = smoothstep(0.0, 0.12, abs(animatedFold)) * 0.08;
 
-  var rgb = vec3<f32>(r, g, b) * shadowFactor * shadedPaper + vec3<f32>(layerHighlight + creaseHighlight + edgeGlow + creaseSpec);
+  // Idea 1 — valley-fold ambient occlusion on concave crease side
+  let valleyAO = smoothstep(0.0, -0.12, animatedFold) * 0.38
+    * (1.0 - abs(animatedFold) / max(foldDepth, 0.001));
+
+  // Idea 2 — wet-glue seam highlight along the spring crease ridge
+  let seamRidge = exp(-abs(sin(mouseAngle * 4.0 + speed)) * 9.0)
+    * exp(-mouseDist * 4.5) * (0.28 + audio.y * 0.18) * select(0.55, 1.0, held);
+
+  var rgb = vec3<f32>(r, g, b) * shadowFactor * shadedPaper * (1.0 - valleyAO)
+    + vec3<f32>(layerHighlight + creaseHighlight + edgeGlow + creaseSpec)
+    + vec3<f32>(0.94, 0.97, 1.0) * seamRidge;
 
   // Mountain/valley tint
   let mountainValley = signFold * 0.5 + 0.5;
