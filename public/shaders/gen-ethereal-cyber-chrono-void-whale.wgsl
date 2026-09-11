@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Ethereal Cyber-Chrono Void-Whale
-// Category: generative
-// A colossal, slow-moving biomechanical space leviathan swimming gracefully through a dense volumetric plasma-ocean.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Ethereal Cyber-Chrono Void-Whale
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: baleen comb striations across rib openings; bass sonar ping rings from core
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -181,6 +185,34 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Native idea 1: baleen comb striations across open rib torus openings.
+fn baleenStriations(p: vec3<f32>, time: f32) -> f32 {
+    var striation = 0.0;
+    for (var i = 0; i < 8; i++) {
+        let z_pos = -2.0 + f32(i) * 0.7;
+        var rp = p;
+        rp.z -= z_pos;
+        let inOpening = smoothstep(0.25, -0.55, rp.y) * smoothstep(1.4, 0.25, abs(rp.x));
+        let comb = 0.5 + 0.5 * sin(rp.x * 130.0 + f32(i) * 1.9 + time * 0.45);
+        let combFine = 0.5 + 0.5 * sin(rp.y * 220.0 + f32(i) * 2.3);
+        striation = max(striation, inOpening * comb * combFine);
+    }
+    return striation;
+}
+
+// Native idea 2: automatic bass-driven sonar ping rings from the whale core.
+fn bassSonarPings(p: vec3<f32>, time: f32, bass: f32) -> f32 {
+    let core = vec3<f32>(0.0, 0.0, 0.5);
+    let dist = length(p.xz - core.xz);
+    let pingRate = 0.75 + bass * 0.85;
+    let pingPhase = fract(time * pingRate);
+    let ringRadius = pingPhase * 4.5;
+    let ring = exp(-abs(dist - ringRadius) * 20.0) * (0.35 + bass * 0.9);
+    let echoPhase = fract(time * pingRate + 0.35);
+    let echoRing = exp(-abs(dist - echoPhase * 4.5) * 16.0) * bass * 0.45;
+    return ring + echoRing;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let size = vec2<f32>(u.config.z, u.config.w);
@@ -228,6 +260,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var m = MapResult(0.0, 0.0);
 
     var vol_plasma = 0.0;
+    var sonarGlow = 0.0;
 
     for (var i = 0; i < 100; i++) {
         p = ro + rd * t;
@@ -236,6 +269,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Volumetric accumulation for plasma ocean
         let ocean_density = fbm(p * 0.5 + vec3<f32>(time * 0.1));
         vol_plasma += ocean_density * plasmaDensity * (0.02 + bass * 0.008);
+        sonarGlow += bassSonarPings(p, time, bass) * 0.015;
 
         if (m.dist < 0.01) {
             hit = true;
@@ -249,6 +283,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var col = vec3<f32>(0.01, 0.03, 0.1); // Deep abyss background
     col += vec3<f32>(0.1, 0.5, 0.8) * vol_plasma; // Add volumetric plasma
+    col += vec3<f32>(0.2, 0.85, 1.0) * sonarGlow * coreBloom;
 
     if (hit) {
         let n = calcNormal(p, time, temporalGlitch);
@@ -263,6 +298,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             bone_col *= diff * 0.5 + 0.5;
             // Simulated Subsurface scattering / Refraction
             bone_col += vec3<f32>(0.1, 0.8, 1.0) * fresnel * refractionIndex;
+            let baleen = baleenStriations(p, time);
+            bone_col += vec3<f32>(0.15, 0.95, 0.85) * baleen * (0.25 + mids * 0.35);
             col = mix(col, bone_col, 0.9);
         } else if (m.mat == 2.0) {
             // Core
