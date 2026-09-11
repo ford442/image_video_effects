@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, edge-preserving, guided-filter,
 //             mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-23
-//  By: Copilot
+//  Upgraded: 2026-09-08
+//  Ideas: depth-augmented guide; exact integer C loads for P
+//  A packing: display RGBA
 //
 //  Guided Image Filtering as described in the Next-Gen Convolutions
 //  feature request:
@@ -59,11 +60,16 @@ struct Uniforms {
 //  Guide I = readTexture (original video luminance)
 //  Input P = dataTextureC (processed content from prior pass)
 //  Returns: (filtered_rgb, confidence)
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn guidedFilter(
     uv: vec2<f32>,
     pixSz: vec2<f32>,
     radius: i32,
-    epsilon: f32
+    epsilon: f32,
+    cDims: vec2<i32>
 ) -> vec4<f32> {
   var sumG   = 0.0;
   var sumP   = vec3<f32>(0.0);
@@ -76,11 +82,12 @@ fn guidedFilter(
     for (var dx = -r; dx <= r; dx++) {
       let off  = vec2<f32>(f32(dx), f32(dy)) * pixSz;
       let p    = clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0));
-      // Guide: luminance of original video
       let gRGB = textureSampleLevel(readTexture, u_sampler, p, 0.0).rgb;
-      let g    = dot(gRGB, vec3<f32>(0.2126, 0.7152, 0.0722));
-      // Input: processed frame
-      let inp  = textureSampleLevel(dataTextureC, u_sampler, p, 0.0).rgb;
+      let gLuma = dot(gRGB, vec3<f32>(0.2126, 0.7152, 0.0722));
+      let gDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, p, 0.0).r;
+      let g = mix(gLuma, gDepth, 0.35);
+      let ic = clamp(vec2<i32>(p * vec2<f32>(cDims)), vec2<i32>(0), cDims - vec2<i32>(1));
+      let inp = textureLoad(dataTextureC, ic, 0).rgb;
 
       sumG  += g;
       sumP  += inp;
@@ -101,8 +108,10 @@ fn guidedFilter(
   let b = meanP - a * meanG;
 
   // Evaluate at centre pixel
-  let gCentre   = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb,
+  let gCentreLuma = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb,
                       vec3<f32>(0.2126, 0.7152, 0.0722));
+  let gCentreDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let gCentre = mix(gCentreLuma, gCentreDepth, 0.35);
   let filtered  = a * gCentre + b;
 
   // Confidence: magnitude of a coefficient (edge guidance strength)
@@ -122,7 +131,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixSz   = 1.0 / res;
   let time    = u.config.x;
   let bass    = plasmaBuffer[0].x;
+  let mids    = plasmaBuffer[0].y;
   let mouse   = u.zoom_config.yz;
+  let cDims   = vec2<i32>(textureDimensions(dataTextureC));
 
   // Parameters
   let radBase   = 1 + i32(u.zoom_params.x * 7.0);
@@ -137,19 +148,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let epsilon = mix(epsBase, epsBase * 0.05, mFactor) * (1.0 - bass * 0.2);
 
   // Run guided filter
-  let result = guidedFilter(uv, pixSz, radius, epsilon);
+  let result = guidedFilter(uv, pixSz, radius, epsilon, cDims);
 
-  // Input (processed) and original
-  let processed = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-  let original  = textureSampleLevel(readTexture,  u_sampler, uv, 0.0).rgb;
+  let processed = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), cDims - vec2<i32>(1)), 0).rgb;
+  let original  = textureSampleLevel(readTexture,  u_sampler, uv, 0.0);
 
-  // Mix filtered result with processed content based on guide strength
-  let finalRGB  = mix(processed, result.rgb, guideStr);
-  let confidence = result.a;
+  let guidedRGB = acesToneMap(result.rgb * (1.0 + mids * 0.15));
+  let finalRGB  = mix(processed, guidedRGB, guideStr);
+  let confidence = clamp(result.a * 0.75 + original.a * 0.25, 0.0, 1.0);
+  let packed = vec4<f32>(finalRGB, confidence);
 
-  textureStore(writeTexture, coord, vec4<f32>(finalRGB, confidence));
+  textureStore(writeTexture, coord, packed);
+  textureStore(dataTextureA, coord, packed);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(finalRGB, confidence));
 }

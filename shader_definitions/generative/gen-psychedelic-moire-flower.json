@@ -55,5 +55,9 @@
   "updated": true,
   "id": "gen-psychedelic-moire-flower",
   "url": "shaders/gen-psychedelic-moire-flower.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

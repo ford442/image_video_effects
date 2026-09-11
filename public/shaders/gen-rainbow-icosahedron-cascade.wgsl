@@ -4,7 +4,9 @@
 //  Features: nested icosahedral shells, spectral facet coloring, orbit-trap
 //            edges, audio-reactive scale, mouse orbit, temporal feedback
 //  Complexity: High
-//  Created: 2026-07-12
+//  Upgraded: 2026-09-09
+//  Ideas: silhouette orbit-trap on edges; golden-angle yaw offset per shell
+//  A packing: ACES display RGBA (HEAD telemetry packing lie fixed)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +33,7 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const PHI: f32 = 1.61803398874989484820;
+const GOLDEN_ANGLE: f32 = 2.399963229728653;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -136,15 +139,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sf = f32(s);
     let scale = baseScale + sf * shellGap * (1.0 + mids * 0.2);
     let thick = edgeGlow * (1.0 - sf * 0.08);
-    let d = icosaShellSDF(p, scale, thick);
+    let pShell = rotY(p, sf * GOLDEN_ANGLE);
+    let d = icosaShellSDF(pShell, scale, thick);
     minDist = min(minDist, d);
 
     let edge = exp(-abs(d) * 80.0);
     let facet = exp(-max(d, 0.0) * 25.0);
-    let hue = fract(sf * 0.17 + hueDrift + time * 0.04 + length(p) * 0.3);
+    let hue = fract(sf * 0.17 + hueDrift + time * 0.04 + length(pShell) * 0.3);
     let spec = spectral(hue + treble * 0.1);
+    let sil = 1.0 - abs(pShell.z / max(length(pShell), 0.001));
 
-    color += spec * edge * (1.2 + bass * 0.5);
+    color += spec * edge * (1.2 + bass * 0.5) * (0.55 + sil * 0.9);
     color += spec * facet * 0.25 * (0.6 + mids * 0.4);
     facetHue = mix(facetHue, hue, edge);
     alpha = max(alpha, edge * (0.7 - sf * 0.08));
@@ -156,12 +161,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let prev = textureLoad(dataTextureC, pixel, 0);
   color = mix(color, prev.rgb, 0.04 + mids * 0.02);
-  color = acesToneMap(color * (1.15 + bass * 0.2));
-
   alpha = clamp(alpha + length(core) * 0.3, 0.0, 1.0);
   let depthOut = clamp(1.0 - minDist * 3.0, 0.0, 1.0);
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
+  color = acesToneMap(color * (1.15 + bass * 0.2));
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(minDist, facetHue, alpha, 1.0));
 }

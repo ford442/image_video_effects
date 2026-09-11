@@ -1,7 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Parallax Shift - Advanced Alpha
-//  Alpha Mode: Effect Intensity Alpha + Depth-Layered
+//  Parallax Shift
+//  Category: distortion
 //  Features: advanced-alpha, parallax, depth-aware, mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-08
+//  Ideas: occlusion peel (near layers outweigh far); focus-plane CoC along the ray
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -65,6 +68,10 @@ fn calculateAdvancedAlpha(
     return clamp(effectAlpha * depthAlpha, 0.0, 1.0);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -99,15 +106,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var accumulatedWeight = 0.0;
     var maxDisplacement = 0.0;
     
+    let denomLayers = max(f32(layerCount - 1), 1.0);
     for (var i: i32 = 0; i < layerCount; i++) {
-        let layerFactor = f32(i) / f32(layerCount - 1);
+        let layerFactor = f32(i) / denomLayers;
         let layerOffset = parallaxDir * depthDiff * shiftAmount * (layerFactor - 0.5) * 2.0;
         let layerUV = clamp(uv + layerOffset, vec2<f32>(0.0), vec2<f32>(1.0));
-        
+        let layerDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, layerUV, 0.0).r;
+        // Occlusion peel: a nearer sample owns the ray; farther layers drop out.
+        let impliedDepth = mix(focusPlane, depth, layerFactor);
+        let occlude = smoothstep(-0.08, 0.12, impliedDepth - layerDepth);
+        let tent = 1.0 - abs(layerFactor - 0.5) * 2.0;
+        var layerWeight = max(tent, 0.05) * (0.25 + occlude);
+        // Focus-plane CoC: off-plane layers smear along the parallax ray.
+        let coc = abs(layerDepth - focusPlane) * shiftAmount * 12.0;
+        let smear = parallaxDir * coc * 0.35;
         let layerSample = textureSampleLevel(readTexture, u_sampler, layerUV, 0.0);
-        let layerWeight = 1.0 - abs(layerFactor - 0.5) * 2.0;
-        
-        accumulatedColor += layerSample.rgb * layerWeight;
+        let smearA = textureSampleLevel(readTexture, u_sampler, clamp(layerUV + smear, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+        let smearB = textureSampleLevel(readTexture, u_sampler, clamp(layerUV - smear, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+        let layerRgb = mix(layerSample.rgb, (smearA.rgb + smearB.rgb) * 0.5, clamp(coc, 0.0, 0.85));
+        accumulatedColor += layerRgb * layerWeight;
         accumulatedWeight += layerWeight;
         maxDisplacement = max(maxDisplacement, length(layerOffset));
     }
@@ -131,7 +148,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = clamp(calculateAdvancedAlpha(uv, displacedUV, baseSample.a, u.zoom_params)
                       + sep * bass * 0.2, 0.0, 1.0);
 
-    let outColor = vec4<f32>(finalColor, alpha);
+    let outColor = vec4<f32>(acesToneMap(finalColor), alpha);
     textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 

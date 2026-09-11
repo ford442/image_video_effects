@@ -1,16 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Audio Symphony Fireworks
 //  Category: generative
-//  Features: envelope-driven launches, bass primary shells, mids secondary
-//            bursts, treble micro-sparks, mouse command shell, temporal
-//            trails, aces-tone-map, semantic alpha, depth-aware
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-// ═══════════════════════════════════════════════════════════════════
-//  The display is conducted by the music. A smoothed bass envelope triggers
-//  bigger/faster launches on transients; mids layer in secondary shells;
-//  treble crackles thousands of micro-sparks. The result is a fireworks
-//  show that feels tightly synced to the audio spectrum.
+//  Upgraded: 2026-09-11
+//  Ideas: onset-only primary (bassPulse gates the big shell); band-tinted stars
+//  A packing: ACES display RGBA; extraBuffer[133] smoothed bass envelope
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -118,7 +114,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var col = vec3<f32>(0.01, 0.008, 0.026);
   let star = step(0.991, hash2(floor(uv * 140.0))) * (0.5 + 0.5 * sin(time * 5.0 + hash2(uv * 60.0) * 20.0));
-  col += vec3<f32>(0.8, 0.85, 1.0) * star * 0.65;
+  // Idea 2 — band-tinted stars (not the shells)
+  let starTint = vec3<f32>(1.0, 0.82, 0.28) * bass
+               + vec3<f32>(1.0, 0.38, 0.48) * mids
+               + vec3<f32>(0.92, 0.96, 1.0) * treble;
+  let starBase = vec3<f32>(0.8, 0.85, 1.0);
+  let starMix = clamp(bass + mids + treble, 0.0, 1.0);
+  col += mix(starBase, starTint / max(bass + mids + treble, 0.001), starMix) * star * 0.65;
 
   // ── Spectrum-driven shells ──
   let numShells = 6;
@@ -137,7 +139,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let baseY = -0.78;
     let burstDelay = 1.1 + seed * 0.6 - bassPulse * 0.2;
     let burstAge = max(0.0, age - burstDelay);
-    let shellEnergy = bassDrive * (0.6 + bass * 0.9 + bassPulse) * (0.8 + seed2 * 0.3);
+    // Idea 1 — onset-only primary: idle mortar stays small; bassPulse opens the big shell
+    let idleEnergy = bassDrive * (0.35 + bass * 0.22) * (0.8 + seed2 * 0.3);
+    let onsetEnergy = bassDrive * (1.15 + bass * 0.45) * (0.8 + seed2 * 0.3);
+    let shellEnergy = mix(idleEnergy, onsetEnergy, smoothstep(0.02, 0.12, bassPulse));
     let hue = fract(seed * 1.7 + time * 0.02 + si * 0.1);
 
     if (age < burstDelay) {

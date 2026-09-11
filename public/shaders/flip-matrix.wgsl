@@ -1,5 +1,12 @@
-// Flip Matrix — inertial split-flap propagation with hinge and bevel mechanics.
-// A/C stores ACES display RGBA. B is unused. Source depth passes through.
+// ═══════════════════════════════════════════════════════════════════
+//  Flip Matrix
+//  Category: geometric
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: mechanical cam notch at hinge crossing 90°; back-face mirror sample
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -99,7 +106,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let source = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
     let frontMaterial = source.rgb * (0.32 + 0.68 * projectedHeight);
     let backMaterial = mix(source.bgr * 0.14, vec3<f32>(0.11, 0.035, 0.018), 0.68);
-    hdr = select(frontMaterial, backMaterial, cosineAngle < 0.0);
+
+    // Back-face mirror sample when flap angle > π/2.
+    if (cosineAngle < 0.0) {
+      let mirrorUV = clamp(vec2<f32>(1.0 - sampleUV.x, sampleUV.y), vec2<f32>(0.0), vec2<f32>(1.0));
+      let mirrorSource = textureSampleLevel(readTexture, u_sampler, mirrorUV, 0.0);
+      hdr = mix(backMaterial, mirrorSource.rgb * (0.72 + 0.28 * projectedHeight), 0.68);
+    } else {
+      hdr = frontMaterial;
+    }
 
     let seam = 1.0 - smoothstep(0.006, 0.035, abs(sourceLocalY - 0.5));
     let edgeDistance = min(min(local.x - gap, 1.0 - gap - local.x), min(sourceLocalY - gap, 1.0 - gap - sourceLocalY));
@@ -112,6 +127,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     hdr *= diffuse * (0.58 + bevel * 0.42) * (1.0 - seam * 0.72);
     hdr += vec3<f32>(0.8, 0.86, 0.95) * specular * (0.35 + audio.z * 0.35);
     hdr += vec3<f32>(0.12, 0.07, 0.025) * hinge * (0.4 + abs(sineAngle));
+
+    // Mechanical cam notch darkening at hinge line when flap crosses 90°.
+    let camNotch = pow(abs(sineAngle), 3.0) * hinge * 0.5;
+    hdr *= (1.0 - camNotch);
+
     coverage = source.a * (0.45 + projectedHeight * 0.55) * smoothstep(0.0, 0.04, edgeDistance);
   }
 

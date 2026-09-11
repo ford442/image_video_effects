@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Bayer Dither Interactive v2
+//  Bayer Dither Interactive
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: bayer-dither-interactive
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-09
+//  Ideas: interleaved-gradient-noise assist; channel-rotated Bayer
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -94,18 +95,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let contrasted = clamp((baseColor - 0.5) * contrast + 0.5, vec3<f32>(0.0), vec3<f32>(1.0));
 
     let blueNoise = hash2(vec2<f32>(global_id.xy) + fract(u.config.x * 1.618) * 100.0) * 0.08 - 0.04;
-    let threshold = (bayer8(vec2<u32>(global_id.xy)) - 0.5 + blueNoise) * spread * (0.4 + treble * 0.6);
+    // Idea 1: interleaved gradient noise assist mixed into the Bayer threshold.
+    let pix = vec2<f32>(global_id.xy);
+    let ign = fract(52.9829189 * fract(dot(pix, vec2<f32>(0.06711056, 0.00583715)))) - 0.5;
+    let bayerR = bayer8(vec2<u32>(global_id.xy)) - 0.5;
+    let threshold = (mix(bayerR, ign, 0.32) + blueNoise) * spread * (0.4 + treble * 0.6);
 
     let texel = vec2<f32>(1.0) / resolution;
+    // Idea 2: channel-rotated Bayer — G +4, B +2 (classic color dither).
+    let bayerG = bayer8(vec2<u32>(global_id.xy) + vec2<u32>(4u, 0u)) - 0.5;
+    let bayerB = bayer8(vec2<u32>(global_id.xy) + vec2<u32>(0u, 2u)) - 0.5;
+    let thrG = (mix(bayerG, ign, 0.32) + blueNoise) * spread * (0.4 + treble * 0.6);
+    let thrB = (mix(bayerB, ign, 0.32) + blueNoise) * spread * (0.4 + treble * 0.6);
     let qR = floor((contrasted.r + threshold) * levels) / levels;
-    let qG = floor((contrasted.g + threshold) * levels) / levels;
-    let qB = floor((contrasted.b + threshold) * levels) / levels;
+    let qG = floor((contrasted.g + thrG) * levels) / levels;
+    let qB = floor((contrasted.b + thrB) * levels) / levels;
     let errVec = contrasted - vec3<f32>(qR, qG, qB);
 
-    let neighbor = textureSampleLevel(readTexture, u_sampler, pixelUV + vec2<f32>(texel.x, texel.y), 0.0).rgb;
+    let neighbor = textureSampleLevel(readTexture, u_sampler, clamp(pixelUV + vec2<f32>(texel.x, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let nQ = floor(neighbor * levels) / levels;
     let errDiff = (neighbor - nQ) * 0.25 * influence;
-    let dithered = floor((contrasted + threshold + errDiff) * levels) / levels;
+    let dithered = vec3<f32>(
+        floor((contrasted.r + threshold + errDiff.r) * levels) / levels,
+        floor((contrasted.g + thrG + errDiff.g) * levels) / levels,
+        floor((contrasted.b + thrB + errDiff.b) * levels) / levels
+    );
 
     let paletteMix = clamp(bass * 2.5, 0.0, 1.0);
     let retro1bit = step(vec3<f32>(0.5), dithered);
@@ -133,10 +147,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalColor = acesToneMap(caColor + halo);
 
     let ditherConf = 1.0 - length(errDiff) * 2.0;
-    let alpha = clamp(influence * 0.35 + scanline * 0.15 + ditherConf * 0.2 + bass * 0.06, 0.1, 0.92);
+    let srcA = textureSampleLevel(readTexture, u_sampler, pixelUV, 0.0).a;
+    let alpha = clamp(influence * 0.35 + scanline * 0.15 + ditherConf * 0.2 + bass * 0.06 + srcA * 0.1, 0.1, 0.92);
     let outDepth = clamp(depth + influence * 0.05, 0.0, 1.0);
+    let outCol = vec4<f32>(finalColor, alpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(influence, scanline, ditherConf, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outCol);
 }

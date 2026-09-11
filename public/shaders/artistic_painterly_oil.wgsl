@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Artistic Painterly Oil
 //  Category: artistic
-//  Features: mouse-driven, paint, oil, audio-viscosity, impasto, depth-brush, pigment-mix
+//  Features: mouse-driven, paint, oil, audio-viscosity, impasto, depth-brush, pigment-mix, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish — richer impasto, audio viscosity, atmospheric depth)
+//  Upgraded: 2026-09-09
+//  Ideas: scumble skip on canvas peaks; wet-in-wet from exact C
+//  A packing: pre-ACES color.rgb + thickness.a
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -157,9 +158,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Apply anisotropic Kuwahara filter
     var color = kuwahara(uv, invRes, brushSize, edgeDir);
-    
+
     // Color quantization
     color = quantizeColor(color, colorLevels);
+
+    // Idea 2 — wet-in-wet: mix previous body where paint is still wet
+    let prevBody = textureLoad(dataTextureC, coord, 0);
+    color = mix(color, prevBody.rgb, paintWetness * 0.28 * smoothstep(0.15, 0.9, prevBody.a));
     
     // Impasto effect - calculate physical paint height
     let lum = luminance(color);
@@ -249,13 +254,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let brokenColor = (hash12(vec2<f32>(coord) + time * 3.0) - 0.5) * treble * 0.06 * paintWetness;
     color += brokenColor;
 
+    // Idea 1 — scumble: thin paint misses canvas peaks
+    let peak = canvasTexture(uv, 1.35);
+    let scumble = (1.0 - smoothstep(0.15, 0.55, paint_thickness)) * smoothstep(0.55, 0.9, peak);
+    color = mix(color, color * vec3<f32>(0.93, 0.90, 0.84) + vec3<f32>(0.06), scumble * 0.45);
+
     // Specular highlight contributes to perceived solidity
     let spec_alpha = luminance(specular) * paintWetness * 0.5;
-    paint_alpha = min(1.0, paint_alpha + spec_alpha);
+    paint_alpha = min(1.0, paint_alpha + spec_alpha + scumble * 0.08);
+
+    let preAces = color;
+    color = clamp((color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 
     textureStore(writeTexture, coord, vec4<f32>(color, paint_alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(paint_thickness, 0.0, 0.0, paint_alpha));
-    
-    // Store filtered result with thickness for temporal continuity
-    textureStore(dataTextureA, coord, vec4<f32>(color, paint_thickness));
+    textureStore(writeDepthTexture, coord, vec4<f32>(paint_thickness, 0.0, 0.0, 0.0));
+
+    // Store filtered result with thickness for temporal continuity — never ACES A
+    textureStore(dataTextureA, coord, vec4<f32>(preAces, paint_thickness));
 }

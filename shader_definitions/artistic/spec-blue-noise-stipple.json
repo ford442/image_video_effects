@@ -18,7 +18,8 @@
     "mouse-driven",
     "audio-reactive",
     "click-reactive",
-    "fast-motion"
+    "fast-motion",
+    "upgraded-rgba"
   ],
   "params": [
     {

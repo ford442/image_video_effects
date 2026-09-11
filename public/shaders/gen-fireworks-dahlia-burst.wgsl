@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Dahlia Burst
 //  Category: generative
-//  Features: flat petal-disk shells, layered petal rows, audio-reactive,
-//            mouse dahlia burst, hex-bokeh, temporal feedback, aces-tone-map
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-12
+//  Upgraded: 2026-09-10
+//  Ideas: even-row imbrication (half-petal offset); midrib along each petal dir
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -137,7 +139,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         for (var p = 0; p < petals; p = p + 1) {
           let pf = f32(p);
           let ps = hash1(si * 71.0 + rf * 19.0 + pf * 2.9);
-          let ang = pf / f32(petals) * TAU + seed * 0.3 + rf * 0.15;
+          // Imbrication: even rows rotate by half a petal so rows nest.
+          let imb = select(0.0, TAU * 0.5 / max(f32(petals), 1.0), (row % 2) == 1);
+          let ang = pf / f32(petals) * TAU + seed * 0.3 + rf * 0.15 + imb;
           let petalWidth = 0.25 + ps * 0.2;
           let dir = vec2<f32>(cos(ang), sin(ang));
           let perp = vec2<f32>(-dir.y, dir.x);
@@ -154,6 +158,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
           let glowR = 0.004 + ps * 0.003 + rf * 0.001;
           col += pc * hexBokeh(uv, fallPos, glowR, rowFade * energy * (0.8 + treble * 0.3));
           col += pc * 0.4 * hexBokeh(uv, petalCenter, glowR * 1.5, rowFade * energy * 0.5);
+          // Midrib — thin bright line along this petal's dir.
+          let rib1 = center + dir * along * 0.32;
+          let rib2 = center + dir * along * 0.68;
+          let ribCol = mix(pc, vec3<f32>(1.0, 0.96, 0.88), 0.55);
+          col += ribCol * hexBokeh(uv, rib1, glowR * 0.42, rowFade * energy * 0.55);
+          col += ribCol * hexBokeh(uv, rib2, glowR * 0.38, rowFade * energy * 0.4);
         }
       }
     }

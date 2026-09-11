@@ -3,7 +3,9 @@
 //  Category: image
 //  Features: audio-reactive, temporal, upgraded-rgba, semantic-alpha
 //  Complexity: Medium
-//  Created: 2026-05-30
+//  Upgraded: 2026-09-08
+//  Ideas: pigment granulation in paper valleys; C-history backrun cauliflower
+//  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Applies a soft, feathered watercolor bloom using multi-tap
 //  Gaussian-like blurring, paper texture, and wet-edge darkening.
@@ -52,6 +54,10 @@ fn paperNoise(uv: vec2<f32>, scale: f32) -> f32 {
 // Gaussian weighted tap blur
 fn bloomSample(uv: vec2<f32>, offset: vec2<f32>, weight: f32) -> vec4<f32> {
     return textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0) * weight;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -120,9 +126,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let desat = mix(bloom.rgb, vec3<f32>(luma), 0.15);
     let warm  = desat + vec3<f32>(0.02, 0.01, -0.02) * (1.0 - luma);
 
-    // Paper texture
+    // Paper texture + granulation in fibre valleys
     let paper = paperNoise(uv, 80.0) * paperStr;
     var col   = warm * (1.0 - paper * 0.5) + vec3<f32>(paper * 0.03);
+    let valleys = smoothstep(0.55, 0.18, paperNoise(uv * vec2<f32>(1.7, 1.0), 110.0));
+    col = mix(col, col * vec3<f32>(0.78, 0.82, 0.88), valleys * paperStr * 2.4);
     let pigmentRunner = pow(max(0.0, sin(uv.x * 63.0 + uv.y * 29.0 - time * 15.0)), 14.0);
     col += vec3<f32>(0.12, 0.05, 0.16) * pigmentRunner * (0.08 + audio.z * 0.14 + wetBrush * 0.12);
 
@@ -134,6 +142,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let wetFlow = vec2<f32>(sin(uv.y * 18.0 + time * 2.0), -1.0) * (1.0 + wetBrush * 2.0 + mid);
     let historyCoord = clamp(coord - vec2<i32>(round(wetFlow)), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
     let prev = textureLoad(dataTextureC, historyCoord, 0);
+    let prevLuma = dot(prev.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let washLuma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let backrunAmt = smoothstep(0.02, 0.14, prevLuma - washLuma) * (1.0 - dryRate);
+    let cauliflower = paperNoise(uv * vec2<f32>(3.1, 2.4) + vec2<f32>(time * 0.07, 0.0), 48.0);
+    let frill = smoothstep(0.42, 0.72, cauliflower) * backrunAmt;
+    col = mix(col, mix(prev.rgb, col, 0.35), frill * 0.55);
     let retention = clamp(1.0 - dryRate + wetBrush * 0.04, 0.0, 0.995);
     let freshPigment = vec4<f32>(col + vec3<f32>(0.12, 0.04, 0.08) * clickBloom, bloom.a);
     let accumulated = mix(freshPigment, prev, retention * (1.0 - mid * 0.1));
@@ -143,7 +157,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let alpha = clamp(src.a * (0.85 + luma * 0.15), 0.0, 1.0);
     finalColor.a = alpha;
 
-    finalColor = vec4<f32>(clamp(finalColor.rgb, vec3<f32>(0.0), vec3<f32>(4.0)), alpha);
+    finalColor = vec4<f32>(acesToneMap(clamp(finalColor.rgb, vec3<f32>(0.0), vec3<f32>(4.0))), alpha);
     textureStore(writeTexture, coord, finalColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(luma, 0.0, 0.0, 1.0));
     textureStore(dataTextureA, coord, finalColor);

@@ -1,17 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Double Exposure HDR
 //  Category: advanced-hybrid
-//  Features: double-exposure, HDR-bloom, tone-mapping, mouse-driven
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: double-exposure.wgsl, alpha-hdr-bloom-chain.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-22 — Artistic & Texture Enhancer
-// ═══════════════════════════════════════════════════════════════════
-//  Blends the image with a zoomed and rotated version of itself,
-//  then applies HDR bloom to the composite. The double exposure
-//  creates ghostly overlays while the bloom chain adds luminous
-//  halos around bright overlap regions with ACES tone mapping.
-//  Mouse position sets the pivot point for the zoom/rotation.
+//  Upgraded: 2026-09-09
+//  Ideas: overlap-only bloom knee; pivot-locked second plate
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -58,8 +52,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var uv = vec2<f32>(gid.xy) / res;
     let coord = vec2<i32>(gid.xy);
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Double exposure params
     let zoomParam = u.zoom_params.x;
     let zoom = 0.5 + zoomParam * 2.5;
     let rotParam = u.zoom_params.y;
@@ -67,87 +63,73 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let opacity = u.zoom_params.z;
     let saturation = u.zoom_params.w;
 
-    // Mouse pivot
     var mouse = u.zoom_config.yz;
-    let aspect = res.x / res.y;
+    let aspect = res.x / max(res.y, 1.0);
 
-    // Sample 1: Base Image
     let c1 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // Sample 2: Transformed Image
+    // Idea 2 — pivot-locked second plate (mouse is the sandwich pin).
     var p = uv - mouse;
     p.x *= aspect;
     p = rotate2d(p, angle);
     p = p / zoom;
     p.x /= aspect;
-    let uv2 = p + mouse;
+    let uv2 = clamp(p + mouse, vec2<f32>(0.0), vec2<f32>(1.0));
     let c2 = textureSampleLevel(readTexture, u_sampler, uv2, 0.0);
 
-    // Screen Blend: 1 - (1-a)*(1-b)
     var blended = 1.0 - (1.0 - c1.rgb) * (1.0 - c2.rgb * opacity);
-
-    // Saturation adjustment
     let gray = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
     blended = mix(vec3<f32>(gray), blended, 0.5 + saturation * 0.5);
 
-    // ═══ HDR BLOOM CHAIN ═══
-    let bloomRadius = mix(0.01f, 0.06f, 0.4f);
-    let bloomIntensity = 1.5;
-    let bloomSamples = 12;
+    let lum1 = max(c1.r, max(c1.g, c1.b));
+    let lum2 = max(c2.r, max(c2.g, c2.b));
+    // Idea 1 — overlap-only bloom knee (both plates bright).
+    let overlapKnee = smoothstep(0.55, 0.92, min(lum1, lum2)) * opacity;
 
+    let bloomRadius = 0.034 * (1.0 + bass * 0.2);
+    let bloomSamples = 12;
     var bloom = vec3<f32>(0.0);
     var totalWeight = 0.0;
-
     for (var i = 0; i < bloomSamples; i = i + 1) {
         let a = f32(i) * 6.283185307 / f32(bloomSamples);
         let radius = bloomRadius * (1.0 + f32(i % 4) * 0.5);
         let offset = vec2<f32>(cos(a), sin(a)) * radius;
         let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
         let neighbor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-        let neighborMax = max(neighbor.r, max(neighbor.g, neighbor.b));
-        let neighborExposure = max(0.0, neighborMax - 1.0);
+        let n2 = textureSampleLevel(readTexture, u_sampler, clamp(uv2 + offset * 0.35, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        let pair = min(max(neighbor.r, max(neighbor.g, neighbor.b)), max(n2.r, max(n2.g, n2.b)));
+        let neighborExposure = max(0.0, pair - 0.65);
         let weight = exp(-f32(i % 4) * 0.5);
-        bloom += neighbor * neighborExposure * weight;
+        bloom += (neighbor + n2) * 0.5 * neighborExposure * weight;
         totalWeight += neighborExposure * weight;
     }
+    bloom /= max(totalWeight, 0.001);
+    bloom *= 1.5 * overlapKnee * (1.0 + mids * 0.25);
 
-    if (totalWeight > 0.001) {
-        bloom /= totalWeight;
-    }
-    bloom *= bloomIntensity;
-
-    // Composite HDR
     var hdrColor = blended + bloom;
 
-    // Mouse bloom boost
     let mouseDown = u.zoom_config.w;
     let mouseDist = length(uv - mouse);
     let mouseGlow = smoothstep(0.2, 0.0, mouseDist) * mouseDown * 2.0;
     hdrColor += vec3<f32>(mouseGlow * 0.5, mouseGlow * 0.3, mouseGlow * 0.1);
 
-    // Ripple flash
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rDist = length(uv - ripple.xy);
         let age = time - ripple.z;
-        if (age < 0.5 && rDist < 0.1) {
-            let flash = smoothstep(0.1, 0.0, rDist) * max(0.0, 1.0 - age * 2.0);
-            hdrColor += vec3<f32>(flash * 2.0, flash * 1.5, flash);
-        }
+        let live = f32(age < 0.5 && rDist < 0.1);
+        let flash = smoothstep(0.1, 0.0, rDist) * max(0.0, 1.0 - age * 2.0) * live;
+        hdrColor += vec3<f32>(flash * 2.0, flash * 1.5, flash);
     }
 
-    // Tone map
-    let toneMapExp = mix(0.5f, 2.0f, 0.5f);
-    let ldrColor = toneMapACES(hdrColor * toneMapExp);
-    let exposure = max(0.0, max(hdrColor.r, max(hdrColor.g, hdrColor.b)) - 1.0);
+    let ldrColor = toneMapACES(hdrColor * 1.25);
+    let energy = clamp(overlapKnee + treble * 0.08, 0.0, 1.0);
+    let alpha = clamp(c1.a * 0.3 + energy * 0.55 + opacity * 0.2, 0.0, 1.0);
+    let outColor = vec4<f32>(ldrColor, alpha);
 
-    // Store HDR state
-    textureStore(dataTextureA, coord, vec4<f32>(hdrColor, exposure));
-
-    // Write display
-    textureStore(writeTexture, coord, vec4<f32>(ldrColor, exposure + 0.1));
-
+    textureStore(dataTextureA, coord, outColor);
+    textureStore(writeTexture, coord, outColor);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Concentric Spin v2
+//  Concentric Spin
 //  Category: image
-//  Features: mouse-driven, audio-reactive, depth-aware, chromatic-dispersion, upgraded-rgba
-//  Complexity: Very High
-//  Upgraded: 2026-05-30
-//  By: 4-Agent Upgrade Swarm
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-09
+//  Ideas: exact-C lag; ring-gap tangent conveyor
+//  A packing: lag.xy telemetry
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -21,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -59,8 +60,9 @@ fn epi(r: f32, a: f32, R: f32, rr: f32) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
   if(global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
   let uv = vec2<f32>(global_id.xy) / res;
-  let aspect = res.x / res.y;
+  let aspect = res.x / max(res.y, 0.001);
   let t = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -72,7 +74,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let parallax = (depth - 0.5) * 0.05;
   let targetPos = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
-  let prevLag = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rg;
+  // Idea 1 — exact-C lag (HEAD used a filtering sample)
+  let prevLag = textureLoad(dataTextureC, coord, 0).rg;
   let lag = mix(select(targetPos, prevLag, t > 0.1), targetPos, 0.08);
   let center = lag + vec2<f32>(parallax, parallax);
   let p = uv * vec2<f32>(aspect, 1.0) - center;
@@ -90,13 +93,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rot = t * speed * dir;
   let rp = fract(rv);
   let edge = min(rp, 1.0 - rp);
-  if(edge > smoothW + 0.05 && gapFade > 0.7) {
-    let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(base.rgb, base.a));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(lag, 0.0, 0.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    return;
-  }
+  let gapMask = smoothstep(0.0, smoothW + 0.001, edge);
+
+  // Idea 2 — gap conveyor: slide the photo along the ring tangent in the gap
+  let tangent = vec2<f32>(-p.y, p.x) / max(r, 0.001);
+  let conveyor = (1.0 - gapMask) * 0.04 * speed;
+  let convShift = vec2<f32>(tangent.x / aspect, tangent.y) * conveyor;
+
   let chroma = 0.025 * (1.0 + treble * 0.5);
   let irid = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.09, 4.18) + (ri * 0.7 + edge * 20.0 + a) * 2.0);
   let rOff = rot + chroma * ri;
@@ -105,13 +108,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rP = vec2<f32>(cos(a + rOff), sin(a + rOff)) * r;
   let gP = vec2<f32>(cos(a + gOff), sin(a + gOff)) * r;
   let bP = vec2<f32>(cos(a + bOff), sin(a + bOff)) * r;
-  let rUV = clamp((rP + center) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
-  let gUV = clamp((gP + center) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
-  let bUV = clamp((bP + center) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let rUV = clamp((rP + center) / vec2<f32>(aspect, 1.0) + convShift, vec2<f32>(0.0), vec2<f32>(1.0));
+  let gUV = clamp((gP + center) / vec2<f32>(aspect, 1.0) + convShift, vec2<f32>(0.0), vec2<f32>(1.0));
+  let bUV = clamp((bP + center) / vec2<f32>(aspect, 1.0) + convShift, vec2<f32>(0.0), vec2<f32>(1.0));
   let rCol = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
   let gCol = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
   let bCol = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
-  let gapMask = smoothstep(0.0, smoothW + 0.001, edge);
+  let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
   var pulse = 0.0;
   let rc = u32(u.config.y);
   for(var i: u32 = 0u; i < min(rc, 10u); i = i + 1u) {
@@ -127,8 +130,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = aces(col * (1.0 + bass * 0.15));
   let sheen = pow(abs(cos(a * 3.0 + rot)), 4.0) * bass * 0.2 * gapMask;
   col = col + vec3<f32>(sheen);
-  let alpha = clamp(gapMask * (1.0 - gapFade * 0.5) + bloom * 0.3 + pulse * 0.5, 0.0, 1.0);
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(lag, 0.0, 0.0));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let alpha = clamp(gapMask * (1.0 - gapFade * 0.5) + bloom * 0.3 + pulse * 0.5 + srcA * 0.15, 0.0, 1.0);
+  textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(lag, 0.0, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

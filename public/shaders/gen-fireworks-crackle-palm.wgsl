@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Crackle Palm
 //  Category: generative
-//  Features: multi-stage bursts, delayed crackle, palm fronds,
-//            treble micro-pops, audio-reactive, mouse shell,
-//            temporal trails, aces-tone-map, semantic alpha
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
+//  Upgraded: 2026-09-10
+//  Ideas: crackle born on primary spark positions; opposite leaflet pairs on fronds
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -127,6 +128,11 @@ fn addPalmFrond(
     let fade = smoothstep(3.5, 0.2, localAge) * (1.0 - ff * 0.5);
     let g = softGlow(uv, pos, 0.005 + ff * 0.003, fade * energy);
     *col += shellColor(hue + ff * 0.15, 1.0 - ff) * g;
+    // Opposite leaflet pairs on each rachis sample.
+    let leaf = side * (0.55 + ff * 0.8);
+    let leafFade = fade * energy * 0.7 * (1.0 - ff * 0.35);
+    *col += shellColor(hue + ff * 0.15, 0.35) * softGlow(uv, pos + leaf, 0.0035 + ff * 0.002, leafFade);
+    *col += shellColor(hue + ff * 0.15, 0.35) * softGlow(uv, pos - leaf, 0.0035 + ff * 0.002, leafFade);
   }
 }
 
@@ -204,21 +210,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       // Core flash
       col += vec3<f32>(1.0, 0.95, 0.85) * exp(-burstAge * 10.0) * shellEnergy * 2.0 * softGlow(uv, center, 0.07, 1.0);
 
-      // ── STAGE 2: Delayed crackle from sub-points along primary sparks ──
+      // ── STAGE 2: Delayed crackle born on primary spark positions ──
       let stage2Start = stageDelay * (0.6 + seed * 0.4);
       let stage2Age = max(0.0, burstAge - stage2Start);
       if (stage2Age > 0.0 && stage2Age < 4.0) {
-        let subPoints = i32(5.0 + mids * 4.0);
-        for (var sp = 0; sp < subPoints; sp = sp + 1) {
+        let hosts = i32(5.0 + mids * 4.0);
+        for (var sp = 0; sp < hosts; sp = sp + 1) {
           let spf = f32(sp);
-          let sps = hash1(si * 83.0 + spf * 11.0);
-          let sps2 = hash1(si * 37.0 + spf * 7.0);
-          let subAng = sps * TAU;
-          let subDist = (0.12 + sps2 * 0.2) * shellEnergy;
-          let subCenter = center + vec2<f32>(cos(subAng), sin(subAng)) * subDist;
-
+          let jf = spf * f32(nPrimary) / max(f32(hosts), 1.0);
+          let js = hash1(si * 71.0 + jf * 4.1);
+          let js2 = hash1(si * 17.0 + jf * 6.3);
+          let ang = (jf / max(f32(nPrimary), 1.0)) * TAU + (js - 0.5) * 0.6;
+          let spd = (0.5 + js2 * 0.6) * shellEnergy;
+          let vel = vec2<f32>(cos(ang), sin(ang)) * spd;
+          let hostPos = sparkPos(center, vel, burstAge, 1.0, 0.2);
           let crackleCount = i32(4.0 + crackleAmt * 12.0 + treble * 10.0);
-          addCrackle(&col, uv, subCenter, stage2Age, shellEnergy * crackleAmt, treble, sps, crackleCount);
+          addCrackle(&col, uv, hostPos, stage2Age, shellEnergy * crackleAmt, treble, js, crackleCount);
         }
       }
 
@@ -261,10 +268,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col += shellColor(mks, 0.5) * softGlow(uv, mpos, 0.007, smoothstep(4.0, 0.2, mbAge) * mEnergy);
       }
 
-      // Stage 2 crackle
+      // Stage 2 crackle on the mouse primary sparks
       let mStage2 = max(0.0, mbAge - stageDelay * 0.5);
       if (mStage2 > 0.0) {
-        addCrackle(&col, uv, mCenter, mStage2, mEnergy * crackleAmt, treble, 7.0, i32(8.0 + treble * 15.0));
+        let mHosts = i32(6.0 + treble * 4.0);
+        for (var mh = 0; mh < mHosts; mh = mh + 1) {
+          let mhf = f32(mh);
+          let mhs = hash1(mhf * 2.3);
+          let mang = (mhf / f32(mn)) * TAU;
+          let mvel = vec2<f32>(cos(mang), sin(mang)) * (0.6 + mhs * 0.7) * mEnergy;
+          let hostPos = sparkPos(mCenter, mvel, mbAge, 1.0, 0.18);
+          addCrackle(&col, uv, hostPos, mStage2, mEnergy * crackleAmt, treble, mhs, i32(6.0 + treble * 10.0));
+        }
       }
 
       // Stage 3 palm

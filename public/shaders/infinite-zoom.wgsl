@@ -1,17 +1,10 @@
 // ═══════════════════════════════════════════════════════════════
-//  Infinite Zoom with Möbius Transformations and Alpha Physics
+//  Infinite Zoom with Möbius Transformations
 //  Category: distortion
-//  Features: mathematical, escher-like, hyperbolic geometry with physical deformation
-// 
-//  Möbius transformations: f(z) = (az + b) / (cz + d)
-//  Creates conformal mappings of the complex plane for
-//  infinite tessellations with self-similar patterns.
-//  
-//  ALPHA PHYSICS:
-//  - Iterative transformations create cumulative distortion
-//  - Each iteration affects light path = scattered alpha
-//  - Modular form coloring affects per-region opacity
-//  - Zoom cycle creates depth-based transparency variations
+//  Features: mathematical, mouse-driven, upgraded-rgba
+//  Upgraded: 2026-09-08
+//  Ideas: mouse as Möbius pole; log-polar seam wrap
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -48,7 +41,7 @@ fn complex_mul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
 }
 
 fn complex_div(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-    let denom = b.x * b.x + b.y * b.y;
+    let denom = max(b.x * b.x + b.y * b.y, 0.0001);
     return vec2<f32>(
         (a.x * b.x + a.y * b.y) / denom,
         (a.y * b.x - a.x * b.y) / denom
@@ -105,8 +98,9 @@ fn hyperbolic_mobius(z: vec2<f32>, t: f32) -> vec2<f32> {
 
 fn lattice_modular_value(z: vec2<f32>, omega1: vec2<f32>, omega2: vec2<f32>) -> vec2<f32> {
     let det = omega1.x * omega2.y - omega1.y * omega2.x;
-    let m = (z.x * omega2.y - z.y * omega2.x) / det;
-    let n = (omega1.x * z.y - omega1.y * z.x) / det;
+    let safe = select(det, 0.0001, abs(det) < 0.0001);
+    let m = (z.x * omega2.y - z.y * omega2.x) / safe;
+    let n = (omega1.x * z.y - omega1.y * z.x) / safe;
     return vec2<f32>(fract(m), fract(n));
 }
 
@@ -123,6 +117,10 @@ fn modular_j_invariant_approx(z: vec2<f32>) -> f32 {
 
 fn ping_pong(a: f32) -> f32 {
     return 1.0 - abs(fract(a * 0.5) * 2.0 - 1.0);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn hue_to_rgb(h: f32) -> vec3<f32> {
@@ -191,7 +189,10 @@ fn apply_mobius_zoom_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
     
     let a = vec2<f32>(cos(theta), sin(theta));
     let b = vec2<f32>(a_param * cos(t * 0.7), a_param * sin(t * 0.7));
-    let c = complex_conj(b);
+    // Mouse as Möbius pole: pointer owns coefficient c.
+    let mouse = u.zoom_config.yz;
+    let pole = (mouse - vec2<f32>(0.5)) * 2.0;
+    let c = complex_conj(b) * 0.45 + pole * 0.55;
     let d = complex_conj(a);
     
     var z = z0;
@@ -215,12 +216,17 @@ fn apply_mobius_zoom_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
     
     let zoom_scale = 1.0 + cycle * 3.0;
     z = z / zoom_scale;
-    
-    var result = z / 4.0 + 0.5;
-    result = fract(result);
-    
-    // Sample texture
-    let tex_color = textureSampleLevel(readTexture, non_filtering_sampler, result, 0.0);
+
+    // Log-polar seam instead of fract (seamless zoom cycle).
+    let zr = max(length(z), 0.001);
+    let za = atan2(z.y, z.x);
+    let logSpan = log(4.0);
+    let logR = log(zr);
+    let wrappedR = exp(logR - floor(logR / logSpan) * logSpan);
+    z = vec2<f32>(cos(za), sin(za)) * wrappedR;
+    var result = clamp(z / 4.0 + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+
+    let tex_color = textureSampleLevel(readTexture, u_sampler, result, 0.0);
     
     // Calculate modular coloring
     let omega1 = vec2<f32>(1.0, 0.0);
@@ -287,24 +293,23 @@ var<private> cycle: f32;
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let zoom_time = u.zoom_config.x;
-    
+
     cycle = fract(zoom_time * u.zoom_params.x);
-    
-    // Apply Möbius infinite zoom with alpha
+
     let color = apply_mobius_zoom_alpha(uv, zoom_time);
-    
-    // Add depth variation
-    let t = zoom_time * u.zoom_params.x;
+
     let depth_variation = 0.5 + 0.5 * sin(cycle * 6.28318);
-    
-    // Sample depth
-    let transformed_uv = fract((uv - 0.5) * 4.0 / (1.0 + cycle * 3.0) / 4.0 + 0.5);
+    let transformed_uv = clamp((uv - 0.5) / (1.0 + cycle * 3.0) + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
     let base_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, transformed_uv, 0.0).r;
     let final_depth = mix(base_depth, depth_variation, 0.2);
-    
-    // Store results with RGBA
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, color.a));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(final_depth, 0.0, 0.0, 0.0));
+    let pixel = vec2<i32>(global_id.xy);
+    let outColor = vec4<f32>(acesToneMap(color.rgb), color.a);
+    textureStore(writeTexture, pixel, outColor);
+    textureStore(dataTextureA, pixel, outColor);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(final_depth, 0.0, 0.0, 0.0));
 }

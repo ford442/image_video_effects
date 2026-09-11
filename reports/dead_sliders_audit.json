@@ -1,7 +1,7 @@
 {
-  "generated": "2026-09-06T08:02:16.275726+00:00",
-  "defs_scanned": 1201,
-  "defs_with_params": 1201,
+  "generated": "2026-09-11T08:11:31.911511+00:00",
+  "defs_scanned": 1213,
+  "defs_with_params": 1213,
   "new_dead_sliders": [],
   "known_dead_sliders": [
     {
@@ -44,34 +44,6 @@
       "category": "advanced-hybrid",
       "param_id": "toxinStrength",
       "name": "Toxin Strength",
-      "field": "w"
-    },
-    {
-      "id": "alpha-paint-thickness",
-      "category": "artistic",
-      "param_id": "specularPower",
-      "name": "Specular Power",
-      "field": "z"
-    },
-    {
-      "id": "alpha-paint-thickness",
-      "category": "artistic",
-      "param_id": "dryingRate",
-      "name": "Drying Rate",
-      "field": "w"
-    },
-    {
-      "id": "alpha-watercolor-wetness",
-      "category": "artistic",
-      "param_id": "flowStrength",
-      "name": "Flow Strength",
-      "field": "w"
-    },
-    {
-      "id": "color-blindness",
-      "category": "image",
-      "param_id": "unused",
-      "name": "Unused",
       "field": "w"
     },
     {

@@ -3,7 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, click-reactive, audio-reactive, depth-aware, upgraded-rgba, semantic-alpha
 //  Complexity: Medium
-//  Upgraded: 2026-08-02 (Batch 30)
+//  Upgraded: 2026-09-09
+//  Ideas: two-ply yarn twist; exact-C under-thread ghost
+//  A packing: display RGBA (leftover B kept)
 // ═══════════════════════════════════════════════════════════════════
 //  Samples R, G, and B channels from offset positions, creating the
 //  visual illusion of woven fabric threads. Horizontal threads carry
@@ -33,6 +35,10 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265358979;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -105,8 +111,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let warpOnTop  = fract((warpCell + weftCell) * 0.5) < 0.5;
 
     // Thread brightness from sine profile (rounded cross-section)
-    let warpBright = smoothstep(0.0, 0.3, warpPhase) * (1.0 - smoothstep(0.7, 1.0, warpPhase));
-    let weftBright = smoothstep(0.0, 0.3, weftPhase) * (1.0 - smoothstep(0.7, 1.0, weftPhase));
+    // Idea 1: two-ply twist — each yarn is two offset fibers.
+    let ply = 0.55;
+    let warpBrightA = smoothstep(0.0, 0.3, warpPhase) * (1.0 - smoothstep(0.7, 1.0, warpPhase));
+    let weftBrightA = smoothstep(0.0, 0.3, weftPhase) * (1.0 - smoothstep(0.7, 1.0, weftPhase));
+    let warpPhase2 = sin(ruv.x * threadFreq * PI + ply + pluck * 0.8) * 0.5 + 0.5;
+    let weftPhase2 = sin(ruv.y * threadFreq * PI - ply - pluck * 0.8) * 0.5 + 0.5;
+    let warpBrightB = smoothstep(0.0, 0.3, warpPhase2) * (1.0 - smoothstep(0.7, 1.0, warpPhase2)) * 0.82;
+    let weftBrightB = smoothstep(0.0, 0.3, weftPhase2) * (1.0 - smoothstep(0.7, 1.0, weftPhase2)) * 0.82;
+    let warpBright = max(warpBrightA, warpBrightB);
+    let weftBright = max(weftBrightA, weftBrightB);
     let topBright  = select(weftBright, warpBright, warpOnTop);
     let botBright  = select(warpBright, weftBright, warpOnTop);
     let cellCode = u32(abs(warpCell * 19.0 + weftCell * 37.0));
@@ -145,10 +159,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.5));
 
-    // Semantic alpha
-    let alpha = clamp(srcA, 0.0, 1.0);
+    // Idea 2: exact-C under-thread ghost — previous weft shows through gaps.
+    let histDim = textureDimensions(dataTextureC);
+    let histCoord = clamp(coord, vec2<i32>(0), vec2<i32>(histDim) - vec2<i32>(1));
+    let prev = textureLoad(dataTextureC, histCoord, 0);
+    let gap = 1.0 - topBright;
+    col = mix(col, prev.rgb * botBright, gap * 0.28);
 
-    let outColor = vec4<f32>(col, alpha);
+    // Semantic alpha
+    let alpha = clamp(srcA * (0.55 + topBright * 0.45), 0.0, 1.0);
+
+    let mapped = acesToneMap(clamp(col, vec3<f32>(0.0), vec3<f32>(1.2)));
+    let outColor = vec4<f32>(mapped, alpha);
     textureStore(writeTexture, coord, outColor);
     let sourceDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let weaveDepth = clamp(sourceDepth + topBright * shadowDepth * 0.18 + abs(pluck) * topBright * 0.05, 0.0, 1.0);

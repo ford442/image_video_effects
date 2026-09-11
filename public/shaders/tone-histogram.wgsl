@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Tone Histogram v2
+//  Tone Histogram
 //  Category: post-processing
 //  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Chunks From: tone-histogram
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-09
+//  Ideas: mouse local metering window; per-channel shoulder
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -70,6 +72,7 @@ fn localStats(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
 
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
@@ -84,13 +87,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let hazeRemoval = u.zoom_params.w;
 
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-  // Per-pixel local histogram equalization via sliding-window statistics
   let stats = localStats(uv, texel);
   let localMean = stats.x;
   let localStd = stats.y;
 
-  // Adaptive contrast stretch driven by parameter and bass intensity
+  // Idea 1 — spot meter at the cursor biases the stretch target.
+  let mousePos = u.zoom_config.yz;
+  let meterUV = clamp(mousePos, vec2<f32>(0.001), vec2<f32>(0.999));
+  let meterLuma = dot(textureSampleLevel(readTexture, u_sampler, meterUV, 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let meterWeight = 0.35 + 0.25 * u.zoom_config.w;
+  let stretchRef = mix(localMean, meterLuma, meterWeight);
+
   let targetStd = mix(0.12, 0.28, stretchAmount + bass * 0.12);
   let adaptGain = select(targetStd / max(localStd, 0.01), 1.0, localStd < 0.001);
   let adaptGainClamped = clamp(adaptGain, 0.5, 2.5);
@@ -98,48 +105,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let luma = dot(src.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
   let chroma = src.rgb - vec3<f32>(luma);
 
-  // Apply local adaptive stretch
-  var stretchedLuma = (luma - localMean) * adaptGainClamped + localMean;
+  var stretchedLuma = (luma - stretchRef) * adaptGainClamped + stretchRef;
   stretchedLuma = clamp(stretchedLuma, 0.0, 1.0);
-
-  // Film-like tonal curve with toe and shoulder rolloff
   let curvedLuma = filmCurve(stretchedLuma, toeStrength, shoulderStrength);
 
-  // Split-tone shadows (cool blue) and highlights (warm amber)
+  // Idea 2 — per-channel shoulder (dye rolloff, luma curve still drives midtones).
+  let rCurve = filmCurve(src.r, toeStrength, shoulderStrength * 1.08);
+  let gCurve = filmCurve(src.g, toeStrength, shoulderStrength);
+  let bCurve = filmCurve(src.b, toeStrength, shoulderStrength * 0.92);
+  let dyeRgb = vec3<f32>(rCurve, gCurve, bCurve);
+  let dyeLuma = dot(dyeRgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let dyeChroma = dyeRgb - vec3<f32>(dyeLuma);
+
   let shadowTint = vec3<f32>(0.06, 0.05, 0.10) * (1.0 - smoothstep(0.0, 0.3, curvedLuma));
   let highlightTint = vec3<f32>(0.10, 0.07, 0.03) * smoothstep(0.7, 1.0, curvedLuma);
   let splitTone = shadowTint + highlightTint;
 
-  // Recombine luma with saturation-adjusted chroma
-  var color = vec3<f32>(curvedLuma) + chroma * mix(0.8, 1.4, stretchAmount) + splitTone * 0.3;
+  var color = vec3<f32>(curvedLuma) + mix(chroma, dyeChroma, 0.55) * mix(0.8, 1.4, stretchAmount) + splitTone * 0.3;
 
-  // Grain texture layered for filmic feel
   let g1 = grain(uv, time) * (1.0 + mids * 0.5);
   let g2 = grain(uv * 1.7 + 0.3, time * 0.7) * 0.5;
   color = color + vec3<f32>(g1 + g2);
 
-  // Mouse creates local exposure zones (dodge/burn)
-  let mousePos = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
   let mouseDist = length(uv - mousePos);
   let exposureZone = smoothstep(0.25, 0.0, mouseDist) * mouseDown;
   color = color * (1.0 + exposureZone * 0.4);
 
-  // Depth controls haze removal strength
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let haze = (1.0 - depth) * hazeRemoval * 0.3;
   let hazeColor = vec3<f32>(0.75, 0.78, 0.82);
   color = mix(color, hazeColor, haze);
 
-  // ACES tone mapping for cinematic output
   let finalColor = acesTone(max(color, vec3<f32>(0.0)));
-
-  // Alpha: tonal confidence × local_contrast × depth
   let tonalConfidence = smoothstep(0.0, 0.15, abs(curvedLuma - localMean) + localStd);
   let localContrast = smoothstep(0.0, 0.2, localStd) * 0.5 + 0.5;
-  let alpha = clamp(tonalConfidence * localContrast * depth + 0.18, 0.15, 0.9);
+  let alpha = clamp(src.a * 0.25 + tonalConfidence * localContrast * depth + 0.18, 0.15, 0.95);
+  let outColor = vec4<f32>(finalColor, alpha);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(localMean, localStd, curvedLuma, alpha));
+  textureStore(writeTexture, coord, outColor);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, outColor);
 }

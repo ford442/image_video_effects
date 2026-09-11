@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Psychedelic Time-Warp Kaleidoscope
 //  Category: generative
-//  Features: kaleidoscope, noise, audio-reactive, temporal, chromatic, depth-aware
+//  Features: kaleidoscope, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: standard kaleidoscope + temporal feedback patterns
-//  Created: original
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-09
+//  Ideas: exact-C smear along the fold; honest three-band audio
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,11 +23,12 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Mirror Strength, y=Wobble, z=Noise Intensity, w=unused
+    config: vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
 };
+
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
   let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
@@ -38,25 +39,26 @@ fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   return vec4<f32>(controlled, color.a);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
-// Hash function
 fn hash31(p: vec3<f32>) -> f32 {
     let q = fract(p * 0.1031);
     let r = q + vec3<f32>(dot(q, q.yzx + vec3<f32>(33.33)));
     return fract((r.x + r.y) * r.z);
 }
 
-// 3D Noise for distortion
 fn noise3D(p: vec3<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
-    let u = f * f * (vec3<f32>(3.0) - vec3<f32>(2.0) * f);
+    let uu = f * f * (vec3<f32>(3.0) - vec3<f32>(2.0) * f);
     return mix(
-        mix(mix(hash31(i + vec3<f32>(0.0,0.0,0.0)), hash31(i + vec3<f32>(1.0,0.0,0.0)), u.x),
-            mix(hash31(i + vec3<f32>(0.0,1.0,0.0)), hash31(i + vec3<f32>(1.0,1.0,0.0)), u.x), u.y),
-        mix(mix(hash31(i + vec3<f32>(0.0,0.0,1.0)), hash31(i + vec3<f32>(1.0,0.0,1.0)), u.x),
-            mix(hash31(i + vec3<f32>(0.0,1.0,1.0)), hash31(i + vec3<f32>(1.0,1.0,1.0)), u.x), u.y),
-        u.z
+        mix(mix(hash31(i + vec3<f32>(0.0,0.0,0.0)), hash31(i + vec3<f32>(1.0,0.0,0.0)), uu.x),
+            mix(hash31(i + vec3<f32>(0.0,1.0,0.0)), hash31(i + vec3<f32>(1.0,1.0,0.0)), uu.x), uu.y),
+        mix(mix(hash31(i + vec3<f32>(0.0,0.0,1.0)), hash31(i + vec3<f32>(1.0,0.0,1.0)), uu.x),
+            mix(hash31(i + vec3<f32>(0.0,1.0,1.0)), hash31(i + vec3<f32>(1.0,1.0,1.0)), uu.x), uu.y),
+        uu.z
     );
 }
 
@@ -75,80 +77,62 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (coords.x >= i32(res.x) || coords.y >= i32(res.y)) { return; }
 
     let time = u.config.x;
-    let audio = plasmaBuffer[0].x; // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Mouse center, default to middle if 0
     var center = u.zoom_config.yz * res;
     if (center.x == 0.0 && center.y == 0.0) {
         center = res * 0.5;
     }
 
-    // Calculate 3D curl noise for distortion
     let norm_coords = vec2<f32>(coords) / res;
     let noise_val = curlNoise3D(vec3<f32>(norm_coords * 5.0, time * 0.2));
 
-    // Store in dataTextureA as requested
-    textureStore(dataTextureA, coords, vec4<f32>(noise_val, 0.0, 1.0));
+    let wobble = mix(0.1, 0.5, u.zoom_params.y) * (1.0 + mids * 0.55);
+    let noise_intensity = mix(0.5, 2.0, u.zoom_params.z) * (1.0 + treble * 0.6);
 
-    // Modulate based on u.zoom_params which might be 0.0 if sliders are missing.
-    // If they are 0.0, default to interesting values.
-    let mirror_strength = mix(1.0, 2.0, u.zoom_params.x);
-    let wobble = mix(0.1, 0.5, u.zoom_params.y);
-    let noise_intensity = mix(0.5, 2.0, u.zoom_params.z);
+    // Idea 2 — honest three-band: bass drives mirror count (not plasmaBuffer[index])
+    let mirror_count = mix(3.0, 12.0, clamp(bass, 0.0, 1.0));
+    let angle_step = 6.2831853 / max(mirror_count, 3.0);
 
-    // Retrieve sine wave from plasmaBuffer to modulate mirror count
-    let plasmaIndex = u32(abs(time * 10.0 + audio * 100.0)) % 256u;
-    var plasmaVal = plasmaBuffer[plasmaIndex].x;
-    if (plasmaVal == 0.0) { plasmaVal = 0.5; }
+    var foldUV = vec2<f32>(coords) - center;
+    let dist = length(foldUV);
+    var angle = atan2(foldUV.y, foldUV.x);
 
-    // Dynamic mirror count
-    let min_mirrors = 3.0;
-    let max_mirrors = 12.0;
-    let mirror_count = mix(min_mirrors, max_mirrors, plasmaVal);
-    let angle_step = 3.14159265 * 2.0 / mirror_count;
-
-    var uv = vec2<f32>(coords) - center;
-    let dist = length(uv);
-    var angle = atan2(uv.y, uv.x);
-
-    // Wobble effect
     angle += wobble * sin(dist * 0.02 - time * 2.0);
 
-    // Kaleidoscope mirroring logic
-    angle = ((angle - angle_step * floor(angle / angle_step)) + angle_step); angle = angle - angle_step * floor(angle / angle_step);
-    angle = abs(angle - angle_step / 2.0) * mirror_strength;
+    angle = ((angle - angle_step * floor(angle / angle_step)) + angle_step);
+    angle = angle - angle_step * floor(angle / angle_step);
+    angle = abs(angle - angle_step / 2.0) * mix(1.0, 2.0, u.zoom_params.x);
 
-    uv = vec2<f32>(cos(angle), sin(angle)) * dist;
+    foldUV = vec2<f32>(cos(angle), sin(angle)) * dist;
 
-    // Add curl noise distortion based on noise_intensity
-    let dist_uv = vec2<i32>(uv + center + noise_val * 50.0 * noise_intensity);
-
-    // Wrap or clamp texture coordinates.
-    // We can just mirror repeat or clamp. Clamp for simplicity since readTexture might be a video feed.
-    let clamped_uv = clamp(dist_uv, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+    let dist_uv = vec2<i32>(foldUV + center + noise_val * 50.0 * noise_intensity);
+    let maxCoord = vec2<i32>(res) - vec2<i32>(1);
+    let clamped_uv = clamp(dist_uv, vec2<i32>(0), maxCoord);
     var color = textureLoad(readTexture, clamped_uv, 0).rgb;
+    let srcA = textureLoad(readTexture, coords, 0).a;
 
-    // Audio glow to the edges of the kaleidescope
-    let glow = max(0.0, 1.0 - (dist / (res.x * 0.5))) * audio;
-    color += vec3<f32>(0.2, 0.5, 1.0) * glow * plasmaVal;
+    let glow = max(0.0, 1.0 - (dist / (res.x * 0.5))) * bass;
+    color += vec3<f32>(0.2, 0.5, 1.0) * glow * (0.4 + mids * 0.4);
 
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    // Idea 1 — exact-C smear along the fold
+    let foldDir = select(vec2<f32>(0.0, 1.0), foldUV / max(dist, 0.001), dist > 0.001);
+    let smearPix = clamp(coords + vec2<i32>(foldDir * 3.0), vec2<i32>(0), maxCoord);
+    let prevSmear = textureLoad(dataTextureC, smearPix, 0);
+    color = mix(color, prevSmear.rgb * 0.92, 0.08 + bass * 0.04);
 
-    // Temporal feedback
-    let prev = textureSampleLevel(dataTextureC, u_sampler, norm_coords, 0.0);
-    color = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
-
-    // Chromatic dispersion: audio-modulated channel offsets on glow
     color.r += glow * bass * 0.35;
     color.g += glow * mids * 0.25;
     color.b += glow * treble * 0.3;
 
-    let _luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, coords, applyGenerativePrimaryControls(vec4<f32>(color, _alpha)));
-    let _depth_uv = clamp(vec2<f32>(coords) / res, vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(luma * 0.55 + glow * 0.25 + srcA * 0.2, 0.0, 1.0);
+    var outCol = applyGenerativePrimaryControls(vec4<f32>(acesToneMap(color), alpha));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(norm_coords, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    textureStore(writeTexture, coords, outCol);
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, outCol);
 }

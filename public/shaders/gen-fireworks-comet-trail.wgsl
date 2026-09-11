@@ -1,4 +1,14 @@
-// Comet Trail Shell — blazing head with luminous streak (upgraded)
+// ═══════════════════════════════════════════════════════════════════
+//  Comet Trail Shell
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Created: 2026-07-05
+//  Upgraded: 2026-09-11
+//  Ideas: ion tail along -velocity vs dust gravity-sag trail; coma halo around the head
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -84,9 +94,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vel = vec2<f32>(sin(angle)*0.15, 1.0)*energy;
     let headPos = sparkPos(vec2<f32>(bx, -0.75), vel, age, 0.12);
     let fade = smoothstep(5.0, 0.2, age);
+    let velLen = max(length(vel), 0.001);
+    let ionDir = vel / velLen;
 
     col += vec3<f32>(1.0,0.95,0.85)*hexBokeh(uv, headPos, 0.012+energy*0.006, fade*energy*2.5);
     col += cometColor(seed, colorShift)*hexBokeh(uv, headPos, 0.008, fade*energy*1.2);
+    // Idea 2 — coma halo, wider and dimmer than the hex core
+    col += cometColor(seed, colorShift) * softGlow(uv, headPos, 0.048 + energy * 0.018, fade * energy * 0.32) * (0.7 + mids * 0.4);
+
+    // Idea 1 — ion tail: straight anti-velocity streak (no gravity sag)
+    let dHead = uv - headPos;
+    let alongIon = dot(dHead, -ionDir);
+    let perpIon = abs(dot(dHead, vec2<f32>(-ionDir.y, ionDir.x)));
+    let ionLen = 0.18 + trailLen * 0.22;
+    let ionTail = exp(-perpIon * 95.0) * exp(-abs(alongIon - ionLen * 0.45) * 9.0) * step(0.0, alongIon) * fade * energy;
+    col += vec3<f32>(0.45, 0.78, 1.0) * ionTail * 0.55;
 
     let trailSteps = i32(8.0 + trailLen*14.0);
     for (var t = 0; t < trailSteps; t = t + 1) {
@@ -124,6 +146,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mVel = vec2<f32>(0.0, 1.0)*speed*headBright;
     let head = mUV + mVel*mAge;
     col += vec3<f32>(1.0)*hexBokeh(uv, head, 0.015, (1.0-mAge*0.4)*headBright);
+    col += cometColor(0.2, colorShift) * softGlow(uv, head, 0.05, (1.0-mAge*0.4)*headBright*0.28);
+    let mDir = vec2<f32>(0.0, 1.0);
+    let mAlong = dot(uv - head, -mDir);
+    let mPerp = abs((uv - head).x);
+    col += vec3<f32>(0.45, 0.78, 1.0) * exp(-mPerp * 90.0) * exp(-abs(mAlong - 0.2) * 8.0) * step(0.0, mAlong) * (1.0 - mAge * 0.3) * 0.4;
     for (var t = 0; t < 10; t = t + 1) {
       let tf = f32(t)*0.12;
       col += cometColor(tf, colorShift)*hexBokeh(uv, head-mVel*tf, 0.006, (1.0-tf*3.0)*headBright);

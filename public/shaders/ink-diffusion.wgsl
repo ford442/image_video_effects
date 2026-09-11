@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Ink Diffusion v2
+//  Ink Diffusion
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, temporal-ink-spread, organic-growth,
 //            upgraded-rgba, navier-stokes, vorticity-confinement, surface-tension
 //  Complexity: Very High
-//  Chunks From: ink-diffusion.wgsl v1
-//  Created: 2026-05-31
+//  Upgraded: 2026-09-09
+//  Ideas: fiber-steered advection; nijimi wet-edge bloom
+//  A packing: raw ink + vel.xy + alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -51,8 +52,9 @@ fn curlNoise(uv: vec2<f32>, time: f32) -> vec2<f32> {
   return vec2<f32>(-(ny - n) / eps, (nx - n) / eps);
 }
 
-fn sampleInk(uv: vec2<f32>, px: vec2<f32>) -> f32 {
-  return textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+fn loadInk(p: vec2<i32>, res: vec2<f32>) -> f32 {
+  let hi = vec2<i32>(res) - vec2<i32>(1);
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0).r;
 }
 
 fn paperFiber(uv: vec2<f32>) -> f32 {
@@ -70,6 +72,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let mousePos = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
 
@@ -78,36 +81,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let turbulence = u.zoom_params.z;
   let inkDensity = u.zoom_params.w;
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
   let diffusionCoeff = spreadRate * (1.0 + (1.0 - depth) * 0.5);
 
-  let px = 1.0 / resolution;
   let coord = vec2<i32>(global_id.xy);
-
-  let prevInk = sampleInk(uv, px);
-
-  let e = sampleInk(uv + vec2<f32>(px.x, 0.0), px);
-  let w = sampleInk(uv - vec2<f32>(px.x, 0.0), px);
-  let n = sampleInk(uv + vec2<f32>(0.0, px.y), px);
-  let s_ = sampleInk(uv - vec2<f32>(0.0, px.y), px);
+  let prevInk = loadInk(coord, resolution);
+  let e = loadInk(coord + vec2<i32>(1, 0), resolution);
+  let w = loadInk(coord + vec2<i32>(-1, 0), resolution);
+  let n = loadInk(coord + vec2<i32>(0, 1), resolution);
+  let s_ = loadInk(coord + vec2<i32>(0, -1), resolution);
   let laplacian = (e + w + n + s_) * 0.25 - prevInk;
 
-  let vel = curlNoise(uv, time) * turbulence * (1.0 + bass * 0.4);
-  let advUV = uv - vel * px * 2.0;
-  let advected = sampleInk(advUV, px);
+  let fiber = paperFiber(uv);
+  // Idea 1 — fiber-steered advection
+  let fiberAng = (hash21(floor(uv * 18.0)) - 0.5) * 1.2;
+  let fiberDir = vec2<f32>(cos(fiberAng), sin(fiberAng));
+  var vel = curlNoise(uv, time) * turbulence * (1.0 + bass * 0.4);
+  vel = vel + fiberDir * (fiber - 0.94) * turbulence * 0.8;
+
+  let advUV = clamp(uv - vel / max(resolution, vec2<f32>(1.0)) * 2.0, vec2<f32>(0.0), vec2<f32>(1.0));
+  let advPixel = vec2<i32>(clamp(round(advUV * resolution), vec2<f32>(0.0), resolution - 1.0));
+  let advected = loadInk(advPixel, resolution);
 
   let vorticity = ((e - w) - (n - s_)) * 0.5;
   let vortForce = vec2<f32>(abs(n - s_), abs(e - w)) * sign(vorticity) * turbulence * 0.3;
-  let vortUV = uv + vortForce * px;
-  let vortInk = sampleInk(vortUV, px);
+  let vortUV = clamp(uv + vortForce / max(resolution, vec2<f32>(1.0)), vec2<f32>(0.0), vec2<f32>(1.0));
+  let vortPixel = vec2<i32>(clamp(round(vortUV * resolution), vec2<f32>(0.0), resolution - 1.0));
+  let vortInk = loadInk(vortPixel, resolution);
 
   let diffused = mix(prevInk, advected * 0.7 + vortInk * 0.3, diffusionCoeff);
-  let diffused2 = diffused + laplacian * diffusionCoeff * 0.5;
+  var diffused2 = diffused + laplacian * diffusionCoeff * 0.5;
 
   let dist = length(uv - mousePos);
   let brush = smoothstep(0.12, 0.0, dist) * mouseDown * inkDensity;
   let pellet = smoothstep(0.04, 0.0, dist) * mouseDown * inkDensity * 2.0;
-
   let splatter = hash21(uv * 120.0 + time * 15.0) * bass * 0.25 * turbulence;
   let injection = bass * 0.08 * turbulence * inkDensity;
 
@@ -119,28 +126,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let surfaceTension = smoothstep(0.05, 0.2, gradMag) * (1.0 - smoothstep(0.2, 0.5, gradMag));
   newInk = newInk + surfaceTension * 0.03 * (1.0 - depth);
 
-  let paperBase = vec3<f32>(0.94, 0.92, 0.88);
-  let fiber = paperFiber(uv);
-  let paperColor = paperBase * fiber;
+  let wetEdge = smoothstep(0.08, 0.25, newInk) * (1.0 - smoothstep(0.25, 0.55, newInk));
+  // Idea 2 — nijimi bloom on the wet edge only
+  newInk = clamp(newInk + laplacian * wetEdge * 0.22 * (1.0 + treble * 0.3), 0.0, 1.0);
 
+  let paperBase = vec3<f32>(0.94, 0.92, 0.88);
+  let paperColor = paperBase * fiber;
   let inkColor = vec3<f32>(0.04, 0.04, 0.07) + vec3<f32>(0.03, 0.0, 0.04) * mids;
   let wetInk = inkColor + vec3<f32>(0.01, 0.01, 0.02) * bass;
-
-  let wetEdge = smoothstep(0.08, 0.25, newInk) * (1.0 - smoothstep(0.25, 0.55, newInk));
   let edgeDarken = vec3<f32>(0.06) * wetEdge;
-
   let specAngle = sin(time * 2.0 + uv.x * 20.0) * 0.5 + 0.5;
   let wetSpec = vec3<f32>(0.08, 0.09, 0.1) * wetEdge * specAngle * (1.0 + bass * 0.5);
 
   var finalRGB = mix(paperColor, wetInk, newInk) - edgeDarken + wetSpec;
-
   let chromEdge = vec3<f32>(0.02, 0.0, -0.02) * wetEdge * mids;
   finalRGB = finalRGB + chromEdge;
-
   finalRGB = acesToneMap(finalRGB * 1.1);
 
   let waterClarity = 1.0 - newInk * 0.7;
-  let alpha = clamp(newInk * (1.0 - waterClarity) * depth + newInk * 0.15 + bass * 0.03, 0.0, 1.0);
+  let alpha = clamp(newInk * (1.0 - waterClarity) * depth + newInk * 0.15 + bass * 0.03 + wetEdge * 0.08, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalRGB, alpha));
   textureStore(dataTextureA, coord, vec4<f32>(newInk, vel.x, vel.y, alpha));

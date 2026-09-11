@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Double Exposure Zoom v2
+//  Double Exposure Zoom
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-30
-//  Chunks From: film-stock-response, aces-tonemap, chromatic-aberration
+//  Upgraded: 2026-09-09
+//  Ideas: plate registration drift; highlight-keyed second plate
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -51,6 +51,7 @@ fn luminance(c: vec3<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+  let coord = vec2<i32>(global_id.xy);
 
   let time = u.config.x;
   let resolution = u.config.zw;
@@ -67,17 +68,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeFade = u.zoom_params.z;
   let audioReact = u.zoom_params.w;
 
-  // Bass drives zoom speed
   let zoomMod = zoomRaw + bass * audioReact * 0.4;
   let zoom = clamp(pow(2.0, (zoomMod - 0.5) * 4.0), 0.01, 100.0);
 
-  // Primary exposure
   let col1 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-  // Secondary exposure: mouse controls position + depth parallax
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let parallax = (mouse - 0.5) * (1.0 - depth) * 0.08;
-  var uv2 = uv - mouse + parallax;
+
+  // Idea 1 — analog sandwich registration drift (continuous, not strobed).
+  let drift = vec2<f32>(sin(time * 0.37), cos(time * 0.29)) * (0.003 + treble * 0.002);
+
+  var uv2 = uv - mouse + parallax + drift;
   uv2.x = uv2.x * aspect;
   let c = cos(rot);
   let s = sin(rot);
@@ -86,7 +87,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   uv2 = uv2 / zoom;
   uv2 = uv2 + mouse;
 
-  // Chromatic aberration on zoom edges
   let edgeDist = min(min(uv2.x, 1.0 - uv2.x), min(uv2.y, 1.0 - uv2.y));
   let edgeMask = smoothstep(0.0, 0.05 + edgeFade * 0.45, edgeDist);
   let caStrength = (1.0 - edgeMask) * 0.008;
@@ -100,41 +100,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureSampleLevel(readTexture, u_sampler, clamp(uv2, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).a
   );
 
-  // Luminance-based matte extraction
   let lum1 = luminance(col1.rgb);
   let lum2 = luminance(col2.rgb);
-  let matte = smoothstep(0.1, 0.6, lum2);
+  // Idea 2 — highlight-keyed second plate (bright plate-2 prints through).
+  let highlightKey = smoothstep(0.45, 0.82, lum2);
+  let matte = mix(smoothstep(0.1, 0.6, lum2), highlightKey, 0.7);
 
-  // Multi-scale blend: screen + soft-light hybrid
   let screen = 1.0 - (1.0 - col1.rgb) * (1.0 - col2.rgb);
   let soft = 2.0 * col1.rgb * col2.rgb + col1.rgb * col1.rgb * (1.0 - 2.0 * col2.rgb);
   let blendedRGB = mix(screen, soft, matte * 0.5);
+  let keyed = mix(col1.rgb, blendedRGB, 0.55 + highlightKey * 0.35);
 
-  // Film stock color response + ACES tone mapping
-  var film = filmResponse(blendedRGB);
+  var film = filmResponse(keyed);
   film = acesToneMap(film * (1.0 + mids * 0.3));
 
-  // Light leak artifact (warm shift on edges)
   let lightLeak = smoothstep(0.4, 0.0, edgeDist) * (0.1 + bass * 0.15);
   film += vec3<f32>(lightLeak * 1.2, lightLeak * 0.6, lightLeak * 0.2);
-
-  // Vignette on secondary exposure
   let vignette = 1.0 - smoothstep(0.3, 0.8, edgeDist) * 0.5;
   film *= vignette;
 
-  // Temporal feedback trail
-  let prevFrame = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prevFrame = textureLoad(dataTextureC, coord, 0);
   let trailAmt = 0.12 + bass * audioReact * 0.2;
   let finalRGB = mix(film, prevFrame.rgb, trailAmt);
 
-  // Alpha: exposure_blend_ratio × luminance_confidence × depth
   let blendRatio = matte * 0.5 + 0.3;
   let lumConfidence = smoothstep(0.05, 0.5, max(lum1, lum2));
-  let alpha = clamp(blendRatio * lumConfidence * (0.4 + depth * 0.6), 0.0, 1.0);
-
+  let alpha = clamp(col1.a * 0.25 + blendRatio * lumConfidence * (0.4 + depth * 0.6), 0.0, 1.0);
   let finalColor = vec4<f32>(finalRGB, alpha);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);
+  textureStore(writeTexture, coord, finalColor);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, finalColor);
 }

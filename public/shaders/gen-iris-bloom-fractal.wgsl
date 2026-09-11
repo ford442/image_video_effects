@@ -1,4 +1,12 @@
-// Iris Bloom Fractal — recursive polar petals, aperture, pupil, and veins
+// ═══════════════════════════════════════════════════════════════════
+//  Iris Bloom Fractal
+//  Category: generative
+//  Features: fractal, polar-geometry, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: collarette zigzag; Fuchs crypt pits near the pupil
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -58,6 +66,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let veinPhase = sin(angle * petalCount * 2.0 + r * (65.0 + treble * 16.0) - time * 0.45);
   let veins = pow(abs(veinPhase), 8.0) * irisMask;
   let limbal = exp(-abs(r - 0.51) * 70.0);
+  let collR = aperture * 1.38;
+  let collZig = collR + 0.014 * sin(angle * petalCount * 3.0 + time * 0.2);
+  let collarette = exp(-abs(r - collZig) * 88.0) * irisMask;
+  let cryptRing = smoothstep(aperture, aperture * 1.45, r) * (1.0 - smoothstep(aperture * 1.7, aperture * 2.15, r));
+  let crypts = pow(0.5 + 0.5 * cos(angle * petalCount + r * 38.0), 16.0) * cryptRing * irisMask;
 
   var clickBloom = 0.0;
   let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
@@ -73,13 +86,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var raw = vec3<f32>(0.004, 0.006, 0.012);
   raw += palette(hue) * irisMask * (0.25 + petals * 1.25 + bass * 0.18);
   raw += palette(hue + 0.27) * veins * (0.55 + treble * 0.8);
+  raw += vec3<f32>(0.95, 0.72, 0.42) * collarette * (0.55 + mids * 0.2);
   raw += vec3<f32>(0.22, 0.58, 1.25) * limbal * (0.6 + mids * 0.3);
   raw += palette(colorCycle + clickBloom * 0.2) * clickBloom * 0.7;
+  raw *= 1.0 - crypts * 0.62;
   raw *= 1.0 - pupil * 0.94;
   let prev = textureLoad(dataTextureC, pixel, 0);
   raw = clamp(mix(prev.rgb * 0.94, raw, 0.27 + bloomDepth * 0.012), vec3<f32>(0.0), vec3<f32>(7.0));
-  let coverage = clamp(0.025 + irisMask * 0.55 + petals * 0.22 + veins * 0.12 + limbal * 0.12 + clickBloom * 0.12, 0.025, 0.98);
-  let depth = clamp(irisMask * 0.28 + recursive * 0.48 + limbal * 0.2, 0.0, 1.0);
+  let coverage = clamp(0.025 + irisMask * 0.55 + petals * 0.22 + collarette * 0.1 + veins * 0.12 + limbal * 0.12 + clickBloom * 0.12, 0.025, 0.98);
+  let depth = clamp(irisMask * 0.28 + recursive * 0.48 + collarette * 0.12 + limbal * 0.2, 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(raw, coverage));
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(raw * 1.12), coverage));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

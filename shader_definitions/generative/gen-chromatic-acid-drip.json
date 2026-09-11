@@ -58,7 +58,11 @@
   "updated": true,
   "id": "gen-chromatic-acid-drip",
   "url": "shaders/gen-chromatic-acid-drip.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "intensity",

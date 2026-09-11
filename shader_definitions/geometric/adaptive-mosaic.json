@@ -10,7 +10,8 @@
     "temporal",
     "bounded-history",
     "click-reactive",
-    "fast-motion"
+    "fast-motion",
+    "upgraded-rgba"
   ],
   "params": [
     {

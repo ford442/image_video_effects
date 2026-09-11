@@ -10,7 +10,8 @@
     "spectral-analysis",
     "audio-reactive",
     "hue-shift",
-    "randomization-safe"
+    "randomization-safe",
+    "upgraded-rgba"
   ],
   "params": [
     {

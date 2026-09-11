@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Page Curl Interactive
 //  Category: image
-//  Features: upgraded-rgba, mouse-driven, audio-reactive, temporal,
-//            depth-aware, aces-tone-map, chromatic-aberration, oklab-mix,
-//            lod-noise, branchless-page-mask
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-07-08
+//  Upgraded: 2026-09-08
+//  Ideas: backside peek of the curled sheet; paper fiber along curl tangent
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -179,6 +179,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let paperNoise = fbmLod(srcUV * 40.0 + vec2<f32>(time * 0.01, 0.0), oct) * 0.15 * curlMask;
   let chromaOff = mids * 0.01;
   var curlLin = srgb_to_linear(curlSample(srcUV, chromaOff) * 0.55 + vec3<f32>(paperNoise));
+
+  let backUV = vec2<f32>(clamp(1.0 - srcX, 0.0, 1.0), srcUV.y);
+  let backLin = srgb_to_linear(textureSampleLevel(readTexture, u_sampler, backUV, 0.0).rgb) * 0.72;
+  let backMix = curlMask * smoothstep(0.18, 0.85, abs(theta));
+  curlLin = mix(curlLin, backLin, backMix * 0.55);
+  let fiber = abs(sin(srcUV.y * 180.0 + theta * 6.0));
+  curlLin *= 0.92 + 0.08 * fiber * curlMask;
 
   // Aurora marbling across the curled backside.
   let marble = fbmLod(srcUV * 12.0 + vec2<f32>(time * 0.18, -time * 0.11), 3);

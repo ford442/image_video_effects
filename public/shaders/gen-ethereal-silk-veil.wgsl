@@ -4,11 +4,9 @@
 //  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
 //            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
-//  Description: Multi-layered translucent silk ribbons flowing in an
-//  ethereal wind. Audio drives undulation amplitude; mouse gathers and
-//  disturbs the fabric like a hand through cloth. Gold-cream palette
-//  with depth-layered parallax and fabric sheen.
-//  Created: 2026-06-06
+//  Upgraded: 2026-09-11
+//  Ideas: selvage fray noise along ribbon width edges; held-crease memory blended from exact C when mouse down
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -122,8 +120,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Secondary higher-frequency ripple
     let ripple = sin(uv.y * freq * 2.5 + time * speed * 1.3 + ribbonPhase * 2.0) * waveIntensity * 0.3;
 
+    // Held-crease memory blended from exact C when mouse down
+    let creaseMem = prev.rgb;
+    let creaseBias = select(0.0, (creaseMem.r - 0.5) * 0.1, mouseDown > 0.5);
+
     // Mouse gather shifts ribbon toward mouse
-    let gatherX = baseX + wave + ripple - toMouse.x * gatherStrength * (0.5 + layerDepth * 0.5);
+    let gatherX = baseX + wave + ripple - toMouse.x * gatherStrength * (0.5 + layerDepth * 0.5) + creaseBias;
 
     // Ribbon width varies with layer (front layers wider)
     let ribbonWidth = mix(0.04, 0.12, layerDepth) * (1.0 + bass * 0.1);
@@ -131,9 +133,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Distance from this pixel to the ribbon center
     let distToRibbon = abs(uv.x - gatherX);
 
+    // Selvage fray noise along ribbon width edges
+    let selvageZone = exp(-abs(distToRibbon - ribbonWidth * 0.9) * 110.0);
+    let frayNoise = noise2(vec2<f32>(uv.y * 45.0 + time * 3.5, f32(li) * 2.3)) * selvageZone;
+
     // Soft ribbon edge with audio-driven flutter
     let flutter = noise2(vec2<f32>(uv.y * 10.0 + time * 2.0, f32(li))) * 0.02 * (1.0 + treble);
-    let ribbonMask = smoothstep(ribbonWidth + flutter, 0.0, distToRibbon);
+    let frayedEdge = ribbonWidth + flutter + frayNoise * 0.018;
+    let ribbonMask = smoothstep(frayedEdge, 0.0, distToRibbon);
 
     // Fabric fold darkness (derivative of wave gives fold depth)
     let foldDepth = cos(uv.y * freq + time * speed + ribbonPhase) * 0.5 + 0.5;
@@ -146,6 +153,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Sheen on fold peaks (where derivative crosses zero going up)
     let sheenMask = pow(smoothstep(0.4, 0.6, foldDepth), 3.0) * sheenAmount;
     layerColor = mix(layerColor, goldSheen, sheenMask * (0.5 + bass * 0.3));
+    layerColor += goldSheen * selvageZone * 0.22;
+
+    // Held-crease color memory when mouse down
+    let heldCrease = smoothstep(0.035, 0.0, abs(uv.x - gatherX)) * mouseDown * ribbonMask;
+    layerColor = mix(layerColor, creaseMem * depthDarken, heldCrease * 0.32);
 
     // Layer alpha: front layers more opaque
     let layerAlpha = ribbonMask * mix(0.25, 0.75, layerDepth) * (0.8 + mids * 0.2);

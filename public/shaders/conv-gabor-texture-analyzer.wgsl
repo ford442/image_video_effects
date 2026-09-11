@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Gabor Texture Analyzer
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Convolution Type: gabor-filter-bank
 //  Complexity: High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: even/odd quadrature energy; dominant-orientation grain
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -56,7 +57,8 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn gaborResponse(uv: vec2<f32>, theta: f32, freq: f32, sigma: f32, pixelSize: vec2<f32>) -> f32 {
-    var response = 0.0;
+    var evenR = 0.0;
+    var oddR = 0.0;
     let radius = i32(ceil(sigma * 3.0));
     let maxRadius = min(radius, 6);
     let cosTheta = cos(theta);
@@ -70,15 +72,15 @@ fn gaborResponse(uv: vec2<f32>, theta: f32, freq: f32, sigma: f32, pixelSize: ve
             let yTheta = -x * sinTheta + y * cosTheta;
             
             let gaussian = exp(-(xTheta*xTheta + yTheta*yTheta) / (2.0 * sigma * sigma + 0.001));
-            let sinusoidal = cos(2.0 * 3.14159265 * freq * xTheta);
-            let kernel = gaussian * sinusoidal;
+            let phase = 2.0 * 3.14159265 * freq * xTheta;
             
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-            let luma = dot(textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-            response += luma * kernel;
+            let luma = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+            evenR += luma * gaussian * cos(phase);
+            oddR += luma * gaussian * sin(phase);
         }
     }
-    return response;
+    return sqrt(evenR * evenR + oddR * oddR);
 }
 
 fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
@@ -123,7 +125,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Ripple frequency bursts
     var rippleFreqMod = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -159,6 +161,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let totalResponse = abs(r0) + abs(r45) + abs(r90) + abs(r135) + 0.001;
     color = color / totalResponse;
+
+    let bestA = abs(r0);
+    let bestB = max(abs(r45), abs(r90));
+    let bestC = max(bestB, abs(r135));
+    var domTheta = 0.0;
+    domTheta = select(domTheta, 0.785398, abs(r45) >= bestA && abs(r45) >= abs(r90) && abs(r45) >= abs(r135));
+    domTheta = select(domTheta, 1.570796, abs(r90) >= bestA && abs(r90) >= abs(r45) && abs(r90) >= abs(r135));
+    domTheta = select(domTheta, 2.356194, abs(r135) >= bestA && abs(r135) >= abs(r45) && abs(r135) >= abs(r90));
+    let grain = 0.5 + 0.5 * sin(dot(uv, vec2<f32>(cos(domTheta), sin(domTheta))) * (90.0 + freq * 400.0));
+    color = mix(color, color * (0.82 + grain * 0.28), clamp(bestC * 0.12, 0.0, 0.45));
     
     // Boost saturation
     color = color * 1.3;
@@ -182,9 +194,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Semantic alpha: total response modulated by depth and treble
     let alpha = clamp(totalResponse * 0.15 * (0.5 + depth * 0.5) * (0.6 + treble * 0.4), 0.0, 1.0);
+    let packed = vec4<f32>(color, alpha);
     
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));
-    
-    // Depth pass-through
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

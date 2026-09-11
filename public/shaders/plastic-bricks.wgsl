@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Plastic Bricks v2
+//  Plastic Bricks
 //  Category: image
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Chunks From: plastic-bricks
-//  Upgraded: 2026-05-30
-//  By: 4-Agent Shader Upgrade Swarm
+//  Upgraded: 2026-09-08
+//  Ideas: hollow underside tubes; injection knit-line
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -92,6 +92,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let studCavityAO = 1.0 - smoothstep(0.0, studSize * 1.5, studDist) * 0.35;
   let cornerAO = smoothstep(0.5, 0.35, max(abs(cell.x), abs(cell.y))) * 0.25;
+  let tubeInner = studSize * 0.52;
+  let tubeOuter = studSize * 0.86;
+  let tubeRing = smoothstep(tubeInner - bevel, tubeInner, studDist)
+    * (1.0 - smoothstep(tubeOuter, tubeOuter + bevel, studDist));
+  let tubes = tubeRing * bodyMask * (1.0 - studMask);
+  let knit = (1.0 - smoothstep(0.0, 0.016 + bevel * 0.12, abs(cell.y - 0.045 * sin(cell.x * 18.0))))
+    * bodyMask * (1.0 - studMask);
 
   let centerUV = clamp((brickId + 0.5) / density, vec2<f32>(0.0), vec2<f32>(1.0));
   let baseColor = textureSampleLevel(readTexture, u_sampler, centerUV, 0.0).rgb;
@@ -124,8 +131,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = finalColor + sss;
 
   let reliefMask = clamp(bodyMask * relief + studMask * (relief + 0.3), 0.0, 1.0);
-  let ao = studCavityAO * (1.0 - cornerAO);
+  let ao = studCavityAO * (1.0 - cornerAO) * (1.0 - tubes * 0.45);
   finalColor = finalColor * ao;
+  finalColor = mix(finalColor, finalColor * vec3<f32>(0.55, 0.58, 0.62), tubes * 0.7);
+  finalColor = mix(finalColor, finalColor * vec3<f32>(0.72, 0.74, 0.78), knit * 0.55);
+  finalColor += vec3<f32>(0.18, 0.2, 0.22) * knit * plasticGloss * 0.25;
 
   let depthOut = clamp(mix(depth, 0.18 + reliefMask * 0.78 + deconstruct * 0.05, 0.4), 0.0, 1.0);
 
@@ -135,7 +145,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let plasticAlpha = clamp(0.65 + reliefMask * 0.2 + plasticGloss * 0.15, 0.42, 0.96);
   let finalAlpha = plasticAlpha * plasticGloss * depth;
 
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  let display = vec4<f32>(finalColor, finalAlpha);
+  textureStore(writeTexture, vec2<i32>(gid.xy), display);
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(studMask, bodyMask, plasticGloss, finalAlpha));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), display);
 }

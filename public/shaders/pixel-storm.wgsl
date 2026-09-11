@@ -1,5 +1,10 @@
 // ---------------------------------------------------------------
-//  Pixel Storm – Mouse-driven chaos
+//  Pixel Storm
+//  Category: distortion
+//  Features: mouse-driven, distortion, audio-reactive, click-reactive, temporal-persistence, upgraded-rgba
+//  Upgraded: 2026-09-08
+//  Ideas: luma-weighted debris; exact-C advection for the trail
+//  A packing: ACES display RGBA
 // ---------------------------------------------------------------
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -29,6 +34,10 @@ fn hash12(p: vec2<f32>) -> f32 {
 	var p3  = fract(vec3<f32>(p.xyx) * .1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -141,40 +150,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         wind = -wind * 2.0;
     }
 
-    // Where to sample from? (uv - wind)
-    let samplePos = clamp(uv - wind, vec2<f32>(0.0), vec2<f32>(1.0));
+    // Luma debris: brighter pixels travel farther.
+    let sourceCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let debris = 0.55 + dot(sourceCol.rgb, vec3<f32>(0.299, 0.587, 0.114)) * 0.9;
+    wind *= debris;
 
-    // Sample current video frame (fresh pixels)
+    let samplePos = clamp(uv - wind, vec2<f32>(0.0), vec2<f32>(1.0));
     let fresh = textureSampleLevel(readTexture, u_sampler, samplePos, 0.0).rgb;
 
-    // Sample history (previous displaced pixels)
-    // We also advect the history?
-    // If we just read history at 'samplePos', we get the smear.
-    let history = textureSampleLevel(dataTextureC, non_filtering_sampler, samplePos, 0.0).rgb;
+    let maxC = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
+    let histCoord = clamp(vec2<i32>(samplePos * resolution), vec2<i32>(0), maxC);
+    let history = textureLoad(dataTextureC, histCoord, 0).rgb;
 
-    // Mix fresh and history based on Trail parameter
-    // If Trail is high, we see mostly history (smear). If low, we see fresh video.
-    // But we only want history where the effect is happening?
-    // Let's mix globally.
-    // Trail 1.0 = infinite feedback (don't update with fresh unless we have to?)
-    // Usually mix(fresh, history, trail)
+    var outCol = mix(fresh, history, trail * 0.95);
 
-    var outCol = mix(fresh, history, trail * 0.95); // Limit max trail to avoid total freeze
-
-    // If wind is zero, we should probably just show fresh video to reset?
-    // Or if trail is high, the screen freezes.
-    // Let's fade to fresh if no wind?
     if (length(wind) < 0.0001) {
-       outCol = mix(outCol, fresh, 0.1); // Slow recovery
+       outCol = mix(outCol, fresh, 0.1);
     }
 
-    // Store
-    textureStore(writeTexture, gid.xy, vec4<f32>(outCol, 1.0));
+    let alpha = clamp(0.18 + length(wind) * 18.0 + trail * 0.25, 0.12, 1.0);
+    let outColor = vec4<f32>(acesToneMap(outCol), alpha);
+    textureStore(writeTexture, gid.xy, outColor);
+    textureStore(dataTextureA, gid.xy, outColor);
 
-    // Store for history (dataTextureA is next frame's C)
-    textureStore(dataTextureA, gid.xy, vec4<f32>(outCol, 1.0));
-
-    // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

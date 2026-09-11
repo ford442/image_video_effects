@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware
 //  Convolution Type: weighted-voronoi-stippling-convolution
 //  Complexity: High
-//  Created: 2026-04-18
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-08
+//  Ideas: paper ground under dots; gradient-stretched ellipses
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -64,7 +65,7 @@ fn localMean(uv: vec2<f32>, pixelSize: vec2<f32>, radius: i32) -> vec3<f32> {
     for (var dy = -r; dy <= r; dy++) {
         for (var dx = -r; dx <= r; dx++) {
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-            sum += textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
+            sum += textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
             count += 1.0;
         }
     }
@@ -104,7 +105,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Ripple stipple displacement
     var rippleOffset = vec2<f32>(0.0);
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -140,19 +141,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Depth-based stipple size
     let dotRadius = density * 0.45 * mix(1.2, 0.7, depth);
     let cellCenter = hash22(cellCoord) * 0.6 + 0.2;
-    let distToCenter = length(cellUV - cellCenter);
-    let inDot = 1.0 - smoothstep(dotRadius * 0.7, dotRadius, distToCenter);
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let gx = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(pixelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let gy = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, pixelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let gdir = vec2<f32>(gx - meanLuma, gy - meanLuma);
+    let glen = max(length(gdir), 0.0001);
+    let gN = gdir / glen;
+    let delta = cellUV - cellCenter;
+    let along = dot(delta, gN);
+    let across = dot(delta, vec2<f32>(-gN.y, gN.x));
+    let ellipse = length(vec2<f32>(along * 0.72, across * 1.28));
+    let inDot = 1.0 - smoothstep(dotRadius * 0.7, dotRadius, ellipse);
 
     // Colorize
     let saturatedColor = meanColor * colorSaturation;
-    var stippleColor = saturatedColor * inDot + meanColor * 0.1 * (1.0 - inDot);
+    let paper = vec3<f32>(0.93, 0.90, 0.84);
+    var stippleColor = mix(paper * 0.98, saturatedColor, inDot);
 
     // Chromatic aberration on stipple dots
     let caStrength = 0.003 * (1.0 + bass) * cellSize;
     let caR = localMean(displacedUV + vec2<f32>(caStrength, 0.0), pixelSize, i32(cellSize * max(res.x, res.y) * 0.5)).r;
     let caB = localMean(displacedUV - vec2<f32>(caStrength, 0.0), pixelSize, i32(cellSize * max(res.x, res.y) * 0.5)).b;
-    stippleColor.r = mix(stippleColor.r, caR * colorSaturation * inDot + caR * 0.1 * (1.0 - inDot), 0.5 * (1.0 + treble));
-    stippleColor.b = mix(stippleColor.b, caB * colorSaturation * inDot + caB * 0.1 * (1.0 - inDot), 0.5 * (1.0 + treble));
+    stippleColor.r = mix(stippleColor.r, mix(paper.r, caR * colorSaturation, inDot), 0.5 * (1.0 + treble));
+    stippleColor.b = mix(stippleColor.b, mix(paper.b, caB * colorSaturation, inDot), 0.5 * (1.0 + treble));
 
     // Artistic edge variation
     let edgeNoise = hash12(cellCoord * 3.7 + vec2<f32>(time * 0.05));
@@ -170,8 +181,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor *= depthFactor;
 
     // Semantic alpha: stipple density × dot coverage × depth
-    let alpha = clamp(density * inDot * depthFactor, 0.0, 1.0);
+    let alpha = clamp(density * inDot * depthFactor + src.a * 0.15, 0.0, 1.0);
+    let packed = vec4<f32>(finalColor, alpha);
+    let pixel = vec2<i32>(global_id.xy);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

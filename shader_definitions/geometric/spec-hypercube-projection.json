@@ -15,7 +15,9 @@
     "4D",
     "hypercube",
     "mouse-driven",
-    "geometric"
+    "geometric",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -51,5 +53,11 @@
       "step": 0.01
     }
   ],
-  "target_rating": 4.7
+  "target_rating": 4.7,
+  "updatedParams": [
+    { "index": 0, "name": "XW Rotation", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "YZ Rotation", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Edge Glow", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Face Opacity", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+  ]
 }

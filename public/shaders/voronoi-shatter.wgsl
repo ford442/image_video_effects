@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Voronoi Shatter
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: voronoi-shatter
 //  Created: 2026-05-30
 //  By: Copilot CLI
+//  Upgraded: 2026-09-11
+//  Ideas: click-impact shockwave (u.ripples[] was bound but never read —
+//         clicking did nothing); bass-gated shard chatter jitter
+//  A packing: raw (m_dist, influence, rotAngle/pi, alpha) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,6 +37,10 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
 }
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -42,6 +50,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
+    let time = u.config.x;
     let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
     let bass = audio.x;
     let mids = audio.y;
@@ -98,8 +107,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vecLen = max(length(vecToMouse), 0.0001);
     let displace = (vecToMouse / vecLen) * influence * (0.2 + treble * 0.05);
 
+    // Click-impact shockwave: u.ripples[] was bound but never read, so
+    // clicking never broke a single shard. Each active ripple now gives
+    // shards inside its expanding, age-decaying ring an outward kick and a
+    // brief rotation snap — a click visibly shatters more glass.
+    var shockDisplace = vec2<f32>(0.0);
+    var shockRot = 0.0;
+    var shockEnergy = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.2) {
+            let toCell = (globalCellCenterUV - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let cellDist = length(toCell);
+            let front = exp(-abs(cellDist - age * 0.55) * 16.0) * exp(-age * 1.6);
+            let dir = select(vec2<f32>(0.0), toCell / max(cellDist, 0.0001), cellDist > 0.0001);
+            shockDisplace += dir * front * 0.14;
+            shockRot += front * 1.1;
+            shockEnergy += front;
+        }
+    }
+
+    // Bass shard chatter: a subtle bass-gated micro-jitter/rotation on top
+    // of the continuous mouse-driven rotation, giving shards a percussive
+    // rattle on beat independent of pointer proximity.
+    let chatterSeed = hash22(m_id + floor(time * 9.0));
+    let chatterGate = step(0.8 - bass * 0.5, chatterSeed.x);
+    let chatterAngle = (chatterSeed.y - 0.5) * 0.3 * chatterGate * bass;
+
     // Rotation
-    let rotAngle = influence * rotationStr * 3.14; // Rotate up to 180 deg
+    let rotAngle = influence * rotationStr * 3.14 + shockRot + chatterAngle; // Rotate up to 180 deg, plus shock/chatter
 
     // Local coords relative to cell center
     let pixelPosAspect = vec2<f32>(uv.x * aspect, uv.y);
@@ -114,7 +152,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
 
     // Final Sample Pos (Aspect Corrected)
-    let samplePosAspect = centerPosAspect + rotatedLocal - vec2<f32>(displace.x * aspect, displace.y);
+    let totalDisplace = displace + shockDisplace;
+    let samplePosAspect = centerPosAspect + rotatedLocal - vec2<f32>(totalDisplace.x * aspect, totalDisplace.y);
 
     // Back to UV
     let sampleUV = clamp(
@@ -129,15 +168,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edge = smoothstep(0.18 + gapSize * 0.25, 0.55, m_dist);
     let shardLight = (1.0 - edge) * (0.2 + bass * 0.1);
     let seamGlow = smoothstep(0.3 - gapSize, 0.55, m_dist) * (0.08 + treble * 0.12);
-    let finalColor = baseColor.rgb * (1.0 + shardLight) + vec3<f32>(0.05, 0.09, 0.16) * seamGlow;
-    let finalAlpha = clamp(0.26 + (1.0 - edge) * 0.28 + influence * 0.35 + bass * 0.08, 0.18, 0.95);
+    let finalColor = baseColor.rgb * (1.0 + shardLight) + vec3<f32>(0.05, 0.09, 0.16) * seamGlow + vec3<f32>(0.85, 0.92, 1.0) * shockEnergy * 0.3;
+    let finalAlpha = clamp(0.26 + (1.0 - edge) * 0.28 + influence * 0.35 + bass * 0.08 + shockEnergy * 0.2, 0.18, 0.95);
     let depth = clamp(
         textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r + influence * 0.06,
         0.0,
         1.0
     );
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(finalColor), finalAlpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(m_dist, influence, rotAngle / 3.14, finalAlpha));
 }

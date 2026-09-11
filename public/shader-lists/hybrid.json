@@ -15,7 +15,9 @@
       "image-distortion",
       "alpha-passthrough",
       "depth-aware",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "hybrid",
@@ -82,6 +84,40 @@
       "hsv2rgb (chronos-brush.wgsl)"
     ],
     "created_by": "Agent 4c - Advanced Hybrid Effect Creator",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Trace Width",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chroma Spread",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "updated": true
   },
   {
@@ -161,6 +197,40 @@
     "chunks_used": [
       "nearestHexCenter (hex-mosaic.wgsl)",
       "voronoi2D (interactive-voronoi-lens.wgsl)"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Hex Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Voronoi Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Distortion Amount",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "updated": true
   },
@@ -346,7 +416,9 @@
       "image-distortion",
       "alpha-passthrough",
       "depth-aware",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "hybrid",
@@ -413,6 +485,40 @@
       "iridescence (gen-holographic-fracture.wgsl)"
     ],
     "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Voronoi Density",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Feedback Drift",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Dust Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "updated": true
   },
   {
@@ -563,7 +669,9 @@
       "image-distortion",
       "alpha-passthrough",
       "depth-aware",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "tags": [
       "hybrid",
@@ -631,7 +739,41 @@
       "palette (gen-xeno-botanical-synth-flora.wgsl)"
     ],
     "created_by": "Agent 4c - Advanced Hybrid Effect Creator",
-    "updated": true
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Temporal Shift",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "FBM Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Warp Amount",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "hybrid-chromatic-liquid",
@@ -715,7 +857,9 @@
       "organic-growth",
       "neon-glow",
       "hex-grid",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -765,7 +909,41 @@
       "palette (gen-xeno-botanical-synth-flora.wgsl)"
     ],
     "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Circuit Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Organic Growth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Neon Glow",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Randomness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "hybrid-fractal-feedback",
@@ -883,7 +1061,8 @@
       "magnetic-distortion",
       "glow",
       "randomization-safe",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -943,7 +1122,41 @@
       "rot2 (kaleidoscope.wgsl)"
     ],
     "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Field Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Line Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Persistence",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Field Distortion",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "hybrid-noise-kaleidoscope",
@@ -1022,7 +1235,9 @@
       "fluid-advection",
       "glow",
       "curl-noise",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1072,7 +1287,41 @@
       "palette (gen-xeno-botanical-synth-flora.wgsl)"
     ],
     "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Particle Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Decay",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glow Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "hybrid-reaction-diffusion-glass",
@@ -1214,7 +1463,8 @@
       "spectral-analysis",
       "audio-reactive",
       "hue-shift",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba"
     ],
     "params": [
       {

@@ -21,6 +21,6 @@
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
-  "features": ["analytic-lines", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "features": ["analytic-lines", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware", "upgraded-rgba"],
   "feedbackPacking": "A/C = raw HDR moire interference display RGBA history"
 }

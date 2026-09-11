@@ -4,8 +4,9 @@
 //  Features: advanced-convolution, rgba32float-exploiting, depth-aware, mouse-driven
 //  Convolution Type: guided-filter
 //  Complexity: High
-//  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
+//  Upgraded: 2026-09-08
+//  Ideas: joint luma range on the depth guide; photo-edge hold when depth misses
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  RGBA32FLOAT EXPLOITATION:
@@ -46,6 +47,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
@@ -54,11 +59,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
     let pixelSize = 1.0 / res;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     
     // Parameters
-    let radiusBase = i32(mix(2.0, 8.0, u.zoom_params.x));
+    let radiusBase = i32(mix(2.0, 8.0, u.zoom_params.x) * (1.0 + bass * 0.25));
     let epsilonBase = mix(0.0001, 0.05, u.zoom_params.y);
     let depthInfluence = u.zoom_params.z;  // How much depth guides the filter
     let mouseInfluence = u.zoom_params.w;
@@ -71,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Ripple depth discontinuities
     var rippleDepth = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -86,6 +93,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let maxRadius = min(radius, 7);
     
+    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let centerLuma = dot(original.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let pixel = vec2<i32>(global_id.xy);
+
     var sumGuide = 0.0;
     var sumInput = vec3<f32>(0.0);
     var sumGuideInput = vec3<f32>(0.0);
@@ -95,13 +106,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var dy = -maxRadius; dy <= maxRadius; dy++) {
         for (var dx = -maxRadius; dx <= maxRadius; dx++) {
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-            let guideVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + offset, 0.0).r + rippleDepth * 0.1;
-            let inputVal = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
-            sumGuide += guideVal;
-            sumInput += inputVal;
-            sumGuideInput += inputVal * guideVal;
-            sumGuide2 += guideVal * guideVal;
-            count += 1.0;
+            let p = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+            let guideVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, p, 0.0).r + rippleDepth * 0.1;
+            let inputVal = textureSampleLevel(readTexture, u_sampler, p, 0.0).rgb;
+            let sampleLuma = dot(inputVal, vec3<f32>(0.299, 0.587, 0.114));
+            let lumaW = exp(-pow(sampleLuma - centerLuma, 2.0) / 0.025);
+            sumGuide += guideVal * lumaW;
+            sumInput += inputVal * lumaW;
+            sumGuideInput += inputVal * guideVal * lumaW;
+            sumGuide2 += guideVal * guideVal * lumaW;
+            count += lumaW;
         }
     }
     
@@ -120,15 +134,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Confidence = how much the guide influences the result
     let confidence = length(a) * depthInfluence;
-    
-    // Mix between guided result and original based on depth influence
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let finalResult = mix(original, result, depthInfluence);
-    
-    // Store: RGB = filtered image, Alpha = filtering confidence
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalResult, confidence));
-    
-    // Depth pass-through (with ripple)
+    let finalResult = mix(original.rgb, result, depthInfluence);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    
+    let lumaN = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, pixelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let depthN = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(0.0, pixelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let keepPhoto = smoothstep(0.02, 0.14, abs(lumaN - centerLuma) - abs(depthN - guide));
+    let mixed = mix(finalResult, original.rgb, keepPhoto * 0.5);
+    let mapped = acesToneMap(mixed * (1.0 + mids * 0.2));
+    let alpha = clamp(confidence + original.a * 0.2, 0.0, 1.0);
+    let packed = vec4<f32>(mapped, alpha);
+    textureStore(writeTexture, pixel, packed);
+    textureStore(dataTextureA, pixel, packed);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

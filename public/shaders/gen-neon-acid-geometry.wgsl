@@ -4,9 +4,9 @@
 //  Features: neon, acid, geometry, audio-reactive, mouse-interactive,
 //            semantic-alpha, upgraded-rgba, temporal, chromatic-aberration
 //  Complexity: Medium-High
-//  Created: 2026-05-31
-//  Updated: 2026-06-07
-//  By: Kimi Agent Upgrade
+//  Upgraded: 2026-09-09
+//  Ideas: pH on SDF rims only; traveling smin sibling morph
+//  A packing: HDR display RGBA in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -149,11 +149,11 @@ fn sdfGlow(d: f32, width: f32, audioIntensity: f32) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
     let time = u.config.x;
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let mouseDown = u.zoom_config.w;
-    let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);
+    let mouseNorm = (u.zoom_config.yz - 0.5) * vec2<f32>(resolution.x, resolution.y) / min(resolution.x, resolution.y);
 
     var audioIntensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
@@ -206,40 +206,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Select shape type based on seed
             let shapeType = floor(seed * 3.0);
             var shapeDist: f32 = 1000.0;
+            var siblingDist: f32 = 1000.0;
+            let morphT = time * audioSpeed * 0.55 + seed * TAU;
+            let siblingOff = vec2<f32>(cos(morphT), sin(morphT)) * shapeScale * 0.55;
 
             if (shapeType < 1.0) {
-                // Triangle with melting distortion — mids control drip speed
                 let melt = vec2<f32>(
                     vnoise(localUV * 8.0 + time * speed * (2.0 + mids * 3.0)) * 0.015,
                     vnoise(localUV * 8.0 + time * speed * (2.0 + mids * 3.0) + 50.0) * 0.015
                 ) * audioIntensity;
                 shapeDist = sdTriangle(localUV + melt, shapeScale);
+                siblingDist = sdTriangle(localUV + melt - siblingOff, shapeScale * 0.85);
             } else if (shapeType < 2.0) {
-                // Hexagon — mids control distortion rate
                 let melt = vec2<f32>(
                     vnoise(localUV * 6.0 + time * speed * (1.5 + mids * 2.0)) * 0.012,
                     vnoise(localUV * 6.0 + time * speed * (1.5 + mids * 2.0) + 30.0) * 0.012
                 ) * audioIntensity;
                 shapeDist = sdHexagon(localUV + melt, shapeScale * 1.2);
+                siblingDist = sdHexagon(localUV + melt - siblingOff, shapeScale);
             } else {
-                // Circle with wobble
                 let wobble = vnoise(localUV * 10.0 + time * speed * 3.0) * 0.01 * audioIntensity;
                 shapeDist = sdCircle(localUV, shapeScale + wobble);
+                siblingDist = sdCircle(localUV - siblingOff, shapeScale * 0.9 + wobble);
             }
+            shapeDist = smin(shapeDist, siblingDist, 0.028);
 
-            // pH-based color: seed offsets phase, bass drives oscillation
             let shapePH = fract(seed + phCycle / 14.0 + colorShift + beat * 0.2) * 14.0;
             let shapeCol = phToColor(shapePH);
+            let geoFill = mix(vec3<f32>(0.07, 0.09, 0.12), shapeCol * 0.32, 0.4);
 
-            // Neon glow from shape edge with acid/base transitions
             let glow1 = sdfGlow(abs(shapeDist), 0.012 * audioIntensity * pulse, 2.5);
             let glow2 = sdfGlow(abs(shapeDist), 0.035 * audioIntensity * pulse, 0.8);
             let fill = smoothstep(0.005, -0.005, shapeDist) * 0.6;
 
-            // Additive contribution
             col += shapeCol * glow1 * audioIntensity * 1.5;
             col += shapeCol * glow2 * audioIntensity * 0.5;
-            col += shapeCol * fill * audioIntensity * 0.8;
+            col += geoFill * fill * audioIntensity * 0.8;
 
             // Mouse-reactive explosion at cursor with localized pH disturbance
             let toMouse = length(refractUV - mouseNorm);
@@ -266,23 +268,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sparkleTrigger = step(1.0 - treble * 0.3, sparkle);
     col += phToColor(fract(sparkle * 14.0)) * sparkleTrigger * treble * 2.0;
 
-    // ═══ TEMPORAL FEEDBACK ═══
-    let prev = textureSampleLevel(dataTextureC, u_sampler, (vec2<f32>(pixel) + 0.5) / resolution, 0.0);
+    let prev = textureLoad(dataTextureC, pixel, 0);
     col = mix(prev.rgb * 0.96, col, 0.25);
-    textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
 
-    // ═══ CHROMATIC ABERRATION ═══
     let caStr = 0.003 * (1.0 + bass);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    // Vignette
     let vig = 1.0 - dot(uv * 0.7, uv * 0.7);
     col *= clamp(vig, 0.0, 1.0) * 1.3;
 
-    // ═══ ACES TONE MAP + SEMANTIC ALPHA ═══
-    col = acesToneMap(col * 1.1);
     let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
-
-    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+    let mapped = acesToneMap(col * 1.1);
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(length(col) * 0.45, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

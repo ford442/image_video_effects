@@ -3,9 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Chunks From: slime-drip
-//  Created: 2026-05-30
-//  By: Copilot CLI
+//  Upgraded: 2026-09-08
+//  Ideas: anisotropic gravity stretch; exact-C drip hang
+//  A packing: raw fields (drip, thickness, tint_mask, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -91,6 +91,15 @@ fn calculateSlimeAlpha(dripAmount: f32, thickness: f32, viscosity: f32) -> f32 {
     return clamp(finalAlpha, 0.25, 0.85);
 }
 
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -112,21 +121,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let amount = u.zoom_params.z;
     let tint_str = u.zoom_params.w * (1.0 + treble * 0.35);
 
-    // Drip Logic
+    // Drip Logic — anisotropic gravity stretch (falls down, not isotropic)
     let noise_scale = mix(5.0, 20.0, viscosity);
-    let flow = noise(vec2<f32>(uv.x * noise_scale, time * speed * 0.2));
+    let yStretch = mix(0.22, 0.55, viscosity);
+    let flow = noise(vec2<f32>(uv.x * noise_scale, uv.y * noise_scale * yStretch + time * speed * 0.2));
 
     // Threshold flow to create "drips"
-    let drip = smoothstep(0.4, 0.7, flow);
+    let dripFresh = smoothstep(0.4, 0.7, flow);
+    let prevField = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    let mouse_dist = distance((uv - mouse) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0));
+    let wipe = smoothstep(0.2, 0.0, mouse_dist);
+    let drip = max(dripFresh, prevField.r * 0.84 * (1.0 - wipe));
 
     // Distortion
     let y_offset = drip * 0.1 * amount;
 
     var sample_uv = uv + vec2<f32>(0.0, -y_offset);
-
-    // Mouse Wipe
-    let mouse_dist = distance((uv - mouse) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0));
-    let wipe = smoothstep(0.2, 0.0, mouse_dist);
     sample_uv = clamp(mix(sample_uv, uv, wipe), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
     // Sample base image
@@ -161,7 +171,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blendedAlpha = mix(baseColor.a, finalAlpha, tint_mask * 0.8);
 
     let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, sample_uv, 0.0).r + slimeThickness * 0.08, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, blendedAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesTonemap(finalColor), blendedAlpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(drip, slimeThickness, tint_mask, blendedAlpha));
 }

@@ -5,7 +5,9 @@
 //            depth-aware, stained-glass-facets, oil-slick-prism
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-08-21
+//  Upgraded: 2026-09-11
+//  Ideas: segment seam glow on mirror beat; counter-rotating inner ring wedge
+//  A packing: display RGBA + bass env/spring state at (0,0)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -91,12 +93,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let folded = angle - segment_angle * floor(angle / segment_angle);
     angle = select(folded, segment_angle - folded, folded > segment_angle * 0.5);
 
+    // Idea 2 — counter-rotating inner ring wedge at half angular speed
+    let innerSpin = time * (rot_speed - 0.5) * 1.0;
+    let innerAngleRaw = atan2(aspect_uv.y, aspect_uv.x) + innerSpin + held * (mouse.y - 0.5) * 0.45 * exp(-dist * 3.0);
+    let innerFolded = innerAngleRaw - segment_angle * floor(innerAngleRaw / segment_angle);
+    let innerAngle = select(innerFolded, segment_angle - innerFolded, innerFolded > segment_angle * 0.5);
+    let innerBlend = smoothstep(0.42, 0.0, dist);
+
     let scale = (2.0 - zoom * 1.8) * (1.0 - held * 0.12);
     let radius = dist * scale + offset_param * 0.5;
     let new_vec = vec2<f32>(cos(angle), sin(angle)) * radius;
+    let inner_vec = vec2<f32>(cos(innerAngle), sin(innerAngle)) * radius * 0.62;
     let sample_uv = clamp(vec2<f32>(0.5, 0.5) + vec2<f32>(new_vec.x / aspect, new_vec.y), vec2<f32>(0.0), vec2<f32>(1.0));
+    let inner_sample_uv = clamp(vec2<f32>(0.5, 0.5) + vec2<f32>(inner_vec.x / aspect, inner_vec.y), vec2<f32>(0.0), vec2<f32>(1.0));
 
     var color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
+    let innerColor = textureSampleLevel(readTexture, u_sampler, inner_sample_uv, 0.0).rgb;
+    color = mix(color, innerColor, innerBlend * 0.58);
 
     let prism_shift = sin(angle * 6.0 + spin) * (0.02 + env * 0.06);
     let r = textureSampleLevel(readTexture, u_sampler, clamp(sample_uv + vec2<f32>(prism_shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
@@ -107,6 +120,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += textureSampleLevel(readTexture, u_sampler, reflect_uv, 0.0).rgb * (0.3 + env * 0.4);
 
     let seam = smoothstep(0.035, 0.0, min(angle, segment_angle - angle));
+    // Idea 1 — segment seam glow pulsing on kaleido beat (bass-driven mirror boundary)
+    let seamBeat = seam * (0.55 + bass * 0.85 + 0.35 * sin(time * (4.0 + bass * 6.0)));
     let grout = smoothstep(0.08, 0.0, abs(fract(radius * 5.0 + offset_param) - 0.5));
     let conveyor = smoothstep(0.09, 0.0, abs(fract(angle / segment_angle * 4.0 - time * (2.4 + rot_speed * 3.0)) - 0.5));
     let packets = smoothstep(0.08, 0.0, abs(fract(radius * 7.0 - time * (2.8 + bass * 2.0)) - 0.5));
@@ -124,11 +139,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hue = fract(angle / segment_angle + time * 0.12 + mids * 0.25 + radius * 0.35);
     let slick = hsv2rgb(vec3<f32>(hue, 0.72 + treble * 0.2, 0.92));
     color = mix(color, color * slick * 1.35, 0.32 + treble * 0.22);
-    color += slick * (seam * 0.45 + grout * 0.22 + conveyor * 0.28 + packets * 0.24 + iris * 0.55);
+    color += slick * (seamBeat * 0.55 + grout * 0.22 + conveyor * 0.28 + packets * 0.24 + iris * 0.55);
     color *= (1.0 + bass * 0.1 + mids * 0.05 + treble * 0.05) * (1.0 + held * 0.12 + iris * 0.35);
 
     let luminance = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let effect_intensity = clamp(0.5 + dist * 0.5 + seam * 0.2 + iris * 0.3, 0.0, 1.0);
+    let effect_intensity = clamp(0.5 + dist * 0.5 + seamBeat * 0.2 + iris * 0.3, 0.0, 1.0);
     let alpha = clamp(0.25 + luminance * 0.7 * effect_intensity, 0.0, 1.0);
 
     let decay = 0.88;
@@ -141,7 +156,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dataAOut = select(trailColor, stateOut, isStatePixel);
 
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
-    let outDepth = clamp(depth + seam * 0.08 + grout * 0.04, 0.0, 1.0);
+    let outDepth = clamp(depth + seamBeat * 0.08 + grout * 0.04, 0.0, 1.0);
     textureStore(writeTexture, pixel, finalColor);
     textureStore(dataTextureA, pixel, dataAOut);
     textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));

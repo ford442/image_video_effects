@@ -4,10 +4,9 @@
 //  Features: mandala, neon, cyber, audio-reactive, mouse-interactive,
 //            semantic-alpha, upgraded-rgba, temporal, chromatic
 //  Complexity: Medium-High
-//  Created: 2026-05-31
-//  Updated: 2026-06-07
-//  By: Kimi Agent (Bright batch)
-//  Math: Golden Ratio φ=1.6180339887, Fibonacci symmetry, golden angle
+//  Upgraded: 2026-09-09
+//  Ideas: φ ring spacing; inner vs outer contra-rotation
+//  A packing: HDR display RGBA in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -156,11 +155,11 @@ fn patternedRing(p: vec2<f32>, innerR: f32, outerR: f32, pattern: i32, time: f32
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
-    let uvTex = vec2<f32>(pixel) / res;
     
     let time = u.config.x;
-    let mousePos = (u.zoom_config.yz - res * 0.5) / min(res.x, res.y);
+    let mousePos = (u.zoom_config.yz - 0.5) * vec2<f32>(res.x, res.y) / min(res.x, res.y);
     let mouseDown = u.zoom_config.w > 0.5;
     let intensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
@@ -219,16 +218,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // ─── Ring definitions with golden-angle layer rotation ───
     let rings = 6;
-    let ringSpacing = 0.12 / zoom * (1.0 + scale * 0.5) / PHI;
+    var ringInner = 0.055 * (0.7 + scale * 0.5) / max(zoom, 0.25);
     
     for (var i = 0; i < rings; i++) {
         let fi = f32(i);
-        let innerR = 0.06 + fi * ringSpacing;
-        let outerR = innerR + ringSpacing * 0.7;
+        let innerR = ringInner;
+        let outerR = innerR * 1.25;
         let ringHue = fract(fi / f32(rings) + colorShift + time * 0.02);
         
-        // Golden-angle rotation per layer
-        let layerAngle = GOLDEN_ANGLE * fi;
+        let contra = select(1.0, -1.0, i < 3);
+        let layerAngle = GOLDEN_ANGLE * fi + time * rotSpeed * contra * 0.45;
         let cos_la = cos(layerAngle);
         let sin_la = sin(layerAngle);
         let layerRot = mat2x2<f32>(cos_la, -sin_la, sin_la, cos_la);
@@ -273,7 +272,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         // Connecting lines between rings
         if (i < rings - 1) {
-            let nextR = 0.06 + (fi + 1.0) * ringSpacing;
+            let nextR = innerR * PHI;
             let connFreq = 12.0 + fi * 4.0;
             for (var c = 0; c < i32(connFreq); c++) {
                 let fc = f32(c);
@@ -296,6 +295,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 col += neonRainbow(connHue) * lineGlow * 0.15 * pulse * intensity;
             }
         }
+        ringInner = innerR * PHI;
     }
     
     // Central star burst with Fibonacci rays
@@ -310,7 +310,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += vec3<f32>(1.0, 0.95, 0.8) * orbGlow * 0.8 * intensity;
     
     // Outer decorative border
-    let borderR = 0.06 + f32(rings) * ringSpacing + 0.02;
+    let borderR = ringInner + 0.02;
     let borderDist = abs(d - borderR);
     let borderMask = smoothstep(0.01, 0.0, borderDist);
     let borderPattern = sin(angle * 36.0 + time) * 0.5 + 0.5;
@@ -338,19 +338,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     col = mix(vec3<f32>(lum), col, 1.2 + intensity * 0.3);
     
-    // ─── Chromatic aberration driven by bass ───
     let caStr = 0.003 * (1.0 + bass);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
-    
-    // ─── ACES tone mapping + semantic alpha ───
-    col = acesToneMap(col * 1.1);
-    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
-    
-    // ─── Temporal feedback ───
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uvTex, 0.0);
-    let feedback = mix(prev.rgb * 0.96, col, 0.25);
-    
-    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(feedback, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    let hdr = mix(prev.rgb * 0.96, col, 0.25);
+    let alpha = clamp(length(hdr) * 1.2, 0.2, 0.95);
+    textureStore(dataTextureA, pixel, vec4<f32>(hdr, alpha));
+    let mapped = acesToneMap(hdr * 1.1);
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - d * 0.55, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

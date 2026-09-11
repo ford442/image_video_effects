@@ -57,5 +57,15 @@
   "updated": true,
   "id": "gen-plasma-mandala",
   "url": "shaders/gen-plasma-mandala.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    { "id": "symmetry", "name": "Symmetry", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "spin_speed", "name": "Spin Speed", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "zoom", "name": "Zoom", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "glow_scale", "name": "Glow Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ]
 }

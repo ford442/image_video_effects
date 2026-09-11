@@ -3,9 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, cmyk-halftone, upgraded-rgba
 //  Complexity: High
-//  Chunks From: polka-wave, bass_env, aa_step, IGN-dither
-//  Created: 2026-05-17
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-08
+//  Ideas: offset-print dot gain; screen grid rides the wave
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -41,6 +41,15 @@ fn rot2D(a: f32) -> mat2x2<f32> {
   let c = cos(a);
   let s = sin(a);
   return mat2x2<f32>(c, -s, s, c);
+}
+
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -91,7 +100,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i: i32 = 0; i < 4; i = i + 1) {
     let angle = angles[i];
     let chVal = channels[i];
-    let rotGrid = rot2D(angle) * (uv * vec2<f32>(aspect, 1.0) * density);
+    let rotGrid = rot2D(angle) * ((uv * vec2<f32>(aspect, 1.0) + vec2<f32>(0.0, invertRipple * 0.12 / density)) * density);
     let cellId = floor(rotGrid);
     let cellUv = fract(rotGrid) - 0.5;
 
@@ -101,7 +110,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sampleBright = dot(sampleCol.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
     let distCell = length(cellUv);
-    let dotRadius = sampleBright * 0.45 * bass_env(bass, mids);
+    let gain = 1.0 + (1.0 - sampleBright) * 0.38;
+    let dotRadius = sampleBright * 0.45 * bass_env(bass, mids) * gain;
     let noiseAmt = (treble * 0.05) * sin(time * 10.0 + cellId.x * 3.0 + cellId.y * 7.0);
     let rFinal = clamp(dotRadius + ripple * 0.15 * amp + noiseAmt, 0.03, 0.5);
 
@@ -118,8 +128,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rosette = sin((uv.x + uv.y) * density * 0.4 - time * speed) * sin((uv.x - uv.y) * density * 0.35 + time * speed * 0.7);
   let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + rosette * 3.0 + time);
   let halftoneRGB = paperWhite - dotAccum + spectral * (abs(rosette) * 0.07 + clickFront * 0.18);
+  let mapped = acesTonemap(clamp(halftoneRGB, vec3<f32>(0.0), vec3<f32>(4.0)));
   let halftoneAlpha = clamp(maskAccum + brightness * 0.3 + mids * 0.1, 0.0, 1.0);
-  let finalColor = vec4<f32>(clamp(halftoneRGB, vec3<f32>(0.0), vec3<f32>(1.0)), halftoneAlpha);
+  let finalColor = vec4<f32>(mapped, halftoneAlpha);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, coord, finalColor);

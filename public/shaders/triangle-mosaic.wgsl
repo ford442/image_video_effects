@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Triangle Mosaic
+//  Category: geometric
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-08
+//  Ideas: grout on triangle edges; per-facet tilt from centroid
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -103,6 +111,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     tri_center.x /= aspect;
 
     var sample_uv = tri_center;
+    let bary = f_uv - tri_offset;
+    let tilt = dot(bary, vec2<f32>(0.18, -0.24));
+    sample_uv = sample_uv + vec2<f32>(tilt, -tilt) * 0.045;
     let uv_centered = sample_uv - 0.5;
     let rot_mat = rotate2d(angle);
     sample_uv = 0.5 + uv_centered * rot_mat;
@@ -124,6 +135,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seamRunner = sin((f_uv.x + f_uv.y) * 12.0 - time * (3.0 + mids * 5.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + seamRunner * 2.0 + time);
     color += spectral * ((1.0 - smoothstep(0.0, 0.12, boundaryDist)) * 0.12 + clickFront * 0.22);
+
+    let grout = 1.0 - smoothstep(0.0, 0.07, boundaryDist);
+    color = mix(color, color * vec3<f32>(0.16, 0.14, 0.12), grout * 0.72);
+    color *= 0.88 + 0.12 * (0.5 + tilt);
 
     // Edge darkening toward triangle boundaries
     let edgeDarken = 1.0 - boundaryDist * 0.6;

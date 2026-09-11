@@ -2,7 +2,7 @@
   "id": "green-tracer",
   "name": "Green Tracer World",
   "url": "shaders/green-tracer.wgsl",
-  "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night‑vision aesthetics.",
+  "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night\u2011vision aesthetics.",
   "params": [
     {
       "id": "trailLen",
@@ -34,14 +34,50 @@
     }
   ],
   "features": [
-    "temporal‑persistence",
-    "edge‑glow",
-    "film‑grain",
-    "depth‑aware",
-    "mouse-driven"
+    "temporal\u2011persistence",
+    "edge\u2011glow",
+    "film\u2011grain",
+    "depth\u2011aware",
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
     "image-processing"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Trail Length",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Glow Intensity",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Green Tint",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Film Grain",
+      "default": 0.1,
+      "min": 0,
+      "max": 0.5,
+      "step": 0.01
+    }
   ]
 }

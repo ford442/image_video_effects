@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Lamb-Oseen Vortex Fluid with Kelvin-Helmholtz Shear Instability
 //  Category: distortion
-//  Features: mouse-driven, audio-reactive, temporal
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Scientific: Lamb-Oseen vortex u_θ = (Γ/2πr)(1−exp(−r²/4νt)),
-//              Kelvin-Helmholtz instability at vortex boundary,
-//              multiple interacting vortices from ripple history,
-//              streamline color coding by velocity magnitude + vorticity
-//  Upgraded: Phase B
+//  Upgraded: 2026-09-08
+//  Ideas: streamline smear along velocity; source-tied vorticity overlay
+//  A packing: raw field (vel.xy, vorticity, speed) — never ACES
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0)  var u_sampler: sampler;
@@ -43,6 +41,10 @@ fn lambOseen(p: vec2<f32>, center: vec2<f32>, circulation: f32, nu: f32, age: f3
     // Tangential direction (perpendicular to radial)
     let tangent = vec2<f32>(-d.y, d.x) / r;
     return tangent * uTheta;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Kelvin-Helmholtz sinusoidal perturbation at shear radius
@@ -107,35 +109,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Displace sample UV ───
     let speed  = length(vel);
-    // Chromatic aberration by velocity magnitude
-    let uvBase = uv - vec2<f32>(vel.x / aspect, vel.y) * 0.04;
+    let uvOff = vec2<f32>(vel.x / aspect, vel.y) * 0.04;
+    let uvBase = uv - uvOff;
+    // Streamline smear: a few taps along velocity (advection, not a new solver).
+    let stepV = uvOff * 0.45;
+    var smear = vec3<f32>(0.0);
+    for (var s = 0; s < 4; s++) {
+        let suv = clamp(uvBase - stepV * f32(s), vec2<f32>(0.001), vec2<f32>(0.999));
+        smear += textureSampleLevel(readTexture, u_sampler, suv, 0.0).rgb;
+    }
+    smear = smear * 0.25;
     let uvR    = uvBase + vec2<f32>(aberration, 0.0);
     let uvB    = uvBase - vec2<f32>(aberration, 0.0);
-
     let sR  = textureSampleLevel(readTexture, u_sampler, clamp(uvR, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
     let sG  = textureSampleLevel(readTexture, u_sampler, clamp(uvBase, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
     let sB  = textureSampleLevel(readTexture, u_sampler, clamp(uvB, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
-    var color = vec3<f32>(sR.r, sG.g, sB.b);
+    var color = mix(vec3<f32>(sR.r, sG.g, sB.b), smear, clamp(speed * 0.55, 0.0, 0.65));
 
-    // ─── Vorticity color overlay ───
-    // Red = CW vortex, Blue = CCW, Green = irrotational
     let vNorm = clamp(vorticity, -1.0, 1.0);
     let vCol  = mix(
         mix(vec3<f32>(0.1, 0.3, 1.0), vec3<f32>(0.0, 0.8, 0.3), 0.5 + vNorm * 0.5),
         vec3<f32>(1.0, 0.15, 0.05),
         clamp(vNorm, 0.0, 1.0)
     );
-    let vIntensity = smoothstep(0.0, 0.5, speed) * 0.35;
+    let sourceLuma = dot(sG.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let vIntensity = smoothstep(0.0, 0.5, speed) * 0.35 * mix(0.35, 1.0, sourceLuma);
     color = mix(color, vCol, vIntensity);
 
-    // Streamline brightness at high-speed regions
     color += vec3<f32>(1.0, 0.8, 0.5) * clamp(speed - 0.3, 0.0, 0.5) * 0.4;
 
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthUncertainty = speed * 0.08;
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(vel.x, vel.y, vorticity, speed));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy),
+    let alpha = clamp(0.2 + speed * 0.7 + abs(vorticity) * 0.15, 0.12, 1.0);
+    let pixel = vec2<i32>(global_id.xy);
+    textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(vel.x, vel.y, vorticity, speed));
+    textureStore(writeDepthTexture, pixel,
         vec4<f32>(d * (1.0 + depthUncertainty), 0.0, 0.0, 0.0));
 }
 

@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Encaustic Wax v2
+//  Encaustic Wax
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, painterly, thermal-flow
 //  Complexity: High
-//  Chunks From: encaustic-wax
-//  Created: 2026-05-31
-//  By: 4-Agent Swarm
+//  Upgraded: 2026-09-08
+//  Ideas: cooling wax bloom; held-mouse iron scrape
+//  A packing: telemetry RGBA (ridge, pigment, heatMouse, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -150,7 +150,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var finalColor = base.rgb;
   finalColor = mix(finalColor, finalColor * 0.6 + waxColor * 0.65, pigmentDeposit * (0.35 + ridge));
-  finalColor = finalColor + vec3<f32>(1.0, 0.96, 0.88) * spec + sss + sparkle;
+  let cool = 1.0 - heat;
+  let waxBloom = vec3<f32>(0.94, 0.95, 0.92) * cool * cool * (0.10 + (1.0 - strataMask) * 0.08);
+  let held = step(0.5, u.zoom_config.w);
+  let scrape = heatMouse * held;
+  finalColor = mix(finalColor, base.rgb, scrape * 0.48);
+  finalColor = finalColor + vec3<f32>(1.0, 0.96, 0.88) * spec + sss + sparkle + waxBloom;
   finalColor = finalColor * (1.0 + canvas) + vec3<f32>(bloom);
   finalColor = finalColor * vignette;
   finalColor = acesToneMap(finalColor);

@@ -3,8 +3,9 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-09-09
+//  Ideas: log-z pulse rings; wavelength-scaled twist
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,11 +23,15 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -36,22 +41,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001));
     let aspect = resolution.x / max(resolution.y, 0.001);
 
-    // Audio reactivity
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
     let time = u.config.x;
 
-    // Parameters
     let mouseDown = u.zoom_config.w;
     let tunnelStrength = clamp(u.zoom_params.x * (1.0 + bass * 0.2) * (1.0 + mouseDown * 0.25), 0.0, 1.0);
     let aberration     = clamp(u.zoom_params.y * (1.0 + mids * 0.15), 0.0, 1.0);
     let pulseSpeed     = clamp(u.zoom_params.z * (1.0 + treble * 0.1), 0.0, 1.0);
     let spiral         = u.zoom_params.w;
 
-    // Critically damped tunnel center. Persistent state stays in the shader-safe
-    // range: position [133..134], velocity [135..136], time [137], flag [138].
+    // Existing spring kept: position [133..134], velocity [135..136], time [137], flag [138]
     let mouse = u.zoom_config.yz;
     let hasSpringState = arrayLength(&extraBuffer) > 138u;
     var center = mouse;
@@ -79,15 +81,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       extraBuffer[138] = 1.0;
     }
 
-    // Correct for aspect ratio for distance calculation
     let uvAspect = vec2<f32>(uv.x * aspect, uv.y);
     let centerAspect = vec2<f32>(center.x * aspect, center.y);
     let offset = uvAspect - centerAspect;
     let dist = length(offset);
     let angle = atan2(offset.y, offset.x);
 
-    // Clicks launch short-lived tunnel mouths at their normalized ripple
-    // positions. The ring and signed twist are accumulated independently.
     var rippleTwist = 0.0;
     var rippleGlow = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -105,17 +104,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       rippleGlow = max(rippleGlow, ring * fade);
     }
 
-    // Dynamic Pulse (audio-reactive)
     let audioPulse = 1.0 + bass * 0.5;
-    let pulse = sin(dist * 20.0 - time * (pulseSpeed * 10.0 * audioPulse)) * 0.05 * tunnelStrength;
+    // Idea 1 — log-z pulse so rings recede
+    let logZ = -log(max(dist, 0.001));
+    let pulse = sin(logZ * 8.0 - time * (pulseSpeed * 10.0 * audioPulse)) * 0.05 * tunnelStrength;
 
-    // Twist
-    let twistAngle = angle + (1.0 - smoothstep(0.0, 1.0, dist)) * (spiral * 5.0) * sin(time) + rippleTwist * 1.4;
+    let twistAngle = angle + (1.0 - smoothstep(0.0, 1.0, dist)) * (spiral * 5.0) * sin(time) + rippleTwist * 1.4 + pulse * 4.0;
 
-    // Zoom factor
-    let zoom = 1.0 - (tunnelStrength * 0.5 * smoothstep(1.0, 0.0, dist));
+    let zoom = 1.0 - (tunnelStrength * 0.5 * smoothstep(1.0, 0.0, dist)) + pulse;
 
-    // Chromatic Aberration: Sample R, G, B at different scales/twists
     let sector = u32(floor(fract((angle + 3.14159265) / 6.2831853) * 8.0));
     let fftVoice = plasmaBuffer[(sector % 8u) + 1u].x;
     let abbrScale = aberration * 0.05 * dist * (1.0 + fftVoice * 0.35);
@@ -124,39 +121,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rG = dist * zoom;
     let rB = dist * (zoom + abbrScale);
 
-    let offR = vec2<f32>(cos(twistAngle), sin(twistAngle)) * rR;
-    let offG = vec2<f32>(cos(twistAngle), sin(twistAngle)) * rG;
-    let offB = vec2<f32>(cos(twistAngle), sin(twistAngle)) * rB;
+    // Idea 2 — wavelength-scaled twist on the same twistAngle
+    let waveTwist = aberration * 0.22;
+    let twistR = twistAngle + waveTwist;
+    let twistB = twistAngle - waveTwist;
 
-    // Convert back to UV space (undo aspect correction)
+    let offR = vec2<f32>(cos(twistR), sin(twistR)) * rR;
+    let offG = vec2<f32>(cos(twistAngle), sin(twistAngle)) * rG;
+    let offB = vec2<f32>(cos(twistB), sin(twistB)) * rB;
+
     let uvR = clamp(vec2<f32>(offR.x / aspect, offR.y) + center, vec2<f32>(0.0), vec2<f32>(1.0));
     let uvG = clamp(vec2<f32>(offG.x / aspect, offG.y) + center, vec2<f32>(0.0), vec2<f32>(1.0));
     let uvB = clamp(vec2<f32>(offB.x / aspect, offB.y) + center, vec2<f32>(0.0), vec2<f32>(1.0));
 
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let cR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
     let cG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let cB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    // Luminance-based alpha
     let luminance = dot(vec3<f32>(cR, cG, cB), vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luminance + tunnelStrength * 0.3, 0.0, 1.0);
-    var color = vec4<f32>(cR, cG, cB, alpha);
+    let alpha = clamp(luminance + tunnelStrength * 0.3 + abs(pulse) * 2.0 + src.a * 0.2, 0.0, 1.0);
+    var color = vec3<f32>(cR, cG, cB);
 
-    // Glow at the mouse cursor (audio-reactive)
     let glow = 1.0 - smoothstep(0.0, 0.1, dist);
     let glowColor = vec3<f32>(0.2, 0.4, 1.0) * (1.0 + bass * 2.0);
-    color = vec4<f32>(color.rgb + glowColor * (glow * tunnelStrength + rippleGlow * 0.45), color.a);
+    color = color + glowColor * (glow * tunnelStrength + rippleGlow * 0.45);
 
-    // Preserve hue while bounding stacked cursor/click/audio emission.
     let peak = max(max(color.r, color.g), color.b);
-    color = vec4<f32>(color.rgb * min(1.0, 1.8 / max(peak, 0.001)), color.a);
+    color = color * min(1.0, 1.8 / max(peak, 0.001));
+    color = acesToneMap(color);
 
-    // Depth read and mandatory writes
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let finalColor = color;
     let depthOut = clamp(depth - (glow * tunnelStrength + rippleGlow) * 0.06, 0.0, 1.0);
+    let outCol = vec4<f32>(color, alpha);
 
-    textureStore(writeTexture, texel, finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, texel, outCol);
+    textureStore(dataTextureA, texel, outCol);
+    textureStore(writeDepthTexture, texel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

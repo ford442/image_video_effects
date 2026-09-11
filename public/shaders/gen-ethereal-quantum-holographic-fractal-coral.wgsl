@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Ethereal Quantum-Holographic Fractal-Coral
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Ethereal Quantum-Holographic Fractal-Coral
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: polyp mouth pits along branch axis; zooxanthellae symbiont pulse from exact C
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -117,6 +122,14 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     d = smin(baseGeom, baseGeom + organicNoise, 0.2);
 
+    // Polyp mouth pits along branch axis (tube SDF minus)
+    let axisDir = normalize(vec3<f32>(p_in.x, p_in.y * 0.45, p_in.z + 0.001));
+    let axial = dot(p_in, axisDir);
+    let radial = p_in - axisDir * axial;
+    let pitCell = fract(axial * 2.8 + t * 0.15) - 0.5;
+    let pitSDF = length(vec2<f32>(length(radial), pitCell * 1.6)) - 0.055;
+    d = max(d, -pitSDF * 0.4);
+
     return d;
 }
 
@@ -192,6 +205,10 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     // Add volumetric glow (scattering)
     col = col + vec3<f32>(0.1 + treble * 0.15, 0.5, 0.8) * glow * 0.05 * maxGlow;
 
+    // Zooxanthellae symbiont glow in branch interior (volume channel)
+    let symInterior = glow * (0.14 + audioEnergy * 0.42);
+    col += vec3<f32>(0.22, 0.82, 0.36) * symInterior * maxGlow * 0.09;
+
     // Background fog / attenuation
     col = mix(col, vec3<f32>(0.01, 0.02, 0.05), 1.0 - exp(-0.02 * tDist));
 
@@ -226,6 +243,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let coord = vec2<i32>(id.xy);
     let previous = textureLoad(dataTextureC, coord, 0);
     var rawColor = rendered.rgb;
+
+    // Zooxanthellae symbiont pulse in branch interior from exact C
+    let bass = plasmaBuffer[0].x;
+    let maxGlow = u.zoom_params.z;
+    let volumeVeil = 1.0 - rendered.a;
+    let symPulse = mix(previous.rgb * 0.94, vec3<f32>(0.25, 0.85, 0.32), 0.12 + bass * 0.24);
+    rawColor += symPulse * volumeVeil * smoothstep(0.0, 0.55, volumeVeil) * maxGlow * 0.32;
 
     let rippleCount = min(i32(u.config.y), 50);
     for (var i = 0; i < rippleCount; i++) {

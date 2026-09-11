@@ -1,4 +1,12 @@
-// Julia Set Classic — escape-time fractal with orbit traps and pointer-controlled C
+// ═══════════════════════════════════════════════════════════════════
+//  Julia Set Classic
+//  Category: generative
+//  Features: escape-time, orbit-trap, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: exterior distance estimate; log|z| stripe coloring
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -48,31 +56,43 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
   var z = screenP * (2.45 / zoom) + vec2<f32>(clickWarp * 0.015, -clickWarp * 0.01);
+  var dz = vec2<f32>(1.0, 0.0);
   var escaped = f32(iterations);
   var trap = 10.0;
   var orbit = 0.0;
+  var stripeAcc = 0.0;
   for (var i = 0; i < 160; i++) {
     if (i >= iterations) { break; }
+    let dzx = 2.0 * (z.x * dz.x - z.y * dz.y);
+    let dzy = 2.0 * (z.x * dz.y + z.y * dz.x);
+    dz = vec2<f32>(dzx, dzy);
     let x = z.x * z.x - z.y * z.y + c.x;
     let y = 2.0 * z.x * z.y + c.y;
     z = vec2<f32>(x, y);
+    let r2 = dot(z, z);
     trap = min(trap, min(abs(z.x), abs(length(z) - 0.5)));
     orbit += exp(-abs(length(z) - 1.0) * 8.0) / f32(iterations);
-    if (dot(z, z) > 256.0) { escaped = f32(i); break; }
+    stripeAcc += 0.5 + 0.5 * sin(log(max(r2, 0.0001)) * 4.2);
+    if (r2 > 256.0) { escaped = f32(i); break; }
   }
   let escapedMask = select(0.0, 1.0, escaped < f32(iterations));
   let smoothIter = escaped - log2(max(log2(max(dot(z, z), 1.0001)), 0.0001));
   let normalized = clamp(smoothIter / f32(iterations), 0.0, 1.0);
   let trapGlow = exp(-trap * (45.0 + treble * 24.0));
   let interior = 1.0 - escapedMask;
-  var raw = palette(normalized * 3.2 + time * 0.012 + mids * 0.08) * escapedMask * (0.25 + normalized * 1.5 + bass * 0.2);
+  let rEsc = max(length(z), 1.0001);
+  let de = 0.5 * log(rEsc) * rEsc / max(length(dz), 0.0001);
+  let deEdge = exp(-de * (16.0 + zoom * 5.0)) * escapedMask;
+  let stripe = stripeAcc / max(escaped, 1.0);
+  var raw = palette(normalized * 3.2 + time * 0.012 + mids * 0.08 + stripe * 0.22) * escapedMask * (0.25 + normalized * 1.5 + bass * 0.2 + stripe * 0.35);
   raw += palette(trapGlow * 0.3 + 0.37) * trapGlow * (0.5 + treble * 0.9);
+  raw += vec3<f32>(1.15, 0.85, 1.35) * deEdge * (0.55 + treble * 0.35);
   raw += vec3<f32>(0.04, 0.08, 0.16) * interior * (0.7 + orbit * 0.5);
   raw += vec3<f32>(1.1, 0.45, 1.4) * clickWarp * 0.48;
   let prev = textureLoad(dataTextureC, pixel, 0);
   raw = clamp(mix(prev.rgb * 0.935, raw, 0.32 + bass * 0.025), vec3<f32>(0.0), vec3<f32>(7.0));
-  let alpha = clamp(0.04 + escapedMask * normalized * 0.58 + trapGlow * 0.3 + interior * 0.16 + clickWarp * 0.12, 0.04, 0.98);
-  let depth = clamp(interior * 0.88 + trapGlow * 0.45 + normalized * 0.25, 0.0, 1.0);
+  let alpha = clamp(0.04 + escapedMask * normalized * 0.58 + trapGlow * 0.3 + deEdge * 0.22 + interior * 0.16 + clickWarp * 0.12, 0.04, 0.98);
+  let depth = clamp(interior * 0.88 + trapGlow * 0.45 + deEdge * 0.35 + normalized * 0.25, 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(raw, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(raw * 1.1), alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

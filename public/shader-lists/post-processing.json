@@ -1681,6 +1681,40 @@
         "mapping": "zoom_params.w",
         "description": "Ghost echo strength"
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Exposure Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Decay Rate",
+        "default": 0.86,
+        "min": 0.6,
+        "max": 0.97,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Bloom Color Temp",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ghost Echo",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2182,6 +2216,40 @@
       },
       {
         "id": "psychedelic",
+        "name": "Haze Removal",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Stretch Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Toe Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Shoulder Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Haze Removal",
         "default": 0,
         "min": 0,

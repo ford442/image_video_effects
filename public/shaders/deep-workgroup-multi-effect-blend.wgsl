@@ -74,7 +74,7 @@ fn hsv_to_rgb(c: vec3<f32>) -> vec3<f32> {
 
 // ── Main entry point ─────────────────────────────────────────────────────────
 
-@compute @workgroup_size(16, 16, 4)
+@compute @workgroup_size(16, 16, 1)
 fn main(
     @builtin(global_invocation_id)   gid: vec3<u32>,
     @builtin(local_invocation_id)    lid: vec3<u32>,

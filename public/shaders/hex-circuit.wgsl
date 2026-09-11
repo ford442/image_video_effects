@@ -2,10 +2,9 @@
 //  Hex Circuit
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Chunks From: hex-circuit
-//  Created: 2026-05-30
-//  By: Copilot CLI
+//  Upgraded: 2026-09-10
+//  Ideas: via pads at hex nuclei; exact-C contour persist
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,16 +22,19 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time
-  zoom_config: vec4<f32>,  // y=MouseX, z=MouseY
-  zoom_params: vec4<f32>,  // x=GridSize, y=Glow, z=PulseSpeed, w=EdgeSens
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Distance to hex edge
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn hexEdgeDist(p: vec2<f32>) -> f32 {
     var q = abs(p);
-    return max(q.x * 0.5 + q.y * 0.866025, q.x); // Outer radius is 1.0
+    return max(q.x * 0.5 + q.y * 0.866025, q.x);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -43,14 +45,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = vec2<f32>(global_id.xy) / dims;
-    let aspect = dims.x / dims.y;
+    let coord = vec2<i32>(global_id.xy);
+    let aspect = dims.x / max(dims.y, 0.001);
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
     let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
     let bass = audio.x;
     let mids = audio.y;
     let treble = audio.z;
 
-    // Params
     let gridSize = mix(10.0, 50.0, u.zoom_params.x);
     let glowStrength = mix(0.5, 3.0, u.zoom_params.y) * (1.0 + bass * 0.5);
     let pulseSpeed = u.zoom_params.z * 5.0 * (1.0 + mids * 0.35);
@@ -58,34 +60,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var p = uvCorrected * gridSize;
 
-    // Hex Grid Calculation
-    // https://www.youtube.com/watch?v=VmrIDyYiJBA
     let r = vec2<f32>(1.0, 1.7320508);
     let h = r * 0.5;
 
-    // Simplified logic removing modf
     let fractA = fract(p / r) * r - h;
     let fractB = (fract((p / r) + 0.5) * r) - h;
 
-    // Determine which grid cell we are in
     var localUV = vec2<f32>(0.0);
-    // var id = vec2<f32>(0.0); // ID unused for now
-
     if (dot(fractA, fractA) < dot(fractB, fractB)) {
         localUV = fractA;
-        // id = floor(p / r);
     } else {
         localUV = fractB;
-        // id = floor((p / r) + 0.5);
     }
 
-    // Calculate distance to edge of hex
     var q = abs(localUV);
-    let distToCenter = max(q.x * 0.5 + q.y * 0.866025, q.x); // This approximates distance
+    let distToCenter = max(q.x * 0.5 + q.y * 0.866025, q.x);
     let distToEdge = 0.5 - distToCenter;
 
-    // Edge Detection from Image
-    let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let c = src.rgb;
     let texel = 1.0 / dims;
     let cR = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let cU = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
@@ -95,40 +88,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lumaU = dot(cU, vec3<f32>(0.333));
 
     let imgEdge = sqrt(pow(luma - lumaR, 2.0) + pow(luma - lumaU, 2.0));
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let persist = max(imgEdge, prev.a * 0.82);
 
-    // Mouse Pulse
-    var mouse = u.zoom_config.yz;
+    var mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
     let mouseDist = distance(uvCorrected, vec2<f32>(mouse.x * aspect, mouse.y));
     let pulseTime = u.config.x * pulseSpeed;
     let wave = sin(mouseDist * 10.0 - pulseTime);
-    let pulse = smoothstep(0.8 - treble * 0.08, 1.0, wave); // Sharp wave ring
+    let pulse = smoothstep(0.8 - treble * 0.08, 1.0, wave);
 
-    // Final color logic
-    var color = c * 0.7; // Dim background
+    var color = c * 0.7;
 
-    // Hex Lines
-    let lineThickness = 0.02; // relative to grid
-    // Fixed undefined smoothstep behavior (high < low)
+    let lineThickness = 0.02;
     let isHexLine = 1.0 - smoothstep(0.0, lineThickness, distToEdge);
+    let via = 1.0 - smoothstep(0.0, lineThickness * 1.8, distToCenter);
 
-    // Determine glow color
     let hexColor = mix(vec3<f32>(0.0, 0.5, 1.0), vec3<f32>(1.0, 0.0, 0.5), pulse + bass * 0.15);
 
-    // Light up hexes that contain image edges OR are hit by pulse
-    let activeHex = step(edgeSens * 0.1, imgEdge) * (0.7 + treble * 0.3) + pulse * (0.45 + bass * 0.45);
+    let liveEdge = max(imgEdge, persist * 0.85);
+    let activeHex = step(edgeSens * 0.1, liveEdge) * (0.7 + treble * 0.3) + pulse * (0.45 + bass * 0.45);
 
     color = mix(color, hexColor * glowStrength, isHexLine * clamp(activeHex + 0.2, 0.2, 1.0));
     color += (1.0 - isHexLine) * hexColor * activeHex * 0.2;
+    color += hexColor * via * activeHex * 0.45;
 
-    // Highlight near mouse
-    // Fixed undefined smoothstep behavior
     let mouseHover = 1.0 - smoothstep(0.0, 0.2, mouseDist);
     color += mouseHover * vec3<f32>(0.1, 0.1, 0.2);
 
-    let finalAlpha = clamp(0.14 + isHexLine * clamp(activeHex + 0.15, 0.0, 1.0) * 0.45 + pulse * 0.18 + bass * 0.08, 0.08, 0.96);
+    let finalAlpha = clamp(0.14 + isHexLine * clamp(activeHex + 0.15, 0.0, 1.0) * 0.45 + pulse * 0.18 + bass * 0.08 + via * activeHex * 0.12, 0.08, 0.96);
     let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + isHexLine * 0.05 + pulse * 0.02, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(imgEdge, activeHex, pulse, finalAlpha));
+    let outColor = vec4<f32>(acesToneMap(color), finalAlpha);
+    textureStore(writeTexture, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

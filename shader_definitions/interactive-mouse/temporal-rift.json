@@ -46,10 +46,38 @@
   ],
   "supportsDepth": false,
   "updatedParams": [
-    { "index": 0, "name": "Trail Decay", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Rift Width", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Chroma Split", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Echo Intensity", "default": 0.8, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "index": 0,
+      "name": "Trail Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Rift Width",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Chroma Split",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Echo Intensity",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ],
   "updated": true
 }

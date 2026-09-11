@@ -1,6 +1,323 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-06 (Optical / Glass / Holographic / Prism ten)
+**Last updated:** 2026-09-11 (ethereal generative ten)
+
+## 2026-09-11 — Ethereal generative ten (10 shaders)
+
+- IDs: `gen-ethereal-cyber-chrono-nebula-phoenix`, `gen-ethereal-cyber-chrono-void-whale`, `gen-ethereal-cyber-plasma-void-dragon`, `gen-ethereal-glass-flora-terrarium`, `gen-ethereal-quantum-glass-nautilus`, `gen-ethereal-quantum-hologram-bonsai`, `gen-ethereal-quantum-holographic-fractal-coral`, `gen-ethereal-quantum-medusa`, `gen-ethereal-silk-veil`, `gen-feedback-echo-chamber`.
+- Per shader, the ideas actually added:
+  - gen-ethereal-cyber-chrono-nebula-phoenix: wing feather filaments on SDF edge; tail ember convection. Spring halo [133..137] kept.
+  - gen-ethereal-cyber-chrono-void-whale: baleen comb striations on ribs; bass sonar ping rings from core.
+  - gen-ethereal-cyber-plasma-void-dragon: breath plasma jet along spine; per-segment scale overlap parallax.
+  - gen-ethereal-glass-flora-terrarium: condensation droplets on shell; dew meniscus on leaf tips.
+  - gen-ethereal-quantum-glass-nautilus: chamber septa walls; pearl nacre luster. Full floor added (ACES/dataA/plasmaBuffer/updatedParams).
+  - gen-ethereal-quantum-hologram-bonsai: prune-cut seal rings; north-facing moss lichen. bass_env [133] kept.
+  - gen-ethereal-quantum-holographic-fractal-coral: polyp mouth pits; zooxanthellae symbiont pulse from exact C.
+  - gen-ethereal-quantum-medusa: nematocyst stinger dots; bell contraction wave from bass phase.
+  - gen-ethereal-silk-veil: selvage fray on ribbon edges; held-crease memory from exact C.
+  - gen-feedback-echo-chamber: harmonic echo ladder at 2× spacing; standing-wave nodal interference. bass_env [133] kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM bridge. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/composer-2026-09-11-ethereal-ten/`.
+
+**Last updated:** 2026-09-11 (leftover branch union)
+
+## 2026-09-11 — Leftover branches older than one day
+
+- Inventory after fetch/prune: today's ethereal/lighting/geometric Cursor branches skipped. Mycelium plan and Claude weekly-dispatch already merged. batch-59 empty. batch-60/61 mostly superseded (graphs already on main; WASM JS would regress TS SoT).
+- Landed unique positives: `liquid-swirl` (restore Lamb-Oseen identity), `liquid-tensor-vortex` (spectral tensor + A write), `rgb-glitch-displacement` (Batch 61 persistence, 16×16). Params exact. Naga 3/3. Real-GPU QA external.
+
+## 2026-09-11 — Fireworks leftover atmospheric six (6 shaders)
+
+- IDs: `gen-fireworks-fan-shell`, `gen-fireworks-comet-trail`, `gen-fireworks-smoke-bloom`, `gen-fireworks-wind-ripple`, `gen-fireworks-nocturne`, `gen-fireworks-audio-symphony`.
+- Per shader, the ideas actually added:
+  - fan-shell: peacock eye spots on even rays; two-row palmette (inner 0.55 / outer 1.0). Batch 37 drag/wind/flutter kept.
+  - comet-trail: ion tail along −velocity; coma halo around the hex head.
+  - smoke-bloom: buoyancy (puff rises as sparks fall); burst-lit smoke from local flash.
+  - wind-ripple: altitude shear; leeward streak only downwind. Click-ripple barrages kept.
+  - nocturne: muzzle flash at launchPos; even round vs odd droop habit.
+  - audio-symphony: onset-only primary (bassPulse gates the big shell); band-tinted stars. extraBuffer[133] envelope kept.
+- Floor: bindings / 16×16 / exact C / ACES display RGBA / saved params exact. No new springs. Nocturne no longer treats `config.y` as dt.
+- Gates: Naga 6/6, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-11-fireworks-leftover-six/`.
+- Skipped lighting leftovers (`neon-pulse-edge`, `sim-volumetric-fake-em`) and `matrix_digital_rain` (wrong kernel).
+
+## 2026-09-10 — Fireworks shell taxonomy ten (10 shaders)
+
+- IDs: `gen-fireworks-chrysanthemum`, `gen-fireworks-dahlia-burst`, `gen-fireworks-crossette`, `gen-fireworks-crackle-palm`, `gen-fireworks-willow-cascade`, `gen-fireworks-horse-tail`, `gen-fireworks-kamuro-gold`, `gen-fireworks-ring-shell`, `gen-fireworks-strobe-shell`, `gen-fireworks-roman-candle`.
+- Per shader, the ideas actually added:
+  - chrysanthemum: pistil heart (inner ring slower/denser); sphere latitude foreshorten.
+  - dahlia-burst: even-row imbrication; petal midrib.
+  - crossette: parent star then four-way fork; split-instant X flash.
+  - crackle-palm: crackle on primary spark positions; opposite leaflet pairs.
+  - willow-cascade: terminal hang at strand tips; leeward curtain lean.
+  - horse-tail: brocade pinch then parallel rain; tip spark-out.
+  - kamuro-gold: per-glitter twinkle; hang plateau then resume fall.
+  - ring-shell: Saturn tilt ellipse; empty core (inner jewels removed).
+  - strobe-shell: per-spark flash phase; true dark interval.
+  - roman-candle: muzzle flash; per-tube starCol sequence. Click ripples kept.
+- Floor: bindings / 16×16 / exact C / ACES display RGBA / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-10-fireworks-ten/`.
+- Skipped audio-symphony, nocturne, wind-ripple, smoke-bloom, comet-trail, fan-shell.
+
+## 2026-09-10 — Hybrid leftover ten (10 shaders)
+
+
+- IDs: `hyb-hex-voronoi-distort`, `hyb-chromatic-circuit`, `hyb-neural-voronoi-feedback`, `hybrid-particle-fluid`, `hybrid-magnetic-field`, `hybrid-cyber-organic`, `spec-hypercube-projection`, `hex-circuit`, `neon-poly-grid`, `neon-light`.
+- Per shader, the ideas actually added:
+  - hyb-hex-voronoi-distort: F2−F1 crack ridge; hex mortar. Mouse UV 0–1.
+  - hyb-chromatic-circuit: neighbor-gated traces; traveling packet along segment h.
+  - hyb-neural-voronoi-feedback: honest C echo along FBM drift; F2 synapse.
+  - hybrid-particle-fluid: exact-C advection; LIC ribbon. Particle loop unchanged.
+  - hybrid-magnetic-field: opposite-polarity second pole; exact-C LIC. Killed `config.y` as audio.
+  - hybrid-cyber-organic: exact-C occupancy; photo-luma seed. Raw occupy in A.r.
+  - spec-hypercube-projection: W-silhouette on inner-cube edges; photo at closest-edge h. A packing lie fixed.
+  - hex-circuit: via pads; exact-C contour persist. A packing lie fixed.
+  - neon-poly-grid: dual-lattice vertex; occupied-cell fill. Existing spring kept.
+  - neon-light: phosphor persist from exact C; tube-axis Sobel stretch.
+- Floor: bindings / 16×16 / exact C where C is history / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-10-hybrid-lattice-ten/`.
+- Skipped kaleido hybrids, Batch 56/58E/61 overlays, `hybrid-sdf-plasma` / `hybrid-chromatic-liquid` (ink kernel ≠ name).
+
+## 2026-09-09 — Generative fast-motion / psychedelic ten (10 shaders)
+
+- IDs: `gen-plasma-psychedelic-wormhole`, `gen-neon-acid-geometry`, `gen-chromatic-acid-drip`, `gen-polar-rainbow-explosion`, `gen-neon-cyber-mandala`, `gen-plasma-mandala`, `gen-neon-lotus`, `gen-electric-kaleidoscope-storm`, `gen-rainbow-icosahedron-cascade`, `gen-neon-stellated-octahedron`.
+- Per shader, the ideas actually added:
+  - gen-plasma-psychedelic-wormhole: contra-rotating plasma octaves; Doppler hue along 1/r. Mouse UV 0–1. Exact C.
+  - gen-neon-acid-geometry: pH on SDF rims only; traveling smin sibling morph. Triangle/hex/circle kept.
+  - gen-chromatic-acid-drip: meniscus coffee-ring; gravity-biased blob fall. Metaballs kept.
+  - gen-polar-rainbow-explosion: Mach split ahead vs behind shockR; wavelength-scaled ray width.
+  - gen-neon-cyber-mandala: φ ring spacing; inner vs outer contra-rotation.
+  - gen-plasma-mandala: fold-seam highlight; radial plasma advection. Did not clone Poincaré.
+  - gen-neon-lotus: petal midline vein; golden-angle layer offset.
+  - gen-electric-kaleidoscope-storm: Lichtenberg exact-C afterimage; leader vs return-stroke. Existing click rings kept. No log-z.
+  - gen-rainbow-icosahedron-cascade: silhouette orbit-trap; golden-angle yaw per shell. A packing lie fixed.
+  - gen-neon-stellated-octahedron: two-tetra intersection ridge; face vs edge spectral split. Did not clone nested icosa shells.
+- Floor: bindings / 16×16 / exact C where C is history / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Real-GPU visual QA: external.
+
+## 2026-09-09 — Fast-motion + psychedelic ten (10 shaders)
+
+- IDs: `mouse-kaleidoscope-tunnel`, `mouse-wormhole-lens`, `kaleido-scope`, `breathing-kaleidoscope`, `hypnotic-spiral`, `concentric-spin`, `quantum-tunnel-interactive`, `gen-hypnotic-vortex-tunnel`, `gen-psychedelic-time-warp-kaleidoscope`, `gen-psychedelic-moire-flower`.
+- Per shader, the ideas actually added:
+  - mouse-kaleidoscope-tunnel: log-z rings; wavelength split along the spiral. Fold/click bursts kept. No spring.
+  - mouse-wormhole-lens: inverse-square lensing; exact-C throat ghost. Mouse stash extraBuffer[133..134].
+  - kaleido-scope: Poincaré hypR geodesic crease; opposite-wedge dihedral. Did not clone grokcf1.
+  - breathing-kaleidoscope: inhale vs exhale petal scale; held-breath freeze on mouseDown. No spring.
+  - hypnotic-spiral: log vs Archimedean mix; photo rides the spiral tangent.
+  - concentric-spin: exact-C lag; ring-gap tangent conveyor. A stays lag.xy.
+  - quantum-tunnel-interactive: log-z pulse; wavelength-scaled twist. Existing [133..138] spring kept.
+  - gen-hypnotic-vortex-tunnel: log-depth seam walls; even/odd contra-rotate. Single ACES.
+  - gen-psychedelic-time-warp-kaleidoscope: exact-C smear along the fold; honest three-band (killed `plasmaBuffer[index]`).
+  - gen-psychedelic-moire-flower: 8/13 phyllotaxis; p1/p2 density detune. Speed wired; mouse as UV.
+- Floor: bindings / 16×16 / exact C where C is history / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-09-psychedelic-motion-ten/`.
+
+## 2026-09-09 — Classic generative geometry / fractal ten (10 shaders)
+
+- IDs: `gen-julia-set-classic`, `gen-fractal-flame-classic`, `gen-flame-fractal-attractor`, `gen-fractal-tree-growth`, `gen-fibonacci-spiral-garden`, `gen-islamic-geometric-tiling`, `gen-ice-crystal-lattice`, `gen-interference-moire-field`, `gen-iris-bloom-fractal`, `gen-flowing-silk-ribbons`.
+- Per shader, the ideas actually added:
+  - gen-julia-set-classic: exterior DE from |z|/|z'|; log|z| stripe coloring. C/zoom/iterations kept. No spring.
+  - gen-fractal-flame-classic: Draves log-density; spherical z/r² as a third IFS pick. Swirl/horseshoe/polar kept.
+  - gen-flame-fractal-attractor: abs-fold crease specular; even/odd iteration ember bands. Did not clone classic flame variations.
+  - gen-fractal-tree-growth: bark rings from segment h; apical meristem glow on growing tips.
+  - gen-fibonacci-spiral-garden: √n disk packing; 8- and 13-family parastichy ridges. Golden angle kept.
+  - gen-islamic-geometric-tiling: over-under strap shadow; half-angle girih dart. Star/rosette kept.
+  - gen-ice-crystal-lattice: secondary dendrite teeth; plate vs needle habit. Hex lattice kept.
+  - gen-interference-moire-field: 6.8% density detune beat; two-source Young path-difference.
+  - gen-iris-bloom-fractal: collarette zigzag; Fuchs crypt pits. Pupil/veins/limbal kept.
+  - gen-flowing-silk-ribbons: warp threads along length; selvage edge. Iridescence mix kept, not a hologram rewrite.
+- Floor: bindings / 16×16 / exact C / HDR display A / saved params exact. No new springs. Existing click ripples kept.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Jest 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-09-classic-gen-ten/`.
+
+## 2026-09-09 — Pixel-sort eight (8 shaders)
+
+- IDs: `pixel-sorter`, `pixel-sort-explorer`, `spectral-flow-sorting`, `hybrid-spectral-sorting`, `flow-sort`, `magnetic-luma-sort`, `pixel-sort-radial`, `mouse-pixel-sort`.
+- Per shader, the ideas actually added:
+  - pixel-sorter: Asendorf interval close; span-seam accent. Direction/reverse/intensity/threshold kept. No spring.
+  - pixel-sort-explorer: luma-hold hysteresis; exact-C streak persist. Scan sweep kept, not the upgrade.
+  - spectral-flow-sorting: exact-C Lucas-Kanade; Asendorf close along the flow. Killed `zoom_config.x` as audio.
+  - hybrid-spectral-sorting: band-length Y interval; honest plasmaBuffer audio.
+  - flow-sort: LIC smear; streamline interval gate. A packing fixed to display RGBA (HEAD stored flow in A).
+  - magnetic-luma-sort: dipole field-line offset; luma domains. Existing magnet spring kept.
+  - pixel-sort-radial: radial Asendorf interval; ring seam. Existing CA/runners kept, not the upgrade.
+  - mouse-pixel-sort: V/H Asendorf interval; exact-C ghost. Voronoi/attractor kept, not the upgrade. A packing fixed.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs. pixel-sorter extraBuffer[133..134] is a 1-frame mouse delay (HEAD wrote mouse into B).
+- Gates: Naga 8/8, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-09-pixel-sort-eight/`.
+- Skipped Batch 58–66 overlay sorts and already-idea-rich `luma-pixel-sort` / `pixel-depth-sort` / `bitonic-sort`.
+
+## 2026-09-09 — Foundation audit, not another shader swarm
+
+- Catalog **1,362**. Board was #1080 (WASM evidence), #1182 (VJ audio/OSC), #1228 (CSS split). Healthy thumbs ~26.6%. Jest still carries a WASM `bridge/api.js` fail story.
+- **Yes, foundation before more content.** Device ladder, requiredLimits, dual JS+C++ canvas configure, B→C then A→C, single GPUDevice are load-bearing. Do not rewrite them. CRA→Vite stays deferred. WASM stays Tier B until #1080.
+- Gaps that are real: (1) TS `.js` imports vs Jest for `src/wasm/`; (2) canvas configure has no COPY_SRC / colorSpace / toneMapping contract; (3) CI emsdk `version: latest` vs Noah’s emcc 6.0.3 pin; ASYNCIFY is −31% size vs a broken init; (4) stills still Canvas2D; recording is MediaRecorder + putImageData; (5) GraphRunner + gpu-chores are TS-only; (6) picker cannot find 1,362 shaders.
+- Issues filed: **#1234** Jest bridge, **#1235** canvas configure v2, **#1236** WebCodecs / copyExternalImageToTexture, **#1237** emcc pin + JSPI, **#1238** GraphRunner C++ gated on #1080, **#1239** thumbs 50% + CLIP search (reuse `@xenova/transformers`, no second ML stack).
+- If content resumes after A-motion on thumbs: leftover **small** families (lighting 15, geometric 16, hybrid 18), not another generative optical ten.
+
+## 2026-09-09 — Weather / wind / condensation ten (10 shaders)
+
+- IDs: `snow`, `raindrop-ripples`, `bubble-wrap`, `pixel-wind-chimes`, `sim-smoke-trails`, `radiating-haze`, `radiating-displacement`, `interactive-pixel-wind`, `lidar`, `rain-lens-wipe`.
+- Per shader, the ideas actually added:
+  - snow: flake tumble (hex arms rotate); land fade into the C bank. Layers / accumulation kept.
+  - raindrop-ripples: wave-speed as Laplacian c² (slider was unused); slope caustic. Shield kept. Exact C.
+  - bubble-wrap: hex packing; neighbor sympathetic pop. Elastic collapse / burst ring kept.
+  - pixel-wind-chimes: hinge specular; closest-Z strip sort. Top-pivot sway kept. A now display RGBA.
+  - sim-smoke-trails: vorticity confinement; altitude cooling. Raw density/temp/vel kept. ACES display only.
+  - radiating-haze: neighbor-bleed corona; mouse-origin waves. Uniforms canonicalized to JSON slider roles.
+  - radiating-displacement: spatial radiate from mouse (HEAD used centre=uv so dist=0); RGB phase-split of the same wave. Uniforms canonicalized.
+  - interactive-pixel-wind: luma-weighted advection; upwind wind shadow. Existing CA/palette kept, not the upgrade. Exact C.
+  - lidar: echo in A (was B); range ticks. Held=radial, held+rim=spiral. Persistence from treble, not mouse.x.
+  - rain-lens-wipe: meniscus ridge; bead runoff. Existing streaks/wipe fronts kept.
+- Floor: bindings / 16×16 / exact C where C is state / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-09-weather-wind-ten/`.
+
+## 2026-09-09 — Wet media / charcoal / ink / paint ten (10 shaders)
+
+- IDs: `charcoal-rub`, `charcoal-rub-diffusion`, `alpha-paint-thickness`, `ink-diffusion`, `sim-ink-diffusion`, `ink-bleed-fluid`, `mouse-paint-splatter`, `alpha-fluid-simulation-paint`, `alpha-watercolor-wetness`, `artistic_painterly_oil`.
+- Per shader, the ideas actually added:
+  - charcoal-rub: laid-paper fiber catch; vine-dust halo. Reveal mask / fade kept. No spring.
+  - charcoal-rub-diffusion: contour vine along diffused Sobel; kneaded-eraser skip. Perona-Malik kept.
+  - alpha-paint-thickness: palette-knife ridge; canvas tooth in thin wash. Wired specularPower / dryingRate.
+  - ink-diffusion: fiber-steered advection; nijimi wet-edge bloom. Exact C. Not Gray-Scott.
+  - sim-ink-diffusion: anisotropic paper laplacian; coffee-ring V pile-up. Three Wolfram patterns kept. Viscosity into Du/Dv.
+  - ink-bleed-fluid: paper capillary; wet-edge darkening. NS packing kept.
+  - mouse-paint-splatter: cast-off satellites; dry craquelure. (0,0) mouse stash kept.
+  - alpha-fluid-simulation-paint: dye-front surface tension; impasto from density gradient. Audio visc kept.
+  - alpha-watercolor-wetness: cockling warp; salt bloom. Existing granulation/backrun not the upgrade. Wired flowStrength.
+  - artistic_painterly_oil: scumble skip; wet-in-wet from exact C. Kuwahara kept. ACES write only.
+- Floor: bindings / 16×16 / exact C where C is state / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-09-wet-media-ten/`.
+
+## 2026-09-09 — Camera / shutter / grade eight (8 shaders)
+
+- IDs: `pp-ssao`, `long-exposure`, `tone-histogram`, `temporal-halation-freeze`, `double-exposure-zoom`, `night-vision-scope`, `chromatographic-separation`, `double-exposure-hdr`.
+- Per shader, the ideas actually added:
+  - pp-ssao: cosine-weighted hemisphere; bent-normal color bleed. Quality 4/8/16 kept. A now display RGBA.
+  - long-exposure: reciprocity-law fade; highlight-only plate mix. Eraser / C glow / ripple flashes kept. A stays raw HDR exposure.
+  - tone-histogram: mouse spot-meter; per-channel dye shoulder. filmCurve / split-tone kept. A now display RGBA.
+  - temporal-halation-freeze: red dye-layer lag; held C freeze-hold. HEX_TAPS kept. Exact C. Stopped unused B write.
+  - double-exposure-zoom: plate registration drift; highlight-keyed second plate. Not HDR-overlap bloom.
+  - night-vision-scope: MCP scintillation; bright-source blooming. Existing [133..138] spring kept.
+  - chromatographic-separation: solvent-front Rf; capillary tailing. Saved viscosity* ids unchanged (roles stay amount/spin/depth/mode).
+  - double-exposure-hdr: overlap-only bloom knee; pivot-locked second plate. Not registration drift. A now display RGBA.
+- Floor: bindings / 16×16 / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 8/8, extraBuffer 0 new, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-09-camera-grade-eight/`.
+
+## 2026-09-09 — Temporal ghost / lag eight (8 shaders)
+
+- IDs: `time-lag-map`, `temporal-rift`, `phantom-lag-history`, `hyb-temporal-fbm-ghost`, `spectral-slit-scan`, `rgb-delay-brush`, `green-tracer`, `phase-shift`.
+- Per shader, the ideas actually added:
+  - time-lag-map: luma-keyed delay; motion-gated smear. Five mapping modes kept. A stays history RGB.
+  - temporal-rift: distance-arrival delay; C ghost shear along sprung velocity. Existing [133..138] spring kept.
+  - phantom-lag-history: age-tint; luma-weighted persist. A.a luma history kept.
+  - hyb-temporal-fbm-ghost: per-channel lag from exact C; source-tied ghost. No new IQ palette. A now written.
+  - spectral-slit-scan: wavelength-staggered slits; luma-hold on dark C. Curves kept.
+  - rgb-delay-brush: bristle along stroke; wet C trail. Existing spring kept. ACES display, delayed RGB in A.
+  - green-tracer: phosphor persist from exact C; edge-only trail. Uniforms canonicalized; sliders still trail/glow/tint/noise.
+  - phase-shift: per-channel angular period; distance-modulated phase. 5-layer speeds kept. Stopped extraBuffer[0]/[10]. A now written.
+- Floor: bindings / 16×16 / A packing as documented / saved params exact. No new extraBuffer owners. Did not clone interactive-rgb-split.
+- Gates: Naga 8/8, extraBuffer 0 new, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-09-temporal-ghost-eight/`.
+
+## 2026-09-09 — Print-screen / dither / mosaic ten (10 shaders)
+
+- IDs: `spec-blue-noise-stipple`, `stipple-render`, `halftone-reveal`, `bayer-dither-interactive`, `halftone`, `adaptive-mosaic`, `crystal-mosaic`, `cyber-halftone-scanner`, `posterize-neon-edges`, `color-channel-weave`.
+- Per shader, the ideas actually added:
+  - spec-blue-noise-stipple: dark-cell packing (jitter shrinks with ink); neighbor occupancy skip. R2 dual+golden kept. A now display RGBA.
+  - stipple-render: contour-aligned Sobel hatch; exact-C wet memory. Lloyd / paper kept.
+  - halftone-reveal: per-plate newsprint gain; highlight knockout. Four CMYK plates / loupe kept.
+  - bayer-dither-interactive: IGN assist; channel-rotated Bayer (G+4, B+2). bayer8 table kept.
+  - halftone: highlight skip; overprint gain on plate overlap. ellipDot / misreg / fibre kept.
+  - adaptive-mosaic: local-variance subdivision; mortar from neighbor tesserae. Depth tiles / C history kept.
+  - crystal-mosaic: facet crease along u=v; lead came. Triangle lighting stack kept. No extra CA.
+  - cyber-halftone-scanner: AM circular cells on 15/75/0/45; scanline hard-dot. Scan/burst/bloom kept.
+  - posterize-neon-edges: band-hold flats; Sobel-ridge neon. Quantize / neonHue kept.
+  - color-channel-weave: two-ply yarn twist; exact-C under-thread ghost. Existing [133..138] spring kept.
+- Floor: bindings / 16×16 / A packing as documented / saved params exact. No new extraBuffer owners. Did not stamp Wave Halftone ellipse+rosette.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, catalog 1,362, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-09-print-screen-ten/`.
+
+## 2026-09-08 — Tactile twelve (12 shaders)
+
+- IDs: `kintsugi-repair`, `plastic-bricks`, `wave-halftone`, `spec-histogram-equalize`, `pin-art-3d`, `triangle-mosaic`, `polka-wave`, `honey-melt`, `slime-drip`, `velvet-scatter-bloom`, `page-curl-interactive`, `fabric-step`.
+- Per shader, the ideas actually added:
+  - kintsugi-repair: F2 T-junction cracks; raised gold meniscus. A now display RGBA.
+  - plastic-bricks: hollow underside tubes; injection knit-line.
+  - wave-halftone: elliptical dots along wave gradient; 15° hex rosette. Wave Speed stays chromaticAmt.
+  - spec-histogram-equalize: highlight shoulder; exact-C temporal mix. CLAHE kept.
+  - pin-art-3d: neighbor-pin occlusion; pin shaft. Sphere-cap kept. A now written.
+  - triangle-mosaic: grout on edges; per-facet tilt from centroid.
+  - polka-wave: offset-print dot gain; screen rides the wave. CMYK angles kept.
+  - honey-melt: gravity sag; comb-wall capillary. A now written.
+  - slime-drip: anisotropic gravity stretch; exact-C drip hang. A stays drip fields.
+  - velvet-scatter-bloom: anisotropic nap sheen; held nap crush.
+  - page-curl-interactive: backside peek; paper fiber along curl. Existing shocks kept.
+  - fabric-step: warp/weft weave; exact C load. A stays Verlet pos/prev.
+- Floor: bindings / 16×16 / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0, catalog 1,361, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-08-tactile-twelve/`.
+
+## 2026-09-08 — Distortion / warp ten (10 shaders)
+
+- IDs: `sine-wave`, `parallax-shift`, `perspective-tilt`, `interactive-rgb-split`, `radial-rgb`, `elastic-surface`, `vortex-distortion`, `chromatic-swirl`, `infinite-zoom`, `pixel-storm`.
+- Per shader, the ideas actually added:
+  - sine-wave: standing-wave nodes around the pointer; Stokes second-order drift. Packets kept.
+  - parallax-shift: occlusion peel; focus-plane CoC along the ray. Layer loop kept.
+  - perspective-tilt: vanishing falloff; grazing Scheimpflug soften. Ray–plane kept.
+  - interactive-rgb-split: wavelength-scaled R/G/B along the field; lateral vs longitudinal mix. Modes kept.
+  - radial-rgb: radial chromatic k1; mustache k3 r^6. Brown k1/k2 kept.
+  - elastic-surface: Poisson contraction; exact C neighbors. A stays disp/vel.
+  - vortex-distortion: streamline smear; source-tied vorticity. Lamb-Oseen + KH kept.
+  - chromatic-swirl: angular chromatic; animate as continuous spin. percent² kept.
+  - infinite-zoom: mouse as Möbius pole; log-polar seam. Möbius/hyperbolic kept.
+  - pixel-storm: luma debris; exact-C trail. Existing spring eye kept.
+- Floor: bindings / 16×16 / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, catalog 1,361, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-08-distort-ten/`.
+
+## 2026-09-08 — Convolution ten B (10 shaders)
+
+- IDs: `conv-guided-video-filter`, `conv-stochastic-stipple`, `conv-structure-tensor-flow`, `conv-spiral-blur`, `conv-steerable-pyramid`, `conv-reaction-convolution`, `conv-guided-filter-depth`, `conv-bilateral-grid-splat`, `conv-frequency-domain-notch`, `conv-fractal-kernel`.
+- Per shader, the ideas actually added:
+  - conv-guided-video-filter: depth-augmented guide; exact integer C loads for P. He linear model kept.
+  - conv-stochastic-stipple: paper ground; gradient-stretched ellipses. Cell/threshold kept.
+  - conv-structure-tensor-flow: minor-eigenvector LIC; source-luma tint. Tensor + palette kept.
+  - conv-spiral-blur: φ-spaced arms; Archimedean/log mix. Mouse center kept.
+  - conv-steerable-pyramid: H2 quadrature energy (HEAD’s unused `h2Basis`); source-tied reconstruct.
+  - conv-reaction-convolution: C.rg chemical persistence; Pearson F/k from feed. A,B,blue store kept.
+  - conv-guided-filter-depth: joint luma range; photo-edge hold when depth misses.
+  - conv-bilateral-grid-splat: joint depth range; adjacent luma-bin slice.
+  - conv-frequency-domain-notch: oriented cosine notch; residual cut mix.
+  - conv-fractal-kernel: boundary vs interior weight; distance-estimator glint.
+- Floor: bindings / 16×16 / exact C where history / A packing as documented / saved params exact. No springs. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, catalog 1,361, SKIP_WASM_BUILD=1 build green. Jest 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-08-conv-ten-b/`.
+
+## 2026-09-08 — Print / paint / convolution (10 shaders)
+
+- IDs: `conv-non-local-means`, `conv-anisotropic-diffusion`, `conv-difference-of-gaussians-cascade`, `conv-morphological-erosion-dilation`, `conv-gabor-texture-analyzer`, `watercolor-bloom`, `film-cross-process`, `engraving-stipple`, `rotoscope-ink`, `encaustic-wax`.
+- Per shader, the ideas actually added:
+  - conv-non-local-means: luma-weighted patch SSD; gradient-aligned search. Modes kept. No spring. A write fixed (HEAD read C, never wrote A).
+  - conv-anisotropic-diffusion: Tukey biweight conductivity; 4-neighbor coherence boost. PM kernel kept. No spring.
+  - conv-difference-of-gaussians-cascade: Marr–Hildreth zero-crossing ridges; source-tied XDoG tanh. 4-scale DoG + palette kept.
+  - conv-morphological-erosion-dilation: black-hat beside top-hat; SE-axis ridge skeleton. Min/max SE kept.
+  - conv-gabor-texture-analyzer: even/odd quadrature energy; dominant-orientation grain. 4-orientation bank kept.
+  - watercolor-bloom: pigment granulation in paper valleys; C-history backrun cauliflower. 13-tap bloom / dry advection kept. No spring.
+  - film-cross-process: per-channel grain; highlight cyan-green XPro crossover. S-curves kept. Existing enlarger spring kept (HEAD).
+  - engraving-stipple: roulette-wheel stipple; burin taper from |grad|. Hatch family kept. Telemetry A kept.
+  - rotoscope-ink: edge-magnitude ink weight; cel hold-flats. Posterize + Sobel kept. Telemetry A kept.
+  - encaustic-wax: cooling wax bloom; held-mouse iron scrape. 3-strata melt kept. Telemetry A kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new extraBuffer owners.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0 (10 defs + full-tree 0 new), catalog 1,361 (README/manifest synced after origin’s two new generative IDs), SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail (pre-existing WASM `bridge/api.js`). Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-08-print-paint-conv-ten/`.
 
 ## 2026-09-06 — Optical / Glass / Holographic / Prism (10 shaders)
 

@@ -38,7 +38,8 @@
     "distortion",
     "audio-reactive",
     "click-reactive",
-    "temporal-persistence"
+    "temporal-persistence",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

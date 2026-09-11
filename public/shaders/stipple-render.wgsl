@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Stipple Render v2
+//  Stipple Render
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Chunks From: stipple-render
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-09
+//  Ideas: contour-aligned hatch; exact-C wet memory
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -58,6 +58,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var uv = vec2<f32>(coord) / resolution;
 
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -94,13 +96,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let distToCenter = length(cellFract - offsetCenter);
   let dotMask = 1.0 - smoothstep(dotSize * 0.6, dotSize, distToCenter);
 
-  // Wet ink: dots bleed together near mouse
-  let bleed = mix(1.0, 2.5, wetFactor);
+  // Idea 2: exact-C wet memory — previous ink keeps the bleed open.
+  let histDim = textureDimensions(dataTextureC);
+  let histCoord = clamp(coord, vec2<i32>(0), vec2<i32>(histDim) - vec2<i32>(1));
+  let prev = textureLoad(dataTextureC, histCoord, 0);
+  let prevInk = 1.0 - dot(prev.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let wetMemory = smoothstep(0.35, 0.8, prevInk) * 0.55;
+
+  // Wet ink: dots bleed together near mouse, plus C hang
+  let bleed = mix(1.0, 2.5, clamp(wetFactor + wetMemory, 0.0, 1.0));
   let wetDot = 1.0 - smoothstep(dotSize * 0.4 * bleed, dotSize * bleed, distToCenter);
 
-  // Cross-hatching in dark regions
-  let hatchAngle = uv.x * 300.0 + uv.y * 300.0;
-  let hatch = sin(hatchAngle) * sin(hatchAngle * 0.7 + 1.0);
+  // Idea 1: contour-aligned hatch — strokes follow the Sobel tangent.
+  let texel = 1.0 / resolution;
+  let nL = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let nR = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let nU = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let nD = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let gx = dot(nR - nL, vec3<f32>(0.299, 0.587, 0.114));
+  let gy = dot(nD - nU, vec3<f32>(0.299, 0.587, 0.114));
+  let gLen = max(length(vec2<f32>(gx, gy)), 0.0001);
+  let tangent = vec2<f32>(-gy, gx) / gLen;
+  let hatchPhase = dot(uv * resolution, tangent) * 0.35;
+  let hatch = sin(hatchPhase) * sin(hatchPhase * 0.7 + 1.0 + mids);
   let hatchMask = smoothstep(0.3, 0.0, adjustedLuma) * smoothstep(0.0, 0.3, hatch);
 
   // Ink and paper colors
@@ -120,10 +138,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ACES tone mapping for ink richness
   finalColor = aces_tone_map(finalColor * 1.1);
 
-  // Alpha: Dot density * ink_saturation * depth
-  let alpha = clamp((dotMask + wetDot * 0.5 + hatchMask * 0.2) * inkSaturation * depth, 0.05, 1.0);
+  let sparkle = treble * hatchMask * 0.08;
+  finalColor = clamp(finalColor + vec3<f32>(sparkle), vec3<f32>(0.0), vec3<f32>(1.0));
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+  // Alpha: Dot density * ink_saturation * depth
+  let alpha = clamp((dotMask + wetDot * 0.5 + hatchMask * 0.2) * inkSaturation * (0.35 + depth * 0.65) * (0.7 + baseColor.a * 0.3), 0.05, 1.0);
+  let outCol = vec4<f32>(finalColor, alpha);
+
+  textureStore(writeTexture, coord, outCol);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, coord, outCol);
 }

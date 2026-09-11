@@ -598,11 +598,43 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bubble Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Pop Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Unused",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -643,11 +675,43 @@
     "features": [
       "mouse-driven",
       "interactive",
-      "stateful"
+      "stateful",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Edge Hardness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Paper Texture",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Rub Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Fade Back",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -2534,7 +2598,7 @@
         "id": "hue_shift"
       },
       {
-        "name": "Unused",
+        "name": "Artifact Amount",
         "type": "float",
         "default": 0,
         "min": 0,
@@ -2574,7 +2638,7 @@
       },
       {
         "index": 3,
-        "name": "Unused",
+        "name": "Artifact Amount",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -6266,11 +6330,43 @@
     ],
     "features": [
       "mouse-driven",
-      "feedback"
+      "feedback",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wind Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Trail Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 0.99
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -8177,7 +8273,8 @@
       "spring-interaction",
       "click-reactive",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -9322,7 +9419,9 @@
     "name": "Kaleidoscope Tunnel",
     "url": "shaders/mouse-kaleidoscope-tunnel.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Infinite kaleidoscope tunnel centered on the mouse. Moving creates spiraling mirrors with perspective depth. Click ripples send kaleidoscope bursts through the tunnel.",
     "params": [
@@ -9361,6 +9460,41 @@
       "kaleidoscope",
       "tunnel",
       "psychedelic"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tunnel Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mirror Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spiral Twist",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Tunnel Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -9561,7 +9695,9 @@
     "url": "shaders/mouse-paint-splatter.wgsl",
     "features": [
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Mouse drags leave colorful paint splatters sampled from the image. Paint spreads, mixes, and dries over time. Click ripples create explosive paint bursts.",
     "params": [
@@ -9600,6 +9736,36 @@
       "paint",
       "temporal",
       "artistic"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Brush Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Dry Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Paint Spread",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Color Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -9797,7 +9963,9 @@
     "name": "Wormhole Lens",
     "url": "shaders/mouse-wormhole-lens.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "A wormhole portal at the mouse position inverts, spirals, and color-shifts the image inside. Dragging stretches the portal. Event-horizon glow and gravitational lensing at the edge.",
     "params": [
@@ -9836,6 +10004,41 @@
       "portal",
       "wormhole",
       "psychedelic"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Portal Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spiral Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Lens Strength",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -11927,6 +12130,40 @@
       "audio-reactive",
       "upgraded-rgba"
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sort Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spot Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Direction (V/H)",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Smoothness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "tags": [
       "filter",
       "image-processing"
@@ -12148,11 +12385,43 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Strip Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Sway Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Wind Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Gap Size",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -13344,7 +13613,8 @@
       "temporal",
       "fast-motion",
       "click-reactive",
-      "bounded-history"
+      "bounded-history",
+      "upgraded-rgba"
     ],
     "updatedParams": [
       {
@@ -13469,11 +13739,43 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Rain Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "Shield Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
