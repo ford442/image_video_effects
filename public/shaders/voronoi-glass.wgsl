@@ -3,6 +3,10 @@
 //  Animated Voronoi cells refracting the source as bevelled glass tiles,
 //  with mouse-attracted cell points and audio-swelled density.
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-11
+//  Ideas: bass-triggered per-cell facet-fracture crackle; exact-C breath-fog
+//         trail that thickens with refraction activity
+//  A packing: display RGBA (unchanged; now also read back for the fog trail)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -16,7 +20,7 @@
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -30,6 +34,10 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
+}
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -93,6 +101,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let glintRunner = pow(max(0.0, sin(atan2(normal.y, normal.x) * 8.0 - time * (10.0 + treble * 5.0))), 14.0);
   let facetRunner = pow(max(0.0, sin(m_dist * cell_density * 6.0 - time * (8.0 + mids * 4.0))), 12.0);
 
+  // Bass facet-fracture pulse: a sparse per-cell crackle layered on top of
+  // the continuous glint/facet shimmer above, so the glass also gets a
+  // percussive fracture beat instead of only continuous runners.
+  let fractureSeed = hash22(i_st + floor(time * 2.0));
+  let fractureGate = step(1.0 - bass * 0.55, fractureSeed.x);
+  let crackLine = pow(max(0.0, sin(m_dist * cell_density * 46.0 - time * 3.0)), 30.0) * fractureGate;
+
   var clickShatter = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -112,9 +127,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += vec3<f32>(0.1) * (1.0 - m_dist);
   color -= vec3<f32>(0.25) * grout;
   color += vec3<f32>(0.15, 0.18, 0.22) * glintRunner * facetRunner;
+  color += vec3<f32>(0.9, 0.95, 1.0) * crackLine;
 
-  let alpha = clamp(dot(color, vec3<f32>(0.299, 0.587, 0.114)) * 0.6 + (1.0 - m_dist) * 0.4, 0.0, 1.0);
-  let finalOut = vec4<f32>(color, alpha);
+  // Exact-C breath-fog trail: the previously write-only history buffer now
+  // blends back in proportionally to how much the refraction is deforming
+  // this pixel (bend magnitude + click shatter), a light condensation haze
+  // that thickens with fast pointer motion instead of a flat overlay.
+  let history = textureLoad(dataTextureC, clamp(vec2<i32>(global_id.xy), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0);
+  let refractionActivity = clamp(length(normal.xy) * 5.0 + clickShatter, 0.0, 1.0);
+  color = mix(color, history.rgb, refractionActivity * 0.3);
+
+  let alpha = clamp(dot(color, vec3<f32>(0.299, 0.587, 0.114)) * 0.6 + (1.0 - m_dist) * 0.4 + crackLine * 0.3, 0.0, 1.0);
+  let finalOut = vec4<f32>(acesToneMap(color), alpha);
   textureStore(writeTexture, vec2<i32>(global_id.xy), finalOut);
   textureStore(dataTextureA, vec2<i32>(global_id.xy), finalOut);
 

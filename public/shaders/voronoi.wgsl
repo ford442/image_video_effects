@@ -4,7 +4,9 @@
 //  Features: cellular, mouse-seeded, ripple-seeded, ridges, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: Phase B / Algorithmist
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-09-11
+//  Ideas: slow tectonic lattice drift; treble-gated ridge sparkle bursts
+//  A packing: display RGBA (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -36,6 +38,10 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(hash21(p), hash21(p + vec2<f32>(17.0, 31.0)));
+}
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 struct Voro { F1: f32, F2: f32, cellId: vec2<f32>, };
@@ -84,6 +90,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let paletteShift  = u.zoom_params.w;
 
     var p = uv * cellDensity;
+
+    // Tectonic drift: a slow, low-frequency migration of the sampling lattice
+    // itself, independent of mouse/ripple input, so the tessellation never
+    // sits fully static even with no interaction.
+    let drift = vec2<f32>(sin(time * 0.05 + uv.y * 1.7), cos(time * 0.04 - uv.x * 1.3)) * 0.6;
+    p += drift;
+
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     let dMouse = length((uv - mouse) * vec2<f32>(aspect, 1.0));
@@ -116,13 +129,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color * mix(0.7, 1.15, cellMask);
     color = color + ridge * ridgeStrength * mix(palette, vec3<f32>(1.0), 0.4) * 0.6;
 
+    // Treble ridge sparkle: bursty specular glints riding the cell ridges,
+    // gated by the instantaneous treble band rather than the static
+    // ridgeStrength*treble scale above — the boundary lines sparkle on
+    // transients instead of just brightening evenly.
+    let sparklePhase = hash21(v.cellId + floor(time * 9.0));
+    let sparkleBurst = step(0.92 - treble * 0.5, sparklePhase);
+    let sparkle = ridge * sparkleBurst * treble;
+    color = color + sparkle * vec3<f32>(1.0, 0.97, 0.88);
+
     let edgeAA = smoothstep(0.0, 0.04, v.F2 - v.F1);
     color = color * (0.5 + 0.5 * edgeAA);
 
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luma * 0.5 + ridge * ridgeStrength * 0.4 + mouseInfl * 0.2 + 0.1, 0.0, 1.0);
 
-    let finalColor = vec4<f32>(color, alpha);
+    let finalColor = vec4<f32>(acesToneMap(color), alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);
