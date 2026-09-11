@@ -9154,7 +9154,8 @@
       "hyperbolic-geometry",
       "quaternion-julia",
       "raymarched",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "features": [
       "hyperbolic-geometry",

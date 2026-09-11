@@ -1,6 +1,23 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-11 (lighting leftover ten)
+**Last updated:** 2026-09-11 (geometric leftover eight)
+
+## 2026-09-11 — Geometric leftover eight (8 shaders)
+
+- IDs: `hyperbolic-dreamweaver`, `hyperbolic-dreamweaver-julia`, `mouse-hyperbolic-navigator`, `voxel-grid`, `cyber-grid-pulse`, `zipper-reveal`, `quantum-field-visualizer`, `neon-topology`.
+- Per shader, the ideas actually added:
+  - hyperbolic-dreamweaver: angular wrap tiling from `tile_count`; radial chroma + geodesic glow. Stripped leftover clock/IQ overlay. JSON slider roles remapped in WGSL.
+  - hyperbolic-dreamweaver-julia: photo albedo on hit; horocycle fog. plasmaBuffer audio (not zoom_config.x).
+  - mouse-hyperbolic-navigator: horocycle rings; tile mortar at angular wrap. Void early-out writes A.
+  - voxel-grid: mortar AO in `cell_gap`; axis-face photo tint. Exact-C trail kept.
+  - cyber-grid-pulse: dual-lattice vertex dots; traveling X-line packet. Existing extraBuffer[133..138] spring kept.
+  - zipper-reveal: slider puller at local y=0; staggered L/R teeth.
+  - quantum-field-visualizer: barrier + two gaps; held-only collapse (`zoom_config.w`).
+  - neon-topology: slope hachures; hypsometric fill between contours. Click quakes kept.
+- Floor: bindings / 16×16 / ACES display RGBA / saved params exact / additive `updatedParams`. No new springs.
+- Gates: Naga 8/8, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM/canvas. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-11-geometric-leftover-eight/`.
+- Skipped digital-crease, interactive-origami, ascii-glyph, neon-quantum-lattice, kaleido clones, Batch 56 warp_drive, elastic-chromatic. Did not overlap `cursor/geometric-five-2833`.
 
 ## 2026-09-11 — Lighting leftover ten (10 shaders)
 
