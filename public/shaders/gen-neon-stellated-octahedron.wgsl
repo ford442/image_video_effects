@@ -4,7 +4,9 @@
 //  Features: star-tetrahedron (stellated octahedron), neon edge glow,
 //            dual-tetra rainbow facets, kaleidoscopic symmetry, audio pulse
 //  Complexity: High
-//  Created: 2026-07-12
+//  Upgraded: 2026-09-09
+//  Ideas: intersection ridge of the two tetras; face vs edge spectral split
+//  A packing: ACES display RGBA (HEAD telemetry packing lie fixed)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -77,27 +79,34 @@ fn tetraEdges() -> array<vec2<i32>, 6> {
   );
 }
 
-fn stellatedOctaSDF(p: vec3<f32>, scale: f32, edgeThick: f32) -> vec2<f32> {
+fn stellatedOctaSDF(p: vec3<f32>, scale: f32, edgeThick: f32) -> vec3<f32> {
   let verts = tetraVerts(scale);
   let edges = tetraEdges();
-  var minEdge = 1e9;
+  var e0 = 1e9;
+  var e1 = 1e9;
   var minFace = 1e9;
 
-  // Two interpenetrating tetrahedra (stellated octahedron / star tetrahedron)
   for (var layer = 0; layer < 2; layer = layer + 1) {
     let flip = select(1.0, -1.0, layer == 1);
+    var layerEdge = 1e9;
     for (var i = 0; i < 6; i = i + 1) {
       let e = edges[i];
       let a = verts[e.x] * flip;
       let b = verts[e.y] * flip;
-      minEdge = min(minEdge, sdSegment3(p, a, b) - edgeThick);
+      layerEdge = min(layerEdge, sdSegment3(p, a, b) - edgeThick);
     }
-    // Face planes for facet coloring
+    if (layer == 0) {
+      e0 = layerEdge;
+    } else {
+      e1 = layerEdge;
+    }
     let f0 = sdPlane(p, normalize(vec3<f32>(1.0, 1.0, 1.0)), -scale * 0.577 * flip);
     let f1 = sdPlane(p, normalize(vec3<f32>(-1.0, 1.0, 1.0)), -scale * 0.577 * flip);
     minFace = min(minFace, abs(f0));
+    minFace = min(minFace, abs(f1));
   }
-  return vec2<f32>(minEdge, minFace);
+  let ridge = max(e0, e1);
+  return vec3<f32>(min(e0, e1), minFace, ridge);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -134,7 +143,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let edgeThick = mix(0.006, 0.02, u.zoom_params.z);
   let sd = stellatedOctaSDF(p, starScale, edgeThick);
   let edge = exp(-abs(sd.x) * 90.0);
-  let facet = exp(-sd.y * 15.0) * 0.35;
+  let facet = exp(-sd.y * 15.0) * 0.35 * (1.0 - edge);
+  let ridge = exp(-abs(sd.z) * 70.0);
 
   let hue = fract(atan2(p.z, p.x) / TAU + length(p) * 0.4 + colorShift + time * 0.06);
   let hue2 = fract(hue + 0.5 + mids * 0.1);
@@ -142,6 +152,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var color = vec3<f32>(0.01, 0.005, 0.03);
   color += neon(hue, neonPower * edge) * edge * (1.0 + bass * 0.5);
   color += neon(hue2, neonPower * facet) * facet * (0.8 + treble * 0.4);
+  color += neon(hue + 0.12, neonPower) * ridge * 0.85 * (0.7 + bass * 0.4);
 
   // Stellate spike glow at vertices
   let spike = exp(-length(p) * 2.5) * neon(hue + 0.33, 0.8) * 0.3;
@@ -149,12 +160,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let prev = textureLoad(dataTextureC, pixel, 0);
   color = mix(color, prev.rgb, 0.04);
-  color = acesToneMap(color * (1.2 + mids * 0.1));
 
-  let alpha = clamp(edge * 0.9 + facet * 0.4 + length(spike) * 0.3, 0.0, 1.0);
-  let depthOut = clamp(edge * 0.6 + facet * 0.4, 0.0, 1.0);
+  let alpha = clamp(edge * 0.9 + facet * 0.4 + length(spike) * 0.3 + ridge * 0.25, 0.0, 1.0);
+  let depthOut = clamp(edge * 0.6 + facet * 0.4 + ridge * 0.2, 0.0, 1.0);
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
+  color = acesToneMap(color * (1.2 + mids * 0.1));
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(sd.x, hue, alpha, edge));
 }

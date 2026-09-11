@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Hypnotic Spiral
-//  Category: image
-//  Features: interactive, spiral, sdf, audio-reactive, depth-aware, upgraded-rgba
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: hypnotic-spiral, bass_env
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-09
+//  Ideas: log vs Archimedean mix; photo rides the spiral tangent
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -41,25 +42,33 @@ fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.5 + mids * 0.2;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let coord = vec2<i32>(global_id.xy);
     let minRes = min(resolution.x, resolution.y);
     let uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / minRes;
+    let pixUV = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let mousePos = (u.zoom_config.yz - 0.5) * resolution / minRes;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let sampleUV = vec2<f32>(global_id.xy) / resolution;
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, pixUV, 0.0).r;
     let depthTwist = mix(0.5, 1.5, depth);
 
     let clickReverse = select(1.0, -1.0, u.zoom_config.w > 0.5);
     let breathe = sin(time * 0.5) * 0.3 + 1.0;
-    let radius = length(uv) * breathe;
+    let rLin = length(uv);
+    // Idea 1 — log vs Archimedean mix so the coil can tighten
+    let rLog = abs(log(max(rLin, 0.002)));
+    let radius = mix(rLin, rLog * 0.45, 0.4) * breathe;
     let baseAngle = atan2(uv.y, uv.x);
     let arms = max(1.0, u.zoom_params.x + floor(mids * 4.0));
     let rotSpeed = (u.zoom_params.y + bass * 0.5) * clickReverse * bass_env(bass, mids);
@@ -86,14 +95,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let centerDist = length(uv);
     let glow = exp(-centerDist * 3.0) * sin(time * 5.0) * 0.5 + 0.5;
     rgb += vec3<f32>(1.0, 0.8, 0.5) * glow * (1.0 - radius);
-    let distortedUV = clamp(vec2<f32>(spiralMask * cos(twistedAngle) * 0.5 + 0.5, spiralMask * sin(twistedAngle) * 0.5 + 0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-    let texColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
-    let alpha = (spiralMask + secMask * 0.5) * (1.0 - radius * 0.3) + glow * 0.2 + bass * 0.1;
-    let bloomWeight = val * glow * 2.0;
-    let finalAlpha = clamp(alpha + bloomWeight, 0.0, 1.0);
-    let finalColor = mix(vec4<f32>(rgb, finalAlpha), texColor, 0.3);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+
+    // Idea 2 — photo rides the spiral tangent (kill the UV blob)
+    let tangent = vec2<f32>(-sin(twistedAngle), cos(twistedAngle));
+    let ride = spiralMask * 0.07 * (0.35 + u.zoom_params.w * 0.4);
+    let texUV = clamp(pixUV + tangent * ride / vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let texColor = textureSampleLevel(readTexture, u_sampler, texUV, 0.0);
+    let mapped = acesToneMap(mix(rgb, texColor.rgb, 0.3));
+    let alpha = clamp((spiralMask + secMask * 0.5) * (1.0 - radius * 0.3) + glow * 0.2 + bass * 0.1 + texColor.a * 0.2, 0.0, 1.0);
+    let outCol = vec4<f32>(mapped, alpha);
+
+    textureStore(writeTexture, coord, outCol);
     let depthOut = 1.0 - clamp(radius, 0.0, 1.0);
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outCol);
 }

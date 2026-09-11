@@ -40,6 +40,12 @@
     "audio-driven",
     "upgraded-rgba"
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Sort Direction", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 1, "name": "Reverse Sort", "default": 0, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 2, "name": "Intensity Scale", "default": 1, "min": 0.0, "max": 2.0, "step": 0.01 },
+    { "index": 3, "name": "Sort Threshold Luma", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ],
   "tags": [
     "filter",
     "image-processing",

@@ -61,5 +61,9 @@
   "updated": true,
   "id": "gen-electric-kaleidoscope-storm",
   "url": "shaders/gen-electric-kaleidoscope-storm.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

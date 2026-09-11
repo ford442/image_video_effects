@@ -2598,7 +2598,7 @@
         "id": "hue_shift"
       },
       {
-        "name": "Unused",
+        "name": "Artifact Amount",
         "type": "float",
         "default": 0,
         "min": 0,
@@ -2638,7 +2638,7 @@
       },
       {
         "index": 3,
-        "name": "Unused",
+        "name": "Artifact Amount",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -8273,7 +8273,8 @@
       "spring-interaction",
       "click-reactive",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -9418,7 +9419,9 @@
     "name": "Kaleidoscope Tunnel",
     "url": "shaders/mouse-kaleidoscope-tunnel.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Infinite kaleidoscope tunnel centered on the mouse. Moving creates spiraling mirrors with perspective depth. Click ripples send kaleidoscope bursts through the tunnel.",
     "params": [
@@ -9457,6 +9460,41 @@
       "kaleidoscope",
       "tunnel",
       "psychedelic"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tunnel Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mirror Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spiral Twist",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Tunnel Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -9925,7 +9963,9 @@
     "name": "Wormhole Lens",
     "url": "shaders/mouse-wormhole-lens.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "A wormhole portal at the mouse position inverts, spirals, and color-shifts the image inside. Dragging stretches the portal. Event-horizon glow and gravitational lensing at the edge.",
     "params": [
@@ -9964,6 +10004,41 @@
       "portal",
       "wormhole",
       "psychedelic"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Portal Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spiral Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Lens Strength",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -12054,6 +12129,40 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sort Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spot Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Direction (V/H)",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Smoothness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",

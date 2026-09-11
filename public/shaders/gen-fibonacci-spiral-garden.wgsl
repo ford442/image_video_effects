@@ -1,4 +1,12 @@
-// Fibonacci Spiral Garden — audio-reactive phyllotaxis bloom
+// ═══════════════════════════════════════════════════════════════════
+//  Fibonacci Spiral Garden
+//  Category: generative
+//  Features: audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: √n disk packing; 8- and 13-family parastichy ridges
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -58,6 +66,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var flower = 0.0;
     var leaf = 0.0;
+    var paraRidge = 0.0;
     var hueSum = 0.0;
     var nearDepth = 0.0;
     for (var i = 0; i < 96; i++) {
@@ -71,12 +80,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let q = p - node;
         let localAngle = atan2(q.y, q.x) - angle;
         let lobes = 0.72 + 0.28 * cos(localAngle * 5.0 + time * 0.6 + fi);
-        let size = petalSize * (0.72 + 0.55 * hash11(fi)) * (1.0 + audio.x * 0.35);
+        let pack = mix(1.18, 0.48, sqrt(normalizedIndex));
+        let size = petalSize * pack * (0.82 + 0.28 * hash11(fi)) * (1.0 + audio.x * 0.35);
         let petalDistance = length(q) - size * lobes;
         let petal = exp(-max(petalDistance, 0.0) * 115.0) * smoothstep(size * 1.8, -size * 0.2, petalDistance);
         let halo = exp(-abs(petalDistance) * 38.0) * 0.1;
+        let para8 = exp(-abs(sin(fi * 3.14159265 / 8.0)) * 9.0);
+        let para13 = exp(-abs(sin(fi * 3.14159265 / 13.0)) * 9.0);
+        let para = max(para8, para13);
         flower += petal;
         leaf += halo;
+        paraRidge += halo * para * 0.85 + petal * para * 0.22;
         hueSum += (petal + halo) * normalizedIndex;
         nearDepth = max(nearDepth, petal * (1.0 - normalizedIndex * 0.55));
     }
@@ -96,11 +110,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let background = vec3<f32>(0.008, 0.018, 0.012) + palette(length(p) * 0.1) * 0.015;
     var hdrColor = background + palette(hue) * flower * (0.65 + bloomStrength + audio.x * 0.7);
     hdrColor += palette(hue + 0.3) * leaf * bloomStrength * (0.5 + audio.z);
+    hdrColor += palette(hue + 0.12) * paraRidge * (0.55 + bloomStrength * 0.25);
     hdrColor += vec3<f32>(0.45, 0.85 + audio.y * 0.3, 0.3 + audio.z * 0.5) * clickBloom * 0.42;
     let history = textureLoad(dataTextureC, coord, 0);
     hdrColor = clamp(mix(hdrColor, history.rgb, 0.045 + audio.x * 0.06), vec3<f32>(0.0), vec3<f32>(7.0));
     let mapped = acesToneMap(hdrColor * 1.06);
-    let alpha = clamp(flower * 0.48 + leaf * 0.15 + clickBloom * 0.12, 0.02, 0.98);
+    let alpha = clamp(flower * 0.48 + leaf * 0.15 + paraRidge * 0.08 + clickBloom * 0.12, 0.02, 0.98);
     let depth = clamp(nearDepth * 0.8 + flower * 0.05, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));

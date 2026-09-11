@@ -1,4 +1,12 @@
-// Classic Fractal Flame — affine variation distance traps
+// ═══════════════════════════════════════════════════════════════════
+//  Classic Fractal Flame
+//  Category: generative
+//  Features: fractal, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: log-density compression; spherical z/r² variation
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -66,8 +74,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                               z.x * cos(r * r) + z.y * sin(r * r));
         let horseshoe = vec2<f32>((z.x - z.y) * (z.x + z.y), 2.0 * z.x * z.y) / r;
         let polar = vec2<f32>(theta / 3.14159265, r - 1.0);
+        let spherical = z / (r * r);
         let firstMix = mix(swirl, horseshoe, variationMix);
-        let varied = mix(firstMix, polar, 0.22 + audio.y * 0.12);
+        var varied = mix(firstMix, polar, 0.22 + audio.y * 0.12);
+        let pick = fract(fi * 0.37 + 0.11);
+        varied = mix(varied, spherical, select(0.0, 0.55 + audio.z * 0.12, pick > 0.72));
         let affine = rot(0.38 + sin(time * 0.12) * 0.07) * varied * (0.62 + audio.x * 0.035);
         z = affine + vec2<f32>(-0.12 + sin(fi * 2.1) * 0.025, 0.16);
         let trap = exp(-abs(length(z) - 0.48) * (12.0 + audio.z * 8.0));
@@ -88,7 +99,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
-    let flame = min(density + edgeTrap, 5.0);
+    let logDensity = log(1.0 + (density + edgeTrap) * 8.0);
+    let flame = min(logDensity, 5.0);
     let hue = hueMoment / max(density * 12.0, 0.001) * 0.002 + time * (0.015 + paletteCycle * 0.06) + audio.y * 0.12;
     let classicWarm = vec3<f32>(1.3, 0.18, 0.015);
     let spectral = palette(hue);
@@ -99,7 +111,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     hdrColor = clamp(mix(hdrColor, history.rgb, 0.05 + audio.x * 0.065), vec3<f32>(0.0), vec3<f32>(8.0));
     let mapped = acesToneMap(hdrColor);
     let alpha = clamp(flame * 0.46 + edgeTrap * 0.2 + clickFlame * 0.1, 0.02, 0.98);
-    let depth = clamp(density * 0.3 + edgeTrap * 0.12, 0.0, 1.0);
+    let depth = clamp(logDensity * 0.28 + edgeTrap * 0.12, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

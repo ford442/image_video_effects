@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Psychedelic Moiré Flower
 //  Category: generative
-//  Features: moire, flower, psychedelic, audio-reactive, mouse-interactive, semantic-alpha, depth-aware,
-//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+//  Features: moire, flower, psychedelic, audio-reactive, upgraded-rgba
 //  Complexity: Medium-High
-//  Created: 2026-05-31
-//  Updated: 2026-06-14
-//  By: Kimi Agent (Bright batch), Claude Code Batch 3B
+//  Upgraded: 2026-09-09
+//  Ideas: 8/13 phyllotaxis on petal sines; p1/p2 density detune
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -117,21 +116,23 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn sampleFlower(uv: vec2<f32>, center: vec2<f32>, time: f32, intensity: f32, scale: f32, colorShift: f32, mouseDown: f32, bass: f32, depth: f32) -> vec4<f32> {
+fn sampleFlower(uv: vec2<f32>, center: vec2<f32>, time: f32, intensity: f32, scale: f32, colorShift: f32, mouseDown: f32, bass: f32, speed: f32, depth: f32) -> vec4<f32> {
     let patternScale = 0.5 + scale * 2.0;
     let mouseDensity = select(1.0, 2.0, mouseDown > 0.5);
     let mouseSpeed = select(1.0, 2.5, mouseDown > 0.5);
-    let t = time * (0.2 + (1.0 + bass * 0.4) * 1.5);
+    let t = time * (0.2 + speed * (1.0 + bass * 0.4) * 1.5);
     let p1 = moireFlower(uv, center, t, patternScale * mouseDensity * (1.0 + bass * 0.2), mouseSpeed, 0.3 * (1.0 + bass * 0.5));
-    let p2 = moireFlower(uv, center, t + 1.0, patternScale * mouseDensity * 1.2 * (1.0 + bass * 0.2), mouseSpeed * 0.8, -0.5 * (1.0 + bass * 0.3));
+    // Idea 2 — 6.8% density detune between p1 and p2
+    let p2 = moireFlower(uv, center, t + 1.0, patternScale * mouseDensity * 1.2 * 1.068 * (1.0 + bass * 0.2), mouseSpeed * 0.8, -0.5 * (1.0 + bass * 0.3));
     let p3 = moireFlower(uv, center, t + 2.3, patternScale * mouseDensity * 0.8 * (1.0 + bass * 0.2), mouseSpeed * 1.2, 0.7 * (1.0 + bass * 0.3));
     let interference = abs(p1 - p2) * abs(p2 - p3) * abs(p3 - p1) * 8.0;
     let d = length(uv - center);
     let radialMoire = sin(d * 60.0 * patternScale - t * 4.0) * 0.5 + 0.5;
     let radialMoire2 = sin(d * 45.0 * patternScale + t * 3.0) * 0.5 + 0.5;
     let angle = atan2(uv.y - center.y, uv.x - center.x);
+    // Idea 1 — 8/13 phyllotaxis on the existing petal sines
     let petal = sin(angle * 8.0 + t * 2.0) * 0.5 + 0.5;
-    let petal2 = sin(angle * 12.0 - t * 1.5) * 0.5 + 0.5;
+    let petal2 = sin(angle * 13.0 - t * 1.5) * 0.5 + 0.5;
     var pattern = p1 * 0.25 + p2 * 0.2 + p3 * 0.15;
     pattern += interference * (0.5 + intensity);
     pattern += radialMoire * radialMoire2 * 0.2 * (1.0 - d * 0.5);
@@ -152,10 +153,11 @@ fn sampleFlower(uv: vec2<f32>, center: vec2<f32>, time: f32, intensity: f32, sca
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
+    let pixel = vec2<i32>(global_id.xy);
     let uv = (vec2<f32>(pixel) + 0.5) / res;
-    let aspect = res.x / res.y;
+    let aspect = res.x / max(res.y, 0.001);
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
@@ -165,21 +167,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colorShift = u.zoom_params.w;
     let centeredUV = vec2<f32>(uv.x * aspect, uv.y);
     let center = vec2<f32>(aspect * 0.5, 0.5);
-    let mouseUV = vec2<f32>(mousePos.x / res.x * aspect, mousePos.y / res.y);
+    let mouseUV = vec2<f32>(mousePos.x * aspect, mousePos.y);
     let activeCenter = select(center, mouseUV, mouseDown > 0.5);
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let caStrength = 0.003 * intensity * (1.0 + bass);
-    let rFull = sampleFlower(centeredUV + vec2<f32>(caStrength, 0.0), activeCenter, time, intensity, scale, colorShift, mouseDown, bass, depth);
-    let gFull = sampleFlower(centeredUV, activeCenter, time, intensity, scale, colorShift, mouseDown, bass, depth);
-    let bFull = sampleFlower(centeredUV - vec2<f32>(caStrength, 0.0), activeCenter, time, intensity, scale, colorShift, mouseDown, bass, depth);
+    let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    let caStrength = 0.003 * intensity * (1.0 + bass + treble * 0.2);
+    let rFull = sampleFlower(centeredUV + vec2<f32>(caStrength, 0.0), activeCenter, time, intensity, scale, colorShift, mouseDown, bass, speed, depth);
+    let gFull = sampleFlower(centeredUV, activeCenter, time, intensity, scale, colorShift, mouseDown, bass, speed, depth);
+    let bFull = sampleFlower(centeredUV - vec2<f32>(caStrength, 0.0), activeCenter, time, intensity, scale, colorShift, mouseDown, bass, speed, depth);
     var color = vec3<f32>(rFull.r, gFull.g, bFull.b);
     let prev = textureLoad(dataTextureC, pixel, 0);
     color = mix(color, prev.rgb, 0.08 * (1.0 + bass));
+    color = color * (1.0 + mids * 0.12);
     color = acesToneMap(color);
     let patternDensity = length(color);
-    let alpha = gFull.a * patternDensity * depth;
+    let alpha = clamp(gFull.a * patternDensity * 0.55 + depth * 0.2 + srcA * 0.2 + treble * 0.08, 0.05, 1.0);
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, pixel, vec4<f32>(patternDensity));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(patternDensity, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 }

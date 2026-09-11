@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-09T04:55:22.076306",
+  "timestamp": "2026-09-11T07:56:40.269987",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 10,
-  "passed": 10,
+  "total": 8,
+  "passed": 8,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/bubble-wrap.wgsl",
+      "file": "public/shaders/astral-kaleidoscope-gemini.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/interactive-pixel-wind.wgsl",
+      "file": "public/shaders/astral-kaleidoscope-grokcf1.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/lidar.wgsl",
+      "file": "public/shaders/astral-kaleidoscope.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pixel-wind-chimes.wgsl",
+      "file": "public/shaders/voronoi-chaos.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/radiating-displacement.wgsl",
+      "file": "public/shaders/voronoi-dynamics.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/radiating-haze.wgsl",
+      "file": "public/shaders/voronoi-glass.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/rain-lens-wipe.wgsl",
+      "file": "public/shaders/voronoi-shatter.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,37 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/raindrop-ripples.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/sim-smoke-trails.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/snow.wgsl",
+      "file": "public/shaders/voronoi.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

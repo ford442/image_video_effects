@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Magnetic Luma Sort
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, spring-interaction
+//  Upgraded: 2026-09-09
+//  Ideas: dipole field-line offset; luma domains
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -121,9 +128,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // If pixels move towards mouse, we (at current pixel) look AWAY from mouse to see what's coming.
     // Movement speed depends on luma. Brighter = faster.
 
+    // Idea 2 — luma domains: sort energy peaks at discrete luma steps.
+    let domain = abs(fract(luma * 6.0) - 0.5);
+    let domainGate = smoothstep(0.22, 0.08, domain);
+
     var speed = 0.0;
     if (luma > threshold) {
-        speed = pullStrength * (luma - threshold) / (1.0 - threshold + 0.001);
+        speed = pullStrength * (luma - threshold) / (1.0 - threshold + 0.001) * mix(0.35, 1.0, domainGate);
     }
 
     // Per-row read-only FFT voice lives in engine slots [5..132].
@@ -136,8 +147,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Let's dampen slightly so the edge of screen doesn't pull too hard if mouse is center.
     // speed *= smoothstep(0.0, 0.1, dist);
 
-    // Main pull vector (before the offset is applied).
-    var pull = dir * speed;
+    // Idea 1 — dipole field-line offset: perpendicular B so trails loop.
+    let tangent = vec2<f32>(-dir.y, dir.x);
+    var pull = dir * speed + tangent * speed * 0.35 * (0.5 + mids * 0.5);
 
     // Click vortex pulses: each live ripple adds a decaying second attractor at
     // its click point, stirring the flow. Composed with the main pull here.

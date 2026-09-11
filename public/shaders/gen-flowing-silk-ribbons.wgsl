@@ -1,4 +1,12 @@
-// Flowing Silk Ribbons — layered anisotropic fabric streams
+// ═══════════════════════════════════════════════════════════════════
+//  Flowing Silk Ribbons
+//  Category: generative
+//  Features: audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-09
+//  Ideas: warp threads along ribbon length; selvage edge highlight
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -53,6 +61,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var coverage = 0.0;
     var highlight = 0.0;
+    var warpAcc = 0.0;
+    var selvageAcc = 0.0;
     var hueAccum = 0.0;
     var depth = 0.0;
     for (var i = 0; i < 12; i++) {
@@ -69,8 +79,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let d = abs(p.y - center);
         let ribbon = smoothstep(width, width * 0.15, d);
         let sheen = pow(max(1.0 - d / max(width, 0.001), 0.0), 7.0) * (0.35 + abs(slope));
+        let warp = ribbon * pow(abs(sin(p.x * (26.0 + fi * 2.2) - phase * 0.18)), 10.0);
+        let selvage = exp(-abs(d - width * 0.88) * 90.0) * smoothstep(width * 1.15, width * 0.7, d);
         coverage += ribbon * (1.0 - coverage * 0.18);
         highlight += sheen;
+        warpAcc += warp;
+        selvageAcc += selvage;
         hueAccum += (ribbon + sheen) * (fi / max(f32(ribbonCount), 1.0) + slope * 0.15);
         depth = max(depth, ribbon * (1.0 - fi / max(f32(ribbonCount), 1.0) * 0.55));
     }
@@ -90,11 +104,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let baseSilk = mix(vec3<f32>(0.16, 0.025, 0.08), palette(hue), 0.3 + iridescence * 0.7);
     var hdrColor = vec3<f32>(0.006, 0.008, 0.018) + baseSilk * coverage * (0.8 + audio.x * 0.5);
     hdrColor += palette(hue + 0.2) * highlight * (0.18 + iridescence * 0.85 + audio.z * 0.35);
+    hdrColor += palette(hue + 0.08) * warpAcc * (0.22 + iridescence * 0.18);
+    hdrColor += vec3<f32>(1.15, 1.05, 0.85) * selvageAcc * (0.28 + audio.z * 0.12);
     hdrColor += vec3<f32>(0.45, 0.7 + audio.y * 0.4, 1.15 + audio.z * 0.5) * clickWave * 0.32;
     let history = textureLoad(dataTextureC, coord, 0);
     hdrColor = clamp(mix(hdrColor, history.rgb, 0.06 + audio.x * 0.065), vec3<f32>(0.0), vec3<f32>(7.0));
     let mapped = acesToneMap(hdrColor * 1.08);
-    let alpha = clamp(coverage * 0.7 + highlight * 0.12 + clickWave * 0.1, 0.02, 0.98);
+    let alpha = clamp(coverage * 0.7 + highlight * 0.12 + warpAcc * 0.08 + selvageAcc * 0.1 + clickWave * 0.1, 0.02, 0.98);
 
     textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth, 0.0, 1.0), 0.0, 0.0, 0.0));

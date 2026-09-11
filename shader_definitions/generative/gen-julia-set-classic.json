@@ -21,6 +21,6 @@
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
-  "features": ["escape-time", "orbit-trap", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "features": ["escape-time", "orbit-trap", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware", "upgraded-rgba"],
   "feedbackPacking": "A/C = raw HDR Julia display RGBA history"
 }

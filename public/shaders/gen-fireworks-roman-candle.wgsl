@@ -1,6 +1,12 @@
-// Roman Candle — vertical star barrage from launch tubes
-// Batch 23: normalized mouse launches, discrete click candles, treble detail,
-// and luminance-derived depth without changing the display feedback packing.
+// ═══════════════════════════════════════════════════════════════════
+//  Roman Candle
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-10
+//  Ideas: muzzle flash at the tube mouth; per-tube color sequence on starCol
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -77,13 +83,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let starPos = vec2<f32>(tubeX + sin(age*(3.0+mids*1.5)+seed*10.0)*0.02*(1.0+mids), starY);
       let fade = smoothstep(3.0, 0.1, age);
       let sz = starSize*(1.0+bass*0.2);
-      col += starCol(seed+sf*0.1)*softGlow(uv, starPos, sz, fade*energy*2.0);
+      // Per-tube color sequence: shot 0,1,2 cycle the existing starCol set.
+      let seq = f32((shot + i32(seed * 4.0)) % 5) / 4.99;
+      let sc = starCol(seq);
+      col += sc*softGlow(uv, starPos, sz, fade*energy*2.0);
+      // Muzzle flash at the tube mouth on each shot.
+      col += sc*softGlow(uv, vec2<f32>(tubeX, tubeY), sz*2.2, exp(-age*26.0)*energy*2.8);
       // Comet trail
       let trailSamples = 4 + i32(trebleDetail * 3.0);
       for (var tr = 1; tr <= trailSamples; tr = tr + 1) {
         let trf = f32(tr)*0.08;
         let trailPos = vec2<f32>(starPos.x, starY - trf*0.15);
-        col += starCol(seed)*softGlow(uv, trailPos, sz*0.6, fade*energy*(1.0-trf*0.8)*0.7);
+        col += sc*softGlow(uv, trailPos, sz*0.6, fade*energy*(1.0-trf*0.8)*0.7);
       }
       // Mini burst at apex
       if (age > 1.2 && age < 2.5) {
@@ -94,7 +105,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         for (var sp = 0; sp < burstSparks; sp = sp + 1) {
           let ang = f32(sp)/f32(burstSparks)*TAU;
           let bp = burstC + vec2<f32>(cos(ang), sin(ang))*bAge*0.25*energy;
-          col += starCol(seed)*softGlow(uv, bp, sz*0.8, fade*exp(-bAge*2.0)*energy*0.8);
+          col += sc*softGlow(uv, bp, sz*0.8, fade*exp(-bAge*2.0)*energy*0.8);
         }
       }
     }
@@ -109,7 +120,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       if (mAge < sa || mAge > sa+0.4) { continue; }
       let localAge = mAge-sa;
       let sp = mouseUV + vec2<f32>(0.0, localAge*1.5);
-      col += starCol(f32(s)*0.2)*softGlow(uv, sp, starSize*1.5, (1.0-localAge*2.5)*(0.8+bass));
+      col += starCol(f32(s % 5) / 4.99)*softGlow(uv, sp, starSize*1.5, (1.0-localAge*2.5)*(0.8+bass));
+      col += starCol(f32(s % 5) / 4.99)*softGlow(uv, mouseUV, starSize*2.0, exp(-localAge*22.0)*(0.8+bass));
     }
   }
 
@@ -130,8 +142,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let energy = 0.85 + bass * 0.45 + trebleDetail * 0.12;
       let launch = origin + vec2<f32>(jitter * 0.08, localAge * 0.75 * energy);
       let clickFade = smoothstep(1.7, 0.05, localAge);
-      let clickColor = starCol(clickSeed + f32(cs) * 0.17);
+      let clickColor = starCol(f32((cs + i32(clickSeed * 4.0)) % 5) / 4.99);
       col += clickColor * softGlow(uv, launch, starSize * 1.2, clickFade * energy * 1.4);
+      col += clickColor * softGlow(uv, origin, starSize * 2.0, exp(-localAge * 24.0) * energy * 2.2);
       let glitterCount = 3 + i32(trebleDetail * 4.0);
       for (var gs = 0; gs < glitterCount; gs = gs + 1) {
         let ga = hash1(f32(gs) * 31.0 + clickSeed) * TAU;

@@ -1,16 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Wind & Ripple Fireworks
 //  Category: generative
-//  Features: wind-drifted sparks, ripple-triggered barrages, audio-reactive,
-//            mouse command shell, temporal trails, aces-tone-map,
-//            semantic alpha, depth-aware
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-07-05
-// ═══════════════════════════════════════════════════════════════════
-//  Sparks drift on a time-varying wind. Ripples from the UI become
-//  ignition points that launch directed radial barrages. Bass deepens
-//  shells, mids add secondary gusts, treble puts silver micro-sparkle
-//  in the wind. Mouse click/hold launches a personal shell at the cursor.
+//  Upgraded: 2026-09-11
+//  Ideas: altitude shear (higher sparks drift more); leeward streak downwind of each spark
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -71,6 +67,10 @@ fn sparkPosWind(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32, drag: f32, wind: v
   let df = exp(-drag * t);
   let windPush = wind * t * (1.0 - exp(-t * 0.4));
   return o + vec2<f32>(v.x * df + windPush.x, v.y * df - g * t * t * 0.5 + windPush.y * 0.5);
+}
+
+fn altitudeShear(y: f32) -> f32 {
+  return 0.55 + 0.45 * clamp((y + 0.8) * 0.7, 0.0, 1.0);
 }
 
 fn shellColor(hue: f32, hot: f32) -> vec3<f32> {
@@ -157,17 +157,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ang = (jf / f32(nSparks)) * TAU + (js - 0.5) * 0.7;
         let spd = (0.48 + js2 * 0.55) * shellEnergy;
         let vel = vec2<f32>(cos(ang), sin(ang)) * spd;
-        let sp = sparkPosWind(center, vel, burstAge, 1.05, 0.18, wind * (0.8 + js * 0.4));
+        let estY = center.y + vel.y * burstAge * 0.45;
+        let shearWind = wind * (0.8 + js * 0.4) * altitudeShear(estY);
+        let sp = sparkPosWind(center, vel, burstAge, 1.05, 0.18, shearWind);
 
         // Comet tail speed lines along wind direction.
         let wDir = normalize(wind + vec2<f32>(0.001));
         let comet = exp(-abs(dot(uv - sp, vec2<f32>(-wDir.y, wDir.x))) * 130.0) *
                     exp(-abs(dot(uv - sp, wDir) + burstAge * 0.25) * 16.0) * fade * 0.3;
+        // Idea 2 — leeward streak only downwind of the spark
+        let downwind = dot(uv - sp, wDir);
+        let leeward = exp(-abs(dot(uv - sp, vec2<f32>(-wDir.y, wDir.x))) * 110.0) *
+                      exp(-max(downwind, 0.0) * 14.0) * step(0.0, downwind) * fade * 0.42;
 
         let sz = 0.006 + js * 0.004;
         let g = softGlow(uv, sp, sz, fade * shellEnergy * 1.5);
         col += shellColor(hue + js * 0.25, smoothstep(0.4, 0.0, burstAge * 0.2)) * g;
         col += shellColor(hue + js * 0.25, 0.3) * comet * shellEnergy;
+        col += shellColor(hue + js * 0.25, 0.15) * leeward * shellEnergy;
       }
 
       // Silver wind micro-sparkle (treble)
@@ -178,7 +185,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let ms = hash1(si * 53.0 + mf * 7.0);
           let mAng = ms * TAU + time * 2.0;
           let mVel = vec2<f32>(cos(mAng), sin(mAng)) * (0.25 + ms * 0.35);
-          let mPos = sparkPosWind(center, mVel, burstAge * 0.7, 0.7, 0.3, wind * 1.3);
+          let mPos = sparkPosWind(center, mVel, burstAge * 0.7, 0.7, 0.3, wind * 1.3 * altitudeShear(center.y));
           col += vec3<f32>(0.8, 0.92, 1.0) * softGlow(uv, mPos, 0.003, fade * treble * 0.9);
         }
       }
@@ -206,7 +213,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let ang = (jf / f32(rSparks)) * TAU + js;
       let spd = (0.35 + js * 0.45) * strength;
       let vel = vec2<f32>(cos(ang), sin(ang)) * spd;
-      let sp = sparkPosWind(rCenter, vel, rAge, 0.9, 0.25, wind * 0.7);
+      let sp = sparkPosWind(rCenter, vel, rAge, 0.9, 0.25, wind * 0.7 * altitudeShear(rCenter.y));
       let g = softGlow(uv, sp, 0.005 + js * 0.003, rFade * strength * 1.8);
       col += shellColor(fract(js + colorDrift), 0.4) * g;
     }
@@ -227,7 +234,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ks = hash1(f32(k) * 2.7 + 2.0);
         let ang = (f32(k) / f32(mSparks)) * TAU + (ks - 0.5) * 0.8;
         let vel = vec2<f32>(cos(ang), sin(ang)) * (0.6 + ks * 0.7) * mEnergy;
-        let sp = sparkPosWind(mCenter, vel, mbAge, 1.0, 0.18, wind * 0.9);
+        let sp = sparkPosWind(mCenter, vel, mbAge, 1.0, 0.18, wind * 0.9 * altitudeShear(mCenter.y));
         let g = softGlow(uv, sp, 0.0065, mFade * mEnergy);
         col += shellColor(fract(ks * 1.4 + colorDrift), 0.5) * g;
       }

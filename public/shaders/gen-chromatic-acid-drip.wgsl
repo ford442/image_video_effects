@@ -4,9 +4,9 @@
 //  Features: acid, chromatic, drip, audio-reactive, mouse-interactive,
 //            semantic-alpha, upgraded-rgba, temporal, chromatic-aberration
 //  Complexity: Medium
-//  Created: 2026-05-31
-//  Updated: 2026-06-07
-//  By: Kimi Agent Upgrade
+//  Upgraded: 2026-09-09
+//  Ideas: meniscus coffee-ring on metaball isosurface; gravity-biased blob fall
+//  A packing: HDR display RGBA in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -126,14 +126,14 @@ fn criticalAngle(n1: f32, n2: f32) -> f32 {
     return asin(clamp(n2 / n1, 0.0, 1.0));
 }
 
-fn metaballField(p: vec2<f32>, time: f32) -> f32 {
+fn metaballField(p: vec2<f32>, time: f32, gravity: f32) -> f32 {
     var field = 0.0;
 
     for (var i: i32 = 0; i < 7; i = i + 1) {
         let fi = f32(i);
         let phase = fi * 0.93 + time * (0.3 + fi * 0.1);
         let bx = sin(phase * 1.1) * 0.4 + sin(phase * 0.7 + fi) * 0.15;
-        let by = cos(phase * 0.9) * 0.35 + cos(phase * 1.3 + fi * 0.5) * 0.15 + fi * 0.05;
+        let by = cos(phase * 0.9) * 0.35 + cos(phase * 1.3 + fi * 0.5) * 0.15 + fi * 0.05 + gravity * (0.22 + 0.04 * fi);
         let bpos = vec2<f32>(bx, by);
         let r = 0.06 + 0.04 * sin(phase * 1.5);
         let d = length(p - bpos);
@@ -144,7 +144,7 @@ fn metaballField(p: vec2<f32>, time: f32) -> f32 {
         let fi = f32(i);
         let phase = fi * 1.27 + time * 0.5;
         let bx = sin(phase * 0.8) * 0.5 + 0.1;
-        let by = cos(phase * 1.1) * 0.3 - 0.3 + sin(phase * 0.4) * 0.1;
+        let by = cos(phase * 1.1) * 0.3 - 0.3 + sin(phase * 0.4) * 0.1 + gravity * 0.28;
         let bpos = vec2<f32>(bx, by);
         let r = 0.04 + 0.02 * sin(phase * 2.0);
         let d = length(p - bpos);
@@ -189,11 +189,11 @@ fn chromaticDrip(uv: vec2<f32>, time: f32, offset: f32, colorShift: f32, phCycle
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
     let uv = (vec2<f32>(pixel) + 0.5) / res;
-    let aspect = res.x / res.y;
+    let aspect = res.x / max(res.y, 1.0);
 
     let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     let intensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
@@ -216,7 +216,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let centeredUV = vec2<f32>((uv.x - 0.5) * aspect, uv.y - 0.5);
     let scaledUV = centeredUV * (1.5 + scale * 4.0);
 
-    let mouseUV = vec2<f32>((mousePos.x / res.x - 0.5) * aspect, mousePos.y / res.y - 0.5);
+    let mouseCentered = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+    let mouseUV = mouseCentered * (1.5 + scale * 4.0);
     let mouseDist = length(scaledUV - mouseUV);
 
     // Mouse creates acid/base splashes with realistic color shifts
@@ -230,7 +231,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         cos(scaledUV.x * 3.0 + t) * 0.02 * sin(crit)
     ) * bass;
 
-    var field = metaballField(refractUV * (0.8 + scale), t);
+    var field = metaballField(refractUV * (0.8 + scale), t, 0.2);
     field += mouseAttraction * 3.0;
 
     let fieldThreshold1 = 2.5;
@@ -267,6 +268,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += edgeColor2 * edgeGlow2 * 2.0;
     color += edgeColor3 * edgeGlow3 * 2.0;
 
+    let meniscus1 = exp(-abs(field - fieldThreshold1) * 16.0) * (1.0 - blob1);
+    let meniscus2 = exp(-abs(field - fieldThreshold2) * 16.0) * (1.0 - blob2);
+    let meniscus3 = exp(-abs(field - fieldThreshold3) * 16.0) * (1.0 - blob3);
+    color += edgeColor1 * meniscus1 * 2.2;
+    color += edgeColor2 * meniscus2 * 1.8;
+    color += edgeColor3 * meniscus3 * 1.6;
+
     let drip1 = chromaticDrip(uv, t, 0.0, colorShift, phCycle, mids);
     let drip2 = chromaticDrip(uv, t * 1.1 + 10.0, 3.33, colorShift + 0.2, phCycle, mids);
     let drip3 = chromaticDrip(uv, t * 0.9 + 20.0, 6.67, colorShift + 0.4, phCycle, mids);
@@ -282,19 +290,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow = exp(-mouseDist * 4.0) * 0.5;
     color += phToColor(splashPH) * glow * mouseDown;
 
-    // ═══ TEMPORAL FEEDBACK ═══
-    let prev = textureSampleLevel(dataTextureC, u_sampler, (vec2<f32>(pixel) + 0.5) / res, 0.0);
+    let prev = textureLoad(dataTextureC, pixel, 0);
     color = mix(prev.rgb * 0.96, color, 0.25);
-    textureStore(dataTextureA, pixel, vec4<f32>(color, 1.0));
 
-    // ═══ CHROMATIC ABERRATION ═══
     let caStr = 0.003 * (1.0 + bass);
     color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
-    // ═══ ACES TONE MAP + SEMANTIC ALPHA ═══
-    color = acesToneMap(color * 1.1);
     let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
-
-    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
+    let mapped = acesToneMap(color * 1.1);
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(length(color) * 0.4, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

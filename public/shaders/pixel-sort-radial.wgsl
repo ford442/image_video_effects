@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Radial Pixel Stretch
 //  Category: image
-//  Features: image, mouse-driven, audio-reactive, chromatic-aberration, pixel-sort
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-06-28
-//  By: Agent 1a - Alpha Channel Specialist
+//  Upgraded: 2026-09-09
+//  Ideas: radial Asendorf interval; ring seam at run close
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -35,6 +37,10 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
   return fract(pp * (k1.z + dot(pp, k2)));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -54,7 +60,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let aspect = resolution.x / max(resolution.y, 1.0);
   let mousePos = u.zoom_config.yz;
-  let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
+  let dist = distance(uv * vec2<f32>(aspect, 1.0), mousePos * vec2<f32>(aspect, 1.0));
 
   let breathe = radius * (1.0 + sin(time * (1.5 + bass)) * 0.15);
   let influence = smoothstep(breathe, 0.0, dist);
@@ -68,10 +74,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let inRun = luma >= threshold;
 
   let audioStretch = stretchAmt * (1.0 + bass * 0.8 + held * 1.2 + clickFront);
-  let stretchFactor = step(threshold, luma) * audioStretch * influence;
-  let dirToMouse = normalize(mousePos - uv + 0.0001);
+  let stretchFactor = select(0.0, 1.0, inRun) * audioStretch * influence;
+  let dirToMouse = normalize(mousePos - uv + vec2<f32>(0.0001));
   let jitter = hash22(uv * 1000.0 + time) * 0.08 - 0.04;
   let dir = mix(dirToMouse + jitter, -dirToMouse + jitter, step(0.5, direction));
 
@@ -82,23 +89,50 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let isActive = select(0.0, 1.0, influence > 0.001);
   let radialRunner = sin(dist * 95.0 - time * (5.0 + mids * 7.0)) * influence;
-  let finalUV = clamp(mix(uv, uv - dir * stretchFactor * 0.2 + tangent * isActive * (0.015 + radialRunner * 0.012), isActive), vec2<f32>(0.0), vec2<f32>(1.0));
 
+  // Idea 1 — radial Asendorf: walk along radius, close when luma drops, keep brightest.
+  var best = color.rgb;
+  var bestL = luma;
+  var closed = 0.0;
+  let stepLen = 0.012 * (0.4 + stretchAmt);
+  if (inRun && isActive > 0.0) {
+    for (var i = 1; i <= 10; i = i + 1) {
+      let sUV = clamp(uv - dir * stepLen * f32(i), vec2<f32>(0.0), vec2<f32>(1.0));
+      let sCol = textureSampleLevel(readTexture, u_sampler, sUV, 0.0).rgb;
+      let sL = dot(sCol, vec3<f32>(0.299, 0.587, 0.114));
+      if (sL < threshold) {
+        closed = 1.0;
+        break;
+      }
+      if (sL > bestL) {
+        bestL = sL;
+        best = sCol;
+      }
+    }
+  }
+
+  // Idea 2 — ring seam at the closed end of the radial run.
+  let nextUV = clamp(uv - dir * stepLen, vec2<f32>(0.0), vec2<f32>(1.0));
+  let nextL = dot(textureSampleLevel(readTexture, u_sampler, nextUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let ringSeam = select(0.0, 1.0, inRun && nextL < threshold) * influence;
+
+  let finalUV = clamp(mix(uv, uv - dir * stretchFactor * 0.2 + tangent * isActive * (0.015 + radialRunner * 0.012), isActive), vec2<f32>(0.0), vec2<f32>(1.0));
   let caStrength = stretchFactor * 0.015;
   let rUV = finalUV + dir * caStrength;
   let bUV = finalUV - dir * caStrength;
   let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+  let stretched = mix(vec3<f32>(r, g, b), best, 0.55 * f32(inRun) * isActive);
 
-  let stretched = vec3<f32>(r, g, b);
   let bloom = max(dot(stretched, vec3<f32>(0.299, 0.587, 0.114)) - 0.8, 0.0) * 2.0;
-  let alpha = mix(color.a, clamp(color.a + stretchFactor * 0.3 + bloom, 0.0, 1.0), isActive);
-
+  let alpha = mix(color.a, clamp(color.a + stretchFactor * 0.3 + bloom + ringSeam * 0.2, 0.0, 1.0), isActive);
   let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + dist * 24.0 - time * (0.8 + treble));
-  let finalColor = vec4<f32>(mix(color.rgb, stretched, isActive) + spectral * (abs(radialRunner) * 0.1 + clickFront * 0.2), alpha);
+  var rgb = mix(color.rgb, stretched, isActive) + spectral * (abs(radialRunner) * 0.1 + clickFront * 0.2);
+  rgb = rgb + vec3<f32>(0.16, 0.14, 0.11) * ringSeam * (0.5 + treble * 0.5);
+  rgb = rgb * (1.0 + closed * mids * 0.04);
+  let finalColor = vec4<f32>(acesToneMap(rgb), alpha);
   textureStore(writeTexture, coord, finalColor);
-
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coord, finalColor);

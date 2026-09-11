@@ -1,4 +1,12 @@
-// Crossette Split — four-arm split burst fireworks (upgraded)
+// ═══════════════════════════════════════════════════════════════════
+//  Crossette Split
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium-High
+//  Upgraded: 2026-09-10
+//  Ideas: parent star then four-way fork at splitDelay; split-instant X flash
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -98,27 +106,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let fade = smoothstep(5.5, 0.3, bAge);
       col += vec3<f32>(1.0)*exp(-bAge*11.0)*energy*2.0*hexBokeh(uv, center, 0.065, 1.0);
 
-      for (var p = 0; p < 16; p = p + 1) {
-        let ang = f32(p)/16.0*TAU;
-        let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*0.3*energy, bAge, GRAVITY);
-        col += vec3<f32>(1.0,0.95,0.8)*hexBokeh(uv, sp, 0.005, fade*energy*exp(-bAge*3.0));
-      }
+      let splitT = splitDly*(0.7+mids*0.3);
+      let armAge = max(0.0, bAge - splitT);
+      for (var a = 0; a < 4; a = a + 1) {
+        let af = f32(a);
+        let armAng = af*PI*0.5 + seed*0.2;
+        let armDir = vec2<f32>(cos(armAng), sin(armAng));
+        let parentVel = armDir * armSpread * energy * 1.15;
+        let parentAge = min(bAge, splitT);
+        let parentPos = sparkPos(center, parentVel, parentAge, GRAVITY);
+        col += armColor(af, hueShift)*hexBokeh(uv, parentPos, 0.008, fade*energy*1.4*exp(-parentAge*1.2));
 
-      let armAge = max(0.0, bAge - splitDly*(0.7+mids*0.3));
-      if (armAge > 0.0) {
-        for (var a = 0; a < 4; a = a + 1) {
-          let af = f32(a);
-          let armAng = af*PI*0.5 + seed*0.2;
-          let armDir = vec2<f32>(cos(armAng), sin(armAng));
-          let armCenter = center + armDir*armSpread*energy*(0.3+armAge*0.7);
-          col += armColor(af, hueShift)*exp(-armAge*8.0)*energy*hexBokeh(uv, armCenter, 0.04, 1.0);
+        if (armAge > 0.0) {
+          let fork = sparkPos(center, parentVel, splitT, GRAVITY);
+          // Split-instant X flash at the fork.
+          let xFlash = exp(-armAge * 22.0) * energy;
+          let xArm = armDir * 0.045;
+          let xPerp = vec2<f32>(-armDir.y, armDir.x) * 0.045;
+          col += vec3<f32>(1.0, 0.97, 0.9) * xFlash * (
+            hexBokeh(uv, fork, 0.035, 1.6) +
+            hexBokeh(uv, fork + xArm, 0.012, 1.0) +
+            hexBokeh(uv, fork - xArm, 0.012, 1.0) +
+            hexBokeh(uv, fork + xPerp, 0.012, 1.0) +
+            hexBokeh(uv, fork - xPerp, 0.012, 1.0)
+          );
           let n = i32(18.0+power*20.0);
           for (var j = 0; j < n; j = j + 1) {
             let jf = f32(j);
             let js = hash1(si*53.0+af*17.0+jf*2.3);
             let subAng = armAng + (jf/f32(n)-0.5)*1.2;
             let spd = (0.3+js*0.4)*energy;
-            let sp = sparkPos(armCenter, vec2<f32>(cos(subAng),sin(subAng))*spd, armAge, GRAVITY);
+            let sp = sparkPos(fork, vec2<f32>(cos(subAng),sin(subAng))*spd, armAge, GRAVITY);
             col += armColor(af, hueShift+js*0.2)*hexBokeh(uv, sp, 0.005+js*0.003, fade*energy*(0.85+treble*0.4));
           }
         }
@@ -130,13 +148,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mAge = fract(time*0.85)*3.8;
     if (mAge > 0.7) {
       let mb = mAge-0.7;
+      let mSplit = splitDly*(0.7+mids*0.3);
+      let mArmAge = max(0.0, mb - mSplit);
       for (var a = 0; a < 4; a = a + 1) {
         let dir = vec2<f32>(cos(f32(a)*PI*0.5), sin(f32(a)*PI*0.5));
-        let ac = mouseUV + dir*armSpread*0.5;
-        for (var j = 0; j < 20; j = j + 1) {
-          let ang = f32(a)*PI*0.5 + (f32(j)/20.0-0.5)*1.0;
-          let sp = sparkPos(ac, vec2<f32>(cos(ang),sin(ang))*0.5*power, mb-0.2, GRAVITY);
-          col += armColor(f32(a), hueShift)*hexBokeh(uv, sp, 0.006, smoothstep(3.0,0.2,mb)*power);
+        let parentVel = dir * armSpread * power * 1.15;
+        let parentPos = sparkPos(mouseUV, parentVel, min(mb, mSplit), GRAVITY);
+        col += armColor(f32(a), hueShift)*hexBokeh(uv, parentPos, 0.008, smoothstep(3.0,0.2,mb)*power);
+        if (mArmAge > 0.0) {
+          let fork = sparkPos(mouseUV, parentVel, mSplit, GRAVITY);
+          col += vec3<f32>(1.0)*exp(-mArmAge*22.0)*power*hexBokeh(uv, fork, 0.03, 1.4);
+          for (var j = 0; j < 20; j = j + 1) {
+            let ang = f32(a)*PI*0.5 + (f32(j)/20.0-0.5)*1.0;
+            let sp = sparkPos(fork, vec2<f32>(cos(ang),sin(ang))*0.5*power, mArmAge, GRAVITY);
+            col += armColor(f32(a), hueShift)*hexBokeh(uv, sp, 0.006, smoothstep(3.0,0.2,mb)*power);
+          }
         }
       }
     }

@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-09
+//  Ideas: fold-seam highlight on the sector cut; radial plasma advection along r
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,7 +23,7 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
@@ -119,15 +121,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Quantise angle to symmetry sectors and mirror within each sector
   let sector_angle = 3.14159265 / symmetry;
   let folded_angle = abs(fract(angle / (2.0 * sector_angle) + 0.5) * 2.0 * sector_angle - sector_angle);
+  let seam = exp(-folded_angle * 22.0);
 
-  // Spinning mandala
   let spin = t * spin_speed;
   let px = r * cos(folded_angle + spin);
   let py = r * sin(folded_angle + spin);
   let mp = vec2<f32>(px, py);
 
-  // Plasma field on folded coords
-  let plasma_val = plasma(mp, t, mids);
+  let plasma_val = plasma(mp, t - r * 1.15, mids);
 
   // FBM detail layer
   let detail = fbm2(mp * 3.0 + vec2<f32>(t * 0.2, t * 0.15));
@@ -151,23 +152,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let ring_glow = exp(-abs(r - 0.5) * 6.0) * glow_scale;
 
   col = col * vignette + vec3<f32>(ring_glow * 0.3 * (1.0 + treble * 0.5));
+  col += vec3<f32>(1.0, 0.92, 0.85) * seam * 0.28 * (0.6 + treble * 0.4);
 
-  // Treble sparkle — high-freq shimmer
   let spark = hash21(uv + vec2<f32>(t * 0.01)) * treble * 0.15;
   col += spark;
 
-  // Tonemap
-  col = aces(col * glow_scale);
-
-  // Alpha: driven by luminance + glow ring + mouse influence
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let mouse_influence = length(mouse_pull) * 0.3;
-  let alpha = clamp(luma * 0.7 + ring_glow * 0.2 + mouse_influence * 0.1, 0.0, 1.0);
-
-  // Depth: radial distance encodes depth (center is near)
+  let alpha = clamp(luma * 0.7 + ring_glow * 0.2 + mouse_influence * 0.1 + seam * 0.15, 0.0, 1.0);
   let depth = clamp(1.0 - r * 0.5, 0.0, 1.0);
 
-  let final_color = vec4<f32>(acesToneMap(col * 1.1), alpha);
+  let mapped = acesToneMap(col * glow_scale * 1.05);
+  let final_color = vec4<f32>(mapped, alpha);
   textureStore(writeTexture,      coord, final_color);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA,      coord, final_color);

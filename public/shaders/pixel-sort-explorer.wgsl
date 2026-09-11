@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Pixel Sort Explorer
 //  Category: image
-//  Features: pixel-sort, interactive-mouse, audio-reactive,
-//            interval-sort, streak-ramps, scan-sweep, upgraded-rgba
-//  Upgraded by: kimi-swarm 2026-07-19
+//  Features: pixel-sort, interactive-mouse, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-09
+//  Ideas: luma-hold hysteresis; exact-C streak persist
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -59,6 +60,14 @@ fn luma(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.299, 0.587, 0.114));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+    return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -99,6 +108,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let origAlpha = color.a;
     let myLum = luma(color.rgb);
+    let histDims = vec2<i32>(textureDimensions(dataTextureC));
+    let prevC = textureLoad(dataTextureC, historyCoord(uv, histDims), 0);
+    // Idea 1 — luma-hold: last frame's streak alpha keeps a barely-under pixel in the run.
+    let heldLum = max(myLum, prevC.a * 0.85);
+    let holdThresh = thresh - 0.04 * prevC.a;
 
     // ── Interval-segmented pixel sort ─────────────────────────────
     // Walk both ways along the sort axis; a sample whose luma drops below
@@ -125,20 +139,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (sUV.x < 0.0 || sUV.x > 1.0 || sUV.y < 0.0 || sUV.y > 1.0) { break; }
             let sColor = textureSampleLevel(readTexture, u_sampler, sUV, 0.0).rgb;
             let sLum = luma(sColor);
-            if (sLum < thresh) { break; }
+            if (sLum < holdThresh) { break; }
             backSteps = fi;
             if (sLum > bestVal) { bestVal = sLum; bestColor = sColor; }
         }
 
         // Forward walk: measure interval extent (only inside bright runs)
         var fwdSteps = 0.0;
-        if (myLum >= thresh) {
+        if (heldLum >= holdThresh) {
             for (var i = 1; i <= 12; i++) {
                 let fi = f32(i);
                 let sUV = uv + dirVec * (fi * stride) + perpVec * (wobble * fi * 0.12);
                 if (sUV.x < 0.0 || sUV.x > 1.0 || sUV.y < 0.0 || sUV.y > 1.0) { break; }
                 let sColor = textureSampleLevel(readTexture, u_sampler, sUV, 0.0).rgb;
-                if (luma(sColor) < thresh) { break; }
+                if (luma(sColor) < holdThresh) { break; }
                 fwdSteps = fi;
             }
         }
@@ -146,7 +160,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let intervalLen = backSteps + fwdSteps + 1.0;
         streakT = clamp(backSteps / max(intervalLen, 1.0), 0.0, 1.0);
 
-        if (bestVal > myLum && bestVal > thresh) {
+        if (bestVal > myLum && bestVal > holdThresh) {
             // Head-bright → tail-dark ramp along the sorted interval
             let ramp = mix(1.10, 0.88, streakT);
             // Luma-preserving saturation punch on the streak color
@@ -156,6 +170,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Treble shimmer concentrated at the streak head
             let headGlow = pow(1.0 - streakT, 3.0) * treble * 0.18;
             sc = clamp(sc + vec3<f32>(headGlow), vec3<f32>(0.0), vec3<f32>(1.0));
+            // Idea 2 — exact-C streak persist so runs don't strobe.
+            sc = mix(sc, prevC.rgb, 0.22 * prevC.a);
             streak = sc;
             sorted = 1.0;
         }
@@ -192,8 +208,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let grain = (hash21(grainSeed) - 0.5) * 0.028 * mask;
     rgb = clamp(rgb + vec3<f32>(grain), vec3<f32>(0.0), vec3<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(rgb, origAlpha));
-
+    let acesRGB = acesToneMap(rgb);
+    let alpha = clamp(origAlpha * 0.35 + sortMix * 0.55 + mask * 0.15, 0.0, 1.0);
+    let outCol = vec4<f32>(acesRGB, alpha);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outCol);
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

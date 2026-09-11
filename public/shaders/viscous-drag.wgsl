@@ -1,4 +1,6 @@
 // Thick-liquid displacement with advected jets, vortices, and click pressure fronts.
+// Ideas: shear-thinning viscosity (prior dragEnergy thins the mix locally); bass jet surge
+// A packing: RG offset, thickness, drag energy (raw sim state, unchanged)
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -39,9 +41,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let recovery = mix(0.88, 0.994, u.zoom_params.z);
     let scale = mix(0.01, 0.2, u.zoom_params.w);
 
-    // Advect the RG offset state along a smooth moving liquid jet.
-    let jetDirection = normalize(vec2<f32>(cos(time * 0.77), sin(time * 0.61)));
-    let advectPixels = vec2<i32>(round(jetDirection * (1.0 + (1.0 - viscosity) * 3.0)));
+    // Idea 2: bass jet surge — a secondary jet direction briefly adds onto the
+    // constant rotating jet on bass energy, reading as the liquid getting
+    // "pumped" on the beat instead of only drifting at a fixed rate.
+    let jetSurgeDirection = normalize(vec2<f32>(cos(time * 1.9 + 1.7), sin(time * 2.3 + 0.4)));
+    let jetDirection = normalize(vec2<f32>(cos(time * 0.77), sin(time * 0.61)) + jetSurgeDirection * audio.x * audio.x * 1.4);
+
+    // Advect the RG offset state along the (now surge-augmented) liquid jet.
+    let advectPixels = vec2<i32>(round(jetDirection * (1.0 + (1.0 - viscosity) * 3.0) * (1.0 + audio.x * 0.6)));
     let baseCoord = coord - advectPixels;
     let previous = historyLoad(baseCoord);
     let upState = historyLoad(baseCoord + vec2<i32>(0, -1));
@@ -49,7 +56,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let leftState = historyLoad(baseCoord + vec2<i32>(-1, 0));
     let rightState = historyLoad(baseCoord + vec2<i32>(1, 0));
     let neighborState = (upState + downState + leftState + rightState) * 0.25;
-    let diffusedOffset = mix(previous.xy, neighborState.xy, viscosity);
+
+    // Idea 1: shear-thinning viscosity — the prior frame's drag energy (a
+    // proxy for local shear/strain, already stored in the .w channel) thins
+    // the effective viscosity where the fluid was recently sheared hard,
+    // mimicking real non-Newtonian shear-thinning behavior.
+    let shearThinning = clamp(previous.w * 0.5, 0.0, 0.6);
+    let effectiveViscosity = clamp(viscosity - shearThinning, 0.02, 0.95);
+    let diffusedOffset = mix(previous.xy, neighborState.xy, effectiveViscosity);
 
     let aspect = resolution.x / resolution.y;
     let delta = vec2<f32>((uv.x - u.zoom_config.y) * aspect, uv.y - u.zoom_config.z);

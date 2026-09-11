@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse Pixel Sort
 //  Category: artistic
-//  Features: mouse-driven, audio-reactive, upgraded-rgba, multi-layer-sort, fbm-patterns, noise-warping
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: mouse-pixel-sort
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-09-09
+//  Ideas: Asendorf interval along V/H; exact-C ghost
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -32,6 +33,14 @@ const TAU: f32 = 6.28318530718;
 
 fn get_luma(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
+    return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
 }
 
 fn hash12(p: vec2<f32>) -> f32 {
@@ -168,6 +177,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ) * 0.003 * influence;
 
     // Layer 1: Primary sort direction
+    // Idea 1 — Asendorf interval along the V/H axis.
+    let axis = select(vec2<f32>(0.0, 1.0), vec2<f32>(1.0, 0.0), direction > 0.5);
+    let invert = mode > 0.5;
+    let inBright = luma > localThreshold;
+    let inDark = invert && luma < (1.0 - localThreshold);
+    var best = base.rgb;
+    var bestKey = select(luma, 1.0 - luma, invert);
+    let stride = sortLength * 0.08 + 0.004;
+    if (inBright || inDark) {
+        for (var i = 1; i <= 10; i = i + 1) {
+            let sUV = clamp(uv - axis * stride * f32(i) + combinedWarp * influence, vec2<f32>(0.001), vec2<f32>(0.999));
+            let sCol = textureSampleLevel(readTexture, u_sampler, sUV, 0.0).rgb;
+            let sL = get_luma(sCol);
+            let stillIn = select(sL > localThreshold, sL < (1.0 - localThreshold), invert);
+            if (!stillIn) { break; }
+            let key = select(sL, 1.0 - sL, invert);
+            if (key > bestKey) {
+                bestKey = key;
+                best = sCol;
+            }
+        }
+    }
+
     var sourceUV1 = uv + audioJitter + combinedWarp * influence;
     if (direction > 0.5) {
         sourceUV1.x -= offset1;
@@ -190,7 +222,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Blend multi-layer sorts
     let layerBlend = fbm(uv * 3.0 + time * 0.1, 5) * 0.5 + 0.5;
-    let sorted = mix(sorted1, sorted2, layerBlend * influence * 0.5);
+    var sorted = mix(sorted1, sorted2, layerBlend * influence * 0.5);
+    sorted = vec4<f32>(mix(sorted.rgb, best, 0.6 * select(1.0, 0.0, !(inBright || inDark))), sorted.a);
 
     // Trail tint with bass/mids/treble spectrum
     let trailTint1 = mix(
@@ -213,6 +246,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var finalColor = sorted.rgb + trailTint * streak * influence * (0.15 + bass * 0.12) + vec3<f32>(sparkle);
 
+    // Idea 2 — exact-C ghost so streaks hold one frame.
+    let histDims = vec2<i32>(textureDimensions(dataTextureC));
+    let prevC = textureLoad(dataTextureC, historyCoord(uv, histDims), 0);
+    finalColor = mix(finalColor, prevC.rgb, 0.2 * prevC.a * influence);
+
     // FBM-based color grading
     let colorGrade = fbm(uv * 2.0 + time * 0.05, 4);
     finalColor = finalColor * (0.85 + colorGrade * 0.3);
@@ -221,11 +259,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = clamp(sorted.a * 0.4 + totalOffset * 5.0 + influence * 0.12 + bass * 0.05 + sparkle * 0.5, 0.08, 1.0);
     let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, sourceUV1, 0.0).r + totalOffset * 0.25, 0.0, 1.0);
 
-    // Premultiplied alpha
-    let premultColor = finalColor * alpha;
-    let finalPixel = vec4<f32>(premultColor, alpha);
+    let acesRGB = acesToneMap(finalColor);
+    let finalPixel = vec4<f32>(acesRGB, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(totalOffset, influence, streak, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalPixel);
 }

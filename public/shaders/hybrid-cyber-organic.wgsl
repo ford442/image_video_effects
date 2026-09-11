@@ -1,14 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Hybrid Cyber-Organic
 //  Category: generative
-//  Features: hybrid, circuit-patterns, organic-growth, neon-glow
-//  Chunks From: hex-circuit.wgsl (hex-grid), digital-moss.wgsl (growth logic),
-//               neon-edge-diffusion.wgsl (glow calculation)
-//  Created: 2026-03-22
-//  By: Agent 2A - Shader Surgeon
-// ═══════════════════════════════════════════════════════════════════
-//  Concept: Digital circuit traces that grow organically with neon glow,
-//           combining hexagonal grid structures with cellular growth patterns
+//  Features: hybrid, circuit-patterns, organic-growth, neon-glow, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-10
+//  Ideas: exact-C occupancy persist; photo-luma seed on growth
+//  A packing: raw occupancy in A.r; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,25 +28,25 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK 1: hash12 (from gen_grid.wgsl) ═══
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
-// ═══ CHUNK 2: hexEdgeDist (from hex-circuit.wgsl) ═══
 fn hexEdgeDist(p: vec2<f32>) -> f32 {
     var q = abs(p);
     return max(q.x * 0.5 + q.y * 0.866025, q.x);
 }
 
-// ═══ CHUNK 3: palette (from gen-xeno-botanical-synth-flora.wgsl) ═══
 fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
     return a + b * cos(6.28318 * (c * t + d));
 }
 
-// ═══ CHUNK 4: fbm2 (from gen_grid.wgsl) ═══
 fn valueNoise(p: vec2<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
@@ -74,60 +70,61 @@ fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
     return value;
 }
 
-// ═══ HYBRID LOGIC: Cyber-Organic Fusion ═══
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    
+
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let id = vec2<i32>(global_id.xy);
-    
-    // Parameters
-    let gridSize = mix(5.0, 25.0, u.zoom_params.x);        // x: Circuit density
-    let growthAmount = u.zoom_params.y;                     // y: Organic growth
-    let glowStrength = mix(0.5, 3.0, u.zoom_params.z);      // z: Neon glow
-    let chaosFactor = u.zoom_params.w * 0.5;                // w: Randomness
-    
-    // Hex grid setup
-    let aspect = resolution.x / resolution.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let gridSize = mix(5.0, 25.0, u.zoom_params.x);
+    let growthAmount = u.zoom_params.y;
+    let glowStrength = mix(0.5, 3.0, u.zoom_params.z);
+    let chaosFactor = u.zoom_params.w * 0.5;
+
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let srcLuma = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let prev = textureLoad(dataTextureC, id, 0);
+
+    let aspect = resolution.x / max(resolution.y, 0.001);
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
     var p = uvCorrected * gridSize;
-    
-    // Hex grid calculation
+
     let r = vec2<f32>(1.0, 1.7320508);
     let h = r * 0.5;
     let fractA = fract(p / r) * r - h;
     let fractB = (fract((p / r) + 0.5) * r) - h;
-    
+
     var localUV = vec2<f32>(0.0);
     if (dot(fractA, fractA) < dot(fractB, fractB)) {
         localUV = fractA;
     } else {
         localUV = fractB;
     }
-    
-    // Hex distance
+
     var q = abs(localUV);
     let distToCenter = max(q.x * 0.5 + q.y * 0.866025, q.x);
     let distToEdge = 0.5 - distToCenter;
-    
-    // Organic growth pattern using FBM
+
     let cellId = floor(p / r);
     let growthNoise = fbm2(cellId * 0.5 + time * 0.1, 3);
-    let growthPattern = smoothstep(0.3, 0.7, growthNoise + growthAmount - 0.5);
-    
-    // Circuit activation based on growth
+    let seeded = growthNoise + growthAmount - 0.5 + srcLuma * 0.45;
+    let growthLive = smoothstep(0.3, 0.7, seeded);
+    let occupy = max(growthLive, prev.r * mix(0.86, 0.97, growthAmount));
+    let growthPattern = occupy;
+
     let circuitActive = growthPattern > 0.5;
     let lineThickness = mix(0.02, 0.08, growthAmount) * (1.0 + chaosFactor * hash12(cellId));
     let isHexLine = 1.0 - smoothstep(0.0, lineThickness, distToEdge);
-    
-    // Organic tendrils extending from hexes
+
     let tendrilNoise = fbm2(uv * gridSize * 2.0 + time * 0.2, 4);
     let tendrils = smoothstep(0.4, 0.6, tendrilNoise) * growthPattern;
-    
-    // Neon glow colors
+
     let hue = cellId.x * 0.1 + cellId.y * 0.05 + time * 0.1;
     let baseColor = palette(hue,
         vec3<f32>(0.5),
@@ -135,38 +132,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         vec3<f32>(1.0, 1.0, 0.5),
         vec3<f32>(0.0, 0.33, 0.67)
     );
-    
-    // Cyber color when active, organic when growing
+
     let cyberColor = mix(
-        vec3<f32>(0.0, 0.8, 1.0),  // Cyan circuit
-        vec3<f32>(0.2, 1.0, 0.3),  // Green organic
+        vec3<f32>(0.0, 0.8, 1.0),
+        vec3<f32>(0.2, 1.0, 0.3),
         growthPattern
     );
-    
-    // Combine colors
-    var color = vec3<f32>(0.02, 0.03, 0.05);  // Dark background
-    
-    // Hex circuit lines
+
+    var color = vec3<f32>(0.02, 0.03, 0.05);
+
     if (isHexLine > 0.0 && circuitActive) {
         color = mix(color, cyberColor * glowStrength, isHexLine);
     }
-    
-    // Organic tendrils
+
     color += vec3<f32>(0.1, 0.9, 0.4) * tendrils * growthAmount;
-    
-    // Neon glow around active circuits
+
     let glowRadius = lineThickness * 3.0;
-    let glow = (1.0 - smoothstep(0.0, glowRadius, distToEdge)) * growthPattern;
-    color += baseColor * glow * glowStrength * 0.5;
-    
-    // Pulse effect along circuits
-    let pulse = sin(time * 3.0 + cellId.x * 0.5 + cellId.y * 0.3) * 0.5 + 0.5;
+    let glowAmt = (1.0 - smoothstep(0.0, glowRadius, distToEdge)) * growthPattern;
+    color += baseColor * glowAmt * glowStrength * 0.5;
+
+    let pulse = sin(time * 3.0 + cellId.x * 0.5 + cellId.y * 0.3 + bass * 2.0) * 0.5 + 0.5;
     color += cyberColor * pulse * isHexLine * 0.3;
-    
-    // Alpha based on activity
-    let activity = isHexLine + tendrils + glow * 0.5;
+
+    let activity = isHexLine + tendrils + glowAmt * 0.5;
     let alpha = mix(0.3, 1.0, activity);
-    
-    textureStore(writeTexture, id, vec4<f32>(color, alpha));
+
+    textureStore(dataTextureA, id, vec4<f32>(occupy, tendrils, glowAmt, 1.0));
+    textureStore(writeTexture, id, vec4<f32>(acesToneMap(color), alpha));
     textureStore(writeDepthTexture, id, vec4<f32>(growthPattern, 0.0, 0.0, 0.0));
 }

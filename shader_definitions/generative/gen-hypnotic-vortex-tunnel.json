@@ -56,5 +56,9 @@
   "updated": true,
   "id": "gen-hypnotic-vortex-tunnel",
   "url": "shaders/gen-hypnotic-vortex-tunnel.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

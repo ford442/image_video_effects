@@ -749,6 +749,41 @@
       "reactive",
       "organic",
       "fbm"
+    ],
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Cycle Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Segments",
+        "default": 6,
+        "min": 2,
+        "max": 16,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 4,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Max Rotation",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1540,7 +1575,9 @@
     "name": "Hex Circuit",
     "url": "shaders/hex-circuit.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Overlays a cybernetic hexagonal grid that highlights image edges and reacts to mouse pulses.",
     "params": [
@@ -1577,6 +1614,40 @@
       "vfx",
       "particles",
       "glow"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Pulse Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Edge Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2700,6 +2771,40 @@
       "audio-reactive",
       "audio-driven",
       "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sort Direction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Reverse Sort",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Intensity Scale",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Sort Threshold Luma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "tags": [
       "filter",
