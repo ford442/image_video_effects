@@ -1,10 +1,13 @@
-// ----------------------------------------------------------------
-// Ethereal Quantum-Hologram Bonsai
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Ethereal Quantum-Hologram Bonsai
+//  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            hologram, l-system, quantum, iridescence, curl-noise, upgraded-rgba
-// ----------------------------------------------------------------
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: prune-cut seal rings at terminal branch tips; north-facing moss lichen from bark normal vs up-light
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 struct Uniforms {
   config      : vec4<f32>,
@@ -172,6 +175,32 @@ fn calcNormal(p: vec3<f32>, time: f32, complexity: f32, instability: f32) -> vec
   ));
 }
 
+// Prune-cut seal rings at terminal branch tips (concentric cross-section bands).
+fn pruneSealRings(p: vec3<f32>, time: f32, complexity: f32) -> f32 {
+  var rings = 0.0;
+  let levels = i32(mix(2.0, 5.0, complexity));
+  for (var level = 0; level < levels; level++) {
+    let lvlF = f32(level);
+    let branchY = -0.5 + lvlF * 0.6;
+    let nBranches = i32(mix(2.0, 4.0, complexity)) + level;
+    for (var b = 0; b < nBranches; b++) {
+      let bf = f32(b);
+      let angle = bf * (6.28 / f32(nBranches)) + lvlF * 1.3 + time * 0.1;
+      let branchLen = 0.8 - lvlF * 0.15;
+      let tilt = 0.3 + lvlF * 0.2;
+      let dir = normalize(vec3<f32>(sin(angle) * tilt, cos(tilt), cos(angle) * tilt));
+      let pos = vec3<f32>(sin(angle) * 0.1, branchY, cos(angle) * 0.1);
+      let tipPos = pos + dir * branchLen;
+      let toTip = p - tipPos;
+      let distTip = length(toTip);
+      let ringBands = 0.5 + 0.5 * sin(distTip * 110.0 - time * 1.4);
+      let tipMask = smoothstep(0.14, 0.02, distTip) * smoothstep(0.0, 0.03, distTip);
+      rings = max(rings, tipMask * ringBands);
+    }
+  }
+  return rings;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = vec2<f32>(u.config.z, u.config.w);
@@ -276,6 +305,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Audio holographic shimmer
     col += vec3<f32>(0.1, 0.2, 0.3) * bassSmooth * audioReact * fresnel;
+
+    // Prune-cut seal rings at terminal branch tips
+    let pruneRings = pruneSealRings(p, time, complexity);
+    col += vec3<f32>(0.35, 0.18, 0.12) * pruneRings * (0.45 + bassSmooth * 0.2);
+
+    // North-facing moss lichen (bark normal vs up-light)
+    let upLight = normalize(vec3<f32>(0.12, 0.92, -0.28));
+    let mossFacing = smoothstep(0.38, 0.8, dot(n, upLight));
+    let mossTex = fbm(p * vec3<f32>(6.0, 4.5, 6.0) + vec3<f32>(0.0, time * 0.04, 0.0));
+    let mossCol = vec3<f32>(0.07, 0.24, 0.08) * mossTex;
+    col = mix(col, col * 0.68 + mossCol, mossFacing * 0.65);
 
     // Distance fade
     col *= exp(-t * 0.08);

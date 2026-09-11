@@ -1,5 +1,12 @@
-// Datamosh — Batch 58D authoritative motion-state correction
-// A packs motion.xy, normalized age, and strength; B is intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
+//  Datamosh
+//  Category: geometric
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: macroblock quantization tear at I-frame boundary; chroma ghost trail from C motion
+//  A packing: motion state in A (documented); display on writeTexture
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -81,7 +88,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var age = clamp(previous.z, 0.0, 1.0);
   var strength = clamp(previous.w, 0.0, 1.0);
   let iframePhase = fract(time / iframeInterval);
-  let isIFrame = iframePhase < (0.035 + treble * 0.01);
+  let iFrameThreshold = 0.035 + treble * 0.01;
+  let isIFrame = iframePhase < iFrameThreshold;
   if (isIFrame) {
     motion = observedMotion; age = 0.0; strength = u.zoom_params.x;
   } else {
@@ -115,6 +123,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let blockDecision = step(0.3, hash12(block + floor(time / 0.12)));
   let predictionMix = select(blendAmount * 0.35, blendAmount, blockDecision > 0.5) * select(1.0, 0.0, isIFrame);
   var hdr = mix(source.rgb, predicted.rgb, predictionMix);
+
+  // Chroma ghost trail along stored motion vector from exact C.
+  let ghostUv = clamp(uv - previous.xy * (0.55 + strength * 1.1), vec2<f32>(0.0), vec2<f32>(1.0));
+  let ghostSample = textureSampleLevel(readTexture, u_sampler, ghostUv, 0.0);
+  let chromaGhost = vec3<f32>(ghostSample.r, source.g, ghostSample.b);
+  let ghostMix = (1.0 - age) * strength * 0.38 * select(1.0, 0.0, isIFrame);
+  hdr = mix(hdr, chromaGhost, ghostMix);
+
+  // Macroblock quantization tear at I-frame phase boundary (8×8 block snap glitch).
+  let phaseEdge = smoothstep(0.045, 0.0, abs(iframePhase - iFrameThreshold));
+  let blockSnapCenter = (block * blockSize + vec2<f32>(4.0, 4.0)) / res;
+  let snapSample = textureSampleLevel(readTexture, u_sampler, clamp(blockSnapCenter, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  hdr = mix(hdr, snapSample.rgb, phaseEdge * blockDecision * 0.52 * select(1.0, 0.0, isIFrame));
+
   let blockUv = fract(vec2<f32>(pixel) / blockSize) - vec2<f32>(0.5);
   let blockEdge = smoothstep(0.36, 0.5, max(abs(blockUv.x), abs(blockUv.y)));
   hdr += vec3<f32>(0.06, 0.012, 0.09) * blockEdge * (corruption + clickStrength) * (0.5 + treble);

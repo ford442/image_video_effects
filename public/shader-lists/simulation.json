@@ -4556,7 +4556,9 @@
       "fake-volumetrics",
       "radial-blur",
       "god-rays",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "params": [
       {

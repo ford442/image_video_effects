@@ -39,6 +39,12 @@
     "depth-aware",
     "upgraded-rgba"
   ],
+  "updatedParams": [
+    { "index": 0, "name": "Density", "default": 1, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Decay", "default": 0.95, "min": 0.8, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Weight", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Exposure", "default": 0.6, "min": 0, "max": 1, "step": 0.01 }
+  ],
   "tags": [
     "filter",
     "image-processing",

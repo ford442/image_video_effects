@@ -3,7 +3,9 @@
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-17
+//  Upgraded: 2026-09-11
+//  Ideas: half-cell dual lattice dots; traveling X-line packet
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -75,9 +77,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Audio reactivity
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+    let bass   = select(0.0, plasmaBuffer[0].x, hasAudio);
+    let mids   = select(0.0, plasmaBuffer[0].y, hasAudio);
+    let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
 
     // Parameters — bass drives pulse
     let gridSize = 20.0 + u.zoom_params.x * 50.0;
@@ -131,10 +134,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let thickness = 0.02 + luma * 0.1;
     let gridMask = 1.0 - smoothstep(thickness, thickness + 0.02, min(gridLineX, gridLineY));
+    let dualX = abs(fract(gridUV.x + 0.5 + wave) - 0.5);
+    let dualY = abs(fract(gridUV.y + 0.5) - 0.5);
+    let vertexDot = (1.0 - smoothstep(0.0, 0.08, dualX)) * (1.0 - smoothstep(0.0, 0.08, dualY));
+    let packet = exp(-pow((fract(gridUV.x * 0.15 - time * pulseSpeed * 0.12) - 0.5) / 0.08, 2.0)) * (1.0 - smoothstep(0.0, 0.06, gridLineY));
 
     // Pulse color — treble adds shimmer
     let cellBin = (u32(abs(floor(gridUV.x)) + abs(floor(gridUV.y))) % 8u) + 1u;
-    let fftCell = plasmaBuffer[cellBin].x;
+    let fftCell = select(0.0, plasmaBuffer[cellBin].x, arrayLength(&plasmaBuffer) > cellBin);
     let pulse = (0.5 + 0.5 * sin(time * pulseSpeed - dist * 10.0)) * (1.0 + treble * 0.15 + fftCell * 0.18);
     let gridColor = vec3<f32>(0.0, 1.0, 0.8) * pulse * glowIntensity;
 
@@ -143,6 +150,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     finalColor = mix(finalColor, gridColor + baseColor.rgb * 0.5, gridMask);
     finalColor += gridColor * gridMask * pulse;
+    finalColor += vec3<f32>(0.9, 1.0, 0.85) * vertexDot * glowIntensity * 0.55;
+    finalColor += gridColor * packet * 0.85;
     finalColor += vec3<f32>(scanline);
 
     // Mouse highlight — branchless
@@ -153,7 +162,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Hue-preserving bounded HDR avoids channel clipping on stacked grid lines.
     finalColor = max(finalColor, vec3<f32>(0.0));
     let peak = max(max(finalColor.r, finalColor.g), finalColor.b);
-    finalColor *= min(1.0, 1.6 / max(peak, 0.001));
+    let aa = 2.51; let bb = 0.03; let cc = 2.43; let dd = 0.59; let ee = 0.14;
+    finalColor = clamp((finalColor * (aa * finalColor + bb)) / (finalColor * (cc * finalColor + dd) + ee), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

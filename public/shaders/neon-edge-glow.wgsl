@@ -4,7 +4,9 @@
 //  Features: edge-glow, neon, bloom, gas-discharge, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Chunks From: neon-edge-glow
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-11
+//  Ideas: tube core + dark sheath; 60 Hz mains beat
+//  A packing: ACES display RGBA
 //  By: 4-Agent Shader Upgrade Swarm
 // ═══════════════════════════════════════════════════════════════════
 
@@ -67,9 +69,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let neonTint = u.zoom_params.z;
   let intensity = u.zoom_params.w;
 
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+  let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
+  let mids = select(0.0, plasmaBuffer[0].y, hasAudio);
+  let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -84,17 +87,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let edgeMag = length(vec2<f32>(l - r, t - b)) * edgeStrength * (1.0 + bass * 0.5);
 
-  let acFreq = 60.0 + bass * 40.0;
-  let acPhase = time * acFreq;
-  let rectified = abs(sin(acPhase));
-  let flicker = pow(rectified, 0.7) * (0.85 + 0.15 * sin(time * 7.0 + bass * 5.0));
-  let beatFlicker = step(0.7, bass) * 0.2 * sin(time * 20.0);
+  let acFreq = 60.0;
+  let mains = pow(abs(sin(time * acFreq * 3.14159265)), 2.0);
+  let flicker = mains * (0.82 + 0.18 * sin(time * 7.0 + bass * 5.0)) * (1.0 + bass * 0.25);
 
   let mouseOffset = (mouse - 0.5) * 0.15;
   let bendUV = uv + vec2<f32>(sin(uv.y * 3.14159) * mouseOffset.x, sin(uv.x * 3.14159) * mouseOffset.y);
 
   let tubeT = fract(neonTint * 0.8 + bendUV.x * 2.0 + time * 0.08);
-  let neonColor = neonSpectrum(tubeT, flicker + beatFlicker);
+  let neonColor = neonSpectrum(tubeT, flicker);
   let mercuryColor = mercurySpectrum(tubeT) * (0.3 + mids * 0.4);
 
   let edgeMask = smoothstep(0.015, 0.22, edgeMag);
@@ -118,15 +119,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let secondaryBloom = neonColor * bloomRing * (0.4 + bass * 0.3);
 
   let tubeGeometry = smoothstep(0.02, 0.06, edgeMag) * (1.0 - smoothstep(0.12, 0.20, edgeMag));
-  let tubeCore = neonColor * tubeGeometry * 0.25 * flicker;
+  let tubeCore = neonColor * tubeGeometry * (0.55 + flicker * 0.4);
+  let sheath = smoothstep(0.05, 0.18, edgeMag) * (1.0 - smoothstep(0.18, 0.42, edgeMag));
+  let darkSheath = 1.0 - sheath * 0.55;
 
-  var finalColor = chromaticBase + neonLine + glowBloom + secondaryBloom + sputter + atmospheric + tubeCore;
+  var finalColor = chromaticBase * darkSheath + neonLine + glowBloom + secondaryBloom + sputter + atmospheric + tubeCore;
   finalColor = acesTonemap(finalColor * 1.2);
 
   let tubeExcitation = edgeMask * (flicker + 0.3) + glow * 0.5 + electrodeGlow * 0.2;
   let finalAlpha = clamp(tubeExcitation * intensity * depth, 0.25, 0.98);
+  let display = vec4<f32>(finalColor, finalAlpha);
 
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeTexture, vec2<i32>(gid.xy), display);
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(edgeMask, flicker, tubeExcitation, finalAlpha));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), display);
 }

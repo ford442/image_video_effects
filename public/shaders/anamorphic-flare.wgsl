@@ -4,8 +4,9 @@
 //  Features: mouse-driven, lens-flare
 //  Complexity: Medium
 //  Chunks From: anamorphic-flare
-//  Created: 2026-05-31
-//  By: Copilot CLI (tactical swarm)
+//  Upgraded: 2026-09-11
+//  Ideas: threshold-gated highlight streak; blue-line ghost
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -112,27 +113,45 @@ fn centralGlow(uv: vec2<f32>, lightPos: vec2<f32>, size: f32) -> vec3<f32> {
     return (core + corona) * glowTint;
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let lightPos = u.zoom_config.yz;
     let time = u.config.x;
-    
-    let flareIntensity = u.zoom_params.x * 3.0;
-    let streakLength = u.zoom_params.y * 0.8 + 0.05;
+    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+    let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
+    let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
+
+    // JSON: width, intensity, color, threshold
+    let streakLength = u.zoom_params.x * 0.8 + 0.05;
+    let flareIntensity = u.zoom_params.y * 3.0;
     let dispersion = u.zoom_params.z * 2.0;
-    let ghostCount = i32(u.zoom_params.w * 5.0 + 1.0);
-    
+    let threshold = u.zoom_params.w;
+
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    
+    let lightSrc = textureSampleLevel(readTexture, u_sampler, clamp(lightPos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let lightLuma = dot(lightSrc.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let highlightGate = smoothstep(threshold, threshold + 0.18, lightLuma);
+
     var flareColor = vec3<f32>(0.0);
-    
-    // 1. Anamorphic streak
     let streak = anamorphicStreak(uv, lightPos, streakLength, 2.0, dispersion);
-    flareColor += streak * flareIntensity;
-    
-    // 2. Ghost reflections
+    flareColor += streak * flareIntensity * highlightGate;
+
+    let blueLine = anamorphicStreak(uv, lightPos + vec2<f32>(0.0, 0.018), streakLength * 0.85, 1.4, dispersion * 0.4);
+    flareColor += blueLine * vec3<f32>(0.25, 0.55, 1.0) * flareIntensity * 0.55 * highlightGate;
+
+    let ghostCount = i32(clamp(1.0 + highlightGate * 4.0, 1.0, 5.0));
     for (var i: i32 = 0; i < ghostCount; i++) {
         let fi = f32(i);
         let ghostOffset = vec2<f32>(
@@ -140,31 +159,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             cos(fi * 0.7) * 0.1 + fi * 0.05
         );
         let ghostSize = 0.08 - fi * 0.01;
-        let ghostIntensity = (0.4 - fi * 0.06) * flareIntensity;
+        let ghostIntensity = (0.4 - fi * 0.06) * flareIntensity * highlightGate;
         let ghost = ghostElement(uv, lightPos, ghostOffset, ghostSize, ghostIntensity);
         let toGhost = uv - (vec2<f32>(0.5) + (vec2<f32>(0.5) - lightPos) * ghostOffset * 2.0);
-        let hexPattern = hexagonAperture(toGhost / (ghostSize * 3.0), 0.5);
+        let hexPattern = hexagonAperture(toGhost / max(ghostSize * 3.0, 0.001), 0.5);
         let ghostDist = length(toGhost);
         let ghostDispersion = spectralDispersion(ghostDist * 10.0, dispersion * 0.5);
         flareColor += ghost * hexPattern * ghostDispersion;
     }
-    
-    // 3. Central glow
+
     let glow = centralGlow(uv, lightPos, 0.15);
-    flareColor += glow * flareIntensity * 0.8;
-    
-    // 4. Volumetric rays
+    flareColor += glow * flareIntensity * 0.8 * highlightGate;
     let rays = volumetricRays(uv, lightPos, flareIntensity);
-    flareColor += vec3<f32>(rays * 0.5, rays * 0.6, rays * 0.8);
-    
-    // 5. Starburst
+    flareColor += vec3<f32>(rays * 0.5, rays * 0.6, rays * 0.8) * highlightGate;
     let toLight = uv - lightPos;
     let angle = atan2(toLight.y, toLight.x);
     let dist = length(toLight);
     let starburst = pow(abs(sin(angle * 6.0)), 20.0) * exp(-dist * 3.0);
-    flareColor += vec3<f32>(starburst * 0.3 * flareIntensity);
-    
-    // 6. Rainbow halo
+    flareColor += vec3<f32>(starburst * 0.3 * flareIntensity) * highlightGate;
     let haloDist = abs(dist - 0.25);
     let haloIntensity = exp(-haloDist * 100.0) * dispersion * 0.5;
     let rainbowPhase = angle * 3.0;
@@ -173,16 +185,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         (sin(rainbowPhase + TWO_PI / 3.0) + 1.0) * 0.5,
         (sin(rainbowPhase + 2.0 * TWO_PI / 3.0) + 1.0) * 0.5
     );
-    flareColor += rainbow * haloIntensity * flareIntensity * 0.2;
-    
-    let finalColor = baseColor.rgb + flareColor;
-    let tonemapped = finalColor / (1.0 + finalColor * 0.1);
-    
-    // ═══ ADVANCED ALPHA CALCULATION ═══
-    let alpha = calculateFlareAlpha(flareColor, flareIntensity, u.zoom_params);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(tonemapped, max(baseColor.a, alpha)));
-    
+    flareColor += rainbow * haloIntensity * flareIntensity * 0.2 * highlightGate;
+    flareColor *= 1.0 + bass * 0.2 + treble * 0.1;
+
+    let mapped = aces(baseColor.rgb + flareColor);
+    let alpha = calculateFlareAlpha(flareColor, flareIntensity, u.zoom_params) * baseColor.a;
+    let display = vec4<f32>(mapped, max(baseColor.a, alpha));
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), display);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -9154,13 +9154,15 @@
       "hyperbolic-geometry",
       "quaternion-julia",
       "raymarched",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "features": [
       "hyperbolic-geometry",
       "quaternion-julia",
       "raymarched",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9198,6 +9200,40 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Morph Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Cycles",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"

@@ -1980,7 +1980,42 @@
     "features": [
       "audio-reactive",
       "depth-aware",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Edge Sensitivity",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mach Strength",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spotlight Radius",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Neon Gain",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2306,8 +2341,13 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "held-drag",
+      "bounded-click-ripples",
+      "spring-damper-pointer",
+      "aces"
     ],
+    "feedbackPacking": "A packs offset.xy + glitchEnergy; writeTexture is ACES display RGBA; spring cursor extraBuffer[133..136]",
     "author": "Kimi",
     "params": [
       {

@@ -7,7 +7,9 @@
 //            sdf, early-exit, lod-noise, branchless
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-07-08
+//  Upgraded: 2026-09-11
+//  Ideas: mortar AO in cell_gap; axis-face photo tint
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -95,7 +97,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01 = vec2<f32>(pixel) / res;
     let uv   = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
     let time = u.config.x; let mouse = u.zoom_config.yz;
-    let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
+    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+    let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
+    let mids = select(0.0, plasmaBuffer[0].y, hasAudio);
+    let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let prev  = textureLoad(dataTextureC, pixel, 0);
 
@@ -192,13 +197,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fresnel = pow(1.0 - max(dot(normal, vec3<f32>(0.0, 0.0, 1.0)), 0.0), 3.0);
 
     let cellColor = textureSampleLevel(readTexture, u_sampler, clamp(cellCenter, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let axis = select(select(vec2<f32>(0.0, 1.0 / grid_density), vec2<f32>(1.0 / grid_density, 0.0), abs(n2.x) > abs(n2.y)), vec2<f32>(0.0), abs(nz) > max(abs(n2.x), abs(n2.y)));
+    let faceColor = textureSampleLevel(readTexture, u_sampler, clamp(cellCenter + axis, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let palette = psychedelicPalette(time * 0.08 + influence + fbm(uv * 4.0, flowOct) + u.zoom_params.x * 0.2);
-    let base = mix(cellColor, palette, 0.35 + influence * 0.35 + bass * 0.15);
+    let base = mix(mix(cellColor, faceColor, 0.45), palette, 0.28 + influence * 0.25 + bass * 0.12);
     let lit = base * (keyLit * 1.2 + fillLit * 0.6) + fresnel * vec3<f32>(0.4, 0.7, 1.0) * (0.5 + treble * 0.5);
     var color = lit * (1.3 + influence * 0.7 + bass * 0.4 + treble * 0.2);
 
     let edgeWidth = 0.004 + cell_gap * 0.01;
     let mask = 1.0 - smoothstep(-edgeWidth, edgeWidth, box);
+    let mortarAo = smoothstep(0.0, edgeWidth * 3.0, abs(box)) * cell_gap * 2.2;
+    color *= 1.0 - clamp(mortarAo, 0.0, 0.55);
     let decay = 0.96 - cell_gap * 0.04;
     color = mix(prev.rgb * decay, color, 0.18 + influence * 0.12 + bass * 0.08);
 

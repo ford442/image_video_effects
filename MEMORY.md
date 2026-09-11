@@ -1,6 +1,65 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-11 (fireworks leftover atmospheric six)
+**Last updated:** 2026-09-11 (geometric leftover eight)
+
+## 2026-09-11 — Geometric leftover eight (8 shaders)
+
+- IDs: `hyperbolic-dreamweaver`, `hyperbolic-dreamweaver-julia`, `mouse-hyperbolic-navigator`, `voxel-grid`, `cyber-grid-pulse`, `zipper-reveal`, `quantum-field-visualizer`, `neon-topology`.
+- Per shader, the ideas actually added:
+  - hyperbolic-dreamweaver: angular wrap tiling from `tile_count`; radial chroma + geodesic glow. Stripped leftover clock/IQ overlay. JSON slider roles remapped in WGSL.
+  - hyperbolic-dreamweaver-julia: photo albedo on hit; horocycle fog. plasmaBuffer audio (not zoom_config.x).
+  - mouse-hyperbolic-navigator: horocycle rings; tile mortar at angular wrap. Void early-out writes A.
+  - voxel-grid: mortar AO in `cell_gap`; axis-face photo tint. Exact-C trail kept.
+  - cyber-grid-pulse: dual-lattice vertex dots; traveling X-line packet. Existing extraBuffer[133..138] spring kept.
+  - zipper-reveal: slider puller at local y=0; staggered L/R teeth.
+  - quantum-field-visualizer: barrier + two gaps; held-only collapse (`zoom_config.w`).
+  - neon-topology: slope hachures; hypsometric fill between contours. Click quakes kept.
+- Floor: bindings / 16×16 / ACES display RGBA / saved params exact / additive `updatedParams`. No new springs.
+- Gates: Naga 8/8, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM/canvas. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-11-geometric-leftover-eight/`.
+- Skipped digital-crease, interactive-origami, ascii-glyph, neon-quantum-lattice, kaleido clones, Batch 56 warp_drive, elastic-chromatic. Did not overlap `cursor/geometric-five-2833`.
+
+## 2026-09-11 — Lighting leftover ten (10 shaders)
+
+- IDs: `neon-pulse-edge`, `sim-volumetric-fake-em`, `sim-volumetric-fake`, `volumetric-god-rays`, `neon-flashlight`, `neon-strings`, `neon-edges`, `neon-edge-glow`, `anamorphic-flare`, `neon-echo`.
+- Per shader, the ideas actually added:
+  - neon-pulse-edge: Sobel-tangent tube glow; exact-C edge afterglow. Raw edge field in A.
+  - sim-volumetric-fake-em: Beer–Lambert dust on bent rays; E×B lateral kick. Ripple charges kept. Mouse stash extraBuffer[133..134]. Display RGBA in A.
+  - sim-volumetric-fake: depth occlusion vs the light; discrete dust motes on radial taps.
+  - volumetric-god-rays: photo-luma occluder in the march; sun-disk core. A packing switched to display RGBA.
+  - neon-flashlight: umbra vs penumbra; specular catch on edges inside the cone. JSON slider roles remapped in WGSL.
+  - neon-strings: standing-wave node darkening; nut/bridge end-pins. Packet/click kept.
+  - neon-edges: inverse-square spotlight; Kelvin isotherm bands. Tube-current wave kept. A packing switched to display RGBA.
+  - neon-edge-glow: tube core + dark sheath; 60 Hz mains beat. A packing switched to display RGBA.
+  - anamorphic-flare: threshold-gated highlight streak; blue-line ghost. JSON width/intensity/color/threshold mapped honestly.
+  - neon-echo: exact-C persistence; P7 yellow-green tail. Raw persist in A.
+- Floor: bindings / 16×16 / exact C where C is history / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM/canvas. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-11-lighting-leftover-ten/`.
+- Skipped matrix_digital_rain, aurora pass-2 graphs, Batch 60 neon-pulse, overlay-rich geometric leftovers.
+
+## 2026-09-11 — Ethereal generative ten (10 shaders)
+
+- IDs: `gen-ethereal-cyber-chrono-nebula-phoenix`, `gen-ethereal-cyber-chrono-void-whale`, `gen-ethereal-cyber-plasma-void-dragon`, `gen-ethereal-glass-flora-terrarium`, `gen-ethereal-quantum-glass-nautilus`, `gen-ethereal-quantum-hologram-bonsai`, `gen-ethereal-quantum-holographic-fractal-coral`, `gen-ethereal-quantum-medusa`, `gen-ethereal-silk-veil`, `gen-feedback-echo-chamber`.
+- Per shader, the ideas actually added:
+  - gen-ethereal-cyber-chrono-nebula-phoenix: wing feather filaments on SDF edge; tail ember convection. Spring halo [133..137] kept.
+  - gen-ethereal-cyber-chrono-void-whale: baleen comb striations on ribs; bass sonar ping rings from core.
+  - gen-ethereal-cyber-plasma-void-dragon: breath plasma jet along spine; per-segment scale overlap parallax.
+  - gen-ethereal-glass-flora-terrarium: condensation droplets on shell; dew meniscus on leaf tips.
+  - gen-ethereal-quantum-glass-nautilus: chamber septa walls; pearl nacre luster. Full floor added (ACES/dataA/plasmaBuffer/updatedParams).
+  - gen-ethereal-quantum-hologram-bonsai: prune-cut seal rings; north-facing moss lichen. bass_env [133] kept.
+  - gen-ethereal-quantum-holographic-fractal-coral: polyp mouth pits; zooxanthellae symbiont pulse from exact C.
+  - gen-ethereal-quantum-medusa: nematocyst stinger dots; bell contraction wave from bass phase.
+  - gen-ethereal-silk-veil: selvage fray on ribbon edges; held-crease memory from exact C.
+  - gen-feedback-echo-chamber: harmonic echo ladder at 2× spacing; standing-wave nodal interference. bass_env [133] kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM bridge. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/composer-2026-09-11-ethereal-ten/`.
+
+## 2026-09-11 — Leftover branches older than one day
+
+- Inventory after fetch/prune: today's ethereal/lighting/geometric Cursor branches skipped. Mycelium plan and Claude weekly-dispatch already merged. batch-59 empty. batch-60/61 mostly superseded (graphs already on main; WASM JS would regress TS SoT).
+- Landed unique positives: `liquid-swirl` (restore Lamb-Oseen identity), `liquid-tensor-vortex` (spectral tensor + A write), `rgb-glitch-displacement` (Batch 61 persistence, 16×16). Params exact. Naga 3/3. Real-GPU QA external.
 
 ## 2026-09-11 — Fireworks leftover atmospheric six (6 shaders)
 
