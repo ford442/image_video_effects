@@ -3,8 +3,9 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Very High
-//  Chunks From: neon-quantum-lattice
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-11
+//  Ideas: electron hop glow on treble beats; defect pentagon tile highlight
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -50,6 +51,31 @@ fn penrose_dist(p: vec2<f32>, scale: f32) -> f32 {
   let d5 = abs(fract(dot(s, a5)) - 0.5);
   let m = min(min(min(min(d1, d2), d3), d4), d5);
   return m / scale;
+}
+
+fn penrose_defect(p: vec2<f32>, scale: f32) -> f32 {
+  let a1 = vec2<f32>(cos(0.0), sin(0.0));
+  let a2 = vec2<f32>(cos(2.094), sin(2.094));
+  let a3 = vec2<f32>(cos(4.189), sin(4.189));
+  let a4 = vec2<f32>(cos(1.047), sin(1.047));
+  let a5 = vec2<f32>(cos(3.142), sin(3.142));
+  let s = p * scale;
+  let d1 = abs(fract(dot(s, a1)) - 0.5) / scale;
+  let d2 = abs(fract(dot(s, a2)) - 0.5) / scale;
+  let d3 = abs(fract(dot(s, a3)) - 0.5) / scale;
+  let d4 = abs(fract(dot(s, a4)) - 0.5) / scale;
+  let d5 = abs(fract(dot(s, a5)) - 0.5) / scale;
+  let f1 = min(min(min(min(d1, d2), d3), d4), d5);
+  let f2 = min(
+    select(d2, 1.0, d2 <= f1),
+    min(select(d3, 1.0, d3 <= f1), min(select(d4, 1.0, d4 <= f1), select(d5, 1.0, d5 <= f1)))
+  );
+  let f2alt = min(
+    select(d1, 1.0, d1 <= f1),
+    min(select(d3, 1.0, d3 <= f1), min(select(d4, 1.0, d4 <= f1), select(d5, 1.0, d5 <= f1)))
+  );
+  let second = min(f2, f2alt);
+  return smoothstep(0.06, 0.012, second - f1);
 }
 
 fn tile_color(uv: vec2<f32>, t: f32, bass: f32) -> vec3<f32> {
@@ -114,6 +140,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vertexGlow = pow(edge1 * edge2, 2.0) * (2.0 + runner1 * 5.0) * (1.0 + mids);
     let vertexGlow2 = pow(edge2 * edge3, 2.0) * (1.5 + runner2 * 4.0) * (1.0 + treble * 0.5);
 
+    // Electron hop glow along nearest lattice edge on treble beats.
+    let trebleBeat = smoothstep(0.55, 0.92, treble) * (0.55 + 0.45 * sin(t * 11.0));
+    let hopPhase = fract(dot(floor(layer1UV * inflation * 2.0), vec2<f32>(0.618, 1.414)) - t * (5.0 + treble * 7.0));
+    let electronHop = exp(-pow((hopPhase - 0.5) / 0.07, 2.0)) * edge1 * trebleBeat;
+
+    // Defect pentagon tile highlight at quasi-crystal mismatch sites.
+    let defectSite = penrose_defect(layer1UV - mouse * 0.1, inflation);
+
     let mouseDist = length(uv - mouse);
     let uncertainty = 1.0 - smoothstep(0.0, 0.35, mouseDist);
     let quantumSeed = fract(sin(dot(floor(uv * dims * 0.2), vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -132,6 +166,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     rgb += vec3<f32>(1.0, 0.9, 0.5) * (vertexGlow + vertexGlow2) * 0.2;
     rgb += vec3<f32>(0.1, 0.4, 1.0) * quantumZone * edgeConfidence;
     rgb += vec3<f32>(0.4, 0.7, 1.0) * dephaseFront * (edge1 + edge2 * 0.5);
+    rgb += vec3<f32>(0.85, 1.0, 0.35) * electronHop * 0.42;
+    rgb += vec3<f32>(1.0, 0.55, 0.15) * defectSite * (0.35 + bass * 0.25);
 
     // Advect bounded display history opposite the conveyor for short lattice trails.
     let coord = vec2<i32>(gid.xy);
@@ -143,7 +179,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     rgb = aces_tonemap(rgb * (0.8 + brightness * 0.5));
 
-    let alpha = clamp(edgeConfidence * (0.7 + depth * 0.3) + (vertexGlow + vertexGlow2) * 0.1 + uncertainty * 0.1, 0.0, 1.0);
+    let alpha = clamp(edgeConfidence * (0.7 + depth * 0.3) + (vertexGlow + vertexGlow2) * 0.1 + uncertainty * 0.1 + defectSite * 0.08, 0.0, 1.0);
 
     let finalColor = vec4<f32>(rgb, alpha);
     textureStore(writeTexture, gid.xy, finalColor);
