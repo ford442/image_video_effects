@@ -3,6 +3,8 @@
 //  Category: feedback/temporal
 //  Alpha Mode: Accumulative Alpha (Feedback)
 //  Features: advanced-alpha, temporal-feedback, paint-accumulation
+//  Ideas: user-controlled echo depth (temporalOffset, previously dead); bass-transient echo pinning
+//  A packing: accumulated RGBA (unchanged)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -62,30 +64,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(f32(id.x), f32(id.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
     let time = u.config.x;
     // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
-    
+    // Fix: zoom_config.x duplicates config.x (time), it is not audio — see
+    // docs/BINDING_CONTRACT.md. Real audio lives in plasmaBuffer[0].xyz.
+    let bass = plasmaBuffer[0].x;
+    let audioReactivity = 1.0 + bass * 0.3;
+
+    // Idea 2: bass-transient echo pinning — a single-writer read/update of the
+    // previous frame's bass in extraBuffer[133] (this shader's own buffer;
+    // read-old-then-write-new-at-corner, same convention as the spring shaders)
+    // lets us detect a rising bass edge and pin a fresh echo frame on the beat,
+    // layered alongside the existing click-ripple pin.
+    let hasBassState = arrayLength(&extraBuffer) > 133u;
+    var prevBass = bass;
+    if (hasBassState) { prevBass = extraBuffer[133]; }
+    if (global_id.x == 0u && global_id.y == 0u && hasBassState) {
+        extraBuffer[133] = bass;
+    }
+    let bassTransient = clamp((bass - prevBass) * 4.0, 0.0, 1.0);
+
     // Parameters
     let accumulationRate = u.zoom_params.x;     // How fast alpha accumulates
     let echoDecay = u.zoom_params.y;            // Echo decay rate
     let depthWeight = u.zoom_params.z;          // Depth influence
     let temporalOffset = u.zoom_params.w;       // Time offset for echo
-    
+
     let current = textureLoad(readTexture, coord, 0);
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    
+
     // Calculate temporal echo offset
     let frame_idx = i32(time) % 60;
     let slice_y = i32(frame_idx);
-    
+
     // Mouse-controlled history offset
     let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let history_offset_factor = distance(uv, mouse_pos);
-    
+
     let brightness = dot(current.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    var history_offset = i32(brightness * 59.0 * (1.0 + history_offset_factor));
-    
+    // Idea 1: user-controlled echo depth — temporalOffset was read but never
+    // used; it now adds an explicit frame-lag bias independent of brightness.
+    var history_offset = i32(brightness * 59.0 * (1.0 + history_offset_factor) * audioReactivity)
+        + i32(temporalOffset * 30.0);
+
     // Ripples pin frames into history
     for (var i = 0; i < 50; i++) {
         let ripple = u.ripples[i];
@@ -99,11 +117,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
         }
     }
-    
-    // Sample from history
+    history_offset = i32(mix(f32(history_offset), 0.0, bassTransient));
+
+    // Sample from history (coordinates clamped — an unclamped lookup here
+    // could read outside dataTextureC's bounds)
     let past_y = clamp(slice_y - history_offset, 0, 59);
-    let past_uv = vec2<f32>(uv.x, (uv.y + f32(past_y) / f32(dim.y)) / 60.0);
-    let past = textureLoad(dataTextureC, vec2<i32>(i32(uv.x * f32(dim.x)), i32((uv.y + f32(past_y) / f32(dim.y)) * f32(dim.y))), 0);
+    let pastCoord = vec2<i32>(
+        clamp(i32(uv.x * f32(dim.x)), 0, i32(dim.x) - 1),
+        clamp(i32((uv.y + f32(past_y) / f32(dim.y)) * f32(dim.y)), 0, i32(dim.y) - 1)
+    );
+    let past = textureLoad(dataTextureC, pastCoord, 0);
     
     // Apply echo decay
     let decayedPast = vec4<f32>(

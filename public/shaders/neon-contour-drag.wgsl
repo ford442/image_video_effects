@@ -3,6 +3,8 @@
 //  Category: lighting-effects
 //  Physics: Emissive edges with UV warp and alpha occlusion
 //  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
+//  Ideas: edge-tangent glow streaks; bass core pulse
+//  A packing: emissive RGBA, no history (unchanged)
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,7 +28,9 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn sobel(uv: vec2<f32>, step: vec2<f32>) -> f32 {
+// Returns (gxLuma, gyLuma, magnitude). Magnitude is exactly the prior scalar
+// return value; gxLuma/gyLuma expose the gradient direction for Idea 1.
+fn sobel(uv: vec2<f32>, step: vec2<f32>) -> vec3<f32> {
     let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -step.y), 0.0).rgb;
     let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, step.y), 0.0).rgb;
     let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-step.x, 0.0), 0.0).rgb;
@@ -37,7 +41,8 @@ fn sobel(uv: vec2<f32>, step: vec2<f32>) -> f32 {
     let br = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(step.x, step.y), 0.0).rgb;
     let gx = -tl + tr - 2.0 * l + 2.0 * r - bl + br;
     let gy = -tl - 2.0 * t - tr + bl + 2.0 * b + br;
-    return length(gx) + length(gy);
+    let lumaWeights = vec3<f32>(0.299, 0.587, 0.114);
+    return vec3<f32>(dot(gx, lumaWeights), dot(gy, lumaWeights), length(gx) + length(gy));
 }
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
@@ -82,10 +87,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let stepFine = 1.0 / dims;
     let stepCoarse = stepFine * 3.0;
-    let edgeFine = sobel(warpUV, stepFine);
-    let edgeCoarse = sobel(warpUV, stepCoarse);
-    let edgeBlend = mix(edgeCoarse, edgeFine, u.zoom_params.x);
+    let sobelFine = sobel(warpUV, stepFine);
+    let sobelCoarse = sobel(warpUV, stepCoarse);
+    let edgeBlend = mix(sobelCoarse.z, sobelFine.z, u.zoom_params.x);
     let edge = edgeBlend * (1.0 + edgeStrength * 0.15);
+
+    // Idea 1: edge-tangent glow streaks — walk along the gradient's tangent
+    // (perpendicular to the edge normal) and re-sample edge strength there;
+    // where the contour keeps going in that direction the streak brightens,
+    // so the neon light runs along contours instead of glowing isotropically.
+    let edgeDir = sobelFine.xy;
+    let edgeDirLen = length(edgeDir);
+    let edgeTangent = select(vec2<f32>(1.0, 0.0), vec2<f32>(-edgeDir.y, edgeDir.x) / max(edgeDirLen, 0.0001), edgeDirLen > 0.0001);
+    let streakForward = sobel(warpUV + edgeTangent * stepFine * 2.0, stepFine).z;
+    let streakBack = sobel(warpUV - edgeTangent * stepFine * 2.0, stepFine).z;
+    let tangentStreak = (streakForward + streakBack) * 0.5;
 
     let contourRunner = pow(max(0.0, sin(edge * 28.0 - time * (14.0 + bass * 6.0))), 12.0);
     let hueConveyor = pow(max(0.0, sin(dot(warpUV, vec2<f32>(1.2, 0.7)) * 40.0 - time * (18.0 + treble * 8.0))), 14.0);
@@ -104,10 +120,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hue = fract(time * 0.2 + dist * 2.0 + colorShift + hueConveyor * 0.12);
     let neonColor = hsv2rgb(vec3<f32>(hue, 0.8, 1.0));
 
-    let glow = edge * edgeStrength * glowIntensity * smoothstep(1.0, 0.0, dist * 0.5);
+    let glow = edge * edgeStrength * glowIntensity * smoothstep(1.0, 0.0, dist * 0.5) * (1.0 + tangentStreak * 0.4);
     var emission = neonColor * glow * (1.0 + contourRunner * 0.35 + clickFront * 0.4);
 
-    let hotCore = smoothstep(0.05, 0.0, dist);
+    // Idea 2: bass core pulse — the inverted "pupil" at the cursor visibly
+    // grows and shrinks on the beat instead of sitting at a fixed radius.
+    let hotCore = smoothstep(0.05 + bass * 0.05, 0.0, dist);
     emission = mix(emission, vec3<f32>(1.0) - emission, hotCore * 0.5);
 
     let glowStrength = length(emission);

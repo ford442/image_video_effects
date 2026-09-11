@@ -2,6 +2,8 @@
 //  Cyber Slit Scan — Batch 56 merge
 //  Traveling scan heads, diagonal tears, phosphor aurora / oil-slick bands,
 //  held slit bend, click injections, conveyor decay
+//  Ideas: second lagged scan head; treble artifact bursts
+//  A packing: display RGBA (unchanged)
 // ────────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -62,6 +64,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hueShift = u.zoom_params.z;
   let artifactAmt = u.zoom_params.w;
 
+  // Idea 2: treble artifact bursts — briefly crush bits harder on treble
+  // transients, layered on top of the static Bit Crush slider.
+  let bitCrushEffective = clamp(bitCrush + treble * treble * 0.5, 0.0, 1.0);
+
   var slitX = u32(mouse.x * dims.x);
   if (mouse.x < 0.0) { slitX = width / 2u; }
   slitX = clamp(slitX, 0u, width - 1u);
@@ -69,12 +75,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let scanHead = 0.5 + 0.5 * sin(time * (1.0 + u.zoom_params.x * 5.0) + f32(gid.y) * 0.025);
   let speed = 1u + u32(clamp(u.zoom_params.x + scanHead * 0.12 + bass * 0.1, 0.0, 1.0) * 5.0);
 
+  // Idea 1: second lagged scan head — a phase-offset head sweeps horizontally
+  // and injects its own fresh, independently bit-crushed/hue-shifted column,
+  // so the "traveling scan heads" the header already claims are genuinely
+  // plural instead of a single head at the right edge.
+  let scanHead2 = 0.5 + 0.5 * sin(time * (1.3 + u.zoom_params.x * 5.0) - f32(gid.y) * 0.031 + 2.4);
+  var slitX2 = u32(fract(mouse.x + 0.5) * dims.x);
+  slitX2 = clamp(slitX2, 0u, width - 1u);
+  let head2CenterF = (0.5 + 0.5 * sin(time * 0.37)) * dims.x;
+  let head2Width = 2.0 + scanHead2 * 3.0;
+
   var outputColor: vec4<f32>;
+  let inHead2 = abs(f32(gid.x) - head2CenterF) < head2Width && gid.x < width - speed;
   if (gid.x >= width - speed) {
     let uvSource = vec2<f32>(f32(slitX) / dims.x, f32(gid.y) / dims.y);
     var color = textureSampleLevel(readTexture, u_sampler, uvSource, 0.0);
 
-    let bits = mix(255.0, 2.0, bitCrush);
+    let bits = mix(255.0, 2.0, bitCrushEffective);
     color = floor(color * bits) / bits;
 
     if (fract(time * 10.0 + f32(gid.y) * 0.01) > 0.98) {
@@ -84,13 +101,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let scanBand = smoothstep(0.04, 0.0, abs(fract(f32(gid.y) * 0.018 - time * (2.4 + bass * 1.5)) - 0.5));
     let auroraPhase = f32(gid.y) * 0.012 + time * (3.2 + mids);
     let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(auroraPhase * 0.07) + vec3<f32>(0.0, 0.33, 0.67)));
-    color.rgb = color.rgb + oilSlick * scanBand * (0.25 + artifactAmt * 0.35) * (1.0 + treble * 0.3);
+    color = vec4<f32>(color.rgb + oilSlick * scanBand * (0.25 + artifactAmt * 0.35) * (1.0 + treble * 0.3), color.a);
 
     var hsv = rgb2hsv(color.rgb);
     hsv.y = min(hsv.y * 1.2, 1.0);
     hsv.z = min(hsv.z * 1.1, 1.0);
     hsv.x = fract(hsv.x + hueShift + mouse.y * 0.5 + mids * 0.12 + held * 0.08);
     outputColor = vec4<f32>(hsv2rgb(hsv), color.a);
+  } else if (inHead2) {
+    let uvSource2 = vec2<f32>(f32(slitX2) / dims.x, f32(gid.y) / dims.y);
+    var color2 = textureSampleLevel(readTexture, u_sampler, uvSource2, 0.0);
+    let bits2 = mix(255.0, 2.0, bitCrushEffective);
+    color2 = floor(color2 * bits2) / bits2;
+    var hsv2 = rgb2hsv(color2.rgb);
+    hsv2.x = fract(hsv2.x + hueShift * 0.7 + mouse.y * 0.3 + treble * 0.1);
+    outputColor = vec4<f32>(hsv2rgb(hsv2), color2.a);
   } else {
     let diagonal = sin((f32(gid.x + gid.y) * 0.035) - time * 5.0) * artifactAmt * (2.0 + treble * 8.0);
     let heldBend = select(0.0, (mouse.x - f32(gid.x) / dims.x) * 18.0 * artifactAmt, u.zoom_config.w > 0.5);
@@ -107,7 +132,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     outputColor = textureLoad(dataTextureC, vec2<i32>(i32(sourceX), sourceY), 0);
 
     let conveyor = smoothstep(0.06, 0.0, abs(fract(f32(gid.x) * 0.04 + time * (1.8 + bass)) - 0.5));
-    outputColor.rgb = outputColor.rgb * (1.0 - conveyor * artifactAmt * 0.12);
+    outputColor = vec4<f32>(outputColor.rgb * (1.0 - conveyor * artifactAmt * 0.12), outputColor.a);
   }
 
   var clickFront = 0.0;
@@ -120,7 +145,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       clickFront = max(clickFront, exp(-d * 120.0) * (1.0 - age / 1.4));
     }
   }
-  outputColor.rgb += vec3<f32>(0.2, 0.85, 1.0) * clickFront * (0.5 + bass);
+  outputColor = vec4<f32>(outputColor.rgb + vec3<f32>(0.2, 0.85, 1.0) * clickFront * (0.5 + bass), outputColor.a);
 
   textureStore(dataTextureA, pixel, outputColor);
   textureStore(writeTexture, pixel, outputColor);

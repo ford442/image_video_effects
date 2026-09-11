@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-11T08:45:00.000000",
+  "timestamp": "2026-09-11T07:25:27.384007",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 11,
-  "passed": 11,
+  "total": 8,
+  "passed": 8,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-symbiotic-cyber-mycelium.wgsl",
+      "file": "public/shaders/cyber-slit-scan.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-chrysanthemum.wgsl",
+      "file": "public/shaders/cyber-trace.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-crackle-palm.wgsl",
+      "file": "public/shaders/glitch-ripple-drag.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-crossette.wgsl",
+      "file": "public/shaders/neon-contour-drag.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-dahlia-burst.wgsl",
+      "file": "public/shaders/pixel-drag-smear.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-horse-tail.wgsl",
+      "file": "public/shaders/slinky-distort.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-kamuro-gold.wgsl",
+      "file": "public/shaders/temporal-echo.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,52 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-ring-shell.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/gen-fireworks-roman-candle.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/gen-fireworks-strobe-shell.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/gen-fireworks-willow-cascade.wgsl",
+      "file": "public/shaders/viscous-drag.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
