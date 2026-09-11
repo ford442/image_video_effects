@@ -1,6 +1,24 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-10 (fireworks shell taxonomy ten)
+**Last updated:** 2026-09-11 (lighting-effects ten)
+
+## 2026-09-11 — Lighting-effects ten (10 shaders)
+
+- IDs: `divine-light`, `divine-light-gpt52`, `alpha-aurora-bands`, `aurora_borealis`, `underwater_caustics`, `cinematic-flare`, `dynamic-lens-flares`, `lens-flare-brush`, `neon-pulse-edge`, `sim-volumetric-fake-em`.
+- Per shader, the ideas actually added:
+  - divine-light: Henyey-Greenstein forward scatter per march step; depth-occluded shaft extinction.
+  - divine-light-gpt52: header documents Cauchy dispersion, rose-window stained glass, Airy halo (no new overlay). Spring [133..138] kept.
+  - alpha-aurora-bands: field-aligned curtain folds along windDir; green-line treble shimmer on 557.7 nm band only.
+  - aurora_borealis: corona crown at ribbon crest; magnetic reconnection sparks from bass vs C.a envelope.
+  - underwater_caustics: dual-frequency caustic beat; particulate glitter in bright cells.
+  - cinematic-flare: lens dirt speckle on axis; veiling glare between light and center.
+  - dynamic-lens-flares: veiling glare along axis; ghost aperture breathing from C.a bass smooth.
+  - lens-flare-brush: wet smear from exact C along drag; caustic sparkle at ghost centers.
+  - neon-pulse-edge: gradient-oriented neon rim; treble sub-harmonic strobe. ACES + A packing fix.
+  - sim-volumetric-fake-em: Faraday hue twist; Lichtenberg branches. dataA + ACES floor added.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM bridge. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/composer-2026-09-11-lighting-ten/`. Skipped neon-light (hybrid batch) and aurora-rift variants.
 
 ## 2026-09-10 — Fireworks shell taxonomy ten (10 shaders)
 
