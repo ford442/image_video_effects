@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Voronoi Chaos
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-11
+//  Ideas: bass-snap shard jitter on top of the continuous mouse repulsion;
+//         held-pointer trail smear from exact dataTextureC history
+//  A packing: display RGBA history (previously unused; A/C now genuinely read/written)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -33,6 +41,10 @@ fn hash2(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
+}
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -95,6 +107,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                  point = point + vec2<f32>(sin(dToMouse * 20.0 - time * 5.0), cos(dToMouse * 20.0 - time * 5.0)) * repulsion;
             }
 
+            // Bass-snap shard jitter: on top of the continuous mouse repulsion
+            // above, a bass transient gives cell points a brief discontinuous
+            // snap (held for one ~1/6s beat window), proportional to chaos —
+            // a percussive shatter-beat native to this file's own repulsion
+            // mechanism rather than a new overlay.
+            let snapSeed = hash2(id + floor(time * 6.0));
+            let snapGate = step(0.82 - audio.x * 0.5, snapSeed.x);
+            point = point + (snapSeed - 0.5) * snapGate * chaos * 0.5;
+
             let diff = neighbor + point - f_st;
             let dist = length(diff);
 
@@ -133,8 +154,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color + vec4<f32>(spectral * (abs(ridge) * 0.08 + clickFront * 0.24), 0.0);
 
     // Add center dots
+    var dotCoverage = 0.0;
     if (m_dist < dotSize) {
         color = mix(color, vec4<f32>(0.0, 0.0, 0.0, 1.0), 0.5);
+        dotCoverage = 1.0;
     }
 
     // Highlight cells near mouse
@@ -145,7 +168,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
        }
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    // Held-pointer trail smear: exact dataTextureC history blended in while
+    // the pointer is held, giving the chaos field a short trailing ghost
+    // instead of the previously write-only/unused history buffer.
+    let history = textureLoad(dataTextureC, clamp(vec2<i32>(global_id.xy), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0);
+    color = vec4<f32>(mix(color.rgb, max(color.rgb, history.rgb * 0.92), held * 0.55), color.a);
+
+    // Semantic alpha: ridge/shatter/dot coverage instead of the source
+    // texture's near-opaque alpha.
+    let alpha = clamp(0.5 + abs(ridge) * 0.22 + clickFront * 0.3 + dotCoverage * 0.25, 0.0, 1.0);
+    let finalColor = vec4<f32>(acesToneMap(color.rgb), alpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    textureStore(dataTextureA, global_id.xy, finalColor);
 
     // Pass depth
     var d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
