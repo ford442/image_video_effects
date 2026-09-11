@@ -1,6 +1,44 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-11 (ethereal generative ten)
+**Last updated:** 2026-09-11 (merged: cyber-EM, geometric, ethereal, leftover batches)
+
+## 2026-09-11 — Cyber-EM hybrid ten (10 shaders)
+
+- IDs: `cyber-rain-em`, `cyber-lattice-bilateral`, `cyber-ripples-coupled`, `cyber-scan-gabor`, `cyber-trace-structure`, `block-distort-em`, `bio-touch-em`, `ferrofluid-em`, `edge-glow-mouse-em`, `gravity-well-em`.
+- Per shader, the ideas actually added:
+  - cyber-rain-em: column lead-char bloom; EM wiper skew along mouse velocity.
+  - cyber-lattice-bilateral: node capacitive discharge on ripple; seam snap bilateral highlight.
+  - cyber-ripples-coupled: constructive crest doubling; orbital charge decay ring.
+  - cyber-scan-gabor: orthogonal null cyan/magenta tint; retrace phosphor decay from C.
+  - cyber-trace-structure: eigenvector neon streak; saddle bifurcation fork.
+  - block-distort-em: block hinge shear along E-field; row phase π stagger.
+  - bio-touch-em: mitosis twin pulse (bass); membrane depolarization wave.
+  - ferrofluid-em: spike coalescence snap; Earnshaw treble wobble.
+  - edge-glow-mouse-em: Laplacian corona; field-line advection streak from C.
+  - gravity-well-em: photon ring halo; frame-drag hue shear.
+- Floor: bindings / 16×16 / exact C / ACES display RGBA / saved params exact. Springs kept on five shaders; no new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/composer-2026-09-11-cyber-em-ten/`.
+- Skipped cyber-organic-ecosystem, magnetic-field, particle-fluid, neon-light (hybrid leftover ten).
+
+## 2026-09-11 — Geometric ten (10 shaders)
+
+- IDs: `interactive-origami`, `datamosh`, `flip-matrix`, `neon-quantum-lattice`, `ascii-glyph`, `voronoi-zoom-turbulence`, `kinetic_tiles`, `hyperbolic-dreamweaver`, `digital-crease`, `kaleido-scope-grokcf1`.
+- Per shader, the ideas actually added:
+  - interactive-origami: mountain-valley fold parity; wet-fold shadow along crease tangent.
+  - datamosh: 8×8 macroblock I-frame tear; chroma ghost from C motion.
+  - flip-matrix: cam notch at 90°; back-face mirror past π/2.
+  - neon-quantum-lattice: electron hop on treble; defect pentagon highlight.
+  - ascii-glyph: phosphor smear vs C on char change; CRT scanline mask.
+  - voronoi-zoom-turbulence: F2−F1 edge neon rim; bass centroid inflation.
+  - kinetic_tiles: domino row delay; grout compression under wave.
+  - hyperbolic-dreamweaver: {7,3} distance bands; geodesic weave highlight.
+  - digital-crease: valley-fold AO; wet-glue seam along crease.
+  - kaleido-scope-grokcf1: segment seam glow; counter-rotating inner ring.
+- Floor: bindings / 16×16 / exact C / ACES display RGBA / saved params exact. No new springs; existing springs kept on datamosh, ascii-glyph, kinetic_tiles, digital-crease.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/composer-2026-09-11-geometric-ten/`.
+- Skipped kaleido-scope, time-lag-map, adaptive-mosaic, neon-poly-grid, spec-hypercube-projection, crystal-mosaic (upgraded in prior batches).
 
 ## 2026-09-11 — Ethereal generative ten (10 shaders)
 
@@ -19,8 +57,6 @@
 - Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
 - Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM bridge. Real-GPU visual QA: external.
 - Notes: `agents/swarm-outputs/composer-2026-09-11-ethereal-ten/`.
-
-**Last updated:** 2026-09-11 (leftover branch union)
 
 ## 2026-09-11 — Leftover branches older than one day
 

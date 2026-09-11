@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Ripples Coupled — Batch 67
-//  fp128 ripple phase, exact-load fluid advection, spring mouse [133..138],
-//  racing vortex packet, capped click bursts, held deepens vortex, ACES.
-//  dataTextureA = SIM STATE (vel.xy, vorticity, density).
+//  Cyber Ripples Coupled
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: constructive crest doubling; orbital charge decay ring
+//  A packing: raw sim state (vel.xy, vorticity, density) in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -141,6 +144,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   vel = vel + mouseVel * influence * 0.5;
   vel = vel + vec2<f32>(-mouseVel.y, mouseVel.x) * influence * mouseSpeed;
 
+  var crestPhaseSum = 0.0;
+  var crestAmpSum = 0.0;
+  var orbitHalo = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
@@ -152,8 +158,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let outward = select(vec2<f32>(0.0), normalize(rToMouse / vec2<f32>(aspect, 1.0)), rDist > 0.001);
       vel = vel + outward * rInfluence * 0.3;
       dens = dens + rInfluence * 0.5;
+
+      // Idea 1 — constructive crest doubling: in-phase ripple overlap brightens crest
+      let ringRadius = elapsed * 0.32;
+      let ringBand = exp(-pow((rDist - ringRadius) * 14.0, 2.0));
+      let ripplePhase = sin(fp128_val(fp128_mul(fp128(ringRadius), fp128(frequency))) - elapsed * speed * 2.0);
+      crestPhaseSum = crestPhaseSum + ripplePhase * ringBand;
+      crestAmpSum = crestAmpSum + ringBand;
+
+      // Idea 2 — orbital charge decay ring: click charges leave fading EM orbit halo
+      let orbitAngle = elapsed * (2.2 + bass) + f32(i) * 1.047;
+      let orbitPos = ripple.xy + vec2<f32>(cos(orbitAngle), sin(orbitAngle)) * ringRadius * 0.85;
+      let orbitDist = length((uv - orbitPos) * vec2<f32>(aspect, 1.0));
+      orbitHalo = orbitHalo + exp(-orbitDist * orbitDist * 900.0) * exp(-elapsed * 1.1) * ringBand;
     }
   }
+  let inPhase = smoothstep(0.55, 0.95, abs(crestPhaseSum) / max(crestAmpSum, 0.001));
+  let crestDouble = inPhase * crestAmpSum * (1.0 + mids * 0.35);
 
   let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
   vel = vel * smoothstep(0.05, 0.1, edgeDist);
@@ -181,10 +202,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let specNoise = hash12(uv * 300.0 + time * 2.0);
   color = color + vec3<f32>(0.9, 0.95, 1.0) * pow(specNoise, 20.0) * influence * dens * 3.0;
   color = color + vec3<f32>(0.2, 0.9, 1.0) * packet * (0.15 + mids * 0.2);
+  color = color + vec3<f32>(0.95, 1.0, 0.85) * crestDouble * 0.35;
+  color = color + vec3<f32>(0.35, 0.75, 1.0) * orbitHalo * (0.4 + treble * 0.25);
   color = acesToneMap(color);
 
   let vorticity = vel.x - vel.y;
-  let alpha = clamp(dens * 0.4 + length(vel) * 0.5 + packet * 0.15 + bass * 0.06, 0.06, 0.96);
+  let alpha = clamp(dens * 0.4 + length(vel) * 0.5 + crestDouble * 0.2 + orbitHalo * 0.15 + packet * 0.15 + bass * 0.06, 0.06, 0.96);
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
   textureStore(dataTextureA, pixel, vec4<f32>(vel, vorticity, dens));
