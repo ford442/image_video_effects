@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Scan Gabor — Batch 67
-//  fp128 scan phase, Gabor bank, racing horizontal packet, C smear,
-//  capped click bursts, held widens band, ACES + semantic alpha.
+//  Cyber Scan Gabor
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: orthogonal null tint; retrace phosphor decay
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -98,8 +102,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gridIntensity = u.zoom_params.y;
   let colorSpeed = u.zoom_params.z * 5.0;
   let freq = mix(0.05, 0.3, u.zoom_params.w);
-  let sigma = mix(1.5, 4.0, 0.4);
-  let responseScale = mix(0.5, 3.0, 0.5);
+  let sigma = mix(1.5f, 4.0f, 0.4f);
+  let responseScale = mix(0.5f, 3.0f, 0.5f);
 
   let scanPhase = fp128_sum(fp128(mousePos.y), fp128_mul(fp128(sin(time * (2.0 + bass))), fp128(0.02)));
   let distY = abs(uv.y - fp128_val(scanPhase));
@@ -117,6 +121,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let r45 = gaborResponse(uv, 0.785398 + rotationOffset, freq, sigma, pixelSize) * responseScale;
     let r90 = gaborResponse(uv, 1.570796 + rotationOffset, freq, sigma, pixelSize) * responseScale;
     let r135 = gaborResponse(uv, 2.356194 + rotationOffset, freq, sigma, pixelSize) * responseScale;
+
+    // Idea 1 — orthogonal null tint: zero-cross of perpendicular Gabor tints cyan/magenta
+    let orthGabor = gaborResponse(uv, 1.570796 + rotationOffset, freq * 1.15, sigma * 0.9, pixelSize) * responseScale;
+    let nullCross = 1.0 - smoothstep(0.0, 0.08, abs(orthGabor));
+    let nullTint = mix(vec3<f32>(1.0, 0.15, 0.85), vec3<f32>(0.1, 0.95, 1.0), select(0.0, 1.0, orthGabor > 0.0));
 
     let pal0 = palette(r0 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
     let pal45 = palette(r45 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.33, 0.67, 0.0));
@@ -139,6 +148,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cyberColor = vec3<f32>(0.5 + 0.5 * sin(hue), 0.5 + 0.5 * sin(hue + 2.09), 0.5 + 0.5 * sin(hue + 4.18));
     var processed = mix(gaborColor, cyberColor, gridVal * gridIntensity) + cyberColor * edgeVal * 3.0;
     processed += vec3<f32>(0.2, 0.95, 1.0) * packet * (0.2 + treble * 0.3);
+    processed += nullTint * nullCross * gridIntensity * 0.55;
     processed += sin(uv.y * resolution.y * 0.5) * 0.1;
     finalColor = mix(baseColor.rgb, processed, scanMask);
   } else {
@@ -158,13 +168,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor += vec3<f32>(0.3, 0.9, 1.0) * clickBurst * 0.4;
 
   let prev = textureLoad(dataTextureC, pixel, 0);
+  // Idea 2 — retrace phosphor decay: scan band leaves brief afterglow from exact C
+  let phosphorDecay = exp(-distY * resolution.y * 0.35) * (1.0 - scanMask);
+  let afterglow = prev.rgb * (0.72 + packet * 0.18) * phosphorDecay * (0.25 + mids * 0.15);
   finalColor = mix(finalColor, prev.rgb * 0.9, scanMask * 0.12);
+  finalColor = finalColor + afterglow;
 
   let band = min(u32(uv.x * 8.0), 7u);
   finalColor += vec3<f32>(0.03, 0.08, 0.12) * plasmaBuffer[band + 1u].x * scanMask * 0.12;
 
   finalColor = acesToneMap(finalColor);
-  let alpha = clamp(baseColor.a * mix(0.5, 0.95, scanMask) + clickBurst * 0.1 + packet * 0.08, 0.06, 0.98);
+  let alpha = clamp(baseColor.a * mix(0.5, 0.95, scanMask) + clickBurst * 0.1 + packet * 0.08 + phosphorDecay * 0.12, 0.06, 0.98);
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
   textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
