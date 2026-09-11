@@ -1,13 +1,12 @@
-// ----------------------------------------------------------------
-// Ethereal Cyber-Plasma Void-Dragon
-// Category: generative
-// Upgraded 2026-08-03 (batch b31, algorithmist):
-//   - CRITICAL FIX: audio was read from u.config.y (rippleCount!) -> now plasmaBuffer[0].xyz
-//   - Bounds guard from u.config.zw; mouse y-flip removed (0-1, y=0 top)
-//   - Full 3D SDF library; octahedral crystal shards, torus halo around the head, box spine-ribs
-//   - 2D geometric layer: Voronoi energy veins + kaleidoscopic fold in the nebula
-//   - Adaptive raymarch, real depth, semantic alpha, dataTextureA output
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Ethereal Cyber-Plasma Void-Dragon
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: breath plasma jet cone along spine tangent; per-segment scale overlap parallax
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -250,6 +249,24 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Native idea 1: breath plasma jet along head-to-tail spine tangent.
+fn breathPlasmaJet(p: vec3<f32>, head: vec3<f32>, tailDir: vec3<f32>, audio: f32, t: f32) -> f32 {
+    let along = dot(p - head, tailDir);
+    let clampedAlong = clamp(along, 0.0, 7.0);
+    let perp = length(p - head - tailDir * clampedAlong);
+    let inCone = smoothstep(6.5, 0.0, along) * smoothstep(1.4, 0.0, perp);
+    let turbulence = 0.5 + 0.5 * sin(along * 9.0 - t * 7.0 + perp * 14.0);
+    return inCone * turbulence * (0.45 + audio * 0.9);
+}
+
+// Native idea 2: per-segment scale overlap parallax on body armor.
+fn scaleOverlapParallax(p: vec3<f32>, segMid: vec3<f32>, viewDir: vec3<f32>, fi: f32, t: f32) -> f32 {
+    let layerOffset = fract(fi * 0.37 + dot(viewDir, vec3<f32>(1.0, 0.3, 0.5)) * 2.0);
+    let scaleRing = 0.5 + 0.5 * sin(length(p - segMid) * 28.0 - fi * 2.3 + layerOffset * 6.28);
+    let overlap = smoothstep(0.42, 0.58, scaleRing);
+    return overlap * (0.28 + 0.22 * sin(t * 2.2 + fi * 0.8));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -273,6 +290,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Dragon head anchor (matches map()) for halo-space sigil shading
     let tHead = time * params.y;
     let headPos = mouseTarget + vec3<f32>(sin(tHead * 0.5), cos(tHead * 0.3), sin(tHead * 0.7)) * 2.0;
+    let tailDir = normalize(vec3<f32>(0.0, 0.0, 1.0) + vec3<f32>(sin(tHead * 0.4), cos(tHead * 0.25), 0.0) * 0.35);
 
     // Camera
     let ro = vec3<f32>(0.0, 0.0, -15.0);
@@ -322,6 +340,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (hit) {
         let n = calcNormal(p, time, audio, mouseTarget, params);
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
+        let viewDir = normalize(-rd);
 
         let diff = max(dot(n, l), 0.0);
         let r_vec = reflect(rd, n);
@@ -338,6 +357,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let veinBody = voronoiEdge(p.xy * 4.0 + p.z);
             let etch = (1.0 - smoothstep(0.0, 0.06, veinBody.x)) * (0.5 + audio);
             col += vec3<f32>(0.0, 0.9, 1.0) * etch * params.x * 0.5;
+            var scaleParallax = 0.0;
+            for (var si = 0; si < 20; si = si + 1) {
+                if (f32(si) >= params.z) { continue; }
+                let fi = f32(si);
+                let segMid = headPos + vec3<f32>(0.0, 0.0, 1.2 * fi);
+                scaleParallax = max(scaleParallax, scaleOverlapParallax(p, segMid, viewDir, fi, time));
+            }
+            col += vec3<f32>(0.15, 0.55, 0.75) * scaleParallax * (0.35 + audio * 0.5);
             let inner_glow = vec3<f32>(0.0, 0.8, 1.0) * glow * (1.0 + audio * 1.5);
             col = col + inner_glow;
 
@@ -353,6 +380,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             col += halo_col * (1.0 - smoothstep(0.0, 0.1, abs(star_d))) * (0.5 + audio);
         }
     }
+
+    // Breath plasma jet cone along spine tangent (volumetric, pre-fog).
+    let breathJet = breathPlasmaJet(ro + rd * min(total_dist, 12.0), headPos, tailDir, audio, time);
+    col += vec3<f32>(0.2, 0.85, 1.0) * breathJet * params.x * 1.2;
 
     // Add volumetric nebula fog
     col = mix(col, neb_col, smoothstep(10.0, 50.0, total_dist));
