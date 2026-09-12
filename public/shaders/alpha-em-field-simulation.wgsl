@@ -1,8 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha EM Field Simulation
 //  Category: simulation
-//  Features: mouse-driven, temporal, rgba-state-machine
+//  Features: mouse-driven, temporal, rgba-state-machine, audio-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-12
+//  Ideas: LIC streaks along E; recombination flash where +/− charge meet
+//  A packing: raw (Ex, Ey, B, charge)
+// ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
 //    R = Electric field X (signed f32)
 //    G = Electric field Y (signed f32)
@@ -209,6 +213,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     displayColor.r += max(0.0, chargeVis) * 0.5;
     displayColor.b += max(0.0, -chargeVis) * 0.5;
     displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    // Idea 1 — LIC streaks along E
+    let eLen = max(eStrength, 0.0001);
+    let eUnit = eField / eLen;
+    var lic = 0.0;
+    for (var k: i32 = -3; k <= 3; k++) {
+        let off = vec2<i32>(i32(round(eUnit.x * f32(k) * 2.0)), i32(round(eUnit.y * f32(k) * 2.0)));
+        let sLic = stateAt(coord + off, dims);
+        lic += length(sLic.rg);
+    }
+    lic = lic / 7.0;
+    let streak = smoothstep(0.04, 0.22, lic) * min(eStrength * 2.2, 1.0);
+    displayColor += vec3<f32>(0.85, 0.9, 1.0) * streak * 0.22;
+
+    // Idea 2 — recombination flash where +/− charge meet
+    let nCh = vec4<f32>(left.a, right.a, down.a, up.a);
+    let opp = max(max(max(-charge * nCh.x, -charge * nCh.y), -charge * nCh.z), -charge * nCh.w);
+    let recombine = smoothstep(0.0, 0.08, max(opp, 0.0)) * (abs(charge) + abs(nCh.x) + abs(nCh.y)) * 0.35;
+    displayColor += vec3<f32>(1.0, 0.92, 0.55) * recombine;
 
     // B-field adds brightness variation
     displayColor *= 1.0 + bField * bVisibility * 0.3;

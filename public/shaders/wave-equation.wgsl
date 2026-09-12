@@ -1,6 +1,13 @@
-// Wave Equation — Codex (g) single-pass damped ripple field.
-// A/C packing: height, velocity, foam energy, oscillator phase.
-// B and extraBuffer are intentionally unused; C reads are exact and bounded.
+// ═══════════════════════════════════════════════════════════════════
+//  Wave Tank
+//  Category: simulation
+//  Features: physics, mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-12
+//  Ideas: caustic ridges from |grad h|; standing-node darkening (h,v quadrature)
+//  A packing: raw (height, velocity, foam, oscillator phase)
+// ═══════════════════════════════════════════════════════════════════
+//  B and extraBuffer are intentionally unused; C reads are exact and bounded.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -109,6 +116,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(dataTextureA, pixel, vec4<f32>(height, velocity, foam, phase));
 
   let gradient = vec2<f32>(right.r - left.r, bottom.r - top.r);
+  let slopeMag = length(gradient);
+  let causticRidge = pow(clamp(slopeMag * 4.8, 0.0, 1.0), 2.4);
+  let energyHV = height * height + velocity * velocity;
+  let inPhase = abs(height * velocity) / max(energyHV, 0.0001);
+  let standingNode = (1.0 - inPhase) *
+    smoothstep(0.02, 0.16, sqrt(energyHV)) * mix(0.4, 1.0, reflectivity);
   let normal = normalize(vec3<f32>(-gradient * 6.0, 0.16));
   let offset = normal.xy * (0.018 + audio.x * 0.011);
   let sourceR = textureSampleLevel(readTexture, u_sampler,
@@ -127,6 +140,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     normalize(vec3<f32>(0.45, 0.52, 1.0))), 0.0), 42.0);
   var rgb = source.rgb * (0.65 + normal.z * 0.35);
   rgb += tint * (amplitude * 0.72 + foam * 0.28 + clickFront * 0.05);
+  rgb += vec3<f32>(1.05, 0.98, 0.88) * causticRidge * (0.28 + foam * 0.18);
+  rgb *= 1.0 - standingNode * 0.38;
   rgb += vec3<f32>(1.0, 0.96, 0.86) * specular * 0.3;
   let alpha = clamp(source.a * 0.58 + amplitude * 0.28 + foam * 0.14, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(aces(rgb), alpha));

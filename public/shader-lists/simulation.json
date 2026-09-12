@@ -101,7 +101,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -195,7 +197,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -290,7 +294,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -385,7 +391,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -582,7 +590,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -871,7 +881,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2060,7 +2072,8 @@
       "cellular-automata",
       "audio-reactive",
       "mouse-driven",
-      "lenia"
+      "lenia",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3348,7 +3361,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3435,7 +3450,9 @@
       "cellular-automata",
       "corrosion",
       "layered-materials",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

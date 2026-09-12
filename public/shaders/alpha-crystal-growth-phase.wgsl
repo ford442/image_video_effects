@@ -1,8 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Crystal Growth Phase
 //  Category: simulation
-//  Features: mouse-driven, temporal, rgba-state-machine
+//  Features: mouse-driven, temporal, rgba-state-machine, audio-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-12
+//  Ideas: secondary dendrite arms at high impurity; grain-boundary darkening
+//  A packing: raw (phase, temp, orientation, impurity)
+// ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
 //    R = Phase field (0.0 = liquid, 1.0 = solid)
 //    G = Temperature / supercooling (can be negative)
@@ -115,6 +119,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let phaseReaction = phase * (1.0 - phase) * (phase - 0.5 + m * 0.5);
 
     phase += phaseReaction * growthRate * anisoFactor + lapPhase * 0.1 * growthRate;
+
+    // Idea 1 — secondary dendrite arms when impurity is high (perpendicular to primary orientation)
+    let frontBand = smoothstep(0.12, 0.35, phase) * smoothstep(0.88, 0.55, phase);
+    let perp = vec2<f32>(-dir.y, dir.x);
+    let sideAlign = abs(dot(normalize(gradPhase + vec2<f32>(0.0001)), perp));
+    let sideArm = impurity * impurityLevel * sideAlign * frontBand * growthRate * 1.6;
+    phase += sideArm;
     phase = clamp(phase, 0.0, 1.0);
 
     // === TEMPERATURE UPDATE ===
@@ -195,6 +206,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Impurity tint
     displayColor = mix(displayColor, vec3<f32>(0.8, 0.6, 0.4), impurity * 0.3);
+
+    // Idea 2 — grain-boundary darkening where neighbor orientation jumps
+    let wrap2pi = 6.283185307;
+    let dL = abs(fract((left.b - orientation) / wrap2pi + 0.5) - 0.5);
+    let dR = abs(fract((right.b - orientation) / wrap2pi + 0.5) - 0.5);
+    let dD = abs(fract((down.b - orientation) / wrap2pi + 0.5) - 0.5);
+    let dU = abs(fract((up.b - orientation) / wrap2pi + 0.5) - 0.5);
+    let grainJump = max(max(dL, dR), max(dD, dU)) * 2.0;
+    let grainBound = smoothstep(0.04, 0.12, grainJump) * smoothstep(0.35, 0.7, phase);
+    displayColor *= 1.0 - grainBound * 0.55;
+    displayColor += vec3<f32>(0.08, 0.07, 0.1) * grainBound;
 
     displayColor += audio * vec3<f32>(0.12, 0.07, 0.18) * interfaceMask;
 

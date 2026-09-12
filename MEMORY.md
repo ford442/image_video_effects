@@ -1,6 +1,25 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-11 (geometric leftover eight)
+**Last updated:** 2026-09-12 (simulation leftover ten)
+
+## 2026-09-12 — Simulation leftover ten (10 shaders)
+
+- IDs: `sim-decay-system`, `sim-decay-system-rgba`, `alpha-erosion-terrain`, `alpha-crystal-growth-phase`, `alpha-fire-temperature`, `alpha-em-field-simulation`, `alpha-multi-state-ecosystem`, `cellular-automata-rgba`, `lenia-on-video`, `digital-moss`.
+- Per shader, the ideas actually added:
+  - sim-decay-system: filiform rust veins along edge tangent; oxide bloom from stored corrosion. Held protection / click rings kept.
+  - sim-decay-system-rgba: paint-flake holes when integrity drops; rust bleed from metal into failed paint.
+  - alpha-erosion-terrain: alluvial fans where slope flattens; stream incision where water concentrates.
+  - alpha-crystal-growth-phase: secondary dendrite arms at high impurity; grain-boundary darkening.
+  - alpha-fire-temperature: side-vorticity from up-advection; age-gated ember sparks from Ember Glow.
+  - alpha-em-field-simulation: LIC streaks along E; recombination flash where +/− meet. Click-parity charges kept.
+  - alpha-multi-state-ecosystem: ecotone ridge where s1≈s2; toxin stain from stored A.
+  - cellular-automata-rgba: herbivore taxis along plant gradient; nutrient patches from local death.
+  - lenia-on-video: anisotropic kernel from video luma gradient; membrane from |∇A|. extraBuffer audio lie deleted.
+  - digital-moss: shade taxis toward darker neighbor; rhizoid threads along luma gradient. Sampler names canonicalized. No new spring.
+- Floor: bindings / 16×16 / exact C / raw A packing / ACES display only / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,364, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM/canvas. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-12-sim-leftover-ten/`.
+- Skipped lighting/geometric/hybrid leftovers (done); kaleido/voronoi eight and drag-glitch eight; sand/slime/physarum/wave-equation leftover; overlay-rich origami/crease/ascii-glyph/neon-quantum-lattice.
 
 ## 2026-09-11 — Geometric leftover eight (8 shaders)
 

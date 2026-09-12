@@ -1,8 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Erosion Terrain
 //  Category: simulation
-//  Features: mouse-driven, temporal, rgba-state-machine
+//  Features: mouse-driven, temporal, rgba-state-machine, audio-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-12
+//  Ideas: alluvial fans where slope flattens; stream incision where water concentrates
+//  A packing: raw (height, water, sediment, erosion)
+// ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
 //    R = Terrain height (from image luminance, can change)
 //    G = Water depth (0.0 to 1.0+)
@@ -113,6 +117,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         sediment -= depositAmount;
     }
 
+    // Idea 1 — alluvial fans: extra deposit where slope flattens and sediment is high
+    let fanGate = smoothstep(0.45, 0.08, slope) * smoothstep(0.08, 0.35, sediment);
+    let fanDeposit = sediment * depositionRate * fanGate * 0.35;
+    height += fanDeposit;
+    sediment -= fanDeposit;
+
     // === WATER MOVEMENT (advect toward lower neighbors) ===
     var flowOut = 0.0;
     let myTotalHeight = height + water * 0.1;
@@ -129,6 +139,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     water += rainRate;
     water -= flowOut;
     water = max(water, 0.0);
+
+    // Idea 2 — stream incision: extra downcut where water concentrates
+    let incision = water * flowOut * erosionRate * 0.45 * smoothstep(0.04, 0.18, slope);
+    height -= incision;
+    erosion += incision;
+    sediment += incision * 0.35;
 
     // Sediment moves with water
     sediment *= 0.995; // Some sediment settles
@@ -184,9 +200,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sedimentColor = vec3<f32>(0.5, 0.4, 0.2);
     displayColor = mix(displayColor, sedimentColor, min(sediment, 0.5));
 
+    // Alluvial fan visual: pale silt apron on flattened deposits
+    let fanVis = smoothstep(0.45, 0.08, slope) * smoothstep(0.08, 0.4, sediment);
+    displayColor = mix(displayColor, vec3<f32>(0.72, 0.62, 0.42), fanVis * 0.35);
+
     // Erosion = reddish scars
     let erosionColor = vec3<f32>(0.6, 0.3, 0.2);
     displayColor = mix(displayColor, erosionColor, min(erosion * 0.5, 0.3));
+
+    // Stream incision visual: darker wet channel
+    let channelVis = smoothstep(0.05, 0.22, water) * smoothstep(0.03, 0.16, slope);
+    displayColor = mix(displayColor, vec3<f32>(0.12, 0.18, 0.22), channelVis * 0.4);
 
     displayColor += audio * vec3<f32>(0.05, 0.08, 0.12) * waterVis;
 

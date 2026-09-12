@@ -1,11 +1,23 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sim: Decay System RGBA
 //  Category: simulation
-//  Features: simulation, rgba-state-machine, temporal, mouse-driven
+//  Features: simulation, rgba-state-machine, temporal, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: sim-decay-system.wgsl, alpha-reaction-diffusion-rgba.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-2 - RGBA Simulation Upgrader
+//  Upgraded: 2026-09-12
+//  Ideas: paint-flake holes when integrity drops; rust bleed from metal into failed paint
+//  A packing: raw (paint, metal, organic, structure)
+// ═══════════════════════════════════════════════════════════════════
+//  Four-layer material decay with cross-coupling. Each layer decays
+//  at a different rate and affects the decay rate of other layers.
+//  RGBA Channels:
+//    R = Paint layer integrity (1=perfect, 0=fully peeled)
+//    G = Metal corrosion (0=pristine, 1=fully rusted)
+//    B = Organic rot / wood decay (0=healthy, 1=fully rotten)
+//    A = Structural integrity (1=sound, 0=collapsed)
+//  Cross-coupling: when paint fails, metal corrodes faster;
+//                  when structure weakens, all layers decay faster.
+//  Why f32: Subtle early-stage decay requires precision below 0.01;
+//  8-bit would make everything appear either perfect or ruined.
 // ═══════════════════════════════════════════════════════════════════
 //  Four-layer material decay with cross-coupling. Each layer decays
 //  at a different rate and affects the decay rate of other layers.
@@ -133,6 +145,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rustRate = baseDecay * 2.0 * (1.0 + exposedMetal * 2.0) * (1.0 + moisture * 1.5);
     metal = metal + rustRate * (1.0 + decayedNeighbors * 0.08);
 
+    // Idea 2 solver — rust bleed: neighbor metal seeps into this pixel when paint has failed
+    var neighborMetal = 0.0;
+    var neighborFailedPaint = 0.0;
+    for (var by: i32 = -1; by <= 1; by++) {
+        for (var bx: i32 = -1; bx <= 1; bx++) {
+            if (bx == 0 && by == 0) { continue; }
+            let nBleed = stateAt(coord + vec2<i32>(bx, by), dims);
+            neighborMetal += nBleed.g;
+            neighborFailedPaint += 1.0 - nBleed.r;
+        }
+    }
+    neighborMetal *= 0.125;
+    neighborFailedPaint *= 0.125;
+    let rustBleedIn = neighborMetal * exposedMetal * baseDecay * 1.8 * (1.0 + moisture);
+    metal = metal + rustBleedIn;
+
     // Organic rot: accelerated by moisture, spreads from neighbors
     let rotRate = baseDecay * 1.5 * (1.0 + moisture * 2.0);
     organic = organic + rotRate * (1.0 + decayedNeighbors * 0.1);
@@ -192,6 +220,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Blend original paint over where paint still exists
     displayColor = mix(displayColor, sourceColor * paintColor * structDim, paint);
+
+    // Idea 1 — paint-flake holes when integrity drops (discrete chips)
+    let flakeCell = floor(uv * 96.0);
+    let flakeHash = hash12(flakeCell + vec2<f32>(17.0, 9.0));
+    let flakeMask = step(0.62, flakeHash) * smoothstep(0.55, 0.18, paint) * (1.0 - structure * 0.25);
+    let flakeHole = pow(abs(fract(uv.x * 96.0) - 0.5) * abs(fract(uv.y * 96.0) - 0.5) * 4.0, 0.4);
+    let flake = flakeMask * (1.0 - flakeHole);
+    displayColor = mix(displayColor, rustColor * (0.55 + metal * 0.45), flake);
+
+    // Idea 2 visual — rust bleed from metal into failed paint
+    let rustSeep = metal * exposedMetal * (0.35 + neighborFailedPaint * 0.5);
+    displayColor = mix(displayColor, rustColor, clamp(rustSeep, 0.0, 0.7));
 
     // Add rust texture noise in corroded areas
     let rustNoise = hash12(uv * 150.0 + time * 0.005);

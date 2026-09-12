@@ -1,5 +1,12 @@
-// Cymatic Sand — damped Chladni plate with persistent grain transport.
-// A/C: sand density, radial velocity, resonant energy, strike memory.
+// ═══════════════════════════════════════════════════════════════════
+//  Cymatic Sand
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-12
+//  Ideas: node piles vs antinode ejection; beat envelope between Chladni modes
+//  A packing: raw (density, radial velocity, resonant energy, strike memory)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -38,11 +45,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var velocity = (s.g + drive + lapDensity * 0.035) * (0.91 - audio.y * 0.03); var strikes = 0.0; let count = min(u32(u.config.y), 50u);
   for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 2.0) { let d = length((uv - e.xy) * vec2<f32>(aspect, 1.0)); strikes += exp(-age * 1.7) * exp(-abs(d - age * (0.24 + audio.x * 0.07)) * 72.0); } }
   velocity += strikes * 0.18; let held = select(0.0, 1.0, u.zoom_config.w > 0.5); let md = length((uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0)); let hover = exp(-md * 18.0);
-  velocity += hover * (0.004 + held * 0.10); let newDensity = clamp(s.r + velocity * 0.08 + node * (0.008 + densityControl * 0.018) - abs(wave) * s.r * 0.008, 0.0, 1.0);
-  let energy = clamp(mix(s.b, abs(wave) * (0.35 + audio.y * sensitivity) + strikes, 0.12), 0.0, 1.0); let memory = clamp(max(s.a * 0.94, strikes + hover * held * 0.5), 0.0, 1.0);
+  velocity += hover * (0.004 + held * 0.10);
+  let nodePile = node * (0.018 + densityControl * 0.03);
+  let antinodeEject = (1.0 - node) * abs(wave) * s.r * 0.016;
+  let beatEnv = abs(w0 + w1) / (abs(w0) + abs(w1) + 0.001);
+  let newDensity = clamp(s.r + velocity * 0.08 + nodePile - antinodeEject, 0.0, 1.0);
+  let energy = clamp(mix(s.b, abs(wave) * (0.35 + audio.y * sensitivity) * (0.65 + beatEnv * 0.5) + strikes, 0.12), 0.0, 1.0); let memory = clamp(max(s.a * 0.94, strikes + hover * held * 0.5), 0.0, 1.0);
   let next = vec4<f32>(newDensity, clamp(velocity, -1.0, 1.0), energy, memory); textureStore(dataTextureA, px, next);
   let grain = step(hash21(vec2<f32>(px)), clamp(newDensity * (0.35 + densityControl), 0.0, 1.0)); let bronze = vec3<f32>(1.35, 0.58, 0.14); let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + wave * 4.0 + time * 0.15);
   var hdr = bronze * grain * (0.55 + newDensity + energy * 0.5) + spectral * (node * 0.28 + strikes * 0.65 + audio * sensitivity * 0.12);
+  hdr *= 0.72 + beatEnv * 0.48;
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0); hdr = mix(src.rgb * 0.45, hdr, clamp(newDensity * 0.75 + node * 0.25, 0.25, 0.95));
   let alpha = clamp(src.a * 0.15 + newDensity * 0.75 + node * 0.25 + memory * 0.25, 0.0, 1.0); let mapped = aces(max(hdr, vec3<f32>(0.0)));
   textureStore(writeTexture, px, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, px, vec4<f32>(clamp(1.0 - newDensity * 0.62 - node * 0.12, 0.0, 1.0), 0.0, 0.0, 0.0));

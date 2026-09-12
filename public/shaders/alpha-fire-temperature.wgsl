@@ -1,8 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Fire Temperature
 //  Category: simulation
-//  Features: mouse-driven, temporal, rgba-state-machine
+//  Features: mouse-driven, temporal, rgba-state-machine, audio-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-12
+//  Ideas: side-vorticity curl from up-advection; age-gated ember sparks from Ember Glow
+//  A packing: raw (fuel, temperature, smoke, age)
+// ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
 //    R = Fuel amount (what's burning, 0.0 to 1.0+)
 //    G = Temperature (drives blackbody color, can exceed 1.0)
@@ -42,6 +46,12 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
 
 fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
     return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 = p3 + dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
 // Blackbody approximation (simplified)
@@ -123,6 +133,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     smoke = advectedSmoke;
     age = advectedAge;
 
+    // Idea 1 — side-vorticity at the flame (curl from the existing up-advection)
+    let dTdx = right.g - left.g;
+    let vortAmt = clamp(abs(dTdx) * convectionStrength * smokeRise * 4.0, 0.0, 0.35);
+    let fromRight = dTdx > 0.0;
+    temperature = mix(temperature, select(left.g, right.g, fromRight), vortAmt);
+    smoke = mix(smoke, select(left.b, right.b, fromRight), vortAmt * 0.85);
+
     // Thermal diffusion
     let lapTemp = left.g + right.g + down.g + up.g - 4.0 * temperature;
     temperature += lapTemp * 0.05;
@@ -187,6 +204,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Age adds red ember glow
     let ember = smoothstep(0.5, 2.0, age) * emberGlow;
     displayColor += ember * vec3<f32>(1.8, 0.18 + audio.y * 0.18, 0.025);
+
+    // Idea 2 — age-gated ember sparks driven by Ember Glow (leftover fuel + old combustion)
+    let sparkHash = hash12(uv * 110.0 + vec2<f32>(floor(time * 14.0), 3.7));
+    let sparkGate = smoothstep(1.1, 2.4, age) * smoothstep(0.02, 0.18, fuel);
+    let spark = step(0.88, sparkHash) * sparkGate * emberGlow;
+    displayColor += spark * vec3<f32>(2.2, 0.55, 0.08);
 
     displayColor += audio * vec3<f32>(0.22, 0.08, 0.3) * temperature;
 

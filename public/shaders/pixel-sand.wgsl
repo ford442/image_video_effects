@@ -1,6 +1,12 @@
-// Pixel Sand — granular density/velocity automaton with avalanche sheets.
-// A/C: density, horizontal velocity, vertical velocity, kinetic energy.
-// This pass intentionally migrates the legacy B-state to authoritative A.
+// ═══════════════════════════════════════════════════════════════════
+//  Pixel Sand
+//  Category: simulation
+//  Features: granular, mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-12
+//  Ideas: diagonal rest from up-diagonals; kinetic sparkle from energy
+//  A packing: raw (density, vx, vy, kinetic energy)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -27,6 +33,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = res.x / max(res.y, 1.0); let time = u.config.x; let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0)); var s = grainAt(p, hi);
   if (time < 0.12 || dot(s, s) < 0.000001) { let src0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0); let seed = hash21(vec2<f32>(p)); let density = step(seed, clamp(u.zoom_params.y * (0.35 + uv.y * 0.65) + dot(src0.rgb, vec3<f32>(0.08)), 0.0, 1.0)); s = vec4<f32>(density, 0.0, 0.0, density * 0.05); }
   let l = grainAt(p + vec2<i32>(-1, 0), hi); let r = grainAt(p + vec2<i32>(1, 0), hi); let t = grainAt(p + vec2<i32>(0, -1), hi); let b = grainAt(p + vec2<i32>(0, 1), hi);
+  let ul = grainAt(p + vec2<i32>(-1, -1), hi); let ur = grainAt(p + vec2<i32>(1, -1), hi);
   let gravity = mix(0.015, 0.16, u.zoom_params.x) * (1.0 + audio.x * 0.35); let curlForce = mix(0.0, 0.18, u.zoom_params.z) * (1.0 + audio.y * 0.4); let bounce = mix(0.05, 0.82, u.zoom_params.w);
   let densityGrad = vec2<f32>(r.r - l.r, b.r - t.r) * 0.5; let sheet = max(s.r - b.r, 0.0); let avalanche = max(abs(densityGrad.x) - 0.08, 0.0);
   let noiseAngle = time * (0.35 + audio.y) + uv.x * 19.0 - uv.y * 13.0; let curl = vec2<f32>(cos(noiseAngle), sin(noiseAngle));
@@ -38,10 +45,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var shelves = 0.0; let count = min(u32(u.config.y), 50u);
   for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 1.5) { let q = (uv - e.xy) * vec2<f32>(aspect, 1.0); let d = length(q); let ring = exp(-age * 2.0) * exp(-abs(d - age * 0.32) * 78.0); velocity += normalize(q + vec2<f32>(0.0001)) * ring * 0.18; shelves += ring; } }
   let inflow = t.r * clamp(t.b, 0.0, 1.0) + l.r * max(l.g, 0.0) + r.r * max(-r.g, 0.0); let outflow = s.r * clamp(length(velocity), 0.0, 0.65);
-  let density = clamp(s.r + (inflow - outflow) * 0.11 + sheet * 0.04 - shelves * 0.025, 0.0, 1.0); let energy = clamp(mix(s.a, length(velocity) + shelves + audio.z * density * 0.15, 0.16), 0.0, 1.0);
+  let diagRest = (1.0 - s.r) * (ul.r * step(0.55, l.r) + ur.r * step(0.55, r.r));
+  let density = clamp(s.r + (inflow - outflow) * 0.11 + sheet * 0.04 - shelves * 0.025 + diagRest * 0.08, 0.0, 1.0); let energy = clamp(mix(s.a, length(velocity) + shelves + audio.z * density * 0.15, 0.16), 0.0, 1.0);
   let next = vec4<f32>(density, clamp(velocity.x, -1.0, 1.0), clamp(velocity.y, -1.0, 1.0), energy); textureStore(dataTextureA, p, next);
   let grain = step(hash21(vec2<f32>(p) + floor(time * 0.2)), density); let speed = length(velocity); let warm = vec3<f32>(1.45, 0.50, 0.07); let hot = vec3<f32>(2.2, 0.16, 0.03); let cool = vec3<f32>(0.08, 0.45, 1.55);
   var hdr = mix(warm, hot, clamp(speed * 2.0 + audio.x * 0.25, 0.0, 1.0)); hdr = mix(hdr, cool, clamp(audio.z * 0.35 + curlForce * 1.5, 0.0, 0.7)); hdr *= grain * (0.45 + density * 0.9 + energy * 0.7);
+  let sparkle = energy * energy * step(0.62, hash21(vec2<f32>(p) + vec2<f32>(time * 11.0, energy * 7.0)));
+  hdr += vec3<f32>(2.4, 1.85, 0.55) * sparkle;
   hdr += shelves * vec3<f32>(1.6, 0.65, 0.12); let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0); hdr = mix(src.rgb, hdr, clamp(density * 0.82 + grain * 0.12, 0.0, 0.95));
   let alpha = clamp(src.a * 0.18 + density * 0.78 + energy * 0.20 + shelves * 0.25, 0.0, 1.0); let mapped = aces(max(hdr, vec3<f32>(0.0)));
   textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, p, vec4<f32>(clamp(1.0 - density * 0.70 - energy * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));

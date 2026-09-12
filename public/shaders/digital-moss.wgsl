@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Digital Moss - Simulation with Organic Foliage Material Properties
+// ═══════════════════════════════════════════════════════════════════
+//  Digital Moss
 //  Category: simulation
-//  Features: Moss growth, leaf translucency, photosynthetic tissue
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, simulation
+//  Complexity: Medium
+//  Upgraded: 2026-09-12
+//  Ideas: shade taxis toward darker neighbor; rhizoid threads along luma gradient
+//  A packing: raw (grown, moisture, spores, age)
+// ═══════════════════════════════════════════════════════════════════
 
 struct Uniforms {
   config: vec4<f32>,
@@ -16,13 +20,13 @@ struct Uniforms {
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var filteringSampler: sampler;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparisonSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 // Moss/Foliage Material Properties
@@ -147,7 +151,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let neighborGrowth = (left.r + right.r + up.r + down.r) * 0.25;
     let neighborSpores = (left.b + right.b + up.b + down.b) * 0.25;
     let habitat = smoothstep(0.68, 0.08, luma) * moisture;
-    grown += (neighborGrowth * (1.0 - grown) + spores * 0.45) * speed * habitat * intensity;
+
+    // Idea 1 — shade taxis: grow toward the darker neighbor
+    let pixel = 1.0 / vec2<f32>(dims);
+    let lumaL = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixel.x, 0.0), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let lumaR = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixel.x, 0.0), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let lumaU = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, pixel.y), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let lumaDn = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, pixel.y), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let darkest = min(min(lumaL, lumaR), min(lumaU, lumaDn));
+    let fromShade = select(0.0, left.r, abs(lumaL - darkest) < 0.001)
+        + select(0.0, right.r, abs(lumaR - darkest) < 0.001)
+        + select(0.0, up.r, abs(lumaU - darkest) < 0.001)
+        + select(0.0, down.r, abs(lumaDn - darkest) < 0.001);
+    grown += (neighborGrowth * (1.0 - grown) + spores * 0.45 + fromShade * 0.35 * (1.0 - grown)) * speed * habitat * intensity;
+
+    // Idea 2 — rhizoid threads along the luma gradient
+    let lumaG = vec2<f32>(lumaR - lumaL, lumaU - lumaDn);
+    let gLen = max(length(lumaG), 0.0001);
+    let ridgeT = vec2<f32>(-lumaG.y, lumaG.x) / gLen;
+    let thread = pow(abs(sin(dot(uv, ridgeT) * scale * 1.8 + hash12(floor(uv * scale)))), 10.0);
+    grown += (1.0 - thread) * habitat * speed * detail * 0.22 * (1.0 - grown);
+
     spores = clamp(spores * 0.985 + neighborSpores * speed * detail - grown * 0.002, 0.0, 1.0);
 
     // 3. Environmental Decay
@@ -212,6 +236,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, coord, vec4<f32>(aces(finalColor), alpha));
 
     // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
