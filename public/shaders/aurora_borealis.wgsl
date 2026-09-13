@@ -1,5 +1,12 @@
-// Aurora Borealis — flowing atmospheric ribbons with curl noise, oxygen/nitrogen emission spectra, and geomagnetic interaction.
-// A/C stores ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Aurora Borealis
+//  Category: lighting-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-11
+//  Ideas: corona discharge crown at ribbon crest; magnetic reconnection sparks from C/bass
+//  A packing: ACES display RGBA (A channel stores smoothed bass envelope for reconnection)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -78,6 +85,11 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
                vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn bassEnv(prev: f32, curr: f32) -> f32 {
+  let k = select(0.12, 0.75, curr > prev);
+  return mix(prev, curr, k);
+}
+
 fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
   let hi = vec2<i32>(resolution) - vec2<i32>(1);
   let coord = clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), hi);
@@ -107,6 +119,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let prevHistory = textureLoad(dataTextureC, coord, 0);
+  let bassSmooth = bassEnv(prevHistory.a, bass);
+  let reconnectionBurst = smoothstep(bassSmooth + 0.04, bassSmooth + 0.18, bass);
 
   let rawMouse = u.zoom_config.yz;
   let hasMouse = rawMouse.x >= 0.0 && rawMouse.x <= 1.0 && rawMouse.y >= 0.0 && rawMouse.y <= 1.0;
@@ -137,6 +152,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var auroraRGB = vec3<f32>(0.0);
   var auroraCoverage = 0.0;
+  var reconnectionSparks = 0.0;
 
   for (var i: i32 = 0; i < numRibbons; i = i + 1) {
     let fi = f32(i);
@@ -159,8 +175,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let color = auroraColor(height, intensityMod * glowIntensity, treble);
 
     let glow = smoothstep(width * 3.5, width, dist) * glowIntensity * 0.45;
-    let contribution = color * (ribbonShape + glow);
-    let alpha = ribbonShape * 0.8 + glow * 0.25;
+
+    // Corona discharge crown at each ribbon crest (local max of ribbonShape)
+    let crestMask = ribbonShape * smoothstep(width * 1.8, width * 0.35, dist);
+    let corona = pow(crestMask, 2.2) * glowIntensity * vec3<f32>(0.55, 0.95, 0.72);
+
+    // Magnetic reconnection sparks along ribbon longitude when bass exceeds smoothed C history
+    let sparkLon = sin(uv.x * 95.0 + fi * 13.7 + time * 9.0);
+    let sparkLat = smoothstep(width * 2.2, width * 0.4, dist);
+    let sparkCell = pow(max(0.0, sparkLon), 22.0) * sparkLat * ribbonShape;
+    reconnectionSparks += sparkCell * reconnectionBurst;
+
+    let contribution = color * (ribbonShape + glow) + corona;
+    let alpha = ribbonShape * 0.8 + glow * 0.25 + crestMask * 0.2;
 
     auroraRGB += contribution * (1.0 - auroraCoverage);
     auroraCoverage = min(auroraCoverage + alpha, 1.0);
@@ -172,16 +199,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Composite background with stars and aurora
   let bg = mix(src.rgb, src.rgb * 0.65 + starField * 0.35, 0.4);
-  var hdr = bg + auroraRGB + vec3<f32>(rippleGlow);
+  let sparkColor = vec3<f32>(0.75, 0.92, 1.0) * reconnectionSparks * glowIntensity * 2.8;
+  var hdr = bg + auroraRGB + vec3<f32>(rippleGlow) + sparkColor;
 
   // Exact previous frame history load for continuous atmospheric persistence
   let history = historyAt(uv - ripplePerturb * 0.5, resolution);
   hdr += history.rgb * 0.06;
 
-  let alpha = clamp(src.a * 0.7 + auroraCoverage * 0.6 + length(starField) * 0.2, 0.0, 1.0);
-  let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
+  let displayAlpha = clamp(src.a * 0.7 + auroraCoverage * 0.6 + length(starField) * 0.2 + reconnectionSparks * 0.15, 0.0, 1.0);
+  let toneMapped = aces(max(hdr, vec3<f32>(0.0)));
 
-  textureStore(writeTexture, coord, result);
-  textureStore(dataTextureA, coord, result);
+  textureStore(writeTexture, coord, vec4<f32>(toneMapped, displayAlpha));
+  textureStore(dataTextureA, coord, vec4<f32>(toneMapped, bassSmooth));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

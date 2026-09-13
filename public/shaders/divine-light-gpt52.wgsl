@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  divine-light-gpt52
+//  Divine Light GPT52
 //  Category: lighting-effects
-//  Features: mouse-driven, volumetric, atmospheric, audio-reactive, upgraded-rgba
-//  Ideas: Cauchy crepuscular ray dispersion, rose-window stained-glass projection, Airy disk diffraction halo
-//  A packing: display RGBA (RGB=ACES tone-mapped beam radiance, A=volumetric transmission)
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: Cauchy dispersion; rose-window stained glass; Airy diffraction halo
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

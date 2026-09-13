@@ -1,5 +1,12 @@
-// Alpha Aurora Bands — multi-layer geomagnetic curtains with discrete spectral emission bands (O 557.7nm, O 630nm, N2 427.8nm).
-// A/C stores ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Alpha Aurora Bands
+//  Category: lighting-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-11
+//  Ideas: field-aligned curtain folds; green-line treble shimmer
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -51,13 +58,13 @@ fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
   return value;
 }
 
-fn auroraEmission(altitude: f32, particleEnergy: f32, treble: f32) -> vec3<f32> {
+fn auroraEmission(altitude: f32, particleEnergy: f32) -> vec3<f32> {
   // Oxygen green line: 100-200 km altitude (normalized 0.3-0.6)
-  let greenLine = exp(-pow((altitude - 0.45) / 0.12, 2.0)) * particleEnergy * (1.0 + treble * 0.3);
+  let greenLine = exp(-pow((altitude - 0.45) / 0.12, 2.0)) * particleEnergy;
   // Oxygen red line: 200-400 km altitude (normalized 0.6-0.9)
   let redLine = exp(-pow((altitude - 0.75) / 0.18, 2.0)) * particleEnergy * 0.65;
   // Nitrogen blue/violet line: 80-100 km altitude (normalized 0.1-0.3)
-  let blueLine = exp(-pow((altitude - 0.22) / 0.11, 2.0)) * particleEnergy * (0.45 + treble * 0.4);
+  let blueLine = exp(-pow((altitude - 0.22) / 0.11, 2.0)) * particleEnergy * 0.45;
   return vec3<f32>(redLine, greenLine, blueLine);
 }
 
@@ -129,9 +136,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let layerF = f32(layer);
     let baseAltitude = 0.2 + layerF * 0.15;
 
+    // Field-aligned curtain folds — magnetic draping along wind direction
+    let foldPhase = sin((uv.x + layerF * 0.7) * curtainFrequency * 1.8 + time * speed * 1.4) * windStrength;
+    let foldWarp = windDir * foldPhase * 0.09;
     let noiseUV = vec2<f32>(
-      (uv.x + ripplePerturb.x) * curtainFrequency + time * speed * windDir.x * windStrength + layerF * 3.2,
-      (uv.y + ripplePerturb.y) * 2.2 + time * speed * 0.35
+      (uv.x + ripplePerturb.x + foldWarp.x) * curtainFrequency + time * speed * windDir.x * windStrength + layerF * 3.2,
+      (uv.y + ripplePerturb.y + foldWarp.y) * 2.2 + time * speed * 0.35 + foldWarp.x * 0.4
     );
     let curtainNoise = fbm2(noiseUV, 3);
 
@@ -142,7 +152,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let altitude = clamp(altitudeVar, 0.0, 1.0);
 
     let particleEnergy = curtainMask * intensity * (1.0 + rippleEnergy + select(0.0, 0.6, held));
-    let emission = auroraEmission(altitude, particleEnergy, treble);
+    var emission = auroraEmission(altitude, particleEnergy);
+
+    // Green-line treble shimmer — modulate only the 557.7 nm band
+    let greenShimmer = 1.0 + treble * 0.45 * sin(uv.x * 48.0 + layerF * 2.3 + time * 5.5) * curtainMask;
+    emission.g *= greenShimmer;
 
     totalEmission += emission;
     totalAltitude += altitude * particleEnergy;
