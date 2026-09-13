@@ -1,6 +1,23 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-13 (Grok-2 mid-complexity generative ten + #1228 style.css split + #1234 Jest WASM bridge + conflicting shader-upgrade PR union)
+**Last updated:** 2026-09-13 (Grok-2 mid-complexity generative eldritch ten + hyper/grav ten + #1228 style.css split + #1234 Jest WASM bridge + conflicting shader-upgrade PR union)
+
+## 2026-09-13 — Grok-2 mid-complexity generative eldritch ten (8 upgraded, 2 skipped)
+
+- IDs upgraded: `gen-eldritch-tesseract-hive-mind`, `gen-emergent-calligraphic-ecosystems`, `gen-emergent-script-gardens`, `gen-evolutionary-cellular-gardens`, `gen-fractal-bioluminescence-spore-network`, `gen-fractal-chrono-dendrite-forge`, `gen-glass-mosaic-liquid-refraction`, `gen-gravitational-ferrofluid-singularity-engine`.
+- Skipped already idea-rich: `gen-electric-kaleidoscope-storm` (2026-09-09 Lichtenberg afterimage + leader/return-stroke), `gen-feedback-echo-chamber` (2026-09-11 harmonic echo ladder + standing-wave nodes).
+- Per shader, the ideas actually added:
+  - gen-eldritch-tesseract-hive-mind: W-cell hive lattice along unused W; sentinel pheromone lanes on radial spokes. extraBuffer[133..134] burst kept.
+  - gen-emergent-calligraphic-ecosystems: brush pressure swell; prey-predator ink chase along the flow. No spring.
+  - gen-emergent-script-gardens: Fibonacci parastichy veins on the opposing spiral; ligature bridges to +X neighbor. No spring.
+  - gen-evolutionary-cellular-gardens: scale-mismatch sporulation; nutrient-facing rhizoids. extraBuffer[133..138] spring kept.
+  - gen-fractal-bioluminescence-spore-network: capsule hyphae between Clifford spores; quorum pulse when they close.
+  - gen-fractal-chrono-dendrite-forge: side-branch buds per L-system iteration; recalescence flash on entropy-pulse crests.
+  - gen-glass-mosaic-liquid-refraction: Voronoi facet-pane Snell tilt; meniscus kick at the lead came.
+  - gen-gravitational-ferrofluid-singularity-engine: Rosensweig peak ridges; photon-ring oil sheen outside the horizon.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 8/8, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,365 / 470 generative, SKIP_WASM_BUILD=1 build green. Jest 6 fail = pre-existing WASM `bridge/api.js`, not this batch. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-13-gen-mid-eldritch-ten/`.
 
 ## 2026-09-13 — Grok-2 mid-complexity generative ten (10 shaders)
 

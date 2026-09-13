@@ -1,17 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Multi-Scale Evolutionary Cellular Gardens
+//  Evolutionary Cellular Gardens
 //  Category: generative
-//  Description: Multi-state cellular automata where rules evolve based
-//  on local conditions and global audio input. Audio drives genetic
-//  pressure. Mouse is a spring-smoothed nutrient attractor introducing
-//  invasive species; clicks spawn bounded colony-burst shockwaves.
-//  Temporal feedback memory (dataTextureA/C) gives colonies persistent
-//  age and bioluminescent trails, so growth self-organizes along its
-//  own history. Organic coral-like emergent structures.
-//  Features: audio-reactive (bass/mids/treble + guarded FFT bins 1-8),
-//  mouse-gravity-well, click-reactive, temporal-feedback, generated
-//  depth, semantic alpha
+//  Features: audio-reactive, mouse-driven, click-reactive, temporal-feedback,
+//            generated-depth, semantic-alpha, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: scale-mismatch sporulation where fine lives and coarse is dead; nutrient-facing rhizoids toward the spring well
+//  A packing: trail RGB + colonyAge in A.a; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -261,6 +256,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Glow: bioluminescent inner light
     let bioluminescence = fine * treble * glow * 0.5;
     color += vec3<f32>(0.1, 0.8, 0.6) * bioluminescence;
+
+    // Idea 1 — scale-mismatch sporulation: fine alive, coarse dead
+    let sporulate = fine * (1.0 - coarse) * (0.35 + treble * 0.5);
+    color += vec3<f32>(0.55, 1.0, 0.35) * sporulate * glow * 0.32;
+
+    // Idea 2 — nutrient-facing rhizoids: established colonies send filaments to the well
+    let toNutrient = mousePos - uvA;
+    let nutLen = max(length(toNutrient), 0.0001);
+    let nutDir = toNutrient / nutLen;
+    let alongN = dot(uvA - mousePos, nutDir);
+    let acrossN = abs(dot(uvA - mousePos, vec2<f32>(-nutDir.y, nutDir.x)));
+    let rhizoid = exp(-acrossN * 72.0) * smoothstep(-0.02, 0.18, -alongN)
+                * colonyAge * invasiveForce * (0.45 + bass * 0.35);
+    color += vec3<f32>(0.18, 0.72, 0.32) * rhizoid;
 
     // Coarse structure silhouette shading
     let shadowEdge = smoothstep(0.4, 0.6, coarse) - smoothstep(0.6, 0.8, coarse);

@@ -66,5 +66,5 @@
   "updated": true,
   "id": "gen-emergent-script-gardens",
   "url": "shaders/gen-emergent-script-gardens.wgsl",
-  "features": []
+  "features": ["upgraded-rgba"]
 }

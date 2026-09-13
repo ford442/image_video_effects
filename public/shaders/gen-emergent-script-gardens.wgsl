@@ -3,13 +3,10 @@
 //  Category: generative
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven,
 //            golden-ratio-branching, phyllotaxis, overgrowth-trails
-//  Description: Interacting calligraphic strokes self-organize into
-//  alien symbolic gardens via golden-ratio phyllotaxis (137.5°).
-//  Mouse plants stroke seeds. Bass drives growth iterations.
-//  Temporal feedback creates organic overgrowth trails.
 //  Complexity: Medium-High
-//  Created: 2026-05-31
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-09-13
+//  Ideas: Fibonacci parastichy veins on the opposing spiral family; ligature bridges to +X neighbor
+//  A packing: pre-ACES color RGB + totalInk in A.a; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -107,6 +104,12 @@ fn glyphGarden(uv: vec2<f32>, cluster: vec2<f32>, t: f32, bass: f32, mids: f32, 
         let len = (0.028 + h.y * 0.07 + bass * 0.025) * bloom;
         let bend = t * (0.5 + mids) + fi + h.x * TAU;
         ink += brushStroke(uv, seed, len, inkWidth * (0.65 + h.x * 0.8), angle, bend);
+
+        // Idea 1 — Fibonacci parastichy veins: opposing spiral family (τ − 137.5°)
+        let oppositeTheta = fi * (TAU - PHYLLOTAXIS) + clusterHash.y * TAU;
+        let orbit2 = vec2<f32>(cos(oppositeTheta), sin(oppositeTheta)) * goldenR * 0.92;
+        ink += brushStroke(uv, cluster + orbit2, len * 0.45, inkWidth * 0.38,
+                           oppositeTheta + PI * 0.5, bend) * 0.55;
     }
 
     return clamp(ink, 0.0, 1.0);
@@ -167,7 +170,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let mouseBoost = exp(-length(cluster - mouse) * length(cluster - mouse) * 24.0) * 0.55;
             let ink = glyphGarden(p, cluster, time, bass, mids, treble,
                                   clamp(strokeDensity + mouseBoost, 0.0, 1.0), curvature, inkWidth);
-            if (ink > 0.0) {
+            // Idea 2 — ligature bridges: a short brush toward the +X neighbor
+            let nextCluster = (neighbor + vec2<f32>(1.0, 0.0) + 0.5 + jitter) / gardenScale;
+            let ligDelta = nextCluster - cluster;
+            let ligLen = length(ligDelta);
+            let ligAngle = atan2(ligDelta.y, ligDelta.x);
+            let ligature = brushStroke(p, cluster, ligLen * 0.55, inkWidth * 0.32, ligAngle, 0.0) * 0.42;
+            let inkAll = ink + ligature;
+            if (inkAll > 0.0) {
                 let h = hash22(neighbor * 0.23 + 0.5);
                 let hue = h.x + time * 0.018 + bass * 0.1;
                 let clusterColor = vec3<f32>(
@@ -175,8 +185,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                     0.5 + 0.5 * cos(hue * TAU + 2.094),
                     0.5 + 0.5 * cos(hue * TAU + 4.189)
                 );
-                chroma += clusterColor * ink;
-                totalInk += ink;
+                chroma += clusterColor * inkAll;
+                totalInk += inkAll;
             }
         }
     }

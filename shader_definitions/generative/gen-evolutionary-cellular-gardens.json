@@ -71,7 +71,8 @@
     "depth-output",
     "semantic-alpha",
     "procedural",
-    "aces-tonemap"
+    "aces-tonemap",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = untonemapped colony trail RGB plus colony age; exact cellular history; extraBuffer[133..138] = smoothed attractor and click state"
 }

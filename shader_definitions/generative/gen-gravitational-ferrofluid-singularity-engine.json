@@ -18,7 +18,8 @@
     "fast-motion",
     "depth-aware",
     "semantic-alpha",
-    "aces-tone-map"
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
   "tags": [
     "ferrofluid",

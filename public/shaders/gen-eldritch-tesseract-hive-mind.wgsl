@@ -1,11 +1,15 @@
-// ----------------------------------------------------------------
-// Eldritch Tesseract-Hive Mind
-// Category: generative
-// Features: 4d-tesseract-raymarch, thin-film-iridescence, voxel-tearing,
-//           sentinel-swarm, hdr-feedback-trails, speed-streaks,
-//           audio-transient-burst, audio-color-temperature,
-//           aces-tone-map, semantic-alpha, generated-depth, fast-motion
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Eldritch Tesseract-Hive Mind
+//  Category: generative
+//  Features: 4d-tesseract-raymarch, thin-film-iridescence, voxel-tearing,
+//            sentinel-swarm, hdr-feedback-trails, speed-streaks,
+//            audio-transient-burst, audio-color-temperature,
+//            aces-tone-map, semantic-alpha, generated-depth, fast-motion, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: W-cell hive lattice along unused W; sentinel pheromone lanes on radial spokes
+//  A packing: raw HDR trail RGB + raymarch depth in A.a; ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -93,6 +97,11 @@ fn map(p: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
 
     // Core tesseract SDF evaluation
     var d1 = length(max(abs(p4) - vec4<f32>(1.0), vec4<f32>(0.0))) - 0.1;
+
+    // Idea 1 — W-cell hive lattice: neighboring 4D cube along unused W
+    let p4hive = p4 - vec4<f32>(0.0, 0.0, 0.0, 2.15);
+    let dHive = length(max(abs(p4hive) - vec4<f32>(0.85), vec4<f32>(0.0))) - 0.08;
+    d1 = min(d1, dHive);
 
     // Boolean Carving using noise to create veins
     let carve = vnoise3(p * vec3<f32>(2.0) + vec3<f32>(time * 0.6)) * 0.3;
@@ -274,6 +283,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth_mask = 1.0 - smoothstep(0.0, 12.0, d);
     let swarm_color = vec3<f32>(0.1, 1.0, 0.55) * tempTint * vec3<f32>(swarm_val * depth_mask * (2.2 + burst * 2.0));
     col += swarm_color;
+
+    // Idea 2 — sentinel pheromone lanes: radial hive traffic beside tangential streaks
+    let alongRad = dot(uv, radialDir) * 3.5 - warpT * swarmSpeed * 0.12;
+    let nPhero = vnoise3(vec3<f32>(alongRad, across * 0.35, warpT * 0.4));
+    let phero = smoothstep(0.90, 0.97, nPhero) * depth_mask * clamp(swarm_density * 0.15, 0.0, 0.8);
+    col += vec3<f32>(0.08, 0.55, 0.28) * tempTint * vec3<f32>(phero * (1.2 + burst));
     col += iridescence(vec3<f32>(0.0, 0.0, 1.0), normalize(vec3<f32>(uv, 1.0)), iridescence_shift + time * 0.1)
          * shock * (0.8 + treble * 1.2);
 

@@ -60,5 +60,5 @@
   "updated": true,
   "id": "gen-fractal-bioluminescence-spore-network",
   "url": "shaders/gen-fractal-bioluminescence-spore-network.wgsl",
-  "features": []
+  "features": ["upgraded-rgba"]
 }

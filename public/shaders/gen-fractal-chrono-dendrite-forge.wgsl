@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Fractal Chrono-Dendrite Forge (Visualist Upgrade)
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Fractal Chrono-Dendrite Forge
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: side-branch buds at each L-system iteration; recalescence flash on entropy-pulse crests
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -77,6 +82,11 @@ fn map(p_in: vec3<f32>, time: f32, mouse_pos: vec2<f32>, click: f32, complexity:
 
         let cylinder = length(p_fract.xy) - (0.1 + bass * 0.2) * (1.0 - f32(i) / f32(iterations));
         d = min(d, cylinder / scale);
+
+        // Idea 1 — side-branch buds: thinner perpendicular cylinder at each fold
+        let budOff = p_fract - vec3<f32>(0.18 * sin(time * entropy + f32(i)), 0.0, 0.0);
+        let bud = length(budOff.yz) - (0.045 + bass * 0.08) * (1.0 - f32(i) / f32(iterations));
+        d = min(d, bud / scale);
     }
 
     // Chronos Node Intersections (Apollonian gasket-like spheres at junctions)
@@ -197,6 +207,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 + rim_col * fresnel * (0.9 + treble * 0.6)
                 + vec3<f32>(1.0) * spec
                 + glow_color;
+
+            // Idea 2 — recalescence flash: entropy-pulse crest heats high-curvature metal
+            let recalescence = pow(max(sin(time * entropy * 4.0 + length(p) * 3.0), 0.0), 8.0);
+            col += vec3<f32>(1.25, 0.52, 0.18) * recalescence * (0.22 + bass * 0.4) * (0.4 + fresnel);
 
             // Volumetric fog: deep-violet chrono haze, tinted teal by the
             // accumulated near-miss glow (depth cue + atmosphere).

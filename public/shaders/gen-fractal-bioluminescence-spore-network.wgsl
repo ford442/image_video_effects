@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-09-13
+//  Ideas: capsule hyphae between Clifford spores; quorum pulse when the two spores close
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 const PI=3.14159265358979323846; const TAU=6.28318530717958647692;
 const PHI=1.61803398874989484820; const SQRT2=1.41421356237309504880;
@@ -100,11 +102,19 @@ fn map(p_in: vec3<f32>, complexity: f32, time: f32, audio_react: f32) -> f32 {
         scale *= 0.8;
     }
     let ca = clifford(p.xy * 0.5, 1.8 + time*0.05, -2.1, -1.5, 2.3);
-    let spore1 = length(p - vec3<f32>(ca.x, ca.y, sin(time*0.2)*0.5)) - 0.3 * scale;
-    let spore2 = length(p - vec3<f32>(-ca.y, ca.x, cos(time*0.15)*0.5)) - 0.25 * scale;
+    let sporeA = vec3<f32>(ca.x, ca.y, sin(time*0.2)*0.5);
+    let sporeB = vec3<f32>(-ca.y, ca.x, cos(time*0.15)*0.5);
+    let spore1 = length(p - sporeA) - 0.3 * scale;
+    let spore2 = length(p - sporeB) - 0.25 * scale;
     let fil = length(p.xz) - 0.05 * scale;
     var d = smin(spore1, spore2, 0.15 * scale);
     d = smin(d, fil, 0.08 * scale);
+    // Idea 1 — spore-to-spore hyphae: capsule between the Clifford centers
+    let pa = p - sporeA;
+    let ba = sporeB - sporeA;
+    let ht = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
+    let hypha = length(pa - ba * ht) - 0.045 * scale;
+    d = smin(d, hypha, 0.06 * scale);
     return d;
 }
 
@@ -182,6 +192,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var final_col = mix(col_base, col_hot, glow * 0.1) * glow * bio_intensity * 0.25;
     final_col += col_inj * injection * 2.0;
     final_col += vec3<f32>(0.35, 0.95, 1.2) * clickPulse * (0.7 + mids * 0.5);
+
+    // Idea 2 — quorum pulse: extra hot glow when the two Clifford spores are close
+    let caQ = clifford(uv * 0.5, 1.8 + time * 0.05, -2.1, -1.5, 2.3);
+    let sporeSep = length(caQ - vec2<f32>(-caQ.y, caQ.x));
+    let quorum = exp(-sporeSep * 1.8) * (0.5 + 0.5 * sin(time * 3.2 + bass * 4.0));
+    final_col += col_hot * quorum * glow * 0.12 * bio_intensity;
     final_col = final_col * (1.0 + audio_react * bass * 0.3 + treble * 0.1);
 
     let hueDrift = warpedFBM(uv * 2.0, time * 0.05) * PI * 0.25;

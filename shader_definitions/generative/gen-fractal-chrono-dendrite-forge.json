@@ -62,5 +62,5 @@
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
-  "features": []
+  "features": ["upgraded-rgba"]
 }

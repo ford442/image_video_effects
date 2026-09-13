@@ -3,13 +3,9 @@
 //  Category: generative
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: High
-//  Enrichment: Lotka-Volterra Predator-Prey Dynamics (Wolfram Alpha)
-//    - dx/dt = αx - βxy (prey growth minus predation)
-//    - dy/dt = δxy - γy (predator growth minus starvation)
-//    - Equilibrium: x = γ/δ, y = α/β
-//    - Population oscillations create cyclic color waves
-//  Created: 2026-06-07
-//  By: Kimi Shader Agent
+//  Upgraded: 2026-09-13
+//  Ideas: brush pressure swell along the stroke; prey-predator ink chase along the flow
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -80,8 +76,10 @@ fn stroke(uv: vec2<f32>, seed: vec2<f32>, t: f32, strokeLen: f32,
     let across = -d.x * sin(orientation) + d.y * cos(orientation);
 
     let inLength = smoothstep(0.0, 0.1, along) * smoothstep(strokeLen + 0.05, strokeLen, along);
-    let taper = sin(clamp(along / strokeLen, 0.0, 1.0) * PI);
-    let inWidth = smoothstep(inkWidth, 0.0, abs(across)) * taper;
+    let taper = sin(clamp(along / max(strokeLen, 0.001), 0.0, 1.0) * PI);
+    // Idea 1 — brush pressure swell: real calligraphy width breathes along the stroke
+    let pressure = 1.0 + 0.38 * sin(along * 16.0 + orientation + t * 0.7);
+    let inWidth = smoothstep(inkWidth * pressure, 0.0, abs(across)) * taper;
 
     return inLength * inWidth;
 }
@@ -89,7 +87,7 @@ fn stroke(uv: vec2<f32>, seed: vec2<f32>, t: f32, strokeLen: f32,
 // Calligraphic glyph cluster: N strokes around a seed, self-organizing into glyphs
 fn glyphCluster(uv: vec2<f32>, clusterSeed: vec2<f32>, t: f32,
                 bass: f32, mids: f32, treble: f32,
-                strokeDensity: f32, inkWidth: f32) -> f32 {
+                strokeDensity: f32, inkWidth: f32, chase: f32) -> f32 {
     var totalInk = 0.0;
     let numStrokes = i32(clamp(strokeDensity * 6.0 + 3.0, 3.0, 9.0));
     let seedHash = hash22(clusterSeed);
@@ -101,9 +99,11 @@ fn glyphCluster(uv: vec2<f32>, clusterSeed: vec2<f32>, t: f32,
         let kf = f32(k);
         let strokeHash = hash22(clusterSeed + vec2<f32>(kf * 0.37, kf * 0.73));
         let localOffset = (strokeHash - 0.5) * 0.08 * (1.0 + mids * 0.5);
-        let strokeSeed = clusterSeed + localOffset;
-
         let baseAngle = flowAngle(clusterSeed, t * 0.5, mids, bass);
+        // Idea 2 — prey-predator ink chase: flora seeds slide along the flow
+        let chaseOff = vec2<f32>(cos(baseAngle), sin(baseAngle)) * chase;
+        let strokeSeed = clusterSeed + localOffset + chaseOff;
+
         let strokeAngle = baseAngle + (strokeHash.x - 0.5) * PI * 0.6 +
                           treble * PI * 0.3 * sin(t * 2.0 + kf);
 
@@ -178,8 +178,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Invasive species from mouse boost density locally
             let effectiveDensity = strokeDensity + invasiveBoost * 0.4;
+            let clusterHash0 = hash22(neighbor * 0.1 + 0.5);
+            // Flora (low hash) chases predators along the flow; fauna stays put
+            let chase = (predatorBloom - 0.5) * 0.028 * (1.0 - clusterHash0.x);
             let ink = glyphCluster(uvA, clusterSeed, t, bass, mids, treble,
-                                   effectiveDensity, inkWidth);
+                                   effectiveDensity, inkWidth, chase);
             if (ink > 0.0) {
                 // Ecosystem color driven by Lotka-Volterra cycles
                 // Flora color = green scaled by prey population
@@ -245,5 +248,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(feedback, alpha));
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(feedback, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0));
+    let depthOut = clamp(totalInk * 0.65 + invasiveBoost * 0.2 + clickInk * 0.15, 0.0, 1.0);
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

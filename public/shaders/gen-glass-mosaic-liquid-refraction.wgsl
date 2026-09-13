@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Glass Mosaic + Liquid Refraction — Algorithmist Upgrade
+//  Glass Mosaic Liquid Refraction
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, depth-aware, FBM, domain-warping,
-//            curl-noise, Worley, Fresnel-Schlick, Beer-Lambert, IOR, temporal
+//            curl-noise, Worley, Fresnel-Schlick, Beer-Lambert, IOR, temporal, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-09-13
+//  Ideas: Voronoi facet-pane Snell tilt; meniscus refraction kick at the lead came
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -132,9 +134,9 @@ fn glassThickness(uv: vec2<f32>, h: f32, edgeDist: f32) -> f32 {
 
 fn chromaticAberration(uv: vec2<f32>, strength: f32, time: f32) -> vec3<f32> {
     let dir = normalize(uv - vec2<f32>(0.5) + vec2<f32>(sin(time), cos(time)) * 0.1);
-    let rOff = uv + dir * strength * 1.2;
-    let gOff = uv + dir * strength * 0.6;
-    let bOff = uv - dir * strength * 0.8;
+    let rOff = clamp(uv + dir * strength * 1.2, vec2<f32>(0.0), vec2<f32>(1.0));
+    let gOff = clamp(uv + dir * strength * 0.6, vec2<f32>(0.0), vec2<f32>(1.0));
+    let bOff = clamp(uv - dir * strength * 0.8, vec2<f32>(0.0), vec2<f32>(1.0));
     return vec3<f32>(
         textureSampleLevel(readTexture, u_sampler, rOff, 0.0).r,
         textureSampleLevel(readTexture, u_sampler, gOff, 0.0).g,
@@ -171,8 +173,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let depth = baseDepth * 0.5 + lum * 0.3 + h * 0.2;
     // Refraction with IOR-based Snell approximation
     let eta = IOR_AIR / IOR_GLASS;
-    let refractUV = uv + refractOffset(uv, h, bevelWidth) * refractionStrength * (1.0 + bass * 0.5);
-    let refractUV2 = uv + refractOffset(uv, h * 0.7, bevelWidth * 0.5) * refractionStrength * eta * (1.0 + mids * 0.3);
+    var refractUV = uv + refractOffset(uv, h, bevelWidth) * refractionStrength * (1.0 + bass * 0.5);
+    var refractUV2 = uv + refractOffset(uv, h * 0.7, bevelWidth * 0.5) * refractionStrength * eta * (1.0 + mids * 0.3);
+    // Idea 1 — facet-pane Snell: each Voronoi cell tilts as a stable pane
+    let paneTilt = (hash2(vec2<f32>(cellHash, cellHash * 1.7)) - 0.5) * 2.0;
+    let paneAmt = refractionStrength * 0.12 * smoothstep(0.0, bevelWidth * 4.0, edgeDist);
+    refractUV += paneTilt * paneAmt;
+    refractUV2 += paneTilt * paneAmt * eta;
+    // Idea 2 — meniscus at lead: extra refraction kick on the came
+    let meniscus = exp(-edgeDist * edgeDist * 380.0) * bevelWidth * 8.0;
+    let meniscusDir = normalize(refractOffset(uv, h, 1.0) + vec2<f32>(0.0001));
+    refractUV += meniscusDir * meniscus * refractionStrength;
+    refractUV2 += meniscusDir * meniscus * refractionStrength * 0.7;
+    refractUV = clamp(refractUV, vec2<f32>(0.0), vec2<f32>(1.0));
+    refractUV2 = clamp(refractUV2, vec2<f32>(0.0), vec2<f32>(1.0));
     // Glass pane color with thin-film interference
     let phase = cellHash * TAU + time * 0.5 + treble * 2.0;
     let paneTint = vec3<f32>(

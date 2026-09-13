@@ -64,6 +64,7 @@
     "aces-tone-map",
     "volumetric-depth-atmosphere",
     "generated-depth",
-    "semantic-alpha"
+    "semantic-alpha",
+    "upgraded-rgba"
   ]
 }

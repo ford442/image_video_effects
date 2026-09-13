@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Gravitational Ferrofluid Singularity-Engine
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Gravitational Ferrofluid Singularity-Engine
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: Rosensweig peak ridges on angular×radial crests; photon-ring oil sheen outside the horizon
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -186,19 +190,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let glowIntensity = smoothstep(2.5, 0.5, distToCenter); // Intense near singularity
 
         color = baseColor * diff + spec * vec3<f32>(1.0) + iridColor * rimPow * glowIntensity * 2.0;
+
+        // Idea 1 — Rosensweig peak ridges: specular on angular×radial spike crests
+        let spikeAng = atan2(p.y, p.x);
+        let crest = pow(max(sin(spikeAng * (5.0 + spikeDensity * 2.0) - time * 8.0)
+                          * sin(distToCenter * 15.0 - time * (9.0 + fluidViscosity * 5.0)), 0.0), 4.0);
+        color += iridColor * crest * (0.55 + spec * 0.4) * (0.6 + iridescence * 0.5);
     }
 
     // Event horizon lensing overlay
     if (!hit) {
         let distToCenter = length(uv);
-        if (distToCenter < singularityMass * 0.5) {
+        let horizonR = singularityMass * 0.5;
+        if (distToCenter < horizonR) {
              color = vec3<f32>(0.0); // Black hole core
         } else {
              // Lensing distortion of background
              let lens = (singularityMass * 0.1) / (distToCenter * distToCenter + 0.01);
              let bgUV = uv * (1.0 - lens);
              let lensedNoise = noise3D(vec3<f32>(bgUV * 10.0, time * 0.5));
-             color = mix(color, vec3<f32>(0.1, 0.2, 0.4) * lensedNoise, smoothstep(1.0, 0.0, distToCenter - singularityMass * 0.5));
+             color = mix(color, vec3<f32>(0.1, 0.2, 0.4) * lensedNoise, smoothstep(1.0, 0.0, distToCenter - horizonR));
+             // Idea 2 — photon-ring oil sheen: iridescent film just outside the horizon
+             let ring = abs(distToCenter - horizonR * 1.5);
+             let sheen = exp(-ring * ring * 900.0);
+             let sheenHue = time * 0.5 + iridescence * 3.14;
+             let sheenCol = vec3<f32>(
+                 0.5 + 0.5 * sin(sheenHue),
+                 0.5 + 0.5 * sin(sheenHue + 2.0),
+                 0.5 + 0.5 * sin(sheenHue + 4.0)
+             );
+             color += sheenCol * sheen * iridescence * 0.7;
         }
     }
 

@@ -12451,7 +12451,8 @@
       "aces-tone-map",
       "volumetric-depth-atmosphere",
       "generated-depth",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ]
   },
   {
@@ -12653,7 +12654,9 @@
     "updated": true,
     "id": "gen-emergent-calligraphic-ecosystems",
     "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-emergent-calligraphic-weave",
@@ -12860,7 +12863,9 @@
     "updated": true,
     "id": "gen-emergent-script-gardens",
     "url": "shaders/gen-emergent-script-gardens.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Erosion Strata",
@@ -14586,7 +14591,8 @@
       "depth-output",
       "semantic-alpha",
       "procedural",
-      "aces-tonemap"
+      "aces-tonemap",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = untonemapped colony trail RGB plus colony age; exact cellular history; extraBuffer[133..138] = smoothed attractor and click state"
   },
@@ -17102,7 +17108,9 @@
     "updated": true,
     "id": "gen-fractal-bioluminescence-spore-network",
     "url": "shaders/gen-fractal-bioluminescence-spore-network.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-fractal-chrono-dendrite-forge",
@@ -17204,7 +17212,9 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "features": []
+    "features": [
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Fractal Clockwork",
@@ -18223,7 +18233,8 @@
       "mouse-warped-refraction",
       "temporal-feedback",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -18247,7 +18258,8 @@
       "fast-motion",
       "depth-aware",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "tags": [
       "ferrofluid",
