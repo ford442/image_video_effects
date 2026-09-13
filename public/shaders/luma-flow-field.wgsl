@@ -1,5 +1,12 @@
-// Luma Flow Field — iso-luminance advection with curl ribbons.
-// A/C: HDR trail RGB plus semantic trail coverage in alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Luma Flow Field
+//  Category: simulation
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-12
+//  Ideas: LIC sample along isoFlow; stagnation hold in luma flats
+//  A packing: HDR display-history RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -43,12 +50,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 1.5) { let d = length((uv - e.xy) * vec2<f32>(aspect, 1.0)); let ring = exp(-age * 2.1) * exp(-abs(d - age * 0.34) * 70.0); flow += normalize(uv - e.xy + vec2<f32>(0.0001)) * ring * 1.6; fronts += ring; } }
   let velocity = flow * px * (1.5 + 6.0 * u.zoom_params.x + audio.x * audioSensitivity * 4.0);
   let histPx = clamp(vec2<i32>((uv - velocity) * res), vec2<i32>(0), hi); let history = textureLoad(dataTextureC, histPx, 0);
+  // Idea 1 — LIC sample along isoFlow
+  let licPx = clamp(vec2<i32>((uv - isoFlow * px * 5.0) * res), vec2<i32>(0), hi);
+  let licHist = textureLoad(dataTextureC, licPx, 0);
   let src = textureSampleLevel(readTexture, u_sampler, clamp(uv + velocity * 0.4, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
   let phase = atan2(flow.y, flow.x) + time * (0.7 + audio.z);
   let ribbon = 0.5 + 0.5 * cos(vec3<f32>(phase, phase - 2.094, phase + 2.094));
   let edge = clamp(length(grad) * 4.0, 0.0, 1.0); let fresh = src.rgb * (0.7 + ribbon * (0.35 + audio * audioSensitivity * 0.25));
-  let hdr = mix(fresh, history.rgb * decay, 0.52 + u.zoom_params.y * 0.30) + ribbon * (edge * 0.25 + fronts * 0.4);
-  let alpha = clamp(src.a * 0.35 + edge * 0.5 + history.a * decay * 0.45 + fronts * 0.35, 0.0, 1.0);
+  var hdr = mix(fresh, history.rgb * decay, 0.52 + u.zoom_params.y * 0.30) + ribbon * (edge * 0.25 + fronts * 0.4);
+  hdr = mix(hdr, licHist.rgb, 0.16 + u.zoom_params.y * 0.12);
+  // Idea 2 — stagnation hold where |∇luma| is tiny
+  let stagnate = 1.0 - smoothstep(0.0, 0.035, length(grad));
+  hdr = mix(hdr, history.rgb, stagnate * 0.48);
+  let alpha = clamp(src.a * 0.35 + edge * 0.5 + history.a * decay * 0.45 + fronts * 0.35 + stagnate * 0.12, 0.0, 1.0);
   let state = vec4<f32>(clamp(hdr, vec3<f32>(0.0), vec3<f32>(8.0)), alpha); textureStore(dataTextureA, p, state);
   let mapped = aces(state.rgb); let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, p, vec4<f32>(clamp(mix(depth, 1.0 - edge, 0.45), 0.0, 1.0), 0.0, 0.0, 0.0));

@@ -16,7 +16,7 @@
     "mouse-driven",
     "electromagnetic",
     "interactive",
-    "randomization-safe", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-charge", "click-charges", "aces-tone-map", "semantic-alpha"
+    "randomization-safe", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-charge", "click-charges", "aces-tone-map", "semantic-alpha", "upgraded-rgba"
   ],
   "params": [
     {

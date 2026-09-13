@@ -15,7 +15,7 @@
     "temperature-field",
     "convection",
     "refraction",
-    "randomization-safe", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-heat", "click-fronts", "aces-tone-map", "semantic-alpha"
+    "randomization-safe", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-heat", "click-fronts", "aces-tone-map", "semantic-alpha", "upgraded-rgba"
   ],
   "params": [
     {

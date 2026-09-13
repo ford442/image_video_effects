@@ -15,7 +15,7 @@
     "agent-based",
     "chemoattractant",
     "sensor-steering",
-    "randomization-safe", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-growth", "click-growth-fronts", "aces-tone-map", "semantic-alpha"
+    "randomization-safe", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-growth", "click-growth-fronts", "aces-tone-map", "semantic-alpha", "upgraded-rgba"
   ],
   "params": [
     {

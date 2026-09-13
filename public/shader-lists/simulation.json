@@ -673,7 +673,7 @@
     "id": "alpha-reaction-diffusion-rgba",
     "name": "Alpha Reaction Diffusion RGBA",
     "url": "shaders/alpha-reaction-diffusion-rgba.wgsl",
-    "description": "Four-species ecological Gray-Scott field with exact-load state stencils, cross-inhibited warm/cool colonies, three-band mutation pressure, held inoculation, click seed fronts, ACES display, and semantic activity alpha. Raw RGBA chemistry persists in dataTextureA.",
+    "description": "Four-species ecological Gray-Scott with photo-nutrient chemotaxis, an interface membrane where warm and cool inhibitors meet, held inoculation, click seed fronts, and ACES display. Raw RGBA chemistry persists in dataTextureA.",
     "tags": [
       "reaction-diffusion",
       "simulation",
@@ -686,7 +686,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -760,7 +762,8 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "feedbackPacking": "A/C = warm U, warm V, cool U, cool V. ACES display only."
   },
   {
     "id": "bitonic-sort",
@@ -964,7 +967,7 @@
     "id": "chromatic-reaction-diffusion-rgba",
     "name": "Chromatic Reaction Diffusion RGBA",
     "url": "shaders/chromatic-reaction-diffusion-rgba.wgsl",
-    "description": "Two cross-coupled warm/cool Turing systems with exact-load RGBA chemistry, audio-shifted spectral phases, pointer spiral seeding, bounded click fronts, ACES color, and semantic boundary alpha. Raw state persists only in dataTextureA.",
+    "description": "Two cross-coupled warm/cool Gray-Scott systems with competitive overlap quench, photo chroma seeding, pointer spiral inoculation, bounded click fronts, and ACES display. Raw chemistry persists in dataTextureA.",
     "tags": [
       "reaction-diffusion",
       "simulation",
@@ -978,7 +981,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1052,7 +1057,8 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "feedbackPacking": "A/C = warm U, warm V, cool U, cool V. ACES display only."
   },
   {
     "id": "chromatographic-fluid",
@@ -2155,7 +2161,47 @@
       "mouse-driven",
       "depth-aware",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = charge, age, curl bias, residual scorch; raw DBM state via exact bounded loads",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Branch Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Decay Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Depth Attraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -2297,7 +2343,7 @@
     "id": "nano-assembler",
     "name": "Nano Assembler",
     "url": "shaders/nano-assembler.wgsl",
-    "description": "Simulates nanobots constructing the image. Mouse movement disrupts the assembly, scattering the particles.",
+    "description": "Photo rebuilt as a grid of nanobots. Mouse scatter is ballistic along the radial; docking bonds weld shared cell edges as assembly rises.",
     "params": [
       {
         "id": "assembly_progress",
@@ -2329,11 +2375,49 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "simulation",
       "physics"
+    ],
+    "feedbackPacking": "A = ACES display RGBA (no persistent sim).",
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Assembly",
+        "default": 1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Disruption",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Rebuild Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2964,7 +3048,7 @@
     "id": "predator-prey",
     "name": "Pixel Ecology",
     "url": "shaders/predator-prey.wgsl",
-    "description": "Cellular automata ecosystem with plants, herbivores, and carnivores - watch the food chain unfold.",
+    "description": "Cellular-automata food chain of plants, herbivores, and carnivores. Prey lose energy to adjacent predators; animal death composts into plants.",
     "params": [
       {
         "id": "eatProbability",
@@ -2999,11 +3083,49 @@
       "temporal-persistence",
       "interactive",
       "ecology",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
       "generative"
+    ],
+    "feedbackPacking": "A/C = species, energy, age, variant. ACES display only.",
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Eat Probability",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Death Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Mutation Rate",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Breed Threshold",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -3790,7 +3912,8 @@
       "held-heat",
       "click-fronts",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4289,7 +4412,8 @@
       "held-charge",
       "click-charges",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4405,7 +4529,8 @@
       "held-growth",
       "click-growth-fronts",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4795,7 +4920,8 @@
       "held-vortex",
       "click-fronts",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {

@@ -93,5 +93,6 @@
       "step": 0.01,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "feedbackPacking": "A/C = A, B, luciferin-age, 1. ACES display only."
 }

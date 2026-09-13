@@ -1,22 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Lichen Reaction-Diffusion
-//  Category: generative
-//  Description: Gray-Scott reaction-diffusion system simulating
-//    lichen growth patterns. Creates organic, slowly evolving
-//    patterns reminiscent of coral lichens, leopard spots, and
-//    maze-like structures. Mouse deposits additional activator.
-//  Complexity: High
-//  Upgraded: 2026-06-07
-// ═══════════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════════
 //  Lichen Reaction Diffusion
 //  Category: generative
-//  Features: lichen, reaction-diffusion, organic, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: lichen, reaction-diffusion, organic, audio-reactive, mouse-interactive, semantic-alpha, upgraded-rgba
 //  Complexity: Medium-High
-//  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-09-12
+//  Ideas: thallus growth rings around deposits; apothecia cups on dense patches
+//  A packing: display RGB + pattern_density in A.a
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -100,6 +89,7 @@ fn evalLichen(uv_in: vec2<f32>, time: f32, p2: f32, pattern_scale: f32, feed: f3
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
   let resolution = vec2<f32>(u.config.zw);
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let uv = vec2<f32>(pixel) / resolution;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
@@ -109,6 +99,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let p3 = u.zoom_params.z;
   let p4 = u.zoom_params.w;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let prev = textureLoad(dataTextureC, pixel, 0);
   let prevVal = dot(prev.rgb, vec3<f32>(0.299, 0.587, 0.114));
@@ -134,12 +126,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let deposit = exp(-m_dist * m_dist * 2000.0) * 0.5 * f32(mouseDown);
   v_chem += vec3<f32>(deposit);
 
-  // Ripple deposits (branchless)
+  // Ripple deposits (branchless). Ripple xy is already UV.
   for (var i = 0; i < 3; i++) {
     let rp = u.ripples[i];
     let r_age = time - rp.z;
     let rippleActive = step(0.001, rp.z) * step(0.0, r_age) * step(r_age, 3.0);
-    let r_pos = vec2<f32>(rp.x, rp.y) / resolution;
+    let r_pos = rp.xy;
     let r_dist = length(uv - r_pos);
     let ring = exp(-pow(r_dist - r_age * 0.05, 2.0) * 200.0) * (1.0 - r_age / 3.0);
     v_chem += vec3<f32>(ring * 0.3 * rippleActive);
@@ -166,6 +158,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Moss highlight (bass-reactive)
   let moss_highlight = smoothstep(0.5, 0.8, pattern_density) * bass * 0.15;
   color += vec3<f32>(0.6, 0.75, 0.4) * moss_highlight;
+
+  // Idea 1 — thallus growth rings around the pointer deposit and click rings
+  let thallus = abs(sin(m_dist * 48.0 - time * p2 * 0.8));
+  let ringMask = exp(-m_dist * m_dist * 28.0) * (0.35 + f32(mouseDown) * 0.65);
+  color += vec3<f32>(0.62, 0.58, 0.38) * (1.0 - thallus) * ringMask * pattern_density * (0.7 + mids * 0.4);
+  for (var j = 0; j < 3; j++) {
+    let rp = u.ripples[j];
+    let r_age = time - rp.z;
+    let live = step(0.001, rp.z) * step(0.0, r_age) * step(r_age, 3.0);
+    let rd = length(uv - rp.xy);
+    let clickRing = abs(sin(rd * 56.0 - r_age * 6.0));
+    color += vec3<f32>(0.7, 0.65, 0.4) * (1.0 - clickRing) * exp(-rd * 12.0) * live * 0.22;
+  }
+
+  // Idea 2 — apothecia cups on high-density crustose patches
+  let cupCell = fract(uv * pattern_scale * 1.8) - 0.5;
+  let cupR = length(cupCell);
+  let cupSite = hashf(dot(floor(uv * pattern_scale * 1.8), vec2<f32>(17.1, 31.7)));
+  let fruiting = smoothstep(0.62, 0.88, pattern_density) * step(0.72, cupSite);
+  let disk = smoothstep(0.16, 0.05, cupR);
+  let rim = smoothstep(0.04, 0.09, cupR) * smoothstep(0.16, 0.11, cupR);
+  color += vec3<f32>(0.55, 0.28, 0.16) * disk * fruiting * 0.55;
+  color += vec3<f32>(0.82, 0.72, 0.42) * rim * fruiting * (0.4 + treble * 0.35);
 
   // Spore dispersal particles
   let spore_time = time * p2 * 0.5;

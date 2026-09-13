@@ -1,7 +1,12 @@
-// Alpha Reaction Diffusion RGBA — four-species ecological Gray-Scott field.
-// A/C: warm activator/inhibitor in RG, cool activator/inhibitor in BA.
-// Upgraded 2026-08-23: exact C stencil, spectral kinetics, held inoculation,
-// bounded click fronts, ACES display, and semantic activity alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Alpha Reaction Diffusion RGBA
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-12
+//  Ideas: nutrient chemotaxis along photo luma; interface membrane |∇(g−a)|
+//  A packing: raw (warm U, warm V, cool U, cool V)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -53,6 +58,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   );
   s = clamp(s + ds * 0.78, vec4<f32>(0.0), vec4<f32>(1.0));
   s.r += nutrient * u.zoom_params.w * 0.012; s.b += (1.0 - nutrient) * u.zoom_params.w * 0.009;
+
+  // Idea 1 — nutrient chemotaxis: inhibitors step along the photo-luma gradient
+  let srcL = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(1.0 / res.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let srcR = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(1.0 / res.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let srcT = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, 1.0 / res.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let srcB = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, 1.0 / res.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let lumL = dot(srcL.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let lumR = dot(srcR.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let lumT = dot(srcT.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let lumBt = dot(srcB.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let nGrad = vec2<f32>(lumR - lumL, lumBt - lumT);
+  let fromGx = select(l.g, r.g, nGrad.x > 0.0);
+  let fromGy = select(t.g, btm.g, nGrad.y > 0.0);
+  let fromAx = select(l.a, r.a, nGrad.x < 0.0);
+  let fromAy = select(t.a, btm.a, nGrad.y < 0.0);
+  let taxis = u.zoom_params.w * 0.08;
+  s.g = clamp(s.g + (fromGx - s.g) * abs(nGrad.x) * taxis + (fromGy - s.g) * abs(nGrad.y) * taxis, 0.0, 1.0);
+  s.a = clamp(s.a + (fromAx - s.a) * abs(nGrad.x) * taxis + (fromAy - s.a) * abs(nGrad.y) * taxis, 0.0, 1.0);
+
+  // Idea 2 — interface membrane where warm V meets cool V
+  let gGrad = abs(r.g - l.g) + abs(btm.g - t.g);
+  let aGrad = abs(r.a - l.a) + abs(btm.a - t.a);
+  let membrane = abs((s.g - s.a)) * (gGrad + aGrad);
+  s.g = clamp(s.g - membrane * 0.04, 0.0, 1.0);
+  s.a = clamp(s.a - membrane * 0.04, 0.0, 1.0);
+
   let md = length((uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0));
   let hover = exp(-md * 18.0); let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
   s.g += hover * (0.008 + held * (0.24 + audio.x * 0.12));
@@ -73,8 +104,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hdr = s.r * vec3<f32>(0.08, 0.42, 1.35) + s.g * vec3<f32>(2.10, 0.20, 0.04)
           + s.b * vec3<f32>(0.05, 1.25, 0.40) + s.a * vec3<f32>(1.65, 0.70, 0.05);
   hdr += boundary * boundary * vec3<f32>(0.45, 0.12 + audio.y * 0.15, 0.55);
+  hdr += membrane * vec3<f32>(0.85, 0.95, 0.55);
   hdr = mix(src.rgb, hdr, 0.72 + u.zoom_params.w * 0.20);
-  let alpha = clamp(src.a * 0.20 + boundary * 0.55 + instability * 0.35 + max(s.g, s.a) * 0.45, 0.0, 1.0);
+  let alpha = clamp(src.a * 0.20 + boundary * 0.55 + instability * 0.35 + max(s.g, s.a) * 0.45 + membrane * 0.4, 0.0, 1.0);
   let mapped = aces(max(hdr, vec3<f32>(0.0)));
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha));

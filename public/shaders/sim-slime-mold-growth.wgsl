@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sim: Slime Mold Growth (Physarum)
 //  Category: simulation
-//  Features: simulation, agent-based, chemoattractant, sensor-steering
+//  Features: simulation, agent-based, chemoattractant, sensor-steering, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-03-22
-//  By: Agent 3B - Advanced Hybrid Creator
-// ═══════════════════════════════════════════════════════════════════
-//  Agent-based Physarum-style simulation
-//  1000s of agents deposit trails, sensor-based steering (left/center/right)
+//  Upgraded: 2026-09-12
+//  Ideas: photo-luma food on dark regions; vein anastomosis across trail corridors
+//  A packing: raw (trail, diffused, activity, deposit)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -137,6 +135,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
     
+    // Idea 1 — photo food: extra deposit on dark luma (colonize the picture)
+    let photo = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let photoLuma = dot(photo.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    deposit += (1.0 - photoLuma) * 0.014 * (1.0 + bass * 0.25);
+
     // Add deposit from mouse
     let mousePos = u.zoom_config.yz;
     let mouseDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
@@ -156,13 +159,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     deposit += clickGrowth * (0.08 + treble * 0.06);
     
     newTrail = min(newTrail + deposit, 1.0);
+
+    // Idea 2 — vein anastomosis: thicken where neighbor trails already form a corridor
+    let tL = stateAt(coord + vec2<i32>(-1, 0), resolution).r;
+    let tR = stateAt(coord + vec2<i32>(1, 0), resolution).r;
+    let tU = stateAt(coord + vec2<i32>(0, -1), resolution).r;
+    let tD = stateAt(coord + vec2<i32>(0, 1), resolution).r;
+    let corridorH = min(tL, tR) * step(0.12, min(tL, tR));
+    let corridorV = min(tU, tD) * step(0.12, min(tU, tD));
+    let anastomosis = max(corridorH, corridorV) * (1.0 - newTrail) * 0.10;
+    newTrail = min(newTrail + anastomosis, 1.0);
     
     // Store trail
     let activity = clamp(abs(newTrail - trail) * 8.0 + clickGrowth, 0.0, 1.0);
     textureStore(dataTextureA, coord, vec4<f32>(newTrail, diffused, activity, clamp(deposit, 0.0, 1.0)));
     
     // Render
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let baseColor = photo.rgb;
     
     // Trail color (cyan/gold gradient based on density)
     let trailColor = vec3<f32>(
@@ -176,12 +189,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Add glow
     color += vec3<f32>(0.05 + bass * 0.15, 0.3 + mids * 0.25, 0.4 + treble * 0.3) * newTrail * newTrail;
+    color += vec3<f32>(0.12, 0.55, 0.38) * anastomosis;
     color = acesToneMap(color);
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
-    let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
-    let alpha = clamp(sourceAlpha * 0.2 + newTrail * 0.75 + activity * 0.15, 0.0, 1.0);
+    let sourceAlpha = photo.a;
+    let alpha = clamp(sourceAlpha * 0.2 + newTrail * 0.75 + activity * 0.15 + anastomosis * 0.2, 0.0, 1.0);
     textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - newTrail * 0.2), 0.0, 0.0, 0.0));
 }

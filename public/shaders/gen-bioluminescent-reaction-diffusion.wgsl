@@ -4,8 +4,9 @@
 //  Features: mouse-driven, audio-reactive, simulation, upgraded-rgba,
 //            chromatic-species, temporal-mutation, depth-scaled-glow
 //  Complexity: Medium
-//  Created: 2026-05-10
-//  Upgraded: 2026-08-01 (Batch 23 — bounded stencil, honest controls/palette)
+//  Upgraded: 2026-09-12
+//  Ideas: luciferin quench from stored B-age; excitation flash on advancing B fronts
+//  A packing: raw (A, B, luciferin-age, 1)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,8 +39,8 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn loadStateClamped(coord: vec2<i32>, maxCoord: vec2<i32>) -> vec2<f32> {
-  return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), maxCoord), 0).xy;
+fn loadStateClamped(coord: vec2<i32>, maxCoord: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), maxCoord), 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -64,6 +65,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let center = loadStateClamped(coord, maxCoord);
   var a = center.x;
   var b = center.y;
+  let prevAge = center.z;
 
   if (time < 0.1) {
     a = 1.0;
@@ -75,15 +77,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let weightDiag = 0.05;
   let weightCenter = -1.0;
 
-  lapl += center * weightCenter;
-  lapl += loadStateClamped(coord + vec2<i32>(1, 0), maxCoord) * weightAdj;
-  lapl += loadStateClamped(coord + vec2<i32>(-1, 0), maxCoord) * weightAdj;
-  lapl += loadStateClamped(coord + vec2<i32>(0, 1), maxCoord) * weightAdj;
-  lapl += loadStateClamped(coord + vec2<i32>(0, -1), maxCoord) * weightAdj;
-  lapl += loadStateClamped(coord + vec2<i32>(1, 1), maxCoord) * weightDiag;
-  lapl += loadStateClamped(coord + vec2<i32>(-1, -1), maxCoord) * weightDiag;
-  lapl += loadStateClamped(coord + vec2<i32>(1, -1), maxCoord) * weightDiag;
-  lapl += loadStateClamped(coord + vec2<i32>(-1, 1), maxCoord) * weightDiag;
+  let nR = loadStateClamped(coord + vec2<i32>(1, 0), maxCoord);
+  let nL = loadStateClamped(coord + vec2<i32>(-1, 0), maxCoord);
+  let nU = loadStateClamped(coord + vec2<i32>(0, 1), maxCoord);
+  let nD = loadStateClamped(coord + vec2<i32>(0, -1), maxCoord);
+  let nNE = loadStateClamped(coord + vec2<i32>(1, 1), maxCoord);
+  let nSW = loadStateClamped(coord + vec2<i32>(-1, -1), maxCoord);
+  let nSE = loadStateClamped(coord + vec2<i32>(1, -1), maxCoord);
+  let nNW = loadStateClamped(coord + vec2<i32>(-1, 1), maxCoord);
+
+  lapl += center.xy * weightCenter;
+  lapl += nR.xy * weightAdj;
+  lapl += nL.xy * weightAdj;
+  lapl += nU.xy * weightAdj;
+  lapl += nD.xy * weightAdj;
+  lapl += nNE.xy * weightDiag;
+  lapl += nSW.xy * weightDiag;
+  lapl += nSE.xy * weightDiag;
+  lapl += nNW.xy * weightDiag;
 
   let video_color = textureLoad(readTexture, coord, 0);
   let luma = dot(video_color.rgb, vec3<f32>(0.299, 0.587, 0.114));
@@ -112,7 +123,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseSeed = smoothstep(mouseRadius, 0.0, dist_to_mouse) * mouseStrength;
   finalB = mix(finalB, 1.0, mouseSeed);
 
-  let state = vec4<f32>(finalA, finalB, 0.0, 1.0);
+  // Idea 1 — luciferin quench: age rises while B stays high, then glow dims
+  let luciferinAge = clamp(select(prevAge * 0.92, prevAge + simulationSpeed * 0.04, finalB > 0.45), 0.0, 1.0);
+  let quench = 1.0 - smoothstep(0.35, 0.95, luciferinAge) * 0.55;
+
+  let state = vec4<f32>(finalA, finalB, luciferinAge, 1.0);
   textureStore(dataTextureA, coord, state);
 
   let concDiff = clamp(finalA - finalB, 0.0, 1.0);
@@ -129,13 +144,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mixedSpecies = (deepWater + speciesA + speciesB) * (0.7 + spectralVoice * 0.65)
     + spectralTint * spectralVoice * concDiff * 0.18;
 
-  let glow = clamp(finalB * 2.0, 0.0, 1.0);
+  // Idea 2 — excitation front: flash where B is advancing vs neighbors
+  let neighborB = (nR.y + nL.y + nU.y + nD.y) * 0.25;
+  let advancing = clamp(finalB - neighborB, 0.0, 1.0);
+  let excitation = pow(advancing * 2.4, 2.0) * (0.55 + treble * 0.45);
+
+  let glow = clamp(finalB * 2.0, 0.0, 1.0) * quench;
 
   // Depth-scaled glow intensity
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthScale = 0.5 + depth * 0.5;
   let alpha = mix(video_color.a, 1.0, glow * 0.7 * depthScale);
-  let finalRGB = mixedSpecies * glow * depthScale * intensity;
+  let finalRGB = mixedSpecies * glow * depthScale * intensity + vec3<f32>(0.55, 0.95, 1.0) * excitation * intensity;
 
   textureStore(writeTexture, coord, vec4<f32>(acesToneMap(finalRGB * 1.1), alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

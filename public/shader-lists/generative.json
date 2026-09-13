@@ -5812,7 +5812,8 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "feedbackPacking": "A/C = A, B, luciferin-age, 1. ACES display only."
   },
   {
     "name": "Biomechanical Hive",
@@ -22043,7 +22044,12 @@
     "updated": true,
     "id": "gen-lichen-reaction-diffusion",
     "url": "shaders/gen-lichen-reaction-diffusion.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = display RGB + pattern_density in A.a"
   },
   {
     "name": "Lichtenberg Storm",
