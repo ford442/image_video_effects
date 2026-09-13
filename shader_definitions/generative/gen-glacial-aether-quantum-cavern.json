@@ -70,7 +70,8 @@
     "fresnel",
     "material-palette",
     "temporal-feedback",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

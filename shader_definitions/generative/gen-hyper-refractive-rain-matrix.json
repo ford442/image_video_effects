@@ -60,6 +60,6 @@
   "updated": true,
   "id": "gen-hyper-refractive-rain-matrix",
   "url": "shaders/gen-hyper-refractive-rain-matrix.wgsl",
-  "features": ["raymarched", "audio-reactive", "mouse-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware", "input-depth-aware"],
+  "features": ["raymarched", "audio-reactive", "mouse-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware", "input-depth-aware", "upgraded-rgba"],
   "feedbackPacking": "A/C = raw HDR refractive rain display RGBA history"
 }

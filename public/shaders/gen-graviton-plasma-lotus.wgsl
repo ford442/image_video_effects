@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-03 (Batch 33)
+//  Upgraded: 2026-09-13
+//  Ideas: petal-fold veins along KIFS abs planes; nectary corona at the core/petal smin
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -179,6 +181,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Color mapping
         let time = u.config.x;
+        let foldTime = time * u.zoom_params.x;
         let baseColor = 0.5 + 0.5 * cos(time + p.xyx + vec3<f32>(0.0, 2.0, 4.0));
 
         if (mat == 1.0) {
@@ -187,7 +190,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         } else if (mat == 2.0) {
             // Petals: Iridescent subsurface
             col = baseColor * diff * (1.0 + mids * 0.3) + vec3<f32>(0.2, 0.6, 1.0) * smoothstep(0.6, 1.0, rim) * (1.0 + treble * 0.4);
+            // Idea 1 — petal-fold veins along the KIFS abs-fold planes
+            let foldedHit = fold(p, foldTime);
+            let vein = 1.0 - smoothstep(0.0, 0.08, min(abs(foldedHit.x), min(abs(foldedHit.y), abs(foldedHit.z))));
+            col += vec3<f32>(0.95, 0.4, 1.05) * vein * (0.22 + treble * 0.28);
         }
+
+        // Idea 2 — nectary corona where core SDF ≈ petal SDF
+        var qN = p;
+        qN.x += sin(qN.z * 2.0 + foldTime) * 0.2;
+        qN.y += cos(qN.x * 2.0 + foldTime) * 0.2;
+        let dPetal = length(fold(qN, foldTime)) - 0.3 * u.zoom_params.y;
+        let dCore = length(p) - 0.5;
+        let nectar = 1.0 - clamp(abs(dPetal - dCore) / 0.22, 0.0, 1.0);
+        col += vec3<f32>(1.0, 0.55, 0.88) * nectar * (0.18 + bass * 0.32);
 
         // Apply Bloom
         col += vec3<f32>(1.0, 0.5, 0.8) * (0.12 + rim * 0.35) * u.zoom_params.z;

@@ -62,6 +62,7 @@
     "click-gravity-pulses",
     "multi-band-iridescence",
     "temporal-feedback",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba"
   ]
 }

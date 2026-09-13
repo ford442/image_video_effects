@@ -1,13 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  Gravitational Strain Field — Algorithmist Upgrade
+//  Gravitational Strain Field
 //  Category: GENERATIVE
 //  Complexity: VERY HIGH
 //  Mathematical approach: N gravity wells with metric tensor deformation.
 //  Rays traced along geodesics via RK4 integration of dv/ds = -∇Φ.
 //  Lensed image sampled from procedural star field with domain-warped nebula.
 //  Tidal forces emit where |∇²Φ| is large (field gradient maxima).
-//  Upgraded with: domain-warped FBM, curl noise, Worley/Voronoi, Beer-Lambert
-//  extinction, Fresnel-Schlick lensing, enhanced temporal coherence, audio reactivity.
+//  Upgraded: 2026-09-13
+//  Ideas: photon-sphere caustic at 1.5 Rs; tidal stretch of the background star field along ∇Φ
+//  A packing: potential depth, ray speed, emission energy, semantic alpha
 // ─────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -285,6 +286,15 @@ fn tidalEmission(p: vec2<f32>, wells: array<vec3<f32>, 6>, n: i32, t: f32) -> ve
     return hsv2rgb(hue, 0.9, 1.0) * emission;
 }
 
+// ── Photon-sphere caustic (1.5 Rs) — distinct from Einstein ring ──
+fn photonSphereGlow(p: vec2<f32>, wellPos: vec2<f32>, mass: f32) -> f32 {
+    let d = length(p - wellPos);
+    let rs = mass * 2.0;
+    let photonR = rs * 1.5;
+    let w = 0.0035 + mass * 0.0025;
+    return exp(-pow((d - photonR) / max(w, 0.0001), 2.0)) * mass * 6.0;
+}
+
 // ── Einstein ring glow with Fresnel falloff ──
 fn einsteinRingGlow(p: vec2<f32>, wellPos: vec2<f32>, mass: f32, t: f32) -> f32 {
     let d = length(p - wellPos);
@@ -374,7 +384,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     // ── Sample lensed star field ──
-    let lensedUV = (rayPos / vec2<f32>(aspect, 1.0) + 0.5);
+    // Idea 2 — tidal stretch: displace the sky sample along ∇Φ
+    let tidalDir = gravGrad(p, wells, wellCount);
+    let tidalLen = max(length(tidalDir), 0.0001);
+    let tidalStretch = (tidalDir / tidalLen) * clamp(tidalLen * 0.12, 0.0, 0.05);
+    let lensedUV = (rayPos / vec2<f32>(aspect, 1.0) + 0.5) + tidalStretch / vec2<f32>(aspect, 1.0);
     let stars    = starField(lensedUV, t);
 
     // ── Tidal emission ──
@@ -419,6 +433,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ering = einsteinRingGlow(p, wells[i].xy, wells[i].z, t);
         let eHue  = fract(f32(i) / 6.0 + t * 0.05 + 0.1 + mids * 0.1);
         col += hsv2rgb(eHue, 0.9, 1.0) * ering;
+        // Idea 1 — photon-sphere caustic just outside the hole
+        let photon = photonSphereGlow(p, wells[i].xy, wells[i].z);
+        col += hsv2rgb(fract(eHue + 0.08), 0.55, 1.0) * photon * (0.55 + treble * 0.35);
     }
 
     // ── Accretion disks ──

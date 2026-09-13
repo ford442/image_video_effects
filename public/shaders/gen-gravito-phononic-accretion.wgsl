@@ -8,6 +8,9 @@
 //  Wolfram: Blackbody radiation (3000K–10000K) for accretion disk colors.
 //           Gravitational lensing Einstein radius ~3.6 arcsec for cluster.
 //  Complexity: Medium-High
+//  Upgraded: 2026-09-13
+//  Ideas: relativistic beaming crescent on the approaching disk limb; phononic spiral density waves
+//  A packing: tone-mapped temporal display RGB + semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -149,6 +152,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let density = fbmDensity(lensedUV * 3.0 + vec2<f32>(t * 0.04, 0.0), 5);
     let densityB = fbmDensity(lensedUV * 5.0 - vec2<f32>(t * 0.06, t * 0.03), 4);
+    // Idea 2 — phononic spiral density waves driven by audio phase
+    let phonoAng = atan2(lensedUV.y - 0.5, lensedUV.x - 0.5 * aspect);
+    let phono = 0.5 + 0.5 * sin(phonoAng * 5.0 + t * (1.0 + bass) + mids * 3.0);
+    let densityWave = density * (0.72 + phono * 0.45 * densityAmt);
 
     // Accretion disk with blackbody temperature gradient
     var accretion = 0.0;
@@ -176,12 +183,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let angle = atan2(uvA.y - bodyPos.y, uvA.x - bodyPos.x);
         let shear = sin(angle * 3.0 + t * (1.0 + fi * 0.3) + audioAmp * PI) * 0.5 + 0.5;
+        // Idea 1 — relativistic beaming: brighter on the orbital approaching limb
+        let tangent = vec2<f32>(-sin(t * orbitSpd + bodySeed.y * TAU), cos(t * orbitSpd * 0.7 + bodySeed.x * TAU));
+        let radial = (uvA - bodyPos) / max(dist, 0.0001);
+        let approach = clamp(dot(radial, tangent), 0.0, 1.0);
+        let beaming = 0.55 + approach * 0.9;
 
         // Inner disk hotter (blue-white 10000K), outer cooler (red 3000K)
         let diskTemp = mix(10000.0, 3000.0, smoothstep(diskInner, diskOuter, dist));
         let diskBB = blackbodyColor(diskTemp) * (1.0 + audioAmp * 0.5);
 
-        let diskVal = diskProfile * bodyMass * shear * densityAmt;
+        let diskVal = diskProfile * bodyMass * shear * densityAmt * beaming;
         accretion += diskVal;
         accretionColor += diskBB * diskVal;
     }
@@ -192,8 +204,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Filamentary gas structure from density field
     let gasColor1 = vec3<f32>(0.4 + bass * 0.3, 0.15, 0.5 + mids * 0.2);
     let gasColor2 = vec3<f32>(0.7 + treble * 0.2, 0.4 + mids * 0.1, 0.1);
-    let gasBlend = mix(gasColor1, gasColor2, density);
-    color += gasBlend * density * densityAmt * 0.4;
+    let gasBlend = mix(gasColor1, gasColor2, densityWave);
+    color += gasBlend * densityWave * densityAmt * 0.4;
 
     // Blackbody-weighted accretion color
     if (accretion > 0.001) {

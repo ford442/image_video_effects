@@ -17898,7 +17898,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -18110,7 +18111,8 @@
       "fresnel",
       "material-palette",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -18447,7 +18449,8 @@
       "bounded-raymarch",
       "semantic-alpha",
       "generated-depth",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = potential depth, ray speed, emission energy, semantic alpha"
   },
@@ -18557,7 +18560,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped temporal display RGB and semantic alpha"
   },
@@ -18625,7 +18629,8 @@
       "click-gravity-pulses",
       "multi-band-iridescence",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ]
   },
   {
@@ -19601,7 +19606,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = exact ACES display RGBA; alpha combines ray hit and gear-shock glow coverage"
   },
@@ -19710,7 +19716,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = exact ACES display RGBA; guarded bass envelope uses extraBuffer[133]"
   },
@@ -19816,7 +19823,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = exact ACES display RGBA with finite fold-shock persistence"
   },
@@ -20147,7 +20155,8 @@
       "semantic-alpha",
       "aces-tone-mapping",
       "depth-aware",
-      "input-depth-aware"
+      "input-depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR refractive rain display RGBA history"
   },
@@ -20256,7 +20265,8 @@
       "ripple-reactive",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR crystal and advected trail RGBA history"
   },

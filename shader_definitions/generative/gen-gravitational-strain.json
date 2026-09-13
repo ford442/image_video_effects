@@ -68,6 +68,6 @@
   "supportsDof": false,
   "updated": true,
   "url": "shaders/gen-gravitational-strain.wgsl",
-  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "bounded-raymarch", "semantic-alpha", "generated-depth", "aces-tone-map"],
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "bounded-raymarch", "semantic-alpha", "generated-depth", "aces-tone-map", "upgraded-rgba"],
   "feedbackPacking": "dataTextureA/C = potential depth, ray speed, emission energy, semantic alpha"
 }

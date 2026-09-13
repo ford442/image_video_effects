@@ -5,6 +5,9 @@
 //  Local curvature influenced by audio and mouse. Non-Euclidean tiling
 //  with iridescent jewel-like coloring and symmetry breaking.
 //  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: horocycle growth rings in hyperbolic distance; species takeover at thin facet borders
+//  A packing: raw HDR crystal + advected trail RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -220,6 +223,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = jewelColor(combinedId, facetDist, facetBorder,
                             warpT, bass, mids, treble);
+
+    // Idea 2 — species takeover: mix toward the rival seed at contested borders
+    let rival = jewelColor(fract(combinedId + 0.5), facetDist, facetBorder, warpT, bass, mids, treble);
+    let takeover = clamp(competition * (1.0 - facetBorder * 4.0), 0.0, 1.0);
+    color = mix(color, rival, takeover * 0.45);
+
+    // Idea 1 — horocycle growth rings (concentric hyperbolic distance bands)
+    let horo = 1.0 - smoothstep(0.0, 0.045, abs(fract(cellDist * 2.4 - warpT * growthSpeed * 0.35) - 0.5) * 2.0);
+    color += vec3<f32>(0.92, 0.68, 1.05) * horo * (0.1 + mutation * 0.35 + treble * 0.12);
 
     // Racing growth-front runners along hyperbolic tiles.
     let frontWave = sin(facetDist * 12.0 - warpT * (growthSpeed * 4.0 + competition * 2.0));

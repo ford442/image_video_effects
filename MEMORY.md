@@ -1,6 +1,24 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-13 (#1228 style.css split + #1234 Jest WASM bridge + conflicting shader-upgrade PR union)
+**Last updated:** 2026-09-13 (Grok-2 mid-complexity generative ten + #1228 style.css split + #1234 Jest WASM bridge + conflicting shader-upgrade PR union)
+
+## 2026-09-13 — Grok-2 mid-complexity generative ten (10 shaders)
+
+- IDs: `gen-hyper-bismuth-clockwork`, `gen-hyper-dimensional-bismuth-matrix`, `gen-hyper-dimensional-tesseract-labyrinth`, `gen-hyper-refractive-rain-matrix`, `gen-hyperbolic-crystal-symbiosis`, `gen-gravitational-strain`, `gen-gravito-phononic-accretion`, `gen-graviton-plasma-lotus`, `gen-galactic-aether-crystal-geode-core`, `gen-glacial-aether-quantum-cavern`.
+- Per shader, the ideas actually added:
+  - gen-hyper-bismuth-clockwork: hopper terrace ridges on step-cuts; escapement mesh flash at gearPhase crests. No spring.
+  - gen-hyper-dimensional-bismuth-matrix: twin-boundary misfit where hopper≈KIFS; stair-riser rainbow film thickness. extraBuffer[133] bass envelope kept.
+  - gen-hyper-dimensional-tesseract-labyrinth: W-slice ghost frame from q4.w; cell-face corridor glow on cube midplanes.
+  - gen-hyper-refractive-rain-matrix: rain-streak tail capsule; primary bow caustic at ~42°. Raw HDR A kept.
+  - gen-hyperbolic-crystal-symbiosis: horocycle growth rings in hyperbolic distance; species takeover at thin facet borders.
+  - gen-gravitational-strain: photon-sphere caustic at 1.5 Rs; tidal stretch of the star field along ∇Φ. Raw A packing kept.
+  - gen-gravito-phononic-accretion: relativistic beaming crescent; phononic spiral density waves.
+  - gen-graviton-plasma-lotus: petal-fold veins along KIFS abs planes; nectary corona at core/petal smin. extraBuffer[133..138] spring kept.
+  - gen-galactic-aether-crystal-geode-core: druse sparkle on inner cavity; gas convection swirl in the hollow.
+  - gen-glacial-aether-quantum-cavern: ablation scallops on ice walls; meltwater film specular on downward faces.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,365 / 470 generative, SKIP_WASM_BUILD=1 build green. Jest 5 fail = pre-existing WASM bridge (`bridge/api.js` / mapper), not this batch. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-13-gen-mid-hyper-grav-ten/`.
 
 ## 2026-09-13 — #1228 Split `src/style.css`
 

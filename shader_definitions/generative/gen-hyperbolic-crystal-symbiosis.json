@@ -71,7 +71,8 @@
     "ripple-reactive",
     "semantic-alpha",
     "aces-tone-mapping",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = raw HDR crystal and advected trail RGBA history"
 }

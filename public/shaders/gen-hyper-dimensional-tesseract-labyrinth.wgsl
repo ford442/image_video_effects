@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-09-13
+//  Ideas: W-slice ghost frame from the 4th coordinate; cell-face corridor glow on cube midplanes
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -65,7 +67,7 @@ fn sdBoxFrame(p: vec3<f32>, b: vec3<f32>, e: f32) -> f32 {
     return min(min(c1, c2), c3);
 }
 
-fn map(p: vec3<f32>, complexity: f32, warp: f32, audio: f32, time: f32, mousePos: vec3<f32>) -> vec2<f32> {
+fn map(p: vec3<f32>, complexity: f32, warp: f32, audio: f32, time: f32, mousePos: vec3<f32>) -> vec3<f32> {
     var q3 = p;
     let spacing = 6.0;
 
@@ -98,12 +100,21 @@ fn map(p: vec3<f32>, complexity: f32, warp: f32, audio: f32, time: f32, mousePos
     let dFrame = sdBoxFrame(projected3D, boxSize, frameThickness);
     let dSolid = sdBox(projected3D, boxSize * 0.98); // slightly smaller
 
-    // Material 1.0 = Frame, 2.0 = Solid Face
-    if (dFrame < dSolid) {
-        return vec2<f32>(dFrame, 1.0);
-    } else {
-        return vec2<f32>(dSolid, 2.0);
+    // Idea 1 — W-slice ghost: second frame offset by the unused 4th coordinate
+    let wShift = vec3<f32>(q4.w, q4.w * 0.7, -q4.w * 0.4) * 0.35;
+    let dGhost = sdBoxFrame(projected3D + wShift, boxSize * 0.85, frameThickness * 0.45);
+
+    // Idea 2 — cell-face corridors on the three midplanes of the projected cube
+    let corridor = 1.0 - smoothstep(0.0, 0.12, min(abs(projected3D.x), min(abs(projected3D.y), abs(projected3D.z))));
+
+    // Material 1.0 = Frame, 2.0 = Solid Face, 3.0 = W-ghost
+    if (dGhost < dFrame && dGhost < dSolid) {
+        return vec3<f32>(dGhost, 3.0, corridor);
     }
+    if (dFrame < dSolid) {
+        return vec3<f32>(dFrame, 1.0, corridor);
+    }
+    return vec3<f32>(dSolid, 2.0, corridor);
 }
 
 fn calcNormal(p: vec3<f32>, complexity: f32, warp: f32, audio: f32, time: f32, mousePos: vec3<f32>) -> vec3<f32> {
@@ -174,6 +185,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var t = 0.0;
     var d = 0.0;
     var matId = 0.0;
+    var corridorGlow = 0.0;
     var p = ro;
 
     // Accumulate glow along the ray
@@ -184,12 +196,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let res_map = map(p, complexity, effectiveWarp, audio, time, mousePos);
         d = res_map.x;
         matId = res_map.y;
+        corridorGlow = res_map.z;
 
         // Volumetric glow accumulation near edges
-        if (matId == 1.0) {
+        if (matId == 1.0 || matId == 3.0) {
             let glowColorBase = 0.5 + 0.5 * cos(time * 2.0 + p.xyz * 0.5 + vec3<f32>(0.0, 2.0, 4.0));
-            glowCol += glowColorBase * (0.005 / (abs(d) + 0.01)) * edgeGlow * (1.0 + audio * 2.0 + mids * 0.7);
+            let ghostAmt = select(1.0, 0.45, matId == 3.0);
+            glowCol += glowColorBase * (0.005 / (abs(d) + 0.01)) * edgeGlow * (1.0 + audio * 2.0 + mids * 0.7) * ghostAmt;
         }
+        glowCol += vec3<f32>(0.25, 0.85, 1.15) * corridorGlow * (0.0012 / (abs(d) + 0.02)) * edgeGlow;
 
         if(d < 0.01 || t > 60.0) { break; }
         t += d * 0.8;
@@ -205,12 +220,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (matId == 1.0) {
             // Solid emissive edges
             col = mix(vec3<f32>(1.0, 0.45, 0.85), vec3<f32>(0.25, 0.9, 1.25), clamp(mids, 0.0, 1.0)) * edgeGlow * (1.0 + audio + foldShock);
+        } else if (matId == 3.0) {
+            // Idea 1 — W-slice ghost frame
+            col = mix(vec3<f32>(0.35, 0.2, 1.05), vec3<f32>(0.85, 0.45, 1.15), clamp(treble, 0.0, 1.0)) * edgeGlow * (0.45 + audio * 0.4 + foldShock * 0.3);
         } else {
             // Glassy faces
             let envReflection = vec3<f32>(0.1, 0.3, 0.8) * fresnel * 2.0;
             let transparency = vec3<f32>(0.05, 0.05, 0.1);
             col = envReflection + transparency;
             col += vec3<f32>(0.7, 0.2, 0.9) * treble * fresnel * 0.4;
+            // Idea 2 — corridor lines on cube midplanes
+            col += vec3<f32>(0.35, 0.95, 1.2) * corridorGlow * fresnel * edgeGlow * 0.35;
         }
     }
 

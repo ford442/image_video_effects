@@ -7,8 +7,9 @@
 //            thin-film-iridescence, per-facet-glints, frost-tessellation
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-08-03 — Visualist b32 (octahedral facet SDF, SDF normals,
-//            3-point lighting + Fresnel, material IDs, frost inlay, thin-film)
+//  Upgraded: 2026-09-13
+//  Ideas: ablation scallops on ice walls; meltwater film specular on downward faces
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -208,6 +209,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     hitColor += frostLine * vec3<f32>(0.7, 0.95, 1.1) * (0.12 + bass * 0.35) * ao;
     hitColor += vec3<f32>(0.25, 0.85, 1.0) * veinMask * glow * (1.3 + mids);
     hitColor += vec3<f32>(0.2, 0.8, 1.0) * step(0.95, fracture) * (bass + treble);
+    // Idea 1 — ablation scallops on ice walls (not on facets/veins)
+    let scallop = 0.5 + 0.5 * sin(dot(p.xy, vec2<f32>(7.0, 5.3)) + n.z * 4.0);
+    hitColor *= mix(1.0, 0.82 + scallop * 0.28, (1.0 - facetMask) * (1.0 - veinMask));
+    // Idea 2 — meltwater film: extra wet specular on downward-facing ice
+    let downhill = clamp(-n.y, 0.0, 1.0);
+    let wet = downhill * (1.0 - facetMask) * (0.16 + bass * 0.12);
+    hitColor += keyCol * specG * wet * 1.5;
     hitColor *= depth_fade * glow;
 
     let missColor = vec3<f32>(0.05, 0.1, 0.2) * (1.0 / max(1.0 + min_dist * 10.0, 0.001)) * glow;

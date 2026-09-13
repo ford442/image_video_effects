@@ -6,6 +6,9 @@
 //            aces-tone-map, ambient-occlusion
 //  Complexity: Very High
 //  Created: 2026-06-28
+//  Upgraded: 2026-09-13
+//  Ideas: hopper terrace ridges on step-cuts; escapement mesh flash at gearPhase crests
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -85,18 +88,23 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 // ─── Bismuth stepped crystal SDF ───
-fn sdBismuthStep(p: vec3<f32>, size: f32, steps: i32) -> f32 {
+// .x = distance, .y = hopper terrace ridge (boolean step-cut proximity)
+fn sdBismuthStep(p: vec3<f32>, size: f32, steps: i32) -> vec2<f32> {
   var d = sdBox(p, vec3<f32>(size));
   var s = size * 0.5;
   var pp = p;
+  var terrace = 0.0;
   for (var i: i32 = 0; i < steps; i = i + 1) {
     let offset = vec3<f32>(s * 0.3, -s * 0.2, s * 0.1);
     pp = pp - offset;
     let inner = sdBox(pp, vec3<f32>(s * 0.85, s * 0.9, s * 0.85));
-    d = max(d, -inner); // Subtract inner = hollow stepped
+    let cut = -inner;
+    // Idea 1 — ridge where the hopper subtraction meets the outer box
+    terrace = max(terrace, 1.0 - sat(abs(d - cut) / max(s * 0.08, 0.001)));
+    d = max(d, cut);
     s = s * 0.7;
   }
-  return d;
+  return vec2<f32>(d, terrace);
 }
 
 // ─── KIFS Bismuth ───
@@ -122,6 +130,8 @@ struct MapResult {
   d: f32,
   mat: f32,
   ao: f32,
+  terrace: f32,
+  mesh: f32,
 };
 
 fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
@@ -150,7 +160,8 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
 
   // Stepped bismuth crystal in each cell
   let stepCount = i32(2.0 + complexity * 0.5);
-  let bismuth = sdBismuthStep(rq, cell * 0.35, stepCount);
+  let hopper = sdBismuthStep(rq, cell * 0.35, stepCount);
+  let bismuth = hopper.x;
 
   // KIFS structure at center
   let kifs = sdKIFSBismuth(q, time + cellHash * 10.0, complexity, clockSpeed);
@@ -168,6 +179,9 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
   let gear = sdBox(q - gearOffset, vec3<f32>(cell * 0.05, cell * 0.15, cell * 0.05));
   d = smin(d, gear, 0.05);
 
+  // Idea 2 — escapement mesh: flash when neighboring teeth crest
+  let mesh = pow(0.5 + 0.5 * cos(gearPhase * 2.0), 18.0);
+
   // Frame edges
   let frame = sdBoxFrame(q, vec3<f32>(cell * 0.38), cell * 0.02);
   d = smin(d, frame, 0.03);
@@ -181,7 +195,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
   // Ambient occlusion proxy
   let ao = sat(0.7 + 0.3 * hash3(cellId + vec3<f32>(0.5)));
 
-  return MapResult(d, mat, ao);
+  return MapResult(d, mat, ao, hopper.y, mesh);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, complexity: f32,
@@ -278,6 +292,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hitPos = vec3<f32>(0.0);
   var hitMat = 0.0;
   var hitAo = 1.0;
+  var hitTerrace = 0.0;
+  var hitMesh = 0.0;
   var depth = 0.0;
 
   for (var i: i32 = 0; i < 100; i = i + 1) {
@@ -289,6 +305,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       hitPos = pos;
       hitMat = res.mat;
       hitAo = res.ao;
+      hitTerrace = res.terrace;
+      hitMesh = res.mesh;
       depth = t;
       break;
     }
@@ -324,9 +342,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Sharp stepped edges = more iridescent
       let edge = pow(1.0 - nDotV, 4.0);
       metal = metal + ired * edge * 0.4;
+      // Idea 1 — hopper terrace ridges catch extra film color
+      metal = metal + ired * hitTerrace * 0.55;
 
       col = metal * (0.3 + diff * 0.5 + diff2 * 0.2);
       col = col + vec3<f32>(0.6, 0.7, 0.8) * (spec + spec2) * 0.5;
+      // Idea 2 — escapement mesh flash at tooth crest
+      col = col + vec3<f32>(1.0, 0.78, 0.38) * hitMesh * (spec + 0.18) * 0.85;
 
       // Audio-reactive shimmer
       col = col + ired * bass * 0.2;

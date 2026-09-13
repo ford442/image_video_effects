@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Hyper-Refractive Rain-Matrix - Visualist Upgrade
+//  Hyper-Refractive Rain-Matrix
 //  Category: generative
 //  Features: OkLab color mixing, Blackbody temperature, Cosine palettes,
-//            Fresnel rim lighting, HDR tone mapping, raymarched rain drops
-//  Upgraded: 2026-06-28
+//            Fresnel rim lighting, HDR tone mapping, raymarched rain drops, upgraded-rgba
+//  Upgraded: 2026-09-13
+//  Ideas: rain-streak tail behind each capsule; primary bow caustic at ~42°
+//  A packing: raw HDR refractive rain display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -22,7 +24,7 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=MouseInfluence
+    zoom_params: vec4<f32>,  // x=Rain Density, y=Drop Speed, z=Fluid Viscosity, w=Storm Intensity
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -131,7 +133,10 @@ fn map(pos_in: vec3<f32>) -> vec2<f32> {
     let h = hash33(cell);
     q.y += (h.y - 0.5) * cellSpacing;
     let stretch = 0.8 + dropSpeed + bass * 0.9;
-    let d1 = sdCapsule(q, vec3<f32>(0.0, stretch, 0.0), vec3<f32>(0.0, -stretch, 0.0), 0.2 + h.x * 0.3);
+    let d1Body = sdCapsule(q, vec3<f32>(0.0, stretch, 0.0), vec3<f32>(0.0, -stretch, 0.0), 0.2 + h.x * 0.3);
+    // Idea 1 — rain-streak tail behind the falling capsule
+    let d1Tail = sdCapsule(q, vec3<f32>(0.0, -stretch, 0.0), vec3<f32>(0.0, -stretch * 2.15, 0.0), 0.07 + h.x * 0.06);
+    let d1 = smin(d1Body, d1Tail, 0.14);
     var d2 = 1e10;
     for(var i=-1; i<=1; i++) {
         for(var j=-1; j<=1; j++) {
@@ -196,6 +201,11 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
         // Caustics approximation on surface
         let caustics = sin(p.x * (18.0 + treble * 8.0) + u.config.x * 2.0) * cos(p.z * 20.0 + u.config.x * 1.5) * 0.5 + 0.5;
         col += refCol * caustics * (0.12 + treble * 0.22) * fresnel;
+        // Idea 2 — primary bow: rainbow ring near the raindrop 42° scattering angle
+        let bowAngle = abs(dot(-rd, n) - 0.74);
+        let bow = pow(clamp(1.0 - bowAngle * 9.0, 0.0, 1.0), 4.0);
+        let bowCol = cosinePalette(m + stormIntensity * 0.2, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
+        col += bowCol * bow * (0.18 + stormIntensity * 0.28);
         // Fog with OkLab mixing
         col = mix(col, bgCol, 1.0 - exp(-0.02 * t * t));
     }

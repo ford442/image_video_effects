@@ -1,6 +1,9 @@
 // ----------------------------------------------------------------
 // Galactic Aether-Crystal Geode-Core
 // Category: generative
+// Upgraded: 2026-09-13
+// Ideas: druse sparkle on the inner cavity wall; gas convection swirl in the hollow
+// A packing: ACES display RGBA
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -205,8 +208,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         d = map(p);
 
         // Volumetric accumulation for quantum gas (w = Gas Density)
+        // Idea 2 — gas convection swirl inside the hollow
         if (length(p) < 3.0) {
-           volLight += (0.01 * u.zoom_params.w * (1.0 + mids * 0.35)) / (1.0 + abs(d.x));
+           let swirl = atan2(p.z, p.x) + u.config.x * 0.35 + bass * 0.4;
+           let convect = 1.0 + 0.35 * sin(swirl * 3.0 + p.y * 2.0);
+           volLight += (0.01 * u.zoom_params.w * (1.0 + mids * 0.35) * convect) / (1.0 + abs(d.x));
         }
 
         if (d.x < 0.001 || t > 20.0) { break; }
@@ -234,6 +240,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let innerDist = length(p) - 3.0;
             if (innerDist < 0.5) {
                 col += vec3<f32>(0.5, 0.1, 0.8) * (0.5 - innerDist) * coreGlowIntensity;
+                // Idea 1 — druse sparkle lining the inner cavity
+                let druse = step(0.97, hash31(floor(p * 18.0))) * clamp(0.5 - innerDist, 0.0, 1.0);
+                col += vec3<f32>(0.9, 0.72, 1.1) * druse * spec * 5.0 * (0.35 + treble);
             }
 
         } else if (d.y == 2.0) {

@@ -6,6 +6,9 @@
 //            depth-aware, chromatic, volumetric-fog
 //  Complexity: Very High
 //  Created: 2026-06-28
+//  Upgraded: 2026-09-13
+//  Ideas: twin-boundary misfit where hopper≈KIFS; stair-riser rainbow film thickness
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -115,6 +118,8 @@ struct MapResult {
   d: f32,
   mat: f32,
   ao: f32,
+  twin: f32,
+  riser: f32,
 };
 
 fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
@@ -152,6 +157,8 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
 
   // Blend: bismuth + KIFS
   var d = smin(bismuth, kifs, 0.12);
+  // Idea 1 — twin-boundary misfit at the hopper/KIFS meeting plane
+  let twin = 1.0 - sat(abs(bismuth - kifs) / 0.08);
 
   // Interlocking stair-step extrusions
   let stairPhase = time * growthRate + cellHash * 3.14;
@@ -162,6 +169,8 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
   );
   let stair = sdBox(rq - stairOffset, vec3<f32>(crystalSize * 0.08, crystalSize * 0.12, crystalSize * 0.08));
   d = smin(d, stair, 0.04);
+  // Idea 2 — each hopper riser gets a distinct film-thickness phase
+  let riser = fract(floor(rq.y / max(crystalSize * 0.3, 0.001)) * 0.17 + cellHash);
 
   // Frame edges
   let frame = sdBoxFrame(q, vec3<f32>(cellSize * 0.38), cellSize * 0.015);
@@ -175,7 +184,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
 
   let ao = sat(0.6 + 0.4 * hash3(cellId + vec3<f32>(0.5)));
 
-  return MapResult(d, mat, ao);
+  return MapResult(d, mat, ao, twin, riser);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, complexity: f32,
@@ -283,6 +292,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hitPos = vec3<f32>(0.0);
   var hitMat = 0.0;
   var hitAo = 1.0;
+  var hitTwin = 0.0;
+  var hitRiser = 0.0;
   var depth = 0.0;
 
   for (var i: i32 = 0; i < 120; i = i + 1) {
@@ -293,6 +304,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       hitPos = pos;
       hitMat = res.mat;
       hitAo = res.ao;
+      hitTwin = res.twin;
+      hitRiser = res.riser;
       depth = t;
       break;
     }
@@ -327,12 +340,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     } else {
       // Bismuth crystal surface
       let ired = iridescent(nDotV, time * 0.3 + complexity, audio) * iridescence;
+      let riserIred = iridescent(nDotV, time * 0.3 + hitRiser * 6.28, audio) * iridescence;
       let baseMetal = vec3<f32>(0.15, 0.18, 0.22);
-      var metal = baseMetal + ired * 0.8;
+      var metal = baseMetal + mix(ired, riserIred, 0.45) * 0.8;
 
       // Edge = more iridescent (stepped crystal edges)
       let edge = pow(1.0 - nDotV, 4.0);
       metal = metal + ired * edge * 0.5;
+      // Idea 1 — twin-boundary misfit glow
+      metal = metal + riserIred * hitTwin * 0.5;
 
       // Specular highlights (glass-like)
       let specCol = vec3<f32>(0.9, 0.95, 1.0) * (spec + spec2) * 0.6;
