@@ -2,7 +2,7 @@
   "id": "predator-prey",
   "name": "Pixel Ecology",
   "url": "shaders/predator-prey.wgsl",
-  "description": "Cellular automata ecosystem with plants, herbivores, and carnivores - watch the food chain unfold.",
+  "description": "Cellular-automata food chain of plants, herbivores, and carnivores. Prey lose energy to adjacent predators; animal death composts into plants.",
   "params": [
     {
       "id": "eatProbability",
@@ -37,10 +37,48 @@
     "temporal-persistence",
     "interactive",
     "ecology",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",
     "generative"
+  ],
+  "feedbackPacking": "A/C = species, energy, age, variant. ACES display only.",
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Eat Probability",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Death Rate",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Mutation Rate",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Breed Threshold",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ]
 }

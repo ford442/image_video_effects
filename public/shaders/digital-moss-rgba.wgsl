@@ -1,7 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  digital-moss-rgba — Batch 60
-//  RD-driven digital moss: spring cursor, held plant/clean modes, capped
-//  spore ripples, exact C Laplacian, psychedelic moss palette.
+//  digital-moss-rgba
+//  Category: advanced-hybrid
+//  Features: mouse-driven, temporal, rgba-state-machine, organic, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-12
+//  Ideas: dual-species territorial ridge where B≈D; capsule stalks from high-B
+//  A packing: raw (A, B, C, D) chemistry
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -201,8 +204,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let scan = 0.82 + 0.18 * sin(uv.y * 480.0 + time * 2.0);
   let scannedMossColor = mossColor * scan;
   var finalColor = mix(imgColor, scannedMossColor, grown * 0.88);
+
+  // Idea 1 — dual-species territorial ridge where B meets D
+  let meet = 1.0 - abs(B - D);
+  let ridge = smoothstep(0.78, 0.98, meet) * min(B, D) * grown;
+  finalColor += vec3<f32>(0.95, 0.82, 0.28) * ridge * (0.45 + treble * 0.35);
+
+  // Idea 2 — capsule stalks: high-B samples a short screen-up offset
+  let stalkPx = i32(clamp(B * 7.0, 0.0, 8.0));
+  let stalkCoord = clamp(coord + vec2<i32>(0, -stalkPx), vec2<i32>(0), dims - vec2<i32>(1));
+  let stalkState = textureLoad(dataTextureC, stalkCoord, 0);
+  let capsule = smoothstep(0.55, 0.88, B) * stalkState.g * grown;
+  finalColor = mix(finalColor, scannedMossColor * vec3<f32>(0.85, 1.15, 0.55) + vec3<f32>(0.55, 0.35, 0.12) * capsule, capsule * 0.4);
+
   finalColor = acesToneMap(finalColor * (0.95 + bass * 0.08));
-  let alpha = clamp(mix(1.0, 0.82, grown) + B * 0.1, 0.0, 1.0);
+  let alpha = clamp(mix(1.0, 0.82, grown) + B * 0.1 + ridge * 0.2 + capsule * 0.15, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
 

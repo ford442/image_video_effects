@@ -56,5 +56,10 @@
   "updated": true,
   "id": "gen-lichen-reaction-diffusion",
   "url": "shaders/gen-lichen-reaction-diffusion.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = display RGB + pattern_density in A.a"
 }

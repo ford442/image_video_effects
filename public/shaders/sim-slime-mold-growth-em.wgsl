@@ -1,16 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sim: Slime Mold Growth + EM Field
 //  Category: simulation
-//  Features: simulation, agent-based, mouse-driven, electromagnetic, interactive
+//  Features: simulation, agent-based, mouse-driven, electromagnetic, interactive, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Chunks From: sim-slime-mold-growth, mouse-electromagnetic-aurora
-//  Created: 2026-04-18
-//  By: Agent CB-4 - Mouse Physics Injector
-// ═══════════════════════════════════════════════════════════════════
-//  Physarum-style slime mold with mouse electromagnetic field interaction.
-//  Mouse acts as a moving electric charge; agents steer along field lines.
-//  Click ripples spawn opposite-polarity secondary charges.
-//  Alpha channel stores EM field magnitude blended with trail density.
+//  Upgraded: 2026-09-12
+//  Ideas: field-line deposit along E; opposite-polarity wipe from click charges
+//  A packing: raw (trail, E mag, signed B, activity)
+//  extraBuffer: pointer history [133..138] only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -131,6 +127,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Secondary charges from ripples
   var totalE = eField;
   var totalB = bField;
+  var secE = vec2<f32>(0.0);
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
@@ -141,7 +138,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let orbitPos = ripple.xy + vec2<f32>(cos(orbitAngle), sin(orbitAngle)) * orbitRadius;
       let secondaryCharge = -rippleCharge * exp(-elapsed * 0.8);
       let secVel = vec2<f32>(-sin(orbitAngle), cos(orbitAngle)) * 2.0;
-      totalE = totalE + electricField(uv, orbitPos, secondaryCharge);
+      let secField = electricField(uv, orbitPos, secondaryCharge);
+      totalE = totalE + secField;
+      secE = secE + secField;
       totalB = totalB + magneticField(uv, orbitPos, secVel, secondaryCharge);
     }
   }
@@ -216,7 +215,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseField = smoothstep(0.09, 0.0, mouseDist);
   deposit = deposit + mouseField * (0.004 + u.zoom_config.w * 0.11) * (1.0 + bass * 0.5);
 
+  // Idea 1 — field-line deposit: extra trail along E
+  let fieldStep = fieldDir * 0.018;
+  let alongE = trailAtUV(uv + fieldStep, resolution) + trailAtUV(uv - fieldStep, resolution);
+  let fieldLineDeposit = alongE * 0.5 * smoothstep(0.04, 0.9, fieldMag) * 0.045;
+  deposit = deposit + fieldLineDeposit;
+
   newTrail = min(newTrail + deposit, 1.0);
+
+  // Idea 2 — opposite-polarity wipe: trails thin where secondary (negative) charge is strong
+  let wipe = smoothstep(0.12, 1.4, length(secE)) * 0.22;
+  newTrail = newTrail * (1.0 - wipe);
 
   let activity = clamp(abs(newTrail - trail) * 8.0 + abs(totalB) * 0.02, 0.0, 1.0);
   textureStore(dataTextureA, coord, vec4<f32>(newTrail, clamp(fieldMag * 0.05, 0.0, 4.0), clamp(totalB * 0.05, -2.0, 2.0), activity));
@@ -241,6 +250,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let streamline = smoothstep(0.4, 0.6, streamNoise) * fieldVis * smoothstep(0.0, 0.5, fieldMag);
   let fieldColor = mix(vec3<f32>(0.0, 0.6, 1.0), vec3<f32>(1.0, 0.8, 0.0), atan2(fieldDir.y, fieldDir.x) * 0.159 + 0.5);
   color = mix(color, fieldColor, streamline * 0.4);
+  color = color + fieldColor * fieldLineDeposit * 8.0;
+  color = color * (1.0 - wipe * 0.45);
 
   // Core glow near mouse
   let coreDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
@@ -252,7 +263,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Alpha = EM field magnitude blended with trail
   let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
-  let alpha = clamp(sourceAlpha * 0.15 + fieldMag * 0.12 + newTrail * 0.72 + activity * 0.12, 0.0, 1.0);
+  let alpha = clamp(sourceAlpha * 0.15 + fieldMag * 0.12 + newTrail * 0.72 + activity * 0.12 + wipe * 0.15, 0.0, 1.0);
 
   textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - newTrail * 0.2), 0.0, 0.0, 0.0));

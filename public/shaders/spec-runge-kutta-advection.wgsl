@@ -1,16 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  spec-runge-kutta-advection
 //  Category: simulation
-//  Features: RK4, fluid-advection, dye-simulation, high-order
+//  Features: RK4, fluid-advection, dye-simulation, high-order, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: chunk-library (hash22)
-//  Created: 2026-04-18
-//  By: Agent 3C — Spectral Computation Pioneer
-// ═══════════════════════════════════════════════════════════════════
-//  4th-Order Runge-Kutta Flow Advection
-//  Standard fluid advection uses Euler's method which is inaccurate.
-//  RK4 advection is dramatically more accurate — fluid structures
-//  maintain their shape 10x longer. Mouse creates vortex pairs.
+//  Upgraded: 2026-09-12
+//  Ideas: strain-rate filaments from |∇u|; history LIC along a second RK4 step
+//  A packing: HDR dye RGB + |vel| in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -163,12 +158,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vyD = sampleVelocity(uv - vec2<f32>(0.0, texel.y), time).x;
     let curl = (vxR - vxL - vyU + vyD) / (2.0 * texel.x);
 
+    // Idea 1 — strain-rate filaments (RK4 is what keeps them from collapsing)
+    let dudx = (sampleVelocity(uv + vec2<f32>(texel.x, 0.0), time).x - sampleVelocity(uv - vec2<f32>(texel.x, 0.0), time).x) / (2.0 * texel.x);
+    let dvdy = (sampleVelocity(uv + vec2<f32>(0.0, texel.y), time).y - sampleVelocity(uv - vec2<f32>(0.0, texel.y), time).y) / (2.0 * texel.y);
+    let dudy = (sampleVelocity(uv + vec2<f32>(0.0, texel.y), time).x - sampleVelocity(uv - vec2<f32>(0.0, texel.y), time).x) / (2.0 * texel.y);
+    let dvdx = (sampleVelocity(uv + vec2<f32>(texel.x, 0.0), time).y - sampleVelocity(uv - vec2<f32>(texel.x, 0.0), time).y) / (2.0 * texel.x);
+    let strain = abs(dudx - dvdy) * 0.5 + abs(dudy + dvdx) * 0.5;
+    let filament = clamp(strain * 0.08, 0.0, 1.0);
+
     let curlVis = vec3<f32>(
         max(0.0, curl) * 2.0,
         abs(curl) * 0.5,
         max(0.0, -curl) * 2.0
     );
     dye = mix(dye, dye + curlVis * 0.3, vortexStr);
+    dye += dye * filament * 0.35;
+
+    // Idea 2 — history LIC along a second RK4 step
+    let licPos = fract(advectRK4(wrappedPos, -dt * 0.012 * (1.0 + mids * 0.2), time));
+    let licDye = stateLinear(licPos, res).rgb;
+    dye = mix(dye, licDye, 0.18 * feedback);
 
     let aspect = res.x / res.y;
     var clickEnergy = 0.0;
@@ -186,7 +195,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Store for next frame
     textureStore(dataTextureA, gid.xy, vec4<f32>(clamp(dye, vec3<f32>(0.0), vec3<f32>(8.0)), clamp(length(vel), 0.0, 1.0)));
     let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
-    let alpha = clamp(sourceAlpha * 0.4 + length(vel) * 0.7 + clickEnergy * 0.2, 0.0, 1.0);
+    let alpha = clamp(sourceAlpha * 0.4 + length(vel) * 0.7 + clickEnergy * 0.2 + filament * 0.18, 0.0, 1.0);
     textureStore(writeTexture, gid.xy, vec4<f32>(acesToneMap(dye), alpha));
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));

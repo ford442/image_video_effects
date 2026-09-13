@@ -2,7 +2,7 @@
   "id": "nano-assembler",
   "name": "Nano Assembler",
   "url": "shaders/nano-assembler.wgsl",
-  "description": "Simulates nanobots constructing the image. Mouse movement disrupts the assembly, scattering the particles.",
+  "description": "Photo rebuilt as a grid of nanobots. Mouse scatter is ballistic along the radial; docking bonds weld shared cell edges as assembly rises.",
   "params": [
     {
       "id": "assembly_progress",
@@ -34,10 +34,48 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "simulation",
     "physics"
+  ],
+  "feedbackPacking": "A = ACES display RGBA (no persistent sim).",
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Assembly",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Disruption",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Rebuild Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ]
 }

@@ -1,5 +1,12 @@
-// Predator-Prey Pixel Ecology
-// Cellular automata ecosystem simulation with eating, breeding, and death
+// ═══════════════════════════════════════════════════════════════════
+//  Predator-Prey Pixel Ecology
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-12
+//  Ideas: reciprocal hunt (prey lose energy to adjacent predators); carcass compost
+//  A packing: raw (species, energy, age, variant)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -8,35 +15,34 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // species & energy
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>; // temp buffer
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // read previous ecosystem state
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=EatProbability, y=DeathRate, z=MutationRate, w=BreedThreshold
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
-
-// Species types encoded in R channel:
-// 0.0 = Empty
-// 0.1-0.3 = Plants (prey level 0)
-// 0.4-0.6 = Herbivores (prey level 1, predator of plants)
-// 0.7-0.9 = Carnivores (predator of herbivores)
-// 1.0 = Super predator
 
 const EMPTY: f32 = 0.0;
 const PLANT: f32 = 0.2;
 const HERBIVORE: f32 = 0.5;
 const CARNIVORE: f32 = 0.8;
 
-// G channel = Energy (0.0 - 1.0)
-// B channel = Age (0.0 - 1.0)
-// A channel = Mutation variant
+const SPECIES_EMPTY_MAX: f32 = 0.1;
+const SPECIES_PLANT_MAX: f32 = 0.35;
+const SPECIES_HERBIVORE_MAX: f32 = 0.65;
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash21(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
@@ -44,71 +50,55 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
-// Species classification thresholds for ecosystem balance
-const SPECIES_EMPTY_MAX: f32 = 0.1;      // 0.0 - 0.1 = Empty
-const SPECIES_PLANT_MAX: f32 = 0.35;     // 0.1 - 0.35 = Plant
-const SPECIES_HERBIVORE_MAX: f32 = 0.65; // 0.35 - 0.65 = Herbivore
-                                          // 0.65+ = Carnivore
-
-// Get species type from encoded value
-fn getSpeciesType(value: f32) -> i32 {
-  if (value < SPECIES_EMPTY_MAX) { return 0; } // Empty
-  if (value < SPECIES_PLANT_MAX) { return 1; } // Plant
-  if (value < SPECIES_HERBIVORE_MAX) { return 2; } // Herbivore
-  return 3; // Carnivore
+fn stateAt(coord: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), dims - vec2<i32>(1)), 0);
 }
 
-// Check if predator can eat prey
+fn getSpeciesType(value: f32) -> i32 {
+  if (value < SPECIES_EMPTY_MAX) { return 0; }
+  if (value < SPECIES_PLANT_MAX) { return 1; }
+  if (value < SPECIES_HERBIVORE_MAX) { return 2; }
+  return 3;
+}
+
 fn canEat(predator: i32, prey: i32) -> bool {
-  if (predator == 2 && prey == 1) { return true; } // Herbivore eats Plant
-  if (predator == 3 && prey == 2) { return true; } // Carnivore eats Herbivore
+  if (predator == 2 && prey == 1) { return true; }
+  if (predator == 3 && prey == 2) { return true; }
   return false;
 }
 
-// Count neighbors of each type
-fn countNeighbors(uv: vec2<f32>, texelSize: vec2<f32>) -> vec4<i32> {
-  var counts = vec4<i32>(0, 0, 0, 0); // empty, plant, herbivore, carnivore
-  
+fn countNeighbors(coord: vec2<i32>, dims: vec2<i32>) -> vec4<i32> {
+  var counts = vec4<i32>(0, 0, 0, 0);
   for (var dy = -1; dy <= 1; dy = dy + 1) {
     for (var dx = -1; dx <= 1; dx = dx + 1) {
       if (dx == 0 && dy == 0) { continue; }
-      
-      var neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-      var neighbor = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
-      var species = getSpeciesType(neighbor.r);
-      
+      let neighbor = stateAt(coord + vec2<i32>(dx, dy), dims);
+      let species = getSpeciesType(neighbor.r);
       counts[species] = counts[species] + 1;
     }
   }
-  
   return counts;
 }
 
-// Find best neighbor for predation or breeding
-fn findBestNeighbor(uv: vec2<f32>, texelSize: vec2<f32>, mySpecies: i32, forEating: bool) -> vec4<f32> {
+fn findBestNeighbor(coord: vec2<i32>, dims: vec2<i32>, mySpecies: i32, forEating: bool) -> vec4<f32> {
   var bestNeighbor = vec4<f32>(0.0);
   var bestScore = -1.0;
-  
   for (var dy = -1; dy <= 1; dy = dy + 1) {
     for (var dx = -1; dx <= 1; dx = dx + 1) {
       if (dx == 0 && dy == 0) { continue; }
-      
-      var neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-      var neighbor = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
+      let neighbor = stateAt(coord + vec2<i32>(dx, dy), dims);
       let neighborSpecies = getSpeciesType(neighbor.r);
-      
       if (forEating) {
         if (canEat(mySpecies, neighborSpecies)) {
-          var score = neighbor.g; // Prefer high energy prey
+          let score = neighbor.g;
           if (score > bestScore) {
             bestScore = score;
             bestNeighbor = neighbor;
           }
         }
       } else {
-        // For breeding - find empty space
         if (neighborSpecies == 0) {
-          var score = hash21(neighborUV * 1000.0);
+          let score = hash21(vec2<f32>(coord + vec2<i32>(dx, dy)));
           if (score > bestScore) {
             bestScore = score;
             bestNeighbor = vec4<f32>(f32(dx), f32(dy), 0.0, 0.0);
@@ -117,48 +107,40 @@ fn findBestNeighbor(uv: vec2<f32>, texelSize: vec2<f32>, mySpecies: i32, forEati
       }
     }
   }
-  
   return bestNeighbor;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
-  let coord = gid.xy;
-  if (coord.x >= size.x || coord.y >= size.y) { return; }
-  
-  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
-  let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
+  let coord = vec2<i32>(gid.xy);
+  if (gid.x >= size.x || gid.y >= size.y) { return; }
+
+  let dims = vec2<i32>(size);
+  let uv = (vec2<f32>(coord) + 0.5) / vec2<f32>(size);
   let time = u.config.x;
-  let frame = u.config.y;
-  
-  // Parameters
-  let eatProbability = mix(0.1, 0.5, u.zoom_params.x);
-  let deathRate = mix(0.001, 0.05, u.zoom_params.y);
-  let mutationRate = mix(0.0, 0.1, u.zoom_params.z);
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+
+  let eatProbability = mix(0.1, 0.5, u.zoom_params.x) * (1.0 + audio.y * 0.2);
+  let deathRate = mix(0.001, 0.05, u.zoom_params.y) * (1.0 + audio.x * 0.25);
+  let mutationRate = mix(0.0, 0.1, u.zoom_params.z) * (1.0 + audio.z * 0.3);
   let breedThreshold = mix(0.5, 0.9, u.zoom_params.w);
-  
-  // Read current state
-  let state = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+
+  let state = stateAt(coord, dims);
   var species = state.r;
   var energy = state.g;
   var age = state.b;
   var variant = state.a;
-  
-  let myType = getSpeciesType(species);
-  
-  // Random for this frame/pixel
+  var myType = getSpeciesType(species);
+
   let rand = hash21(uv * 1000.0 + vec2<f32>(time * 100.0));
   let rand2 = hash21(uv * 2000.0 + vec2<f32>(time * 50.0 + 1.0));
-  
-  // Source image influence
+
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let sourceLum = dot(sourceColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  
-  // Initialize from source image if first frame or empty
+
   if (myType == 0 && rand < 0.01 + sourceLum * 0.05) {
-    // Spawn new life based on luminance
     if (rand2 < 0.7) {
       species = PLANT;
       energy = 0.5;
@@ -171,153 +153,134 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     age = 0.0;
     variant = rand;
+    myType = getSpeciesType(species);
   }
-  
-  // Mouse spawns predators
-  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+
+  let mouse = u.zoom_config.yz;
   let mouseDist = length(uv - mouse);
   if (mouseDist < 0.03 && myType == 0) {
     species = CARNIVORE;
     energy = 1.0;
     age = 0.0;
+    myType = 3;
   }
-  
-  // Ripples spawn plants (food sources)
-  for (var i = 0; i < 50; i = i + 1) {
+
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
-    if (ripple.z > 0.0) {
-      let rippleAge = time - ripple.z;
-      if (rippleAge > 0.0 && rippleAge < 0.5) {
-        let dist = length(uv - ripple.xy);
-        if (dist < 0.02 && myType == 0) {
-          species = PLANT;
-          energy = 1.0;
-          age = 0.0;
-        }
+    let rippleAge = time - ripple.z;
+    if (rippleAge > 0.0 && rippleAge < 0.5) {
+      let dist = length(uv - ripple.xy);
+      if (dist < 0.02 && myType == 0) {
+        species = PLANT;
+        energy = 1.0;
+        age = 0.0;
+        myType = 1;
       }
     }
   }
-  
-  // Living entity logic
+
+  let neighbors = countNeighbors(coord, dims);
+
   if (myType > 0) {
-    // Age
     age = age + 0.001;
-    
-    // Plants photosynthesize
+
     if (myType == 1) {
       energy = energy + sourceLum * 0.01;
       energy = min(energy, 1.0);
-      
-      // Plants spread
-      if (energy > breedThreshold && rand < 0.02) {
-        // Will spawn in empty neighbor (handled by empty cells checking)
-      }
+      // Idea 1 — reciprocal hunt: plants lose energy to adjacent herbivores
+      energy = energy - f32(neighbors[2]) * eatProbability * 0.018;
     }
-    
-    // Animals try to eat
+
     if (myType >= 2) {
-      let preyNeighbor = findBestNeighbor(uv, texelSize, myType, true);
+      let preyNeighbor = findBestNeighbor(coord, dims, myType, true);
       let preyType = getSpeciesType(preyNeighbor.r);
-      
       if (canEat(myType, preyType) && rand < eatProbability) {
-        // Eat! Gain energy
         energy = energy + preyNeighbor.g * 0.5;
         energy = min(energy, 1.0);
       }
-      
-      // Lose energy over time
       energy = energy - 0.005;
-      
-      // Carnivores lose energy faster
       if (myType == 3) {
         energy = energy - 0.003;
       }
-    }
-    
-    // Death conditions
-    if (energy <= 0.0 || age > 1.0 || rand < deathRate) {
-      species = EMPTY;
-      energy = 0.0;
-      age = 0.0;
-    }
-    
-    // Breeding
-    if (energy > breedThreshold && rand2 < 0.05) {
-      // Check for empty neighbor
-      var neighbors = countNeighbors(uv, texelSize);
-      if (neighbors[0] > 0) {
-        energy = energy * 0.5; // Split energy with offspring
+      // Idea 1 — herbivores lose energy to adjacent carnivores
+      if (myType == 2) {
+        energy = energy - f32(neighbors[3]) * eatProbability * 0.022;
       }
     }
-    
-    // Mutation
+
+    if (energy <= 0.0 || age > 1.0 || rand < deathRate) {
+      // Idea 2 — carcass compost: animals become plants instead of empty
+      if (myType >= 2) {
+        species = PLANT;
+        energy = 0.22 + variant * 0.08;
+        age = 0.0;
+        myType = 1;
+      } else {
+        species = EMPTY;
+        energy = 0.0;
+        age = 0.0;
+        myType = 0;
+      }
+    }
+
+    if (myType > 0 && energy > breedThreshold && rand2 < 0.05) {
+      if (neighbors[0] > 0) {
+        energy = energy * 0.5;
+      }
+    }
+
     if (rand < mutationRate && myType > 0) {
       variant = fract(variant + 0.1);
     }
   }
-  
-  // Empty cells can be colonized
+
   if (myType == 0) {
-    var neighbors = countNeighbors(uv, texelSize);
-    
-    // Plants spread if neighbors exist
     if (neighbors[1] >= 2 && rand < 0.02) {
       species = PLANT;
       energy = 0.3;
       age = 0.0;
+      myType = 1;
     }
-    
-    // Animals breed into empty space
     if (neighbors[2] >= 2 && rand < 0.01) {
       species = HERBIVORE;
       energy = 0.4;
       age = 0.0;
+      myType = 2;
     }
-    
     if (neighbors[3] >= 2 && rand < 0.005) {
       species = CARNIVORE;
       energy = 0.5;
       age = 0.0;
+      myType = 3;
     }
   }
-  
-  // Store updated state
-  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(species, energy, age, variant));
-  
-  // Visualization
-  var finalColor = sourceColor.rgb * 0.3; // Dim background
-  
+
+  textureStore(dataTextureA, coord, vec4<f32>(species, energy, age, variant));
+
+  var finalColor = sourceColor.rgb * 0.3;
   let speciesType = getSpeciesType(species);
-  
   if (speciesType == 1) {
-    // Plants - green
     let plantColor = vec3<f32>(0.2, 0.6 + energy * 0.4, 0.2);
     finalColor = mix(finalColor, plantColor, 0.8);
   } else if (speciesType == 2) {
-    // Herbivores - blue
     let herbColor = vec3<f32>(0.2, 0.4 + energy * 0.3, 0.8);
     finalColor = mix(finalColor, herbColor, 0.8);
   } else if (speciesType == 3) {
-    // Carnivores - red
     let carnColor = vec3<f32>(0.8, 0.2 + energy * 0.3, 0.2);
     finalColor = mix(finalColor, carnColor, 0.8);
   }
-  
-  // Add energy glow
+
   if (speciesType > 0) {
-    let glow = energy * 0.3;
-    finalColor = finalColor + vec3<f32>(glow);
+    finalColor = finalColor + vec3<f32>(energy * 0.3);
   }
-  
-  // Variant hue shift
   if (speciesType > 0 && variant > 0.0) {
     let hueShift = variant * 0.2;
     finalColor = finalColor * vec3<f32>(1.0 + hueShift, 1.0, 1.0 - hueShift);
   }
-  
-  // Clamp
-  finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
-  
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, 1.0));
-  textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+  let mapped = aces(max(finalColor, vec3<f32>(0.0)));
+  let alpha = clamp(sourceColor.a * 0.2 + select(0.12, 0.55 + energy * 0.4, speciesType > 0), 0.0, 1.0);
+  textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

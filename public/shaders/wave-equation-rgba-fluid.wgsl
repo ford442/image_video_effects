@@ -1,20 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Wave Equation RGBA Fluid
 //  Category: advanced-hybrid
-//  Features: mouse-driven, temporal, rgba-state-machine, physics
+//  Features: mouse-driven, temporal, rgba-state-machine, physics, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Chunks From: wave-equation.wgsl (wave propagation),
-//               alpha-fluid-simulation-paint.wgsl (Navier-Stokes)
-//  Created: 2026-04-18
-//  By: Agent CB-11
-// ═══════════════════════════════════════════════════════════════════
-//  Coupled wave equation and incompressible fluid simulation packed
-//  into a single RGBA32FLOAT state texture.
-//  R = wave height (signed, displacement from equilibrium)
-//  G = wave velocity (signed, time derivative of height)
-//  B = fluid pressure (signed, incompressibility field)
-//  A = dye density (advected scalar, visualizes flow)
-//  Wave velocity drives fluid motion; fluid pressure dampens waves.
+//  Upgraded: 2026-09-12
+//  Ideas: breaking-wave foam on downhill steep slopes; dye stretch along fluidVel
+//  A packing: raw (height, velocity, pressure, dye)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -56,6 +47,26 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     return rgb + vec3(m);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
+fn stateLinear(uv: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+    let q = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * res - 0.5;
+    let p = vec2<i32>(floor(q));
+    let f = fract(q);
+    let dims = vec2<i32>(res);
+    let a = mix(stateAt(p, dims), stateAt(p + vec2<i32>(1, 0), dims), f.x);
+    let b = mix(stateAt(p + vec2<i32>(0, 1), dims), stateAt(p + vec2<i32>(1, 1), dims), f.x);
+    return mix(a, b, f.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -65,9 +76,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+    let dims = vec2<i32>(res);
 
     // Read previous state
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = stateAt(coord, dims);
     var height = prevState.r;
     var waveVel = prevState.g;
     var pressure = prevState.b;
@@ -93,16 +106,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     dye = clamp(dye, 0.0, 5.0);
 
     // Parameters
-    let waveSpeed = mix(0.1, 0.5, u.zoom_params.x);
+    let waveSpeed = mix(0.1, 0.5, u.zoom_params.x) * (1.0 + audio.y * 0.08);
     let damping = mix(0.96, 0.999, u.zoom_params.y);
     let viscosity = u.zoom_params.z * 0.001 + 0.0001;
-    let sourceStrength = mix(0.1, 1.0, u.zoom_params.w);
+    let sourceStrength = mix(0.1, 1.0, u.zoom_params.w) * (1.0 + audio.x * 0.45);
 
-    // === WAVE EQUATION LAPLACIAN (3x3) ===
-    let left = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-ps.x, 0.0), 0.0);
-    let right = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(ps.x, 0.0), 0.0);
-    let up = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -ps.y), 0.0);
-    let down = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, ps.y), 0.0);
+    // === WAVE EQUATION LAPLACIAN (3x3) — exact C loads ===
+    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+    let right = stateAt(coord + vec2<i32>(1, 0), dims);
+    let up = stateAt(coord + vec2<i32>(0, -1), dims);
+    let down = stateAt(coord + vec2<i32>(0, 1), dims);
 
     let laplacian = left.r + right.r + up.r + down.r - 4.0 * height;
 
@@ -115,13 +128,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var fluidVel = vec2<f32>(right.r - left.r, down.r - up.r) * 0.5 * waveSpeed * 2.0;
     fluidVel = clamp(fluidVel, vec2<f32>(-0.5), vec2<f32>(0.5));
 
-    // Advect dye with combined fluid+wave velocity
+    // Advect dye with combined fluid+wave velocity (bilinear reconstructed from exact loads)
     let advectUV = clamp(uv - fluidVel * 0.016, vec2<f32>(0.0), vec2<f32>(1.0));
-    let advected = textureSampleLevel(dataTextureC, u_sampler, advectUV, 0.0);
+    let advected = stateLinear(advectUV, res);
     dye = advected.a;
 
     // Fluid viscosity diffusion on dye
     dye += viscosity * (left.a + right.a + up.a + down.a - 4.0 * dye) * 100.0;
+
+    // Idea 2 — dye stretch along fluidVel
+    let stretchCoord = coord - vec2<i32>(round(sign(fluidVel)));
+    let alongDye = stateAt(stretchCoord, dims).a;
+    let stretch = max(alongDye - dye, 0.0) * clamp(length(fluidVel) * 2.4, 0.0, 1.0);
+    dye += stretch * 0.12;
 
     // === PRESSURE PROJECTION (single Jacobi step) ===
     let pL = left.b;
@@ -140,6 +159,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     waveVel = waveVel + acceleration;
     waveVel = waveVel * damping;
     height = height + waveVel;
+
+    // Idea 1 — breaking-wave foam: steep slope + downhill fluidVel
+    let slope = vec2<f32>(right.r - left.r, down.r - up.r);
+    let slopeLen = length(slope);
+    let downhill = max(dot(fluidVel, slope) / max(slopeLen, 0.0001), 0.0);
+    let breaking = pow(clamp(slopeLen * 3.2, 0.0, 1.0), 1.6) * downhill;
+    dye += breaking * 0.05;
 
     // === MOUSE WAVE INJECTION ===
     let mousePos = u.zoom_config.yz;
@@ -221,11 +247,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Caustic bright spots
     let caustic = pow(abs(laplacian) * 5.0, 2.0);
     finalColor = finalColor + vec3<f32>(caustic * 0.2);
+    finalColor = finalColor + vec3<f32>(1.05, 0.98, 0.88) * breaking * 0.35;
+    finalColor = finalColor + vec3<f32>(0.2, 0.55, 0.85) * stretch * 0.8;
 
-    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    finalColor = aces(max(finalColor, vec3<f32>(0.0)));
 
     // Alpha = wave amplitude + dye density (meaningful)
-    let outputAlpha = min(amplitude * 0.5 + dye * 0.2, 1.0);
+    let outputAlpha = min(amplitude * 0.5 + dye * 0.2 + breaking * 0.2 + stretch * 0.15, 1.0);
     textureStore(writeTexture, coord, vec4<f32>(finalColor, outputAlpha));
 
     // Depth pass-through

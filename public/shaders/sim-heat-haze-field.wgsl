@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sim: Heat Haze Field
 //  Category: distortion
-//  Features: simulation, temperature-field, convection, refraction
+//  Features: simulation, temperature-field, convection, refraction, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-03-22
-//  By: Agent 3B - Advanced Hybrid Creator
-// ═══════════════════════════════════════════════════════════════════
-//  Temperature field simulation + convection currents
-//  Desert mirage effect with rising heat patterns
+//  Upgraded: 2026-09-12
+//  Ideas: thermal plumes (upward heat advection); schlieren streaks along ∇T
+//  A packing: raw (temp, grad.x, grad.y, displacement mag)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -80,6 +78,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Cool over time
     let cooled = mix(prevTemp, diffused, 0.18 + mids * 0.08) * mix(0.965, 0.992, u.zoom_params.x);
+
+    // Idea 1 — thermal plumes: extra upward advection of stored heat
+    // uv.y = 1 is ground; rising heat comes from the cell below
+    let below = stateAt(coord + vec2<i32>(0, 1), resolution).r;
+    let plume = max(below - prevTemp, 0.0) * convectionSpeed * 0.055 * temperature;
     
     // Heat source at bottom (ground heating)
     let groundHeat = smoothstep(0.72, 1.0, uv.y) * temperature * (0.025 + bass * 0.02);
@@ -113,7 +116,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     
     // New temperature
-    let newTemp = clamp(cooled + groundHeat + sourceHeat * 0.035 + mouseHeat + clickHeat * 0.12, 0.0, 1.5);
+    let newTemp = clamp(cooled + groundHeat + sourceHeat * 0.035 + mouseHeat + clickHeat * 0.12 + plume, 0.0, 1.5);
     
     // Store temperature
     // Calculate temperature gradient for refraction
@@ -123,12 +126,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let tempDown = stateAt(coord + vec2<i32>(0, 1), resolution).r;
     
     let grad = vec2<f32>(tempRight - tempLeft, tempUp - tempDown);
+
+    // Idea 2 — schlieren streaks along ∇T
+    let isoT = normalize(vec2<f32>(-grad.y, grad.x) + vec2<f32>(0.0001));
+    let schliere = clamp(length(grad) * 7.5, 0.0, 1.0);
     
     // Hot air rises (buoyancy creates upward displacement)
     var displacement = vec2<f32>(
         grad.x * distortion,
         -newTemp * distortion * convectionSpeed * 0.5
     );
+    displacement += isoT * schliere * distortion * 0.35;
     
     // Add shimmer noise
     let shimmer = hash12(uv * 50.0 + time * 5.0) * newTemp * distortion * 0.3;
@@ -143,6 +151,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let heatTint = vec3<f32>(1.0 + newTemp * 0.3, 1.0 + newTemp * 0.1, 1.0 - newTemp * 0.1);
     color *= heatTint;
     color += vec3<f32>(1.0, 0.35 + mids * 0.25, 0.08 + treble * 0.2) * pow(newTemp, 2.0) * 0.12;
+    color = mix(color, color * vec3<f32>(0.72, 0.88, 1.08), schliere * newTemp * 0.55);
+    color += vec3<f32>(1.15, 0.55, 0.12) * plume * 0.8;
     
     // Desaturate in hot areas (air shimmer effect)
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
@@ -151,7 +161,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     color = acesToneMap(color);
     let sourceAlpha = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).a;
-    let alpha = clamp(sourceAlpha * 0.75 + newTemp * 0.22 + clickHeat * 0.12, 0.0, 1.0);
+    let alpha = clamp(sourceAlpha * 0.75 + newTemp * 0.22 + clickHeat * 0.12 + schliere * 0.15, 0.0, 1.0);
     
     textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

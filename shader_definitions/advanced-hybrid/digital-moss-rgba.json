@@ -18,7 +18,8 @@
     "audio-reactive",
     "click-ripples",
     "held-drag",
-    "aces-tone-map"
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
   "workgroup_size": [
     16,
@@ -100,5 +101,7 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "feedbackPacking": "A/C = A, B, C, D chemistry. ACES display only.",
+  "updated": true
 }

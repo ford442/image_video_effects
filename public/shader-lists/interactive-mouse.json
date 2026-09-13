@@ -10150,12 +10150,50 @@
     ],
     "features": [
       "mouse-driven",
-      "feedback"
+      "feedback",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Repair Radius",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Decay Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glitch Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Scanlines",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = health, 0, 0, 1. ACES display only.",
+    "updated": true
   },
   {
     "id": "neon-contour-drag",
@@ -11320,7 +11358,8 @@
       "audio-reactive",
       "depth-aware",
       "semantic-alpha",
-      "chromatic-edge"
+      "chromatic-edge",
+      "upgraded-rgba"
     ],
     "tags": [
       "origami",
@@ -11332,7 +11371,43 @@
       "chromatic",
       "mountain-valley",
       "Kawasaki-Justin"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fold Speed",
+        "default": 0.1,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Shadow Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Fold Angle",
+        "default": 0,
+        "min": 0,
+        "max": 6.28,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Paper Opacity",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA",
+    "updated": true
   },
   {
     "id": "oscilloscope-overlay",

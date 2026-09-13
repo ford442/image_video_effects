@@ -1,5 +1,12 @@
-// Chromatic Reaction Diffusion RGBA — cross-coupled warm/cool Turing systems.
-// A/C: warm U/V in RG, cool U/V in BA. Raw chemistry is never tone mapped.
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Reaction Diffusion RGBA
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-12
+//  Ideas: competitive overlap quench; photo chroma seed into warm/cool V
+//  A packing: raw (warm U, warm V, cool U, cool V)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -14,7 +21,9 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
 struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+
 fn loadState(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> { return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0); }
 fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0)); }
 fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(41.23, 289.17))) * 43758.5453); }
@@ -48,6 +57,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     0.27 * lap.a + coolReaction - (feed + kill - phase * separation * 0.002) * s.a
   );
   s = clamp(s + delta * 0.80, vec4<f32>(0.0), vec4<f32>(1.0));
+
+  // Idea 1 — competitive overlap quench: warm V and cool V cannot coexist
+  let overlap = s.g * s.a;
+  s.g = clamp(s.g - overlap * (0.18 + coupling * 0.5), 0.0, 1.0);
+  s.a = clamp(s.a - overlap * (0.18 + coupling * 0.5), 0.0, 1.0);
+
+  // Idea 2 — photo chroma seed: red luma → warm V, blue luma → cool V
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let warmSeed = max(src.r - 0.5 * (src.g + src.b), 0.0);
+  let coolSeed = max(src.b - 0.5 * (src.r + src.g), 0.0);
+  s.g = clamp(s.g + warmSeed * 0.010, 0.0, 1.0);
+  s.a = clamp(s.a + coolSeed * 0.010, 0.0, 1.0);
+
   let q = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0);
   let radius = length(q); let angle = atan2(q.y, q.x);
   let hoverSpiral = exp(-radius * 14.0) * (0.5 + 0.5 * sin(angle * 5.0 - radius * 70.0 + time * 2.0));
@@ -68,9 +90,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pigment = s.r * vec3<f32>(1.25, 0.10, 0.02) + s.g * vec3<f32>(2.3, 0.75, 0.04)
               + s.b * vec3<f32>(0.02, 0.28, 1.55) + s.a * vec3<f32>(0.58, 0.04, 1.80);
   let fringe = warmEdge * vec3<f32>(1.8, 0.25, 0.05) + coolEdge * vec3<f32>(0.05, 0.55, 2.2);
-  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let hdr = mix(src.rgb, pigment + fringe * separation * 2.0, 0.68 + coupling * 0.65);
-  let boundary = clamp((warmEdge + coolEdge) * 2.2 + fronts, 0.0, 1.0);
+  let quenchFringe = overlap * vec3<f32>(0.35, 0.08, 0.55);
+  let hdr = mix(src.rgb, pigment + fringe * separation * 2.0 + quenchFringe, 0.68 + coupling * 0.65);
+  let boundary = clamp((warmEdge + coolEdge) * 2.2 + fronts + overlap * 2.0, 0.0, 1.0);
   let alpha = clamp(src.a * 0.18 + boundary * 0.62 + max(s.g, s.a) * 0.52, 0.0, 1.0);
   let mapped = aces(max(hdr, vec3<f32>(0.0)));
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

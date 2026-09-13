@@ -1,4 +1,12 @@
-// Gray-Scott-inspired state with directional advection and traveling feed fronts.
+// ═══════════════════════════════════════════════════════════════════
+//  Reaction-Diffusion
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-12
+//  Ideas: anisotropic Laplacian along flowDir; mitosis pinch on −∇²V
+//  A packing: raw (U, V, packet, accumulation)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -21,6 +29,12 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn historyLoad(pixel: vec2<i32>) -> vec4<f32> {
     let size = vec2<i32>(textureDimensions(dataTextureC));
     return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
@@ -34,7 +48,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     let time = u.config.x;
-    let audio = plasmaBuffer[0].xyz;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
     let diffusionRate = 0.025 + u.zoom_params.x * 0.075;
     let feedRate = 0.018 + u.zoom_params.y * 0.052;
     let killRate = 0.035 + u.zoom_params.z * 0.045;
@@ -49,7 +63,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let right = historyLoad(baseCoord + vec2<i32>(1, 0));
     let up = historyLoad(baseCoord + vec2<i32>(0, -1));
     let down = historyLoad(baseCoord + vec2<i32>(0, 1));
-    let laplacian = (left + right + up + down - 4.0 * prev) * 0.25;
+    let isoLap = (left + right + up + down - 4.0 * prev) * 0.25;
+
+    // Idea 1 — anisotropic Laplacian along flowDir (conveyor smears, not just translates)
+    let flowStep = vec2<i32>(i32(round(flowDir.x)), i32(round(flowDir.y)));
+    let along = historyLoad(baseCoord + flowStep);
+    let against = historyLoad(baseCoord - flowStep);
+    let anisoLap = (along + against - 2.0 * prev) * 0.5;
+    let laplacian = mix(isoLap, anisoLap, 0.55);
 
     let input = textureLoad(readTexture, coord, 0);
     let seed = dot(input.rgb, vec3<f32>(0.299, 0.587, 0.114));
@@ -73,6 +94,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseSeed = smoothstep(0.09, 0.0, length((uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0))) * u.zoom_config.w;
     b = clamp(b + packet * (0.008 + audio.z * 0.012) + front * 0.12 + mouseSeed * 0.16, 0.0, 1.0);
 
+    // Idea 2 — mitosis pinch: extra V where −∇²V is large (spots split)
+    let mitosis = max(-laplacian.g, 0.0) * b * (0.08 + audio.x * 0.04);
+    b = clamp(b + mitosis, 0.0, 1.0);
+
     let reaction = a * b * b;
     let newA = clamp(a + diffusionRate * laplacian.r - reaction + feedRate * (1.0 - a), 0.0, 1.0);
     let newB = clamp(b + diffusionRate * 0.5 * laplacian.g + reaction - (killRate + feedRate) * b, 0.0, 1.0);
@@ -80,15 +105,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let color = vec3<f32>(
         smoothstep(-0.15, 0.55, pattern),
         smoothstep(0.05, 0.68, pattern + packet * 0.2),
-        smoothstep(0.22, 0.82, pattern + front * 0.25)
+        smoothstep(0.22, 0.82, pattern + front * 0.25 + mitosis * 2.0)
     );
     let newAlpha = 1.0 - exp(-abs(pattern) * 2.0);
     let totalAlpha = clamp(prev.a * (0.90 + accumulationRate * 0.08) + newAlpha * accumulationRate * 0.2, 0.0, 1.0);
-    let blendFactor = newAlpha * accumulationRate / max(totalAlpha, 0.001);
-    let accumulatedColor = mix(prev.rgb, color, clamp(blendFactor, 0.0, 1.0));
 
-    textureStore(dataTextureA, coord, vec4<f32>(newA, newB, 0.0, totalAlpha));
-    textureStore(writeTexture, coord, vec4<f32>(clamp(accumulatedColor, vec3<f32>(0.0), vec3<f32>(1.0)), totalAlpha));
+    textureStore(dataTextureA, coord, vec4<f32>(newA, newB, packet, totalAlpha));
+    let mapped = aces(max(color * (0.95 + audio.y * 0.12), vec3<f32>(0.0)));
+    let alpha = clamp(input.a * 0.15 + totalAlpha * 0.55 + newAlpha * 0.45 + front * 0.2, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -3,9 +3,9 @@
 //  Category: simulation
 //  Features: mouse-driven, audio-reactive, temporal-trail, depth-glow, chromatic-tendril, upgraded-rgba
 //  Complexity: High
-//  Chunks From: slime-mold-on-video, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-12
+//  Ideas: food anastomosis between luma peaks; streamer veins along packed drift
+//  A packing: raw (trail, food, drift.x, drift.y)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -129,10 +129,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     deposit += chemPacket * foodGain * (0.20 + mids * 0.20) + clickFoodFront * 0.16;
 
+    // Idea 1 — food anastomosis: bridges between luma peaks
+    let islandBridge = max(min(foodL, foodR) - food, 0.0) + max(min(foodU, foodD) - food, 0.0);
+    deposit += islandBridge * foodGain * 0.45;
+
     var nextTrail = max(max(blur * decay, aheadTrail * follow), advectedTrail * (0.55 + follow * 0.35)) + deposit;
     nextTrail = clamp(nextTrail, 0.0, 1.0);
 
     textureStore(dataTextureA, coord, vec4<f32>(nextTrail, food, drift.x * 0.5 + 0.5, drift.y * 0.5 + 0.5));
+
+    // Idea 2 — streamer veins along packed drift
+    let alongDrift = stateAt(coord - vec2<i32>(round(drift * 3.0)), res).r;
+    let streamer = nextTrail * alongDrift * (1.0 - blur) * follow;
 
     // Chromatic tendrils: bass shifts green, mids shift cyan, treble shifts magenta
     let tendrilR = 0.07 + bass * 0.03;
@@ -140,8 +148,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let tendrilB = 0.62 + treble * 0.05;
     let tendril = vec3<f32>(tendrilR, tendrilG, tendrilB) * nextTrail;
     let hot = vec3<f32>(1.0, 0.55, 0.20) * pow(nextTrail, 2.2) * glowGain;
-    let finalColor = acesToneMap(mix(base.rgb, base.rgb * 0.35 + tendril + hot, nextTrail));
-    let alpha = clamp(base.a * 0.25 + nextTrail * 0.75 + clickFoodFront * 0.15, 0.0, 1.0);
+    let vein = vec3<f32>(0.55, 1.15, 0.85) * streamer * glowGain;
+    let finalColor = acesToneMap(mix(base.rgb, base.rgb * 0.35 + tendril + hot + vein, nextTrail));
+    let alpha = clamp(base.a * 0.25 + nextTrail * 0.75 + clickFoodFront * 0.15 + streamer * 0.2 + islandBridge * 0.15, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

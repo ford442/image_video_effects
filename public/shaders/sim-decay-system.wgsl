@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sim: Decay System
 //  Category: artistic
-//  Features: simulation, cellular-automata, corrosion, layered-materials
+//  Features: simulation, cellular-automata, corrosion, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-03-22
-//  By: Agent 3B - Advanced Hybrid Creator
-// ═══════════════════════════════════════════════════════════════════
-//  Multi-layer decay and corrosion simulation
-//  Decay progresses from edges inward, different materials decay differently
+//  Upgraded: 2026-09-12
+//  Ideas: filiform rust veins along edge tangent; oxide bloom from corrosion
+//  A packing: raw (decay, material, corrosion, protection)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -47,18 +45,19 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-// Edge detection
-fn detectEdges(uv: vec2<f32>, pixel: vec2<f32>) -> f32 {
-    let center = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+fn luma3(c: vec3<f32>) -> f32 {
+    return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+// Edge magnitude + signed luma gradient (for filiform veins)
+fn detectEdgeGrad(uv: vec2<f32>, pixel: vec2<f32>) -> vec3<f32> {
     let right = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixel.x, 0.0), 0.0).rgb;
     let left = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixel.x, 0.0), 0.0).rgb;
     let up = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, pixel.y), 0.0).rgb;
     let down = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, pixel.y), 0.0).rgb;
-    
-    let edgeX = length(right - left);
-    let edgeY = length(up - down);
-    
-    return (edgeX + edgeY) * 0.5;
+    let gx = luma3(right) - luma3(left);
+    let gy = luma3(up) - luma3(down);
+    return vec3<f32>(gx, gy, (abs(gx) + abs(gy)) * 0.5);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -87,7 +86,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var protection = state.a;
     
     // Detect edges in source image
-    let edges = detectEdges(uv, pixel);
+    let edgeGrad = detectEdgeGrad(uv, pixel);
+    let edges = edgeGrad.z;
     let isEdge = step(0.1, edges);
     
     // Count decayed neighbors (for cellular automata spread)
@@ -173,7 +173,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rustNoise = hash12(uv * 100.0 + time * 0.01);
     let rust = vec3<f32>(0.6, 0.3, 0.1) * rustNoise * newDecay * (1.0 - newDecay) * 4.0;
     decayedColor += rust * colorShift * (0.55 + corrosion * 0.8);
-    
+
+    // Idea 1 — filiform rust veins along the edge tangent
+    let gLen = max(length(edgeGrad.xy), 0.0001);
+    let tangent = vec2<f32>(-edgeGrad.y, edgeGrad.x) / gLen;
+    let veinPhase = dot(uv, tangent) * 92.0 + hash12(floor(uv * 48.0)) * 6.283185307;
+    let vein = pow(abs(sin(veinPhase)), 8.0) * smoothstep(0.08, 0.28, edges) * newDecay;
+    decayedColor = mix(decayedColor, vec3<f32>(0.55, 0.22, 0.07), vein * 0.65);
+
+    // Idea 2 — oxide bloom from stored corrosion (neighbor bleed)
+    let nCorr = (stateAt(coord + vec2<i32>(1, 0), dims).b +
+        stateAt(coord + vec2<i32>(-1, 0), dims).b +
+        stateAt(coord + vec2<i32>(0, 1), dims).b +
+        stateAt(coord + vec2<i32>(0, -1), dims).b) * 0.25;
+    let oxide = clamp(corrosion * 0.7 + nCorr * 0.3, 0.0, 1.0);
+    let oxideBloom = oxide * oxide * newDecay;
+    decayedColor += vec3<f32>(0.72, 0.28, 0.06) * oxideBloom * (0.45 + colorShift * 0.55);
+
     // Add edge corrosion
     let edgeCorrosion = isEdge * newDecay * vec3<f32>(0.2, 0.25, 0.3);
     decayedColor += edgeCorrosion;

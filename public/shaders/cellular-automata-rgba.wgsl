@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cellular Automata RGBA
 //  Category: simulation
-//  Features: simulation, rgba-state-machine, temporal, mouse-driven, ecosystem
+//  Features: simulation, rgba-state-machine, temporal, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: cellular-automata-3d.wgsl, alpha-reaction-diffusion-rgba.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-2 - RGBA Simulation Upgrader
+//  Upgraded: 2026-09-12
+//  Ideas: herbivore taxis along plant gradient; nutrient patches from local death
+//  A packing: raw (plants, herbivores, predators, nutrients)
 // ═══════════════════════════════════════════════════════════════════
 //  2D ecosystem cellular automaton with 4 interacting species.
 //  RGBA Channels:
@@ -111,7 +111,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let herbivoreDeath = herbivores * decayRate * 2.0;
     let herbivorePredation = predators * herbivores * 0.5;
     let herbivoreSpread = (avgHerbivores - herbivores) * 0.02 * herbivores;
-    herbivores = herbivores + herbivoreGrowth - herbivoreDeath - herbivorePredation + herbivoreSpread;
+
+    // Idea 1 — herbivores bias toward the plant gradient (taxis, not isotropic spread)
+    let plantGrad = vec2<f32>(right.r - left.r, up.r - down.r);
+    let gAbs = abs(plantGrad);
+    let fromPlants = select(left.g, right.g, plantGrad.x > 0.0);
+    let fromPlantsY = select(down.g, up.g, plantGrad.y > 0.0);
+    let taxis = (fromPlants - herbivores) * gAbs.x * 0.12 * herbivores
+        + (fromPlantsY - herbivores) * gAbs.y * 0.12 * herbivores;
+    herbivores = herbivores + herbivoreGrowth - herbivoreDeath - herbivorePredation + herbivoreSpread + taxis;
 
     // Predators eat herbivores, reproduce, die, spread
     let predatorGrowth = predatorEfficiency * herbivorePredation;
@@ -122,7 +130,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Nutrients: dead matter + plant decomposition - plant consumption
     let decomposition = plantEaten * 0.1 + herbivoreDeath * 0.5 + predatorDeath * 0.7;
     let nutrientConsumption = plantGrowth * 0.8;
-    nutrients = nutrients + decomposition - nutrientConsumption;
+    // Idea 2 solver — extra local nutrient bloom from death (stays here, not averaged)
+    let deathBloom = (herbivoreDeath + predatorDeath) * 0.55;
+    nutrients = nutrients + decomposition + deathBloom - nutrientConsumption;
 
     // === MOUSE INTERACTION ===
     let mousePos = u.zoom_config.yz;
@@ -165,6 +175,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let nutrientColor = vec3<f32>(0.4, 0.25, 0.1) * nutrients;
 
     var displayColor = plantColor + herbivoreColor + predatorColor + nutrientColor;
+
+    // Idea 2 visual — nutrient patches (mottled soil from local death)
+    let patchHash = hash12(floor(uv * 42.0));
+    let soilPatch = smoothstep(0.22, 0.55, nutrients) * step(0.45, patchHash);
+    displayColor = mix(displayColor, vec3<f32>(0.38, 0.22, 0.08), soilPatch * 0.55);
     displayColor += audio * vec3<f32>(0.06, 0.1, 0.08) *
         (plants + herbivores + predators);
 

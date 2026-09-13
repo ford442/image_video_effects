@@ -2,14 +2,16 @@
   "id": "hybrid-reaction-diffusion-glass",
   "name": "Hybrid Reaction-Diffusion Glass",
   "url": "shaders/hybrid-reaction-diffusion-glass.wgsl",
-  "description": "Turing patterns (reaction-diffusion) refracted through depth-aware glass distortion",
+  "description": "Turing chemistry used as glass thickness: the pattern refracts the photo with thickness-scaled IOR and caustic concentrate where the gradient focuses.",
   "features": [
     "hybrid",
     "reaction-diffusion",
     "glass-distortion",
     "depth-aware",
     "fresnel",
-    "randomization-safe"
+    "randomization-safe",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -60,5 +62,41 @@
     "palette (gen-xeno-botanical-synth-flora.wgsl)"
   ],
   "created_by": "Agent 2A - Shader Surgeon",
-  "created_date": "2026-03-22"
+  "created_date": "2026-03-22",
+  "feedbackPacking": "A/C = chem, |grad|, caustic, coverage. ACES display only.",
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Feed Rate",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Kill Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Glass Refraction",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Depth Effect",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }
