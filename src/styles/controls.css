@@ -1,0 +1,326 @@
+/* Sidebar controls, form primitives, canvas status bar, and remote-app chrome.
+   Imported from style.css after layout.css. */
+/* Controls Components (Internal) */
+.controls {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0; /* Important for flex scrolling */
+    overflow-y: auto; /* Enable scrolling within controls */
+    overflow-x: hidden;
+    flex: 1; /* Take available space */
+}
+
+/* Radio group horizontal layout for space efficiency */
+.radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.radio-group input[type="radio"] {
+    margin: 0;
+}
+
+.control-group {
+    margin-bottom: 10px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #ccc;
+    font-size: 13px;
+    text-align: left;
+    min-width: auto;
+}
+
+.stack-controls {
+    background-color: #222;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 10px 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.stack-slot {
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.stack-slot:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Compact view controls */
+.view-controls-grid {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.view-controls-grid label {
+    margin-bottom: 0;
+    font-size: 11px;
+    color: #888;
+}
+
+.view-controls-grid input[type="range"] {
+    margin-top: 0;
+}
+
+/* Parameter grid for better space usage */
+.params-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.params-grid .control-group {
+    margin-bottom: 5px;
+}
+
+/* Inputs & UI Elements */
+button {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: #eee;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+    text-transform: none;
+    font-weight: 500;
+}
+
+button:hover {
+    background-color: #3a3a3a;
+    border-color: #61dafb;
+    color: #61dafb;
+    transform: none;
+    box-shadow: none;
+}
+
+button.primary-action {
+    background: linear-gradient(145deg, #61dafb, #4a9fbf);
+    color: #121212;
+    border: none;
+    font-weight: 600;
+}
+
+button.primary-action:hover {
+    background: linear-gradient(145deg, #7ee7ff, #61dafb);
+    color: #000;
+}
+
+select {
+    width: 100%;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: #eee;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    min-width: 0;
+}
+
+input[type="range"] {
+    width: 100%;
+    margin-top: 5px;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #61dafb;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #61dafb;
+    vertical-align: middle;
+}
+
+hr {
+    border-top: 1px solid #333;
+    margin: 15px 0;
+}
+
+.status-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #aaa;
+    font-size: 11px;
+    padding: 5px 10px;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 20;
+}
+
+/* Renderer backend badge shown in the status bar */
+.renderer-badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+    transition: opacity 0.15s ease;
+}
+.renderer-badge:hover { opacity: 0.8; }
+
+/* WebGPU (TypeScript native) — full gold: this is the recommended default */
+.renderer-badge--webgpu {
+    background: rgba(255, 215, 0, 0.15);
+    color: var(--color-primary-gold, #FFD700);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+}
+
+/* C++ WASM renderer — antique gold (D4AF37): experimental path */
+.renderer-badge--wasm {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--color-gold-light, #D4AF37);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
+/* Canvas2D fallback — dim gold (B8860B): degraded / no-shader mode */
+.renderer-badge--js {
+    background: rgba(184, 134, 11, 0.12);
+    color: var(--color-gold-dark, #B8860B);
+    border: 1px solid rgba(184, 134, 11, 0.3);
+}
+
+/* Prominent one-click renderer switch button in the status bar */
+.renderer-switch-btn {
+    margin-left: 8px;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(212, 175, 55, 0.08));
+    color: var(--color-primary-gold, #FFD700);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.renderer-switch-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(212, 175, 55, 0.14));
+    border-color: rgba(255, 215, 0, 0.55);
+    box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.2);
+}
+
+.renderer-switch-btn:active {
+    transform: translateY(1px);
+}
+
+/* Scrollbar for sidebar and remote content */
+.sidebar::-webkit-scrollbar, .remote-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track, .remote-content::-webkit-scrollbar-track {
+    background: #181818;
+}
+
+.sidebar::-webkit-scrollbar-thumb, .remote-content::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover, .remote-content::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Remote app specific styles */
+.remote-app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.remote-app-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    text-align: center;
+    padding: 16px 12px;
+    margin: 0;
+    background-color: #2a2a2a;
+    border-bottom: 1px solid #444;
+    flex-shrink: 0;
+}
+
+.remote-chrome-restore {
+    flex-shrink: 0;
+    width: 100%;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-bottom: 1px solid #444;
+    background: #2a2a2a;
+    color: #aaa;
+    font-size: 10px;
+    line-height: 16px;
+    cursor: pointer;
+}
+
+.remote-chrome-restore:hover {
+    color: #fff;
+    background: #333;
+}
+
+.remote-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+}
+
+/* Remote button special style */
+.toggle-sidebar-btn {
+    background: transparent;
+    border: 1px solid #444;
+    color: #aaa;
+    padding: 6px 12px;
+}
+
+.toggle-sidebar-btn:hover {
+    color: #fff;
+    border-color: #666;
+}

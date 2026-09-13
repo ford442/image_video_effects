@@ -1,0 +1,175 @@
+/* App chrome: document root, header, sidebar, and canvas stage.
+   Imported from style.css — keep this file ahead of controls/webcam/roulette. */
+body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #121212;
+    color: #e0e0e0;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#root {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.App {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header - Gold & Dark Glass Theme */
+.header {
+    height: 80px;
+    background: linear-gradient(180deg, rgba(25, 25, 32, 0.98) 0%, rgba(18, 18, 24, 0.99) 100%);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+    z-index: 10;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: #FFD700;
+    letter-spacing: 1px;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.subtitle-text {
+    font-size: 14px;
+    color: #888;
+    margin-left: 10px;
+    padding-left: 10px;
+    border-left: 1px solid #444;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.header-controls .header-action-btn {
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.header-controls .header-action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.header-controls .header-action-btn.spinning {
+    animation: header-spin-pulse 0.6s ease-in-out infinite;
+}
+
+@keyframes header-spin-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.35); }
+    50% { box-shadow: 0 0 12px 2px rgba(255, 215, 0, 0.55); }
+}
+
+/* Main Layout */
+.main-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    height: calc(100vh - 80px); /* Full height minus header */
+}
+
+.main-container.fullscreen {
+    height: 100vh;
+}
+
+.show-controls-overlay {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 20;
+    cursor: pointer;
+}
+
+/* Sidebar - Gold & Dark Glass Theme */
+.sidebar {
+    width: 380px;
+    height: 100%;
+    max-height: 100vh;
+    background: linear-gradient(180deg, rgba(20, 20, 25, 0.98) 0%, rgba(15, 15, 20, 0.99) 100%);
+    border-right: 1px solid rgba(255, 215, 0, 0.15);
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    z-index: 5;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #181818;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.sidebar.hidden {
+    transform: translateX(-100%);
+    width: 0;
+    border: none;
+}
+
+/* Canvas Area */
+.canvas-container {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+}
