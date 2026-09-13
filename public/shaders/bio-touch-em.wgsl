@@ -1,16 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Bio Touch EM
 //  Category: advanced-hybrid
-//  Features: mouse-driven, field-simulation, organic, temporal
+//  Features: mouse-driven, field-simulation, organic, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: bio-touch.wgsl, mouse-electromagnetic-aurora.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-9
-// ═══════════════════════════════════════════════════════════════════
-//  Bio-luminescent cellular structures are distorted by electric
-//  field lines. Magnetic field rotates cell glow colors. EM field
-//  lines overlay the organic pattern. Click ripples spawn orbiting
-//  secondary charges that sweep through cells.
+//  Upgraded: 2026-09-11
+//  Ideas: mitosis twin pulse; membrane depolarization wave
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,13 +23,12 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Radius, y=Density, z=ColorShift, w=FieldStrength
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash22 (from bio-touch.wgsl) ═══
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   let k = vec2<f32>(
     dot(p, vec2<f32>(127.1, 311.7)),
@@ -43,7 +37,6 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
   return fract(sin(k) * 43758.5453);
 }
 
-// ═══ CHUNK: voronoi (from bio-touch.wgsl) ═══
 fn voronoi(p: vec2<f32>) -> f32 {
   let i = floor(p);
   let f = fract(p);
@@ -60,18 +53,21 @@ fn voronoi(p: vec2<f32>) -> f32 {
   return minDist;
 }
 
-// ═══ CHUNK: hueShift (from mouse-electromagnetic-aurora.wgsl) ═══
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32> {
   let k = vec3<f32>(0.57735, 0.57735, 0.57735);
   let cosAngle = cos(hue);
   return color * cosAngle + cross(k, color) * sin(hue) + k * dot(k, color) * (1.0 - cosAngle);
 }
 
-// ═══ CHUNK: hash12 (from mouse-electromagnetic-aurora.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
   p3 = p3 + dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn electricField(pos: vec2<f32>, chargePos: vec2<f32>, charge: f32) -> vec2<f32> {
@@ -92,9 +88,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
-  var uv = vec2<f32>(global_id.xy) / resolution;
+  let pixel = vec2<i32>(global_id.xy);
+  let uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
 
   let glowRadius = u.zoom_params.x * 0.5;
   let cellDensity = 10.0 + u.zoom_params.y * 50.0;
@@ -104,13 +104,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mousePos = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
 
-  // ── EM Field Computation ──
-  let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
-  let mouseVel = (mousePos - prevMouse) * 60.0;
-
-  if (global_id.x == 0u && global_id.y == 0u) {
-    textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(mousePos, 0.0, 0.0));
+  let hasMouseBuf = arrayLength(&extraBuffer) > 134u;
+  var prevMouse = mousePos;
+  if (hasMouseBuf) {
+    prevMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    if (global_id.x == 0u && global_id.y == 0u) {
+      extraBuffer[133] = mousePos.x;
+      extraBuffer[134] = mousePos.y;
+    }
   }
+  let mouseVel = (mousePos - prevMouse) * 60.0;
 
   let eField = electricField(uv, mousePos, fieldStrength);
   let bField = magneticField(uv, mousePos, mouseVel, fieldStrength);
@@ -135,53 +138,58 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fieldMag = length(totalE);
   let fieldDir = select(vec2<f32>(0.0), normalize(totalE), fieldMag > 0.0001);
 
-  // ── Bio-Touch Logic (from bio-touch) ──
   let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let dist = length(distVec);
   let influence = smoothstep(glowRadius + 0.1, glowRadius, dist);
 
-  // EM field distorts voronoi UVs
   let fieldDistort = fieldDir * smoothstep(0.0, 2.0, fieldMag) * 0.03;
   let offset = vec2<f32>(sin(time * 0.5), cos(time * 0.4)) * 0.1 + fieldDistort;
-  let v = voronoi((uv + offset) * cellDensity);
+  let voronoiUV = (uv + offset) * cellDensity;
+  let v = voronoi(voronoiUV);
   let glow = 1.0 - smoothstep(0.0, 0.5, v);
 
-  // Pulse modified by magnetic field
+  // Idea 1 — mitosis twin pulse: bass triggers paired brighten on division axis
+  let cellId = floor(voronoiUV);
+  let divisionAxis = normalize(hash22(cellId) - vec2<f32>(0.5));
+  let alongAxis = abs(dot(fract(voronoiUV) - vec2<f32>(0.5), divisionAxis));
+  let twinPulse = smoothstep(0.35, 0.0, alongAxis) * smoothstep(0.25, 0.55, bass) * glow;
+  let mitosisGlow = twinPulse * (0.5 + 0.5 * sin(time * 6.0 + bass * 8.0));
+
+  // Idea 2 — membrane depolarization wave along E-field across cell walls
+  let membrane = smoothstep(0.42, 0.48, v) * (1.0 - smoothstep(0.48, 0.54, v));
+  let depolWave = 0.5 + 0.5 * sin(dot(uv, fieldDir) * 40.0 - time * 4.0 + fieldMag * 3.0);
+  let membraneWave = membrane * depolWave * smoothstep(0.0, 0.6, fieldMag);
+
   let pulse = 0.5 + 0.5 * sin(time * (2.0 + u.zoom_params.w * 5.0) - dist * 10.0 + totalB * 2.0);
-  let finalGlow = glow * influence * pulse * (1.0 + mouseDown * 2.0);
+  let finalGlow = glow * influence * pulse * (1.0 + mouseDown * 2.0) + mitosisGlow * 0.8 + membraneWave * 0.6;
 
-  // Sample Image
-  let displacedUV = uv + fieldDistort * influence;
-  let color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+  let displacedUV = clamp(uv + fieldDistort * influence, vec2<f32>(0.0), vec2<f32>(1.0));
+  let src = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
-  // Color Tinting
   var tint = vec3<f32>(0.2, 0.8, 0.6);
-  if (colorShift > 0.3) { tint = vec3<f32>(0.8, 0.2, 0.6); }
-  if (colorShift > 0.6) { tint = vec3<f32>(0.2, 0.4, 0.9); }
-
-  // Magnetic field rotates tint hue
+  tint = select(tint, vec3<f32>(0.8, 0.2, 0.6), colorShift > 0.3);
+  tint = select(tint, vec3<f32>(0.2, 0.4, 0.9), colorShift > 0.6);
   tint = hueShift(tint, totalB * influence);
 
-  // Composite
-  var outColor = color + tint * finalGlow;
+  var outColor = src.rgb + tint * finalGlow;
+  outColor = outColor + vec3<f32>(0.9, 0.4, 1.0) * mitosisGlow * 0.35;
+  outColor = outColor + vec3<f32>(0.3, 0.85, 1.0) * membraneWave * 0.25;
 
-  // Field line overlay on glow regions
   let streamUV = uv + fieldDir * hash12(uv * 100.0 + time * 0.5) * 0.02;
   let streamNoise = hash12(streamUV * 200.0 + fieldMag * 10.0);
   let streamline = smoothstep(0.4, 0.6, streamNoise) * smoothstep(0.0, 0.5, fieldMag);
   let fieldColor = mix(vec3<f32>(0.0, 0.6, 1.0), vec3<f32>(1.0, 0.8, 0.0), atan2(fieldDir.y, fieldDir.x) * 0.159 + 0.5);
   outColor = mix(outColor, fieldColor, streamline * 0.25 * influence);
 
-  // Core glow near mouse
   let coreGlow = exp(-dist * dist * 400.0) * fieldStrength;
   outColor = outColor + vec3<f32>(0.6, 0.9, 1.0) * coreGlow;
 
-  // Alpha boosted by field influence
-  let alpha = clamp(influence + streamline * 0.2, 0.0, 1.0);
+  let alpha = clamp(influence + streamline * 0.2 + mitosisGlow * 0.3 + membraneWave * 0.2 + src.a * 0.25, 0.0, 1.0);
+  let displayRgb = acesToneMap(outColor);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(displayRgb, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(displayRgb, alpha));
 
-  // Pass through depth
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

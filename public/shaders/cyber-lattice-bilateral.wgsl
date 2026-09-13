@@ -1,6 +1,12 @@
-// Cyber Lattice Bilateral — Composer batch cyber/digital/glitch
-// Edge-preserving bilateral smoothing inside a mouse-warped cyber grid.
-// Spring cursor, held hue flip, capped ripples, exact C dream blend, ACES.
+// ═══════════════════════════════════════════════════════════════════
+//  Cyber Lattice Bilateral
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: node capacitive discharge; seam snap highlight
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -23,6 +29,12 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn hash12(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
@@ -40,6 +52,15 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
   let K = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
   let p = abs(fract(c.xxx + K.xyz) * 6.0 - 3.0);
   return c.z * mix(vec3<f32>(1.0), clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+}
+
+fn hexMetrics(p: vec2<f32>) -> vec3<f32> {
+  let q = vec2<f32>(p.x * 1.7320508 + p.y, p.y * 2.0);
+  let pi = floor(q);
+  let pf = fract(q);
+  let distEdge = min(min(pf.x, 1.0 - pf.x), min(pf.y, 1.0 - pf.y));
+  let vertDist = length(pf - vec2<f32>(0.5));
+  return vec3<f32>(distEdge, vertDist, hash12(pi));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -114,6 +135,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spatialSigma = mix(spatialSigmaBase, spatialSigmaBase * 0.2, mouseFactor);
 
   var rippleSharpness = 0.0;
+  var nodeDischarge = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
@@ -122,9 +144,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
       let wave = exp(-pow((rDist - rElapsed * 0.3) * 12.0, 2.0));
       rippleSharpness = rippleSharpness + wave * (1.0 - rElapsed / 3.0);
+      // Idea 1 — node capacitive discharge at hex vertices on ripple overlap
+      let rippleHex = hexMetrics(gridUV * gridScale);
+      let atVertex = smoothstep(0.12, 0.0, rippleHex.y);
+      nodeDischarge = nodeDischarge + wave * atVertex * exp(-rElapsed * 2.5) * (1.0 + treble * 0.4);
     }
   }
   let finalSigma = max(spatialSigma * (1.0 - rippleSharpness * 0.8), 0.02);
+
+  // Idea 2 — seam snap highlight: bilateral edge weight peaks on hex seam lines
+  let hexInfo = hexMetrics(gridUV * gridScale);
+  let seamSnap = smoothstep(0.06, 0.0, hexInfo.x);
 
   let center = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   var accumColor = vec3<f32>(0.0);
@@ -139,7 +169,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let spatialDist = length(vec2<f32>(f32(dx), f32(dy)));
       let spatialWeight = exp(-spatialDist * spatialDist / (2.0 * finalSigma * finalSigma + 0.001));
       let colorDist = length(neighbor.rgb - center.rgb);
-      let rangeWeight = exp(-colorDist * colorDist / (2.0 * colorSigma * colorSigma + 0.001));
+      let neighborHex = hexMetrics((clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0))) * gridScale);
+      let seamBoost = 1.0 + seamSnap * smoothstep(0.05, 0.0, neighborHex.x) * 2.5;
+      let rangeWeight = exp(-colorDist * colorDist / (2.0 * colorSigma * colorSigma + 0.001)) * seamBoost;
       let weight = spatialWeight * rangeWeight;
       accumColor += neighbor.rgb * weight;
       accumWeight += weight;
@@ -162,13 +194,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = glowColor * totalGlow * 1.5;
   }
 
+  finalColor += glowColor * nodeDischarge * 1.4;
+  finalColor += vec3<f32>(0.2, 0.95, 1.0) * seamSnap * totalGlow * 0.35;
+
   let prevDream = textureLoad(dataTextureC, coord, 0).rgb;
   let dreamMix = mix(0.06, 0.22, u.zoom_params.z) * (1.0 - gridMask * 0.6);
   finalColor = mix(finalColor, prevDream, dreamMix);
 
   finalColor = acesToneMap(finalColor * (0.95 + bass * 0.06));
 
-  let alpha = clamp(center.a * (1.0 - gridMask * 0.2) + gridMask * totalGlow * 0.35 + mouseInfluence * 0.1, 0.0, 1.0);
+  let alpha = clamp(center.a * (1.0 - gridMask * 0.2) + gridMask * totalGlow * 0.35 + nodeDischarge * 0.25 + seamSnap * 0.12 + mouseInfluence * 0.1, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
   textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));

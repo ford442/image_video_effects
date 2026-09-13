@@ -1,6 +1,12 @@
-// Cyber Rain EM — Composer batch cyber/digital/glitch
-// fp128 field integration, spring mouse, racing rain packets,
-// orbital click charges, held widens wiper, ACES + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Cyber Rain EM
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: column lead-char bloom; EM wiper skew
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -171,13 +177,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var finalColor = mix(baseColor, blurredColor, rainIntensity * 0.8);
   finalColor = mix(finalColor, mix(finalColor, prev.rgb * 0.88, 0.12), packet * 0.25);
 
+  // Idea 2 — EM wiper skew: shear rain columns along local E-field from mouse velocity
+  let emSkew = dot(mouseVel, fieldDir) * fieldMag * 12.0;
   let rainPhase = fp128_sum(fp128_mul(fp128(time), fp128(10.0 * rainIntensity)), fp128(fieldDir.x * fieldMag * 5.0));
-  let rainUV = uv * vec2<f32>(20.0, 2.0) + vec2<f32>(fieldDir.x * fieldMag * 5.0, fp128_val(rainPhase));
-  let rainNoise = hash12(floor(rainUV));
-  let drop = smoothstep(0.9, 0.95, rainNoise) * rainIntensity * (1.0 - wiper);
+  let rainUV = uv * vec2<f32>(20.0, 2.0) + vec2<f32>(fieldDir.x * fieldMag * 5.0 + emSkew, fp128_val(rainPhase));
+  let colId = floor(rainUV.x);
+  let colFrac = fract(rainUV.y);
+  let rainNoise = hash12(vec2<f32>(colId, floor(rainUV.y)));
+
+  // Idea 1 — column lead-char bloom: brightest glyph at rain head with phosphor tail
+  let colSpeed = 1.2 + hash12(vec2<f32>(colId, 0.37)) * 2.5;
+  let headY = fract(time * colSpeed * rainIntensity + hash12(vec2<f32>(colId, 1.73)));
+  let headDist = abs(colFrac - headY);
+  let headWrap = min(headDist, 1.0 - headDist);
+  let leadBloom = exp(-headWrap * headWrap * 180.0) * (1.0 + smoothstep(0.08, 0.0, headWrap) * 2.5);
+  let phosphorTail = exp(-max(headWrap - 0.02, 0.0) * 28.0) * smoothstep(0.35, 0.0, headWrap);
+  let glyphMask = smoothstep(0.88, 0.94, rainNoise) * rainIntensity * (1.0 - wiper);
+  let drop = glyphMask * (leadBloom * 1.8 + phosphorTail * 0.55);
 
   let rainColor = hueShift(vec3<f32>(0.5, 0.7, 1.0), totalB * 2.0 + mids * 0.5);
   finalColor += rainColor * drop;
+  finalColor += vec3<f32>(0.85, 1.0, 0.95) * leadBloom * glyphMask * 0.45;
   finalColor += vec3<f32>(0.2, 0.95, 1.0) * packet * fieldVis * (0.2 + treble * 0.3);
 
   let streamNoise = hash12(uv * 200.0 + fieldMag * 10.0 + time * 0.5);
@@ -192,7 +212,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor += vec3<f32>(0.04, 0.1, 0.14) * plasmaBuffer[band + 1u].x * fieldMag * 0.15;
 
   finalColor = acesToneMap(finalColor);
-  let alpha = clamp(fieldMag * 0.35 + drop * 0.4 + packet * 0.2 + bass * 0.08, 0.06, 0.96);
+  let alpha = clamp(fieldMag * 0.35 + drop * 0.4 + leadBloom * glyphMask * 0.25 + packet * 0.2 + bass * 0.08, 0.06, 0.96);
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
   textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));

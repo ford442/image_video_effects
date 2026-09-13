@@ -1,6 +1,17 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-12 (origami / lichen / bio leftover eight)
+**Last updated:** 2026-09-13 (conflicting shader-upgrade PR union)
+
+## 2026-09-13 — Conflicting shader-upgrade PRs unioned onto main
+
+- Open dirty PRs: #1246 geometric ten, #1247 cyber-EM ten, #1252 Claude weekly dispatch (Sept 5).
+- **#1247 (take):** all 10 WGSL files merge-clean vs current main. Native ideas landed. extraBuffer mouse stash `[133..134]` at (0,0) on bio-touch / block-distort / edge-glow / gravity-well (safe zone, not springs). Existing springs kept on rain/lattice/ripples/trace/ferrofluid.
+- **#1246 (cards only):** 9/10 shaders already identical on main. `hyperbolic-dreamweaver` conflict — kept leftover-eight (angular `tile_count` tiling + geodesic glow + honest slider map). Did not take PR `{7,3}` band overlay.
+- **#1252 (skip):** stale audit JSON + `shader_plans/queue.json` that would un-complete nebula/orchid and re-queue bismuth. Weekly plan already superseded by #1256.
+- IDs landed: `cyber-rain-em`, `cyber-lattice-bilateral`, `cyber-ripples-coupled`, `cyber-scan-gabor`, `cyber-trace-structure`, `block-distort-em`, `bio-touch-em`, `ferrofluid-em`, `edge-glow-mouse-em`, `gravity-well-em`.
+- Ideas: lead-char bloom+EM wiper skew; node discharge+seam snap; crest doubling+orbit halo; orthogonal null+retrace phosphor; eigenvector streak+saddle fork; hinge shear+row stagger; mitosis twin+membrane wave; spike coalesce+Earnshaw wobble; Laplacian corona+field-line streak; photon ring+frame-drag hue.
+- Floor: JSON unchanged; A packing as documented (ripples/trace keep raw A; others display RGBA). No new springs. Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,365, SKIP_WASM_BUILD=1 build green. Real-GPU QA external.
+- Cards: `agents/swarm-outputs/composer-2026-09-11-cyber-em-ten/` and `composer-2026-09-11-geometric-ten/`.
 
 ## 2026-09-12 — Origami / lichen / bioluminescent leftover eight (8 shaders)
 
