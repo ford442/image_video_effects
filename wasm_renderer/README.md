@@ -35,7 +35,7 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `timing.cpp` | GPU timestamp queries + `getGPUTimings` resolve/readback |
 | `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
 | `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
-| `src/wasm/bridge/*.ts` | **Hand-edited JS glue** (webpack compiles `src/wasm/wasm_bridge.ts`) |
+| `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |
 | `wasm_bridge.js` (generated) | ESM copies in `wasm_renderer/` + `public/wasm/` — do not edit |
 | `build.sh` | **Canonical build** — single-pass `emcc` + emdawnwebgpu |
 | `CMakeLists.txt` | Optional IDE/fallback build (link-time port only). Reads `src/contracts/wasm_exports.json` — not used in CI. |
@@ -178,7 +178,7 @@ cp ../wasm_bridge.js ../../public/wasm/
 
 - `public/wasm/pixelocity_wasm.js` - Emscripten-generated JS glue
 - `public/wasm/pixelocity_wasm.wasm` - Compiled WASM binary
-- `public/wasm/wasm_bridge.js` - Generated ESM bridge (edit `src/wasm/bridge/*.ts`)
+- `public/wasm/wasm_bridge.js` - Generated ESM bridge. Edit `src/wasm/bridge/*.ts`; **never** edit `public/wasm/bridge/*.js` or `wasm_renderer/bridge/*.js` (those are emitted).
 
 ## JavaScript API
 

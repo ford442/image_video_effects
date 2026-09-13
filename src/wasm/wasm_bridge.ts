@@ -16,4 +16,7 @@ export * from './bridge/uniforms.js';
 export * from './bridge/capture.js';
 export * from './bridge/recording.js';
 
+/** Runtime shape of the default export (use this instead of a parallel hook interface). */
+export type WasmRenderer = typeof wasmBridge;
+
 export default wasmBridge;

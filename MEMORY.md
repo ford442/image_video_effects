@@ -1,6 +1,13 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-13 (conflicting shader-upgrade PR union)
+**Last updated:** 2026-09-13 (#1234 Jest WASM bridge + conflicting shader-upgrade PR union)
+
+## 2026-09-13 — #1234 Jest WASM bridge resolution
+
+- Measured on this VM (not the stale 652/6 note): iteration 0 was **97 suites / 662 pass / 1 skip / 0 fail**; WASM pattern already 6/6.
+- Root cause of the *fragile* mapper: a global `relative .js → $1.ts` remaps node_modules CJS (`./cjs/react-is.development.js`) and Jest throws Configuration error. Extensionless `$1` then `.js`-before-`.ts` search is what actually finds both `api.ts` and real `.js` files.
+- Durable Jest-only fix: prepend `<rootDir>`-anchored WASM mappers; keep `'^(\\.{1,2}/.+)\\.js$': '$1'` last. Source `.js` specifiers untouched. `useWASM` types from `WasmRenderer` (typeof barrel). Docs: edit `src/wasm/bridge/*.ts`; never edit `public/wasm/bridge/*.js`.
+- After: **98 suites / 664 pass / 1 skip**; WASM pattern **7/7, 51 tests** including `WASMBridge.resolve.test.ts`. CI wasm job on recent main **reaches Jest and is green-on-test**; emsdk `latest` still runs first (#1237 latent red-on-build). Did not close #1234.
 
 ## 2026-09-13 — Conflicting shader-upgrade PRs unioned onto main
 

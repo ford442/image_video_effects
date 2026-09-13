@@ -44,10 +44,20 @@
     },
     jest: {
       configure: (jestConfig) => {
+        // Jest 27 has no webpack extensionAlias. Browser ESM keeps explicit
+        // `.js` specifiers in src/wasm/**; map those to the TypeScript files.
+        // Prepend so first-match cannot lose to a later generic pattern.
+        // Do NOT map all relative `.js` to `$1.ts` — that remaps node_modules
+        // CJS (e.g. ./cjs/react-is.development.js) and Jest throws Configuration error.
         jestConfig.moduleNameMapper = {
+          '^src/wasm/bridge/(.+)\\.js$': '<rootDir>/src/wasm/bridge/$1.ts',
+          '^src/wasm/wasm_bridge\\.js$': '<rootDir>/src/wasm/wasm_bridge.ts',
+          '^\\./bridge/(.+)\\.js$': '<rootDir>/src/wasm/bridge/$1.ts',
+          '^\\./(capture|diagnostics|init|recording|shader|state|uniforms|wgslFormat)\\.js$':
+            '<rootDir>/src/wasm/bridge/$1.ts',
           ...jestConfig.moduleNameMapper,
-          // TypeScript ESM: import './foo.js' resolves to foo.ts
-          '^(\\.{1,2}/.*)\\.js$': '$1',
+          // Extensionless fallback for other TS ESM `.js` specifiers. `$1.ts` is too broad.
+          '^(\\.{1,2}/.+)\\.js$': '$1',
         };
         return jestConfig;
       },

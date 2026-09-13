@@ -108,7 +108,8 @@ This ensures:
 - **Bridge sync**: generated `wasm_renderer/` and `public/wasm/` ESM copies must match
   each other; `wasm_bridge.d.ts` must match `src/wasm/wasm_bridge.d.ts`.
   `npm run verify:wasm-bridge-sync` fails if they drift from TypeScript emit.
-  Hand-edit `src/wasm/bridge/*.ts` only.
+  Edit `src/wasm/bridge/*.ts` only. **Never** edit `public/wasm/bridge/*.js`
+  or `wasm_renderer/bridge/*.js` — those are emitted copies.
 
 See [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md) for the full artifact layout.
 

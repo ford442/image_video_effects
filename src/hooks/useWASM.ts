@@ -1,88 +1,32 @@
 import { useState, useCallback, useRef } from 'react';
+import type { WasmRenderer } from '../wasm/wasm_bridge';
 
-// ── Bridge module interface ────────────────────────────────────────────────────
+// ── Bridge types ───────────────────────────────────────────────────────────────
 //
-// This must remain in sync with the exports of public/wasm/wasm_bridge.js.
-// The bridge wraps the raw Emscripten ccall API in safe, typed functions and
-// handles WASM heap allocation/deallocation internally.
-interface WASMBridge {
-  initWasmRenderer: (canvas: HTMLCanvasElement) => Promise<boolean>;
-  shutdownWasmRenderer: () => void;
-
-  // Shader management
-  loadShader: (id: string, wgslCode: string) => boolean;
-  loadShaderFromURL: (id: string, url: string) => Promise<boolean>;
-  setActiveShader: (id: string) => void;
-  setSlotShader: (slotIndex: number, id: string) => void;
-  setSlotParams: (slotIndex: number, p1: number, p2: number, p3: number, p4: number) => void;
-  setSlotMode: (slotIndex: number, mode: number | 'chained' | 'parallel') => void;
-
-  // Per-frame updates
-  updateUniforms: (uniforms?: {
-    time?: number;
-    mouseX?: number;
-    mouseY?: number;
-    mouseDown?: boolean;
-    zoom_params?: [number, number, number, number];
-  }) => void;
-  updateMousePos: (x: number, y: number) => void;
-  setMouseDown: (down: boolean) => void;
-  updateAudioData: (bass: number, mid: number, treble: number) => void;
-  updateDepthMap: (float32Data: Float32Array, width: number, height: number) => void;
-
-  // Input source
-  setInputSource: (source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative') => void;
-
-  // Pixel uploads
-  uploadImageData: (rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number) => void;
-  uploadVideoFrame: (rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number) => void;
-
-  // Interaction
-  addRipple: (x: number, y: number) => void;
-  clearRipples: () => void;
-
-  // State queries
-  getFPS: () => number;
-  isInitialized: () => boolean;
-
-  // Canvas resize
-  resizeCanvas: (newWidth: number, newHeight: number) => void;
-
-  // Frame capture
-  captureFrame: () => Promise<ImageData>;
-  takeScreenshot: (filename?: string) => Promise<void>;
-
-  // Recording
-  startRecording: (
-    canvasElement: HTMLCanvasElement,
-    options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }
-  ) => Promise<Blob>;
-  stopRecording: () => void;
-  recordAndDownload: (
-    canvasElement: HTMLCanvasElement,
-    durationMs?: number,
-    filename?: string
-  ) => Promise<void>;
-}
+// Types come from src/wasm/wasm_bridge.ts (typeof the TypeScript barrel).
+// Edit src/wasm/bridge/*.ts. NEVER edit public/wasm/bridge/*.js or
+// wasm_renderer/bridge/*.js — those are emitted copies.
+// Runtime still loads the emitted /wasm/wasm_bridge.js (webpackIgnore).
 
 export const useWASM = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isWASM, setIsWASM] = useState(false);
-  const bridgeRef = useRef<WASMBridge | null>(null);
+  const bridgeRef = useRef<WasmRenderer | null>(null);
 
   /**
-   * Load the WASM bridge module (from public/wasm/wasm_bridge.js).
+   * Load the emitted ESM bridge from /wasm/wasm_bridge.js (copy of src/wasm).
+   * Edit src/wasm/bridge/*.ts; never edit public/wasm/bridge/*.js.
    * Safe to call multiple times — subsequent calls are no-ops.
    */
   const loadWASM = useCallback(async () => {
     if (bridgeRef.current) return true;
 
     try {
-      // @ts-ignore — wasm_bridge.js lives in public/ and is not part of the
+      // @ts-ignore — emitted wasm_bridge.js lives in public/ and is not part of the
       // webpack bundle.  webpackIgnore prevents webpack from trying to resolve it.
       const bridge = await import(/* webpackIgnore: true */ '/wasm/wasm_bridge.js');
       // The bridge exports named functions and a default object with all of them.
-      bridgeRef.current = (bridge.default ?? bridge) as WASMBridge;
+      bridgeRef.current = (bridge.default ?? bridge) as WasmRenderer;
       setIsLoaded(true);
       console.log('✅ WASM bridge loaded');
       return true;

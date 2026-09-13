@@ -45,7 +45,9 @@ jobs:
       run: npm run verify:wasm-bridge-sync
     
     - name: Run WASM unit smoke tests
-      run: npm test -- --watchAll=false --ci --testPathPattern='WASM'
+      run: |
+        echo "WASM Jest gate: testPathPattern=WASM (job fails on any test failure; no || true)"
+        npm test -- --watchAll=false --ci --testPathPattern='WASM'
       env:
         CI: true
     
