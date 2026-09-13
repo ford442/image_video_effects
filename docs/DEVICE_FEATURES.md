@@ -23,6 +23,17 @@ Feature collection lives in `collectOptionalDeviceFeatures()` — order is `floa
 
 ## Canvas configure contract
 
+Source of truth: [`src/contracts/canvas_configure.json`](../src/contracts/canvas_configure.json). `npm run verify:device-policy` asserts that `buildCanvasConfigureOptions()` (TS), the `ctx.configure` in `JS_CreateSurfaceFromCanvas`, and `ConfigureSurface()` (C++) all match it — `alphaMode`, `usage`, preferred format, `presentModeWasm = fifo`, explicit width/height, and that `ConfigureSurface()` is still called after surface import.
+
+| Key | Default (v1) | Owner |
+|-----|--------------|-------|
+| `alphaMode` | `opaque` | TS + JS configure + C++ |
+| `usage` | `RENDER_ATTACHMENT` | TS + JS configure + C++ |
+| `format` | `getPreferredCanvasFormat()` | TS + JS configure (C++ mirrors via `JS_GetPreferredCanvasFormat`) |
+| `presentModeWasm` | `fifo` | C++ `ConfigureSurface()` only — TS never sets a presentMode |
+| `colorSpace` | `srgb` (browser default, not written) | opt-in only, TS-first |
+| `toneMapping` | `standard` (browser default, not written) | opt-in only, TS-first |
+
 Both paths negotiate the swapchain via the browser's preferred format:
 
 ```typescript
@@ -46,6 +57,25 @@ Diagnostics: `adapterSummary` includes `surfaceFormat=<format>` and `features=[.
 
 gpu-chores (Tier 4b) **adopt** this device — they never call `requestDevice()`. See [GPU_CHORES.md](GPU_CHORES.md).
 
+### Opt-in: `COPY_SRC` swapchain
+
+After the default configure, `runWebGpuBootProbe()` calls `probeCanvasCopySrc()`: it configures `RENDER_ATTACHMENT | COPY_SRC` inside a `validation` error scope (and checks `getConfiguration().usage` where available), records the result, then **restores the render-only configure**. The flag is published as:
+
+- `window.webgpuProbe.canvasCopySrc: boolean`
+- `WebGpuProbeHandoff.canvasCopySrc` (plus `canvasColorOptIns` so callers can rebuild the exact live config)
+- `adapterSummary … | canvas: copySrc=yes|no colorSpace=…`
+
+Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) and `PresentToSurface` (C++) remain blit-to-swapchain. Capture code (WebCodecs / lossless PNG) reconfigures with `buildCanvasConfigureOptions(device, format, { ...canvasColorOptIns, copySrc: true })` only when the flag is true; it does not create a second device. C++ `COPY_SRC` is a parity follow-up (WASM feature freeze until #1080).
+
+### Opt-in: Display P3 / extended tone mapping (default off)
+
+- `?display_p3=1` requests `colorSpace: 'display-p3'`. It is **never** requested at boot by default (Pascal-era GPUs, cheap panels, screenshot mismatch).
+- `toneMapping: { mode: 'extended' }` is only tried behind the same opt-in **and** when `matchMedia('(dynamic-range: high)')` matches. Format stays `getPreferredCanvasFormat()`.
+- Ladder: p3+extended → p3+standard → default srgb. A configure throw, a validation-scope error, or a `getConfiguration()` readback that doesn't match counts as rejected.
+- Applied values: `window.webgpuProbe.canvasColorSpace` / `canvasToneMapping`.
+- TS-first; the WASM path stays srgb/standard. A Controls → Render quality → **Display P3** toggle is a follow-up (needs a live reconfigure).
+
 ## Deferred
 
-- **Wide gamut:** `colorSpace: 'display-p3'` — separate ticket; not requested at device init today.
+- **C++ canvas parity:** `COPY_SRC` / `colorSpace` on `JS_CreateSurfaceFromCanvas` + `ConfigureSurface()` — after #1080.
+- **Controls toggle** for Display P3 (URL opt-in only today).

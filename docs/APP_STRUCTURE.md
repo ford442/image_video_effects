@@ -79,6 +79,23 @@ Directory: `src/components/controls/panels/` — see prior doc; `ControlsContain
 
 ---
 
+## Media upload + recording (GPU timeline)
+
+**Stills (TS):** `WebGPUMediaInput.loadImage` letterboxes via `createImageBitmap(img, { colorSpaceConversion: 'none', resizeWidth/Height })` and `queue.copyExternalImageToTexture` straight into `sourceTex` (+ `readTex` when unscaled). The bitmap is retained in `mediaState.still` so `restoreSourceFromOffscreen` re-copies it after texture recreation. The 2D offscreen is still drawn (no `getImageData`) for CPU consumers (`gpuChores.ingestOffscreen`, `getCpuInputBitmap`). Fallback when the API is missing or the copy throws (tainted source): the old 2D `getImageData` → `rgba8ToFloat32` → `writeTexture` path. `loadImageFromElement` copies from the offscreen canvas the same way.
+
+**Recording** (`src/hooks/useRecording.ts`, Controls → Recording panel):
+
+| Mode | When | Pipeline |
+|------|------|----------|
+| MediaRecorder (**default**) | GPU encode off, or GPU encode can't start | TS: `canvas.captureStream` → `MediaRecorder`. WASM: `WasmBridge.startRecording` (readback → `putImageData` pump, fallback only) |
+| GPU encode (opt-in checkbox, persisted in `localStorage['pixelocity.recording.gpuEncode']`) | `VideoEncoder` + `VideoFrame` exist and a frame source is available | WebCodecs `VideoEncoder` (VP9 → AV1 → VP8) + `webm-muxer` → `.webm` |
+
+GPU-encode frame sources, in order: WASM → `captureFrame()` RGBA readback (`beginFrameCapture`) wrapped as an `RGBA` `VideoFrame`; TS → the canvas itself, after `WebGPURenderer.setCanvasCopySrc(true)` reconfigures the swapchain with `COPY_SRC` (only if the boot probe's `canvasCopySrc` flag is true; restored on stop). Otherwise it falls back to MediaRecorder. A TS `writeTex` → rgba8 readback source for browsers that refuse canvas `COPY_SRC` is a follow-up. No encoder in C++; H.264 is not offered because the muxer is WebM-only.
+
+**Bundle:** the encoder + muxer live in the lazy `gpu-encode` chunk (`src/recording/gpuEncoder.ts`, loaded by `loadGpuEncoder()` in `gpuEncodeSupport.ts`); `verify:bundle-size` fails if it becomes an entrypoint. `webm-muxer` was chosen over `mp4-muxer` (≈11.8 vs ≈14.3 KiB gzip unminified).
+
+---
+
 ## Binding + device policy SoT
 
 - [`docs/BINDING_CONTRACT.md`](BINDING_CONTRACT.md)

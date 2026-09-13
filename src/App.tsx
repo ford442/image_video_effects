@@ -425,6 +425,9 @@ function MainApp() {
         recordingCountdown,
         startRecording,
         stopRecording,
+        gpuEncode,
+        gpuEncodeAvailable,
+        setGpuEncode,
     } = useRecording({
         rendererRef,
         webgpuCanvasRef,
@@ -716,6 +719,9 @@ function MainApp() {
                 recordingCountdown={recordingCountdown}
                 startRecording={startRecording}
                 stopRecording={stopRecording}
+                gpuEncode={gpuEncode}
+                gpuEncodeAvailable={gpuEncodeAvailable}
+                setGpuEncode={setGpuEncode}
                 handleTakeScreenshot={handleTakeScreenshot}
                 setShowShaderScanner={setShowShaderScanner}
                 activeRendererType={activeRendererType}

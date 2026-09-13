@@ -179,6 +179,102 @@ describe('webgpuBootProbe', () => {
     expect(device.destroy).toHaveBeenCalled();
   });
 
+  describe('canvas configure opt-ins', () => {
+    function setup(context: GPUCanvasContext, device: GPUDevice = makeMockDevice()) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      canvas.getContext = jest.fn(() => context) as unknown as typeof canvas.getContext;
+      (navigator as Navigator & { gpu?: GPU }).gpu = {
+        requestAdapter: jest.fn().mockResolvedValue(makeMockAdapter({}, device)),
+        getPreferredCanvasFormat: () => 'bgra8unorm',
+      } as unknown as GPU;
+      return canvas;
+    }
+
+    const lastConfig = (context: GPUCanvasContext) => {
+      const calls = (context.configure as jest.Mock).mock.calls;
+      return calls[calls.length - 1][0] as GPUCanvasConfiguration;
+    };
+
+    it('records canvasCopySrc=true and restores render-only usage', async () => {
+      const context = makeMockContext();
+      const result = await runWebGpuBootProbe(setup(context), 1024, 1024);
+      expect(result.ok).toBe(true);
+      expect(result.canvasCopySrc).toBe(true);
+      expect(result.handoff?.canvasCopySrc).toBe(true);
+      expect(result.canvasColorSpace).toBe('srgb');
+      expect(result.canvasToneMapping).toBe('standard');
+      expect(toWebGpuProbeBreadcrumb(result).canvasCopySrc).toBe(true);
+      const configs = (context.configure as jest.Mock).mock.calls.map((c) => c[0]);
+      expect(configs[0].usage).toBe(0x10);
+      expect(configs.some((c: GPUCanvasConfiguration) => c.usage === (0x10 | 0x01))).toBe(true);
+      expect(lastConfig(context)).toMatchObject({ alphaMode: 'opaque', usage: 0x10 });
+      expect(lastConfig(context)).not.toHaveProperty('colorSpace');
+    });
+
+    it('fails soft when configure throws for COPY_SRC', async () => {
+      const context = makeMockContext();
+      (context.configure as jest.Mock).mockImplementation((c: GPUCanvasConfiguration) => {
+        if ((c.usage as number) & 0x01) throw new Error('COPY_SRC unsupported');
+      });
+      const result = await runWebGpuBootProbe(setup(context), 1024, 1024);
+      expect(result.ok).toBe(true);
+      expect(result.canvasCopySrc).toBe(false);
+      expect(result.attempts.every((a) => a.failedStage === undefined)).toBe(true);
+      expect(lastConfig(context).usage).toBe(0x10);
+    });
+
+    it('fails soft when COPY_SRC raises a validation error scope', async () => {
+      const device = makeMockDevice();
+      const context = makeMockContext();
+      let pending: GPUCanvasConfiguration | null = null;
+      (context.configure as jest.Mock).mockImplementation((c: GPUCanvasConfiguration) => {
+        pending = c;
+      });
+      Object.assign(device, {
+        pushErrorScope: jest.fn(),
+        popErrorScope: jest.fn(async () =>
+          pending && (pending.usage as number) & 0x01 ? { message: 'bad usage' } : null,
+        ),
+      });
+      const result = await runWebGpuBootProbe(setup(context, device), 1024, 1024);
+      expect(result.ok).toBe(true);
+      expect(result.canvasCopySrc).toBe(false);
+      expect(lastConfig(context).usage).toBe(0x10);
+    });
+
+    it('does not request display-p3 by default', async () => {
+      const context = makeMockContext();
+      await runWebGpuBootProbe(setup(context), 1024, 1024);
+      const configs = (context.configure as jest.Mock).mock.calls.map((c) => c[0]);
+      expect(configs.some((c: GPUCanvasConfiguration) => 'colorSpace' in c)).toBe(false);
+    });
+
+    describe('with ?display_p3=1', () => {
+      const originalUrl = window.location.href;
+      beforeEach(() => window.history.replaceState(null, '', '/?display_p3=1'));
+      afterEach(() => window.history.replaceState(null, '', originalUrl));
+
+      it('applies display-p3 when accepted', async () => {
+        const context = makeMockContext();
+        const result = await runWebGpuBootProbe(setup(context), 1024, 1024);
+        expect(result.canvasColorSpace).toBe('display-p3');
+        expect(result.handoff?.canvasColorOptIns.displayP3).toBe(true);
+        expect(lastConfig(context)).toMatchObject({ colorSpace: 'display-p3', usage: 0x10 });
+      });
+
+      it('falls back to srgb when getConfiguration reports srgb', async () => {
+        const context = makeMockContext();
+        Object.assign(context, { getConfiguration: () => ({ colorSpace: 'srgb', usage: 0x11 }) });
+        const result = await runWebGpuBootProbe(setup(context), 1024, 1024);
+        expect(result.ok).toBe(true);
+        expect(result.canvasColorSpace).toBe('srgb');
+        expect(lastConfig(context)).not.toHaveProperty('colorSpace');
+      });
+    });
+  });
+
   it('collectUserAgentBrands returns array (may be empty in jsdom)', () => {
     const brands = collectUserAgentBrands();
     expect(Array.isArray(brands)).toBe(true);

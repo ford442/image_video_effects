@@ -1,5 +1,16 @@
 import { useState, useCallback, useRef, useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
+import {
+    isGpuEncodeAvailable,
+    loadGpuEncoder,
+    readGpuEncodePreference,
+    writeGpuEncodePreference,
+} from '../recording/gpuEncodeSupport';
+import type { GpuEncodeRecorder } from '../recording/gpuEncoder';
+
+const CLIP_SECONDS = 8;
+const CLIP_FPS = 60;
+const CLIP_BITRATE = 8_000_000;
 
 export interface UseRecordingOptions {
     rendererRef: RefObject<RendererManager | null>;
@@ -13,6 +24,45 @@ export interface UseRecordingReturn {
     recordingCountdown: number;
     startRecording: () => Promise<void>;
     stopRecording: () => void;
+    /** Controls → Recording → GPU encode (WebCodecs). Off = MediaRecorder. */
+    gpuEncode: boolean;
+    gpuEncodeAvailable: boolean;
+    setGpuEncode: (enabled: boolean) => void;
+}
+
+/**
+ * Try Recording 2.0 (WebCodecs). Resolves null when no frame source or codec is
+ * available so the caller keeps the MediaRecorder path.
+ */
+async function startGpuEncode(
+    manager: RendererManager,
+    canvas: HTMLCanvasElement,
+): Promise<GpuEncodeRecorder | null> {
+    const { GpuEncodeRecorder, canvasFrameSource, readbackFrameSource } = await loadGpuEncoder();
+    const readback = manager.getFrameReadback();
+    let usesCanvas = false;
+    let source;
+    if (readback) {
+        source = readbackFrameSource(readback);
+    } else if (manager.supportsCanvasFrameCapture() && manager.setCanvasCopySrc(true)) {
+        source = canvasFrameSource(canvas);
+        usesCanvas = true;
+    } else {
+        return null;
+    }
+    try {
+        const recorder = await GpuEncodeRecorder.start(source, {
+            width: canvas.width,
+            height: canvas.height,
+            fps: CLIP_FPS,
+            bitrate: CLIP_BITRATE,
+        });
+        if (!recorder && usesCanvas) manager.setCanvasCopySrc(false);
+        return recorder;
+    } catch (e) {
+        if (usesCanvas) manager.setCanvasCopySrc(false);
+        throw e;
+    }
 }
 
 export function useRecording({
@@ -28,6 +78,14 @@ export function useRecording({
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
     const wasmRecordingPromiseRef = useRef<Promise<Blob> | null>(null);
     const recordingFinishedRef = useRef(false);
+    const gpuRecorderRef = useRef<GpuEncodeRecorder | null>(null);
+    const gpuEncodeAvailable = isGpuEncodeAvailable();
+    const [gpuEncode, setGpuEncodeState] = useState(() => gpuEncodeAvailable && readGpuEncodePreference());
+
+    const setGpuEncode = useCallback((enabled: boolean) => {
+        setGpuEncodeState(enabled);
+        writeGpuEncodePreference(enabled);
+    }, []);
 
     const finishRecordingBlob = useCallback((blob: Blob) => {
         if (recordingFinishedRef.current) return;
@@ -58,6 +116,23 @@ export function useRecording({
         clearRecordingTimer();
 
         const manager = rendererRef.current;
+        const gpuRecorder = gpuRecorderRef.current;
+        if (gpuRecorder) {
+            gpuRecorderRef.current = null;
+            gpuRecorder.stop()
+                .then(finishRecordingBlob)
+                .catch((e) => {
+                    console.error('GPU encode recording failed:', e);
+                    setStatus('❌ GPU encode failed. Turn off GPU encode to use MediaRecorder.');
+                })
+                .finally(() => {
+                    manager?.setCanvasCopySrc(false);
+                    manager?.setRecording(false);
+                });
+            setIsRecording(false);
+            setRecordingCountdown(CLIP_SECONDS);
+            return;
+        }
         if (manager?.usesInternalRecording()) {
             manager.stopRendererRecording();
             manager.setRecording(false);
@@ -74,7 +149,19 @@ export function useRecording({
         setIsRecording(false);
         setRecordingCountdown(8);
         rendererRef.current?.setRecording?.(false);
-    }, [clearRecordingTimer, rendererRef]);
+    }, [clearRecordingTimer, finishRecordingBlob, rendererRef, setStatus]);
+
+    const startCountdown = useCallback((label: string) => {
+        let count = CLIP_SECONDS;
+        recordingTimerRef.current = setInterval(() => {
+            count -= 1;
+            setRecordingCountdown(count);
+            setStatus(`🔴 Recording${label}… ${count}s`);
+            if (count <= 0) {
+                stopRecording();
+            }
+        }, 1000);
+    }, [setStatus, stopRecording]);
 
     const startRecording = useCallback(async () => {
         const canvas = webgpuCanvasRef.current;
@@ -89,6 +176,24 @@ export function useRecording({
         }
 
         recordingFinishedRef.current = false;
+
+        if (gpuEncode && gpuEncodeAvailable) {
+            try {
+                const recorder = await startGpuEncode(manager, canvas);
+                if (recorder) {
+                    gpuRecorderRef.current = recorder;
+                    manager.setRecording(true);
+                    setIsRecording(true);
+                    setRecordingCountdown(CLIP_SECONDS);
+                    setStatus(`🔴 Recording (GPU encode)… ${CLIP_SECONDS}s`);
+                    startCountdown(' (GPU encode)');
+                    return;
+                }
+                console.warn('[Recording] GPU encode unavailable for this backend/browser; using MediaRecorder');
+            } catch (e) {
+                console.warn('[Recording] GPU encode failed to start; using MediaRecorder:', e);
+            }
+        }
 
         try {
             if (manager.usesInternalRecording()) {
@@ -119,16 +224,7 @@ export function useRecording({
                         manager.setRecording(false);
                     });
 
-                let count = 8;
-                recordingTimerRef.current = setInterval(() => {
-                    count -= 1;
-                    setRecordingCountdown(count);
-                    setStatus(`🔴 Recording (WASM)… ${count}s`);
-
-                    if (count <= 0) {
-                        stopRecording();
-                    }
-                }, 1000);
+                startCountdown(' (WASM)');
 
                 return;
             }
@@ -168,27 +264,22 @@ export function useRecording({
             setRecordingCountdown(8);
             setStatus('🔴 Recording… 8s');
 
-            let count = 8;
-            recordingTimerRef.current = setInterval(() => {
-                count -= 1;
-                setRecordingCountdown(count);
-                setStatus(`🔴 Recording… ${count}s`);
-
-                if (count <= 0) {
-                    stopRecording();
-                }
-            }, 1000);
+            startCountdown('');
         } catch (e) {
             console.error('Recording failed:', e);
             setStatus('❌ Recording failed. Browser may not support this feature.');
         }
-    }, [finishRecordingBlob, stopRecording, rendererRef, webgpuCanvasRef, setStatus]);
+    }, [finishRecordingBlob, gpuEncode, gpuEncodeAvailable, startCountdown, rendererRef, webgpuCanvasRef, setStatus]);
 
     useEffect(() => {
         const currentRenderer = rendererRef.current;
         return () => {
             clearRecordingTimer();
-            if (currentRenderer?.usesInternalRecording()) {
+            const gpuRecorder = gpuRecorderRef.current;
+            if (gpuRecorder) {
+                gpuRecorderRef.current = null;
+                gpuRecorder.stop().catch(() => {}).finally(() => currentRenderer?.setCanvasCopySrc(false));
+            } else if (currentRenderer?.usesInternalRecording()) {
                 currentRenderer.stopRendererRecording();
             } else if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                 mediaRecorderRef.current.stop();
@@ -201,5 +292,8 @@ export function useRecording({
         recordingCountdown,
         startRecording,
         stopRecording,
+        gpuEncode,
+        gpuEncodeAvailable,
+        setGpuEncode,
     };
 }

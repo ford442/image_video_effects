@@ -90,6 +90,9 @@ export interface AppShellProps {
     recordingCountdown: number;
     startRecording: () => void;
     stopRecording: () => void;
+    gpuEncode?: boolean;
+    gpuEncodeAvailable?: boolean;
+    setGpuEncode?: (enabled: boolean) => void;
     handleTakeScreenshot: () => void;
     setShowShaderScanner: (show: boolean) => void;
     activeRendererType: RendererType;
@@ -221,6 +224,9 @@ export function AppShell(props: AppShellProps) {
         recordingCountdown,
         startRecording,
         stopRecording,
+        gpuEncode,
+        gpuEncodeAvailable,
+        setGpuEncode,
         handleTakeScreenshot,
         setShowShaderScanner,
         activeRendererType,
@@ -386,6 +392,9 @@ export function AppShell(props: AppShellProps) {
                         recordingCountdown={recordingCountdown}
                         onStartRecording={startRecording}
                         onStopRecording={stopRecording}
+                        gpuEncode={gpuEncode}
+                        gpuEncodeAvailable={gpuEncodeAvailable}
+                        onGpuEncodeChange={setGpuEncode}
                         onTakeScreenshot={handleTakeScreenshot}
                         onOpenShaderScanner={() => setShowShaderScanner(true)}
                         activeRendererType={activeRendererType}

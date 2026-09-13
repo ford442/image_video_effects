@@ -3,7 +3,8 @@
  * verify-device-policy-sync.js
  *
  * CI check: webgpu_limits.json ↔ TS policy ↔ device.cpp CheckLimit/requiredLimits;
- * optional feature order ↔ device.ts / device.cpp; wasm_exports.json ↔ KEEPALIVE /
+ * optional feature order ↔ device.ts / device.cpp;
+ * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE /
  * build.sh / CMakeLists (no hardcoded export lists);
  * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
  * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_.
@@ -185,6 +186,135 @@ function verifyOptionalFeatures() {
   }
 }
 
+function verifyCanvasConfigure() {
+  const file = 'src/contracts/canvas_configure.json';
+  const c = JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8'));
+
+  // Conservative v1 defaults. Changing any of these is a product decision, not drift.
+  const defaults = {
+    alphaMode: 'opaque',
+    presentModeWasm: 'fifo',
+    colorSpace: 'srgb',
+    toneMapping: 'standard',
+  };
+  for (const [key, expected] of Object.entries(defaults)) {
+    if (c[key] !== expected) fail(`${file} ${key} must be '${expected}' (got ${JSON.stringify(c[key])})`);
+  }
+  if (JSON.stringify(c.usage) !== JSON.stringify(['RENDER_ATTACHMENT'])) {
+    fail(`${file} default usage must be ["RENDER_ATTACHMENT"] (COPY_SRC is opt-in only)`);
+  }
+  const copyUsage = c.optIn?.copySrc?.usage || [];
+  if (!copyUsage.includes('RENDER_ATTACHMENT') || !copyUsage.includes('COPY_SRC')) {
+    fail(`${file} optIn.copySrc.usage must be RENDER_ATTACHMENT + COPY_SRC`);
+  }
+  if (c.optIn?.displayP3?.colorSpace !== 'display-p3') {
+    fail(`${file} optIn.displayP3.colorSpace must be 'display-p3'`);
+  }
+  if (c.optIn?.extendedToneMapping?.toneMappingMode !== 'extended') {
+    fail(`${file} optIn.extendedToneMapping.toneMappingMode must be 'extended'`);
+  }
+
+  // ── TS: buildCanvasConfigureOptions reads the contract ───────────────────
+  const tsFile = 'src/renderer/webgpu/device.ts';
+  const ts = fs.readFileSync(path.join(ROOT, tsFile), 'utf8');
+  if (!/import canvasConfigureContract from '\.\.\/\.\.\/contracts\/canvas_configure\.json'/.test(ts)) {
+    fail(`${tsFile} must import canvasConfigureContract from contracts/canvas_configure.json`);
+  }
+  const build = ts.match(/export function buildCanvasConfigureOptions\([\s\S]*?\n\}/);
+  if (!build) {
+    fail(`${tsFile} buildCanvasConfigureOptions not found`);
+  } else {
+    const body = build[0];
+    if (!body.includes('canvasConfigureContract.alphaMode')) {
+      fail(`${tsFile} buildCanvasConfigureOptions must take alphaMode from the contract`);
+    }
+    if (!body.includes('canvasConfigureContract.usage') || !body.includes('canvasConfigureContract.optIn.copySrc.usage')) {
+      fail(`${tsFile} buildCanvasConfigureOptions must take usage (default + copySrc) from the contract`);
+    }
+    if (/presentMode/.test(body)) {
+      fail(`${tsFile} buildCanvasConfigureOptions must not set a presentMode (browser-owned in TS)`);
+    }
+    const guard = body.indexOf('if (optIns.displayP3)');
+    const color = body.indexOf('config.colorSpace');
+    const tone = body.indexOf('toneMapping =');
+    if (guard < 0 || color < guard || tone < guard) {
+      fail(`${tsFile} colorSpace / toneMapping must only be set inside the optIns.displayP3 branch`);
+    }
+    if (/format:\s*['"]/.test(body)) {
+      fail(`${tsFile} buildCanvasConfigureOptions must not hardcode a canvas format`);
+    }
+  }
+
+  const probeFile = 'src/renderer/webgpuBootProbe.ts';
+  const probe = fs.readFileSync(path.join(ROOT, probeFile), 'utf8');
+  if (!probe.includes('context.configure(buildCanvasConfigureOptions(device, canvasFormat))')) {
+    fail(`${probeFile} must configure the default contract first (buildCanvasConfigureOptions(device, canvasFormat))`);
+  }
+  if (!/probeCanvasCopySrc\(device, context, canvasFormat/.test(probe) || !/\n\s*canvasCopySrc,\n/.test(probe)) {
+    fail(`${probeFile} must run probeCanvasCopySrc and publish ${c.optIn.copySrc.probeFlag} on window.webgpuProbe`);
+  }
+
+  // ── C++: JS_CreateSurfaceFromCanvas + ConfigureSurface ──────────────────
+  const cpp = fs.readFileSync(CPP_DEVICE, 'utf8');
+  const jsFn = cpp.match(new RegExp(`EM_JS\\([^,]+,\\s*${c.cpp.jsConfigureFunction}[\\s\\S]*?\\n\\}\\);`));
+  const jsCfg = jsFn && jsFn[0].match(/ctx\.configure\(\{([\s\S]*?)\}\)/);
+  if (!jsCfg) {
+    fail(`device.cpp ${c.cpp.jsConfigureFunction} ctx.configure({...}) not found`);
+  } else {
+    const body = jsCfg[1];
+    if (!new RegExp(`alphaMode:\\s*'${c.alphaMode}'`).test(body)) {
+      fail(`device.cpp ${c.cpp.jsConfigureFunction} alphaMode must be '${c.alphaMode}'`);
+    }
+    const usage = body.match(/usage:\s*([^,\n}]+)/);
+    const jsUsage = usage
+      ? usage[1].split('|').map((u) => u.trim().replace(/^GPUTextureUsage\./, '')).sort()
+      : [];
+    if (JSON.stringify(jsUsage) !== JSON.stringify([...c.usage].sort())) {
+      fail(`device.cpp ${c.cpp.jsConfigureFunction} usage must be ${c.usage.join('|')} (got ${jsUsage.join('|') || 'missing'})`);
+    }
+    if (!/format:\s*preferredFormat/.test(body)) {
+      fail(`device.cpp ${c.cpp.jsConfigureFunction} format must be getPreferredCanvasFormat() (preferredFormat)`);
+    }
+    if (/colorSpace|toneMapping/.test(body)) {
+      fail(`device.cpp ${c.cpp.jsConfigureFunction} must not set colorSpace/toneMapping (opt-in is TS-first)`);
+    }
+  }
+
+  const surf = cpp.match(new RegExp(`void WebGPURenderer::${c.cpp.surfaceConfigureFunction}\\(\\)\\s*\\{[\\s\\S]*?\\n\\}`));
+  if (!surf) {
+    fail(`device.cpp WebGPURenderer::${c.cpp.surfaceConfigureFunction}() not found`);
+  } else {
+    const body = surf[0];
+    const usage = body.match(/config\.usage\s*=\s*([^;]+);/);
+    const cppUsage = usage ? usage[1].split('|').map((u) => u.trim()).sort() : [];
+    const wantUsage = c.usage.map((u) => c.cpp.usageEnums[u]).sort();
+    if (JSON.stringify(cppUsage) !== JSON.stringify(wantUsage)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} usage must be ${wantUsage.join(' | ')} (got ${cppUsage.join(' | ') || 'missing'})`);
+    }
+    const alpha = c.cpp.alphaModeEnums[c.alphaMode];
+    if (!new RegExp(`config\\.alphaMode\\s*=\\s*${alpha}\\b`).test(body)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} alphaMode must be ${alpha}`);
+    }
+    const present = c.cpp.presentModeEnums[c.presentModeWasm];
+    if (!new RegExp(`config\\.presentMode\\s*=\\s*${present}\\b`).test(body)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} presentMode must be ${present}`);
+    }
+    if (!/config\.width\s*=/.test(body) || !/config\.height\s*=/.test(body)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must set explicit width/height`);
+    }
+    if (!/config\.format\s*=\s*surfaceFormat_/.test(body)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} format must be surfaceFormat_ (negotiated preferred format)`);
+    }
+  }
+
+  // Both configures are required: JS configure → importJsSurface → ConfigureSurface().
+  const iImport = cpp.search(new RegExp(`=\\s*${c.cpp.jsConfigureFunction}\\(`));
+  const afterImport = iImport >= 0 ? cpp.slice(iImport) : '';
+  if (!new RegExp(`\\n\\s*${c.cpp.surfaceConfigureFunction}\\(\\);`).test(afterImport)) {
+    fail(`device.cpp must call ${c.cpp.surfaceConfigureFunction}() after ${c.cpp.jsConfigureFunction} (second configure; black canvas without it)`);
+  }
+}
+
 function verifyWasmExports() {
   const json = JSON.parse(
     fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_exports.json'), 'utf8'),
@@ -363,6 +493,7 @@ function verifyEmptyPlaceholder() {
 
 if (!ONLY_WASM_INVARIANTS) {
   verifyOptionalFeatures();
+  verifyCanvasConfigure();
   verifyWasmExports();
   verifyWorkgroupDispatch();
   verifyEmptyPlaceholder();
@@ -374,7 +505,7 @@ if (failed) {
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + wasm_exports + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
+  '✅ Device policy sync OK (limits + optional features + canvas_configure + wasm_exports + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
 
 function walkCppFiles(dir) {

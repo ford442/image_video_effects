@@ -1,0 +1,41 @@
+{
+  "description": "Canvas swapchain configure contract. Default path mirrors TS buildCanvasConfigureOptions() and WASM JS_CreateSurfaceFromCanvas + ConfigureSurface() (device.cpp). WASM keeps BOTH configures: JS (opaque + usage) then C++ (width/height + Fifo). Format is always navigator.gpu.getPreferredCanvasFormat(). colorSpace/toneMapping defaults are the browser defaults and are not written explicitly on the default path. Enforced by verify:device-policy.",
+  "version": 1,
+  "alphaMode": "opaque",
+  "usage": ["RENDER_ATTACHMENT"],
+  "presentModeWasm": "fifo",
+  "colorSpace": "srgb",
+  "toneMapping": "standard",
+  "optIn": {
+    "copySrc": {
+      "usage": ["RENDER_ATTACHMENT", "COPY_SRC"],
+      "probeFlag": "canvasCopySrc",
+      "note": "Boot probe tries RENDER_ATTACHMENT|COPY_SRC inside a validation error scope, records the result, then restores render-only. Capture code reconfigures with copySrc only when the flag is true. TS-first; C++ parity is a follow-up."
+    },
+    "displayP3": {
+      "urlParam": "display_p3",
+      "colorSpace": "display-p3",
+      "note": "Never requested at boot by default. Fail-soft to srgb when the browser rejects it or getConfiguration() reports a different colorSpace."
+    },
+    "extendedToneMapping": {
+      "urlParam": "display_p3",
+      "toneMappingMode": "extended",
+      "requiresMediaQuery": "(dynamic-range: high)",
+      "note": "Only behind the display-p3 opt-in and only on an HDR display."
+    }
+  },
+  "cpp": {
+    "jsConfigureFunction": "JS_CreateSurfaceFromCanvas",
+    "surfaceConfigureFunction": "ConfigureSurface",
+    "usageEnums": {
+      "RENDER_ATTACHMENT": "WGPUTextureUsage_RenderAttachment",
+      "COPY_SRC": "WGPUTextureUsage_CopySrc"
+    },
+    "alphaModeEnums": {
+      "opaque": "WGPUCompositeAlphaMode_Opaque"
+    },
+    "presentModeEnums": {
+      "fifo": "WGPUPresentMode_Fifo"
+    }
+  }
+}

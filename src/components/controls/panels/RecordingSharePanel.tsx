@@ -6,6 +6,10 @@ export interface RecordingSharePanelProps {
     onStartRecording?: () => void;
     onStopRecording?: () => void;
     onTakeScreenshot?: () => void;
+    /** Opt-in WebCodecs encode; MediaRecorder stays the default and the fallback. */
+    gpuEncode?: boolean;
+    gpuEncodeAvailable?: boolean;
+    onGpuEncodeChange?: (enabled: boolean) => void;
 }
 
 export const RecordingSharePanel: React.FC<RecordingSharePanelProps> = ({
@@ -14,6 +18,9 @@ export const RecordingSharePanel: React.FC<RecordingSharePanelProps> = ({
     onStartRecording,
     onStopRecording,
     onTakeScreenshot,
+    gpuEncode = false,
+    gpuEncodeAvailable = false,
+    onGpuEncodeChange,
 }) => (
     <div className="glass-panel" style={{ padding: '15px', marginBottom: '15px' }}>
         <button
@@ -58,6 +65,23 @@ export const RecordingSharePanel: React.FC<RecordingSharePanelProps> = ({
                     }}
                 />
             </div>
+        )}
+
+        {onGpuEncodeChange && (
+            <label
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginTop: '10px', opacity: gpuEncodeAvailable ? 1 : 0.5 }}
+                title={gpuEncodeAvailable
+                    ? 'Encode with WebCodecs (WebM). Falls back to MediaRecorder if the renderer or codec is unavailable.'
+                    : 'WebCodecs VideoEncoder is not available in this browser.'}
+            >
+                <input
+                    type="checkbox"
+                    checked={gpuEncode && gpuEncodeAvailable}
+                    disabled={!gpuEncodeAvailable || isRecording}
+                    onChange={(e) => onGpuEncodeChange(e.target.checked)}
+                />
+                GPU encode (experimental)
+            </label>
         )}
 
         <div style={{ fontSize: '11px', color: '#a0a0b0', textAlign: 'center', marginTop: '8px' }}>

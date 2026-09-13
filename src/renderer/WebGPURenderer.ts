@@ -8,7 +8,12 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
 import { Ripple, MAX_RIPPLES } from './UniformBuffer';
 import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
-import { initializeWebGPUDevice, attachDeviceLostHandler } from './webgpu/device';
+import {
+  initializeWebGPUDevice,
+  attachDeviceLostHandler,
+  buildCanvasConfigureOptions,
+  type CanvasConfigureOptIns,
+} from './webgpu/device';
 import { WebGPUResourcePool } from './webgpu/resources';
 import { WebGPUPipelineModule, createComputeBindGroup } from './webgpu/pipeline';
 import {
@@ -38,6 +43,8 @@ import {
   updateVideoFrame as mediaUpdateVideoFrame,
   loadImage as mediaLoadImage,
   uploadRGBA8,
+  copyExternalToSource,
+  releaseStill,
   clearSourceTexture,
   restoreSourceFromOffscreen,
   WebGPUMediaInputContext,
@@ -55,6 +62,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private device: GPUDevice | null = null;
   private context: GPUCanvasContext | null = null;
   private canvasFormat: GPUTextureFormat = 'bgra8unorm';
+  private canvasCopySrcSupported = false;
+  private canvasCopySrcActive = false;
+  private canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'> = {};
 
   readonly resources = new WebGPUResourcePool();
   readonly pipeline = new WebGPUPipelineModule();
@@ -139,6 +149,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.device = outcome.device;
       this.context = outcome.context;
       this.canvasFormat = outcome.canvasFormat;
+      this.canvasCopySrcSupported = outcome.canvasCopySrc ?? false;
+      this.canvasCopySrcActive = false;
+      this.canvasColorOptIns = outcome.canvasColorOptIns ?? {};
       this.canvasW = outcome.canvasW;
       this.canvasH = outcome.canvasH;
       this.supportsSubgroups = outcome.supportsSubgroups;
@@ -354,6 +367,32 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       videoCopyPipeline: this.pipeline.videoCopyPipeline,
       videoCopyBindGroupLayout: this.pipeline.videoCopyBindGroupLayout,
     };
+  }
+
+  /** Boot probe saw the swapchain accept RENDER_ATTACHMENT | COPY_SRC. */
+  supportsCanvasCopySrc(): boolean {
+    return this.canvasCopySrcSupported;
+  }
+
+  /**
+   * Reconfigure the swapchain with (or without) COPY_SRC for GPU-encode capture,
+   * keeping the applied color opt-ins. Returns false when the probe refused it.
+   */
+  setCanvasCopySrc(enabled: boolean): boolean {
+    if (!this.device || !this.context) return false;
+    if (enabled && !this.canvasCopySrcSupported) return false;
+    if (this.canvasCopySrcActive === enabled) return true;
+    try {
+      this.context.configure(buildCanvasConfigureOptions(
+        this.device, this.canvasFormat, { ...this.canvasColorOptIns, copySrc: enabled },
+      ));
+      this.canvasCopySrcActive = enabled;
+      return true;
+    } catch (e) {
+      console.warn('[WebGPU] canvas COPY_SRC reconfigure failed:', e);
+      if (enabled) this.canvasCopySrcSupported = false;
+      return false;
+    }
   }
 
   /** Adapter identity string (vendor | architecture | device | description), '' before init. */
@@ -680,8 +719,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.mediaState.offCtx.fillStyle = 'black';
     this.mediaState.offCtx.fillRect(0, 0, dstW, dstH);
     this.mediaState.offCtx.drawImage(element, 0, 0, dstW, dstH);
-    const imageData = this.mediaState.offCtx.getImageData(0, 0, dstW, dstH);
-    uploadRGBA8(this.getMediaContext(), imageData.data, dstW, dstH);
+    releaseStill(this.mediaState);
+    const ctx = this.getMediaContext();
+    if (!copyExternalToSource(ctx, this.mediaState.offscreen, dstW, dstH)) {
+      const imageData = this.mediaState.offCtx.getImageData(0, 0, dstW, dstH);
+      uploadRGBA8(ctx, imageData.data, dstW, dstH);
+    }
     return { width: dstW, height: dstH };
   }
   render(): void {}

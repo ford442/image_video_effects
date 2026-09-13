@@ -81,6 +81,9 @@ export interface ControlsProps {
     recordingCountdown?: number;
     onStartRecording?: () => void;
     onStopRecording?: () => void;
+    gpuEncode?: boolean;
+    gpuEncodeAvailable?: boolean;
+    onGpuEncodeChange?: (enabled: boolean) => void;
     onTakeScreenshot?: () => void;
     liveStreamUrl?: string;
     onLiveStreamLoaded?: (url: string) => void;

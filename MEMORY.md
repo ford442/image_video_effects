@@ -1,6 +1,12 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-13 (#1234 Jest WASM bridge + conflicting shader-upgrade PR union)
+**Last updated:** 2026-09-13 (#1228 style.css split + #1234 Jest WASM bridge + conflicting shader-upgrade PR union)
+
+## 2026-09-13 — #1228 Split `src/style.css`
+
+- 1092-line monolith is now a barrel (`App.tsx` still imports `src/style.css`).
+- Sheets: `styles/layout.css` (175, app chrome), `styles/controls.css` (326, sidebar/forms/status/remote), `styles/webcam.css` (294), `styles/roulette.css` (239), `styles/storage-modal.css` (61). All under 700.
+- `@import` order matches the old cascade. Left `gold-glass-theme.css` (717) and `recording-share.css` (358) first. SKIP_WASM_BUILD=1 build green. Issue **closed**.
 
 ## 2026-09-13 — #1234 Jest WASM bridge resolution
 

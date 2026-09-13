@@ -44,7 +44,8 @@ EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice
         return 0;
     }
     try {
-        // Matches TS buildCanvasConfigureOptions. Do NOT drop this configure
+        // Matches TS buildCanvasConfigureOptions default path
+        // (src/contracts/canvas_configure.json; verify:device-policy). Do NOT drop this configure
         // as a "simplification": importJsSurface needs a configured context.
         // ConfigureSurface() below is a second configure (Fifo + width/height)
         // — both are required; omitting the C++ pass can yield a black canvas.
@@ -599,10 +600,11 @@ bool WebGPURenderer::CreateDevice() {
     }
 
     // ── Device limits ─────────────────────────────────────────────────────
-    // Re-check against the same minimums as the adapter: a device can clamp
-    // limits below what the adapter advertised (e.g. due to requiredLimits
-    // negotiation), so this catches that case even though we don't currently
-    // request explicit requiredLimits.
+    // Re-check against the same minimums as the adapter. deviceDesc.requiredLimits
+    // IS seeded above from webgpu_limits.json, so a conforming implementation
+    // should never return less; this is a belt-and-braces diagnostic for clamping
+    // bugs. Do NOT drop the explicit requiredLimits as a "simplification" —
+    // a null requiredLimits yields spec-default (lower) device limits.
     {
         WGPULimits deviceLimits = {};
         wgpuDeviceGetLimits(device_.get(), &deviceLimits);

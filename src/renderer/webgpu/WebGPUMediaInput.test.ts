@@ -6,6 +6,9 @@ import {
   uploadRGBA8,
   uploadSourceRGBA8,
   restoreSourceFromOffscreen,
+  copyExternalToSource,
+  letterboxRect,
+  loadImage,
   WebGPUMediaInputContext,
 } from './WebGPUMediaInput';
 
@@ -143,5 +146,135 @@ describe('WebGPUMediaInput', () => {
     } as unknown as CanvasRenderingContext2D;
     expect(restoreSourceFromOffscreen(ctx, state)).toBe(false);
     expect(writeTexture).not.toHaveBeenCalled();
+  });
+
+  describe('copyExternalImageToTexture still path', () => {
+    function withCopyExternal(ctx: WebGPUMediaInputContext, impl?: () => void) {
+      const copyExternalImageToTexture: jest.Mock = jest.fn(impl);
+      const pass = { end: jest.fn() };
+      const device = ctx.device as unknown as Record<string, unknown>;
+      (device.queue as Record<string, unknown>).copyExternalImageToTexture = copyExternalImageToTexture;
+      (device.queue as Record<string, unknown>).submit = jest.fn();
+      device.createCommandEncoder = jest.fn(() => ({
+        beginRenderPass: jest.fn(() => pass),
+        finish: jest.fn(),
+      }));
+      (ctx.sourceTex as unknown as Record<string, unknown>).createView = jest.fn();
+      (ctx.readTex as unknown as Record<string, unknown>).createView = jest.fn();
+      return copyExternalImageToTexture;
+    }
+
+    it('letterboxRect centers and snaps to integer texels', () => {
+      expect(letterboxRect(200, 100, 64, 48)).toEqual({ x: 0, y: 8, w: 64, h: 32 });
+      expect(letterboxRect(100, 200, 64, 48)).toEqual({ x: 20, y: 0, w: 24, h: 48 });
+    });
+
+    it('copyExternalToSource copies into sourceTex and unscaled readTex without writeTexture', () => {
+      const { ctx, writeTexture, sourceTex, readTex } = makeCtx();
+      const copy = withCopyExternal(ctx);
+      const source = { width: 64, height: 32 } as ImageBitmap;
+
+      expect(copyExternalToSource(ctx, source, 64, 32, { x: 0, y: 8 }, true)).toBe(true);
+
+      expect(writeTexture).not.toHaveBeenCalled();
+      expect(copy).toHaveBeenCalledTimes(2);
+      expect(copy.mock.calls[0][1]).toMatchObject({ texture: sourceTex, origin: [0, 8], premultipliedAlpha: false });
+      expect(copy.mock.calls[1][1].texture).toBe(readTex);
+      expect(copy.mock.calls[0][2]).toEqual([64, 32]);
+    });
+
+    it('copyExternalToSource skips scaled readTex', () => {
+      const { ctx, sourceTex } = makeCtx({ readW: 32, readH: 24 });
+      const copy = withCopyExternal(ctx);
+      copyExternalToSource(ctx, {} as ImageBitmap, 64, 48);
+      expect(copy).toHaveBeenCalledTimes(1);
+      expect(copy.mock.calls[0][1].texture).toBe(sourceTex);
+    });
+
+    it('copyExternalToSource returns false when the API is missing or throws', () => {
+      const { ctx } = makeCtx();
+      expect(copyExternalToSource(ctx, {} as ImageBitmap, 64, 48)).toBe(false);
+
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      withCopyExternal(ctx, () => { throw new Error('tainted'); });
+      expect(copyExternalToSource(ctx, {} as ImageBitmap, 64, 48)).toBe(false);
+      warn.mockRestore();
+    });
+
+    it('restoreSourceFromOffscreen prefers the retained still bitmap', () => {
+      const { ctx, writeTexture } = makeCtx();
+      const copy = withCopyExternal(ctx);
+      const state = createMediaInputState();
+      state.still = { bitmap: { width: 64, height: 32 } as ImageBitmap, x: 0, y: 8, canvasW: 64, canvasH: 48 };
+
+      expect(restoreSourceFromOffscreen(ctx, state)).toBe(true);
+      expect(copy).toHaveBeenCalled();
+      expect(writeTexture).not.toHaveBeenCalled();
+    });
+
+    describe('loadImage', () => {
+      const realImage = global.Image;
+      const realCreateImageBitmap = (global as { createImageBitmap?: unknown }).createImageBitmap;
+      let offCtx: { fillRect: jest.Mock; drawImage: jest.Mock; getImageData: jest.Mock; fillStyle: string };
+
+      beforeEach(() => {
+        class FakeImage {
+          naturalWidth = 200;
+          naturalHeight = 100;
+          crossOrigin = '';
+          onload: (() => void) | null = null;
+          onerror: (() => void) | null = null;
+          set src(_v: string) { setTimeout(() => this.onload?.(), 0); }
+        }
+        (global as unknown as { Image: unknown }).Image = FakeImage;
+        offCtx = {
+          fillStyle: '',
+          fillRect: jest.fn(),
+          drawImage: jest.fn(),
+          getImageData: jest.fn(() => ({ data: new Uint8ClampedArray(64 * 48 * 4) })),
+        };
+        jest.spyOn(HTMLCanvasElement.prototype, 'getContext')
+          .mockImplementation((() => offCtx) as unknown as HTMLCanvasElement['getContext']);
+      });
+
+      afterEach(() => {
+        (global as unknown as { Image: unknown }).Image = realImage;
+        (global as { createImageBitmap?: unknown }).createImageBitmap = realCreateImageBitmap;
+        jest.restoreAllMocks();
+      });
+
+      it('uses copyExternalImageToTexture when available (no getImageData)', async () => {
+        const { ctx, writeTexture } = makeCtx();
+        const copy = withCopyExternal(ctx);
+        const bitmap = { width: 64, height: 32, close: jest.fn() };
+        const createBitmap = jest.fn(async () => bitmap);
+        (global as { createImageBitmap?: unknown }).createImageBitmap = createBitmap;
+        const state = createMediaInputState();
+
+        await loadImage(ctx, state, 'img.png');
+
+        expect(createBitmap).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+          colorSpaceConversion: 'none',
+          resizeWidth: 64,
+          resizeHeight: 32,
+        }));
+        expect(copy).toHaveBeenCalled();
+        expect(offCtx.getImageData).not.toHaveBeenCalled();
+        expect(writeTexture).not.toHaveBeenCalled();
+        expect(state.still?.bitmap).toBe(bitmap);
+      });
+
+      it('falls back to the 2D upload when copyExternalImageToTexture is missing', async () => {
+        const { ctx, writeTexture } = makeCtx();
+        (global as { createImageBitmap?: unknown }).createImageBitmap = jest.fn();
+        const state = createMediaInputState();
+
+        await loadImage(ctx, state, 'img.png');
+
+        expect(offCtx.getImageData).toHaveBeenCalled();
+        expect(writeTexture).toHaveBeenCalled();
+        expect(state.still).toBeNull();
+      });
+    });
   });
 });

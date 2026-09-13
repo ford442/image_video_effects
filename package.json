@@ -13,7 +13,8 @@
     "hls.js": "^1.6.15",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "webm-muxer": "^5.1.4"
   },
   "scripts": {
     "postinstall": "patch-package",

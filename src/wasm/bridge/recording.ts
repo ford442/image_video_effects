@@ -33,6 +33,11 @@ function cleanupRecordingPump(): void {
   _recordCtx = null;
 }
 
+/**
+ * MediaRecorder fallback only. The GPU-encode path (Controls → Recording → GPU
+ * encode) feeds captureFrame() RGBA straight into a WebCodecs VideoFrame in
+ * src/recording/gpuEncoder.ts and never reaches this putImageData pump.
+ */
 function startGpuReadbackPump(drawCanvas: HTMLCanvasElement): void {
   _recordCanvas = drawCanvas;
   _recordCtx = drawCanvas.getContext('2d');

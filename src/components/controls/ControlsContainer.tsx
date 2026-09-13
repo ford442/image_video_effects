@@ -79,6 +79,9 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     recordingCountdown = 8,
     onStartRecording,
     onStopRecording,
+    gpuEncode,
+    gpuEncodeAvailable,
+    onGpuEncodeChange,
     onTakeScreenshot,
     liveStreamUrl,
     onLiveStreamLoaded,
@@ -309,6 +312,9 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 recordingCountdown={recordingCountdown}
                 onStartRecording={onStartRecording}
                 onStopRecording={onStopRecording}
+                gpuEncode={gpuEncode}
+                gpuEncodeAvailable={gpuEncodeAvailable}
+                onGpuEncodeChange={onGpuEncodeChange}
                 onTakeScreenshot={onTakeScreenshot}
             />
 

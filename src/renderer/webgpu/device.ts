@@ -9,6 +9,7 @@ import { reportError } from '../ErrorHandling';
 import type { WebGpuProbeHandoff } from '../webgpuBootProbe';
 import { publishWebGpuProbe, runWebGpuBootProbe } from '../webgpuBootProbe';
 import { AdapterGpuType, DeviceFormatCapabilities } from '../../config/formatPolicy';
+import canvasConfigureContract from '../../contracts/canvas_configure.json';
 
 export interface WebGPUDeviceInitResult {
   ok: true;
@@ -24,6 +25,9 @@ export interface WebGPUDeviceInitResult {
   formatCapabilities: DeviceFormatCapabilities;
   adapterSummary: string;
   adapterAttemptLabel: string | null;
+  /** Probe result: swapchain accepts COPY_SRC (enables canvas → VideoFrame capture). */
+  canvasCopySrc: boolean;
+  canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
 }
 
 export interface WebGPUDeviceInitFailure {
@@ -50,6 +54,8 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     formatCapabilities: handoff.formatCapabilities,
     adapterSummary: handoff.adapterSummary,
     adapterAttemptLabel: handoff.adapterAttemptLabel,
+    canvasCopySrc: handoff.canvasCopySrc,
+    canvasColorOptIns: handoff.canvasColorOptIns,
   };
 }
 
@@ -88,16 +94,76 @@ export function formatEnabledDeviceFeatures(device: GPUDevice): string {
   return `features=[${enabled.join(',')}]`;
 }
 
-/** Canvas context configure options (parity with WASM JS_CreateSurfaceFromCanvas). */
+/** Opt-ins layered on top of the default canvas configure contract. */
+export interface CanvasConfigureOptIns {
+  /** Add COPY_SRC to the swapchain usage (only when probe flag canvasCopySrc is true). */
+  copySrc?: boolean;
+  /** Request colorSpace 'display-p3' (?display_p3=1). */
+  displayP3?: boolean;
+  /** Request toneMapping { mode: 'extended' } (display-p3 opt-in + HDR display only). */
+  extendedToneMapping?: boolean;
+}
+
+// WebGPU spec GPUTextureUsage bit values, for non-browser (Jest / SSR) evaluation.
+const TEXTURE_USAGE_FALLBACK: Record<string, number> = {
+  COPY_SRC: 0x01,
+  RENDER_ATTACHMENT: 0x10,
+};
+
+function textureUsageBits(names: readonly string[]): GPUTextureUsageFlags {
+  const table = (typeof GPUTextureUsage !== 'undefined'
+    ? GPUTextureUsage
+    : TEXTURE_USAGE_FALLBACK) as unknown as Record<string, number>;
+  return names.reduce((bits, name) => bits | table[name], 0);
+}
+
+/**
+ * Canvas context configure options (parity with WASM JS_CreateSurfaceFromCanvas).
+ * Values come from src/contracts/canvas_configure.json. The default path writes
+ * only alphaMode + usage; colorSpace/toneMapping stay browser defaults (srgb /
+ * standard) unless explicitly opted in.
+ */
 export function buildCanvasConfigureOptions(
   device: GPUDevice,
   format: GPUTextureFormat,
+  optIns: CanvasConfigureOptIns = {},
 ): GPUCanvasConfiguration {
-  return {
+  const usageNames = optIns.copySrc
+    ? canvasConfigureContract.optIn.copySrc.usage
+    : canvasConfigureContract.usage;
+  const config: GPUCanvasConfiguration = {
     device,
     format,
-    alphaMode: 'opaque',
-    usage: typeof GPUTextureUsage !== 'undefined' ? GPUTextureUsage.RENDER_ATTACHMENT : 0x10,
+    alphaMode: canvasConfigureContract.alphaMode as GPUCanvasAlphaMode,
+    usage: textureUsageBits(usageNames),
+  };
+  if (optIns.displayP3) {
+    config.colorSpace = canvasConfigureContract.optIn.displayP3.colorSpace as PredefinedColorSpace;
+    if (optIns.extendedToneMapping) {
+      config.toneMapping = {
+        mode: canvasConfigureContract.optIn.extendedToneMapping.toneMappingMode as GPUCanvasToneMappingMode,
+      };
+    }
+  }
+  return config;
+}
+
+/**
+ * Parse the display-p3 opt-in from a URL search string. Extended tone mapping
+ * additionally requires an HDR display (`(dynamic-range: high)`).
+ */
+export function resolveCanvasColorOptIns(
+  search: string = typeof window !== 'undefined' ? window.location.search : '',
+  isHdrDisplay: () => boolean = () =>
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia(canvasConfigureContract.optIn.extendedToneMapping.requiresMediaQuery).matches,
+): Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'> {
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  const displayP3 = params.get(canvasConfigureContract.optIn.displayP3.urlParam) === '1';
+  return {
+    displayP3,
+    extendedToneMapping: displayP3 && isHdrDisplay(),
   };
 }
 

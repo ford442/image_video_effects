@@ -8,8 +8,10 @@ import {
   collectOptionalDeviceFeatures,
   formatEnabledDeviceFeatures,
   initializeWebGPUDevice,
+  resolveCanvasColorOptIns,
   resolveSubgroupFeatureName,
 } from './device';
+import canvasConfigureContract from '../../contracts/canvas_configure.json';
 import { UNIFORM_BUFFER_LAYOUT } from '../types';
 
 const TU = {
@@ -124,6 +126,73 @@ describe('buildCanvasConfigureOptions', () => {
       alphaMode: 'opaque',
       usage: TU.RENDER_ATTACHMENT,
     });
+    expect(opts).not.toHaveProperty('colorSpace');
+    expect(opts).not.toHaveProperty('toneMapping');
+    expect(opts).not.toHaveProperty('presentMode');
+  });
+
+  it('adds COPY_SRC only when opted in', () => {
+    const device = makeDevice();
+    const opts = buildCanvasConfigureOptions(device, 'rgba8unorm', { copySrc: true });
+    expect(opts.usage).toBe(TU.RENDER_ATTACHMENT | TU.COPY_SRC);
+    expect(opts.alphaMode).toBe('opaque');
+    expect(opts.format).toBe('rgba8unorm');
+  });
+
+  it('sets display-p3 only when opted in', () => {
+    const opts = buildCanvasConfigureOptions(makeDevice(), 'bgra8unorm', { displayP3: true });
+    expect(opts.colorSpace).toBe('display-p3');
+    expect(opts).not.toHaveProperty('toneMapping');
+  });
+
+  it('ignores extended tone mapping without the display-p3 opt-in', () => {
+    const opts = buildCanvasConfigureOptions(makeDevice(), 'bgra8unorm', { extendedToneMapping: true });
+    expect(opts).not.toHaveProperty('colorSpace');
+    expect(opts).not.toHaveProperty('toneMapping');
+  });
+
+  it('sets extended tone mapping behind display-p3', () => {
+    const opts = buildCanvasConfigureOptions(makeDevice(), 'bgra8unorm', {
+      displayP3: true,
+      extendedToneMapping: true,
+    });
+    expect(opts).toMatchObject({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } });
+  });
+});
+
+describe('canvas_configure.json contract', () => {
+  it('keeps conservative v1 defaults', () => {
+    expect(canvasConfigureContract).toMatchObject({
+      alphaMode: 'opaque',
+      usage: ['RENDER_ATTACHMENT'],
+      presentModeWasm: 'fifo',
+      colorSpace: 'srgb',
+      toneMapping: 'standard',
+    });
+  });
+});
+
+describe('resolveCanvasColorOptIns', () => {
+  it('is off by default', () => {
+    expect(resolveCanvasColorOptIns('', () => true)).toEqual({
+      displayP3: false,
+      extendedToneMapping: false,
+    });
+  });
+
+  it('enables display-p3 from ?display_p3=1 on SDR displays', () => {
+    expect(resolveCanvasColorOptIns('?display_p3=1', () => false)).toEqual({
+      displayP3: true,
+      extendedToneMapping: false,
+    });
+  });
+
+  it('enables extended tone mapping only with display-p3 on HDR displays', () => {
+    expect(resolveCanvasColorOptIns('display_p3=1&x=2', () => true)).toEqual({
+      displayP3: true,
+      extendedToneMapping: true,
+    });
+    expect(resolveCanvasColorOptIns('?display_p3=0', () => true).extendedToneMapping).toBe(false);
   });
 });
 

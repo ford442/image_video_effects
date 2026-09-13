@@ -26,6 +26,20 @@ export interface WebGPUMediaInputState {
   offscreen: HTMLCanvasElement | null;
   offCtx: CanvasRenderingContext2D | null;
   videoExternalTexture: GPUExternalTexture | null;
+  /**
+   * Letterboxed still uploaded via copyExternalImageToTexture. Kept so texture
+   * recreation re-copies the same (unconverted) pixels instead of the 2D offscreen.
+   */
+  still: StillPlacement | null;
+}
+
+export interface StillPlacement {
+  bitmap: ImageBitmap;
+  x: number;
+  y: number;
+  /** Canvas size the placement was computed for. */
+  canvasW: number;
+  canvasH: number;
 }
 
 export function createMediaInputState(): WebGPUMediaInputState {
@@ -34,7 +48,143 @@ export function createMediaInputState(): WebGPUMediaInputState {
     offscreen: null,
     offCtx: null,
     videoExternalTexture: null,
+    still: null,
   };
+}
+
+export function releaseStill(state: WebGPUMediaInputState): void {
+  state.still?.bitmap.close?.();
+  state.still = null;
+}
+
+type CopyExternalSource = ImageBitmap | HTMLCanvasElement | OffscreenCanvas;
+
+function hasCopyExternalImage(ctx: WebGPUMediaInputContext): ctx is WebGPUMediaInputContext & { device: GPUDevice } {
+  return !!ctx.device && typeof ctx.device.queue.copyExternalImageToTexture === 'function';
+}
+
+function textureSize(tex: GPUTexture, fallbackW: number, fallbackH: number): [number, number] {
+  const t = tex as GPUTexture & { width?: number; height?: number };
+  return [t.width ?? fallbackW, t.height ?? fallbackH];
+}
+
+/**
+ * GPU still upload: copy an external image straight into sourceTex (and readTex
+ * when unscaled) at `origin`, skipping getImageData + CPU float conversion.
+ * The browser converts unorm8 → the tier float format. Returns false when the
+ * API is missing or the copy throws (tainted source, unsupported format), so
+ * callers keep the 2D fallback. `clearFirst` blacks out the letterbox bars.
+ */
+export function copyExternalToSource(
+  ctx: WebGPUMediaInputContext,
+  source: CopyExternalSource,
+  srcW: number,
+  srcH: number,
+  origin: { x: number; y: number } = { x: 0, y: 0 },
+  clearFirst = false,
+): boolean {
+  if (!hasCopyExternalImage(ctx)) return false;
+  const targets = [ctx.sourceTex];
+  const [readW, readH] = textureSize(ctx.readTex, ctx.canvasW, ctx.canvasH);
+  if (readW === ctx.canvasW && readH === ctx.canvasH) targets.push(ctx.readTex);
+
+  try {
+    for (const texture of targets) {
+      const [texW, texH] = textureSize(texture, ctx.canvasW, ctx.canvasH);
+      const w = Math.min(srcW, texW - origin.x);
+      const h = Math.min(srcH, texH - origin.y);
+      if (w <= 0 || h <= 0) continue;
+      if (clearFirst) clearTexture(ctx.device, texture);
+      ctx.device.queue.copyExternalImageToTexture(
+        { source, flipY: false },
+        { texture, origin: [origin.x, origin.y], premultipliedAlpha: false },
+        [w, h],
+      );
+    }
+    return true;
+  } catch (e) {
+    console.warn('[WebGPU] copyExternalImageToTexture failed; using 2D upload:', e);
+    return false;
+  }
+}
+
+/** Fit `srcW×srcH` inside the canvas (letterbox), snapped to integer texels. */
+export function letterboxRect(
+  srcW: number,
+  srcH: number,
+  dstW: number,
+  dstH: number,
+): { x: number; y: number; w: number; h: number } {
+  const srcAspect = srcW / srcH;
+  const dstAspect = dstW / dstH;
+  let w = dstW;
+  let h = dstH;
+  if (srcAspect > dstAspect) {
+    h = dstW / srcAspect;
+  } else {
+    w = dstH * srcAspect;
+  }
+  const rw = Math.max(1, Math.min(dstW, Math.round(w)));
+  const rh = Math.max(1, Math.min(dstH, Math.round(h)));
+  return { x: Math.floor((dstW - rw) / 2), y: Math.floor((dstH - rh) / 2), w: rw, h: rh };
+}
+
+function copyStill(ctx: WebGPUMediaInputContext, still: StillPlacement): boolean {
+  return copyExternalToSource(
+    ctx,
+    still.bitmap,
+    still.bitmap.width,
+    still.bitmap.height,
+    { x: still.x, y: still.y },
+    true,
+  );
+}
+
+async function uploadStillBitmap(
+  ctx: WebGPUMediaInputContext,
+  state: WebGPUMediaInputState,
+  img: HTMLImageElement,
+  rect: { x: number; y: number; w: number; h: number },
+): Promise<boolean> {
+  if (!hasCopyExternalImage(ctx) || typeof createImageBitmap !== 'function') return false;
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(img, {
+      colorSpaceConversion: 'none',
+      premultiplyAlpha: 'none',
+      resizeWidth: rect.w,
+      resizeHeight: rect.h,
+      resizeQuality: 'high',
+    });
+  } catch (e) {
+    console.warn('[WebGPU] createImageBitmap failed; using 2D upload:', e);
+    return false;
+  }
+  const still: StillPlacement = { bitmap, x: rect.x, y: rect.y, canvasW: ctx.canvasW, canvasH: ctx.canvasH };
+  if (!copyStill(ctx, still)) {
+    bitmap.close?.();
+    return false;
+  }
+  releaseStill(state);
+  state.still = still;
+  return true;
+}
+
+function clearTexture(device: GPUDevice, texture: GPUTexture): void {
+  const encoder = device.createCommandEncoder({ label: 'clearStillEncoder' });
+  const pass = encoder.beginRenderPass({
+    label: 'clearStillPass',
+    colorAttachments: [
+      {
+        view: texture.createView(),
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: { r: 0, g: 0, b: 0, a: 1 },
+      },
+    ],
+  });
+  pass.end();
+  device.queue.submit([encoder.finish()]);
 }
 
 function rgba8ToFloat32(
@@ -118,7 +268,12 @@ export function restoreSourceFromOffscreen(
   ctx: WebGPUMediaInputContext,
   state: WebGPUMediaInputState,
 ): boolean {
-  if (!ctx.device || !state.offscreen || !state.offCtx) return false;
+  if (!ctx.device) return false;
+  const still = state.still;
+  if (still && still.canvasW === ctx.canvasW && still.canvasH === ctx.canvasH && copyStill(ctx, still)) {
+    return true;
+  }
+  if (!state.offscreen || !state.offCtx) return false;
   if (state.offscreen.width !== ctx.canvasW || state.offscreen.height !== ctx.canvasH) {
     return false;
   }
@@ -222,6 +377,7 @@ export function updateVideoFrame(
   state: WebGPUMediaInputState,
 ): void {
   if (!state.video || state.video.readyState < 2) return;
+  if (state.still) releaseStill(state);
   const vw = state.video.videoWidth;
   const vh = state.video.videoHeight;
   if (!vw || !vh) return;
@@ -274,19 +430,7 @@ export async function loadImage(
 
     const dstW = ctx.canvasW;
     const dstH = ctx.canvasH;
-    const srcAspect = img.naturalWidth / img.naturalHeight;
-    const dstAspect = dstW / dstH;
-    let drawW = dstW;
-    let drawH = dstH;
-    let drawX = 0;
-    let drawY = 0;
-    if (srcAspect > dstAspect) {
-      drawH = dstW / srcAspect;
-      drawY = (dstH - drawH) / 2;
-    } else {
-      drawW = dstH * srcAspect;
-      drawX = (dstW - drawW) / 2;
-    }
+    const rect = letterboxRect(img.naturalWidth, img.naturalHeight, dstW, dstH);
 
     if (!state.offscreen || state.offscreen.width !== dstW || state.offscreen.height !== dstH) {
       state.offscreen = document.createElement('canvas');
@@ -298,9 +442,14 @@ export async function loadImage(
 
     state.offCtx.fillStyle = 'black';
     state.offCtx.fillRect(0, 0, dstW, dstH);
-    state.offCtx.drawImage(img, drawX, drawY, drawW, drawH);
+    // Offscreen stays populated for CPU consumers (chores ingest, getCpuInputBitmap);
+    // drawImage alone is cheap — the readback + float convert is what the GPU path skips.
+    state.offCtx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
 
-    uploadRGBA8(ctx, state.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
+    if (!(await uploadStillBitmap(ctx, state, img, rect))) {
+      releaseStill(state);
+      uploadRGBA8(ctx, state.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
+    }
     return url;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -313,6 +462,7 @@ export async function loadImage(
 
     console.warn('[WebGPU] Image load failed:', error);
 
+    releaseStill(state);
     if (state.offscreen && state.offCtx) {
       const dstW = ctx.canvasW;
       const dstH = ctx.canvasH;
