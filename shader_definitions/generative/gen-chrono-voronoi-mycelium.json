@@ -63,7 +63,8 @@
     "click-reactive",
     "temporal",
     "fast-motion",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {

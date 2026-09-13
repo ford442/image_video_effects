@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Isometric Cyber-City
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-13
+//  Ideas: podium+tower setbacks; window occupancy flicker
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -25,6 +33,13 @@ struct Uniforms {
 // u.zoom_params.x -> Density / Height Variance
 // u.zoom_params.y -> Traffic Speed
 // u.zoom_params.z -> Glow Intensity
+
+const PI: f32 = 3.14159265359;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -61,12 +76,15 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         height = pow(h_rnd, 2.0) * mix(2.0, 16.0, u.zoom_params.w) * density;
     }
 
-    // Building SDF
-    // Center the box vertically so it sits on the floor.
-    // Box height is 'height', center at y = height/2
-    let boxSize = vec3<f32>(0.6, height * 0.5, 0.6);
-    let boxPos = vec3<f32>(local.x, p.y - height * 0.5, local.y);
-    let dBox = sdBox(boxPos, boxSize);
+    // Idea 1 — setback terraces: podium + narrower tower on the same cell
+    let podiumH = height * 0.42;
+    let towerH = max(height - podiumH, 0.0);
+    let dPodium = sdBox(vec3<f32>(local.x, p.y - podiumH * 0.5, local.y), vec3<f32>(0.72, podiumH * 0.5, 0.72));
+    let dTower = sdBox(
+        vec3<f32>(local.x, p.y - (podiumH + towerH * 0.5), local.y),
+        vec3<f32>(0.42, towerH * 0.5, 0.42)
+    );
+    let dBox = select(min(dPodium, dTower), 1000.0, height < 0.05);
 
     if (dBox < d) {
         d = dBox;
@@ -200,8 +218,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let wx = floor(p.x * 4.0 + p.z * 4.0); // Coordinate along the wall
                 let wy = floor(p.y * 8.0);
                 let w_hash = hash12(vec2<f32>(wx, wy) + h_rnd * 10.0);
+                // Idea 2 — occupancy flicker on the existing window cells
+                let occ = hash12(vec2<f32>(wx, wy) + vec2<f32>(floor(time * 0.35), h_rnd * 17.0));
 
-                if (w_hash > 0.6) {
+                if (w_hash > 0.6 && occ > 0.22) {
                     windowPattern = 1.0;
                 }
             }
@@ -295,10 +315,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
        }
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    let pixel = vec2<i32>(global_id.xy);
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    col = mix(prev.rgb * 0.88, col, 0.42);
+    col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.08);
+    let alpha = clamp(0.08 + (1.0 - exp(-t * 0.02)) * 0.25 + length(col) * 0.55, 0.06, 0.98);
 
-    // Write depth
-    // Map t to 0..1 for depth buffer?
-    // Standard depth is usually 1/z or similar. Here we just store linear t or something useful.
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(t / 100.0, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

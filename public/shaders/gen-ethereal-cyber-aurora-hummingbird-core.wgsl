@@ -1,7 +1,15 @@
-// ----------------------------------------------------------------
-// Ethereal Cyber-Aurora Hummingbird-Core
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Ethereal Cyber-Aurora Hummingbird-Core
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+//  Upgraded: 2026-09-13
+//  Ideas: spring-eased hover target (bird drifts toward mouse, banks with
+//         spring velocity); bass-envelope nectar bloom opening the
+//         chrono-flower and pulsing the beak; treble-keyed wingbeat
+//         afterimage persistence in the exact dataTextureC feedback
+//  A packing: ACES display RGB; alpha = hit coverage + glow/shock energy
+//  State: extraBuffer[133..134] pos, [135..136] vel, [137] bass env, [138] init
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -93,8 +101,14 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
 }
 
 // --- Map Function ---
-fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32) -> vec2<f32> {
-    var p = p_in;
+fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32, hover: vec4<f32>) -> vec2<f32> {
+    // hover.xy = spring-eased bird offset, hover.z = bank roll, hover.w = nectar bloom
+    var p = p_in - vec3<f32>(hover.x, hover.y, 0.0);
+    let bank = rot(hover.z);
+    let p_bank = bank * p.xy;
+    p.x = p_bank.x;
+    p.y = p_bank.y;
+    let p_world = p_in;
     var d = MAX_DIST;
     var mat_id = 0.0;
 
@@ -107,7 +121,7 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32) -> vec2<f32> {
     p_body.y += sin(p_body.x * 2.0 + t) * 0.1;
     let body_base = sdEllipsoid(p_body, vec3<f32>(0.4, 0.2, 0.6));
     let head = sdEllipsoid(p_body - vec3<f32>(0.0, 0.2, 0.7), vec3<f32>(0.2, 0.15, 0.25));
-    let beak = sdEllipsoid(p_body - vec3<f32>(0.0, 0.2, 1.1), vec3<f32>(0.02, 0.02, 0.3));
+    let beak = sdEllipsoid(p_body - vec3<f32>(0.0, 0.2, 1.1 + hover.w * 0.08), vec3<f32>(0.02 + hover.w * 0.01, 0.02 + hover.w * 0.01, 0.3));
 
     var body = smin(body_base, head, 0.2);
     body = smin(body, beak, 0.1);
@@ -139,7 +153,7 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32) -> vec2<f32> {
     let wing = sdBox(p_wing - vec3<f32>(0.5, 0.0, 0.0), vec3<f32>(0.6, 0.01, 0.3)) + wing_disp;
 
     // Chrono-flower gravity well (Radial domain repetition)
-    var p_flower = p;
+    var p_flower = p_world;
     p_flower.y += 1.0;
 
     let petals = 8.0;
@@ -148,7 +162,7 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32) -> vec2<f32> {
     let local_angle = (angle * petals / PI) - t;
 
     let flower_disp = sin(r * 5.0 - t * 2.0) * 0.2 * audio;
-    let flower = sdEllipsoid(vec3<f32>(r - 1.5, p_flower.y, local_angle), vec3<f32>(0.5, 0.1, 0.2)) + flower_disp;
+    let flower = sdEllipsoid(vec3<f32>(r - 1.5, p_flower.y, local_angle), vec3<f32>(0.5 + hover.w * 0.25, 0.1 + hover.w * 0.05, 0.2)) + flower_disp;
 
     // Combine
     if (body < d) {
@@ -167,12 +181,12 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32) -> vec2<f32> {
     return vec2<f32>(d, mat_id);
 }
 
-fn calcNormal(p: vec3<f32>, t: f32, audio: f32, flutter: f32) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, t: f32, audio: f32, flutter: f32, hover: vec4<f32>) -> vec3<f32> {
     let e = vec2<f32>(1.0, -1.0) * 0.5773 * 0.0005;
-    return normalize(e.xyy * map(p + e.xyy, t, audio, flutter).x +
-                     e.yyx * map(p + e.yyx, t, audio, flutter).x +
-                     e.yxy * map(p + e.yxy, t, audio, flutter).x +
-                     e.xxx * map(p + e.xxx, t, audio, flutter).x);
+    return normalize(e.xyy * map(p + e.xyy, t, audio, flutter, hover).x +
+                     e.yyx * map(p + e.yyx, t, audio, flutter, hover).x +
+                     e.yxy * map(p + e.yxy, t, audio, flutter, hover).x +
+                     e.xxx * map(p + e.xxx, t, audio, flutter, hover).x);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -214,6 +228,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         mouse = vec2<f32>(0.5, 0.5);
     }
     let m_uv = (mouse - 0.5) * PI * 2.0;
+
+    // Spring-eased hover target + bass nectar envelope (persistent state).
+    let rawTarget = (mouse - 0.5) * vec2<f32>(0.9, -0.6);
+    var eased = rawTarget;
+    var vel = vec2<f32>(0.0);
+    var env = bass;
+    let hasState = arrayLength(&extraBuffer) > 138u;
+    if (hasState && extraBuffer[138] > 0.5) {
+        eased = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        vel = (vel + (rawTarget - eased) * 0.12) * 0.78;
+        eased += vel;
+        env = max(bass, extraBuffer[137] * 0.94);
+    }
+    if (hasState && id.x == 0u && id.y == 0u) {
+        extraBuffer[133] = eased.x;
+        extraBuffer[134] = eased.y;
+        extraBuffer[135] = vel.x;
+        extraBuffer[136] = vel.y;
+        extraBuffer[137] = env;
+        extraBuffer[138] = 1.0;
+    }
+    let nectar = clamp(env, 0.0, 1.5);
+    let hover = vec4<f32>(eased, clamp(-vel.x * 6.0, -0.6, 0.6), nectar);
 
     // Camera setup
     let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
@@ -263,7 +301,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         var glow = 0.0;
 
         for (var i_step = 0; i_step < MAX_STEPS; i_step++) {
-            let res_map = map(p, t, audio, flutter);
+            let res_map = map(p, t, audio, flutter, hover);
             let d = res_map.x;
             m = res_map.y;
 
@@ -290,7 +328,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         if (hit) {
             coverage = max(coverage, 1.0);
-            let n = calcNormal(p, t, audio, flutter);
+            let n = calcNormal(p, t, audio, flutter, hover);
             let l = normalize(vec3<f32>(1.0, 2.0, -1.0));
             let diff = max(dot(n, l), 0.0);
             let fresnel = pow(1.0 - max(dot(n, -cur_rd), 0.0), 3.0);
@@ -308,6 +346,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 // Chrono-flower
                 col = vec3<f32>(0.1, 0.0, 0.2) * diff;
                 col += vec3<f32>(0.8, 0.0, 1.0) * fresnel;
+                // Nectar bloom: warm glow rising from petal rims on bass
+                col += vec3<f32>(1.0, 0.55, 0.9) * fresnel * nectar * aura_intensity * 1.5;
             }
         }
 
@@ -330,7 +370,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     final_color += vec3<f32>(0.25, 0.8, 1.0) * shock * (0.45 + treble * 0.8);
     let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
-    let hdr = mix(prev.rgb * 0.93, final_color, 0.3 + bass * 0.03);
+    // Wingbeat afterimage: treble + flutter lengthen persistence of trails
+    let persist = clamp(0.9 + treble * 0.06 + flutter * 0.006, 0.85, 0.97);
+    let hdr = mix(prev.rgb * persist, final_color, 0.3 + bass * 0.03);
     let mapped = acesToneMap(hdr * 1.15);
     let alpha = clamp(coverage * 0.68 + length(hdr) * 0.12 + shock * 0.22, 0.03, 1.0);
     textureStore(writeTexture, id.xy, vec4<f32>(mapped, alpha));

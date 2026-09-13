@@ -2,16 +2,17 @@
 //  Fractal Ember Lattice
 //  Category: generative
 //  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
-//            upgraded-rgba, aces-tone-map, chromatic-aberration
+//            upgraded-rgba, aces-tone-map, chromatic-aberration, semantic-alpha
 //  Complexity: Very High
 //  Description: Hexagonal crystal lattice glowing like hot embers.
 //  Mouse click shatters the lattice into rigid shards that fly outward;
 //  release to watch them drift back and reform over ~1.5s.
 //  Audio drives glow pulse, lattice breathing, and spark frequency.
 //  Created: 2026-06-06
-//  Upgraded: 2026-09-06
-//  Ideas: triple-junction glow; cell-core heat
-//  A packing: displacement.xy, seed, reform
+//  Upgraded: 2026-09-13
+//  Ideas: triple-junction glow; cell-core heat; heat crawl along lattice lines;
+//         shard cooling and re-ignition
+//  A packing: raw shard state — A.rg displacement, A.b seed, A.a reform (C via textureLoad)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -168,14 +169,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cellHash = hash21(floor(p));
   let faceBright = 0.2 + cellHash * 0.3 + sin(time * 0.4 + cellHash * 8.0) * 0.08;
 
+  // Idea 4: shard cooling — a detached shard loses heat (seed-staggered)
+  let cool = clamp(shatterAmt * (0.75 + seed * 0.5), 0.0, 1.0);
+  let reignite = smoothstep(0.80, 0.93, reform) * (1.0 - smoothstep(0.93, 1.0, reform));
+
   // Ember coloring
-  let hot = edge * glowIntensity * (1.0 + bass * 1.5);
+  let hot = edge * glowIntensity * (1.0 + bass * 1.5) * (1.0 - cool * 0.55);
   var col = mix(EMBER_CHARCOAL, EMBER_DARK, faceBright);
   col = mix(col, EMBER_DEEP, hot * 0.7);
   col = mix(col, EMBER_HOT, hot * hot * 0.8);
   col = mix(col, EMBER_CORE, pow(hot, 4.0) * 2.5);
   col = mix(col, EMBER_HOT, coreHeat * 0.22 * (0.7 + bass * 0.4));
-  col = col + EMBER_CORE * junc * glowIntensity * (0.55 + treble * 0.5);
+  col = col + EMBER_CORE * junc * glowIntensity * (0.55 + treble * 0.5) * (1.0 - cool * 0.6);
+
+  // Idea 3: heat crawl — ember beads conducted along each line family
+  let lineVal = vec3<f32>(p.x, p.x * 0.5 + p.y * 0.866025, p.x * 0.5 - p.y * 0.866025);
+  let lineIdx = floor(lineVal);
+  let along = vec3<f32>(p.y, -0.866025 * p.x + 0.5 * p.y, 0.866025 * p.x + 0.5 * p.y);
+  let crawlSpeed = vec3<f32>(0.9, 1.3, 1.1) * (1.0 + bass * 0.8);
+  let crawlPhase = vec3<f32>(
+    hash21(vec2<f32>(lineIdx.x, 1.0)),
+    hash21(vec2<f32>(lineIdx.y, 2.0)),
+    hash21(vec2<f32>(lineIdx.z, 3.0))) * 6.283185;
+  let beadWave = max(sin(along * 1.7 - time * crawlSpeed + crawlPhase), vec3<f32>(0.0));
+  let beads = beadWave * beadWave * beadWave * beadWave;
+  let beadsSharp = beads * beads * beads;
+  let lineMask = vec3<f32>(1.0) - smoothstep(vec3<f32>(0.0), vec3<f32>(0.035), d3);
+  let crawl = dot(beadsSharp, lineMask) * (0.35 + sparkDensity * 0.9) * (1.0 - cool * 0.7);
+  col = col + EMBER_HOT * crawl * glowIntensity * 0.7 + EMBER_CORE * crawl * crawl * 0.35;
+
+  // Idea 4: cooled shards shift toward deep red; rejoining shards re-ignite
+  col = vec3<f32>(col.r, col.g * (1.0 - cool * 0.35), col.b * (1.0 - cool * 0.5));
+  col = col + EMBER_CORE * (edge * 0.8 + junc) * reignite * glowIntensity * (0.9 + bass * 0.4);
 
   // ── Shatter visual flair ──
   // Shard boundary glow

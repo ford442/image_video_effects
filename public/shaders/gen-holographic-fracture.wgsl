@@ -1,9 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Holographic Fracture - Iridescent cracked SDF planes
+//  Holographic Fracture
 //  Category: generative
-//  Features: generative, sdf, iridescence, fracture-lines, glow,
-//            audio-reactive, mouse-crack, click-ripples, depth-aware
-//  Agent 4a — Phase A shader upgrade swarm
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+//  Complexity: High
+//  Ideas: spring-eased mouse crack origin driving a radial SDF fracture
+//         network; click-triggered expanding crack fronts with trailing
+//         spokes; per-crack iridescence phase keyed to FFT bins 1-8
+//  A packing: ACES display RGBA (hue-preserving clamp before tonemap;
+//             alpha = fracture/edge/front coverage; matches exact C read)
+//
 //  Engine uniform convention (verified src/renderer/UniformBuffer.ts):
 //    zoom_config.yz = mouse position (0..1), zoom_config.w = mouse-down
 //    zoom_config.x  = TIME (do NOT use as mouse x)

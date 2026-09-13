@@ -1,19 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Ethereal Anemone Bloom - Generative Shader with Organic Materials
+//  Ethereal Anemone Bloom
 //  Category: generative
-//  Features: translucent-tissue, bioluminescence, subsurface-scattering, audio-reactive, ACES
+//  Features: mouse-driven, audio-reactive, click-reactive, raymarching, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-10
-//  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
-//  upgraded-rgba
-// ═══════════════════════════════════════════════════════════════════
-//  OPTIMIZATION LOG (2026-05-31):
-//  - CRITICAL BUG FIX: audio reactivity was reading u.config.y/z/w which are
-//    MouseClickCount/ResX/ResY — NOT audio. audioReactivity scaled with the
-//    render resolution (e.g. ×2048), wildly breaking animation speed. Now reads
-//    plasmaBuffer[0] correctly (bass/mid/treble).
-//  - ACES filmic tone mapping added before gamma (was gamma-only — emissive tips blew out)
-//  - IGN dither added before write
+//  Upgraded: 2026-09-13
+//  Ideas: spring-eased current eddy (pointer vortex centre persists in
+//         extraBuffer and lags like water); bass-envelope tentacle
+//         retraction (anemones flinch shorter on hits, relax slowly);
+//         peristaltic feeding pulse of light travelling up each tentacle
+//         (speed from mids, bands from treble)
+//  A packing: display RGB history (pre-ACES) + semantic tissue alpha;
+//             read back via exact textureLoad(dataTextureC, coord, 0)
+//  Engine: zoom_config.yz = mouse, zoom_config.w = mouse-down, config.y = ripple count
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -41,6 +39,10 @@ struct Uniforms {
 const TENTACLE_DENSITY: f32 = 1.8;      // Less dense than skin
 const TISSUE_SCATTERING: f32 = 2.2;     // High scattering for gelatinous look
 const TIP_EMISSION: f32 = 1.5;          // Bioluminescent emission strength
+
+// Per-frame state shared with map(): eased eddy centre + bass retraction envelope
+var<private> gEddy: vec2<f32> = vec2<f32>(0.5, 0.5);
+var<private> gRetract: f32 = 0.0;
 
 // --- Helpers ---
 
@@ -81,6 +83,10 @@ fn rot2D(a: f32) -> mat2x2<f32> {
 fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn fogAmountEarly(t: f32, murk: f32) -> f32 {
+    return 1.0 - exp(-t * 0.02 * murk);
 }
 
 // --- SDF Primitives ---
@@ -175,8 +181,9 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     var q = vec3<f32>(q_xz.x, p.y - local_ground, q_xz.y);
 
     // Mouse Interaction (Vortex/Eddy)
-    let mouseWorldX = (u.zoom_config.y - 0.5) * 30.0;
-    let mouseWorldZ = (u.zoom_config.z - 0.5) * 30.0;
+    // Idea 1: vortex centre is the spring-eased eddy, not the raw pointer
+    let mouseWorldX = (gEddy.x - 0.5) * 30.0;
+    let mouseWorldZ = (gEddy.y - 0.5) * 30.0;
     let mouseWorld = vec3<f32>(mouseWorldX, 0.0, mouseWorldZ);
 
     let distToMouse = length(p - mouseWorld);
@@ -210,7 +217,8 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let num_tentacles = 4;
     for(var i = 0; i < num_tentacles; i++) {
         let th = hash(id + vec2<f32>(f32(i), 0.0));
-        let height = 3.0 + th * 2.0;
+        // Idea 2: bass envelope retracts tentacles (staggered per tentacle)
+        let height = (3.0 + th * 2.0) * (1.0 - gRetract * (0.25 + th * 0.2));
 
         let angle = th * 6.28 + f32(i) * 1.57;
         let radius = 0.5 + th * 0.5;
@@ -266,12 +274,6 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(t, mat);
 }
 
-fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
-    let size = vec2<i32>(textureDimensions(dataTextureC));
-    let pixel = vec2<i32>(floor(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(size)));
-    return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
-}
-
 // --- Compute Entry Point ---
 
 @compute @workgroup_size(16, 16, 1)
@@ -291,6 +293,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioHigh = plasmaBuffer[0].z;
     let audioReactivity = 1.0 + audioBass * 0.5 + audioMid * 0.2;
 
+    // Persistent state [133..134] eddy pos, [135..136] eddy vel,
+    // [137] bass retraction envelope, [138] init. Only (0,0) writes.
+    let rawMouse = u.zoom_config.yz;
+    var eddy = rawMouse;
+    var eddyVel = vec2<f32>(0.0);
+    var retract = clamp(audioBass, 0.0, 1.0);
+    let hasState = arrayLength(&extraBuffer) > 138u;
+    if (hasState && extraBuffer[138] > 0.5) {
+        eddy = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        eddyVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        eddyVel = (eddyVel + (rawMouse - eddy) * 0.05) * 0.9;
+        eddy += eddyVel;
+        let prevR = extraBuffer[137];
+        let targetR = clamp(audioBass, 0.0, 1.0);
+        retract = select(prevR * 0.96, mix(prevR, targetR, 0.5), targetR > prevR);
+    }
+    if (hasState && global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = eddy.x;
+        extraBuffer[134] = eddy.y;
+        extraBuffer[135] = eddyVel.x;
+        extraBuffer[136] = eddyVel.y;
+        extraBuffer[137] = retract;
+        extraBuffer[138] = 1.0;
+    }
+    gEddy = eddy;
+    gRetract = retract;
+
     // 1. Ray setup and camera matrix
     let ro = vec3<f32>(time * 2.0 * audioReactivity, -1.0, time * 2.0 * audioReactivity);
     let targetPos = ro + vec3<f32>(cos(time*0.5 * audioReactivity), -0.2, sin(time*0.5 * audioReactivity));
@@ -307,7 +336,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // 3. Shading and color accumulation
     var color = vec3<f32>(0.0);
-    var alpha = 1.0;
+    var alpha = 0.0;
     let fogColor = vec3<f32>(0.0, 0.05, 0.12);
     let water_murkiness = u.zoom_params.w;
     let lightDir = normalize(vec3<f32>(0.5, 1.0, 0.2));
@@ -357,6 +386,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             emissive = shiftColor * glowIntensity * 2.0 * pulse_factor;
         }
 
+        // Idea 3: peristaltic feeding pulse climbing the tentacle body
+        if (mat == 2.0 || mat == 3.0) {
+            let climb = p.y * (1.2 + audioHigh * 2.5) - fullTime * (1.5 + audioMid * 4.0) * u.zoom_params.x;
+            let band = pow(max(0.0, sin(climb)), 12.0);
+            let feedCol = vec3<f32>(0.2, 0.95, 0.85) * (0.5 + audioMid);
+            emissive += feedCol * band * u.zoom_params.z * 0.35 * (1.0 - fogAmountEarly(t, water_murkiness));
+            glowIntensity = max(glowIntensity, band * u.zoom_params.z * 0.4);
+        }
+
         // Apply gelatinous subsurface scattering for tentacles
         if (mat == 2.0 || mat == 3.0) {
             let sss = gelatinousSSS(n, lightDir, -rd, thickness, baseColor, glowIntensity);
@@ -378,6 +416,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     } else {
         color = fogColor;
+        alpha = clamp(0.6 + 0.3 * u.zoom_params.w, 0.0, 1.0); // open-water fog density
     }
 
     // Pointer drag excites a local bloom; clicks send bioluminescent food fronts.
@@ -399,7 +438,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         alpha += front * 0.12;
     }
 
-    let previous = historyLoadUV(uv01).rgb;
+    let previous = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
     let display = mix(previous * 0.94, color, 0.3 + u.zoom_config.w * 0.14);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, clamp(alpha, 0.0, 1.0)));
     color = display;

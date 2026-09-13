@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba, aces-tone-map
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: base wick column; ignition chemiluminescence
-//  A packing: temperature, fuel, vx, age
+//  Upgraded: 2026-09-13
+//  Ideas: base wick column; ignition chemiluminescence; buoyant puffing pinch-off; schlieren heat haze
+//  A packing: raw sim state (temperature, fuel, vx, age); ACES on display only
 //  Description: Fluid advection flame simulation with temperature-based
 //    alpha translucency. Hot regions are bright and slightly translucent,
 //    cool regions fade to transparent. Simplex noise advection drives
@@ -253,6 +253,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let heightCooling = coolingRate - heightFactor * 0.03 * audioHeight;
   temperature = temperature * heightCooling;
 
+  // Idea 3: buoyant puffing pinch-off — a cooling wave travels with the updraft
+  // (+y, same direction as advection) and necks the column into detached packets.
+  let puffWobble = snoise3(vec3<f32>(uv.x * 4.0, time * 0.35, 7.0));
+  let puffPhase = uv.y * 16.0 - time * (6.0 + mids * 4.0) + puffWobble * 2.5;
+  let pinch = pow(0.5 + 0.5 * sin(puffPhase), 6.0);
+  let puffDepth = 0.045 * mix(0.5, 1.5, u.zoom_params.x) * (1.0 + smoothRMS * 0.5);
+  temperature = temperature * (1.0 - pinch * puffDepth);
+
   // Fuel replenishment at bottom
   let bottomProximity = smoothstep(0.15, 0.0, uv.y);
   fuel = fuel + bottomProximity * 0.02 * (1.0 + smoothBass * 0.3);
@@ -296,6 +304,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let igniteEdge = smoothstep(0.08, 0.16, tempNorm) * (1.0 - smoothstep(0.16, 0.32, tempNorm));
   flameColor = flameColor + vec3<f32>(0.22, 0.48, 1.05) * igniteEdge * (0.55 + wick * 0.8);
 
+  // Idea 4: schlieren heat haze — temperature gradient from the exact C taps
+  // draws pale refraction fringes in the cool air around the flame.
+  let tGrad = vec2<f32>(right.r - left.r, up.r - down.r) * 0.5 * (max(res.y, 1.0) / 512.0);
+  let gradMag = length(tGrad);
+  let fringe = 0.5 + 0.5 * sin(gradMag * 90.0 - time * 3.0 + uv.y * 40.0);
+  let haze = smoothstep(0.004, 0.06, gradMag) * (1.0 - smoothstep(0.12, 0.45, tempNorm))
+    * mix(0.4, 1.3, u.zoom_params.w);
+  flameColor = flameColor + vec3<f32>(0.32, 0.42, 0.55) * haze * (0.12 + 0.28 * fringe) * (1.0 + treble * 0.4);
+
   // Ghostly glow from high temps
   let glow = smoothstep(0.4, 0.9, tempNorm) * 0.3;
   flameColor = flameColor + vec3<f32>(0.5, 0.8, 1.0) * glow;
@@ -323,7 +340,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Temporal smoothing for flicker reduction
   var finalColor = flameColor;
-  let smoothAlpha = clamp(finalAlpha * (0.94 + treble * 0.06), 0.0, 0.85);
+  let smoothAlpha = clamp(finalAlpha * (0.94 + treble * 0.06) + haze * 0.12, 0.0, 0.85);
 
   // Depth for chromatic + pass-through
   let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -337,5 +354,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = acesToneMap(finalColor * 1.1);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, smoothAlpha));
-  textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+  // Idea 4 (depth): thermal relief — hot gas nearest, haze shell just behind it
+  let thermalDepth = clamp(max(depthVal * 0.25, tempNorm * 0.9 + haze * 0.08), 0.0, 1.0);
+  textureStore(writeDepthTexture, coord, vec4<f32>(thermalDepth, 0.0, 0.0, 0.0));
 }

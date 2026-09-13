@@ -55,5 +55,8 @@
   "updated": true,
   "id": "gen-klein-bottle-walk",
   "url": "shaders/gen-klein-bottle-walk.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

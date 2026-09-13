@@ -3,11 +3,11 @@
 //  Category: generative
 //  Description: Infinite interlocking brass gears rotating in perfect mechanical sync.
 //               Steampunk raymarched masterpiece with metallic PBR shading.
-//  Features: mouse-driven, temporal, chromatic, depth-aware
+//  Features: audio-reactive, upgraded-rgba, mouse-driven, temporal, chromatic, depth-aware
 //  Tags: steampunk, mechanical, 3d, raymarching, gears
 //  Author: ford442
-//  Upgraded: 2026-09-06
-//  Ideas: gear-tooth sparks; inter-gear mesh line
+//  Upgraded: 2026-09-13
+//  Ideas: gear-tooth sparks; inter-gear mesh line; dead-beat escapement tick; ruby jewel bearings
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════
 
@@ -52,7 +52,7 @@ fn sdGear(p: vec3<f32>, radius: f32, teeth: f32, thickness: f32, time: f32) -> f
   return max(gear, -d_axle);
 }
 
-fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32, audioReactivity: f32) -> f32 {
+fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32, audioReactivity: f32, esc: f32) -> f32 {
   let spacing = 5.0 * gearScale;
   var q = p;
   let cell = floor((p.xz + spacing * 0.5) / spacing);
@@ -61,18 +61,19 @@ fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32, audioRea
 
   let parity = abs(i32(cell.x) + i32(cell.y)) % 2;
   let dir = select(-1.0, 1.0, parity == 0);
-  let t = time * speed * audioReactivity * dir * 2.0;
+  // Idea 3: escapement step (one tooth pitch per tick) rides on the continuous turn
+  let t = time * speed * audioReactivity * dir * 2.0 + esc * dir;
 
   var d = sdGear(q, 1.8, teeth, 0.25, t);
   let floorD = p.y + 1.2;
   return min(d, floorD);
 }
 
-fn raymarch(ro: vec3<f32>, rd: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32, audioReactivity: f32) -> f32 {
+fn raymarch(ro: vec3<f32>, rd: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32, audioReactivity: f32, esc: f32) -> f32 {
   var t = 0.0;
   for (var i: i32 = 0; i < 96; i++) {
     var p = ro + rd * t;
-    var d = map(p, gearScale, teeth, speed, time, audioReactivity);
+    var d = map(p, gearScale, teeth, speed, time, audioReactivity, esc);
     if (d < 0.001 || t > 80.0) { break; }
     t += max(d * 0.8, 0.002);
   }
@@ -138,6 +139,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let speed = u.zoom_params.z * 5.0 * (1.0 + clickTorque * 1.5);
   let material = u.zoom_params.w * 2.0;
 
+  // Idea 3: dead-beat escapement — the train advances one tooth pitch (pi/teeth) per tick.
+  // A full pitch reproduces the tooth pattern exactly, so fract() wraps seamlessly (no float growth).
+  let tickGate = clamp(u.zoom_params.z * 20.0, 0.0, 1.0);
+  let tickPhase = time * (0.75 + u.zoom_params.z * 3.25);
+  let tickFrac = fract(tickPhase);
+  let esc = (3.14159265 / max(teeth, 1.0)) * smoothstep(0.0, 0.18, tickFrac) * tickGate;
+  let tickFlash = exp(-tickFrac * 9.0) * tickGate;
+
   // Orbit camera logic
   let yaw = mouse.x * 6.28;
   let height = mouse.y * 14.0 + 1.0;
@@ -150,16 +159,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let up = cross(fwd, right);
   let rd = normalize(fwd + uv.x * right + uv.y * up);
 
-  var t = raymarch(ro, rd, gearScale, teeth, speed, time, audioReactivity);
+  var t = raymarch(ro, rd, gearScale, teeth, speed, time, audioReactivity, esc);
   var col = vec3<f32>(0.02, 0.01, 0.005);
 
   if (t < 79.9) {
     var p = ro + rd * t;
     let eps = 0.001;
     let n = normalize(vec3<f32>(
-      map(p + vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time, audioReactivity) - map(p - vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time, audioReactivity),
-      map(p + vec3<f32>(0.0,eps,0.0), gearScale, teeth, speed, time, audioReactivity) - map(p - vec3<f32>(0.0,eps,0.0), gearScale, teeth, speed, time, audioReactivity),
-      map(p + vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity) - map(p - vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity)
+      map(p + vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time, audioReactivity, esc) - map(p - vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time, audioReactivity, esc),
+      map(p + vec3<f32>(0.0,eps,0.0), gearScale, teeth, speed, time, audioReactivity, esc) - map(p - vec3<f32>(0.0,eps,0.0), gearScale, teeth, speed, time, audioReactivity, esc),
+      map(p + vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity, esc) - map(p - vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity, esc)
     ));
     col = shade(p, n, ro, material);
 
@@ -171,7 +180,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cell = floor((p.xz + spacing * 0.5) / spacing);
     let parity = abs(i32(cell.x) + i32(cell.y)) % 2;
     let dir = select(-1.0, 1.0, parity == 0);
-    let tGear = time * speed * audioReactivity * dir * 2.0;
+    let tGear = time * speed * audioReactivity * dir * 2.0 + esc * dir;
     let onGear = select(0.0, 1.0, p.y > -1.05);
     // Idea 1 — tooth crest spark
     let toothPhase = sin(atan2(q.z, q.x) * teeth * 2.0 + tGear);
@@ -181,6 +190,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let meshR = abs(length(q.xz) - spacing * 0.5);
     let meshLine = exp(-meshR * 14.0) * onGear * (1.0 - smoothstep(0.28, 0.5, abs(p.y)));
     col += vec3<f32>(1.0, 0.85, 0.45) * meshLine * (0.18 + audioMid * 0.2);
+    // Idea 3: tick flash — teeth and mesh catch a brass glint the instant the escapement releases
+    col += vec3<f32>(1.0, 0.72, 0.3) * (toothSpark * 0.6 + meshLine * 0.4) * tickFlash * (0.5 + audioBass * 0.4);
+    // Idea 4: ruby jewel bearing seated around each axle bore on the gear faces
+    let faceMask = smoothstep(0.6, 0.9, abs(n.y)) * (1.0 - smoothstep(0.2, 0.3, abs(abs(p.y) - 0.25))) * onGear;
+    let jewelR = length(q.xz) - 1.8 * 0.25;
+    let jewelRing = (1.0 - smoothstep(0.05, 0.16, abs(jewelR - 0.1))) * faceMask;
+    let jewelGlint = pow(max(dot(reflect(normalize(p - ro), n), normalize(vec3<f32>(1.0, 2.0, 1.0))), 0.0), 64.0);
+    let jewelCol = vec3<f32>(0.75, 0.04, 0.1) * (0.35 + 0.65 * max(n.y, 0.0));
+    col = mix(col, jewelCol + vec3<f32>(1.0, 0.6, 0.65) * jewelGlint * (1.2 + audioBass * 1.5), jewelRing * 0.85);
 
     // ═══ Chromatic dispersion: per-channel spatial offsets on gear surface ═══
     let chromAmt = 0.015 + audioBass * 0.02;

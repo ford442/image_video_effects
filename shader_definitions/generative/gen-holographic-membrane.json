@@ -100,7 +100,8 @@
     "click-reactive",
     "semantic-alpha",
     "aces-tonemap",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = raw membrane height, normal X, normal Y, semantic alpha; ACES is display-only"
 }

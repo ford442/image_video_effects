@@ -2,7 +2,7 @@
   "id": "gen-hyper-warp",
   "name": "Hyper Warp",
   "url": "shaders/gen_hyper_warp.wgsl",
-  "description": "Advanced domain warping with fractal noise and reaction-diffusion feedback.",
+  "description": "Advanced domain warping with fractal noise, etched warped contour lines, and flow-dispersed prismatic reaction-diffusion feedback.",
   "features": [
     "aces-tone-map",
     "audio-reactive",

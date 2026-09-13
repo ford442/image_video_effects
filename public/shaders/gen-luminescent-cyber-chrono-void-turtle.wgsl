@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Luminescent Cyber-Chrono Void-Turtle
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Cyber-Chrono Void-Turtle
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: chronal plate drift (per-cell lift, bass-kicked); chrono-distortion time dilation in mouse well; scute growth rings; void wake via exact C history
+//  A packing: raw linear wake emission RGB (pre-tonemap) + a = wake energy
+// ═══════════════════════════════════════════════════════════════════
 // --- COPY PASTE THIS HEADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -18,8 +23,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=Time, y=MouseX (uv), z=MouseY (uv, 0=top), w=MouseDown
     zoom_params: vec4<f32>,  // x=Shell Complexity, y=Plasma Intensity, z=Chrono-Distortion, w=Swim Speed
     ripples: array<vec4<f32>, 50>,
 };
@@ -37,12 +42,15 @@ fn hash33(p: vec3<f32>) -> vec3<f32> {
     return fract((p3.xxy + p3.yxx) * p3.zyx);
 }
 
-// 3D Voronoi for the shell plates
-fn voronoi(x: vec3<f32>) -> vec2<f32> {
+const TAU: f32 = 6.28318530718;
+
+// 3D Voronoi for the shell plates — returns (F1, F2, nearest plate id hash)
+fn voronoi(x: vec3<f32>) -> vec3<f32> {
     let p = floor(x);
     let f = fract(x);
 
     var res = vec2<f32>(8.0, 8.0);
+    var cellId = 0.0;
 
     for (var k = -1; k <= 1; k++) {
         for (var j = -1; j <= 1; j++) {
@@ -54,6 +62,7 @@ fn voronoi(x: vec3<f32>) -> vec2<f32> {
                 if (d < res.x) {
                     res.y = res.x;
                     res.x = d;
+                    cellId = hash33(p + b + vec3<f32>(7.13)).x;
                 } else if (d < res.y) {
                     res.y = d;
                 }
@@ -61,7 +70,7 @@ fn voronoi(x: vec3<f32>) -> vec2<f32> {
         }
     }
 
-    return vec2<f32>(sqrt(res.x), sqrt(res.y));
+    return vec3<f32>(sqrt(res.x), sqrt(res.y), cellId);
 }
 
 fn smin(a: f32, b: f32, k: f32) -> f32 {
@@ -76,28 +85,38 @@ fn sdSphere(p: vec3<f32>, s: f32) -> f32 {
 fn sdEllipsoid(p: vec3<f32>, r: vec3<f32>) -> f32 {
     let k0 = length(p / r);
     let k1 = length(p / (r * r));
-    return k0 * (k0 - 1.0) / k1;
+    return k0 * (k0 - 1.0) / max(k1, 0.0001);
 }
 
 // Global Variables
 var<private> glow: f32 = 0.0;
 var<private> gTime: f32 = 0.0;
-var<private> audioVal: f32 = 0.0;
+var<private> gBass: f32 = 0.0;
+// Plate state at the last map() evaluation (read after the hit for shading)
+var<private> gPlateF1: f32 = 0.0;
+var<private> gPlateEdge: f32 = 1.0;
+var<private> gPlateId: f32 = 0.0;
+var<private> gDilation: f32 = 0.0;
 
 fn map(p_in: vec3<f32>) -> f32 {
     var p = p_in;
 
     // Mouse Gravity Well (Chrono-distortion)
-    let mouseNorm = u.zoom_config.yz / u.config.zw;
-    // Map from [0,1] to [-2, 2] roughly for screen space mouse mapping
-    let mousePos = vec3<f32>((mouseNorm.x * 2.0 - 1.0) * 4.0, (mouseNorm.y * 2.0 - 1.0) * 4.0, 0.0);
+    let mouseNorm = u.zoom_config.yz; // already canvas UV (0=top)
+    // Map from [0,1] to world [-4, 4]; world Y is up, UV Y is down
+    let mousePos = vec3<f32>((mouseNorm.x * 2.0 - 1.0) * 4.0, -(mouseNorm.y * 2.0 - 1.0) * 4.0, 0.0);
 
     let distToMouse = length(p - mousePos);
     let distortionStrength = u.zoom_params.z;
     if (distortionStrength > 0.0) {
         let warp = distortionStrength / (distToMouse + 0.1);
-        p = p + normalize(p - mousePos) * warp;
+        p = p + (p - mousePos) / max(distToMouse, 0.001) * warp;
     }
+
+    // IDEA 2 — chrono-distortion time dilation: the gravity well slows local time
+    let dilation = distortionStrength * smoothstep(3.5, 0.0, distToMouse);
+    gDilation = dilation;
+    let localTime = gTime * (1.0 - 0.75 * dilation);
 
     // Turtle Base Shape (Ellipsoid body)
     let bodyRot = rot(sin(gTime * u.zoom_params.w) * 0.2);
@@ -111,17 +130,26 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Shell Complexity (Voronoi Plates)
     let complexity = u.zoom_params.x * 5.0 + 2.0;
-    let v = voronoi(pBody * complexity + vec3<f32>(gTime * 0.1));
+    let v = voronoi(pBody * complexity + vec3<f32>(localTime * 0.1));
 
     // Plate edge thickness
     let edge = v.y - v.x;
 
-    // Extrude plates out slightly
-    var shell = baseShell - v.x * 0.2;
-
     // Create gaps between plates
     let gapWidth = 0.1;
     let inGap = smoothstep(gapWidth, 0.0, edge);
+
+    // IDEA 1 — chronal plate drift: every plate rises/sinks on its own phase,
+    // kicked by bass; gaps stay anchored so plates read as floating tiles
+    let plateLift = sin(localTime * (0.6 + 0.8 * u.zoom_params.w) + v.z * TAU)
+                  * (0.04 + gBass * 0.05) * (1.0 - inGap);
+
+    // Extrude plates out slightly
+    var shell = baseShell - v.x * 0.2 - plateLift;
+
+    gPlateF1 = v.x;
+    gPlateEdge = edge;
+    gPlateId = v.z;
 
     // Hollow out gaps slightly
     shell = shell + inGap * 0.15;
@@ -129,17 +157,21 @@ fn map(p_in: vec3<f32>) -> f32 {
     // Plasma Glow in gaps
     let plasmaIntensity = u.zoom_params.y;
     // Base glow
-    var localGlow = inGap * plasmaIntensity * (1.0 + audioVal * 2.0);
+    // Plates rising out of the shell open wider plasma seams
+    var localGlow = inGap * plasmaIntensity * (1.0 + gBass * 1.2 + max(plateLift, 0.0) * 4.0);
 
-    // Ripple effect in glow
-    for(var i = 0u; i < 5u; i++) { // Only check first 5 for performance
+    // Ripple effect in glow (ripples: xy = uv, z = start time; w is padding)
+    let rippleCount = min(u32(u.config.y), 5u); // Only check first 5 for performance
+    for(var i = 0u; i < rippleCount; i++) {
         let ripple = u.ripples[i];
-        if (ripple.w > 0.0) {
-            let rDist = length(p.xy - ripple.xy);
-            let rWave = sin((rDist - ripple.z * 10.0) * 5.0) * 0.5 + 0.5;
-            let rEnvelope = smoothstep(0.5, 0.0, abs(rDist - ripple.z * 10.0));
-            localGlow += rWave * rEnvelope * ripple.w * inGap * plasmaIntensity * 5.0;
-        }
+        let age = gTime - ripple.z;
+        let live = select(0.0, exp(-age * 1.2), ripple.z > 0.0 && age >= 0.0);
+        let rPos = vec2<f32>((ripple.x * 2.0 - 1.0) * 4.0, -(ripple.y * 2.0 - 1.0) * 4.0);
+        let rDist = length(p.xy - rPos);
+        let rRadius = age * 2.5;
+        let rWave = sin((rDist - rRadius) * 5.0) * 0.5 + 0.5;
+        let rEnvelope = smoothstep(0.5, 0.0, abs(rDist - rRadius));
+        localGlow += rWave * rEnvelope * live * inGap * plasmaIntensity * 5.0;
     }
 
     // Accumulate glow (attenuated by distance to surface)
@@ -183,6 +215,15 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     );
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn fbm(p: vec3<f32>) -> f32 {
     var v = 0.0;
     var a = 0.5;
@@ -208,7 +249,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = (pixelCoords - 0.5 * dims) / dims.y;
 
     gTime = u.config.x;
-    audioVal = u.config.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    gBass = clamp(bass, 0.0, 2.0);
 
     // Camera setup
     var ro = vec3<f32>(0.0, 2.0, -8.0);
@@ -250,6 +294,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
+    var bgClouds = 0.0;
+    var fresnel = 0.0;
 
     if (hit) {
         let n = calcNormal(p);
@@ -259,42 +305,79 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let refl = reflect(-l, n);
         let spec = pow(max(dot(viewDir, refl), 0.0), 32.0);
 
-        // Dark Obsidian base color
-        let baseColor = vec3<f32>(0.05, 0.06, 0.07);
+        // Plate state at the hit (last map() calls were at/near p)
+        let plateF1 = gPlateF1;
+        let plateEdge = gPlateEdge;
+        let plateId = gPlateId;
+        fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 3.0);
+
+        // Dark Obsidian base color, each plate a slightly different stone
+        let baseColor = vec3<f32>(0.05, 0.06, 0.07) * (0.8 + 0.4 * plateId);
 
         col = baseColor * (diff * 0.8 + 0.2) + vec3<f32>(spec * 0.5);
+
+        // IDEA 3 — scute growth rings: concentric annuli around each plate
+        // centre, grooved into the obsidian; ring phase creeps outward with
+        // (dilated) chronal time so older rings feel like accumulated epochs
+        let ringTime = gTime * (1.0 - 0.75 * gDilation) * 0.15;
+        let ringPhase = plateF1 * (18.0 + 10.0 * u.zoom_params.x) - ringTime + plateId * TAU;
+        let groove = smoothstep(0.75, 1.0, 0.5 + 0.5 * cos(ringPhase))
+                   * smoothstep(0.02, 0.12, plateEdge);
+        col *= 1.0 - 0.45 * groove;
+        col += vec3<f32>(0.1, 0.8, 1.0) * groove * u.zoom_params.y * 0.06 * (1.0 + mids * 0.6);
 
         // Add fake subsurface scattering / ambient based on glow
         col += vec3<f32>(0.1, 0.8, 1.0) * glow * 0.5;
     } else {
         // Nebula background
-        let bgStars = pow(fbm(rd * 50.0), 10.0) * 2.0;
-        let bgClouds = fbm(rd * 3.0 + vec3<f32>(0.0, 0.0, gTime * 0.05));
+        let bgStars = pow(fbm(rd * 50.0), 10.0) * 2.0 * (1.0 + clamp(treble, 0.0, 2.0) * 0.4);
+        bgClouds = fbm(rd * 3.0 + vec3<f32>(0.0, 0.0, gTime * 0.05));
         col = vec3<f32>(0.02, 0.05, 0.1) * bgClouds + vec3<f32>(bgStars);
     }
 
     // Add volumetric plasma glow
-    let glowColor = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(1.0, 0.2, 0.8), sin(gTime)*0.5+0.5);
+    let glowColor = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(1.0, 0.2, 0.8), sin(gTime + clamp(mids, 0.0, 2.0) * 0.8)*0.5+0.5);
     col += glow * glowColor;
+
+    // IDEA 4 — void wake: plasma shed by the shell streams outward from the
+    // turtle through the void at Swim Speed. Exact C history, advected radially.
+    let center = dims * 0.5;
+    let toPix = pixelCoords - center;
+    let wakeDir = toPix / max(length(toPix), 1.0);
+    let wakeSpeed = 0.6 + 1.6 * u.zoom_params.w;
+    let srcCoord = clamp(vec2<i32>(pixelCoords - wakeDir * wakeSpeed), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+    let prevWake = textureLoad(dataTextureC, srcCoord, 0);
+    let wakeDecay = 0.955;
+    let shed = glowColor * min(glow, 3.0) * 0.12;
+    let wakeRGB = min(prevWake.rgb * wakeDecay + shed, vec3<f32>(4.0));
+    let wakeEnergy = clamp(max(prevWake.a * wakeDecay, min(glow, 1.0)), 0.0, 1.0);
+    col += wakeRGB * select(0.7, 0.15, hit);
 
     // Add ripple visual directly to background if no hit (for extra effect)
     if (!hit) {
-         for(var i = 0u; i < 5u; i++) {
+         let bgRipples = min(u32(u.config.y), 5u);
+         for(var i = 0u; i < bgRipples; i++) {
             let ripple = u.ripples[i];
-            if (ripple.w > 0.0) {
-                 let rDist = length(uv - ripple.xy / dims * 2.0 + vec2<f32>(1.0)); // Rough approximation
-                 let rWave = sin((rDist - ripple.z) * 20.0) * 0.5 + 0.5;
-                 let rEnvelope = smoothstep(0.1, 0.0, abs(rDist - ripple.z));
-                 col += glowColor * rWave * rEnvelope * ripple.w * 0.2;
-            }
+            let age = gTime - ripple.z;
+            let live = select(0.0, exp(-age * 1.5), ripple.z > 0.0 && age >= 0.0);
+            let rUV = (pixelCoords / dims) - ripple.xy;
+            let rDist = length(vec2<f32>(rUV.x * dims.x / max(dims.y, 1.0), rUV.y));
+            let rRadius = age * 0.4;
+            let rWave = sin((rDist - rRadius) * 60.0) * 0.5 + 0.5;
+            let rEnvelope = smoothstep(0.05, 0.0, abs(rDist - rRadius));
+            col += glowColor * rWave * rEnvelope * live * 0.2;
         }
     }
 
-    // Tone mapping
-    col = col / (vec3<f32>(1.0) + col);
-    // Gamma correction
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    // ACES tone mapping on display RGB, then gamma (keeps HEAD's lifted obsidian)
+    let mapped = pow(acesToneMap(col), vec3<f32>(1.0 / 2.2));
 
-    textureStore(writeTexture, vec2<i32>(pixelCoords), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    // Semantic alpha: body coverage + fresnel rim, plasma glow, wake, nebula density
+    let glowLum = clamp(glow * 0.5, 0.0, 1.0);
+    let alpha = clamp(select(0.0, 0.8 + 0.2 * fresnel, hit) + glowLum * 0.4 + wakeEnergy * 0.3 + bgClouds * 0.15, 0.05, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(pixelCoords), vec4<f32>(mapped, alpha));
+    let depth = select(0.0, 1.0 - clamp(t / 20.0, 0.0, 1.0), hit);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(pixelCoords), vec4<f32>(wakeRGB, wakeEnergy));
 }

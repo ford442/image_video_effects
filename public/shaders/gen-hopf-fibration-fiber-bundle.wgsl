@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-13
+//  Ideas: knot-diagram over/under gaps; U(1) fiber-phase beads; base-space S2 inset
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -79,6 +81,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var alphaAcc = 0.0;
   var crossingInt = 0.0;
   var maxDepth = 0.0;
+  // Idea 1: two-slot compositing — nearest strand vs. everything behind it.
+  var frontAcc = vec3<f32>(0.0);
+  var restAcc = vec3<f32>(0.0);
+  var frontZ = -1.0;
+  var frontD = 1.0e3;
+  let gapRadius = fiberThick * 2.6;
+  // Idea 3: base-space S2 inset placement (lower-left, aspect-corrected).
+  let aspect = res.x / max(res.y, 1.0);
+  let screenP = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let insetR = 0.11;
+  let insetC = vec2<f32>(-0.5 * aspect + insetR + 0.05, 0.5 - insetR - 0.05);
+  let insetQ = (screenP - insetC) / insetR;
+  let inInset = dot(insetQ, insetQ) < 1.35;
+  var insetCol = vec3<f32>(0.0);
+  var insetCov = 0.0;
+  let beadSpeed = mix(0.3, 2.2, p4);
 
   for (var i: i32 = 0; i < fiberCount; i = i + 1) {
     let fi = f32(i);
@@ -91,11 +109,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tSteps = 32;
     var prevProj = vec2<f32>(0.0, 0.0);
     var prevW = 0.0;
+    let hue = fract(phi / (2.0 * PI) + theta * 0.3);
+    let fiberColor = hsv2rgb(hue, 0.75, 0.9);
+    var fiberAcc = vec3<f32>(0.0);
+    var fiberMinD = 1.0e3;
+    var fiberZ = -1.0;
+    let beadPhase = time * beadSpeed + fi * 0.73;
+
+    // Idea 3: plot this fiber's base point on the rotating S2 inset.
+    if (inInset) {
+      let cy3 = cos(rot4D);
+      let sy3 = sin(rot4D);
+      let bx = x2 * cy3 + z2 * sy3;
+      let bz = -x2 * sy3 + z2 * cy3;
+      let dq = insetQ - vec2<f32>(bx, y2);
+      let facing = smoothstep(-0.4, 0.4, bz);
+      let dot2 = exp(-dot(dq, dq) * 900.0) * (0.3 + 0.7 * facing);
+      insetCol += fiberColor * dot2 * 1.6;
+      insetCov += dot2;
+    }
 
     for (var t: i32 = 0; t < tSteps; t = t + 1) {
       let tt = f32(t) / f32(tSteps) * PI * 2.0;
       let psi = tt + fiberPhase;
-      let z1r = sqrt((1.0 + z2) * 0.5);
+      let z1r = max(sqrt((1.0 + z2) * 0.5), 0.001);
       let z2r = x2 * 0.5 / z1r;
       let z2i = y2 * 0.5 / z1r;
       let cpsi = cos(psi);
@@ -110,7 +147,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let sy = sin(rot4D);
       let rx = proj3.x * cy + proj3.z * sy;
       let rz = -proj3.x * sy + proj3.z * cy;
-      let depth4 = 1.0 / (2.5 + rz);
+      let depth4 = 1.0 / max(2.5 + rz, 0.05);
       let proj2 = vec2<f32>(rx, proj3.y) * depth4 * 0.35 + 0.5;
       let wCoord = w1;
 
@@ -121,12 +158,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let tProj = clamp(dot(toPixel, seg) / max(segLen2, 0.00001), 0.0, 1.0);
         let closest = prevProj + seg * tProj;
         let d = length(uv - closest);
-        let hue = fract(phi / (2.0 * PI) + theta * 0.3);
-        let fiberColor = hsv2rgb(hue, 0.75, 0.9);
         let glow = exp(-d * d / (fiberThick * fiberThick));
         if (glow > 0.001) {
           let depthFade = smoothstep(-1.0, 1.0, wCoord) * 0.5 + 0.5;
-          accum += fiberColor * glow * depthFade;
+          // Idea 2: bead riding the U(1) circle action at its own psi phase.
+          let bead = pow(0.5 + 0.5 * cos(tt - beadPhase), 28.0);
+          fiberAcc += fiberColor * glow * depthFade;
+          fiberAcc += vec3<f32>(1.0, 0.96, 0.88) * glow * bead * depthFade * (0.7 + bass * 1.3);
+          if (d < fiberMinD) {
+            fiberMinD = d;
+            fiberZ = depth4;
+          }
           alphaAcc += glow * depthFade;
           maxDepth = max(maxDepth, depthFade * glow);
           let segmentDepthDiff = abs(wCoord - prevW);
@@ -136,6 +178,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       prevProj = proj2;
       prevW = wCoord;
     }
+
+    // Idea 1: nearest strand (largest depth4) near this pixel becomes the over-strand.
+    if (fiberMinD < gapRadius && fiberZ > frontZ) {
+      restAcc += frontAcc;
+      frontAcc = fiberAcc;
+      frontZ = fiberZ;
+      frontD = fiberMinD;
+    } else {
+      restAcc += fiberAcc;
+    }
+  }
+
+  // Idea 1: cut a knot-diagram gap in under-strands around the over-strand.
+  let gapMask = exp(-frontD * frontD / (gapRadius * gapRadius * 0.55));
+  accum = frontAcc + restAcc * (1.0 - gapMask * mix(0.45, 0.9, p3));
+
+  // Idea 3: inset sphere limb + base-point dots.
+  if (inInset) {
+    let rq = length(insetQ);
+    let limb = exp(-(rq - 1.0) * (rq - 1.0) * 700.0) * 0.35;
+    let shell = (1.0 - smoothstep(0.96, 1.0, rq)) * 0.05;
+    insetCol += vec3<f32>(0.55, 0.6, 0.8) * (limb + shell) * (1.0 + mids * 0.4);
+    insetCov += limb + shell;
+    accum += insetCol;
+    alphaAcc += insetCov * 1.5;
+    maxDepth = max(maxDepth, clamp(insetCov, 0.0, 0.6));
   }
 
   // Treble particle drift + crossing bloom
@@ -146,8 +214,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   accum += vec3<f32>(0.5, 0.4, 0.8) * crossingInt * (0.12 + treble * 0.35) * mix(0.3, 1.8, p3);
 
   // Finite fiber-phase blooms launched by click timestamps.
-  let aspect = res.x / max(res.y, 1.0);
-  let screenP = (uv - 0.5) * vec2<f32>(aspect, 1.0);
   let rippleCount = min(u32(u.config.y), 50u);
   var clickBloom = 0.0;
   for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {

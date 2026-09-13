@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Liquid Rainbow Glass
 //  Category: generative
-//  Features: liquid, refraction, chromatic, mouse-stir, audio-reactive, semantic-alpha
-//  Complexity: Medium-High
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-09-13
+//  Ideas: meniscus rainbow rims at the liquid/glass lip; viscous stir memory (C history swirled around pointer)
+//  A packing: display-history RGBA (A = mix(prev*0.96, color, 0.25); C read via exact textureLoad)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -203,7 +204,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let centered = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
 
   let time = u.config.x;
-  let mouseNorm = u.zoom_config.yz / res;
+  let mouseNorm = u.zoom_config.yz;
   let mouseCentered = (mouseNorm - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
   let mouseDown = u.zoom_config.w;
 
@@ -217,7 +218,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
   let audioSpeed = speed * (0.85 + bass * 0.6);
   let audioIntensity = intensity * (0.9 + treble * 0.5);
@@ -245,13 +245,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ---- LAYER 3: Main flowing liquid (thick) ----
   // Apply mouse stir if active
-  var uv3 = centered * 0.8;
-  if (mouseDown > 0.5) {
-    let stir = vortexStir(centered, mouseCentered, t, 0.3 * intensity);
-    uv3 += stir;
-  }
+  let held = select(0.0, 1.0, mouseDown > 0.5);
+  let stir = vortexStir(centered, mouseCentered, t, 0.3 * intensity) * held;
+  let uv3 = centered * 0.8 + stir;
   let layer3 = liquidLayer(uv3, t, 1.0, scale * 1.5, 0.5);
   color = mix(color, layer3.rgb, layer3.a * 0.6);
+
+  // Idea 1: meniscus rims — the thick liquid's lip against clear glass (layer3.a ≈ 0.5) refracts into a
+  // rainbow-split band: red sits just outside the lip, blue just inside.
+  let rimW = 0.07;
+  let rimR = 1.0 - smoothstep(0.0, rimW, abs(layer3.a - 0.42));
+  let rimG = 1.0 - smoothstep(0.0, rimW, abs(layer3.a - 0.50));
+  let rimB = 1.0 - smoothstep(0.0, rimW, abs(layer3.a - 0.58));
+  let rimTint = liquidRainbow(layer3.a * 2.0 + colorShift + t * 0.04);
+  let meniscus = vec3<f32>(rimR, rimG, rimB) * (0.55 + 0.45 * rimTint) * intensity * (0.9 + treble * 0.6);
+  color += meniscus * 0.85;
 
   // ---- LAYER 4: Glass refraction layer ----
   let refraction = glassRefraction(centered, t, intensity, scale);
@@ -294,16 +302,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += causticColor * (caustic + caustic2 * 0.5) * intensity * 0.6;
 
   // ---- LAYER 9: Swirling vortex from mouse ----
-  if (mouseDown > 0.5) {
+  {
     let md = length(centered - mouseCentered);
     let vortex = exp(-md * md * 6.0) * (0.8 + 0.2 * sin(t * 4.0));
     let vortexColor = liquidRainbow(md * 5.0 - t * 0.5 + colorShift);
-    color += vortexColor * vortex * intensity * 0.8;
+    color += vortexColor * vortex * intensity * 0.8 * held;
     
     // Spiral arms from mouse
     let vAngle = atan2((centered - mouseCentered).y, (centered - mouseCentered).x);
     let spiral = sin(vAngle * 4.0 + md * 15.0 - t * 3.0);
-    color += liquidRainbow(spiral + colorShift) * exp(-md * md * 4.0) * pow(abs(spiral), 0.5) * intensity * 0.4;
+    color += liquidRainbow(spiral + colorShift) * exp(-md * md * 4.0) * pow(abs(spiral), 0.5) * intensity * 0.4 * held;
   }
 
   // ---- POST PROCESSING ----
@@ -330,13 +338,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ACES tone mapping
   color = acesToneMap(color);
 
+  // Idea 2: viscous stir memory — last frame's liquid is read back swirled around the pointer, so a stir
+  // leaves a curl that keeps turning and relaxes after release (C was computed by HEAD but never shown).
+  let md2 = centered - mouseCentered;
+  let mr = length(md2);
+  let curlAngle = (0.05 + 0.12 * held) * exp(-mr * mr * 5.0) * (0.3 + intensity) * (1.0 + bass * 0.5);
+  let cs = cos(curlAngle);
+  let sn = sin(curlAngle);
+  let backRot = vec2<f32>(md2.x * cs + md2.y * sn, -md2.x * sn + md2.y * cs) + mouseCentered;
+  let backUV = clamp(backRot / vec2<f32>(aspect, 1.0) + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+  let backPix = clamp(vec2<i32>(backUV * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+  let prev = textureLoad(dataTextureC, backPix, 0);
+
   // Temporal feedback
   let decay = 0.96;
   let temporal = mix(prev.rgb * decay, color, 0.25);
+  let swirlWeight = clamp(exp(-mr * mr * 3.0) * 0.55 * (0.4 + intensity), 0.0, 0.6);
+  let display = mix(color, temporal, swirlWeight);
 
   // Semantic alpha - stronger where the bright liquid effect is active
-  let effectStrength = clamp(luminance * 0.6 + bubbleField * 0.4, 0.3, 0.95);
-  textureStore(writeTexture, pixel, vec4<f32>(color, effectStrength));
+  let rimCover = max(rimR, max(rimG, rimB));
+  let effectStrength = clamp(luminance * 0.6 + bubbleField * 0.4 + rimCover * 0.15, 0.3, 0.95);
+  // Depth = glass thickness: how much liquid is stacked over this pixel.
+  let thickness = clamp(layer1.a * 0.2 + layer3.a * 0.45 + layer4.a * 0.35, 0.0, 1.0);
+  textureStore(writeTexture, pixel, vec4<f32>(display, effectStrength));
   textureStore(dataTextureA, pixel, vec4<f32>(temporal, effectStrength));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(thickness, 0.0, 0.0, 0.0));
 }

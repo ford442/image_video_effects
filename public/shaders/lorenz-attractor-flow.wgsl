@@ -1,13 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Lorenz Attractor Flow
 //  Category: generative
-//  Features: generative, mouse-driven, temporal, chromatic, depth-aware,
-//            sdf-tube, kaleidoscope, orbit-trap, orbit-camera,
-//            ripple-deform, audio-reactive, fft-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Chunks From: none (original)
 //  Created: 2026-05-09
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-09-13 (prev 2026-05-31)
+//  Ideas: finite-time Lyapunov ridges from a shadow twin orbit;
+//         wing-switch symbolic banding (x sign-flip count);
+//         flow-advected feedback along the seed's Lorenz velocity
+//  A packing: ACES display RGBA (C read back as display colour)
 //  b32 Interactivist: 2026-08-03 — SDF tube ray along the attractor
 //    trajectory, kaleidoscopic orbit-trap backdrop, mouse orbit camera,
 //    guarded ripple deformation, real depth (was flat 0.5 clobber)
@@ -41,6 +43,11 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     let p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn rotY(a: f32) -> mat3x3<f32> {
@@ -118,8 +125,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rho: f32 = 28.0;
     let beta: f32 = 8.0 / 3.0;
 
+    // Idea 3: seed velocity (screen-projected) for flow-advected feedback
+    let seedVel = vec2<f32>(sigma * (p.y - p.x), p.x * (rho - p.z) - p.y);
+
     var pathLength: f32 = 0.0;
     var prevP = p;
+    // Idea 1: shadow twin orbit for finite-time Lyapunov exponent
+    var q = p + vec3<f32>(1e-3, 0.0, 0.0);
+    // Idea 2: lobe-hop counter (sign flips of x)
+    var hops: f32 = 0.0;
     // ═══ b32: orbit trap — closest approach to the two attractor lobes ═══
     var orbitTrap = 1e5;
 
@@ -133,6 +147,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         p.y += dy * dt;
         p.z += dz * dt;
 
+        let qdx = sigma * (q.y - q.x);
+        let qdy = q.x * (rho - q.z) - q.y;
+        let qdz = q.x * q.y - beta * q.z;
+        q += vec3<f32>(qdx, qdy, qdz) * dt;
+
+        hops += select(0.0, 1.0, p.x * prevP.x < 0.0);
         pathLength += length(p - prevP);
         prevP = p;
         orbitTrap = min(orbitTrap, min(
@@ -147,6 +167,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let val = 0.55 + 0.45 * (sin(p.y * 0.06 + t * 1.5) * 0.5 + 0.5);
 
     var rgb = hsv2rgb(vec3<f32>(hue, sat, val));
+
+    // ═══ Idea 2: wing-switch symbolic banding — parity of lobe hops ═══
+    let hopParity = fract(hops * 0.5) * 2.0;            // 0 even, 1 odd
+    let hopBand = 0.5 + 0.5 * cos(hops * 0.9 + colorShift * TAU);
+    rgb = mix(rgb, rgb.gbr, hopParity * 0.35 * smoothstep(0.5, 1.5, hops));
+    rgb *= 0.8 + 0.3 * hopBand;
+
+    // ═══ Idea 1: FTLE ridges — stretching separatrices of the flow ═══
+    let sep = max(length(p - q), 1e-6);
+    let ftle = log(sep / 1e-3) / max(80.0 * dt, 1e-3);  // per unit time
+    let ftleN = clamp(ftle * 0.12, 0.0, 1.0);
+    let ridge = smoothstep(0.55, 0.95, ftleN) * (1.0 + treble * 0.4);
+    rgb += hsv2rgb(vec3<f32>(fract(hue + 0.5), 0.35, 1.0)) * ridge * (0.25 + glowIntensity * 0.5);
 
     // Chromatic dispersion: offset lobe glow per channel by audio
     let lobeDistR = min(
@@ -225,13 +258,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vignette = 1.0 - length(uv - 0.5) * 0.6;
     rgb *= vignette;
 
-    // Temporal feedback
-    let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
-    rgb = mix(rgb, prev.rgb * 0.9, 0.03 + bass * 0.01);
+    // Display space
+    var disp = acesToneMap(rgb);
 
-    // Luminance-key alpha: brighter regions more opaque (+ 3D tube presence)
-    let luma = dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(mix(0.75, 1.0, smoothstep(0.2, 0.6, luma)) + tubeGlow * 0.1, 0.0, 1.0);
+    // ═══ Idea 3: flow-advected feedback — pull history from upstream along the Lorenz velocity ═══
+    let velLen = max(length(seedVel), 1e-3);
+    let upstream = -seedVel / velLen * min(velLen * 0.02, 3.0) * (0.5 + u.zoom_params.x);
+    let maxC = vec2<f32>(res) - vec2<f32>(1.0);
+    let srcC = vec2<i32>(clamp(vec2<f32>(gid.xy) + upstream, vec2<f32>(0.0), maxC));
+    let prev = textureLoad(dataTextureC, srcC, 0);
+    disp = mix(disp, prev.rgb * 0.9, 0.03 + bass * 0.01 + ridge * 0.04);
+
+    // Luminance-key alpha: brighter regions more opaque (+ 3D tube presence, FTLE ridges)
+    let luma = dot(disp, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(mix(0.75, 1.0, smoothstep(0.2, 0.6, luma)) + tubeGlow * 0.1 + ridge * 0.1, 0.0, 1.0);
 
     // ═══ b32: real depth — tube surface distance + orbit-trap relief ═══
     // (b32 fix: was a flat 0.5 clobber)
@@ -239,7 +279,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let trapDepth = trapV * 0.35;
     let outDepth = clamp(max(tubeDepth, trapDepth), 0.0, 1.0);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(rgb, alpha));
+    textureStore(writeTexture, gid.xy, vec4<f32>(disp, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(rgb, alpha));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(disp, alpha));
 }

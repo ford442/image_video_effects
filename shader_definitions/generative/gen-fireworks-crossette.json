@@ -1,5 +1,5 @@
 {
-  "name": "4th of July \u2014 Crossette Split",
+  "name": "4th of July — Crossette Split",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -18,10 +18,42 @@
     1
   ],
   "params": [
-    { "id": "shell-power", "name": "Shell Power", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "split-delay", "name": "Split Delay", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "arm-spread", "name": "Arm Spread", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "hue-shift", "name": "Hue Shift", "default": 0.0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+    {
+      "id": "shell-power",
+      "name": "Shell Power",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "split-delay",
+      "name": "Split Delay",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "arm-spread",
+      "name": "Arm Spread",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "hue-shift",
+      "name": "Hue Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ],
   "updatedParams": [
     {
@@ -51,7 +83,7 @@
     {
       "index": 3,
       "name": "Hue Shift",
-      "default": 0.0,
+      "default": 0,
       "min": 0,
       "max": 1,
       "step": 0.01
@@ -70,7 +102,9 @@
     "generated-depth",
     "semantic-alpha",
     "aces-tone-map",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "mouse-driven",
+    "audio-reactive"
   ],
   "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

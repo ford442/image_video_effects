@@ -8569,7 +8569,8 @@
       "click-reactive",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -11157,7 +11158,8 @@
       "click-reactive",
       "temporal-feedback",
       "semantic-alpha",
-      "aces-tonemap"
+      "aces-tonemap",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact four-neighbor mycelial history loads"
   },
@@ -13079,7 +13081,8 @@
       "temporal",
       "raymarching",
       "semantic-alpha",
-      "generated-depth"
+      "generated-depth",
+      "upgraded-rgba"
     ]
   },
   {
@@ -13179,7 +13182,11 @@
     "updated": true,
     "id": "gen-ethereal-aurora-ghost-orchid",
     "url": "shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-ethereal-bismuth-resonance-void-owl",
@@ -13201,6 +13208,13 @@
     ],
     "description": "A hyper-dimensional avian entity forged from iridescent bismuth lattices, suspended in a zero-gravity quantum field. Upgraded with thin-film interference on the stepped bismuth shell, per-facet crystal color variation, 3-point lighting with soft shadows and AO, horn-like stepped ear tufts, a tessellated hopper-crystal inlay glowing in the void ether, ACES filmic tonemapping and real depth output.",
     "complexity": "High",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "raymarched",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
@@ -13324,6 +13338,12 @@
     "url": "shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
     "name": "Ethereal Chrono-Plasma Void-Manta",
     "category": "generative",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
+    ],
     "description": "A majestic, hyper-organic cybernetic space-manta ray gliding through a dark-matter ocean, its translucent biomimetic wings rippling with shifting auroral temporal energy as it consumes deep acoustic bass frequencies.",
     "parameters": [
       {
@@ -13531,7 +13551,12 @@
     "updated": true,
     "id": "gen-ethereal-cyber-aurora-hummingbird-core",
     "url": "shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-ethereal-cyber-chrono-nebula-phoenix",
@@ -13658,7 +13683,8 @@
       "temporal-feedback",
       "depth-output",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = phoenix trap distance, signed body distance, nebula density, semantic coverage; exact raw-state history"
   },
@@ -13762,7 +13788,8 @@
       "temporal-feedback",
       "depth-output",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact temporal whale history"
   },
@@ -13872,7 +13899,8 @@
       "temporal-feedback",
       "depth-output",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact plasma-dragon persistence history"
   },
@@ -14482,7 +14510,8 @@
       "depth-aware",
       "depth-output",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = ACES silk effect-layer RGBA; exact veil persistence history; output composites the source layer"
   },
@@ -15028,7 +15057,9 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133] = smoothed bass envelope"
   },
@@ -15248,7 +15279,9 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15358,7 +15391,9 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15466,7 +15501,9 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15688,7 +15725,8 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-driven"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15799,7 +15837,8 @@
       "generated-depth",
       "semantic-alpha",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-driven"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15910,7 +15949,9 @@
       "temporal-feedback",
       "aces-tone-map",
       "semantic-alpha",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -17234,7 +17275,7 @@
       "music",
       "reactive"
     ],
-    "description": "Infinite interlocking brass gears rotating in perfect mechanical sync. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control.",
+    "description": "Infinite interlocking brass gears rotating in perfect mechanical sync, stepping one tooth per escapement tick around ruby jewel bearings. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control.",
     "workgroup_size": [
       16,
       16,
@@ -17318,6 +17359,8 @@
     "id": "gen-fractal-clockwork",
     "url": "shaders/gen-fractal-clockwork.wgsl",
     "features": [
+      "audio-reactive",
+      "mouse-driven",
       "upgraded-rgba",
       "raymarched-gears",
       "sprung-orbit-camera",
@@ -17343,7 +17386,7 @@
       "mouse-driven",
       "temporal"
     ],
-    "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, and spark frequency.",
+    "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, spark frequency, and ember beads that crawl along the lattice lines; flying shards cool to deep red and flare as they re-ignite on reform.",
     "workgroup_size": [
       16,
       16,
@@ -17427,6 +17470,8 @@
     "id": "gen-fractal-ember-lattice",
     "url": "shaders/gen-fractal-ember-lattice.wgsl",
     "features": [
+      "audio-reactive",
+      "mouse-driven",
       "upgraded-rgba",
       "rigid-shard-state",
       "three-band-audio-reactive",
@@ -17587,6 +17632,11 @@
         "max": 3,
         "step": 0.1
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -17712,7 +17762,7 @@
       "music",
       "reactive"
     ],
-    "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light.",
+    "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light that climbs the seams and spills through the cracks onto the water below.",
     "workgroup_size": [
       16,
       16,
@@ -17797,6 +17847,8 @@
     "url": "shaders/gen-fractured-monolith.wgsl",
     "features": [
       "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven",
       "raymarched-fractured-monolith",
       "three-band-audio-reactive",
       "mouse-orbit",
@@ -17924,7 +17976,7 @@
       "blackbody",
       "ethereal"
     ],
-    "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire.",
+    "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air.",
     "workgroup_size": [
       16,
       16,
@@ -18009,6 +18061,8 @@
     "url": "shaders/gen-ghost-flame.wgsl",
     "features": [
       "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven",
       "advected-flame-state",
       "three-band-audio-reactive",
       "mouse-and-click-heat",
@@ -18881,7 +18935,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
@@ -19182,7 +19237,8 @@
       "click-reactive",
       "semantic-alpha",
       "aces-tonemap",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw membrane height, normal X, normal Y, semantic alpha; ACES is display-only"
   },
@@ -19418,7 +19474,7 @@
       "geometric",
       "chromatic"
     ],
-    "description": "Hopf fibration visualization from S³ to S². Each screen pixel maps to a point on S² whose fiber is a circle in S³, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings.",
+    "description": "Hopf fibration visualization from S³ to S². Each screen pixel maps to a point on S² whose fiber is a circle in S³, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings. Knot-diagram over/under gaps make the linking readable, bass-pumped beads ride each fiber's U(1) phase, and a small base-space S² inset shows the fibers' base points.",
     "workgroup_size": [
       16,
       16,
@@ -19504,6 +19560,7 @@
     "features": [
       "hopf-fibration",
       "audio-reactive",
+      "upgraded-rgba",
       "mouse-driven",
       "click-reactive",
       "temporal-feedback",
@@ -19967,7 +20024,7 @@
       "fluid-dynamics",
       "rankine"
     ],
-    "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
+    "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Feedback history is advected by the Rankine differential rotation, and the cyclostrophic pressure well condenses a striated funnel haze. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
     "workgroup_size": [
       16,
       16,
@@ -20054,6 +20111,7 @@
       "upgraded-rgba",
       "rankine-vortex",
       "audio-reactive",
+      "mouse-driven",
       "mouse-interactive",
       "held-interactive",
       "ripple-reactive",
@@ -20075,7 +20133,7 @@
       "raymarch",
       "audio-reactive"
     ],
-    "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, storm flashes, and temporal HDR trails.",
+    "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, bass-triggered lightning strobes, prismatic RGB dispersion on drop rims, and fall-aligned HDR rain streaks.",
     "workgroup_size": [
       16,
       16,
@@ -20168,6 +20226,7 @@
       "aces-tone-mapping",
       "depth-aware",
       "input-depth-aware",
+      "mouse-driven",
       "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR refractive rain display RGBA history"
@@ -20185,7 +20244,7 @@
       "audio-reactive",
       "mathematical"
     ],
-    "description": "Competing crystal growth in hyperbolic (Poincaré disk) geometry. Racing growth-front runners, tile pulse waves, and advected HDR trails. Local curvature influenced by audio and mouse. Iridescent jewel coloring with symmetry-breaking facet borders.",
+    "description": "Competing crystal growth in hyperbolic (Poincaré disk) geometry. Racing growth-front runners, tile pulse waves, and advected HDR trails. Local curvature influenced by audio and mouse. Iridescent jewel coloring with symmetry-breaking facet borders, hyperbolic growth zoning, symbiotic twin lamellae where rival crystals meet, and hyperboloid-lift relief depth.",
     "workgroup_size": [
       16,
       16,
@@ -20384,6 +20443,7 @@
       "hyperbolic-geometry",
       "recursive",
       "audio-reactive",
+      "mouse-driven",
       "mouse-interactive",
       "held-interactive",
       "ripple-reactive",
@@ -20799,7 +20859,8 @@
       "depth-aware",
       "alpha-layered",
       "temporal-feedback",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ]
   },
   {
@@ -21096,7 +21157,11 @@
     "updated": true,
     "id": "gen-inverse-mandelbrot",
     "url": "shaders/gen-inverse-mandelbrot.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-iris-bloom-fractal",
@@ -21376,7 +21441,11 @@
     "updated": true,
     "id": "gen-islamic-star-rose",
     "url": "shaders/gen-islamic-star-rose.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Isometric Cyber-City",
@@ -21433,7 +21502,11 @@
     "updated": true,
     "id": "gen-isometric-city",
     "url": "shaders/gen-isometric-city.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-julia-set-classic",
@@ -21632,7 +21705,8 @@
       "fast-motion",
       "semantic-alpha",
       "generated-depth",
-      "counter-rotating-dendrites"
+      "counter-rotating-dendrites",
+      "upgraded-rgba"
     ],
     "tags": [
       "generative",
@@ -21698,7 +21772,11 @@
     "updated": true,
     "id": "gen-kinetic-neo-brutalist-megastructure",
     "url": "shaders/gen-kinetic-neo-brutalist-megastructure.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Klein Bottle Walk",
@@ -21757,7 +21835,10 @@
     "updated": true,
     "id": "gen-klein-bottle-walk",
     "url": "shaders/gen-klein-bottle-walk.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Koch Snowflake Storm",
@@ -21874,7 +21955,11 @@
     "updated": true,
     "id": "gen-kryonic-quantum-aether-fractal-core",
     "url": "shaders/gen-kryonic-quantum-aether-fractal-core.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Langton's Ant",
@@ -22227,7 +22312,8 @@
       "fast-motion",
       "semantic-alpha",
       "generated-depth",
-      "rose-tracery"
+      "rose-tracery",
+      "upgraded-rgba"
     ],
     "tags": [
       "generative",
@@ -22309,7 +22395,8 @@
       "simulation-state",
       "raymarching",
       "semantic-alpha",
-      "generated-depth"
+      "generated-depth",
+      "upgraded-rgba"
     ]
   },
   {
@@ -22357,6 +22444,11 @@
         "max": 10,
         "step": 1
       }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ]
   },
   {
@@ -22415,7 +22507,11 @@
     "updated": true,
     "id": "gen-liquid-neon-cyber-metropolis",
     "url": "shaders/gen-liquid-neon-cyber-metropolis.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-liquid-neon-topography",
@@ -22424,6 +22520,11 @@
     "description": "A mesmerizing descent into a hyper-fluid, self-illuminating digital landscape where neon currents carve through shifting, organic terrain.",
     "category": "generative",
     "url": "/shaders/gen-liquid-neon-topography.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "ridgeHeight",
@@ -22521,7 +22622,11 @@
     "updated": true,
     "id": "gen-liquid-rainbow-glass",
     "url": "shaders/gen-liquid-rainbow-glass.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Live Studio Tab",
@@ -22600,7 +22705,8 @@
       "orbit-camera",
       "ripple-deformation",
       "audio-reactive",
-      "fft-reactive"
+      "fft-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "chaotic",
@@ -22753,7 +22859,10 @@
       "symmetry-fold",
       "orbit-trap-shading",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ]
   },
   {
@@ -22775,6 +22884,11 @@
       "raymarched",
       "tessellation",
       "interactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,
@@ -22830,6 +22944,11 @@
       "cosmic",
       "particle systems",
       "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "parameters": [
       {
@@ -22968,7 +23087,10 @@
       "click-shockwave-ripples",
       "fft-core-glow",
       "temporal-history-smoothing",
-      "depth-output"
+      "depth-output",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ]
   },
   {
@@ -23086,7 +23208,11 @@
     "updated": true,
     "id": "gen-luminescent-cyber-chrono-void-turtle",
     "url": "shaders/gen-luminescent-cyber-chrono-void-turtle.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-luminescent-nebula-silk-weaver",
@@ -23100,7 +23226,9 @@
       "nebula",
       "audio-reactive",
       "raymarching",
-      "curl-noise"
+      "curl-noise",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "fluid",
@@ -23156,6 +23284,11 @@
     "url": "shaders/gen-luminescent-quantum-flora-symphony.wgsl",
     "updated": true,
     "supportsDepth": true,
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
@@ -23264,7 +23397,11 @@
     "updated": true,
     "id": "gen-luminescent-quantum-glass-phoenix-egg",
     "url": "shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-luminescent-quantum-silicate-diatom",
@@ -24640,7 +24777,8 @@
       "time-warp-growth",
       "hdr-clamped",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ]
   },
   {
@@ -29003,7 +29141,11 @@
     "updated": true,
     "id": "gen-quantum-mycelium",
     "url": "shaders/gen-quantum-mycelium.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Quantum Neural Lace",
@@ -32279,7 +32421,11 @@
     "updated": true,
     "id": "gen-symbiotic-chrono-mycelium-engine",
     "url": "shaders/gen-symbiotic-chrono-mycelium-engine.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-symbiotic-cyber-fungal-core-reactor",
@@ -32450,6 +32596,11 @@
         "step": 0.1,
         "mapping": "zoom_params.w"
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -35038,7 +35189,7 @@
     "id": "gen-hyper-warp",
     "name": "Hyper Warp",
     "url": "shaders/gen_hyper_warp.wgsl",
-    "description": "Advanced domain warping with fractal noise and reaction-diffusion feedback.",
+    "description": "Advanced domain warping with fractal noise, etched warped contour lines, and flow-dispersed prismatic reaction-diffusion feedback.",
     "features": [
       "aces-tone-map",
       "audio-reactive",
@@ -35151,7 +35302,8 @@
       "animated",
       "temporal",
       "chromatic",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",

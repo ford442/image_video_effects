@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-09-13
+//  Ideas: frost-rime orbit trap; aether shatter veins along fold mirror planes
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -82,12 +84,44 @@ fn map(p: vec3<f32>, time: f32, scale: f32, melt: f32, audio: f32, shatter: f32)
     let noise_offset = length(sin(p * 10.0 + vec3<f32>(time))) * 0.05 * shatter * audio;
     d += noise_offset;
 
-    if (melt > 0.0) {
-        let melt_sphere = length(p) - (1.0 + melt);
-        d = smin(d, melt_sphere, melt * 2.0);
-    }
+    let melt_sphere = length(p) - (1.0 + melt);
+    d = select(d, smin(d, melt_sphere, max(melt * 2.0, 0.0001)), melt > 0.0);
 
     return d;
+}
+
+// Idea 1 + 2: replay map()'s fold loop once at the hit and keep its orbit data.
+// x = min orbit radius (rime trap), y = min distance to the sorted-abs mirror planes (shatter seams).
+fn foldTraps(p: vec3<f32>, time: f32, scale: f32, audio: f32) -> vec2<f32> {
+    var q = p;
+    let t = time * 0.2;
+    let qxy = rot2D(t) * vec2<f32>(q.x, q.y);
+    q.x = qxy.x; q.y = qxy.y;
+    let qyz = rot2D(t * 0.7) * vec2<f32>(q.y, q.z);
+    q.y = qyz.x; q.z = qyz.y;
+
+    let s = scale * (1.0 + audio * 0.1);
+    var sf = 1.0;
+    var orbit = 1e5;
+    var seam = 1e5;
+    for (var i = 0; i < 5; i++) {
+        let a = abs(q);
+        let plane = min(min(abs(a.x - a.y), abs(a.x - a.z)), abs(a.y - a.z)) * 0.7071;
+        seam = min(seam, plane / sf);
+        q = fold(q);
+        q = q * s - vec3<f32>(1.2, 1.2, 1.2);
+        sf *= s;
+        orbit = min(orbit, length(q) / sf);
+        let rot = rot2D(t + f32(i) * 0.5);
+        let qxz = rot * vec2<f32>(q.x, q.z);
+        q.x = qxz.x; q.z = qxz.y;
+    }
+    return vec2<f32>(orbit, seam);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, scale: f32, melt: f32, audio: f32, shatter: f32) -> vec3<f32> {
@@ -173,6 +207,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Chromatic edges
         col += vec3<f32>(0.1, 0.5, 0.9) * (1.0 - n.z);
+
+        let traps = foldTraps(p, time, scale_param, audio);
+
+        // Idea 1: frost-rime orbit trap — tight fold tips crust white, recesses sink to glacial blue
+        let rime = 1.0 - smoothstep(0.0, 0.06, traps.x);
+        let frost = mix(vec3<f32>(0.02, 0.12, 0.35), vec3<f32>(0.85, 0.95, 1.0), rime);
+        col = mix(col, col * 0.4 + frost * (0.35 + dif * 0.9), 0.55) + vec3<f32>(0.9, 0.97, 1.0) * rime * spec * 1.5;
+
+        // Idea 2: aether shatter veins — plasma cracks along the fold mirror seams, thawed inside the melt
+        let veinWidth = 0.004 + 0.012 * shatter_param * (1.0 + treble * 0.6);
+        let vein = (1.0 - smoothstep(0.0, veinWidth, traps.y)) * (1.0 - smoothstep(0.0, 0.6, active_melt));
+        let veinCol = mix(vec3<f32>(0.2, 0.9, 1.0), vec3<f32>(0.95, 0.25, 1.0), clamp(mids + 0.5 * sin(time * 1.3 + traps.x * 60.0) + 0.5, 0.0, 1.0));
+        col += veinCol * vein * shatter_param * (1.2 + audio * 1.5);
     }
 
     col += glow;
@@ -184,8 +231,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let semantic_alpha = clamp(luma * 1.6 + length(glow) * 0.3, 0.05, 0.98);
     let outDepth = clamp(t / 10.0, 0.0, 1.0);
+    let display = acesToneMap(col * 1.2);
 
-    textureStore(writeTexture, coords, vec4<f32>(col, semantic_alpha));
+    textureStore(writeTexture, coords, vec4<f32>(display, semantic_alpha));
     textureStore(writeDepthTexture, coords, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, vec4<f32>(col, semantic_alpha));
+    textureStore(dataTextureA, coords, vec4<f32>(display, semantic_alpha));
 }

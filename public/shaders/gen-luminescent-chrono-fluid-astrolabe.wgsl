@@ -1,10 +1,15 @@
-// ----------------------------------------------------------------
-// Luminescent Chrono-Fluid Astrolabe
-// Category: generative
-// Batch 36 (Optimizer): canonical uniform truth, coarse->refined SDF
-// (fluid noise culled when far), bounding-sphere early out, spring mouse,
-// real audio/FFT reactivity, HDR + ACES, semantic alpha, generated depth.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Chrono-Fluid Astrolabe
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: engraved limb graduations on every ring; geared outer mater + radius-ratio gear train; rete star-chart plate (almucantars, azimuths, sidereal stars)
+//  A packing: ACES display RGBA (C read back as colour history, exact textureLoad)
+// ═══════════════════════════════════════════════════════════════════
+// Batch 36 (Optimizer) base kept: coarse->refined SDF (fluid noise culled
+// when far), bounding-sphere early out, spring mouse, audio/FFT, semantic
+// alpha, generated depth.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -40,6 +45,12 @@ const FLUIDITY: f32 = 0.8;         // displacement amplitude of the chrono-fluid
 // Rings farther than this coarse distance skip the 8-hash fluid noise:
 // the displacement (<= ~0.6 world units) can never matter out there.
 const FLUID_CULL_DIST: f32 = 1.5;
+// Idea 2: gear teeth on the outer mater ring (bounded amplitude keeps the
+// SDF close to Lipschitz-1 under STEP_RELAX).
+const GEAR_TEETH: f32 = 36.0;
+const GEAR_TOOTH_H: f32 = 0.025;
+// Idea 3: rete plate latitude (stereographic almucantar geometry)
+const PLATE_LAT: f32 = 0.72;
 
 fn rot2(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -87,6 +98,34 @@ struct SceneCtx {
     treble: f32,
 };
 
+// Ring-local frame (shared by SDF and graduation shading).
+// Idea 2: gear train — each ring spins about its axis at a rate set by the
+// radius ratio to ring 0, alternating direction like meshing gears.
+fn ringFrame(p: vec3<f32>, fi: f32, ctx: SceneCtx) -> vec3<f32> {
+    var rp = p;
+    // Audio-reactive realignment (treble wobble per ring)
+    let axisShift = ctx.treble * 0.5 * sin(fi * 1.5 + ctx.animTime);
+    let rpxy = rp.xy * rot2(ctx.animTime * 0.2 + fi * 0.5 + axisShift);
+    rp.x = rpxy.x;
+    rp.y = rpxy.y;
+    let gearRatio = 1.0 / (1.0 + fi * 0.5);
+    let gearDir = select(1.0, -1.0, (i32(fi) % 2) == 1);
+    let rpxz = rp.xz * rot2(ctx.animTime * 0.3 * gearRatio * gearDir + fi * 0.8 + axisShift);
+    rp.x = rpxz.x;
+    rp.z = rpxz.y;
+    return rp;
+}
+
+fn mouseWarp(p_in: vec3<f32>, ctx: SceneCtx) -> vec3<f32> {
+    var p = p_in;
+    // Bounded mouse gravity well (spring-smoothed, slider-scaled)
+    let dm = p.xy - ctx.mouseWorld;
+    let pull = ctx.mouseStrength / (dot(dm, dm) + 1.0);
+    p.x += ctx.mouseWorld.x * pull * 0.5;
+    p.y += ctx.mouseWorld.y * pull * 0.5;
+    return p;
+}
+
 // Rings + holographic core. useFluid=false is the cheap coarse field.
 fn sceneDist(p: vec3<f32>, ctx: SceneCtx, useFluid: bool) -> vec2<f32> {
     var d = MAX_DIST;
@@ -94,17 +133,7 @@ fn sceneDist(p: vec3<f32>, ctx: SceneCtx, useFluid: bool) -> vec2<f32> {
 
     for (var i = 0; i < NUM_RINGS; i = i + 1) {
         let fi = f32(i);
-        var rp = p;
-
-        // Audio-reactive realignment (treble wobble per ring)
-        let axisShift = ctx.treble * 0.5 * sin(fi * 1.5 + ctx.animTime);
-
-        let rpxy = rp.xy * rot2(ctx.animTime * 0.2 + fi * 0.5 + axisShift);
-        rp.x = rpxy.x;
-        rp.y = rpxy.y;
-        let rpxz = rp.xz * rot2(ctx.animTime * 0.3 + fi * 0.8 + axisShift);
-        rp.x = rpxz.x;
-        rp.z = rpxz.y;
+        var rp = ringFrame(p, fi, ctx);
 
         let radius = (1.0 + fi * 0.5) * ctx.ringScale;
         let thickness = 0.05 + sin(ctx.animTime + fi) * 0.02;
@@ -115,10 +144,17 @@ fn sceneDist(p: vec3<f32>, ctx: SceneCtx, useFluid: bool) -> vec2<f32> {
             rp = rp + rp * n * 0.2;
         }
 
-        let ringD = sdTorus(rp, vec2<f32>(radius, thickness));
+        var ringD = sdTorus(rp, vec2<f32>(radius, thickness));
+        // Idea 2: geared outer mater — rounded teeth on the outer rim only
+        let isMater = i == NUM_RINGS - 1;
+        let az = atan2(rp.z, rp.x);
+        let tooth = clamp(sin(az * GEAR_TEETH) * 1.5, -1.0, 1.0) * 0.5 + 0.5;
+        let outerSide = smoothstep(0.0, 0.04, length(rp.xz) - radius);
+        ringD = select(ringD, ringD - GEAR_TOOTH_H * tooth * outerSide, isMater);
         let closer = ringD < d;
         d = select(d, ringD, closer);
-        matId = select(matId, 1.0, closer);
+        // matId 1.0..1.4 encodes ring index for graduation shading (< 1.5 = ring)
+        matId = select(matId, 1.0 + fi * 0.1, closer);
     }
 
     // Holographic core, pulsing with the bass band
@@ -133,13 +169,7 @@ fn sceneDist(p: vec3<f32>, ctx: SceneCtx, useFluid: bool) -> vec2<f32> {
 // Coarse cull: evaluate the cheap field first; only pay for the fluid
 // noise when the ray is close enough for the displacement to matter.
 fn map(p_in: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
-    var p = p_in;
-
-    // Bounded mouse gravity well (spring-smoothed, slider-scaled)
-    let dm = p.xy - ctx.mouseWorld;
-    let pull = ctx.mouseStrength / (dot(dm, dm) + 1.0);
-    p.x += ctx.mouseWorld.x * pull * 0.5;
-    p.y += ctx.mouseWorld.y * pull * 0.5;
+    let p = mouseWarp(p_in, ctx);
 
     let coarse = sceneDist(p, ctx, false);
     if (coarse.x > FLUID_CULL_DIST) {
@@ -156,7 +186,59 @@ fn getNormal(p: vec3<f32>, ctx: SceneCtx) -> vec3<f32> {
         map(p - e.yxy, ctx).x,
         map(p - e.yyx, ctx).x
     );
-    return normalize(n);
+    return normalize(n + vec3<f32>(0.0, 0.0, 1e-6));
+}
+
+// Idea 1: engraved limb graduations. Returns (groove, majorGlint).
+fn limbGraduation(pWorld: vec3<f32>, ringIdx: f32, ctx: SceneCtx) -> vec2<f32> {
+    let rp = ringFrame(mouseWarp(pWorld, ctx), ringIdx, ctx);
+    let radius = (1.0 + ringIdx * 0.5) * ctx.ringScale;
+    let deg = (atan2(rp.z, rp.x) / TAU + 0.5) * 360.0;
+    let fromFine = abs(fract(deg / 10.0 + 0.5) - 0.5) * 10.0;   // degrees to nearest 10deg mark
+    let fromMajor = abs(fract(deg / 30.0 + 0.5) - 0.5) * 30.0;  // degrees to nearest 30deg mark
+    // engrave only the outward/upper faces of the tube (the readable limb)
+    let q = vec2<f32>(length(rp.xz) - radius, rp.y);
+    let face = smoothstep(-0.2, 0.5, (q.x + abs(q.y)) / max(length(q), 1e-4));
+    let fineMark = 1.0 - smoothstep(0.25, 0.6, fromFine);
+    let majorMark = 1.0 - smoothstep(0.6, 1.2, fromMajor);
+    return vec2<f32>(max(fineMark * 0.55, majorMark) * face, majorMark * face);
+}
+
+fn hash2(c: vec2<f32>) -> f32 {
+    return hash(dot(c, vec2<f32>(1.0, 157.0)) * 0.0137);
+}
+
+// Idea 3: rete star-chart plate (stereographic almucantars + azimuths + stars)
+fn retePlate(uv: vec2<f32>, ctx: SceneCtx, time: f32, mids: f32) -> vec3<f32> {
+    let plateScale = 1.25 * ctx.ringScale;
+    let pu = uv / max(plateScale, 0.05);
+    let rPlate = length(pu);
+    let plateMask = 1.0 - smoothstep(1.9, 2.2, rPlate);
+    // Almucantars: stereographic altitude circles for latitude PLATE_LAT
+    var lines = 0.0;
+    let sinLat = sin(PLATE_LAT);
+    let cosLat = cos(PLATE_LAT);
+    for (var k = 0; k < 6; k = k + 1) {
+        let alt = f32(k) * 0.25;
+        let denom = max(sinLat + sin(alt), 0.05);
+        let cy = cosLat / denom;
+        let cr = cos(alt) / denom;
+        let dc = abs(length(pu - vec2<f32>(0.0, -cy + 1.0)) - cr);
+        lines = max(lines, exp(-dc * 180.0) * select(0.45, 0.8, k == 0));
+    }
+    // Azimuth spokes every 15 degrees, fading toward the rim
+    let ang = atan2(pu.y, pu.x);
+    let spoke = abs(fract(ang * 24.0 / TAU + 0.5) - 0.5) * TAU / 24.0 * rPlate;
+    lines = max(lines, exp(-spoke * 220.0) * 0.35 * smoothstep(0.15, 0.4, rPlate) * (1.0 - smoothstep(1.2, 2.0, rPlate)));
+    // Sidereal star field: rotates slowly about the core
+    let su = pu * rot2(ctx.animTime * 0.05);
+    let cell = floor(su * 22.0);
+    let h = hash2(cell);
+    let starPos = (cell + vec2<f32>(0.3 + 0.4 * fract(h * 17.0), 0.3 + 0.4 * fract(h * 31.0))) / 22.0;
+    let sd = length(su - starPos) * 22.0;
+    let twinkle = 0.7 + 0.3 * sin(time * 3.0 + h * 50.0) * (0.4 + mids);
+    let star = step(0.9, h) * exp(-sd * sd * 60.0) * twinkle;
+    return (vec3<f32>(0.85, 0.62, 0.25) * lines * 0.22 + vec3<f32>(0.75, 0.9, 1.2) * star * 0.9) * plateMask;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -250,6 +332,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let baseCol = vec3<f32>(1.0, 0.8, 0.2); // warm gold
             let iridescence = vec3<f32>(0.0, 1.0, 1.0) * (0.5 + 0.5 * sin(p.x * 2.0 + time));
             col = mix(baseCol, iridescence, 0.5) * (diff + 0.2) * intensity + spec * intensity;
+            // Idea 1: engraved graduations — dark groove, bright treble-glinting rim on major marks
+            let grad = limbGraduation(p, round((matId - 1.0) * 10.0), ctx);
+            col = col * (1.0 - grad.x * 0.6)
+                + baseCol * grad.y * (0.25 + spec * 1.5 + treble * 0.8) * intensity;
         } else { // Core - holographic bloom
             col = (vec3<f32>(0.0, 1.0, 1.0) + vec3<f32>(1.0, 0.0, 1.0) * sin(time * 3.0))
                   * intensity * (1.0 + bass * 0.6);
@@ -258,6 +344,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Nebula dust interference (cheap single-octave, background only)
         let dustNoise = noise3D(vec3<f32>(uv * 10.0, time * 0.5));
         let dustIntensity = smoothstep(0.6, 1.0, dustNoise) * (1.0 + bass);
+        // Idea 3: rete star-chart plate under the dust
+        col += retePlate(uv, ctx, time, mids) * intensity;
         col += vec3<f32>(0.2, 0.4, 0.8) * dustIntensity * intensity * 0.6;
     }
 

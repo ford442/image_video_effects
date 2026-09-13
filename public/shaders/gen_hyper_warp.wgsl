@@ -5,11 +5,11 @@
 //            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-06
 //  Optimized: 2026-07-22 — feedback stabilization + real slider wiring
-//  Upgraded: 2026-09-06
-//  Ideas: first-warp fold caustics; second-layer flow stretch
-//  A packing: raw HDR history RGBA
+//  Upgraded: 2026-09-13
+//  Ideas: first-warp fold caustics; second-layer flow stretch;
+//         warped level-set etching; flow-dispersed feedback trails
+//  A packing: raw HDR history RGBA (pre-ACES chromatic color, coverage alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -51,16 +51,16 @@ fn rand(co: vec2<f32>) -> f32 {
 
 // 2D noise function
 fn noise(p: vec2<f32>) -> f32 {
-    var i = floor(p);
+    let i = floor(p);
     let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
+    let s = f * f * (3.0 - 2.0 * f); // renamed from `u` (shadowed the uniform)
 
     let a = rand(i);
     let b = rand(i + vec2<f32>(1.0, 0.0));
     let c = rand(i + vec2<f32>(0.0, 1.0));
     let d = rand(i + vec2<f32>(1.0, 1.0));
 
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    return mix(mix(a, b, s.x), mix(c, d, s.x), s.y);
 }
 
 // Fractal Brownian Motion (fBm) for detailed patterns
@@ -131,7 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hueShift = mix(0.0, 0.33, scaleCtl);
     let feedbackMix = mix(0.85, 0.98, detailCtl);
 
-    let aspect = resolution.x / resolution.y;
+    let aspect = resolution.x / max(resolution.y, 1.0);
     var p = uv - 0.5;
     p.x *= aspect;
 
@@ -166,7 +166,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flowVec = (r - vec2<f32>(0.5)) * (2.0 + 6.0 * intensity);
     let maxPx = vec2<i32>(resolution) - vec2<i32>(1, 1);
     let histPx = clamp(px + vec2<i32>(flowVec), vec2<i32>(0, 0), maxPx);
-    let history = textureLoad(dataTextureC, histPx, 0).rgb;
+    // Idea 4: flow-dispersed feedback — red/blue history lag/lead the green
+    // tap along the same flow vector (bass widens the spread), so the echo
+    // splits into prismatic trails that follow the warp flow. Exact loads.
+    let flowLen = length(flowVec);
+    let flowDir = flowVec / max(flowLen, 1e-3);
+    let dispersePx = (0.25 + 0.35 * min(flowLen, 3.0)) * (1.0 + 1.5 * bass);
+    let histPxR = clamp(px + vec2<i32>(round(flowVec - flowDir * dispersePx)), vec2<i32>(0, 0), maxPx);
+    let histPxB = clamp(px + vec2<i32>(round(flowVec + flowDir * dispersePx)), vec2<i32>(0, 0), maxPx);
+    let history = vec3<f32>(
+        textureLoad(dataTextureC, histPxR, 0).r,
+        textureLoad(dataTextureC, histPx, 0).g,
+        textureLoad(dataTextureC, histPxB, 0).b
+    );
 
     // --- Final Pattern Generation ---
     // The final value is a mix of warped coordinates and a radial component
@@ -190,6 +202,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — flow stretch from second-layer shear
     let stretch = clamp(length(r - q), 0.0, 1.4);
     color += mix(color1, color2, 0.5) * stretch * 0.16 * (0.6 + treble * 0.5);
+    // Idea 3: warped level-set etching — isolines of the warped scalar.
+    // Line count follows Scale; width widens where the flow shears (stretch)
+    // so contours stay readable where the warp pulls them apart. The groove
+    // darkens and its lip catches a palette-tinted highlight.
+    let isoCount = mix(5.0, 14.0, scaleCtl);
+    let isoPhase = fract(final_val * isoCount - time * 0.5);
+    let isoDist = min(isoPhase, 1.0 - isoPhase);
+    let isoWidth = 0.05 + 0.05 * min(stretch, 1.0);
+    let isoLine = 1.0 - smoothstep(0.0, isoWidth, isoDist);
+    let isoLip = smoothstep(isoWidth, isoWidth * 2.2, isoDist) * (1.0 - smoothstep(isoWidth * 2.2, isoWidth * 3.4, isoDist));
+    let etchAmt = 0.25 + 0.35 * intensity;
+    color = color * (1.0 - isoLine * etchAmt) + color2 * isoLip * etchAmt * (0.35 + 0.4 * foldAmt + 0.3 * mid);
 
     // Boost brightness and contrast for intensity
     color = pow(color, vec3<f32>(0.8)) * 1.5;

@@ -15,7 +15,9 @@
 //  Created: 2026-05-31
 //  By: Grok (creative technical artist)
 //  Upgraded: 2026-06-07
-//  Upgraded: 2026-07-26 (Batch 16 - Algorithmist)
+//  Upgraded: 2026-09-13
+//  Ideas: clampellate septa along hyphae; neighbor-site cords to second-nearest seed
+//  A packing: raw (layer1, layer2, layer3, 0) — ACES display only
 //    * Evicted generic applyGenerativePrimaryControls boilerplate;
 //      sliders now drive real mycelium constants:
 //        x Growth Bias        -> ageMix blend exponent (young vs old)
@@ -62,26 +64,41 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+fn distToSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
+    return length(pa - ba * h);
+}
+
+struct VoronoiHit {
+    minDist: f32,
+    secondDist: f32,
+    minO: vec2<f32>,
+    minR: vec2<f32>,
+    secondR: vec2<f32>,
+};
+
 // Voronoi returning nearest + second-nearest distance for mycelium hyphae edges.
 // Each seed is additionally offset by a per-bin FFT term so whole colonies
 // shimmer with the spectrum instead of only pulsing with the bass band.
-fn voronoi(p: vec2<f32>, time: f32, seed: f32, nutrient: f32) -> vec4<f32> {
+fn voronoi(p: vec2<f32>, time: f32, seed: f32, nutrient: f32) -> VoronoiHit {
     let n = floor(p);
     let f = fract(p);
     var minDist = 8.0;
     var secondDist = 8.0;
     var minO = vec2<f32>(0.0);
+    var minR = vec2<f32>(0.0);
+    var secondR = vec2<f32>(0.0);
 
     for (var j = -1; j <= 1; j++) {
         for (var i = -1; i <= 1; i++) {
             let g = vec2<f32>(f32(i), f32(j));
             let h = hash12(n + g + seed);
-            // Spectral seed jitter: stable per-cell id picks one of 8 FFT bins
             let cellId = u32(h * 4096.0);
             let spectral = plasmaBuffer[(cellId % 8u) + 1u].x;
             let shimmer = vec2<f32>(cos(spectral * 6.2831 + h * 12.0),
                                     sin(spectral * 6.2831 + h * 12.0)) * spectral * 0.08;
-            // Nutrient pulse: bass displaces seeds = faster fungal spread
             let o = vec2<f32>(h, fract(h * GOLDEN)) * (1.0 + nutrient * 0.4)
                   + vec2<f32>(cos(time * nutrient * 2.0), sin(time * nutrient * 2.0)) * nutrient * 0.2
                   + shimmer;
@@ -89,14 +106,17 @@ fn voronoi(p: vec2<f32>, time: f32, seed: f32, nutrient: f32) -> vec4<f32> {
             let d = dot(r, r);
             if (d < minDist) {
                 secondDist = minDist;
+                secondR = minR;
                 minDist = d;
+                minR = r;
                 minO = o;
             } else if (d < secondDist) {
                 secondDist = d;
+                secondR = r;
             }
         }
     }
-    return vec4<f32>(minDist, secondDist, minO.x, minO.y);
+    return VoronoiHit(minDist, secondDist, minO, minR, secondR);
 }
 
 // Expanding spore ring emitted from a center point on strong bass hits.
@@ -114,7 +134,9 @@ fn sporeRing(uv: vec2<f32>, center: vec2<f32>, time: f32, bass: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv = vec2<f32>(gid.xy) / res;
+    let coord = vec2<i32>(gid.xy);
 
     // ── Slider wiring (saved-preset contract: ids/defaults unchanged) ──
     // Growth Bias (x)        -> ageMix blend exponent: favors new vs old layers
@@ -146,18 +168,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // extraBuffer[133..134] = damped inoculation xy (shader state range only).
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
+    if (gid.x == 0u && gid.y == 0u) {
+        var inocWrite = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        if (inocWrite.x <= 0.0 && inocWrite.y <= 0.0) {
+            inocWrite = mouse;
+        }
+        inocWrite = mix(inocWrite, mouse, 0.08);
+        extraBuffer[133] = inocWrite.x;
+        extraBuffer[134] = inocWrite.y;
+    }
     var inoc = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     if (inoc.x <= 0.0 && inoc.y <= 0.0) {
-        inoc = mouse; // cold start: avoid gliding in from the corner
+        inoc = mouse;
     }
-    inoc = mix(inoc, mouse, 0.08); // critically-damped style follow
-    extraBuffer[133] = inoc.x;
-    extraBuffer[134] = inoc.y;
     let mouseDist = length(uv - inoc);
     let mouseInoculate = smoothstep(0.12, 0.0, mouseDist) * mouseDown * 3.0;
 
-    // Read previous temporal layers (single fetch: A packs r/g/b = L1/L2/L3)
-    let prevLayers = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Read previous temporal layers (exact load: A packs r/g/b = L1/L2/L3)
+    let prevLayers = textureLoad(dataTextureC, coord, 0);
 
     // Multi-scale Voronoi growth — Pattern Complexity drives the primary
     // scale; secondary/tertiary scales keep their legacy 2.25x / 4x ratios.
@@ -170,17 +198,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let v3 = voronoi(uv * scale3, time * 1.2, 3.7, nutrient);
 
     // Mycelium hyphae = Voronoi cell edges (second-nearest - nearest)
-    let hyphae1 = sqrt(v1.y) - sqrt(v1.x);
-    let hyphae2 = sqrt(v2.y) - sqrt(v2.x);
-    let hyphae3 = sqrt(v3.y) - sqrt(v3.x);
+    let hyphae1 = sqrt(v1.secondDist) - sqrt(v1.minDist);
+    let hyphae2 = sqrt(v2.secondDist) - sqrt(v2.minDist);
+    let hyphae3 = sqrt(v3.secondDist) - sqrt(v3.minDist);
+
+    // Idea 2 — neighbor-site cords toward the second-nearest seed
+    let cord1 = 1.0 - smoothstep(0.0, 0.07, distToSegment(vec2<f32>(0.0), v1.minR, v1.secondR));
+    let cord2 = 1.0 - smoothstep(0.0, 0.06, distToSegment(vec2<f32>(0.0), v2.minR, v2.secondR));
+    let cord3 = 1.0 - smoothstep(0.0, 0.05, distToSegment(vec2<f32>(0.0), v3.minR, v3.secondR));
+
+    // Idea 1 — clampellate ticks along existing hyphae
+    let tick1 = abs(fract((v1.minO.x + v1.minO.y * GOLDEN) * 7.0) - 0.5);
+    let tick2 = abs(fract((v2.minO.x + v2.minO.y * GOLDEN) * 9.0) - 0.5);
+    let septa = (1.0 - smoothstep(0.0, 0.07, tick1)) * smoothstep(0.06, 0.0, hyphae1)
+              + (1.0 - smoothstep(0.0, 0.06, tick2)) * smoothstep(0.05, 0.0, hyphae2) * 0.65;
 
     // Growth with temporal memory — hyphae edges glow like mycelium threads
-    let growth1 = smoothstep(0.02, 0.18, v1.x) * (0.6 + seasonBloom * 0.5)
-                + smoothstep(0.05, 0.0, hyphae1) * 0.35;
-    let growth2 = smoothstep(0.015, 0.12, v2.x) * (0.5 + seasonVolatile * 0.6)
-                + smoothstep(0.04, 0.0, hyphae2) * 0.3;
-    let growth3 = smoothstep(0.01, 0.08, v3.x) * (0.4 + seasonHarsh * 0.3)
-                + smoothstep(0.03, 0.0, hyphae3) * 0.25;
+    let growth1 = smoothstep(0.02, 0.18, v1.minDist) * (0.6 + seasonBloom * 0.5)
+                + smoothstep(0.05, 0.0, hyphae1) * 0.35
+                + cord1 * 0.22;
+    let growth2 = smoothstep(0.015, 0.12, v2.minDist) * (0.5 + seasonVolatile * 0.6)
+                + smoothstep(0.04, 0.0, hyphae2) * 0.3
+                + cord2 * 0.16;
+    let growth3 = smoothstep(0.01, 0.08, v3.minDist) * (0.4 + seasonHarsh * 0.3)
+                + smoothstep(0.03, 0.0, hyphae3) * 0.25
+                + cord3 * 0.12;
 
     // Combine layers with decay — Decay Influence sets the base rate;
     // the per-layer offsets (-0.01 / -0.02) and harsh-season term are kept.
@@ -228,10 +270,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Spectral tint on the hyphae threads so colonies shimmer with the FFT
     let threadTint = vec3<f32>(treble * 0.12, mids * 0.08, bass * 0.10);
     col += threadTint * (hyphae1 + hyphae2 * 0.5);
+    col += vec3<f32>(0.55, 0.85, 0.45) * (cord1 * 0.35 + cord2 * 0.22);
+    col *= 1.0 - septa * 0.42;
 
-    // Temporal feedback blend
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
+    // Temporal feedback blend — exact C, not a filtered sample
+    col = mix(col, prevLayers.rgb * 0.9, 0.03 + bass * 0.01);
 
     // Subtle depth from layers
     let depth = (layer1 * 0.3 + layer2 * 0.5 + layer3 * 0.7) * 0.6 + 0.2;
@@ -242,13 +285,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let caStr = 0.003 * (1.0 + bass);
     color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
-    // ACES tone mapping
-    color = acesToneMap(color * 1.1);
-
-    // Semantic alpha
-    let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
-
-    
     var clickFront = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     let aspect = u.config.z / max(u.config.w, 1.0);
@@ -258,11 +294,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let age = max(time - event.z, 0.0);
         clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
     }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+    color += clickFront * vec3<f32>(0.35, 0.55, 0.28);
 
-    let __finalRGB = vec4<f32>(color, alpha).rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, gid.xy, vec4<f32>(__finalRGB, vec4<f32>(color, alpha).a));
+    // ACES tone mapping
+    color = acesToneMap(color * 1.1);
+
+    // Semantic alpha
+    let alpha = clamp(length(color) * 1.2 + septa * 0.15 + (cord1 + cord2) * 0.1, 0.2, 0.95);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

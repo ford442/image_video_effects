@@ -1,9 +1,14 @@
-// ----------------------------------------------------------------
-// Luminescent Aether-Plasma Nebula-Koi
-// Category: generative
-// Visualist upgrade: multi-temperature lighting, volumetric quantum nebula,
-// iridescent koi scales, Fresnel rim glow, god rays, ACES + hue clamp + dither.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Aether-Plasma Nebula-Koi
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: tail-fin Karman wake shed into the volumetric nebula (phase-locked to tail, bass);
+//         half-offset scale rows with head-to-tail turning flash (mids) and rim sparkle (treble);
+//         exact dataTextureC persistence that lingers longer inside the wake
+//  A packing: ACES display RGBA (read back from C as display history)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -118,6 +123,40 @@ fn fbm(p_in: vec3<f32>) -> f32 {
     return f;
 }
 
+// Idea 1: Karman vortex street behind the tail. Alternating puffs are shed at the tail tip,
+// advect downstream with koi_speed, and fade with distance. Returns wake density at np.
+fn koiWake(np: vec3<f32>, time: f32, koi_speed: f32, tail_length: f32, bass: f32) -> f32 {
+    let tail_tip = -2.0 - tail_length;
+    let s = tail_tip - np.z;                         // distance downstream of the tail tip
+    let spacing = 0.55;
+    let u_cell = (s - time * koi_speed * 0.45) / spacing;
+    let k = floor(u_cell);
+    let side = select(-1.0, 1.0, fract(k * 0.5) < 0.25);
+    // puffs inherit the tail's lateral wave phase at the moment they were shed
+    let shed_wave = sin((tail_tip - (k + 0.5) * spacing) * 5.0 - time * koi_speed * 5.0) * 0.25;
+    let lateral = side * (0.35 + tail_length * 0.08) + shed_wave;
+    let q = vec3<f32>(np.x - lateral, np.y, (fract(u_cell) - 0.5) * spacing);
+    let r = 0.16 + clamp(bass, 0.0, 1.5) * 0.06;
+    let puff = exp(-dot(q, q) / max(r * r, 0.0001));
+    let downstream = step(0.0, s) * exp(-max(s, 0.0) * 0.35);
+    return puff * downstream * (0.6 + clamp(bass, 0.0, 1.5) * 0.7);
+}
+
+// Idea 2: overlapping koi scale rows along the body axis, odd rows half-offset.
+// Returns (rim, cell-centre) for the hit point.
+fn koiScaleRows(p: vec3<f32>, time: f32, koi_speed: f32) -> vec2<f32> {
+    let wave = sin(p.z * 2.0 - time * koi_speed * 3.0) * 0.5;
+    let theta = atan2(p.y, p.x + wave);
+    let rz = p.z * 9.0;
+    let row = floor(rz);
+    let off = select(0.0, 0.5, fract(row * 0.5) > 0.25);
+    let cell = vec2<f32>(fract(rz), fract(theta * 5.0 / PI + off));
+    let dsc = length((cell - vec2<f32>(1.0, 0.5)) * vec2<f32>(1.0, 1.3));
+    let rim = smoothstep(0.62, 0.72, dsc) * (1.0 - smoothstep(0.8, 0.95, dsc));
+    let centre = 1.0 - smoothstep(0.0, 0.7, dsc);
+    return vec2<f32>(rim, centre);
+}
+
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     let p = abs(fract(c.xxx + k.xyz) * vec3<f32>(6.0) - k.www);
@@ -172,7 +211,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(f32(id.x), f32(id.y)) - 0.5 * vec2<f32>(f32(dims.x), f32(dims.y))) / f32(dims.y);
 
     let time = u.config.x;
-    let audio = u.config.y;
+    // Real audio (HEAD read config.y = ripple count as "audio")
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let mouse = (u.zoom_config.yz - 0.5) * vec2<f32>(f32(dims.x)/f32(dims.y), 1.0);
 
     let plasma_intensity = u.zoom_params.x;
@@ -180,9 +222,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let nebula_density = u.zoom_params.z;
     let tail_length = u.zoom_params.w;
 
-    // Read previous frame for subtle persistence
-    let prevUV = vec2<f32>(id.xy) / vec2<f32>(dims);
-    let prev = textureSampleLevel(readTexture, u_sampler, prevUV, 0.0);
+    // Previous display frame — exact load, no filtering on rgba32float history
+    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
 
     let ro = vec3<f32>(0.0, 0.0, 5.0);
     var rd = normalize(vec3<f32>(uv, -1.0));
@@ -234,7 +275,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let scale_pattern = v.y - v.x;
 
         let base_col = vec3<f32>(0.1, 0.35, 0.75);
-        let glow_col = vec3<f32>(0.95, 0.2, 0.85) * plasma_intensity * (1.0 + audio * 2.0);
+        let glow_col = vec3<f32>(0.95, 0.2, 0.85) * plasma_intensity * (1.0 + clamp(bass, 0.0, 1.5) * 0.6);
 
         let diffKey = max(dot(n, keyLight), 0.0);
         let diffFill = max(dot(n, fillLight), 0.0) * 0.5;
@@ -247,7 +288,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Subsurface plasma scattering
         sss = smoothstep(0.0, 0.05, -mapKoi(p + n * 0.05, time, koi_speed, tail_length)) * plasma_intensity;
 
-        col = base_col * (keyColor * diffKey + fillColor * diffFill)
+        // Idea 2: scale rows — turning flash travels head (+z) to tail across the rows
+        let rows = koiScaleRows(p, time, koi_speed);
+        let flash_z = 2.2 - fract(time * 0.3 * koi_speed) * (4.4 + tail_length);
+        let fz = p.z - flash_z;
+        let flash = exp(-fz * fz * 4.0) * (0.35 + clamp(mids, 0.0, 1.5) * 0.9);
+        let sheen = iridescent_scale(1.0 - rows.y * 0.6, time + p.z) * rows.y * flash * 1.4;
+        let sparkle = vec3<f32>(1.0, 0.95, 0.85) * rows.x * (0.12 + clamp(treble, 0.0, 1.5) * 0.8) * (0.3 + diffKey);
+
+        col = base_col * (keyColor * diffKey + fillColor * diffFill) * (0.8 + rows.y * 0.35)
+            + sheen + sparkle
             + glow_col * scale_pattern
             + rimColor * rim * 1.6
             + iris
@@ -258,8 +308,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var nebula_col = vec3<f32>(0.0);
     var nt = 0.0;
     var nebula_density_acc = 0.0;
+    var wake_acc = 0.0;
     for(var i = 0; i < 40; i++) {
         let np = ro + rd * nt;
+        let wk = koiWake(np, time, koi_speed, tail_length, bass);
+        wake_acc += wk * 0.25;
+        nebula_col += mix(vec3<f32>(0.1, 0.6, 0.9), vec3<f32>(0.9, 0.3, 0.95), wk) * wk * 0.05 * (0.4 + plasma_intensity);
         let den = fbm(np * 0.5 + vec3<f32>(time * 0.1, 0.0, time * 0.2));
         if (den > 0.0) {
             let nc = mix(vec3<f32>(0.12, 0.0, 0.25), vec3<f32>(0.0, 0.45, 0.65), den);
@@ -277,10 +331,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += vec3<f32>(1.2, 0.8, 1.4) * rays * nebula_density;
 
     // Apply bloom from audio
-    col += vec3<f32>(0.25, 0.55, 1.0) * audio * plasma_intensity * (1.0 / (1.0 + t*t*0.1));
-
-    // Temporal persistence
-    col = mix(col, prev.rgb, 0.06);
+    col += vec3<f32>(0.25, 0.55, 1.0) * (bass * 0.5 + mids * 0.2) * plasma_intensity * (1.0 / (1.0 + t*t*0.1));
 
     // HDR hue-preserving clamp
     col = hue_preserving_clamp(col, 8.0);
@@ -288,14 +339,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // ACES tone mapping
     col = aces_tone_map(col);
 
+    // Idea 3: temporal persistence from exact C history; wake regions linger like disturbed water
+    let persist = clamp(0.06 + wake_acc * 0.25, 0.06, 0.35);
+    col = mix(col, prev.rgb, persist);
+
     // IGN dither
     let dither = (ign_dither(vec2<f32>(id.xy)) - 0.5) / 255.0;
     col = clamp(col + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Alpha: emission + density + hit occlusion
-    let alpha = clamp(0.2 + (select(0.0, sss + fresnel, hit) * 0.5) + nebula_density_acc, 0.0, 1.0);
+    let alpha = clamp(0.2 + (select(0.0, sss + fresnel, hit) * 0.5) + nebula_density_acc + wake_acc * 0.1, 0.0, 1.0);
+
+    // Depth: koi geometry near = 1, open nebula = 0
+    let depth = select(0.0, clamp(1.0 - t * 0.1, 0.0, 1.0), hit);
 
     textureStore(writeTexture, id.xy, vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(clamp(t * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, id.xy, vec4<f32>(select(0.0, sss, hit), nebula_density_acc, select(0.0, fresnel, hit), alpha));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, id.xy, vec4<f32>(col, alpha));
 }

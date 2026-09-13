@@ -1,13 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Hyperbolic Crystal Symbiosis
 //  Category: generative
+//  Features: audio-reactive, mouse-driven, temporal, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: hyperbolic growth zoning; symbiotic twin lamellae; hyperboloid lift relief
+//  A packing: raw HDR display-history RGBA (pre-ACES rgb, coverage alpha)
 //  Description: Competing crystal growth in hyperbolic geometry.
 //  Local curvature influenced by audio and mouse. Non-Euclidean tiling
 //  with iridescent jewel-like coloring and symmetry breaking.
-//  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: horocycle growth rings in hyperbolic distance; species takeover at thin facet borders
-//  A packing: raw HDR crystal + advected trail RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -115,11 +116,22 @@ fn hyperbolicTiling(z: vec2<f32>, p: f32, q: f32, bass: f32) -> vec2<f32> {
     return vec2<f32>(hyperbolicDist(w), fract(cellId * 0.137));
 }
 
+struct Facet {
+    minD: f32,
+    secondD: f32,
+    border: f32,
+    minId: f32,
+    secondId: f32,   // Idea 2: runner-up seed identity
+    minK: f32,       // Idea 1: winning seed index (per-seed zoning jitter)
+};
+
 // Crystal facet pattern: Voronoi-like in hyperbolic coordinates
-fn crystalFacet(z: vec2<f32>, t: f32, growthSpeed: f32, mutation: f32) -> vec4<f32> {
+fn crystalFacet(z: vec2<f32>, t: f32, growthSpeed: f32, mutation: f32) -> Facet {
     var minD = 100.0;
     var minId = 0.0;
     var secondD = 100.0;
+    var secondId = 0.0;
+    var minK = 0.0;
 
     let numSeeds = 7;
     for (var k = 0; k < numSeeds; k++) {
@@ -132,17 +144,21 @@ fn crystalFacet(z: vec2<f32>, t: f32, growthSpeed: f32, mutation: f32) -> vec4<f
         let localZ = hyperbolicTranslate(z, seed);
         let d = hyperbolicDist(localZ);
 
+        let seedId = hash12(vec2<f32>(kf + 0.5, kf * 1.3));
         if (d < minD) {
             secondD = minD;
+            secondId = minId;
             minD = d;
-            minId = hash12(vec2<f32>(kf + 0.5, kf * 1.3));
+            minId = seedId;
+            minK = kf;
         } else if (d < secondD) {
             secondD = d;
+            secondId = seedId;
         }
     }
 
     let border = secondD - minD;
-    return vec4<f32>(minD, secondD, border, minId);
+    return Facet(minD, secondD, border, minId, secondId, minK);
 }
 
 // Jewel iridescent color
@@ -196,89 +212,115 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     diskUV = hyperbolicTranslate(diskUV, focus * 0.8);
 
     let r2 = dot(diskUV, diskUV);
-    if (r2 >= 0.99) {
-        let boundaryColor = vec3<f32>(0.05, 0.04, 0.08);
-        textureStore(writeTexture, global_id.xy, vec4<f32>(acesToneMap(boundaryColor), 0.08));
-        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.02, 0.0, 0.0, 0.0));
-        textureStore(dataTextureA, global_id.xy, vec4<f32>(boundaryColor, 0.08));
-        return;
-    }
-
-    // Tiling parameters: vary with audio
-    let p = 5.0 + competition * 2.0; // 5..7 p-fold symmetry
-    let q = 4.0;
-
-    let tiling = hyperbolicTiling(diskUV, p, q, bass);
-    let cellDist = tiling.x;
-    let cellId   = tiling.y;
-
-    // Crystal facets
-    let crystalData = crystalFacet(diskUV, warpT, growthSpeed + bass * 0.5, mutation + mids * 0.2);
-    let facetDist = crystalData.x;
-    let facetId   = crystalData.w;
-    let facetBorder = crystalData.z;
-
-    // Combine tiling and crystal growth
-    let combinedId = fract(cellId * 0.7 + facetId * 0.3);
-
-    var color = jewelColor(combinedId, facetDist, facetBorder,
-                            warpT, bass, mids, treble);
-
-    // Idea 2 — species takeover: mix toward the rival seed at contested borders
-    let rival = jewelColor(fract(combinedId + 0.5), facetDist, facetBorder, warpT, bass, mids, treble);
-    let takeover = clamp(competition * (1.0 - facetBorder * 4.0), 0.0, 1.0);
-    color = mix(color, rival, takeover * 0.45);
-
-    // Idea 1 — horocycle growth rings (concentric hyperbolic distance bands)
-    let horo = 1.0 - smoothstep(0.0, 0.045, abs(fract(cellDist * 2.4 - warpT * growthSpeed * 0.35) - 0.5) * 2.0);
-    color += vec3<f32>(0.92, 0.68, 1.05) * horo * (0.1 + mutation * 0.35 + treble * 0.12);
-
-    // Racing growth-front runners along hyperbolic tiles.
-    let frontWave = sin(facetDist * 12.0 - warpT * (growthSpeed * 4.0 + competition * 2.0));
-    let frontGlow = smoothstep(0.7, 1.0, frontWave) * treble * 0.6;
-    color += vec3<f32>(0.7, 1.0, 0.85) * frontGlow;
-
-    // Facet borders: bright edges (symmetry breaking)
-    let edgeWidth = 0.15 + competition * 0.2;
-    let edgeGlow = smoothstep(edgeWidth, 0.0, facetBorder) *
-                   (0.5 + treble * 0.5);
-    color += vec3<f32>(1.0, 0.95, 0.85) * edgeGlow * 1.5;
-
-    // Tiling boundaries: deeper structural lines
-    let tilingEdge = smoothstep(0.05, 0.0, abs(cellDist - 1.5)) * 0.3;
-    color = mix(color, vec3<f32>(1.0, 1.0, 1.0), tilingEdge * mids);
-
-    // Crystal growth front: glowing rim at mutation threshold
-    let growthFront = smoothstep(0.1, 0.0, abs(facetDist - (0.8 + bass * 0.3)));
-    color += vec3<f32>(0.8, 1.0, 0.9) * growthFront * treble * 0.8;
-
-    var clickFront = 0.0;
-    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
-    for (var ri = 0u; ri < rippleCount; ri++) {
-        let ripple = u.ripples[ri];
-        let age = t - ripple.z;
-        if (age > 0.0 && age < 3.0) {
-            var center = (ripple.xy - vec2<f32>(0.5)) * 2.2;
-            center.x *= res.x / res.y;
-            let front = abs(distance(diskUV, center) - age * (0.18 + growthSpeed * 0.045));
-            clickFront += exp(-front * 56.0) * exp(-age * 1.4);
-        }
-    }
-    color += jewelColor(combinedId + clickFront * 0.2, facetDist, facetBorder, warpT, bass, mids, treble) * clickFront * 0.45;
-
-    // Vignette from disk edge
-    let diskEdge = 1.0 - smoothstep(0.7, 1.0, sqrt(r2));
-    color *= diskEdge;
-
     let pixel = vec2<i32>(global_id.xy);
-    let histCoord = clamp(pixel - vec2<i32>(vec2<f32>(cos(warpT * 0.4), sin(warpT * 0.38)) * (2.0 + growthSpeed * 2.0)),
-                          vec2<i32>(0), vec2<i32>(i32(res.x) - 1, i32(res.y) - 1));
-    let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
-    let temporal = clamp(mix(prev * (0.9 + growthSpeed * 0.015), color, 0.28 + competition * 0.08), vec3<f32>(0.0), vec3<f32>(6.5));
-    let edgeCoverage = clamp(edgeGlow * 0.48 + growthFront * 0.24 + frontGlow * 0.18 + clickFront * 0.18, 0.0, 1.0);
-    let crystalCoverage = clamp((1.0 - smoothstep(0.15, 1.1, facetDist)) * diskEdge, 0.0, 1.0);
-    let alpha = clamp(0.05 + crystalCoverage * 0.72 + edgeCoverage * 0.22, 0.05, 0.97);
-    let depth = clamp(crystalCoverage * 0.7 + edgeCoverage * 0.3, 0.02, 0.99);
+
+    // Single write set for both paths: outside-disk pixels take the dim
+    // boundary branch, inside pixels run the full crystal pipeline.
+    var temporal = vec3<f32>(0.05, 0.04, 0.08);
+    var alpha = 0.08;
+    var depth = 0.02;
+
+    if (r2 < 0.99) {
+        // Tiling parameters: vary with audio
+        let p = 5.0 + competition * 2.0; // 5..7 p-fold symmetry
+
+        let tiling = hyperbolicTiling(diskUV, p, 4.0, bass);
+        let cellDist = tiling.x;
+        let cellId   = tiling.y;
+
+        // Crystal facets
+        let crystalData = crystalFacet(diskUV, warpT, growthSpeed + bass * 0.5, mutation + mids * 0.2);
+        let facetDist = crystalData.minD;
+        let facetId   = crystalData.minId;
+        let facetBorder = crystalData.border;
+
+        // Combine tiling and crystal growth
+        let combinedId = fract(cellId * 0.7 + facetId * 0.3);
+
+        var color = jewelColor(combinedId, facetDist, facetBorder,
+                                warpT, bass, mids, treble);
+
+        // Idea 1: hyperbolic growth zoning — bands evenly spaced in hyperbolic
+        // distance from the winning seed (they crowd toward the ideal boundary).
+        // Mutation jitters spacing per seed; bass pushes zones outward; growth
+        // speed makes the zones accrete outward over time.
+        let zoneJitter = 1.0 + (hash12(vec2<f32>(crystalData.minK * 3.1, 7.7)) - 0.5) * u.zoom_params.w * 1.2;
+        let zoneSpacing = 0.22 * zoneJitter;
+        let zonePhase = (facetDist - bass * 0.12 - warpT * growthSpeed * 0.03) / zoneSpacing;
+        let zoneTri = abs(fract(zonePhase) - 0.5) * 2.0;           // 0 at band line, 1 mid-band
+        let zoneLine = smoothstep(0.22, 0.0, zoneTri) * smoothstep(0.02, 0.2, facetDist);
+        let zoneTint = jewelColor(fract(combinedId + floor(zonePhase) * 0.061), facetDist, facetBorder, warpT, bass, mids, treble);
+        color = mix(color, zoneTint * 1.15, zoneLine * (0.3 + u.zoom_params.w * 0.4));
+
+        // Idea 2: symbiotic twin lamellae — in the contested band between the two
+        // nearest seeds, stripes along the (minD + secondD) level set interleave
+        // both crystals' jewel colors. Competition sets reach and stripe density.
+        let twinReach = 0.08 + competition * 0.3;
+        let contested = smoothstep(twinReach, 0.0, facetBorder);
+        let lamPhase = (crystalData.minD + crystalData.secondD) * (10.0 + competition * 18.0) - warpT * 0.6;
+        let lamella = smoothstep(-0.25, 0.25, sin(lamPhase));
+        let twinColor = jewelColor(fract(cellId * 0.7 + crystalData.secondId * 0.3), facetDist, facetBorder,
+                                   warpT, bass, mids, treble);
+        color = mix(color, twinColor, contested * lamella * (0.55 + mids * 0.2));
+
+        // Racing growth-front runners along hyperbolic tiles.
+        let frontWave = sin(facetDist * 12.0 - warpT * (growthSpeed * 4.0 + competition * 2.0));
+        let frontGlow = smoothstep(0.7, 1.0, frontWave) * treble * 0.6;
+        color += vec3<f32>(0.7, 1.0, 0.85) * frontGlow;
+
+        // Facet borders: bright edges (symmetry breaking)
+        let edgeWidth = 0.15 + competition * 0.2;
+        let edgeGlow = smoothstep(edgeWidth, 0.0, facetBorder) *
+                       (0.5 + treble * 0.5);
+        color += vec3<f32>(1.0, 0.95, 0.85) * edgeGlow * 1.5;
+
+        // Tiling boundaries: deeper structural lines
+        let tilingEdge = smoothstep(0.05, 0.0, abs(cellDist - 1.5)) * 0.3;
+        color = mix(color, vec3<f32>(1.0, 1.0, 1.0), tilingEdge * mids);
+
+        // Crystal growth front: glowing rim at mutation threshold
+        let growthFront = smoothstep(0.1, 0.0, abs(facetDist - (0.8 + bass * 0.3)));
+        color += vec3<f32>(0.8, 1.0, 0.9) * growthFront * treble * 0.8;
+
+        var clickFront = 0.0;
+        let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+        for (var ri = 0u; ri < rippleCount; ri++) {
+            let ripple = u.ripples[ri];
+            let age = t - ripple.z;
+            if (age > 0.0 && age < 3.0) {
+                var center = (ripple.xy - vec2<f32>(0.5)) * 2.2;
+                center.x *= res.x / res.y;
+                let front = abs(distance(diskUV, center) - age * (0.18 + growthSpeed * 0.045));
+                clickFront += exp(-front * 56.0) * exp(-age * 1.4);
+            }
+        }
+        color += jewelColor(combinedId + clickFront * 0.2, facetDist, facetBorder, warpT, bass, mids, treble) * clickFront * 0.45;
+
+        // Idea 3: hyperboloid lift relief — the disk point lifts onto the upper
+        // hyperboloid sheet (x0 = (1+r^2)/(1-r^2)); a dome height 1/x0 falls to 0
+        // at the ideal boundary. Growth-zone ridges and facet cusps modulate it,
+        // and its screen gradient gives a curvature-aware facet sheen.
+        let lift = (1.0 - r2) / (1.0 + r2);                       // = 1/x0, in (0,1]
+        let relief = clamp(lift * (0.75 + 0.25 * zoneTri) * (0.6 + 0.4 * smoothstep(0.0, 0.3, facetBorder)), 0.0, 1.0);
+        let sheenN = normalize(vec3<f32>(-diskUV * lift * 2.2 * curvature, 0.6 + relief));
+        let sheen = pow(max(dot(sheenN, normalize(vec3<f32>(-0.4, 0.5, 0.77))), 0.0), 18.0);
+        color += vec3<f32>(0.9, 0.95, 1.0) * sheen * relief * (0.35 + treble * 0.25);
+
+        // Vignette from disk edge
+        let diskEdge = 1.0 - smoothstep(0.7, 1.0, sqrt(r2));
+        color *= diskEdge;
+
+        let histCoord = clamp(pixel - vec2<i32>(vec2<f32>(cos(warpT * 0.4), sin(warpT * 0.38)) * (2.0 + growthSpeed * 2.0)),
+                              vec2<i32>(0), vec2<i32>(i32(res.x) - 1, i32(res.y) - 1));
+        let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
+        temporal = clamp(mix(prev * (0.9 + growthSpeed * 0.015), color, 0.28 + competition * 0.08), vec3<f32>(0.0), vec3<f32>(6.5));
+        let edgeCoverage = clamp(edgeGlow * 0.48 + growthFront * 0.24 + frontGlow * 0.18 + clickFront * 0.18
+                                 + contested * lamella * 0.12 + zoneLine * 0.08, 0.0, 1.0);
+        let crystalCoverage = clamp((1.0 - smoothstep(0.15, 1.1, facetDist)) * diskEdge, 0.0, 1.0);
+        alpha = clamp(0.05 + crystalCoverage * 0.72 + edgeCoverage * 0.22, 0.05, 0.97);
+        depth = clamp((crystalCoverage * 0.7 + edgeCoverage * 0.3) * 0.6 + relief * 0.4, 0.02, 0.99);
+    }
+
     let display = acesToneMap(temporal * (1.0 + mids * 0.08));
 
     textureStore(writeTexture, global_id.xy, vec4<f32>(display, alpha));

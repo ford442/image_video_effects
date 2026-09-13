@@ -59,6 +59,6 @@
   "updated": true,
   "id": "gen-ethereal-cyber-chrono-void-whale",
   "url": "shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
-  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha"],
+  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha", "upgraded-rgba"],
   "feedbackPacking": "A/C = final ACES display RGBA; exact temporal whale history"
 }

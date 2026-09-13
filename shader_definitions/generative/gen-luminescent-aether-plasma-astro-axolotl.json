@@ -18,6 +18,11 @@
     "tessellation",
     "interactive"
   ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "workgroup_size": [
     16,
     16,

@@ -1,12 +1,10 @@
 # Thumbnail coverage
 
-- Catalog: **1353**
+- Catalog: **1365**
 - Skip allowlist: **1**
-- Eligible: **1352**
-- Healthy: **360** (26.6%)
+- Eligible: **1364**
+- Healthy: **283** (20.7%)
 - Unexpired deferrals: **1069**
-- Missing (no healthy PNG, no deferral): **0**
+- Missing (no healthy PNG, no deferral): **12**
 - Newly eligible: **0**
 - Newly eligible without thumb or deferral: **0**
-
-Integrity audit is stale for the current PNG set; flags were not applied.

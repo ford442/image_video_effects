@@ -49,5 +49,9 @@
   "updated": true,
   "id": "gen-luminescent-cyber-chrono-void-turtle",
   "url": "shaders/gen-luminescent-cyber-chrono-void-turtle.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

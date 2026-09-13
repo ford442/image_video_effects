@@ -13,7 +13,7 @@
     "music",
     "reactive"
   ],
-  "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light.",
+  "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light that climbs the seams and spills through the cracks onto the water below.",
   "workgroup_size": [
     16,
     16,
@@ -66,6 +66,8 @@
   "url": "shaders/gen-fractured-monolith.wgsl",
   "features": [
     "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven",
     "raymarched-fractured-monolith",
     "three-band-audio-reactive",
     "mouse-orbit",

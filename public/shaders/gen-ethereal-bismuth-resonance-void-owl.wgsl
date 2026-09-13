@@ -1,10 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Ethereal Bismuth-Resonance Void-Owl  (visualist upgrade b31)
+//  Ethereal Bismuth-Resonance Void-Owl
 //  Category: generative
-//  Tags: ["crystal", "bismuth", "avian", "iridescent", "void", "quantum", "sdf", "raymarched"]
-//  Upgrade: canonical uniforms fix, thin-film iridescent shell, per-facet
-//           variation, 3-point lighting + Fresnel rim, stepped-crystal 2D
-//           tessellation inlay, ACES tonemap, real depth + data outputs.
+//  Features: mouse-driven, audio-reactive, click-reactive, raymarched, upgraded-rgba
+//  Upgraded: 2026-09-13
+//  Ideas: spring-eased gravitational singularity (lens + gaze follow the
+//         pointer with inertia); persistent bass resonance envelope that
+//         sweeps oxide growth bands outward across the bismuth shell film;
+//         stepped hopper-crystal owl eyes flanking the core, pupils tracking
+//         the eased singularity and flaring with the envelope
+//  A packing: HDR display history RGB (tonemapped on output) + semantic
+//             alpha (surface/luma/shock coverage); exact C read feedback
+//  State: extraBuffer[133..134] eased mouse, [135..136] velocity,
+//         [137] init flag, [138] resonance envelope — written at (0,0) only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,6 +37,10 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const MAX_DIST: f32 = 20.0;
+
+// Per-frame values shared with sdf() (set once in main before marching)
+var<private> gEasedMouse: vec2<f32> = vec2<f32>(0.5, 0.5);
+var<private> gResonance: f32 = 0.0;
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -88,7 +99,7 @@ fn sdf(p_in: vec3<f32>) -> vec2<f32> {
     let complexity = u.zoom_params.x;          // Crystal Complexity (fold iterations)
     let audioReactivityScale = u.zoom_params.y; // Audio Reactivity Scale
 
-    let mouse = u.zoom_config.yz;
+    let mouse = gEasedMouse; // Idea 1: spring-eased singularity
     let mouseDist = length(p.xy - (mouse * 2.0 - 1.0) * 5.0);
 
     // Gravitational lens distortion around mouse (the singularity)
@@ -128,6 +139,23 @@ fn sdf(p_in: vec3<f32>) -> vec2<f32> {
     if (heart < d) {
         d = heart;
         matId = 2.0; // Core material
+    }
+
+    // Idea 3: stepped hopper-crystal eyes flanking the core; pupils glance
+    // toward the eased singularity and swell with the resonance envelope.
+    let gaze = clamp((gEasedMouse - 0.5) * vec2<f32>(0.24, -0.18), vec2<f32>(-0.12), vec2<f32>(0.12));
+    var p_eye = vec3<f32>(abs(p_owl.x), p_owl.y, p_owl.z) - vec3<f32>(0.62, 1.15, 0.55);
+    let socketOuter = box(p_eye, vec3<f32>(0.26, 0.26, 0.08));
+    let socketStep = box(p_eye - vec3<f32>(0.0, 0.0, 0.05), vec3<f32>(0.17, 0.17, 0.08));
+    let socket = max(socketOuter, -socketStep);
+    if (socket < d) {
+        d = socket;
+        matId = 1.0;
+    }
+    let pupil = length(p_eye - vec3<f32>(gaze, 0.04)) - (0.09 + gResonance * 0.05);
+    if (pupil < d) {
+        d = pupil;
+        matId = 2.0;
     }
 
     // Bismuth step-growth geometry: domain folding + hollow square frames
@@ -253,6 +281,32 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audioTreble = plasmaBuffer[0].z;
     let audioReactivityScale = u.zoom_params.y;
 
+    // Idea 1+2 state: spring-damped singularity + bass resonance envelope.
+    var easedMouse = u.zoom_config.yz;
+    var mouseVel = vec2<f32>(0.0);
+    var resonance = clamp(plasmaBuffer[0].x, 0.0, 1.5);
+    let hasState = arrayLength(&extraBuffer) > 138u;
+    if (hasState && extraBuffer[137] > 0.5) {
+        easedMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        mouseVel = (mouseVel + (u.zoom_config.yz - easedMouse) * 0.09) * 0.8;
+        easedMouse += mouseVel;
+        // fast attack, slow decay: the crystal keeps ringing after a hit
+        let prevRes = extraBuffer[138];
+        let target_res = clamp(plasmaBuffer[0].x, 0.0, 1.5) * audioReactivityScale * 2.0;
+        resonance = select(prevRes * 0.965, mix(prevRes, target_res, 0.35), target_res > prevRes);
+    }
+    if (hasState && id.x == 0u && id.y == 0u) {
+        extraBuffer[133] = easedMouse.x;
+        extraBuffer[134] = easedMouse.y;
+        extraBuffer[135] = mouseVel.x;
+        extraBuffer[136] = mouseVel.y;
+        extraBuffer[137] = 1.0;
+        extraBuffer[138] = resonance;
+    }
+    gEasedMouse = easedMouse;
+    gResonance = resonance;
+
     let spectralSpark = clamp(audioTreble * 0.75 + audioMids * 0.25, 0.0, 2.0);
 
     // Pointer-orbit camera; held input moves into the resonance field.
@@ -320,7 +374,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Per-facet variation: quantize hit position into crystal cells
         let facetSeed = hash31(floor(p * 5.0) + floor(n * 2.0 + 0.5));
-        let filmThickness = 0.5 + facetSeed * 1.5;
+        // Idea 2: oxide growth bands radiate from the core; the resonance
+        // envelope pushes the stair-stepped front outward and thickens it.
+        let coreR = length(p - vec3<f32>(0.0, 1.0, 0.0));
+        let band = floor((coreR * 3.0 - time * 0.4 - gResonance * 2.5) * 2.0) / 2.0;
+        let growth = fract(band * 0.37) * (0.35 + gResonance * 0.9);
+        let filmThickness = 0.5 + facetSeed * 1.5 + growth;
 
         // 3-point lighting rig
         let keyL = normalize(vec3<f32>(1.0, 1.0, 1.0));

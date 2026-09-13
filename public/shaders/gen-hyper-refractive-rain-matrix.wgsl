@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Hyper-Refractive Rain-Matrix
 //  Category: generative
-//  Features: OkLab color mixing, Blackbody temperature, Cosine palettes,
-//            Fresnel rim lighting, HDR tone mapping, raymarched rain drops, upgraded-rgba
+//  Features: audio-reactive, mouse-driven, raymarched, temporal-feedback, upgraded-rgba
+//  Complexity: High
 //  Upgraded: 2026-09-13
-//  Ideas: rain-streak tail behind each capsule; primary bow caustic at ~42°
-//  A packing: raw HDR refractive rain display RGBA
+//  Ideas: storm lightning double-strobe; spectral RGB dispersion in drops; fall-aligned streak history
+//  A packing: raw HDR rain RGB + coverage alpha (C read raw via exact textureLoad; ACES on display only)
 // ═══════════════════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -24,7 +24,7 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Rain Density, y=Drop Speed, z=Fluid Viscosity, w=Storm Intensity
+    zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=MouseInfluence
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -86,6 +86,19 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Idea 1: storm lightning — hash-gated time buckets, bass-triggered double strobe
+fn lightningFlash(time: f32, storm: f32, bass: f32) -> f32 {
+    let rate = 0.35 + storm * 1.1;
+    let bucket = floor(time * rate);
+    let hb = hash33(vec3<f32>(bucket, 7.13, 3.71));
+    let chance = 0.92 - storm * 0.5 - clamp(bass, 0.0, 1.0) * 0.2;
+    if (hb.x < chance) { return 0.0; }
+    let local = fract(time * rate) / max(rate, 0.001);
+    let second = 0.09 + hb.y * 0.12;
+    let strobe = exp(-local * 18.0) + 0.7 * exp(-abs(local - second) * 45.0);
+    return strobe * (0.35 + storm * 1.65) * (0.6 + hb.z * 0.4);
+}
+
 fn rotate2D(angle: f32) -> mat2x2<f32> {
     let c = cos(angle); let s = sin(angle);
     return mat2x2<f32>(vec2<f32>(c, -s), vec2<f32>(s, c));
@@ -133,10 +146,7 @@ fn map(pos_in: vec3<f32>) -> vec2<f32> {
     let h = hash33(cell);
     q.y += (h.y - 0.5) * cellSpacing;
     let stretch = 0.8 + dropSpeed + bass * 0.9;
-    let d1Body = sdCapsule(q, vec3<f32>(0.0, stretch, 0.0), vec3<f32>(0.0, -stretch, 0.0), 0.2 + h.x * 0.3);
-    // Idea 1 — rain-streak tail behind the falling capsule
-    let d1Tail = sdCapsule(q, vec3<f32>(0.0, -stretch, 0.0), vec3<f32>(0.0, -stretch * 2.15, 0.0), 0.07 + h.x * 0.06);
-    let d1 = smin(d1Body, d1Tail, 0.14);
+    let d1 = sdCapsule(q, vec3<f32>(0.0, stretch, 0.0), vec3<f32>(0.0, -stretch, 0.0), 0.2 + h.x * 0.3);
     var d2 = 1e10;
     for(var i=-1; i<=1; i++) {
         for(var j=-1; j<=1; j++) {
@@ -174,7 +184,11 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     // Cosine palette for sky + OkLab mixing with blackbody
     let skyCp = cosinePalette(rd.y * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(0.6, 0.8, 1.0), vec3<f32>(0.1, 0.3, 0.6));
     let skyBb = blackbody(mix(3000.0, 7000.0, rd.y * 0.5 + 0.5 + sin(u.config.x * 0.2) * 0.2));
-    let bgCol = oklab_mix(skyCp, skyBb, 0.4) * (0.2 + stormIntensity * 1.25 + bass * 0.12);
+    // Idea 1: lightning floods the sky with ~11000K light, brighter toward the zenith
+    let flash = lightningFlash(u.config.x, clamp(stormIntensity, 0.0, 1.0), bass);
+    let flashCol = blackbody(11000.0) * vec3<f32>(0.85, 0.92, 1.1);
+    let bgCol = oklab_mix(skyCp, skyBb, 0.4) * (0.2 + stormIntensity * 1.25 + bass * 0.12)
+        + flashCol * flash * (0.35 + 0.65 * clamp(rd.y * 0.5 + 0.5, 0.0, 1.0));
     col = bgCol;
     if (m > 0.0) {
         let p = ro + rd * t;
@@ -185,27 +199,35 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
         let hRef = hash33(refDir * 10.0 + u.config.x);
         let refCp = cosinePalette(hRef.x, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(0.8, 1.0, 1.0), vec3<f32>(0.2, 0.5, 0.8));
         let refBb = blackbody(mix(5000.0, 12000.0, hRef.x));
-        let refCol = oklab_mix(refCp, refBb, 0.5) * stormIntensity;
+        var refCol = oklab_mix(refCp, refBb, 0.5) * stormIntensity;
+        // Idea 2: spectral dispersion — red/blue refract with split eta, sampled per channel
+        let disp = 0.015 + clamp(u.zoom_params.z, 0.0, 1.0) * 0.05 + mids * 0.02;
+        let refDirR = refract(rd, n, eta - disp);
+        let refDirB = refract(rd, n, eta + disp);
+        let hR = hash33(refDirR * 10.0 + u.config.x);
+        let hB = hash33(refDirB * 10.0 + u.config.x);
+        let cpR = cosinePalette(hR.x, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(0.8, 1.0, 1.0), vec3<f32>(0.2, 0.5, 0.8));
+        let cpB = cosinePalette(hB.x, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(0.8, 1.0, 1.0), vec3<f32>(0.2, 0.5, 0.8));
+        let rimW = clamp(1.0 - abs(dot(rd, n)), 0.0, 1.0);
+        let prism = vec3<f32>(cpR.r * 1.15, refCp.g, cpB.b * 1.2) * stormIntensity;
+        refCol = mix(refCol, prism, rimW * rimW);
         // Lighting
         let lig = normalize(vec3<f32>(0.5, 0.8, 0.3));
         let hal = normalize(lig - rd);
         let dif = clamp(dot(n, lig), 0.0, 1.0);
         let spe = pow(clamp(dot(n, hal), 0.0, 1.0), 32.0);
         // Fresnel rim lighting with OkLab mixing
-        let fresnel = pow(1.0 + dot(rd, n), 4.0);
+        let fresnel = pow(clamp(1.0 + dot(rd, n), 0.0, 1.0), 4.0);
         let rimWarm = blackbody(4000.0);
         let rimCool = blackbody(9000.0);
         let rimColor = oklab_mix(rimWarm, rimCool, m + sin(u.config.x * 0.3) * 0.3);
         col = mix(refCol, vec3<f32>(1.0), spe + dif * 0.2);
         col += rimColor * fresnel * 0.5;
+        // Idea 1: lightning back-lights drop rims (top-facing normals catch more)
+        col += flashCol * flash * (fresnel * 1.4 + clamp(n.y, 0.0, 1.0) * 0.25);
         // Caustics approximation on surface
         let caustics = sin(p.x * (18.0 + treble * 8.0) + u.config.x * 2.0) * cos(p.z * 20.0 + u.config.x * 1.5) * 0.5 + 0.5;
         col += refCol * caustics * (0.12 + treble * 0.22) * fresnel;
-        // Idea 2 — primary bow: rainbow ring near the raindrop 42° scattering angle
-        let bowAngle = abs(dot(-rd, n) - 0.74);
-        let bow = pow(clamp(1.0 - bowAngle * 9.0, 0.0, 1.0), 4.0);
-        let bowCol = cosinePalette(m + stormIntensity * 0.2, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
-        col += bowCol * bow * (0.18 + stormIntensity * 0.28);
         // Fog with OkLab mixing
         col = mix(col, bgCol, 1.0 - exp(-0.02 * t * t));
     }
@@ -244,7 +266,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         }
     }
     raw += vec3<f32>(0.22 + bass * 0.18, 0.62 + mids * 0.22, 1.25 + treble * 0.45) * clickCaustic;
-    let prev = textureLoad(dataTextureC, pixel, 0);
+    let prevHere = textureLoad(dataTextureC, pixel, 0);
+    // Idea 3: fall-aligned streaks — pull history from above along the fall direction (+fragCoord.y is world-up)
+    let streakLen = i32(round(1.0 + clamp(u.zoom_params.y, 0.0, 1.0) * 9.0 + bass * 3.0));
+    let dimsI = vec2<i32>(i32(dimensions.x), i32(dimensions.y));
+    let upPix = vec2<i32>(pixel.x, clamp(pixel.y + streakLen, 0, dimsI.y - 1));
+    let prevUp = textureLoad(dataTextureC, upPix, 0);
+    let prev = mix(prevHere, prevUp, 0.7);
     raw = clamp(mix(prev.rgb * (0.94 + u.zoom_params.z * 0.025), raw, 0.24 + bass * 0.035), vec3<f32>(0.0), vec3<f32>(7.0));
     let alpha = clamp(rendered.a + clickCaustic * 0.18 + dot(raw, vec3<f32>(0.04, 0.07, 0.02)), 0.04, 0.97);
     let display = acesToneMap(raw * (1.05 + u.zoom_params.w * 0.22));

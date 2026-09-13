@@ -1,8 +1,14 @@
-// ----------------------------------------------------------------
-// Luminescent Aether-Plasma Astro-Axolotl
-// Category: generative
-// Upgraded: 2026-08-03 — Interactivist b31: orbit cam, ripples, FFT gill fold.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Aether-Plasma Astro-Axolotl
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: gill regeneration wave through fractal branch generations (bass-kicked);
+//         root-to-tip capillary plasma flow along gill filaments (mids);
+//         leucistic gold iridophore speckle on body skin (treble glint)
+//  A packing: ACES display RGBA (C not read)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -27,6 +33,16 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const MAX_DIST: f32 = 10.0;
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Skin speckle drifts slowly with the swim so flecks read as attached to tissue.
+fn swim_phase_skin(time: f32) -> f32 {
+    return sin(time * 0.5) * 0.3;
+}
 
 fn rot2D(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -91,6 +107,11 @@ fn rippleField(uv01: vec2<f32>, time: f32) -> f32 {
     return min(acc, 1.5);
 }
 
+// Regeneration front position in gill-generation units (sweeps 0 -> 4.5, root to tip).
+fn regenFront(time: f32) -> f32 {
+    return fract(time * 0.18) * 5.5 - 0.5;
+}
+
 // 2D kaleidoscopic symmetry fold for the aether-caustic tessellation layer.
 fn kaleido(uv: vec2<f32>, folds: f32) -> vec2<f32> {
     let ang = atan2(uv.y, uv.x);
@@ -139,6 +160,9 @@ fn map(p_in: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
     var d_gills = 100.0;
     var scale = 1.0;
     var p_f = p_gills;
+    var gill_gen = 0.0;
+    // Idea 1: regeneration wave — the front swells each branch generation in turn.
+    let front = regenFront(u.config.x);
 
     // Fractal iterations for gills — FFT band folds each branch generation
     for (var i = 0; i < 4; i++) {
@@ -148,7 +172,10 @@ fn map(p_in: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
         p_f = vec3<f32>(grot_xy.x, grot_xy.y, grot_xz.y);
         p_f.y -= 0.15 * scale;
 
-        let cylinder = max(length(p_f.xz) - 0.02 * scale, abs(p_f.y) - 0.15 * scale);
+        let gd = fi - front;
+        let regrow = exp(-gd * gd * 2.0) * (0.6 + clamp(snd.x, 0.0, 1.5) * 0.6);
+        let cylinder = max(length(p_f.xz) - 0.02 * scale * (1.0 + regrow), abs(p_f.y) - 0.15 * scale * (1.0 + regrow * 0.35));
+        gill_gen = select(gill_gen, fi, cylinder < d_gills);
         d_gills = min(d_gills, cylinder);
 
         // Branching
@@ -163,7 +190,7 @@ fn map(p_in: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
 
     // Combine Gills with Body
     if (d_gills < res.x) {
-        res = vec2<f32>(d_gills, 2.0); // ID 2 = Gills
+        res = vec2<f32>(d_gills, 2.0 + gill_gen * 0.1); // ID 2.0..2.3 = Gills (+ generation)
     } else {
         res.x = smin(res.x, d_gills, 0.1);
     }
@@ -265,30 +292,44 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         let base_col = vec3<f32>(0.8, 0.2, 0.6); // Pinkish axolotl base
 
-        if (m_id == 1.0) {
+        if (m_id < 1.5) {
             // Body: subsurface scattering and refraction
             let sss = max(0.0, dot(rd, -lightDir));
             col = base_col * diff + vec3<f32>(0.1, 0.5, 0.8) * fresnel + vec3<f32>(0.5, 0.1, 0.4) * sss * 0.5;
+            // Idea 3: leucistic gold iridophore flecks — sparse noise cells, treble glints.
+            let fleck = smoothstep(0.72, 0.86, noise(p * 34.0 + vec3<f32>(0.0, swim_phase_skin(t), 0.0)));
+            let glint = 0.35 + clamp(treble, 0.0, 1.5) * 1.1 * (0.5 + 0.5 * sin(t * 9.0 + p.y * 40.0));
+            col += vec3<f32>(1.0, 0.72, 0.28) * fleck * glint * (0.25 + diff * 0.75);
             col = mix(col, bg_color, 0.3); // Pick up ambient nebula light
-        } else if (m_id == 2.0) {
+        } else {
             // Gills: Bioluminescence synced to audio
             let biolum = u.zoom_params.w;
             let glow_color = vec3<f32>(0.0, 1.0, 0.8); // Cyan/Gold
             let emission = glow_color * (1.0 + (bass + fft_gill + treble * 0.5) * biolum);
-            col = base_col * 0.5 + emission + vec3<f32>(1.0) * fresnel;
+            // Idea 2: capillary flow — plasma pulses run from gill root to tip (mids set speed),
+            // brightest in the generation the regeneration front is currently re-growing.
+            let gen = clamp(round((m_id - 2.0) * 10.0), 0.0, 3.0);
+            let root = vec3<f32>(sign(p.x) * 0.4, 0.3, 0.0);
+            let along = length(p - root);
+            let pulse = pow(0.5 + 0.5 * sin(along * 38.0 - t * (4.0 + clamp(mids, 0.0, 1.5) * 3.0)), 6.0);
+            let gd = gen - regenFront(t);
+            let fresh = exp(-gd * gd * 2.0);
+            let capillary = vec3<f32>(1.0, 0.35, 0.55) * pulse * (0.35 + fresh * 1.2) * biolum;
+            col = base_col * 0.5 + emission * (1.0 + fresh * 0.5) + capillary + vec3<f32>(1.0) * fresnel;
         }
 
         // Real depth: near = 1, far = 0
         depth = clamp(1.0 - d / MAX_DIST, 0.0, 1.0);
     }
 
-    // Tonemap + gentle gamma
-    col = col / (1.0 + col * 0.6);
+    // ACES on display RGB + gentle gamma
+    col = aces(max(col, vec3<f32>(0.0)) * 0.9);
     col = pow(col, vec3<f32>(1.0 / 2.2));
 
-    // Semantic alpha from luma
-    let luma = dot(clamp(col, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luma * 0.7 + 0.25, 0.0, 1.0);
+    // Semantic alpha: creature coverage is solid, nebula/caustic transmission follows luma
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let hit_cov = select(0.0, 1.0, d < MAX_DIST);
+    let alpha = clamp(mix(luma * 0.7 + 0.25, 0.9 + luma * 0.1, hit_cov), 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

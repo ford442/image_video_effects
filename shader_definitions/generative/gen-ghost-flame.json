@@ -9,7 +9,7 @@
     "blackbody",
     "ethereal"
   ],
-  "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire.",
+  "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air.",
   "workgroup_size": [
     16,
     16,
@@ -62,6 +62,8 @@
   "url": "shaders/gen-ghost-flame.wgsl",
   "features": [
     "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven",
     "advected-flame-state",
     "three-band-audio-reactive",
     "mouse-and-click-heat",

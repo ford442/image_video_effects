@@ -66,6 +66,6 @@
       "step": 0.05
     }
   ],
-  "features": ["audio-reactive", "mouse-driven", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha"],
+  "features": ["audio-reactive", "mouse-driven", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha", "upgraded-rgba"],
   "feedbackPacking": "A/C = final ACES display RGBA; exact plasma-dragon persistence history"
 }

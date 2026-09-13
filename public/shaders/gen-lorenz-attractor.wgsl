@@ -1,9 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Lorenz Attractor
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba,
-//            chromatic-lobes, audio-decay-modulation, depth-output,
-//            sdf-tube-orbit, symmetry-fold, orbit-trap-shading
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Description: Strange attractor density accumulation via per-pixel
 //    Monte Carlo orbit integration. Each pixel seeds a short Lorenz
@@ -14,7 +12,12 @@
 //    smooth-union capsule chain along a live hero trajectory and
 //    sphere-traced with cone-grown LOD; treble mirror-folds the
 //    splat plane across the lobe axis.
-//  Upgraded: 2026-06-06 / geometry b32: 2026-08-03
+//  Upgraded: 2026-09-13 (prev 2026-06-06 / geometry b32: 2026-08-03)
+//  Ideas: per-wing accumulated density (lobe identity survives feedback);
+//         speed-weighted splat tint (fast outer sweeps burn hot, slow
+//         equilibrium spirals stay deep)
+//  A packing: raw sim — r=right-wing density, g=left-wing density,
+//             b=speed-weighted density, a=display alpha (not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=sigma(8–14), y=rho_mod(0–14), z=glow_radius(+tube radius), w=decay
 
@@ -154,8 +157,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var contribR = 0.0;
     var contribB = 0.0;
+    var contribS = 0.0;   // Idea 2: speed-weighted splat
     let invR2   = 1.0 / (glowR * glowR);
     for (var i = 0u; i < 52u; i = i + 1u) {
+        let pPrev = p;
         p = lorenz_step(p, sigma, rho, beta);
         let dx = p.x - viewX;
         let dz = p.z - viewZ;
@@ -164,12 +169,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Chromatic lobe separation: right lobe → R, left lobe → B
         contribR += g * smoothstep(0.0, 2.0, p.x);
         contribB += g * smoothstep(0.0, 2.0, -p.x);
+        // Flow speed |dp/dt| (dt = 0.010): slow near C± spirals, fast on outer sweeps
+        let speedN = smoothstep(20.0, 200.0, length(p - pPrev) * 100.0);
+        contribS += g * speedN;
     }
     contribR *= (1.0 / 52.0);
     contribB *= (1.0 / 52.0);
+    contribS *= (1.0 / 52.0);
 
-    let prevDensity = textureLoad(dataTextureC, coord, 0).r;
-    let accumulated = mix(contribR + contribB, prevDensity, clamp(decay, 0.0, 0.999));
+    // Idea 1: per-wing temporal density — each lobe keeps its own history
+    let prevC = textureLoad(dataTextureC, coord, 0);
+    let keep  = clamp(decay, 0.0, 0.999);
+    let accR  = mix(contribR, prevC.r, keep);
+    let accB  = mix(contribB, prevC.g, keep);
+    let accS  = mix(contribS, prevC.b, keep);
+    let accumulated = accR + accB;
 
     // ─── Hero orbit: a live 3D Lorenz trajectory, time-offset per frame ───
     var hp = vec3<f32>(0.9 + sin(time * 0.23) * 0.4, 1.0, max(rho - 1.0, 1.0));
@@ -228,14 +242,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let warmCol = palette(density, 0.0);
     let coolCol = palette(density, 0.3);
     let lobeMix = smoothstep(-5.0, 5.0, viewX - panX);
-    var col = mix(coolCol, warmCol, lobeMix);
+    // Idea 1: wing colour from accumulated lobe identity; screen-space split only where empty
+    let wingMix = accR / max(accumulated, 1e-4);
+    let wingT   = mix(lobeMix, wingMix, smoothstep(0.0, 0.02, accumulated));
+    var col = mix(coolCol, warmCol, wingT);
+    // Idea 2: mean flow speed under this pixel → hot white-gold fast sweeps, deep slow spirals
+    let meanSpeed = clamp(accS / max(accumulated, 1e-4), 0.0, 1.0);
+    col *= 0.55 + 0.75 * meanSpeed;
+    col += vec3<f32>(1.0, 0.86, 0.62) * density * meanSpeed * meanSpeed * (0.35 + treble * 0.15);
     col += palette(density + 0.55, 0.15) * glow3d * (1.0 + bass);  // tube aura bleed
     col = mix(col, tubeCol * 1.4, select(0.0, 0.85, hit));         // branchless composite
 
     let alpha    = clamp(density * 0.9 + bass * 0.08 + select(0.0, 0.55, hit) + glow3d * 0.5, 0.0, 1.0);
     let finalOut = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
-    textureStore(dataTextureA, coord, vec4<f32>(accumulated, tubeDepth, glow3d, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(accR, accB, accS, alpha));
     textureStore(writeTexture, coord, finalOut);
     let depth = max(clamp(density * 0.8, 0.0, 1.0), tubeDepth * 0.95);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

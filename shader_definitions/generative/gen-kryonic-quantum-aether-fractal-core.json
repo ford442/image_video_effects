@@ -53,5 +53,9 @@
   "updated": true,
   "id": "gen-kryonic-quantum-aether-fractal-core",
   "url": "shaders/gen-kryonic-quantum-aether-fractal-core.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

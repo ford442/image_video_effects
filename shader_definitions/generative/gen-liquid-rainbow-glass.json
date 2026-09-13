@@ -56,5 +56,9 @@
   "updated": true,
   "id": "gen-liquid-rainbow-glass",
   "url": "shaders/gen-liquid-rainbow-glass.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

@@ -1,6 +1,15 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-13 (Grok-2 mid-complexity generative eldritch ten + hyper/grav ten + #1228 style.css split + #1234 Jest WASM bridge + conflicting shader-upgrade PR union)
+**Last updated:** 2026-09-13 (origin Grok-2 eldritch + hyper/grav tens unioned with local Grok-1 ice/Julia + mycelium eight + #1228 / #1234 / PR union / optical audit)
+
+## 2026-09-13 — Pull/push union (ahead 1 / behind 3)
+
+- Rebased local `72f82de5` onto origin `598664f6` (`0c153bcd` Grok-2 tens + `#1259` weekly-plan correction).
+- Overlap policy: keep the side with native WGSL ideas, not metadata-only.
+  - `gen-glass-mosaic-liquid-refraction`: took origin (Snell tilt + meniscus kick). Local optical audit was header/tag only.
+  - `gen-hyper-refractive-rain-matrix`: kept local (lightning strobe + RGB dispersion + fall streak). Origin was rain-streak tail + 42° bow.
+  - `gen-hyperbolic-crystal-symbiosis`: kept local (growth zoning + twin lamellae + hyperboloid lift). Origin was horocycle rings + species takeover (header-scale).
+- MEMORY/USER/daily notes unioned. `weekly_plan.md` from origin kept.
 
 ## 2026-09-13 — Grok-2 mid-complexity generative eldritch ten (8 upgraded, 2 skipped)
 
@@ -26,8 +35,8 @@
   - gen-hyper-bismuth-clockwork: hopper terrace ridges on step-cuts; escapement mesh flash at gearPhase crests. No spring.
   - gen-hyper-dimensional-bismuth-matrix: twin-boundary misfit where hopper≈KIFS; stair-riser rainbow film thickness. extraBuffer[133] bass envelope kept.
   - gen-hyper-dimensional-tesseract-labyrinth: W-slice ghost frame from q4.w; cell-face corridor glow on cube midplanes.
-  - gen-hyper-refractive-rain-matrix: rain-streak tail capsule; primary bow caustic at ~42°. Raw HDR A kept.
-  - gen-hyperbolic-crystal-symbiosis: horocycle growth rings in hyperbolic distance; species takeover at thin facet borders.
+  - gen-hyper-refractive-rain-matrix: **union kept later local** lightning double-strobe + spectral RGB dispersion + fall-aligned streak (not origin rain-streak tail + 42° bow). Raw HDR A kept.
+  - gen-hyperbolic-crystal-symbiosis: **union kept later local** hyperbolic growth zoning + symbiotic twin lamellae + hyperboloid lift (not origin horocycle rings + species takeover).
   - gen-gravitational-strain: photon-sphere caustic at 1.5 Rs; tidal stretch of the star field along ∇Φ. Raw A packing kept.
   - gen-gravito-phononic-accretion: relativistic beaming crescent; phononic spiral density waves.
   - gen-graviton-plasma-lotus: petal-fold veins along KIFS abs planes; nectary corona at core/petal smin. extraBuffer[133..138] spring kept.
@@ -36,6 +45,48 @@
 - Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
 - Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,365 / 470 generative, SKIP_WASM_BUILD=1 build green. Jest 5 fail = pre-existing WASM bridge (`bridge/api.js` / mapper), not this batch. Real-GPU visual QA: external.
 - Notes: `agents/swarm-outputs/grok-2026-09-13-gen-mid-hyper-grav-ten/`.
+
+
+## 2026-09-13 — Grok-1 simpler generative ten (ice → Julia)
+
+- IDs claimed: gen-ice-crystal-lattice, gen-ifs-fractal-flame, gen-interference-moire-field, gen-inverse-mandelbrot, gen-iris-bloom-fractal, gen-islamic-geometric-tiling, gen-islamic-star-rose, gen-isometric-city, gen-julia-set (`gen_julia_set.wgsl`), gen-julia-set-classic.
+- Skipped 5 already stamped 2026-09-09 (classic-gen-ten): ice-crystal-lattice, interference-moire-field, iris-bloom-fractal, islamic-geometric-tiling, julia-set-classic. No date bump.
+- Per shader, the ideas actually added:
+  - gen-ifs-fractal-flame: flam3 color-by-transform; final rotate+scale affine. extraBuffer bass_env [0]→[133].
+  - gen-inverse-mandelbrot: Pickover stalks on the color-space orbit; arg(final_z) bands. HDR A started.
+  - gen-islamic-star-rose: nested φ pentagrams; 10-fold rose from 36° sectors. p1 wired; exact C load.
+  - gen-isometric-city: podium+tower setbacks; window occupancy flicker.
+  - gen-julia-set: smooth trap-mode lerp; velocity |Δz| trap. A packing lie (telemetry vs color) fixed.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 5/5, extraBuffer 0 new, dead sliders 0, catalog 1,365 unified / 1,378 defs, SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Cards: `agents/swarm-outputs/grok-2026-09-13-simpler-gen-ice-julia-ten/`.
+- Did not substitute. Classic math/CA ten (mandelbox / diffraction / Langton / Klein / Verlet cloth / Koch / phyllotaxis / Sierpinski tet / magnetic-field-warp / Newton) still uncarded.
+
+## 2026-09-13 — Grok-1 simpler generative leftover ten (0 upgrades — stale list)
+
+- Requested IDs: gen-fireworks-nocturne, gen-fireworks-ring-shell, gen-fireworks-roman-candle, gen-fireworks-smoke-bloom, gen-fireworks-strobe-shell, gen-fireworks-willow-cascade, gen-fireworks-wind-ripple, gen-fluffy-raincloud, gen-fourier-epicycles, gen-grid.
+- All 10 already have dated `Ideas:` headers and those ideas are in the WGSL (09-10 shell taxonomy, 09-11 atmospheric six, 09-06 kinetic ten A/B). JSON already tagged `upgraded-rgba`. Underscore-backed: `gen_grid.wgsl`, `gen_fluffy_raincloud.wgsl`.
+- Action: skip all. No date bump, no metadata pass, no substitute IDs.
+- Real leftover simpler-gen (not started): mandelbox-explorer, rgb-diffraction, langton-ant, klein-bottle-walk, verlet-cloth-wind, koch-snowflake-storm, phyllotaxis-galaxy-spiral, sierpinski-tetrahedron, magnetic-field-warp, newton-fractal. Skip percolation (extraBuffer[0..] FFT zone).
+- Cards: `agents/swarm-outputs/grok-2026-09-13-simpler-gen-leftover-ten/`.
+- Real-GPU visual QA: n/a (no visuals changed).
+
+## 2026-09-13 — Mycelium leftover eight
+
+- IDs: gen-quantum-mycelium, gen-fractal-neuro-mycelium-lattice, gen-symbiotic-chrono-mycelium-engine, gen-symbiotic-cyber-mycelium, gen-mycelium-network, gen-chrono-voronoi-mycelium, chrono-voronoi-mycelium, gen-cybernetic-mycelium-neural-web.
+- Per shader, the ideas actually added:
+  - gen-quantum-mycelium: septate rings along cylinder axis; neighbor-cell fusion bridges. Mouse UV fixed. No spring.
+  - gen-fractal-neuro-mycelium-lattice: action-potential runners along Voronoi edges; synapse flash at nodes. plasmaBuffer audio. No spring.
+  - gen-symbiotic-chrono-mycelium-engine: hyphal wrapping around the gear; chrono lag vs gear rotation. applyGenerativePrimaryControls deleted.
+  - gen-symbiotic-cyber-mycelium: axis-aligned packets; infection quarantine rim. extraBuffer audio lie deleted.
+  - gen-mycelium-network: chemotaxis toward mouse nutrient; anastomosis loops. Kick env [133..135] kept. HDR A kept.
+  - gen-chrono-voronoi-mycelium: clamp connections across generations; apothecia cups. HDR A kept.
+  - chrono-voronoi-mycelium: clampellate septa; neighbor-site cords. Raw A layers. Inoc [133..134] single-writer. Clock/IQ overlay stripped.
+  - gen-cybernetic-mycelium-neural-web: myelination from neighbor history; gap-junction co-spike. Existing spring kept.
+- Floor: bindings / 16×16 / exact C where C is history / A packing as documented / saved params exact.
+- Gates: Naga 8/8, extraBuffer 0 new, dead sliders 0, catalog 1,365, SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing WASM `bridge/api.js`.
+- Real-GPU visual QA: external.
+- Cards: `agents/swarm-outputs/grok-2026-09-13-mycelium-eight/`.
 
 ## 2026-09-13 — #1228 Split `src/style.css`
 
@@ -60,6 +111,14 @@
 - Ideas: lead-char bloom+EM wiper skew; node discharge+seam snap; crest doubling+orbit halo; orthogonal null+retrace phosphor; eigenvector streak+saddle fork; hinge shear+row stagger; mitosis twin+membrane wave; spike coalesce+Earnshaw wobble; Laplacian corona+field-line streak; photon ring+frame-drag hue.
 - Floor: JSON unchanged; A packing as documented (ripples/trace keep raw A; others display RGBA). No new springs. Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,365, SKIP_WASM_BUILD=1 build green. Real-GPU QA external.
 - Cards: `agents/swarm-outputs/composer-2026-09-11-cyber-em-ten/` and `composer-2026-09-11-geometric-ten/`.
+
+## 2026-09-13 — Optical/glass/holographic "remaining ten" audit (0 new upgrades, 3 metadata fixes)
+
+- Requested batch of 10 (`gen-glass-mosaic-liquid-refraction`, `gen-ethereal-glass-flora-terrarium`, `gen-ethereal-quantum-hologram-bonsai`, `gen-ethereal-quantum-holographic-fractal-coral`, `gen-ethereal-quantum-medusa`, `gen-holographic-fracture`, `gen-holographic-membrane`, `gen-holographic-plasma-geode`, `gen-holographic-rainbow-surface`, `gen-holographic-lens-flare-matrix`) was stale before any edit: 7/10 already have a real dated `Ideas:` header from the 2026-09-11 "Ethereal generative ten" (4 shaders) and a 2026-09-06 optical/photo batch (3 shaders). Left byte-identical, no `Upgraded:` bump — per `docs/SHADER_UPGRADE_BATCH.md` §5.3, "floor present, already idea-rich" is a skip, not a re-date.
+- The other 3 (`gen-glass-mosaic-liquid-refraction`, `gen-holographic-fracture`, `gen-holographic-membrane`) were read in full and are also already idea-rich in the executed WGSL (Voronoi/Worley mosaic + Fresnel/Beer-Lambert dispersion + curl-noise heightfield; spring-eased mouse-crack SDF network + click fronts + per-crack FFT-bin iridescence; two-layer thin-film interference + click impulses + audio vibration) but were undocumented and/or missing the `upgraded-rgba` tag. Treated as the doc's "header/tag missing, picture already good" row: named the existing techniques in `Ideas:`/`A packing:` header lines, added the missing `upgraded-rgba` JSON feature tag. **No WGSL algorithm, param, or packing changed; no `Upgraded:` date added or bumped** — this is documentation, not a counted upgrade.
+- Gates: naga 3/3, `wgsl_precommit_gate.py` 3/3, extraBuffer/dead-sliders clean (repo-wide + scoped), `generate_shader_lists.js`/`check_duplicates.js` clean (1,378 definitions, no dupes). Full app build/Jest not run — change is header-comment/JSON-tag only, and an unrelated CSS-split/search-index task is mid-flight uncommitted in the same tree. Real-GPU QA external (n/a — no visuals changed).
+- Cards: `agents/swarm-outputs/claude-2026-09-13-optical-glass-holographic/`.
+- If more optical/glass/holographic throughput is wanted, a real backlog exists: ~235 `*.wgsl` files matching glass/holographic/hologram/crystal/iridescence/prism/quantum/lens/refract keywords have no `Ideas:` header (e.g. `liquid-lens`, `quantum-prism`, `molten-glass`, `hybrid-voronoi-glass`, `holographic-glitch`, `crystal-facets`, `glass-brick-distortion`). Not started — out of scope for the 10 supplied IDs.
 
 ## 2026-09-12 — Origami / lichen / bioluminescent leftover eight (8 shaders)
 
@@ -2353,3 +2412,74 @@
   catalog entries, URL/uniform/typecheck clean, 81 Jest suites / 545 pass / one
   skip, and production build green. Real-GPU visual/performance QA remains
   external.
+
+## 2026-09-13 — Claude gen mid/high ten (10 shaders)
+
+- IDs: gen-hopf-fibration-fiber-bundle, gen-hyper-warp (`gen_hyper_warp.wgsl`), gen-hyper-rainbow-vortex,
+  gen-hyper-refractive-rain-matrix, gen-hyperbolic-crystal-symbiosis, gen-hyperbolic-tessellation,
+  gen-fractal-clockwork, gen-fractal-ember-lattice, gen-fractured-monolith, gen-ghost-flame.
+- Ideas actually added:
+  - hopf: knot-diagram over/under gaps; fiber-phase beads; base-space S² inset.
+  - hyper-warp: iso-contour etching; prismatic chromatic feedback trails.
+  - rainbow-vortex: vortex-advected history; low-pressure funnel condensation.
+  - refractive-rain: double-strike lightning; dispersive drop fringes; fall-aligned streaks.
+  - crystal-symbiosis: hyperbolic growth zoning; twin lamellae at facet seams; hyperboloid-lift relief.
+  - tessellation: true {p,5} geodesic edges; Escher two-colouring.
+  - clockwork: escapement tick; ruby jewel bearings.
+  - ember-lattice: heat crawl beads along lattice; shard cooling + re-ignition.
+  - monolith: seam light pool on floor; rising seam pulse.
+  - ghost-flame: flame puffing instability; schlieren heat haze (+ temperature depth).
+- Floor: params/updatedParams byte-exact; A packing unchanged per HEAD; crystal-symbiosis duplicate A/depth writes merged;
+  `u` shadowing renamed in hyper-warp + monolith; JSON features corrected (audio-reactive/mouse-driven/upgraded-rgba only where true).
+- Gates: Naga 10/10, precommit gate 10/10, extraBuffer PASS, dead sliders 0 new, catalogs 1378 unique, SKIP_WASM_BUILD=1 build green; Jest 6 failures all from missing src/wasm/bridge/api.js (unrelated).
+- Notes: agents/swarm-outputs/claude-2026-09-13-gen-mid-high-ten/. Real-GPU visual QA: external
+  (watch tessellation line clutter, ghost-flame possible inversion).
+
+## 2026-09-13 — Claude higher-complexity generative ten (10 shaders)
+
+- IDs: gen-kaleidoscopic-synapse-bloom, gen-kinetic-neo-brutalist-megastructure, gen-klein-bottle-walk,
+  gen-kryonic-quantum-aether-fractal-core, gen-liquid-cathedral-dream, gen-liquid-crystal-hive-mind,
+  gen-liquid-metal-cymatic-resonator, gen-liquid-neon-cyber-metropolis, gen-liquid-neon-topography, gen-liquid-rainbow-glass.
+- Ideas actually added:
+  - kaleidoscopic-synapse: refractory wake behind runners; vesicle release at lattice sites.
+  - neo-brutalist: grinding interlock friction seams; server-core slits with rack LEDs.
+  - klein-bottle: orientation-reversing seam flip; walker footprint trail from C.
+  - kryonic: frost-rime orbit trap; aether shatter veins on fold planes.
+  - cathedral: lead cames into tinted panes; molten glass drips.
+  - hive-mind: polariser birefringence fringes; hive relay wave from pointer cell.
+  - cymatic: viscosity drag; Chladni nodal filigree; pointer ferrofluid spikes.
+  - cyber-metropolis: neon rivers down towers; wet-street reflections; warp horizon ring.
+  - topography: neon contour lines; liquid valley pools.
+  - rainbow-glass: dispersive meniscus rims; stir memory swirl.
+- Floor/bug fixes: neo-brutalist + cyber-metropolis read `u.config.y` (click count) as sway/audio; cymatic + topography used C
+  as "audio" (topography also blended the input image as history); rainbow-glass mouse double-divided (stir dead);
+  klein-bottle sliders off-by-one; kryonic claimed upgraded-rgba without ACES; metropolis generic slider shim removed.
+  Params/updatedParams byte-exact; A packing documented per file.
+- Gates: Naga 10/10, precommit gate 10/10, extraBuffer PASS, dead sliders PASS, catalogs 1378 unique, SKIP_WASM_BUILD=1 build green; Jest 6 failures all from missing src/wasm/bridge/api.js (unrelated).
+- Notes: agents/swarm-outputs/claude-2026-09-13-gen-high-complexity-ten/. Real-GPU visual QA: external.
+
+## 2026-09-13 — Claude luminescent / attractor generative ten (10 shaders)
+
+- IDs: gen-lorenz-attractor, gen-lorenz-attractor-flow (WGSL `lorenz-attractor-flow.wgsl`), gen-luminescent-aether-plasma-astro-axolotl,
+  gen-luminescent-aether-plasma-nebula-koi, gen-luminescent-chrono-fluid-astrolabe, gen-luminescent-chrono-prism-astro-stag,
+  gen-luminescent-cyber-chrono-void-turtle, gen-luminescent-nebula-silk-weaver, gen-luminescent-quantum-flora-symphony,
+  gen-luminescent-quantum-glass-phoenix-egg.
+- Ideas actually added:
+  - lorenz-attractor: per-wing density accumulation (true lobe chroma); orbit-speed tint. Tube/fold/trap untouched.
+  - lorenz-attractor-flow: chaos-ridge filaments from twin-orbit divergence; wing-switch parity bands; flow-advected C history.
+  - axolotl: gill regeneration front; gill capillary pulses; gold skin flecks.
+  - koi: alternating tail-beat wake; head→tail scale-row flash; true C feedback.
+  - astrolabe: limb degree graduations; gear-ratio ring train with teeth; rete star-chart plate.
+  - stag: branching antler tines; per-channel prism dispersion; afterimage from C.
+  - void-turtle: scute plate drift; pointer time dilation; growth rings; void wake from C.
+  - silk-weaver: plucked-string thread vibration; dew beads; silk afterglow.
+  - flora-symphony: phyllotaxis seed spiral; petal veins + backlight; stem nodes + rising sap.
+  - phoenix-egg: shell crack network with ember leak; caustic threads; ember afterglow in C.x.
+- Floor/bug fixes: koi, void-turtle, phoenix-egg read `u.config.y` as audio; silk-weaver used filtered C as "audio";
+  stag, void-turtle, phoenix-egg mouse divided by resolution (dead pointer); koi + phoenix-egg "history" sampled the input image;
+  phoenix-egg refract eta>1 (TIR collapse); void-turtle ripple loop dead; turtle + weaver gained dataA (weaver also depth);
+  stag re-centred/un-flipped and Prismatic slider revived. Saved params unchanged; A packing documented per file.
+- Gates: Naga 10/10, precommit gate 10/10, extraBuffer PASS, dead sliders PASS (0 defs scanned where only updatedParams — verified by grep),
+  catalogs 1378 unique, SKIP_WASM_BUILD=1 build green. Jest not run.
+- Notes: agents/swarm-outputs/claude-2026-09-13-luminescent-attractor-ten/. Real-GPU visual QA: external
+  (stag framing change, lorenz-flow ridge flooding, phoenix-egg afterglow ghosting).

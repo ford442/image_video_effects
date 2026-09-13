@@ -9,7 +9,7 @@
     "raymarch",
     "audio-reactive"
   ],
-  "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, storm flashes, and temporal HDR trails.",
+  "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, bass-triggered lightning strobes, prismatic RGB dispersion on drop rims, and fall-aligned HDR rain streaks.",
   "workgroup_size": [
     16,
     16,
@@ -60,6 +60,6 @@
   "updated": true,
   "id": "gen-hyper-refractive-rain-matrix",
   "url": "shaders/gen-hyper-refractive-rain-matrix.wgsl",
-  "features": ["raymarched", "audio-reactive", "mouse-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware", "input-depth-aware", "upgraded-rgba"],
+  "features": ["raymarched", "audio-reactive", "mouse-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware", "input-depth-aware", "mouse-driven", "upgraded-rgba"],
   "feedbackPacking": "A/C = raw HDR refractive rain display RGBA history"
 }

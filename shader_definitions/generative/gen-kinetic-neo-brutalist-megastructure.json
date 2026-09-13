@@ -53,5 +53,9 @@
   "updated": true,
   "id": "gen-kinetic-neo-brutalist-megastructure",
   "url": "shaders/gen-kinetic-neo-brutalist-megastructure.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

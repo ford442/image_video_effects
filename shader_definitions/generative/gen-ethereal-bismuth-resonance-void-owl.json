@@ -6,6 +6,7 @@
   "tags": ["crystal", "bismuth", "avian", "iridescent", "void", "quantum", "sdf", "raymarched", "thin-film", "tessellation", "audio-reactive"],
   "description": "A hyper-dimensional avian entity forged from iridescent bismuth lattices, suspended in a zero-gravity quantum field. Upgraded with thin-film interference on the stepped bismuth shell, per-facet crystal color variation, 3-point lighting with soft shadows and AO, horn-like stepped ear tufts, a tessellated hopper-crystal inlay glowing in the void ether, ACES filmic tonemapping and real depth output.",
   "complexity": "High",
+  "features": ["mouse-driven", "audio-reactive", "click-reactive", "raymarched", "upgraded-rgba"],
   "workgroup_size": [16, 16, 1],
   "updated": true,
   "supportsDepth": true,

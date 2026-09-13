@@ -61,6 +61,9 @@
     "click-shockwave-ripples",
     "fft-core-glow",
     "temporal-history-smoothing",
-    "depth-output"
+    "depth-output",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ]
 }

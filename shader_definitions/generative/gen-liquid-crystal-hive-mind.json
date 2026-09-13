@@ -60,5 +60,5 @@
   "updated": true,
   "id": "gen-liquid-crystal-hive-mind",
   "url": "shaders/gen-liquid-crystal-hive-mind.wgsl",
-  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "simulation-state", "raymarching", "semantic-alpha", "generated-depth"]
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "simulation-state", "raymarching", "semantic-alpha", "generated-depth", "upgraded-rgba"]
 }

@@ -65,6 +65,6 @@
   "updated": true,
   "id": "gen-cybernetic-mycelium-neural-web",
   "url": "shaders/gen-cybernetic-mycelium-neural-web.wgsl",
-  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "semantic-alpha", "aces-tonemap"],
+  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "semantic-alpha", "aces-tonemap", "upgraded-rgba"],
   "feedbackPacking": "A/C = final ACES display RGBA; exact four-neighbor mycelial history loads"
 }

@@ -1,9 +1,14 @@
-// ----------------------------------------------------------------
-// Luminescent Quantum-Glass Phoenix-Egg
-// Category: generative
-// Visualist upgrade: multi-source lighting, volumetric internal plasma fog,
-// iridescent glass shell, Fresnel rim, god rays, ACES + hue clamp + IGN dither.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Quantum-Glass Phoenix-Egg
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: voronoi shell cracks leaking ember light; glass caustic threads; ember afterglow memory from exact C
+//  A packing: raw fields — x=ember heat (decayed, read back from C.x), y=core density, z=fog accum, w=alpha (not tone-mapped)
+// ═══════════════════════════════════════════════════════════════════
+// History: Visualist upgrade — multi-source lighting, volumetric internal
+// plasma fog, iridescent glass shell, Fresnel rim, god rays, ACES + hue clamp + IGN dither.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -20,8 +25,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=rippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=Time, yz=mouse uv 0..1 (y=0 top), w=mouse down
     zoom_params: vec4<f32>,  // x=Plasma Hue, y=Core Activity, z=Glass Refraction, w=Glow Intensity
     ripples: array<vec4<f32>, 50>,
 };
@@ -115,6 +120,37 @@ fn iridescent_shell(cosTheta: f32, hueBase: f32, time: f32) -> vec3<f32> {
     return hsv2rgb(vec3<f32>(hue, 0.7, 1.0));
 }
 
+// Idea 1 helper: 3D cellular crack field. Returns F2-F1 edge distance
+// (0 on a crack seam) so hairline fractures follow Voronoi cell borders.
+fn crackEdge(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    var f1 = 8.0;
+    var f2 = 8.0;
+    for (var z = -1; z <= 1; z++) {
+        for (var y = -1; y <= 1; y++) {
+            for (var x = -1; x <= 1; x++) {
+                let g = vec3<f32>(f32(x), f32(y), f32(z));
+                let o = hash3(i + g);
+                let d = length(g + o - f);
+                let lower = d < f1;
+                f2 = select(min(f2, d), f1, lower);
+                f1 = select(f1, d, lower);
+            }
+        }
+    }
+    return f2 - f1;
+}
+
+// Idea 2 helper: glass caustic filaments — thin bright lines where two drifting
+// noise wavefronts cross zero together (light focused by the uneven shell).
+fn causticThreads(p: vec3<f32>, time: f32) -> f32 {
+    let a = snoise(p * vec3<f32>(3.2) + vec3<f32>(0.0, time * 0.35, 0.0));
+    let b = snoise(p * vec3<f32>(5.7) - vec3<f32>(time * 0.22, 0.0, time * 0.18));
+    let line = 1.0 - clamp(abs(a + 0.6 * b) * 6.0, 0.0, 1.0);
+    return line * line * line * line;
+}
+
 // Egg outer shell SDF
 fn mapEgg(p: vec3<f32>) -> f32 {
     var p2 = p;
@@ -128,7 +164,7 @@ fn mapEgg(p: vec3<f32>) -> f32 {
 fn mapCore(p: vec3<f32>) -> f32 {
     let act = u.zoom_params.y;
     let t = u.config.x * act;
-    let base = length(p) - 0.7 - u.config.y * 0.3;
+    let base = length(p) - 0.7 - plasmaBuffer[0].x * 0.12; // bass swells the core
     let noise = fbm(p * vec3<f32>(3.0) + vec3<f32>(0.0, t, 0.0)) * 0.4;
     return base + noise;
 }
@@ -155,12 +191,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = (fragCoord - 0.5 * iResolution) / iResolution.y;
 
     let time = u.config.x;
-    let audio = u.config.y;
-    let m = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) / iResolution) * vec2<f32>(2.0) - vec2<f32>(1.0);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    // Mouse is canvas uv 0..1 -> -1..1 orbit (was divided by resolution: dead)
+    let m = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * vec2<f32>(2.0) - vec2<f32>(1.0);
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
-    // Read previous frame for subtle persistence
-    let prevUV = fragCoord / iResolution;
-    let prev = textureSampleLevel(readTexture, u_sampler, prevUV, 0.0);
+    // Idea 3: previous ember heat — exact load of our own raw A packing
+    let prevField = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
 
     var ro = vec3<f32>(0.0, 0.0, 4.0);
     var rd = normalize(vec3<f32>(uv, -1.0));
@@ -213,7 +252,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         depth = t * 0.1;
 
         // Refraction into the egg
-        let rdIn = refract(rd, n, 1.0 / max(refr, 0.1));
+        // Glass Refraction slider -> IOR 1.0..1.6 (old eta >1 hit total internal reflection)
+        let rdIn = refract(rd, n, 1.0 / (1.0 + clamp(refr, 0.0, 1.0) * 0.6));
 
         // Volumetric inner core raymarch
         var tIn = 0.1;
@@ -251,8 +291,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let shellLit = vec3<f32>(0.05, 0.08, 0.15) * (keyColor * diffKey + fillColor * diffFill)
                      + rimColor * rim * 1.5;
 
-        col = colCore + shellLit + iris;
-        emission = density + fresnel * 1.5;
+        // Idea 1 — voronoi cracks: seams open with Core Activity + bass (+ held mouse),
+        // shell darkens along the fracture and ember light from the core leaks out.
+        let act = u.zoom_params.y;
+        let crackW = 0.015 + 0.05 * clamp(act, 0.0, 1.5) * (1.0 + bass * 0.6) + held * 0.04;
+        let edge = crackEdge(p * vec3<f32>(2.3) + vec3<f32>(0.0, 7.1, 0.0));
+        let crack = 1.0 - smoothstep(crackW * 0.3, crackW, edge);
+        let emberHue = fract(hue + 0.04);
+        let ember = hsv2rgb(vec3<f32>(emberHue, 0.9, 1.0)) * vec3<f32>(1.6, 0.9, 0.5);
+        let leak = crack * (0.4 + density * 1.2) * glow * (1.0 + bass * 0.5);
+
+        // Idea 2 — caustic threads on the glass, fed by core light, fading at grazing Fresnel
+        let caustic = causticThreads(p, time) * (1.0 - fresnel) * (0.3 + density) * glow * (0.7 + mids * 0.5);
+        let causticCol = mix(hsv2rgb(vec3<f32>(hue, 0.5, 1.0)), vec3<f32>(1.0, 0.95, 0.85), 0.5);
+
+        col = colCore * (1.0 - crack * 0.25) + shellLit * (1.0 - crack * 0.7) + iris * (1.0 + treble * 0.3)
+            + ember * leak + causticCol * caustic * 1.4;
+        emission = density + fresnel * 1.5 + leak * 0.8 + caustic * 0.5;
     }
 
     // Background cosmic dust + god rays
@@ -281,11 +336,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col = mix(bg, col, clamp(0.7 + emission * 0.2, 0.0, 1.0));
     }
 
-    // Audio reactivity bloom
-    col += vec3<f32>(1.0, 0.5, 0.2) * audio * glow * 0.4;
+    // Idea 3 — ember afterglow: heat decays from C.x and is re-lit by emission;
+    // the cooling residue glows warm around the core and crack seams.
+    let heat = max(emission, clamp(prevField.x, 0.0, 16.0) * 0.93);
+    let afterglow = max(heat - emission, 0.0);
+    col += hsv2rgb(vec3<f32>(fract(hue + 0.02), 0.85, 1.0)) * afterglow * glow * 0.35;
 
-    // Temporal persistence
-    col = mix(col, prev.rgb, 0.05);
+    // Audio bloom (bass, controlled)
+    col += vec3<f32>(1.0, 0.5, 0.2) * bass * glow * 0.2 * clamp(emission, 0.0, 1.0);
 
     // HDR hue-preserving clamp
     col = hue_preserving_clamp(col, 8.0);
@@ -298,9 +356,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = clamp(col + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Alpha: glass transparency based on Fresnel + core density + fog
-    let alpha = clamp(0.2 + emission * 0.5 + fogAccum * 0.3, 0.0, 1.0);
+    let alpha = clamp(0.2 + emission * 0.5 + afterglow * 0.2 + fogAccum * 0.3, 0.0, 1.0);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(emission, density, fogAccum, alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(heat, density, fogAccum, alpha));
 }

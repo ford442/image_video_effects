@@ -119,7 +119,7 @@ Skipped shaders (intentional): listed in `reports/thumbnail_skip_allowlist.json`
 
 ## Coverage strategy (campaign target ≥50% healthy; 80% later)
 
-Current catalog is ~1,300 shaders. **Do not capture on the Cloud VM** (no GPU adapter; black PNGs are not coverage). Run on a discrete-GPU workstation:
+**Do not capture on the Cloud VM** (no GPU adapter; black PNGs are not coverage). Run on a discrete-GPU workstation:
 
 ```bash
 SKIP_WASM_BUILD=1 npm run build
@@ -141,6 +141,59 @@ Priority order: `ATTRACT_SHOWCASE_IDS` + `ATTRACT_PHYSICS_LAB_IDS`, then remaini
 | W1 | `generative` | Remaining generative |
 | W2 | `simulation`, `interactive-mouse` | Multipass flagships + user-facing interaction |
 | W3 | `visual-effects`, `distortion`, `liquid-effects`, `image`, remainder | Image shaders use `public/fixtures/thumbnail-sample.png` |
+
+### Campaign plan — 50% checkpoint (baseline 2026-09-13)
+
+Baseline from a fresh integrity audit (`python3 scripts/audit_thumbnail_integrity.py`, then
+`node scripts/check-thumbnail-coverage.js`), against the current catalog:
+
+| | Count |
+|---|---|
+| Catalog (unique list ids) | 1,365 |
+| Eligible (minus skip allowlist) | 1,364 |
+| PNG + manifest | 360 |
+| Integrity-flagged (`black_frame`) | 77 — generative 56, visual-effects 21 |
+| **Healthy** | **283 (20.7%)** |
+| **50% checkpoint** | **682 healthy — +399** |
+
+The older "360 / 26.6%" figure counted the 77 black PNGs as healthy, because that report
+ran against a stale audit. Always audit before quoting a percentage.
+
+Remaining non-healthy shaders by category (eligible − healthy): interactive-mouse 239,
+generative 224 (incl. 56 black), advanced-hybrid 166, artistic 96, image 91, distortion 61,
+simulation 44, retro-glitch 33, liquid-effects 29, post-processing 28, visual-effects 22
+(incl. 21 black), hybrid 18, geometric 16, lighting-effects 15.
+
+| Step | Scope | Healthy after | Command |
+|------|-------|---------------|---------|
+| C0 repair | 77 flagged PNGs, the attract gap (`gen-ethereal-cyber-chrono-nebula-phoenix`), and the 12 ids with no thumb and no deferral (below) | ~373 (27%) | `bash scripts/run-thumbnail-waves.sh --wave=attract` |
+| C1 | rest of `generative` + `visual-effects` | ~529 (39%) | `--missing --category=generative`, then `visual-effects` |
+| C2 | `simulation` + small families: `lighting-effects`, `geometric`, `hybrid`, `liquid-effects`, `post-processing` | ~679 (49.8%) | one `--category=` run per family |
+| **C3 — 50% checkpoint** | first `interactive-mouse` shard to cross 682 | **≥682 (50%)** | `--missing --category=interactive-mouse --limit=20` |
+
+C2 deliberately covers the small families before content work (upgrade batches for
+lighting/geometric/hybrid). The picker should show them with real pictures first.
+
+At the checkpoint: re-run the audit, refresh `reports/thumbnail_coverage.md`, drop
+`continue-on-error` from the regression job (see CI below), and write the monthly snapshot.
+Then continue with `interactive-mouse`, `advanced-hybrid`, `artistic`, `image`, `distortion`,
+and `retro-glitch` toward 80% (1,092).
+
+Ids with no healthy thumbnail and no deferral as of the baseline (gen-* unless noted):
+`gen-aetherial-plasma-loom`, `gen-bioluminescent-neural-lattice`,
+`gen-chronomorphic-glass-tesseract`, `gen-hyperdimensional-bismuth-lattice`,
+`gen-hyperdimensional-plasma-loom`, `gen-liquid-metal-cymatic-resonator`,
+`gen-liquid-neon-topography`, `gen-luminescent-nebula-silk-weaver`,
+`gen-neutron-star-magnetic-spindle`, `gen-sentient-bismuth-hypercrystal`,
+`gen-sentient-void-silk-nebula`, `gen-symbiotic-cyber-mycelium`.
+
+**Deferral cliff:** all 1,069 current deferrals expire **2026-09-29**. Expiry doesn't block
+existing shaders (the gate only looks at newly eligible ids), but the report's "Missing" count
+jumps to ~1,080. Renew deferrals only for the categories in the next scheduled wave, 30 days at
+most. Never bulk-extend the whole catalog.
+
+In the picker, authors can use the dev-only **Needs thumb** filter in `ShaderGallery` to list
+shaders without a healthy thumbnail (manifest + `public/thumbnails/unhealthy.json`).
 
 Example W1:
 

@@ -15,7 +15,8 @@
     "orbit-camera",
     "ripple-deformation",
     "audio-reactive",
-    "fft-reactive"
+    "fft-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "chaotic",

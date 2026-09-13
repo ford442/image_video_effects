@@ -1,16 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Ethereal-Aurora Ghost-Orchid
 //  Category: generative
-//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
+//  Features: mouse-driven, audio-reactive, click-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Enrichment: Aurora Borealis Physics (Wolfram Alpha)
-//    - Altitude: 80-640 km (most intense at 100-300 km)
-//    - Green color (557.7 nm): oxygen at 100-240 km
-//    - Red color (630.0 nm): oxygen above 240 km
-//    - Purple/blue (427.8 nm): nitrogen at lower altitudes
-//    - Solar wind particles spiral along Earth's magnetic field lines
-//  Created: 2026-06-07
-//  By: Kimi Shader Agent
+//  Upgraded: 2026-09-13
+//  Ideas: spring-eased magnetic pole (extraBuffer 133-136) so the orchid's
+//         field-line spiral lags and overshoots the cursor; persistent bass
+//         bloom envelope (extraBuffer 137) unfurls petals and lifts the red
+//         630 nm oxygen band ceiling; raymarch hit distance written as depth
+//  A packing: ACES display RGB blended with exact C read; alpha = aurora
+//             emission/shock/held coverage (semantic, never 1.0)
+//  Enrichment: aurora altitude physics (557.7 / 630.0 / 427.8 nm bands)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -160,9 +160,32 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audio = bass * 0.5 + mids * 0.3 + treble * 0.2;
     let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
+    // Persistent state: spring-eased magnetic pole + bass bloom envelope.
+    var pole = mouse;
+    var poleVel = vec2<f32>(0.0);
+    var bloomEnv = bass;
+    let hasState = arrayLength(&extraBuffer) > 138u;
+    if (hasState && extraBuffer[138] > 0.5) {
+        pole = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        poleVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        bloomEnv = extraBuffer[137];
+    }
+    if (hasState && id.x == 0u && id.y == 0u) {
+        let k = 0.08 + held * 0.06;
+        poleVel = poleVel * 0.82 + (mouse - pole) * k;
+        pole = pole + poleVel;
+        bloomEnv = mix(bloomEnv, bass, select(0.03, 0.25, bass > bloomEnv));
+        extraBuffer[133] = pole.x;
+        extraBuffer[134] = pole.y;
+        extraBuffer[135] = poleVel.x;
+        extraBuffer[136] = poleVel.y;
+        extraBuffer[137] = bloomEnv;
+        extraBuffer[138] = 1.0;
+    }
+
     let petal_complex = u.zoom_params.x;
     let aurora_int = u.zoom_params.y;
-    let audio_react = u.zoom_params.z * audio;
+    let audio_react = u.zoom_params.z * (audio + bloomEnv * 0.5);
     let pollen_dens = u.zoom_params.w;
 
     var ro = vec3<f32>(0.0, 0.0, -5.0 + held * 0.65);
@@ -175,11 +198,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var d = 0.0;
     var col = vec3<f32>(0.0);
     var emission = vec3<f32>(0.0);
+    var hitT = -1.0;
 
     // Raymarching
     for (var i = 0; i < 64; i += 1) {
         let p = ro + rd * t;
-        d = map(p, time, audio_react, mouse, bass);
+        d = map(p, time, audio_react, pole, bass);
 
         if (d < 0.01) {
             // Altitude-based aurora emission physics
@@ -196,10 +220,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             // Altitude-based color gradient
             var aurora_col: vec3<f32>;
+            let redCeil = 0.7 - clamp(bloomEnv, 0.0, 1.0) * 0.2;
+            if (d < 0.01 && hitT < 0.0) { hitT = t; }
             if (altitude < 0.4) {
                 aurora_col = mix(blueNitrogen, greenOxygen, altitude / 0.4);
-            } else if (altitude < 0.7) {
-                aurora_col = mix(greenOxygen, redOxygen, (altitude - 0.4) / 0.3);
+            } else if (altitude < redCeil) {
+                aurora_col = mix(greenOxygen, redOxygen, (altitude - 0.4) / max(redCeil - 0.4, 0.01));
             } else {
                 aurora_col = redOxygen;
             }
@@ -247,13 +273,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let caStr = 0.003 * (1.0 + bass);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    // Exact HDR temporal feedback and filmic presentation.
+    // Exact feedback on ACES display RGB (A holds display RGBA).
     let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
-    let feedback = mix(prev.rgb * 0.96, col, 0.25);
-    col = acesToneMap(feedback * 1.1);
+    let mapped = acesToneMap(max(col, vec3<f32>(0.0)) * 1.1);
+    let display = clamp(mix(prev.rgb * 0.96, mapped, 0.3), vec3<f32>(0.0), vec3<f32>(1.0));
     let alpha = clamp(length(emission) * 0.35 + auroraShock * 0.2 + held * 0.08, 0.04, 0.95);
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(feedback, alpha));
-
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    let outAlpha = clamp(mix(prev.a * 0.96, alpha, 0.3), 0.0, 0.95);
+    let depth = select(0.0, clamp(1.0 - hitT / 10.0, 0.0, 1.0), hitT >= 0.0);
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(display, outAlpha));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(display, outAlpha));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

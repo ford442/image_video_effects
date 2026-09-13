@@ -1,5 +1,13 @@
-// Luminescent Quantum-Flora Symphony — Category: generative
-// Upgraded 2026-08-03 (swarm b31, optimizer): canonical uniforms fix,
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Quantum-Flora Symphony
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: golden-angle phyllotaxis florets on core bulb; KIFS-space petal veins + backlit translucency; stem node rings + rising sap pulse
+//  A packing: ACES display RGB + spore accumulation in .a (C not read)
+// ═══════════════════════════════════════════════════════════════════
+// History: 2026-08-03 (swarm b31, optimizer): canonical uniforms fix,
 // smooth-union SDF flora (stem + KIFS petals + core bulb), hex-tessellation
 // spore field, adaptive raymarch steps + fold LOD, real depth + dataTextureA.
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,6 +36,8 @@ const BASE_STEPS: i32 = 40;
 const STEP_RANGE: f32 = 32.0;      // adaptive steps: 40..72 with Petal Complexity
 const SMIN_K: f32 = 0.22;          // smooth-union blend radius
 const PETAL_R: f32 = 0.5;
+const GOLDEN_ANGLE: f32 = 2.39996323;
+const FLORETS: f32 = 140.0;
 const MAT_STEM: f32 = 1.0;  const MAT_PETAL: f32 = 2.0;  const MAT_CORE: f32 = 3.0;
 fn rot2D(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(cos(a), -sin(a), sin(a), cos(a));
@@ -104,6 +114,49 @@ fn calcNormal(p: vec3<f32>, folds: i32, petal: f32, twist: f32, bass: f32) -> ve
     return normalize(vec3<f32>(dx, dy, dz));
 }
 
+
+// Idea 2 helper: re-run the Gravity Twist warp + KIFS fold loop from map()
+// and return the final fold-space position, so petal veins live in the same
+// frame the petals were built in.
+fn petalFrame(p: vec3<f32>, folds: i32, petal: f32, twist: f32, bass: f32) -> vec3<f32> {
+    let mouse = (u.zoom_config.yz - 0.5) * 2.0;
+    let delta = p.xy - mouse;
+    let ang = twist * PI / (1.0 + dot(delta, delta) * 4.0);
+    var pos = vec3<f32>(rot2D(ang) * delta + mouse, p.z);
+    let t = u.config.x * 0.5;
+    for (var i = 0; i < folds; i++) {
+        pos.y = abs(pos.y) - petal * 0.2;
+        let xy = rot2D(t * 0.2 + f32(i) * 0.5 + bass * 0.1) * pos.xy;
+        pos = vec3<f32>(xy, pos.z * 0.96);
+    }
+    return pos;
+}
+
+// Idea 1: Vogel golden-angle seed spiral projected onto the core bulb.
+// Returns floret mask (1 at seed centres) in .x and seed ring position 0..1 in .y.
+fn phyllotaxis(dir: vec3<f32>, spin: f32) -> vec2<f32> {
+    let q = normalize(dir + vec3<f32>(0.0, 0.0, 0.0001));
+    let r = acos(clamp(q.z, -1.0, 1.0)) / PI;          // 0 facing camera .. 1 back
+    let phi = atan2(q.y, q.x) + spin;
+    let pd = r * vec2<f32>(cos(phi), sin(phi));
+    let nEst = r * r * FLORETS;
+    var best = 10.0;
+    var bestK = 0.0;
+    for (var j = -24; j <= 24; j++) {
+        let k = floor(nEst) + f32(j);
+        let kk = max(k, 0.0);
+        let sr = sqrt(kk / FLORETS);
+        let sa = kk * GOLDEN_ANGLE;
+        let dd = length(pd - sr * vec2<f32>(cos(sa), sin(sa)));
+        let closer = dd < best && k >= 0.0;
+        best = select(best, dd, closer);
+        bestK = select(bestK, kk, closer);
+    }
+    let cell = 0.5 / sqrt(FLORETS);
+    let mask = 1.0 - smoothstep(cell * 0.35, cell * 1.1, best);
+    return vec2<f32>(mask, sqrt(bestK / FLORETS));
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
@@ -169,6 +222,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         albedo = select(albedo, coreCol, mat > 2.5);
         col = albedo * (0.25 + dif * 0.85);
         col += vec3<f32>(0.3, 0.9, 1.0) * fre * 0.6 * coreInt * 0.25;
+
+        let isStem = select(0.0, 1.0, mat < 1.5);
+        let isPetal = select(0.0, 1.0, mat > 1.5 && mat < 2.5);
+        let isCore = select(0.0, 1.0, mat > 2.5);
+
+        // Idea 1 — golden-angle florets on the bulb: seeds glow, gaps darken
+        let ph = phyllotaxis(p, time * 0.15);
+        let floretCol = mix(vec3<f32>(1.0, 0.85, 0.35), vec3<f32>(0.4, 1.0, 0.7), ph.y);
+        let floret = ph.x * (0.6 + mids * 0.4);
+        col = mix(col, col * (0.35 + 0.65 * ph.x) + floretCol * floret * coreInt * 0.35, isCore);
+
+        // Idea 2 — veins in KIFS fold space + backlit petal translucency
+        let fp = petalFrame(p, folds, petal, twist, bass);
+        let va = atan2(fp.y, fp.x);
+        let vr = length(fp.xy);
+        let radialVein = 1.0 - smoothstep(0.0, 0.12, abs(sin(va * 9.0)));
+        let midrib = 1.0 - smoothstep(0.0, 0.03, abs(fp.y));
+        let vein = max(radialVein * smoothstep(0.05, 0.35, vr), midrib) * 0.8;
+        let backLit = pow(max(dot(rd, lig), 0.0), 3.0) * 0.8 + max(dot(-n, lig), 0.0) * 0.35;
+        let tissue = mix(petalCol, vec3<f32>(1.0, 0.95, 0.8), 0.35);
+        let petalAdd = tissue * backLit * (0.5 + 0.5 * (1.0 - fre)) * coreInt * 0.35
+                     + vec3<f32>(0.75, 1.0, 1.0) * vein * (0.15 + dif * 0.25 + treble * 0.2);
+        col += petalAdd * isPetal;
+
+        // Idea 3 — stem node rings + sap pulse climbing ground -> bloom
+        let nodeD = abs(fract(p.y * 2.5 + 0.5) - 0.5);
+        let node = 1.0 - smoothstep(0.015, 0.05, nodeD);
+        let sapY = -2.0 + fract(time * 0.22 + bass * 0.06) * 2.2;
+        let sap = exp(-pow((p.y - sapY) * 5.0, 2.0)) * (0.6 + bass * 0.5);
+        let stemAdd = vec3<f32>(0.1, 0.25, 0.12) * node * (0.4 + dif)
+                    + vec3<f32>(0.4, 1.0, 0.6) * sap * coreInt * 0.3;
+        col = col * (1.0 - node * 0.35 * isStem) + stemAdd * isStem;
     }
 
     // 2D hex-tessellation spore field (background + halo), LOD-gated by density

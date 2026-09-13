@@ -1,19 +1,15 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Julia Set / Newton Fractal — Smooth Iteration + Orbit Trap Coloring
+// ═══════════════════════════════════════════════════════════════════
+//  Julia Set — Orbit Trap
 //  Category: generative
-//  Features: procedural, animated, audio-reactive, temporal, chromatic, depth-aware
+//  Features: procedural, animated, audio-reactive, temporal, chromatic,
+//            depth-aware, upgraded-rgba
 //  Complexity: High
-//  Scientific: Generalized Julia iteration z_{n+1} = z^n + c for n=2..6,
-//              smooth (continuous) iteration μ = i − log₂(log₂|z|),
-//              multi-trap orbit coloring: circle trap, line trap, cross trap,
-//              animated Julia parameter c orbiting a cardioid,
-//              audio-driven trap scale and mode selection
-//  Upgraded: Phase B, 2026-05-31
-//  Optimizer pass, 2026-07-22: bass-driven Lissajous c-morph (mouse drag
-//              overrides), interior filament detail from the iteration
-//              derivative, 2-sample hash-jitter rotated-grid AA, pre-tint
-//              temporal accumulation clamped at 1.2 (luma-echo-warp lesson).
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-09-13
+//  Ideas: smooth trap-mode interpolation; velocity |Δz| trap
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+//  Scientific: z^n+c n=2..6, smooth μ, circle/line/cross traps,
+//              c orbiting a cardioid, mouse-drag c override
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0)  var u_sampler: sampler;
 @group(0) @binding(1)  var readTexture: texture_2d<f32>;
@@ -105,6 +101,7 @@ struct JuliaSample {
     trapDist: f32,
     iterNorm: f32,
     interior: f32,
+    velTrap:  f32,
 }
 
 fn juliaRender(z0: vec2<f32>, c: vec2<f32>, power: f32, trapMode: f32,
@@ -113,6 +110,7 @@ fn juliaRender(z0: vec2<f32>, c: vec2<f32>, power: f32, trapMode: f32,
     var z        = z0;
     var zPrev    = z0;
     var trapDist = 1e9;
+    var velTrap  = 1e9;
     var filAcc   = 0.0;
     var smoothed = 0.0;
     var i        = 0;
@@ -121,16 +119,17 @@ fn juliaRender(z0: vec2<f32>, c: vec2<f32>, power: f32, trapMode: f32,
         zPrev = z;
         z = cpow(z, power) + c;
 
-        // Accumulate min trap distance
-        var td = 0.0;
-        if (trapMode < 0.33) {
-            td = circTrap(z, trapScale);
-        } else if (trapMode < 0.67) {
-            td = lineTrap(z);
-        } else {
-            td = crossTrap(z);
-        }
+        // Idea 1 — lerp circle↔line↔cross along Trap Mode instead of three bins
+        let tdCirc = circTrap(z, trapScale);
+        let tdLine = lineTrap(z);
+        let tdCross = crossTrap(z);
+        let tdA = mix(tdCirc, tdLine, smoothstep(0.0, 0.5, trapMode));
+        let tdB = mix(tdLine, tdCross, smoothstep(0.5, 1.0, trapMode));
+        let td = mix(tdA, tdB, step(0.5, trapMode));
         trapDist = min(trapDist, td);
+
+        // Idea 2 — velocity trap: stall glow where |Δz| is tiny
+        velTrap = min(velTrap, length(z - zPrev));
 
         // Iteration-derivative filament accumulator: orbit-speed bands
         let dz = length(z) - length(zPrev);
@@ -141,6 +140,7 @@ fn juliaRender(z0: vec2<f32>, c: vec2<f32>, power: f32, trapMode: f32,
 
     var out: JuliaSample;
     out.trapDist = trapDist;
+    out.velTrap  = velTrap;
     out.iterNorm = f32(i) / f32(maxIter);
 
     if (i >= maxIter) {
@@ -150,22 +150,23 @@ fn juliaRender(z0: vec2<f32>, c: vec2<f32>, power: f32, trapMode: f32,
         let bands    = 0.5 + 0.5 * sin(fil * 21.0 + trapNorm * 9.0);
         let hue      = fract(trapNorm * 1.5 + fil * 0.7 + time * 0.05);
         let val      = 0.10 + bands * (0.22 + trapNorm * 0.45);
-        out.col      = hsv2rgb(hue, 0.85, val);
+        let velGlow  = exp(-velTrap * 18.0);
+        out.col      = hsv2rgb(hue, 0.85, val) + vec3<f32>(0.85, 0.55, 1.05) * velGlow * 0.22;
         out.smoothed = f32(maxIter);
         out.interior = 1.0;
     } else {
         // Exterior — smooth iteration + trap modulation
         smoothed = smoothIter(f32(i), z);
         let mu    = clamp(smoothed / f32(maxIter), 0.0, 1.0);
-        // Base hue from smooth iteration
         let hue   = fract(mu * 4.0 + time * 0.1 + treble * 0.1);
         let sat   = 0.85;
         let val   = pow(mu, 0.4) * 0.9;
         var col   = hsv2rgb(hue, sat, val);
-        // Overlay trap coloring (bright streaks where orbit passed close)
         let trapGlow = exp(-trapDist * 3.0);
         let trapHue  = fract(trapDist * 1.5 + time * 0.07);
         col = mix(col, hsv2rgb(trapHue, 1.0, 1.0), trapGlow * 0.6);
+        let velGlow = exp(-velTrap * 18.0);
+        col = mix(col, hsv2rgb(fract(trapHue + 0.18), 0.9, 1.0), velGlow * 0.4);
         out.col      = col;
         out.smoothed = smoothed;
         out.interior = 0.0;
@@ -218,10 +219,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sB = juliaRender(baseP - jOff, c, power, trapMode, trapScale, time, treble);
 
     var color     = (sA.col + sB.col) * 0.5;
-    let smoothed  = (sA.smoothed + sB.smoothed) * 0.5;
     let trapDist  = min(sA.trapDist, sB.trapDist);
-    let iterNorm  = (sA.iterNorm + sB.iterNorm) * 0.5;
     let interior  = max(sA.interior, sB.interior);
+    let velTrap   = min(sA.velTrap, sB.velTrap);
 
     // Blend with input texture
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -237,18 +237,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = mix(finalColor, chrColor, 0.2 + bass * 0.15);
 
     // Pre-tint clamp: temporal accumulation can never exceed 1.2
-    // (luma-echo-warp lesson — unbounded feedback blooms into white mush)
     finalColor = min(finalColor, vec3<f32>(1.2));
 
-    // ─── Temporal feedback (clamped history, short trail) ───
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let pixel = vec2<i32>(global_id.xy);
+    let prev = textureLoad(dataTextureC, pixel, 0);
     let prevSafe = min(prev.rgb, vec3<f32>(1.2));
     finalColor = mix(finalColor, prevSafe * 0.9, 0.03 + bass * 0.01);
 
-    // ─── Tone map ───
-    finalColor = acesToneMap(finalColor);
+    let trapGlow = exp(-trapDist * 3.0);
+    let velGlow = exp(-velTrap * 18.0);
+    let alpha = clamp(0.08 + (1.0 - interior) * 0.5 + interior * 0.22 + trapGlow * 0.28 + velGlow * 0.18, 0.05, 0.98);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(smoothed / 128.0, trapDist, iterNorm, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(finalColor), alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

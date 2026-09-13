@@ -13,7 +13,7 @@
     "mouse-driven",
     "temporal"
   ],
-  "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, and spark frequency.",
+  "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, spark frequency, and ember beads that crawl along the lattice lines; flying shards cool to deep red and flare as they re-ignite on reform.",
   "workgroup_size": [
     16,
     16,
@@ -65,6 +65,8 @@
   "id": "gen-fractal-ember-lattice",
   "url": "shaders/gen-fractal-ember-lattice.wgsl",
   "features": [
+    "audio-reactive",
+    "mouse-driven",
     "upgraded-rgba",
     "rigid-shard-state",
     "three-band-audio-reactive",

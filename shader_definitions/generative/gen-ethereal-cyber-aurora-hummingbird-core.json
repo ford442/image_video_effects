@@ -59,5 +59,10 @@
   "updated": true,
   "id": "gen-ethereal-cyber-aurora-hummingbird-core",
   "url": "shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "upgraded-rgba"
+  ]
 }

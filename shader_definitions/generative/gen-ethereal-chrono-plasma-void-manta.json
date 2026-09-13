@@ -3,6 +3,7 @@
   "url": "shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
   "name": "Ethereal Chrono-Plasma Void-Manta",
   "category": "generative",
+  "features": ["mouse-driven", "audio-reactive", "click-reactive", "upgraded-rgba"],
   "description": "A majestic, hyper-organic cybernetic space-manta ray gliding through a dark-matter ocean, its translucent biomimetic wings rippling with shifting auroral temporal energy as it consumes deep acoustic bass frequencies.",
   "parameters": [
     {

@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Liquid-Metal Cymatic Resonator
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid-Metal Cymatic Resonator
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: real viscosity drag from C history; Chladni nodal crystallization; ferrofluid spikes under the pointer
+//  A packing: ACES display RGBA (C read back via exact textureLoad as colour history)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -30,6 +35,11 @@ const TAU: f32 = 6.28318530718;
 // Helper functions
 // ----------------------------------------------------------------
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn smax(a: f32, b: f32, k: f32) -> f32 {
     let h = clamp(0.5 + 0.5 * (a - b) / k, 0.0, 1.0);
     return mix(b, a, h) + k * h * (1.0 - h);
@@ -39,7 +49,7 @@ fn smax(a: f32, b: f32, k: f32) -> f32 {
 // Core Cymatic Algorithm
 // ----------------------------------------------------------------
 
-fn mapHeight(p: vec2<f32>, audio: f32) -> f32 {
+fn mapHeight(p: vec2<f32>, audio: f32, bass: f32) -> f32 {
     let resonance = u.zoom_params.x; // 1.0 to 5.0
     let complexity = u.zoom_params.w; // 1.0 to 10.0
     let t = u.config.x * 0.5;
@@ -77,6 +87,13 @@ fn mapHeight(p: vec2<f32>, audio: f32) -> f32 {
         h += wave * amp;
     }
 
+    // Idea 3: ferrofluid Rosensweig spikes — the pointer is the magnet; a hexagonal
+    // spike lattice rises out of the metal around it, taller on bass hits.
+    let fp = (p - mouse_pos) * 18.0;
+    let hexWave = (cos(fp.x) + cos(0.5 * fp.x + 0.866 * fp.y) + cos(-0.5 * fp.x + 0.866 * fp.y)) / 3.0;
+    let spikes = pow(max(hexWave, 0.0), 3.0);
+    h += spikes * exp(-dist_to_mouse * 6.0) * (0.25 + bass * 0.45);
+
     // Add central audio peak
     h += exp(-r * 3.0) * audio * 0.5;
 
@@ -86,10 +103,10 @@ fn mapHeight(p: vec2<f32>, audio: f32) -> f32 {
     return h * 0.2; // Scale down overall height
 }
 
-fn getNormal(p: vec3<f32>, audio: f32) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, audio: f32, bass: f32) -> vec3<f32> {
     let e = vec2<f32>(0.005, 0.0);
-    let hx = mapHeight(p.xz + e.xy, audio) - mapHeight(p.xz - e.xy, audio);
-    let hz = mapHeight(p.xz + e.yx, audio) - mapHeight(p.xz - e.yx, audio);
+    let hx = mapHeight(p.xz + e.xy, audio, bass) - mapHeight(p.xz - e.xy, audio, bass);
+    let hz = mapHeight(p.xz + e.yx, audio, bass) - mapHeight(p.xz - e.yx, audio, bass);
     return normalize(vec3<f32>(-hx, e.x * 2.0, -hz));
 }
 
@@ -143,8 +160,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = u.config.z / u.config.w;
     let p = (uv * 2.0 - 1.0) * vec2<f32>(aspect, 1.0);
 
-    // Sample audio
-    let audio = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(uv.x, 0.5), 0.0).r;
+    // Audio from the FFT buffer (HEAD filtered-sampled dataTextureC.r here, which is colour history, not audio)
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = bass * 0.3;
 
     // Camera setup
     let ro = vec3<f32>(0.0, 2.5, -2.5); // Fixed camera above and slightly back
@@ -169,7 +189,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         pos = ro + rd * t_dist;
 
         // Signed distance to the heightfield plane
-        let h = mapHeight(pos.xz, audio);
+        let h = mapHeight(pos.xz, audio, bass);
         d = pos.y - h;
 
         if (d < 0.001) {
@@ -185,9 +205,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var color = vec3<f32>(0.0);
+    var fresnelMean = 0.0;
+    var node = 0.0;
+    var pool = 0.0;
 
     if (hit) {
-        let n = getNormal(pos, audio);
+        let n = getNormal(pos, audio, bass);
         let v = -rd; // View vector
         let NdotV = max(dot(n, v), 0.0);
 
@@ -206,28 +229,57 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Iridescence
         let irid_intensity = u.zoom_params.z; // 0.0 to 2.0
         // Use height and audio for thickness variation
-        let thickness = mapHeight(pos.xz, audio) * 2.0 + audio * 0.1;
+        let hSurf = mapHeight(pos.xz, audio, bass);
+        let thickness = hSurf * 2.0 + audio * 0.1 + mids * 0.15;
         let iridColor = iridescence(NdotV, thickness);
 
         // Combine base metal reflection with iridescence
         let reflectionColor = mix(envColor * fresnel, envColor * iridColor, irid_intensity * (1.0 - NdotV)); // Stronger at grazing angles
 
         color = reflectionColor;
+        fresnelMean = (fresnel.x + fresnel.y + fresnel.z) / 3.0;
+
+        // Idea 2: Chladni nodal crystallization — distance to the standing wave's zero
+        // crossing (|h| / slope) marks the nodal lines; the metal crystallizes there into
+        // thin cool filigree with a tighter specular, glinting with treble.
+        let slope = length(n.xz) / max(n.y, 0.05);
+        let nodeDist = abs(hSurf) / max(slope, 0.02);
+        node = 1.0 - smoothstep(0.0, 0.012, nodeDist);
+        let crystalSpec = pow(max(dot(refl, normalize(vec3<f32>(1.0, 1.0, 1.0))), 0.0), 96.0);
+        let glintPhase = sin(dot(pos.xz, vec2<f32>(91.7, 57.3)) + u.config.x * 7.0) * 0.5 + 0.5;
+        let crystal = vec3<f32>(0.85, 0.95, 1.1) * (0.35 + crystalSpec * 2.0 + glintPhase * treble * 0.8);
+        color = mix(color, color * 0.6 + crystal, node * 0.7);
 
         // Viscosity (temporal accumulation / motion blur effect approximation)
         // Since we can't easily read back history cleanly here without a dedicated pass,
         // we'll simulate a visual "drag" by darkening based on steepness to look like deep pools
         let viscosity = u.zoom_params.y; // 0.0 to 1.0
         let pool_darkening = smoothstep(0.8, 1.0, n.y); // Flatter areas
-        color *= mix(1.0, 0.4, pool_darkening * viscosity);
+        pool = pool_darkening * viscosity;
+        color *= mix(1.0, 0.4, pool);
 
     } else {
         // Background
         color = getEnvColor(rd);
     }
 
-    // Gamma correction
+    // Tone map, then gamma correction
+    color = aces(color * 1.15);
     color = pow(color, vec3<f32>(1.0 / 2.2));
 
-    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+    // Idea 1: real viscosity drag — thicker metal settles slowly, so the display lags
+    // behind the resonance through exact colour history (replaces the old "can't read history" note).
+    let viscosityDrag = clamp(u.zoom_params.y, 0.0, 1.0) * 0.75;
+    let previous = textureLoad(dataTextureC, coord, 0);
+    color = mix(color, previous.rgb, viscosityDrag);
+
+    let skyT = clamp(rd.y * 0.5 + 0.5, 0.0, 1.0);
+    let alpha = select(0.25 + 0.35 * skyT,
+                       clamp(0.7 + 0.2 * fresnelMean + node * 0.15 - pool * 0.1, 0.0, 1.0),
+                       hit);
+    let depth = select(1.0, clamp(t_dist / max_dist, 0.0, 0.995), hit);
+
+    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 }

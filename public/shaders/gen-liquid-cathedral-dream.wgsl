@@ -1,4 +1,12 @@
-// Liquid Cathedral Dream — melting stained-glass arches with pointer refraction.
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Cathedral Dream
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-13
+//  Ideas: leaded came panes in each window; molten glass drips below arches
+//  A packing: ACES display RGBA (C read back as melt-offset colour history)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,6 +33,10 @@ const TAU: f32 = 6.28318530718;
 
 fn palette(t: f32) -> vec3<f32> {
     return vec3<f32>(0.52) + vec3<f32>(0.48) * cos(TAU * (vec3<f32>(1.0, 0.78, 0.52) * t + vec3<f32>(0.0, 0.24, 0.55)));
+}
+
+fn hash21(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -78,6 +90,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         exp(-abs(roseRadius - 0.24) * (32.0 + refraction * 28.0));
     let floorCaustic = pow(0.5 + 0.5 * sin(q.x * 28.0 + q.y * 11.0 - flowTime * 5.0), 16.0) * smoothstep(0.35, -0.42, tierY);
 
+    // Idea 1: lead cames — radial + ring came lines split each window into panes, each pane its own hue.
+    let columnId = floor((q.x + 1.0) * columns * 0.5);
+    let tierId = floor((q.y + flowTime * 0.08) * (3.0 + spireDensity * 3.0));
+    let paneCount = 4.0 + floor(spireDensity * 4.0);
+    let paneCoord = (roseAngle / TAU + 0.5) * paneCount;
+    let radialCameDist = abs(fract(paneCoord + 0.5) - 0.5) * roseRadius * TAU / paneCount;
+    let ringCameDist = abs(roseRadius - 0.15);
+    let cameDist = min(radialCameDist, ringCameDist);
+    let came = (1.0 - smoothstep(0.005, 0.014 + refraction * 0.006, cameDist)) * window;
+    let outerRing = step(0.15, roseRadius);
+    let paneId = floor(paneCoord) + outerRing * paneCount;
+    let paneHue = (hash21(vec2<f32>(paneId + columnId * 13.0, tierId * 7.0)) - 0.5) * 0.35;
+
+    // Idea 2: molten glass drips — hashed drips hang past each arch edge, lengthening with melt and bass.
+    let dripSlotCoord = (cellX + 0.5) * 4.0;
+    let dripHash = hash21(vec2<f32>(columnId * 3.1 + floor(dripSlotCoord), tierId * 1.7));
+    let dripLocalX = (fract(dripSlotCoord) - 0.5) * 0.25;
+    let dripStart = 0.27;
+    let dripLength = (0.04 + dripHash * 0.14) * (0.35 + meltSpeed * 0.9) * (1.0 + audio.x * 0.4)
+        * (0.75 + 0.25 * sin(flowTime * 0.7 + dripHash * TAU));
+    let dripAlong = clamp((tierY - dripStart) / max(dripLength, 0.001), 0.0, 1.0);
+    let dripActive = step(dripStart, tierY) * step(tierY, dripStart + dripLength) * step(abs(cellX), 0.34);
+    let dripWidth = mix(0.018, 0.004, dripAlong);
+    let drip = (1.0 - smoothstep(dripWidth * 0.5, dripWidth, abs(dripLocalX))) * dripActive;
+    let bead = exp(-length(vec2<f32>(dripLocalX, tierY - dripStart - dripLength)) * 70.0) * step(abs(cellX), 0.34);
+
     var clickRose = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -92,7 +130,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let hue = stainedHue + cellX * 0.7 + tierY * 0.35 + flowTime * 0.06;
-    var hdr = palette(hue) * window * (0.5 + glassPulse * 1.4 + audio.z);
+    var hdr = palette(hue + paneHue) * window * (1.0 - came * 0.88) * (0.5 + glassPulse * 1.4 + audio.z);
+    hdr += vec3<f32>(0.32, 0.28, 0.24) * came * glassPulse * 0.35;
+    hdr += palette(hue + paneHue) * (drip * 0.9 + bead * 2.4) * (0.7 + audio.x);
+    hdr += palette(hue + 0.57) * floorCaustic * (drip + bead) * 0.8;
     hdr += palette(hue + 0.32) * (arch * 1.8 + spire * 0.8) * (0.8 + audio.x);
     hdr += palette(hue + 0.57) * (roseTracery * 1.35 + floorCaustic * 0.45) * (0.6 + audio.y);
     hdr += palette(hue + clickRose * 0.4) * clickRose * 2.0;
@@ -100,7 +141,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyUV = clamp(uv + vec2<f32>(melt.x / max(aspect, 0.001), 0.004 + meltSpeed * 0.007), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + refraction * 0.20 + dragMask * 0.12, 0.0, 0.42));
-    let structure = clamp(max(arch, spire) + window * 0.45 + roseTracery * 0.35 + clickRose * 0.5, 0.0, 1.0);
+    let structure = clamp(max(arch, spire) + window * 0.45 + roseTracery * 0.35 + clickRose * 0.5 + came * 0.3 + drip * 0.5 + bead * 0.6, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(hdr), clamp(0.16 + structure * 0.82, 0.0, 1.0));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);
