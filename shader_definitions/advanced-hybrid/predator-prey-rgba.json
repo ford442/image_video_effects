@@ -2,7 +2,7 @@
   "id": "predator-prey-rgba",
   "name": "Predator-Prey RGBA",
   "url": "shaders/predator-prey-rgba.wgsl",
-  "description": "Continuous-density predator-prey ecosystem simulation packed into RGBA32FLOAT. Plants photosynthesize using source image luminance, herbivores graze, carnivores hunt, and toxins accumulate from overpopulation. Species diffuse across the grid creating emergent spatial waves.",
+  "description": "Continuous-density predator-prey field. Carnivores pursue along the herbivore gradient, herbivores flee carnivores, and toxin strength is a live slider. Species persist in dataTextureA.",
   "tags": [
     "predator-prey",
     "ecosystem",
@@ -17,7 +17,9 @@
   "features": [
     "mouse-driven",
     "temporal",
-    "rgba-state-machine"
+    "rgba-state-machine",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -46,6 +48,42 @@
     },
     {
       "id": "toxinStrength",
+      "name": "Toxin Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "feedbackPacking": "A/C = plants, herbivores, carnivores, toxin. ACES display only.",
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Eat Probability",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Death Rate",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Plant Growth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
       "name": "Toxin Strength",
       "default": 0.5,
       "min": 0,

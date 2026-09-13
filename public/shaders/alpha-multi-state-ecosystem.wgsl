@@ -1,8 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Multi-State Ecosystem
 //  Category: simulation
-//  Features: multi-species-ecosystem, seasonal-cycles, audio-reactive, keystone-mouse, extinction-recovery, depth-stratified
+//  Features: multi-species-ecosystem, seasonal-cycles, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-12
+//  Ideas: ecotone ridge where s1≈s2; toxin stain from stored A
+//  A packing: raw (s1, s2, resource, toxin)
+// ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
 //    R = Species 1 density (prey-like)
 //    G = Species 2 density (competitor)
@@ -229,6 +233,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let s2Grad = length(vec2<f32>(left.g - right.g, down.g - up.g));
     let edgeHighlight = (s1Grad + s2Grad) * (2.2 + seasonVolatile * 1.5);
     displayColor += vec3<f32>(1.0, 0.92, 0.55) * edgeHighlight * 0.35;
+
+    // Idea 1 — ecotone ridge where both species coexist (contact front, not just gradient glow)
+    let overlap = min(s1, s2);
+    let balance = 1.0 - abs(s1 - s2) / max(s1 + s2, 0.08);
+    let ecotone = overlap * balance * smoothstep(0.08, 0.28, overlap);
+    displayColor += vec3<f32>(0.95, 0.88, 0.35) * ecotone * 0.55;
+
+    // Idea 2 — toxin stain from A (mottled contamination, not a faint purple add)
+    let stainCell = fract(sin(dot(floor(uv * 48.0), vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let stain = min(toxin, 1.4) * (0.45 + stainCell * 0.55) * (0.5 + seasonHarsh * 0.5);
+    displayColor = mix(displayColor, vec3<f32>(0.22, 0.02, 0.28), clamp(stain, 0.0, 0.65));
 
     // Depth stratification: deeper areas appear slightly cooler/darker
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

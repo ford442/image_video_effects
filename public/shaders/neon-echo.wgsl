@@ -3,7 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, temporal, depth-aware, phosphor-halation, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-09-11
+//  Ideas: exact-C persistence; two-component P7 phosphor tail
+//  A packing: raw persistence RGB + alpha (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -35,8 +37,8 @@ fn sampleColor(uv: vec2<f32>) -> vec4<f32> {
   return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 }
 
-fn sampleHistory(uv: vec2<f32>) -> vec4<f32> {
-  return textureSampleLevel(dataTextureC, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+fn sampleHistory(coord: vec2<i32>, max_coord: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), max_coord), 0);
 }
 
 fn sampleDepth(uv: vec2<f32>) -> f32 {
@@ -75,13 +77,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
+  let max_coord = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
   let uv = vec2<f32>(global_id.xy) / resolution;
   let texel = 1.0 / resolution;
   let time = u.config.x;
   let dt = 1.0 / 60.0;
 
-  let bass = plasmaBuffer[0].x;
-  let treble = plasmaBuffer[0].z;
+  let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+  let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
+  let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
   let mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
 
@@ -101,14 +105,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let drift = (mouse - uv) * u.zoom_params.y * 0.015 * (0.35 + 0.65 * mouseDown);
   let prevUV = clamp(uv + drift, vec2<f32>(0.0), vec2<f32>(1.0));
-  let prevPersistence = sampleHistory(prevUV).rgb;
+  let prevCoord = vec2<i32>(prevUV * resolution);
+  let prevPersistence = sampleHistory(prevCoord, max_coord).rgb;
 
-  let halationOffset = texel * mix(1.0, 6.0, u.zoom_params.w);
+  let halationOffset = vec2<i32>(round(vec2<f32>(resolution) * texel * mix(1.0, 6.0, u.zoom_params.w)));
   let halation = (
-    sampleHistory(prevUV + vec2<f32>(halationOffset.x, 0.0)).rgb +
-    sampleHistory(prevUV - vec2<f32>(halationOffset.x, 0.0)).rgb +
-    sampleHistory(prevUV + vec2<f32>(0.0, halationOffset.y)).rgb +
-    sampleHistory(prevUV - vec2<f32>(0.0, halationOffset.y)).rgb
+    sampleHistory(prevCoord + vec2<i32>(halationOffset.x, 0), max_coord).rgb +
+    sampleHistory(prevCoord - vec2<i32>(halationOffset.x, 0), max_coord).rgb +
+    sampleHistory(prevCoord + vec2<i32>(0, halationOffset.y), max_coord).rgb +
+    sampleHistory(prevCoord - vec2<i32>(0, halationOffset.y), max_coord).rgb
   ) * 0.25;
 
   let heatedTauScale = mix(1.0, 0.55, bass);
@@ -118,12 +123,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let decay = vec3<f32>(exp(-dt / tauR), exp(-dt / tauG), exp(-dt / tauB));
 
   let decayed = max(prevPersistence, halation * 0.35) * decay;
+  // Idea 2: P7 slow yellow-green tail
+  let tauP7 = 0.22 * heatedTauScale;
+  let p7Decay = exp(-dt / tauP7);
+  let p7Tail = vec3<f32>(0.35, 1.0, 0.22) * luminance(prevPersistence) * p7Decay * 0.45;
   let threshold = mix(0.02, 0.45, u.zoom_params.z);
   let gain = mix(0.5, 2.6, u.zoom_params.x);
   let injectionStrength = max(luminance(current.rgb) + edgeSignal * 1.4 - threshold, 0.0) * gain;
   let freshInput = mix(current.rgb, vec3<f32>(1.0), 0.45 + 0.2 * bass) * injectionStrength * (1.0 + bass * 0.5);
 
-  let updatedPersistence = min(decayed + freshInput, vec3<f32>(1.35));
+  let updatedPersistence = min(decayed + p7Tail + freshInput, vec3<f32>(1.35));
   let persistenceLuma = luminance(updatedPersistence);
   let temperature = mix(1200.0, 9500.0 + 2500.0 * bass, clamp(persistenceLuma * 1.15 + injectionStrength * 0.6, 0.0, 1.0));
   let spectralTint = blackbodyRGB(temperature);
@@ -134,11 +143,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloom = halation * spectralTint * (0.15 + 0.65 * u.zoom_params.w) * smoothstep(0.08, 0.9, persistenceLuma);
   let scanFlicker = 0.96 + 0.04 * sin((uv.y * resolution.y + time * 240.0) * (1.0 + treble * 6.0));
   displayColor = displayColor * scanFlicker + bloom;
+  let aa = 2.51; let bb = 0.03; let cc = 2.43; let dd = 0.59; let ee = 0.14;
+  let mapped = clamp((displayColor * (aa * displayColor + bb)) / (displayColor * (cc * displayColor + dd) + ee), vec3<f32>(0.0), vec3<f32>(1.0));
 
   let finalAlpha = mix(current.a, 1.0, injectionStrength * 0.7);
   let depth = sampleDepth(uv);
 
   textureStore(dataTextureA, coord, vec4<f32>(updatedPersistence, finalAlpha));
-  textureStore(writeTexture, coord, vec4<f32>(displayColor, finalAlpha));
+  textureStore(writeTexture, coord, vec4<f32>(mapped, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0, 0, 0.0));
 }

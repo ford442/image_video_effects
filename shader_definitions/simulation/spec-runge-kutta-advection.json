@@ -24,7 +24,7 @@
     "RK4",
     "fluid-advection",
     "mouse-driven",
-    "temporal", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-vortex", "click-fronts", "aces-tone-map", "semantic-alpha"
+    "temporal", "exact-load-feedback", "a-only-feedback", "audio-reactive", "held-vortex", "click-fronts", "aces-tone-map", "semantic-alpha", "upgraded-rgba"
   ],
   "params": [
     {

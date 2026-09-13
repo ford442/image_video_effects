@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Origami Fold
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, depth-aware, paper-fold, mountain-valley, chromatic-edge, semantic-alpha
+//  Features: mouse-driven, audio-reactive, depth-aware, paper-fold, mountain-valley, chromatic-edge, semantic-alpha, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2024-01-01
-//  Updated: 2026-06-01
-//  By: Kimi Agent (4-Agent Swarm Upgrade)
+//  Upgraded: 2026-09-12
+//  Ideas: Kawasaki buckle wrinkle on unfoldable vertices; sheet print-through at the crease
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -94,6 +94,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dihedral = smoothstep(0.0, 1.57, kAngle) * foldSpeed;
 
   let isFolded = select(dist > 0.0, dist < 0.0, mountainValley);
+  let creaseTangent = vec2<f32>(-foldDir.y, foldDir.x);
+  // Idea 1 — Kawasaki buckle: unfoldable vertices wrinkle along the crease tangent
+  let buckle = smoothstep(0.85, 1.45, kAngle);
+  let wrinkle = sin(dot(toPoint, creaseTangent) * 42.0 + animPhase) * buckle * 0.018;
+  let reflectDir = toPoint - 2.0 * dist * foldDir + creaseTangent * wrinkle;
+  let sourceUV = clamp(mousePos + reflectDir, vec2<f32>(0.0), vec2<f32>(1.0));
+
   var finalColor = vec3<f32>(0.0);
   var foldAlpha = 0.0;
 
@@ -101,9 +108,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let texColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     finalColor = texColor.rgb;
     foldAlpha = texColor.a;
+    // Idea 2 — sheet print-through: unfolded half sees the reflected face at the crease
+    let ghost = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
+    let showThrough = paperOpacity * (1.0 - smoothstep(0.0, 0.09, abs(dist)));
+    finalColor = mix(finalColor, ghost.rgb * paperTexture(uv * 3.0), showThrough * 0.42);
+    foldAlpha = mix(foldAlpha, ghost.a * paperOpacity, showThrough * 0.35);
   } else {
-    let reflectDir = toPoint - 2.0 * dist * foldDir;
-    let sourceUV = clamp(mousePos + reflectDir, vec2<f32>(0.0), vec2<f32>(1.0));
     let texColor = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
 
     let shadow = 1.0 - smoothstep(0.0, 0.12 + foldSpeed * 0.1, abs(dist)) * shadowStrength;
@@ -124,6 +134,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let creaseGlow = bass * 0.12 * smoothstep(0.06, 0.0, abs(dist)) * select(1.0, 2.0, isMouseDown);
     finalColor += vec3<f32>(creaseGlow, creaseGlow * 0.55, creaseGlow * 0.15);
+    finalColor *= 1.0 - buckle * 0.12 * (1.0 - smoothstep(0.0, 0.08, abs(dist)));
   }
 
   let layerOrder = smoothstep(0.0, 0.08, abs(dist)) * (0.6 + depth * 0.4);

@@ -4,7 +4,9 @@
 //  Features: pluckable-strings, mouse-velocity, harmonics, audio-reactive, blackbody, upgraded-rgba
 //  Complexity: High
 //  Created: Phase B
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-09-11
+//  Ideas: standing-wave node darkening; nut/bridge end-pins
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -51,9 +53,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv     = vec2<f32>(global_id.xy) / resolution;
     let time   = u.config.x;
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+    let bass   = select(0.0, plasmaBuffer[0].x, hasAudio);
+    let mids   = select(0.0, plasmaBuffer[0].y, hasAudio);
+    let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
 
     let stringCount = u.zoom_params.x * 20.0 + 5.0;
     let tension     = clamp(u.zoom_params.y, 0.05, 1.0);
@@ -108,6 +111,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let T_cooled = T_ambient + (T - T_ambient) * pow(coolEnvelope, 1.0 / max(coolRate, 0.1));
     let T_clamped = clamp(T_cooled, 800.0, 18000.0);
 
+    // Idea 1: standing-wave nodes (displacement zeros) stay cooler
+    let nodeHalf = exp(-pow((x - 0.5) * 28.0, 2.0));
+    let nodeThird = exp(-pow((x - 1.0 / 3.0) * 32.0, 2.0)) + exp(-pow((x - 2.0 / 3.0) * 32.0, 2.0));
+    let nodeDark = 1.0 - 0.62 * nodeHalf - 0.42 * nodeThird;
+    let T_nodes = T_ambient + (T_clamped - T_ambient) * clamp(nodeDark, 0.15, 1.0);
+
+    // Idea 2: nut (x~0) and bridge (x~1) end-pins
+    let nut = exp(-x * x * 220.0);
+    let bridge = exp(-pow(x - 1.0, 2.0) * 220.0);
+    let endPin = max(nut, bridge);
+
     let stringY     = fract(uv.y * stringCount);
     let widthNorm   = 0.0005 + 0.002 * (1.0 - tension);
     let coreDist    = abs(stringY - 0.5 + totalAmp * 0.8);
@@ -115,14 +129,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let haloWidth   = 0.014 + widthNorm * 8.0;
     let haloGlow    = exp(-coreDist * coreDist / (haloWidth * haloWidth));
 
-    let SB_factor = pow(T_clamped / 6500.0, 4.0);
+    let SB_factor = pow(T_nodes / 6500.0, 4.0);
     let brightness = clamp(SB_factor * 0.15, 0.0, 1.0);
 
-    let bbColor = blackbody(T_clamped);
+    let bbColor = blackbody(T_nodes);
     let emission = bbColor * (coreGlow * intensity + haloGlow * brightness * 0.4 * intensity);
+    let pinSpec = vec3<f32>(0.95, 0.82, 0.55) * endPin * coreGlow * intensity * 0.85;
 
     let shimmer = treble * 0.15 * sin(time * 80.0 + strIdx * 7.0) * coreGlow;
-    let finalEmission = emission + blackbody(min(T_clamped * 1.5, 18000.0)) * shimmer;
+    let finalEmission = emission + pinSpec + blackbody(min(T_nodes * 1.5, 18000.0)) * shimmer;
 
     // Pull an exact history texel against packet travel for harmonic afterimages.
     let coord = vec2<i32>(global_id.xy);
@@ -136,9 +151,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blend = clamp(coreGlow + haloGlow * brightness * 0.2, 0.0, 1.0);
     let color = finalEmission + afterimage + bg * (1.0 - blend) * 0.3;
 
-    let alpha = clamp(coreGlow * 2.0 + haloGlow * brightness * 0.5 + blend * 0.3 + mids * 0.15, 0.0, 1.0);
+    let alpha = clamp(coreGlow * 2.0 + haloGlow * brightness * 0.5 + blend * 0.3 + mids * 0.15 + endPin * 0.2, 0.0, 1.0);
 
-    let finalColor = vec4<f32>(color, alpha);
+    let aa = 2.51; let bb = 0.03; let cc = 2.43; let dd = 0.59; let ee = 0.14;
+    let mapped = clamp((color * (aa * color + bb)) / (color * (cc * color + dd) + ee), vec3<f32>(0.0), vec3<f32>(1.0));
+    let finalColor = vec4<f32>(mapped, alpha);
 
     let dep = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 

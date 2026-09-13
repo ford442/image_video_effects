@@ -1,8 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  astral-kaleidoscope-gemini
 //  Category: psychedelic
-//  Features: upgraded-rgba, depth-aware
-//  Upgraded: 2026-03-22
+//  Features: upgraded-rgba, depth-aware, mouse-driven, audio-reactive
+//  Upgraded: 2026-09-11
+//  Ideas: bass/treble-driven warp swell; held-pointer becomes a second warp epicenter
+//  A packing: display RGBA feedback trail (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +25,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config:      vec4<f32>,
-  zoom_params: vec4<f32>,
-  zoom_config: vec4<f32>,
+  config:      vec4<f32>,       // x=time, y=rippleCount, z=resX, w=resY
+  zoom_config: vec4<f32>,       // x=time, yz=mouse_uv, w=mouse_down
+  zoom_params: vec4<f32>,       // x=segments, y=rotationSpeed, z=spiralStrength, w=trails
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -43,6 +45,11 @@ fn rotate(v: vec2<f32>, a: f32) -> vec2<f32> {
     var s = sin(a);
     let c = cos(a);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Pseudo-random number generator
@@ -113,9 +120,13 @@ fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
+    if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
     var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
-    
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // -----------------------------------------------------------------
     //  1️⃣  Parameters
     // -----------------------------------------------------------------
@@ -123,10 +134,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rotSpeed    = u.zoom_params.y * 0.4 - 0.2; // Allows reverse rotation
     let spiralStr   = u.zoom_params.z * 3.0;
     let trails      = u.zoom_params.w;
-    let hueShift    = u.zoom_config.x * 2.0;
-    let aberration  = u.zoom_config.y * 0.03;
-    let centerOsc   = u.zoom_config.z * 0.2;
-    let warpPower   = u.zoom_config.w * 0.8; // New GEMINI parameter
+    let hueShift    = 1.0;
+    let aberration  = 0.015;
+    let centerOsc   = 0.2;
+    let pointerUV   = u.zoom_config.yz;
+    let pointerHeld = clamp(u.zoom_config.w, 0.0, 1.0);
+    // GEMINI parameter: warp field strength now genuinely breathes with the
+    // track (bass swells it, treble speeds the scroll below) instead of the
+    // silent mouse_down bit it read before the binding-layout fix.
+    let warpPower   = 0.35 + bass * 0.75;
 
     var center = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * centerOsc;
     
@@ -140,10 +156,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var r = length(toPixel);
     var a = atan2(toPixel.y, toPixel.x);
 
-    // ✨ GEMINI UPGRADE: Add a time-based warping field
+    // ✨ GEMINI UPGRADE: Add a time-based warping field, sped up by treble
     let warpAngle = time * 0.15;
     let warpVec = vec2<f32>(cos(warpAngle), sin(warpAngle));
-    let warp = noise(uv * 4.0 + warpVec * time * 0.2) * warpPower * r;
+    let ambientWarp = noise(uv * 4.0 + warpVec * time * (0.2 + treble * 0.5)) * warpPower;
+
+    // Pointer warp epicenter: a held pointer becomes a second, stronger warp
+    // origin, pulling the noise field toward the cursor instead of only the
+    // ambient time-driven swirl above.
+    let toPointer = uv - pointerUV;
+    let pointerWarp = noise(uv * 6.0 + toPointer * 12.0 + time * 0.6) * pointerHeld * (0.5 + warpPower);
+
+    let warp = (ambientWarp + pointerWarp) * r;
     r = r + warp * 0.5;
     a = a + warp;
 
@@ -212,6 +236,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let alpha = mix(0.7, 1.0, luma);
     let finalAlpha = mix(alpha * 0.8, alpha, staticDepth);
     
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalCol, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(acesToneMap(finalCol), finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
 }

@@ -1,16 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Smoke Bloom Fireworks
 //  Category: generative
-//  Features: volumetric smoke puffs, feedback light bloom, gravity sparks,
-//            audio-reactive, mouse command shell, temporal trails,
-//            aces-tone-map, semantic alpha, depth-aware
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-// ═══════════════════════════════════════════════════════════════════
-//  Soft volumetric smoke gathers around bursts and along falling sparks.
-//  A cheap neighbor-feedback bloom adds luminous halos to bright areas.
-//  Bass swells the smoke glow, mids add secondary burst layers, treble
-//  scatters micro-sparks. Mouse launches a smoky peony at the cursor.
+//  Upgraded: 2026-09-11
+//  Ideas: buoyancy (smoke rises as sparks fall); burst-lit smoke from local flash
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -148,9 +144,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let fade = smoothstep(5.2, 0.3, burstAge);
 
       // Core flash + smoke puff at center
+      let flashLit = exp(-burstAge * 8.0);
       col += vec3<f32>(1.0, 0.96, 0.85) * exp(-burstAge * 9.0) * shellEnergy * 2.2 * softGlow(uv, center, 0.07, 1.0);
-      let smoke = smokePuff(uv, center, burstAge, smokeDensity * (0.6 + bass * 0.4), time);
-      col += vec3<f32>(0.12, 0.1, 0.14) * smoke * fade * shellEnergy;
+      // Idea 1 — buoyancy: puff lifts while sparks fall
+      let puffCenter = center + vec2<f32>(0.0, burstAge * 0.12);
+      let smoke = smokePuff(uv, puffCenter, burstAge, smokeDensity * (0.6 + bass * 0.4), time);
+      // Idea 2 — burst-lit smoke: puff brightness from the local flash
+      col += vec3<f32>(0.12, 0.1, 0.14) * smoke * fade * shellEnergy * (0.35 + flashLit * 1.45);
 
       // Primary sparks
       let nSparks = i32(28.0 + energy * 42.0 + mids * 12.0);
@@ -168,8 +168,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Trail smoke behind bright sparks
         if (js2 > 0.65) {
-          let trailSmoke = smokePuff(uv, sp, burstAge + js, smokeDensity * 0.6, time);
-          col += vec3<f32>(0.08, 0.07, 0.1) * trailSmoke * fade * shellEnergy * 0.7;
+          let trailPuff = sp + vec2<f32>(0.0, burstAge * 0.08);
+          let trailSmoke = smokePuff(uv, trailPuff, burstAge + js, smokeDensity * 0.6, time);
+          col += vec3<f32>(0.08, 0.07, 0.1) * trailSmoke * fade * shellEnergy * 0.7 * (0.4 + flashLit);
         }
       }
 
@@ -216,7 +217,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let mFade = smoothstep(4.5, 0.2, mbAge);
 
       col += vec3<f32>(1.0, 0.96, 0.85) * exp(-mbAge * 10.0) * mEnergy * 2.5 * softGlow(uv, mCenter, 0.08, 1.0);
-      col += vec3<f32>(0.1, 0.09, 0.12) * smokePuff(uv, mCenter, mbAge, smokeDensity, time) * mFade * mEnergy;
+      let mPuff = mCenter + vec2<f32>(0.0, mbAge * 0.12);
+      col += vec3<f32>(0.1, 0.09, 0.12) * smokePuff(uv, mPuff, mbAge, smokeDensity, time) * mFade * mEnergy * (0.35 + exp(-mbAge * 8.0) * 1.4);
 
       let mSparks = i32(40.0 + energy * 50.0);
       let mHue = fract(time * 0.02 + u.zoom_params.w * 0.5);

@@ -5,7 +5,9 @@
 //  Complexity: High
 //  Chunks From: zipper-reveal
 //  Created: 2026-05-30
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-09-11
+//  Ideas: slider puller at zipper head; staggered L/R teeth
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -57,7 +59,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var uv = vec2<f32>(coord) / resolution;
 
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
+  let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+  let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
   let mouse = u.zoom_config.yz;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -98,8 +101,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Interlocking tooth profile
   let toothProfile = sin(local.y * 60.0 + time * 4.0 * zipSpeed) * 0.5 + 0.5;
-  let toothOffset = toothAmp * toothProfile * openMask;
+  let toothIndex = floor(local.y / toothPitch);
+  let stagger = select(-1.0, 1.0, fract(toothIndex * 0.5) > 0.25);
+  let toothOffset = toothAmp * toothProfile * openMask * stagger;
   let seamDist = abs(local.x) - toothOffset;
+
+  let pullerY = 0.0;
+  let puller = (1.0 - smoothstep(0.0, 0.045, abs(local.y - pullerY))) * (1.0 - smoothstep(0.0, 0.07, abs(local.x)));
 
   let toothLine = 1.0 - smoothstep(0.0, toothSize * 0.5, abs(seamDist - halfGap));
   let toothRow = 1.0 - smoothstep(0.22, 0.50, toothWave);
@@ -123,6 +131,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var finalColor = sampleColor;
   finalColor = mix(finalColor, underColor, openMask * (1.0 - toothMask) * edgeConf * 0.8);
   finalColor = mix(finalColor, metalColor, toothMask);
+  let pullerMetal = vec3<f32>(0.75, 0.72, 0.68) + spec * 0.4;
+  finalColor = mix(finalColor, pullerMetal, puller * openMask);
 
   // ACES tone mapping
   finalColor = aces_tone_map(finalColor);

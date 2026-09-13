@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sim: Volumetric Fake + EM Field
 //  Category: lighting-effects
-//  Features: simulation, fake-volumetrics, mouse-driven, electromagnetic, interactive, upgraded-rgba
+//  Features: simulation, fake-volumetrics, mouse-driven, electromagnetic, interactive, upgraded-rgba, audio-reactive
 //  Complexity: High
 //  Upgraded: 2026-09-11
 //  Ideas: Faraday rotation hue twist along bent rays; Lichtenberg branch filaments at high fieldMag
-//  A packing: ACES display RGBA
+//  A packing: ACES display RGBA; extraBuffer[133..134] previous mouse
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -93,19 +93,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = vec2<f32>(gid.xy) / resolution;
   let time = u.config.x;
   let mousePos = u.zoom_config.yz;
-  let aspect = resolution.x / resolution.y;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+
+  let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+  let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
+  let mids = select(0.0, plasmaBuffer[0].y, hasAudio);
+  let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
 
   let lightIntensity = mix(0.5, 2.0, u.zoom_params.x);
-  let dustDensity = mix(0.0, 1.0, u.zoom_params.y);
-  let scattering = mix(0.3, 1.5, u.zoom_params.z);
-  let noiseSpeed = mix(0.1, 1.0, u.zoom_params.w);
-
   let chargeStrength = mix(0.5, 3.0, u.zoom_params.x);
   let emDistortion = mix(0.0, 0.15, u.zoom_params.y);
+  let dustDensity = mix(0.0, 1.0, u.zoom_params.y);
   let chromaticSplit = mix(0.0, 0.02, u.zoom_params.z);
+  let scattering = mix(0.3, 1.5, u.zoom_params.z);
   let rippleCharge = mix(0.5, 2.0, u.zoom_params.w);
+  let noiseSpeed = mix(0.1, 1.0, u.zoom_params.w);
 
-  let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
+  var prevMouse = mousePos;
+  if (arrayLength(&extraBuffer) > 134u) {
+    prevMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    if (gid.x == 0u && gid.y == 0u) {
+      extraBuffer[133] = mousePos.x;
+      extraBuffer[134] = mousePos.y;
+    }
+  }
   let mouseVel = (mousePos - prevMouse) * 60.0;
   let history = textureLoad(dataTextureC, coord, 0);
 
@@ -137,8 +149,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let toLight = lightPos - uv;
-  let distToLight = length(toLight);
-  let dirToLight = normalize(toLight);
+  let distToLight = max(length(toLight), 0.001);
+  let dirToLight = toLight / distToLight;
   let bentDir = normalize(dirToLight + fieldDir * emDistortion * smoothstep(0.0, 2.0, fieldMag));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -150,15 +162,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   for (var i: i32 = 0; i < 32; i = i + 1) {
     if (i >= samples) { break; }
-    let t = f32(i) / f32(samples);
+    let t = f32(i) / f32(max(samples, 1));
     let samplePos = uv + bentDir * t * distToLight;
-
     if (samplePos.x < 0.0 || samplePos.x > 1.0 || samplePos.y < 0.0 || samplePos.y > 1.0) {
       continue;
     }
-
-    let sampleColor = textureSampleLevel(readTexture, u_sampler, samplePos, 0.0).rgb;
-    let sampleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, samplePos, 0.0).r;
+    let sampleColor = textureSampleLevel(readTexture, u_sampler, clamp(samplePos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let luma = dot(sampleColor, vec3<f32>(0.299, 0.587, 0.114));
 
     occlusion = occlusion + luma * (1.0 - t);
@@ -179,30 +188,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var lightRays = volumetric * (1.0 - occlusion) * density;
   lightRays = lightRays * lightIntensity;
   lightRays = lightRays + vec3<f32>(dust * lightIntensity * 0.5);
-
   let sunColor = vec3<f32>(1.0, 0.95, 0.8);
   lightRays = hueRotate(lightRays * sunColor, faradayTwist * 2.8 * chromaticSplit * 40.0);
 
-  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-  var color = baseColor + lightRays;
-
-  let lightDir = normalize(vec2<f32>(0.5) - lightPos);
+  var color = src.rgb + lightRays;
   let viewDir = normalize(uv - lightPos);
+  let lightDir = normalize(vec2<f32>(0.5) - lightPos);
   let alignment = max(0.0, dot(viewDir, lightDir));
   color = color + sunColor * alignment * alignment * lightIntensity * 0.1;
-
   let falloff = 1.0 / (1.0 + distToLight * distToLight * 2.0);
-  color = mix(baseColor, color, falloff);
+  color = mix(src.rgb, color, falloff);
 
-  let rOffset = uv + vec2<f32>(chromaticSplit * totalB, 0.0);
-  let bOffset = uv - vec2<f32>(chromaticSplit * totalB, 0.0);
-  let rSample = textureSampleLevel(readTexture, u_sampler, clamp(rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let bSample = textureSampleLevel(readTexture, u_sampler, clamp(bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let rOffset = clamp(uv + vec2<f32>(chromaticSplit * totalB, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let bOffset = clamp(uv - vec2<f32>(chromaticSplit * totalB, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let rSample = textureSampleLevel(readTexture, u_sampler, rOffset, 0.0).r;
+  let bSample = textureSampleLevel(readTexture, u_sampler, bOffset, 0.0).b;
   color = vec3<f32>(rSample, color.g, bSample) * 0.3 + color * 0.7;
 
   let coreDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
   let coreGlow = exp(-coreDist * coreDist * 400.0) * chargeStrength;
-  color = color + vec3<f32>(0.6, 0.9, 1.0) * coreGlow * 0.5;
+  color = color + vec3<f32>(0.6, 0.9, 1.0) * coreGlow * 0.5 * (1.0 + treble * 0.2);
 
   let filament = lichtenbergFilament(uv, fieldMag, 0.85 + emDistortion * 4.0, time);
   color = color + vec3<f32>(0.55, 0.82, 1.0) * filament * (0.35 + chargeStrength * 0.12);
@@ -210,10 +215,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let temporalMix = clamp(0.08 + dustDensity * 0.12, 0.04, 0.22) * history.a;
   color = mix(color, history.rgb, temporalMix);
 
-  let alpha = clamp(0.85 + fieldMag * 0.1 + filament * 0.08, 0.0, 1.0);
+  let alpha = clamp(0.85 + fieldMag * 0.1 + filament * 0.08, 0.0, 1.0) * src.a;
   let display = vec4<f32>(aces(max(color, vec3<f32>(0.0))), alpha);
 
   textureStore(writeTexture, coord, display);
-  textureStore(dataTextureA, coord, select(display, vec4<f32>(mousePos, 0.0, 0.0), gid.x == 0u && gid.y == 0u));
+  textureStore(dataTextureA, coord, display);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

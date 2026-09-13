@@ -1,9 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Gen Feedback Echo Chamber v5 — Multi-Pass-Architect Optimized
+// ═══════════════════════════════════════════════════════════════════
+//  Gen Feedback Echo Chamber
 //  Category: feedback/temporal
-//  Focus: cached fBM, distance-aware LOD, branchless feedback envelope,
-//         tighter temporal accumulation loop.
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: harmonic echo ladder at integer 2x spacing taps; standing-wave nodal interference from echo-count phase field
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -168,16 +171,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         echoAccum += loadHistoryExact(echoUV) * echoWeight;
         totalWeight += echoWeight;
     }
+
+    // Harmonic echo ladder at integer 2x spacing taps (musical delay)
+    var harmonicWeight = 0.0;
+    for (var harmonic = 1; harmonic <= 4; harmonic++) {
+        let hi = f32(harmonic);
+        let ladderSpacing = echoSpacing * hi * 2.0;
+        let ladderUV = fract(warpedUV + wobble * hi * 2.0 + vec2<f32>(ladderSpacing, ladderSpacing * 0.5));
+        let hw = decayRate * pow(0.62, hi);
+        echoAccum += loadHistoryExact(ladderUV) * hw;
+        harmonicWeight += hw;
+    }
+    totalWeight += harmonicWeight;
+
     let echo = echoAccum / max(totalWeight, 0.0001);
 
     // Psychedelic generative color (reuses cached drift noise)
     let paletteT = time * 0.08 + driftA * 0.7 + driftB * 0.3 + bass * 0.5 + colorShift;
     let genColor = psychedelicPalette(paletteT) * (0.8 + mids * 0.35);
 
+    // Standing-wave nodal interference from echo-count phase field
+    let nodePhase = f32(echoCount) * 0.5;
+    let standingWave = sin(warpedUV.x * nodePhase * TAU + time * 0.42) * sin(warpedUV.y * nodePhase * TAU * 0.72 - time * 0.31);
+    let nodalMask = pow(abs(standingWave), 2.8);
+
     // Depth-aware blend: effect breathes in background, foreground stays crisp
     let fog = 1.0 - exp(-depth * (2.0 + decayRate * 3.0));
-    let blended = mix(echo.rgb, genColor, 0.25 + spawnMask * 0.4 + bass * 0.15);
+    var blended = mix(echo.rgb, genColor, 0.25 + spawnMask * 0.4 + bass * 0.15);
+    blended = mix(blended, echo.rgb * (1.0 - nodalMask * 0.35), nodalMask * 0.28);
     var color = mix(blended, video.rgb, 0.15 + fog * 0.35);
+    color += genColor * nodalMask * 0.1 * (1.0 + bass * 0.25);
 
     // Click shockwave burst
     let clickDist = length(uv01 - mouse);

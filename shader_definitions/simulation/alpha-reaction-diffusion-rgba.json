@@ -2,7 +2,7 @@
   "id": "alpha-reaction-diffusion-rgba",
   "name": "Alpha Reaction Diffusion RGBA",
   "url": "shaders/alpha-reaction-diffusion-rgba.wgsl",
-  "description": "Four-species ecological Gray-Scott field with exact-load state stencils, cross-inhibited warm/cool colonies, three-band mutation pressure, held inoculation, click seed fronts, ACES display, and semantic activity alpha. Raw RGBA chemistry persists in dataTextureA.",
+  "description": "Four-species ecological Gray-Scott with photo-nutrient chemotaxis, an interface membrane where warm and cool inhibitors meet, held inoculation, click seed fronts, and ACES display. Raw RGBA chemistry persists in dataTextureA.",
   "tags": [
     "reaction-diffusion",
     "simulation",
@@ -15,7 +15,9 @@
   "features": [
     "mouse-driven",
     "temporal",
-    "rgba-state-machine"
+    "rgba-state-machine",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -57,9 +59,38 @@
   ],
   "updated": true,
   "updatedParams": [
-    { "id": "param1", "name": "Feed Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "param2", "name": "Kill Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "param3", "name": "Cross Inhibition", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "param4", "name": "Source Mix", "default": 0.2, "min": 0, "max": 1, "step": 0.01 }
-  ]
+    {
+      "id": "param1",
+      "name": "Feed Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Kill Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Cross Inhibition",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Source Mix",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "feedbackPacking": "A/C = warm U, warm V, cool U, cool V. ACES display only."
 }

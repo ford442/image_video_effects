@@ -1,8 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  astral-kaleidoscope
 //  Category: psychedelic
-//  Features: upgraded-rgba, depth-aware
-//  Upgraded: 2026-03-22
+//  Features: upgraded-rgba, depth-aware, mouse-driven, audio-reactive
+//  Upgraded: 2026-09-11
+//  Ideas: pointer-anchored fold center on hold; treble/bass mirror-seam glint
+//  A packing: display RGBA light-trail history (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,9 +26,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
+  config:      vec4<f32>,       // x=time, y=rippleCount, z=resX, w=resY
+  zoom_config: vec4<f32>,       // x=time, yz=mouse_uv, w=mouse_down
   zoom_params: vec4<f32>,       // x=segments, y=rotationSpeed, z=spiralStrength, w=trailPersistence
-  zoom_config: vec4<f32>,       // x=colorShift, y=aberration, z=centerOsc, w=pulsePower
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -46,6 +48,11 @@ fn rotate(v: vec2<f32>, a: f32) -> vec2<f32> {
     var s = sin(a);
     let c = cos(a);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Convert RGB to HSL for color shifting
@@ -108,6 +115,7 @@ fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
+    if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
     var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
@@ -115,7 +123,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    
+
     // -----------------------------------------------------------------
     //  1️⃣  Parameters
     // -----------------------------------------------------------------
@@ -123,14 +131,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rotSpeed    = u.zoom_params.y * 0.5;
     let spiralStr   = u.zoom_params.z * 2.0;
     let trails      = u.zoom_params.w;                         // 0.0 to 1.0
-    let hueShift    = u.zoom_config.x;
-    let aberration  = u.zoom_config.y * 0.02;                  // 0 to 0.02
-    let centerOsc   = u.zoom_config.z * 0.15;                  // center oscillation
-    let pulsePower  = u.zoom_config.w * 0.5 + 0.5;            // 0.5 to 1.0
-    
-    // Dynamic Center point (oscillates over time)
-    var center = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * centerOsc;
-    
+    let hueShift    = 0.6 + spiralStr * 0.5;                   // tied to Spiral Strength, not a raw uniform
+    let aberration  = 0.01;
+    let pointerUV   = u.zoom_config.yz;
+    let pointerHeld = clamp(u.zoom_config.w, 0.0, 1.0);
+    let pulsePower  = 0.75;
+
+    // Dynamic Center point: ambient orbit, pulled toward a held pointer
+    let ambientCenter = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * 0.12;
+    var center = mix(ambientCenter, pointerUV, pointerHeld);
+
     // -----------------------------------------------------------------
     //  2️⃣  Depth-Aware Coordinates
     // -----------------------------------------------------------------
@@ -163,7 +173,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (a > segmentAngle * 0.5) {
         a = segmentAngle - a;
     }
-    
+
+    // Mirror-seam glint: a treble/bass specular streak lit exactly at the fold
+    // seams (a≈0 and a≈segmentAngle*0.5), so audio reacts to the kaleidoscope's
+    // own symmetry lines rather than only the outer glow ring below.
+    let seamDist = min(a, segmentAngle * 0.5 - a);
+    let seamGlint = smoothstep(segmentAngle * 0.05, 0.0, seamDist) * (0.12 + treble * 0.5 + bass * 0.15);
+
     // Convert back to Cartesian with pulsing zoom effect
     let r_pulse = r - log(r + 0.1) * (pulsePower * sin(time));
     let sampleUV = center + vec2<f32>(cos(a), sin(a)) * r_pulse;
@@ -231,7 +247,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = finalCol + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(__finalRGB, finalAlpha));
+    let finalRGB = finalCol + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25) + vec3<f32>(1.0, 0.92, 0.75) * seamGlint;
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(acesToneMap(finalRGB), finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
 }

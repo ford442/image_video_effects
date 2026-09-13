@@ -4,13 +4,9 @@
 //  Features: mouse-driven, audio-reactive, animated, depth-luminance,
 //            bass-character-swap, upgraded-rgba
 //  Complexity: High
-//  Chunks From: ascii-glyph, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-05-31
-//  Batch 19 upgrade (Interactivist): wired the advertised mouse — an
-//  aspect-corrected spring-damper lens (extraBuffer[133..136]) that
-//  densifies glyphs under the pointer, plus click-ripple scramble
-//  rings that chaotically flip characters on a ~1.2s fade.
+//  Upgraded: 2026-09-11
+//  Ideas: phosphor persistence smear on character index changes; CRT scanline mask
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -44,6 +40,11 @@ fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.3 + mids * 0.1;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
@@ -58,6 +59,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
 
     // ── Sliders (saved-preset contract: u.zoom_params.x/y/z/w) ───────
     // x = Glyph Size:    base cell edge in px, still breathes with bass_env
@@ -160,7 +162,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scrambleFlash = clamp(scrambleSeed, 0.0, 1.0) * glyphAlpha;
     let flashColor = vec3<f32>(0.4, 0.9, 1.0) * scrambleFlash * 0.6;
 
-    let finalRGB = depthColor * glyphAlpha * brightness + flashColor;
+    var finalRGB = depthColor * glyphAlpha * brightness + flashColor;
+
+    // Phosphor persistence smear on character index changes (compare to C).
+    let prevCharIndex = fract(prev.r * 5.17 + prev.g * 3.31 + prev.b * 1.73);
+    let indexChange = abs(glyphPattern - prevCharIndex);
+    finalRGB = mix(finalRGB, prev.rgb * 0.9, smoothstep(0.08, 0.35, indexChange) * glyphAlpha * 0.55);
+
+    // CRT horizontal scanline mask modulating glyph brightness.
+    let scanMask = 0.86 + 0.14 * sin(pixelUV.y * 3.14159265 * 2.0 / max(glyphSize, 1.0));
+    finalRGB *= scanMask;
+
+    finalRGB = acesToneMap(max(finalRGB, vec3<f32>(0.0)));
     let alpha = clamp(glyphAlpha * brightness + bass * 0.05, 0.0, 1.0);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));

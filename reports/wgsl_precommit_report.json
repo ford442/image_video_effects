@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-11T07:25:27.384007",
+  "timestamp": "2026-09-12T12:25:33.088035",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 8,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/cyber-slit-scan.wgsl",
+      "file": "public/shaders/bioluminescent-blackbody.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/cyber-trace.wgsl",
+      "file": "public/shaders/bioluminescent.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/glitch-ripple-drag.wgsl",
+      "file": "public/shaders/digital-moss-rgba.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neon-contour-drag.wgsl",
+      "file": "public/shaders/gen-bioluminescent-reaction-diffusion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pixel-drag-smear.wgsl",
+      "file": "public/shaders/gen-lichen-reaction-diffusion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/slinky-distort.wgsl",
+      "file": "public/shaders/interactive-origami-coupled.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/temporal-echo.wgsl",
+      "file": "public/shaders/nano-repair.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/viscous-drag.wgsl",
+      "file": "public/shaders/origami-fold.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

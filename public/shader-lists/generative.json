@@ -5812,7 +5812,8 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "feedbackPacking": "A/C = A, B, luciferin-age, 1. ACES display only."
   },
   {
     "name": "Biomechanical Hive",
@@ -14018,6 +14019,45 @@
         "max": 3,
         "step": 0.1
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Refraction Index",
+        "default": 1.5,
+        "min": 1,
+        "max": 2.5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spiral Tightness",
+        "default": 0.2,
+        "min": 0.05,
+        "max": 0.8,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Iridescence Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "index": 3,
+        "name": "Audio Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -14981,7 +15021,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133] = smoothed bass envelope"
   },
@@ -15200,7 +15241,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15639,7 +15681,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -15971,7 +16014,8 @@
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },
@@ -16302,7 +16346,11 @@
     "updated": true,
     "id": "gen-fireworks-smoke-bloom",
     "url": "shaders/gen-fireworks-smoke-bloom.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "4th of July — Strobe Shell",
@@ -16631,7 +16679,8 @@
       "audio-reactive",
       "mouse-driven",
       "temporal",
-      "fast-motion"
+      "fast-motion",
+      "upgraded-rgba"
     ]
   },
   {
@@ -20384,6 +20433,50 @@
     "features": []
   },
   {
+    "id": "gen-hyperdimensional-bismuth-lattice",
+    "name": "Hyperdimensional Bismuth Lattice",
+    "category": "generative",
+    "url": "/shaders/gen-hyperdimensional-bismuth-lattice.wgsl",
+    "params": [
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "twist",
+        "name": "Twist",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "name": "Hyperdimensional Plasma Loom",
     "category": "generative",
     "tags": [
@@ -21951,7 +22044,12 @@
     "updated": true,
     "id": "gen-lichen-reaction-diffusion",
     "url": "shaders/gen-lichen-reaction-diffusion.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = display RGB + pattern_density in A.a"
   },
   {
     "name": "Lichtenberg Storm",
@@ -30737,6 +30835,61 @@
     "id": "gen-sentient-quantum-chrono-leviathan-moth",
     "url": "shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-sentient-void-silk-nebula",
+    "name": "Sentient Void-Silk Nebula",
+    "author": "Jules",
+    "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads.",
+    "category": "generative",
+    "url": "shaders/gen-sentient-void-silk-nebula.wgsl",
+    "passes": [
+      {
+        "type": "compute",
+        "shader": "gen-sentient-void-silk-nebula.wgsl",
+        "inputs": [
+          "self"
+        ],
+        "params": [
+          {
+            "id": "flow_speed",
+            "name": "Flow Speed",
+            "mapping": "zoom_params.x",
+            "default": 0.5,
+            "min": 0.1,
+            "max": 2,
+            "step": 0.1
+          },
+          {
+            "id": "thread_density",
+            "name": "Thread Density",
+            "mapping": "zoom_params.y",
+            "default": 1,
+            "min": 0.1,
+            "max": 5,
+            "step": 0.1
+          },
+          {
+            "id": "vortex_strength",
+            "name": "Vortex Strength",
+            "mapping": "zoom_params.z",
+            "default": 1,
+            "min": 0,
+            "max": 3,
+            "step": 0.1
+          },
+          {
+            "id": "iridescence_shift",
+            "name": "Iridescence Shift",
+            "mapping": "zoom_params.w",
+            "default": 0,
+            "min": 0,
+            "max": 1,
+            "step": 0.05
+          }
+        ]
+      }
+    ]
   },
   {
     "name": "Crystalline Pulse",

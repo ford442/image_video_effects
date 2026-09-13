@@ -1,4 +1,13 @@
-// Voronoi Dynamics - Interactive Bubble Physics
+// ═══════════════════════════════════════════════════════════════════
+//  Voronoi Dynamics - Interactive Bubble Physics
+//  Category: artistic
+//  Features: interactive, depth-aware, physics, mouse-driven, audio-reactive
+//  Upgraded: 2026-09-11
+//  Ideas: repulsion/attraction sliders now drive real bubble inflation and
+//         pointer-ward merge (previously computed and discarded); bass/mids
+//         audio pulse on bubble size and iridescent edge-hue cycling
+//  A packing: raw sim state (centroidPos, nearestDist, nearestIdx) — unchanged
+// ═══════════════════════════════════════════════════════════════════
 // Dynamic Voronoi cells with physics-based centroid movement
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -122,6 +131,11 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
   return rgb + vec3<f32>(m);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -131,7 +145,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
-  
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
   // Parameters
   let centroidCount = i32(mix(4.0, f32(MAX_CENTROIDS), u.zoom_params.x));
   let repulsion = mix(0.0, 0.1, u.zoom_params.y);
@@ -149,7 +165,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Get source color at this position
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  
+
+  // Mouse interaction - cells near mouse expand (computed early so
+  // repulsion/attraction below can use it)
+  let toMouse = length(uv - mouse);
+  let mouseInfluence = 1.0 - smoothstep(0.0, 0.2, toMouse);
+
   // Get color from nearest centroid position
   var centroidPos: vec2<f32>;
   if (nearestIdx == -1) {
@@ -159,35 +180,43 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     centroidPos = u.ripples[rippleIdx].xy;
   } else {
     centroidPos = getCentroid(nearestIdx, time);
+    // Attraction: this was computed from its slider and then discarded.
+    // Nearby non-mouse centroids now ooze their sample position toward the
+    // pointer, a gooey merge look near the cursor.
+    centroidPos = mix(centroidPos, mouse, clamp(attraction * mouseInfluence * 8.0, 0.0, 0.9));
   }
-  
+
   let centroidColor = textureSampleLevel(readTexture, u_sampler, centroidPos, 0.0);
-  
+
   // Edge detection - difference between nearest and second nearest
   let edgeDist = secondDist - nearestDist;
   let edge = smoothstep(0.0, edgeWidth, edgeDist);
-  
+
+  // Repulsion: also dead before this pass. When the pointer itself is the
+  // nearest centroid, repulsion inflates its cell — a bigger bubble grows
+  // under the cursor instead of a fixed-size Voronoi cell. Bass adds a
+  // pulse on top so the bubble breathes with the track.
+  let bubblePulse = 1.0 + bass * 0.6;
+  let mouseCellBoost = select(0.0, repulsion * 3.0 * bubblePulse, nearestIdx == -1);
+  let effDist = max(nearestDist - mouseCellBoost, 0.0);
+
   // Cell shading
   var cellColor = centroidColor.rgb;
-  
+
   // Add subtle gradient within cell
-  let gradient = 1.0 - nearestDist * 2.0;
+  let gradient = 1.0 - effDist * 2.0;
   cellColor = cellColor * (0.8 + gradient * 0.2);
-  
-  // Iridescent edge coloring
-  let edgeHue = fract(f32(nearestIdx) * 0.1 + time * 0.1);
+
+  // Iridescent edge coloring — mids speed the hue cycle
+  let edgeHue = fract(f32(nearestIdx) * 0.1 + time * (0.1 + mids * 0.35));
   let edgeColor = hsv2rgb(edgeHue, 0.7, 1.0);
-  
+
   // Bubble-like specular highlight
-  let bubbleHighlight = pow(1.0 - nearestDist * 3.0, 8.0);
+  let bubbleHighlight = pow(1.0 - effDist * 3.0, 8.0) * bubblePulse;
   let highlightPos = centroidPos + vec2<f32>(-0.02, -0.02);
   let highlightDist = length(uv - highlightPos);
   let highlight = exp(-highlightDist * 50.0) * 0.5;
-  
-  // Mouse interaction - cells near mouse expand
-  let toMouse = length(uv - mouse);
-  let mouseInfluence = 1.0 - smoothstep(0.0, 0.2, toMouse);
-  
+
   // Ripple influence - waves through cells
   var rippleWave = 0.0;
   for (var i = 0; i < 50; i = i + 1) {
@@ -223,10 +252,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Store cell info for potential physics
   textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(centroidPos, nearestDist, f32(nearestIdx)));
-  
-  // Clamp
-  finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
-  
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, 1.0));
+
+  // Semantic alpha: edge/highlight/bubble coverage instead of a hardcoded 1.0
+  let alpha = clamp(0.55 + (1.0 - edge) * 0.2 + highlight * 0.4 + bubbleHighlight * 0.3, 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(acesToneMap(finalColor), alpha));
   textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -2621,7 +2621,8 @@
         "description": "Signed orbital speed of the counter-rotating vortex pair."
       }
     ],
-    "name": "Liquid Swirl"
+    "name": "Liquid Swirl",
+    "feedbackPacking": "A/C = ACES display RGBA; B unwritten; spring cursor extraBuffer[133..136]"
   },
   {
     "id": "liquid-warp-interactive",

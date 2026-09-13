@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Ethereal Glass-Flora Terrarium
 //  Category: generative
-//  Features: raymarched, glass, botanical, chromatic-dispersion,
-//            audio-reactive, mouse-driven, upgraded-rgba, depth-aware,
-//            subsurface-scattering, pollen-particles, L-system
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-06-28
+//  Upgraded: 2026-09-11
+//  Ideas: condensation droplet beads on terrarium glass shell; dew meniscus highlights on leaf-tip normals
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -129,6 +129,29 @@ fn fresnel(cosi: f32, eta: f32) -> f32 {
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Native idea 1: condensation droplet beads on the terrarium glass shell.
+fn condensationDroplets(p: vec3<f32>, t: f32) -> f32 {
+  let shellDist = abs(length(p) - 4.0);
+  let onShell = smoothstep(0.12, 0.0, shellDist);
+  let sph = normalize(p + vec3<f32>(0.0001));
+  let dropGrid = vec2<f32>(atan2(sph.z, sph.x) * 8.0, sph.y * 14.0);
+  let dropId = floor(dropGrid);
+  let dropFract = fract(dropGrid) - vec2<f32>(0.5);
+  let dropSeed = hash21(dropId);
+  let dropR = 0.22 * (0.45 + dropSeed * 0.55);
+  let drop = smoothstep(dropR, dropR * 0.55, length(dropFract)) * step(0.62, dropSeed);
+  let slide = 0.5 + 0.5 * sin(t * 0.4 + dropSeed * 12.0);
+  return onShell * drop * slide;
+}
+
+// Native idea 2: dew meniscus highlights on upward-facing leaf-tip normals.
+fn dewMeniscus(n: vec3<f32>, p: vec3<f32>, t: f32) -> f32 {
+  let tipUp = smoothstep(0.25, 0.82, n.y) * smoothstep(0.15, 0.75, p.y);
+  let meniscus = pow(max(dot(n, normalize(vec3<f32>(0.15, 1.0, 0.08))), 0.0), 10.0);
+  let bead = 0.5 + 0.5 * sin(p.x * 42.0 + p.z * 36.0 + t * 0.6);
+  return tipUp * meniscus * bead;
 }
 
 // ─── Glass Flora Branch (L-system approximated via folding) ───
@@ -318,7 +341,10 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: 
         );
         col = col + edgeTint * f * 0.25;
 
-        alpha = sat(0.3 + f * 0.7);
+        let dew = dewMeniscus(n, p, time);
+        col += vec3<f32>(0.85, 1.0, 0.95) * dew * (0.35 + treble * 0.4);
+
+        alpha = sat(0.3 + f * 0.7 + dew * 0.15);
       } else {
         // Pollen - bright emissive spheres
         let pollenCol = vec3<f32>(0.9, 0.8, 0.4) * (1.0 + treble * 2.0);
@@ -345,6 +371,12 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: 
     col = col + vec3<f32>(0.05, 0.1, 0.08) * haze * (0.1 + bass * 0.1);
     alpha = 0.0;
   }
+
+  // Condensation beads on the outer terrarium glass shell.
+  let shellProbe = ro + rd * 7.8;
+  let condense = condensationDroplets(shellProbe, time);
+  col += vec3<f32>(0.75, 0.92, 1.0) * condense * (0.2 + mids * 0.15);
+  alpha = sat(alpha + condense * 0.12);
 
   return vec4<f32>(col, alpha);
 }

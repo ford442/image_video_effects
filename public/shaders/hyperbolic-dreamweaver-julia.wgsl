@@ -8,8 +8,9 @@
 //  By: Agent CB-26
 // ═══════════════════════════════════════════════════════════════════
 //  Raymarches a 4D quaternion Julia set through hyperbolic Poincaré
-//  disk space. Hyperbolic translation warps the camera ray, creating
-//  impossible infinite fractal geometries within curved space.
+//  Upgraded: 2026-09-11
+//  Ideas: photo albedo on Julia hit; horocycle fog
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -117,7 +118,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Hyperbolic translation animated
     let intensity = 0.3;
-    let audioReactivity = 1.0 + u.zoom_config.x * 0.3;
+    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+    let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
+    let audioReactivity = 1.0 + bass * 0.3;
     let t = vec2<f32>(
         cos(time * 0.2 * audioReactivity) * intensity * 0.3,
         sin(time * 0.3 * audioReactivity) * intensity * 0.3
@@ -194,30 +197,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
             0.5 + 0.5 * cos(6.28318 * (hue + 0.67))
         );
-        col = baseColor * (diff * 0.7 + 0.3) * ao + vec3<f32>(spec * 0.5);
+        let photo = textureSampleLevel(readTexture, u_sampler, clamp(uv + n.xy * 0.08, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        col = mix(photo * (diff * 0.7 + 0.3) * ao, baseColor * (diff * 0.7 + 0.3) * ao, 0.35) + vec3<f32>(spec * 0.5);
         alpha = 1.0;
     } else {
-        // Background: hyperbolic-distorted image
         let hyperDist = hyperbolicDist(centered);
-        let bgUV = uv + vec2<f32>(sin(time * 0.1 + uv.y * 3.0), cos(time * 0.1 + uv.x * 3.0)) * 0.02 * (1.0 + hyperDist);
+        let bgUV = clamp(uv + vec2<f32>(sin(time * 0.1 + uv.y * 3.0), cos(time * 0.1 + uv.x * 3.0)) * 0.02 * (1.0 + hyperDist), vec2<f32>(0.0), vec2<f32>(1.0));
         col = textureSampleLevel(readTexture, u_sampler, bgUV, 0.0).rgb * 0.3;
         alpha = 0.0;
     }
 
     // LOD-aware color enhancement
     let colorEnhancement = 1.0 + hyperbolicDist(centered) * 0.2 * (1.0 - lodFactor);
+    let hFog = clamp(hyperbolicDist(centered) / 2.4, 0.0, 1.0);
+    let photoBg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    col = mix(col, photoBg, hFog * 0.45 * (1.0 - alpha));
     col *= colorEnhancement;
 
-    // Branchless edge handling
     let display = toneMapACES(col);
     let finalColor = mix(display, vec3<f32>(0.0), 1.0 - edgeThreshold);
-    let finalAlpha = alpha * edgeThreshold;
+    let finalAlpha = mix(hFog * 0.35, 1.0, alpha) * edgeThreshold;
+    let outCol = vec4<f32>(finalColor, finalAlpha);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, finalAlpha));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(col, finalAlpha));
+    textureStore(writeTexture, gid.xy, outCol);
+    textureStore(dataTextureA, gid.xy, outCol);
 
-    // Depth with hyperbolic modulation
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthMod = 1.0 + hyperbolicDist(centered) * 0.1 * (1.0 - lodFactor);
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth * depthMod, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth * depthMod, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

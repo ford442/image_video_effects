@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Origami — Batch 58E
-//  Triangle-wave crease planes, held pinch, traveling crease runners,
-//  foil iridescence, bounded click rings, exact C history.
-//  Display RGBA in A.
+//  Interactive Origami
+//  Category: geometric
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-11
+//  Ideas: mountain-valley fold parity; wet-fold shadow along crease tangent
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -42,6 +45,11 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
   let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
   return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -87,9 +95,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pUV = uv * aVec;
   let mUV = mouse * aVec;
   let dlt = 0.005;
-  let h0 = foldHeight(pUV, mUV, foldScale, bass);
-  let hDx = foldHeight(pUV + vec2<f32>(dlt, 0.0), mUV, foldScale, bass);
-  let hDy = foldHeight(pUV + vec2<f32>(0.0, dlt), mUV, foldScale, bass);
+
+  // Mountain-valley fold parity: alternate crease sign per grid cell.
+  let creaseCell = floor(pUV * foldScale * 0.35);
+  let foldParity = select(-1.0, 1.0, (i32(creaseCell.x) + i32(creaseCell.y)) % 2 == 0);
+
+  let h0 = foldHeight(pUV, mUV, foldScale, bass) * foldParity;
+  let hDx = foldHeight(pUV + vec2<f32>(dlt, 0.0), mUV, foldScale, bass) * foldParity;
+  let hDy = foldHeight(pUV + vec2<f32>(0.0, dlt), mUV, foldScale, bass) * foldParity;
   let grad = vec2<f32>((hDx - h0) / dlt, (hDy - h0) / dlt);
   let creaseDir = select(vec2<f32>(1.0, 0.0), normalize(vec2<f32>(-grad.y, grad.x)), length(grad) > 0.0002);
   let runners = pow(max(0.0, sin(dot(pUV, creaseDir) * 22.0 - time * (6.0 + mids * 4.0))), 11.0) * influence;
@@ -111,11 +124,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let shadow = smoothstep(-0.3, -0.8, h0) * 0.3 * lightInt * influence;
   color *= (1.0 - shadow);
 
+  // Wet-fold shadow: darken valley side along crease tangent.
+  let valleyMask = smoothstep(0.08, -0.28, h0);
+  let tangentAlign = abs(dot(normalize(grad + vec2<f32>(0.0001)), creaseDir));
+  let wetFoldShadow = valleyMask * (0.26 + (1.0 - tangentAlign) * 0.24) * lightInt * influence;
+  color *= (1.0 - wetFoldShadow);
+
   let slick = hsv2rgb(vec3<f32>(fract(0.15 + abs(h0) * 0.35 + mids * 0.18 + time * 0.06), 0.55, 1.0));
   color = mix(color, color * slick * 1.25, (0.16 + treble * 0.14) * clamp(ridgePeak + runners, 0.0, 1.0));
   color += slick * (runners * 0.18 + rippleFold * 0.28);
   color = mix(color, prev.rgb * 0.92, 0.08);
-  color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
+  color = acesToneMap(max(color, vec3<f32>(0.0)));
 
   let alpha = clamp(dot(color, vec3<f32>(0.33)) * 0.6 + 0.4 + depth * 0.1, 0.0, 1.0);
   let outCol = vec4<f32>(color, alpha);

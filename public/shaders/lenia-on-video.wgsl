@@ -2,11 +2,12 @@
 //  Lenia on Video
 //  Category: simulation
 //  Features: simulation, temporal, video-driven, cellular-automata,
-//             audio-reactive, mouse-driven, lenia, continuous-ca
+//             audio-reactive, mouse-driven, lenia, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-23
-//  By: Copilot
-//
+//  Upgraded: 2026-09-12
+//  Ideas: anisotropic kernel from video luma gradient; membrane from |grad A|
+//  A packing: raw (density, neighborhood, signed growth, video luma)
+// ═══════════════════════════════════════════════════════════════════
 //  Continuous Lenia cellular automaton (Bert Wang-Chak Chan, 2019)
 //  whose *food field* and *growth parameters* are continuously driven
 //  by the live video feed:
@@ -27,9 +28,6 @@
 //    y = video coupling (0→fully autonomous, 1→strongly video-driven, default 0.5)
 //    z = glow intensity (0→dim, 1→bright, default 0.6)
 //    w = composite mix  (0→video only, 1→CA only, default 0.5)
-//
-//  extraBuffer layout:
-//    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -154,6 +152,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let vidHue   = rgbHue(vidColor.rgb);
   let vidSat   = rgbSat(vidColor.rgb);
 
+  // Idea 1 — anisotropic kernel stretched by the video luma gradient
+  let lumaL = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(1.0 / res.x, 0.0), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let lumaR = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(1.0 / res.x, 0.0), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let lumaD = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, 1.0 / res.y), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let lumaU = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, 1.0 / res.y), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let lumaG = vec2<f32>(lumaR - lumaL, lumaU - lumaD);
+  let gN = lumaG / max(length(lumaG), 0.0001);
+  let aniso = videoCoupling * 0.45;
+
   // Video-driven growth parameters
   let growthMu    = mix(0.15, 0.35, vidLuma * videoCoupling + 0.15 * (1.0 - videoCoupling));
   let growthSigma = mix(0.015, 0.06, vidSat  * videoCoupling + 0.04 * (1.0 - videoCoupling));
@@ -170,7 +177,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   for (var dy = -rPix; dy <= rPix; dy++) {
     for (var dx = -rPix; dx <= rPix; dx++) {
-      let rNorm  = length(vec2<f32>(f32(dx), f32(dy))) / kernelRadius;
+      let p = vec2<f32>(f32(dx), f32(dy));
+      let pStretch = p + gN * dot(p, gN) * aniso;
+      let rNorm  = length(pStretch) / kernelRadius;
       let kw     = leniaKernel(rNorm, 1.0);
       let cellVal = stateAt(coord + vec2<i32>(dx, dy), dims).r;
       convAcc    += cellVal * kw;
@@ -232,9 +241,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let caFinal = caColor + bloom * 0.15 * glowInt;
 
+  // Idea 2 — membrane from |∇A| so creatures read as organisms, not a glow puddle
+  let nL = stateAt(coord + vec2<i32>(-1, 0), dims).r;
+  let nR = stateAt(coord + vec2<i32>(1, 0), dims).r;
+  let nD = stateAt(coord + vec2<i32>(0, -1), dims).r;
+  let nU = stateAt(coord + vec2<i32>(0, 1), dims).r;
+  let gradA = length(vec2<f32>(nR - nL, nU - nD));
+  let membrane = smoothstep(0.04, 0.18, gradA) * smoothstep(0.08, 0.35, newState);
+  let caWithSkin = caFinal + vec3<f32>(0.75, 1.0, 0.85) * membrane * glowInt * 0.85;
+
   // ── Composite CA over video ───────────────────────────────────────────────
-  let output = mix(vidColor.rgb, caFinal, compositeMix * min(newState * 2.0 + 0.1, 1.0));
-  let alpha   = clamp(newState * 1.5 + 0.3 + bass * 0.2, 0.0, 1.0);
+  let output = mix(vidColor.rgb, caWithSkin, compositeMix * min(newState * 2.0 + 0.1, 1.0));
+  let alpha   = clamp(newState * 1.5 + 0.3 + bass * 0.2 + membrane * 0.25, 0.0, 1.0);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, coord, vec4<f32>(aces(output), alpha));

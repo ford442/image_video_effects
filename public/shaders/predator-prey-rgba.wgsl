@@ -1,20 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Predator-Prey RGBA
 //  Category: advanced-hybrid
-//  Features: mouse-driven, temporal, rgba-state-machine, ecology
-//  Complexity: Very High
-//  Chunks From: predator-prey.wgsl (ecosystem dynamics),
-//               alpha-multi-state-ecosystem.wgsl (RGBA state machine)
-//  Created: 2026-04-18
-//  By: Agent CB-11
-// ═══════════════════════════════════════════════════════════════════
-//  Continuous-density predator-prey ecosystem packed into RGBA32FLOAT.
-//  Plants photosynthesize, herbivores graze, carnivores hunt. Toxins
-//  accumulate from overpopulation. Species diffuse across the grid.
-//  R = Plant density
-//  G = Herbivore density
-//  B = Carnivore density
-//  A = Environmental toxin / nutrient cycle
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-12
+//  Ideas: carnivore pursuit along herbivore gradient; herbivore flee from carnivores
+//  A packing: raw (plants, herbivores, carnivores, toxin)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,10 +29,20 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn hash21(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
     p3 = p3 + dot(p3, vec3<f32>(p3.y + 33.33, p3.z + 33.33, p3.x + 33.33));
     return fract((p3.x + p3.y) * p3.z);
+}
+
+fn stateAt(coord: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), dims - vec2<i32>(1)), 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -50,18 +51,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
     let uv = vec2<f32>(gid.xy) / res;
-    let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let dims = vec2<i32>(res);
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
 
-    // Read previous state
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = stateAt(coord, dims);
     var plants = prevState.r;
     var herbivores = prevState.g;
     var carnivores = prevState.b;
     var toxin = prevState.a;
 
-    // Seed on first frame
     if (time < 0.1) {
         plants = 0.0;
         herbivores = 0.0;
@@ -78,78 +78,79 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     carnivores = clamp(carnivores, 0.0, 2.0);
     toxin = clamp(toxin, 0.0, 2.0);
 
-    // Sample neighbors
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+    let right = stateAt(coord + vec2<i32>(1, 0), dims);
+    let down = stateAt(coord + vec2<i32>(0, -1), dims);
+    let up = stateAt(coord + vec2<i32>(0, 1), dims);
 
     let lapP = left.r + right.r + down.r + up.r - 4.0 * plants;
     let lapH = left.g + right.g + down.g + up.g - 4.0 * herbivores;
     let lapC = left.b + right.b + down.b + up.b - 4.0 * carnivores;
     let lapT = left.a + right.a + down.a + up.a - 4.0 * toxin;
 
-    // Parameters
-    let eatProbability = mix(0.1, 0.5, u.zoom_params.x);
-    let deathRate = mix(0.001, 0.05, u.zoom_params.y);
+    let eatProbability = mix(0.1, 0.5, u.zoom_params.x) * (1.0 + audio.y * 0.2);
+    let deathRate = mix(0.001, 0.05, u.zoom_params.y) * (1.0 + audio.x * 0.25);
     let plantGrowth = mix(0.01, 0.05, u.zoom_params.z);
+    let toxinStrength = mix(0.4, 1.6, u.zoom_params.w);
     let toxinDecay = 0.95;
 
-    // Source image influence (light drives photosynthesis)
     let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let sourceLum = dot(sourceColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    // === ECOSYSTEM DYNAMICS ===
-    // Plants photosynthesize and diffuse
     plants += plantGrowth * sourceLum + lapP * 0.05;
 
-    // Herbivores eat plants
     let grazing = plants * herbivores * eatProbability;
     plants -= grazing;
     herbivores += grazing * 0.5;
 
-    // Carnivores eat herbivores
     let hunting = herbivores * carnivores * eatProbability * 0.8;
     herbivores -= hunting;
     carnivores += hunting * 0.4;
 
-    // Natural death
     herbivores -= herbivores * deathRate * 0.5;
     carnivores -= carnivores * deathRate * 0.8;
 
-    // Overpopulation produces toxin
     toxin += (herbivores * herbivores + carnivores * carnivores) * 0.002;
     toxin += lapT * 0.02;
     toxin *= toxinDecay;
 
-    // Toxin kills all species
-    let toxinKill = toxin * 0.01;
+    let toxinKill = toxin * 0.01 * toxinStrength;
     plants -= toxinKill;
     herbivores -= toxinKill * 2.0;
     carnivores -= toxinKill * 3.0;
 
-    // Diffusion of animals
     herbivores += lapH * 0.03;
     carnivores += lapC * 0.02;
 
-    // Clamp
+    // Idea 1 — carnivore pursuit along the herbivore gradient
+    let herbGrad = vec2<f32>(right.g - left.g, up.g - down.g);
+    let fromHx = select(left.b, right.b, herbGrad.x > 0.0);
+    let fromHy = select(down.b, up.b, herbGrad.y > 0.0);
+    let pursuit = (fromHx - carnivores) * abs(herbGrad.x) * 0.10 * carnivores
+        + (fromHy - carnivores) * abs(herbGrad.y) * 0.10 * carnivores;
+    carnivores += pursuit;
+
+    // Idea 2 — herbivore flee away from the carnivore gradient
+    let carnGrad = vec2<f32>(right.b - left.b, up.b - down.b);
+    let fromFx = select(right.g, left.g, carnGrad.x > 0.0);
+    let fromFy = select(up.g, down.g, carnGrad.y > 0.0);
+    let flee = (fromFx - herbivores) * abs(carnGrad.x) * 0.10 * herbivores
+        + (fromFy - herbivores) * abs(carnGrad.y) * 0.10 * herbivores;
+    herbivores += flee;
+
     plants = clamp(plants, 0.0, 2.0);
     herbivores = clamp(herbivores, 0.0, 2.0);
     carnivores = clamp(carnivores, 0.0, 2.0);
     toxin = clamp(toxin, 0.0, 2.0);
 
-    // === MOUSE INTERACTION ===
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     let mouseDist = length(uv - mousePos);
     let mouseInfluence = smoothstep(0.08, 0.0, mouseDist) * mouseDown;
-    // Mouse spawns carnivores
     carnivores += mouseInfluence * 0.5;
-    // Mouse clears toxin
     toxin -= mouseInfluence * 0.3;
     toxin = max(toxin, 0.0);
 
-    // === RIPPLE SPAWN ===
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
@@ -161,29 +162,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
     plants = clamp(plants, 0.0, 2.0);
+    carnivores = clamp(carnivores, 0.0, 2.0);
+    herbivores = clamp(herbivores, 0.0, 2.0);
 
-    // === STORE STATE ===
     textureStore(dataTextureA, coord, vec4<f32>(plants, herbivores, carnivores, toxin));
 
-    // === VISUALIZATION ===
     let plantColor = vec3<f32>(0.2, 0.8, 0.2) * min(plants, 1.0);
     let herbColor = vec3<f32>(0.2, 0.5, 0.9) * min(herbivores, 1.0);
     let carnColor = vec3<f32>(0.9, 0.2, 0.2) * min(carnivores, 1.0);
     let toxinColor = vec3<f32>(0.4, 0.0, 0.5) * min(toxin, 1.0) * 0.4;
 
     var displayColor = plantColor + herbColor + carnColor + toxinColor;
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
-
-    // Energy glow around animals
     let animalEnergy = herbivores + carnivores;
     displayColor += vec3<f32>(0.1, 0.1, 0.15) * animalEnergy * 0.3;
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    displayColor += vec3<f32>(0.15, 0.05, 0.02) * max(pursuit, 0.0) * 2.0;
+    displayColor += vec3<f32>(0.02, 0.12, 0.18) * max(flee, 0.0) * 2.0;
 
-    // Alpha = total ecosystem density (meaningful)
-    let ecoDensity = min(plants + herbivores + carnivores, 1.0);
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, ecoDensity));
+    let mapped = aces(max(displayColor, vec3<f32>(0.0)));
+    let ecoDensity = clamp(plants + herbivores + carnivores + toxin * 0.25, 0.0, 1.0);
+    let alpha = clamp(sourceColor.a * 0.15 + ecoDensity * 0.75, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));
 
-    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

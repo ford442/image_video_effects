@@ -1,5 +1,12 @@
-// Sim Sand Dunes RGBA — four interacting grain populations.
-// A/C: fine sand, coarse sand, moist clumps, airborne dust.
+// ═══════════════════════════════════════════════════════════════════
+//  Sim Sand Dunes RGBA
+//  Category: simulation
+//  Features: rgba-state-machine, mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-12
+//  Ideas: size segregation (coarse troughs / fine saltation); dust-devil swirl
+//  A packing: raw (fine, coarse, moist clumps, airborne dust)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,6 +40,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   next.g += lap.g * 0.018 + coarseGradient * gravity * 0.025;
   let clump = min(next.r, 0.02 + moisture * 0.04); next.r -= clump * moisture * 0.12; next.b += clump * moisture * 0.12 + lap.b * 0.012;
   next.a += (abs(wind) * next.r * dustiness * 0.035 + audio.z * dustiness * 0.012) - next.a * (0.025 + moisture * 0.03) + (b.a - t.a) * 0.03;
+  let bed = s.r + s.g;
+  let neighBed = (l.r + l.g + r.r + r.g + t.r + t.g + b.r + b.g) * 0.25;
+  let trough = max(neighBed - bed, 0.0);
+  next.g += trough * 0.045;
+  next.r -= trough * 0.022;
+  next.r += abs(wind) * (1.0 - moisture) * 0.012;
+  let devil = max(abs(wind) - 0.015, 0.0) * (1.0 - moisture) * dustiness;
+  let tang = vec2<f32>(-(uv.y - 0.5), uv.x - 0.5);
+  let devilAdvect = (l.a - r.a) * tang.x + (t.a - b.a) * tang.y;
+  next.a += devilAdvect * devil * 0.12;
   let q = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0); let md = length(q); let hover = exp(-md * 15.0); let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
   next.r += hover * held * 0.06; next.g += hover * held * 0.035; next.a += hover * (0.004 + held * 0.045);
   var impacts = 0.0; let count = min(u32(u.config.y), 50u);
@@ -41,7 +58,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let total = clamp(next.r + next.g + next.b, 0.0, 1.0); let ridges = abs((l.r + l.g) - (r.r + r.g)) + abs((t.r + t.g) - (b.r + b.g));
   let fineColor = vec3<f32>(1.45, 0.75, 0.18); let coarseColor = vec3<f32>(0.80, 0.31, 0.08); let moistColor = vec3<f32>(0.25, 0.12, 0.07); let dustColor = vec3<f32>(1.35, 1.05, 0.62);
   var hdr = next.r * fineColor + next.g * coarseColor + next.b * moistColor + next.a * dustColor * (0.8 + audio.z);
-  hdr *= 0.45 + 0.75 * clamp(1.0 - ridges * 2.0, 0.0, 1.0); hdr += impacts * vec3<f32>(1.8, 0.8, 0.2);
+  hdr *= 0.45 + 0.75 * clamp(1.0 - ridges * 2.0, 0.0, 1.0);
+  hdr += vec3<f32>(1.2, 1.05, 0.7) * abs(devilAdvect) * devil * 1.8;
+  hdr += impacts * vec3<f32>(1.8, 0.8, 0.2);
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0); hdr = mix(src.rgb, hdr, clamp(total + next.a * 0.6, 0.0, 0.94));
   let alpha = clamp(src.a * 0.18 + total * 0.78 + next.a * 0.45, 0.0, 1.0); let mapped = aces(max(hdr, vec3<f32>(0.0)));
   textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, p, vec4<f32>(clamp(1.0 - total * 0.72 + next.a * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));

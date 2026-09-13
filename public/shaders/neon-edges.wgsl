@@ -4,7 +4,9 @@
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, mach-band, blackbody-spectrum
 //  Complexity: High
 //  Scientific: Multi-scale Sobel and directional second-derivative enhancement approximate Mach bands for perceptual edge glow.
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-09-11
+//  Ideas: inverse-square spotlight; Kelvin isotherm bands
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -146,8 +148,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / resolution;
   let texel = 1.0 / resolution;
 
-  let bass = plasmaBuffer[0].x;
-  let treble = plasmaBuffer[0].z;
+  let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+  let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
+  let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
   let base = sampleColor(uv);
   let depth = sampleDepth(uv);
 
@@ -165,7 +168,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
   let aspect = resolution.x / max(resolution.y, 1.0);
   let deltaMouse = vec2<f32>((uv.x - mouse.x) * aspect, uv.y - mouse.y);
-  let depthReveal = exp(-dot(deltaMouse, deltaMouse) / max(spotlightRadius * spotlightRadius, 0.002)) * (0.35 + 0.65 * max(u.zoom_config.w, 0.35));
+  let r2 = max(dot(deltaMouse, deltaMouse), 0.0004);
+  let invSq = spotlightRadius * spotlightRadius / r2;
+  let depthReveal = clamp(invSq, 0.0, 4.0) * (0.35 + 0.65 * max(u.zoom_config.w, 0.35));
 
   let combinedEdge = (
     scale1.magnitude * 1.35 * (1.0 + treble * 0.75) +
@@ -197,7 +202,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeStrength = smoothstep(0.02, 0.90, edgeSignal);
 
   let temperature = mix(1400.0, 11200.0, clamp(edgeStrength * 0.85 + brightBand * 0.5 + bass * 0.12, 0.0, 1.0));
-  let spectral = blackbodyRGB(temperature);
+  let isotherm = floor(temperature / 700.0 + 0.5) * 700.0;
+  let spectral = blackbodyRGB(isotherm);
 
   // ═══ UNIQUE VISUAL IDEA: electric current flowing along the neon tube ═══
   // A real neon sign has charge carriers racing along the glass tube. The finest
@@ -218,10 +224,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let halo = smoothstep(0.02, 0.45, combinedEdge) * smoothstep(0.0, 0.35, darkBand) * 0.75;
   let fogLift = spectral * depthReveal * 0.06 * (1.0 - depth);
 
-  let finalColor = max(base.rgb * (1.0 - halo * 0.45) + glow + fineDetail + fogLift, vec3<f32>(0.0));
-  let alpha = clamp(luminance(finalColor) + edgeStrength * 0.25, 0.0, 1.0);
+  let lit = max(base.rgb * (1.0 - halo * 0.45) + glow + fineDetail + fogLift, vec3<f32>(0.0));
+  let aa = 2.51; let bb = 0.03; let cc = 2.43; let dd = 0.59; let ee = 0.14;
+  let finalColor = clamp((lit * (aa * lit + bb)) / (lit * (cc * lit + dd) + ee), vec3<f32>(0.0), vec3<f32>(1.0));
+  let alpha = clamp(luminance(finalColor) + edgeStrength * 0.25, 0.0, 1.0) * base.a;
+  let display = vec4<f32>(finalColor, alpha);
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
-  textureStore(dataTextureA, coord, vec4<f32>(edgeStrength, brightBand, (temperature - 1400.0) / 9800.0, halo));
+  textureStore(writeTexture, coord, display);
+  textureStore(dataTextureA, coord, display);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

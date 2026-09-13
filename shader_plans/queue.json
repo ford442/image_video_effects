@@ -556,9 +556,14 @@
       "added": "2026-09-09T15:26:46.087880"
     },
     {
-      "filename": "2026-09-11_hyperdimensional-bismuth-lattice.md",
-      "title": "Hyperdimensional Bismuth Lattice",
-      "added": "2026-09-11T06:08:11.179748"
+      "filename": "2026-09-11_sentient-void-silk-nebula.md",
+      "title": "Sentient Void-Silk Nebula",
+      "added": "2026-09-11T15:12:01.123937"
+    },
+    {
+      "filename": "2026-09-12_cybernetic-plasma-orchid-nexus.md",
+      "title": "Cybernetic Plasma-Orchid Nexus",
+      "added": "2026-09-12T15:12:23.018457"
     }
   ],
   "current": null,
@@ -1036,6 +1041,20 @@
       "added": "2026-09-09T08:11:11.677314+00:00",
       "status": "completed",
       "completed_at": "2026-09-09T08:11:11.677338+00:00"
+    },
+    {
+      "filename": "2026-09-11_hyperdimensional-bismuth-lattice.md",
+      "title": "Hyperdimensional Bismuth Lattice",
+      "added": "2026-09-11T06:08:11.179748",
+      "status": "completed",
+      "completed_at": "2026-09-11T08:06:38.417576+00:00"
+    },
+    {
+      "filename": "2026-09-11_sentient-void-silk-nebula.md",
+      "title": "Sentient Void-Silk Nebula",
+      "added": "2026-09-11T15:12:01.123937",
+      "status": "completed",
+      "completed_at": "2026-09-12T08:26:07.521699+00:00"
     }
   ],
   "rejected": [],

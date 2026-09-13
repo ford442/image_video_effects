@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  bioluminescent-blackbody
+//  Bioluminescent Blackbody
 //  Category: advanced-hybrid
-//  Features: organic-growth, blackbody-thermal, bioluminescence
+//  Features: organic-growth, blackbody-thermal, bioluminescence, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: bioluminescent.wgsl, spec-blackbody-thermal.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-8 — Thermal & Atmospheric Enhancer
+//  Upgraded: 2026-09-12
+//  Ideas: leading-edge heat on advancing growth; cooling lag stored in A.g
+//  A packing: raw (growth, heat, 0, 1)
 // ═══════════════════════════════════════════════════════════════════
 //  Living organic growth patterns with physically-correct thermal
 //  coloring. Growth energy maps to blackbody temperature — cooler
@@ -54,6 +54,10 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
 }
 
 // ═══ CHUNK: hash (from bioluminescent.wgsl) ═══
+fn loadState(coord: vec2<i32>, maxCoord: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), maxCoord), 0);
+}
+
 fn hash(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
@@ -86,58 +90,58 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
+    let coord = vec2<i32>(gid.xy);
+    let maxCoord = vec2<i32>(res) - vec2<i32>(1);
     let uv = vec2<f32>(gid.xy) / res;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let texel = 1.0 / res;
-
-    // Parameters
     let spread_mult = 1.0 + u.zoom_params.x * 0.1;
     let branch_density = u.zoom_params.y;
     let glow_intensity = u.zoom_params.z;
     let spore_count = u32(u.zoom_params.w * 10.0);
-    let growth_rate = u.zoom_config.x;
-    let pulse = u.zoom_config.z;
-    let depth_influence = u.zoom_config.w;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     let base_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-    // Initialize or load growth state
-    var growth = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+    let prev = loadState(coord, maxCoord);
+    var growth = prev.r;
+    var heat = prev.g;
 
-    // Interactive Spore Placement
+    let aspect = res.x / max(res.y, 1.0);
     for (var i: u32 = 0u; i < min(50u, spore_count + 1u); i = i + 1u) {
         if (i < u32(u.config.y)) {
             let ripple = u.ripples[i];
-            let center = ripple.xy;
             let age = time - ripple.z;
             if (age > 0.1 && age < 2.0) {
-                let aspect = res.x / res.y;
-                let d_aspect = distance(uv * vec2<f32>(aspect, 1.0), center * vec2<f32>(aspect, 1.0));
+                let d_aspect = distance(uv * vec2<f32>(aspect, 1.0), ripple.xy * vec2<f32>(aspect, 1.0));
                 let influence = smoothstep(0.05, 0.0, d_aspect) * (1.0 - smoothstep(1.5, 2.0, age));
                 growth = max(growth, influence);
             }
         }
     }
 
-    // Simple growth diffusion
-    let n1 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
-    let n2 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).r;
-    let n3 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
-    let n4 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).r;
+    let n1 = loadState(coord + vec2<i32>(1, 0), maxCoord).r;
+    let n2 = loadState(coord + vec2<i32>(-1, 0), maxCoord).r;
+    let n3 = loadState(coord + vec2<i32>(0, 1), maxCoord).r;
+    let n4 = loadState(coord + vec2<i32>(0, -1), maxCoord).r;
     let neighbor_avg = (n1 + n2 + n3 + n4) * 0.25;
     let depth_mask = smoothstep(0.1, 0.9, depth);
-    let noise_val = noise3d(vec3<f32>(uv * 5.0, time * 0.1));
 
-    if (growth_rate > 0.01) {
-        growth = min(1.0, growth * 0.998 + neighbor_avg * spread_mult * depth_mask * branch_density);
-    }
+    growth = min(1.0, growth * 0.998 + neighbor_avg * spread_mult * depth_mask * branch_density);
 
-    textureStore(dataTextureA, gid.xy, vec4<f32>(growth, 0.0, 0.0, 1.0));
+    // Idea 1 — leading-edge heat on the advancing front
+    let advancing = clamp(growth - neighbor_avg, 0.0, 1.0);
+    let frontHeat = pow(advancing * 3.0, 1.6);
+
+    // Idea 2 — cooling lag: stored heat trails growth
+    let targetHeat = clamp(pow(growth, 1.5) + frontHeat * 0.85, 0.0, 1.0);
+    heat = mix(heat, targetHeat, 0.18 + bass * 0.08 + mids * 0.06);
+    heat = heat * (0.985 - treble * 0.01);
+
+    textureStore(dataTextureA, coord, vec4<f32>(growth, heat, 0.0, 1.0));
 
     // Vein structure
     let vein_noise = noise3d(vec3<f32>(uv * 20.0, time * 0.5));
@@ -150,13 +154,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // High growth = 9000K (blue-white)
     let tempLow = 1200.0;
     let tempHigh = 9000.0;
-    let growthEnergy = pow(growth, 1.5) * glow_intensity;
+    let growthEnergy = heat * glow_intensity;
     let temperature = mix(tempLow, tempHigh, growthEnergy);
     var bio_light = blackbodyColor(temperature);
 
-    // Pulse modulation
-    let pulse_beat = sin(time * 10.0 + pulse * 5.0) * 0.3 + 0.7;
-    bio_light = bio_light * pulse_beat;
+    let pulse_beat = sin(time * 10.0 + bass * 5.0) * 0.3 + 0.7;
+    bio_light = bio_light * pulse_beat * (1.0 + frontHeat * 0.65);
 
     // Subsurface scattering
     let ss_scatter = smoothstep(0.0, 0.5, growth) * 0.3;
@@ -180,21 +183,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Tone map
     final_color = toneMapACES(final_color);
 
-    
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(vec2<i32>(gid.xy)) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
-
-    let __finalRGB = final_color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(__finalRGB, growth_alpha));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(final_color, growth_alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

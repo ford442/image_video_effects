@@ -10,7 +10,9 @@
 //  The image is mapped onto a Poincaré disk. Mouse movement drives
 //  Möbius transformations that scroll the hyperbolic plane. Tiles
 //  become smaller and more numerous toward the disk boundary.
-//  Alpha channel stores hyperbolic distance from center.
+//  Upgraded: 2026-09-11
+//  Ideas: horocycle rings; tile mortar at angular wrap
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -104,9 +106,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Only render inside unit disk
   let distFromOrigin = length(diskUV);
   if (distFromOrigin > 0.999) {
-    // Outside disk: dark hyperbolic void
     let voidColor = vec3<f32>(0.01, 0.0, 0.02);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(voidColor, 0.0));
+    let display = vec4<f32>(voidColor, 0.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), display);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
     return;
@@ -119,15 +122,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let tiled = hyperbolicTile(transformed, tileCount);
 
   // Map back to UV space for image sampling
-  let sampleUV = tiled * 0.5 + 0.5;
-
-  // Hyperbolic magnification: near boundary = more detail
+  let sampleUV = clamp(tiled * 0.5 + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
   let hDist = hyperbolicDistOrigin(transformed);
   let magnify = 1.0 + hDist * 0.3;
-
-  // Sample with magnification bias
-  let magnifiedUV = (sampleUV - 0.5) * magnify + 0.5;
+  let magnifiedUV = clamp((sampleUV - 0.5) * magnify + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
   var color = textureSampleLevel(readTexture, u_sampler, magnifiedUV, 0.0).rgb;
+  let srcA = textureSampleLevel(readTexture, u_sampler, magnifiedUV, 0.0).a;
+
+  let wrapSeam = abs(fract(atan2(transformed.y, transformed.x) / 6.28318 * tileCount) - 0.5);
+  let mortar = 1.0 - smoothstep(0.02, 0.08, wrapSeam);
+  color = mix(color, color * 0.35, mortar * 0.65);
+  let horo = abs(sin(hDist * 6.0 - time * 1.1));
+  color += vec3<f32>(0.25, 0.55, 1.0) * horo * 0.12 * (1.0 - distFromOrigin);
 
   // Ripple distortions: clicks create hyperbolic waves
   let rippleCount = min(u32(u.config.y), 50u);
@@ -151,9 +157,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(color, vec3<f32>(0.3, 0.6, 1.0), boundaryGlow * 0.4);
 
   // Hyperbolic distance as alpha
-  let alpha = clamp(hDist / 3.0, 0.0, 1.0);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+  let aa = 2.51; let bb = 0.03; let cc = 2.43; let dd = 0.59; let ee = 0.14;
+  let mapped = clamp((color * (aa * color + bb)) / (color * (cc * color + dd) + ee), vec3<f32>(0.0), vec3<f32>(1.0));
+  let alpha = clamp(hDist / 3.0, 0.0, 1.0) * srcA;
+  let display = vec4<f32>(mapped, alpha);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), display);
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
 
   // Depth passthrough
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

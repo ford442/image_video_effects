@@ -1,6 +1,76 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-11 (lighting-effects ten)
+**Last updated:** 2026-09-12 (origami / lichen / bio leftover eight)
+
+## 2026-09-12 — Origami / lichen / bioluminescent leftover eight (8 shaders)
+
+- IDs: `origami-fold`, `interactive-origami-coupled`, `gen-lichen-reaction-diffusion`, `gen-bioluminescent-reaction-diffusion`, `nano-repair`, `digital-moss-rgba`, `bioluminescent`, `bioluminescent-blackbody`.
+- Per shader, the ideas actually added:
+  - origami-fold: Kawasaki buckle wrinkle on unfoldable vertices; sheet print-through at the crease.
+  - interactive-origami-coupled: capillary pooling in crease valleys; Kármán street along a crease. Prev mouse extraBuffer[133..134] stash (not a spring). C loads canonicalized.
+  - gen-lichen-reaction-diffusion: thallus growth rings around deposits; apothecia cups. Noise regimes kept (not rewritten as Gray-Scott).
+  - gen-bioluminescent-reaction-diffusion: luciferin quench from stored B-age; excitation flash on advancing B fronts.
+  - nano-repair: healing front on |∇health|; weld flash where health rose this frame. Exact C load.
+  - digital-moss-rgba: dual-species territorial ridge where B≈D; capsule stalks from high-B. Existing spring kept. Did not clone this morning's shade taxis.
+  - bioluminescent: spore tropism toward live click inoculum; quorum flash vs neighbors. zoom_config no longer stolen as GrowthRate/ColorMode.
+  - bioluminescent-blackbody: leading-edge heat; cooling lag in A.g. Leftover clock/IQ overlay stripped.
+- Floor: bindings / 16×16 / exact C / A packing as documented / ACES display only / saved params exact. No new springs.
+- Gates: Naga 8/8, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,364, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-12-origami-lichen-bio-eight/`.
+- Skipped kaleido/drag eights (already 09-11); interactive-origami / digital-crease / ascii-glyph; paper-cutout / paper-burn; tesseract-fold / gen-quantum-aether-origami; physarum extraBuffer[0..] agents; creature seahorse/owl/jellyfish/abyss.
+
+## 2026-09-12 — RD / predator-prey / nano leftover eight (8 shaders)
+
+- IDs: `reaction-diffusion`, `chromatic-reaction-diffusion-rgba`, `alpha-reaction-diffusion-rgba`, `hybrid-reaction-diffusion-glass`, `predator-prey`, `predator-prey-rgba`, `nano-assembler`, `nano-assembler-crystal`.
+- Per shader, the ideas actually added:
+  - reaction-diffusion: anisotropic Laplacian along flowDir; mitosis pinch on −∇²V. Packing honesty: A is U/V/packet/accum, not display RGB.
+  - chromatic-reaction-diffusion-rgba: competitive overlap quench; photo chroma seed (red→warm V, blue→cool V).
+  - alpha-reaction-diffusion-rgba: nutrient chemotaxis along photo luma; interface membrane where |∇(g−a)| is high.
+  - hybrid-reaction-diffusion-glass: thickness IOR from chemistry; caustic concentrate where ∇·grad < 0. Laplacian C loads clamped.
+  - predator-prey: reciprocal hunt (prey lose energy to adjacent predators); carcass compost (animal death → plant). C loads canonicalized.
+  - predator-prey-rgba: carnivore pursuit along herbivore gradient; herbivore flee from carnivores. Toxin Strength wired. Did not clone this morning's plant-taxis.
+  - nano-assembler: docking bonds on shared cell edges; ballistic scatter along mouse radial. Sampler names + time canonicalized. Display RGBA in A.
+  - nano-assembler-crystal: hex facet lock of orientation; recalescence glow from latent heat. Did not clone this morning's dendrite arms.
+- Floor: bindings / 16×16 / exact C / A packing as documented / ACES display only / saved params exact. No new springs.
+- Gates: Naga 8/8, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,364, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-12-rd-eco-nano-eight/`.
+- Skipped chromatic-reaction-diffusion (already idea-rich); gen-lichen / gen-bioluminescent; predator-prey-ecology graph; nano-repair; physarum extraBuffer[0..] agents; origami/crease/ascii (already 09-11 Idea Cards).
+
+## 2026-09-12 — Slime / flow leftover eight (8 shaders)
+
+- IDs: `sim-slime-mold-growth`, `sim-slime-mold-growth-em`, `slime-mold-on-video`, `luma-flow-field`, `wave-equation-rgba-fluid`, `spec-runge-kutta-advection`, `sim-heat-haze-field`, `lichtenberg-fractal`.
+- Per shader, the ideas actually added:
+  - sim-slime-mold-growth: photo-luma food on dark regions; vein anastomosis across trail corridors.
+  - sim-slime-mold-growth-em: field-line deposit along E; opposite-polarity wipe from click charges. extraBuffer[133..138] pointer history kept.
+  - slime-mold-on-video: food anastomosis between luma peaks; streamer veins along packed drift.
+  - luma-flow-field: LIC sample along isoFlow; stagnation hold in luma flats.
+  - wave-equation-rgba-fluid: breaking-wave foam on downhill steep slopes; dye stretch along fluidVel. C loads canonicalized.
+  - spec-runge-kutta-advection: strain-rate filaments from |∇u|; history LIC along a second RK4 step.
+  - sim-heat-haze-field: thermal plumes (upward heat advection); schlieren streaks along ∇T.
+  - lichtenberg-fractal: streamer tips at empty-neighbor ends; residual scorch along cooled channels. C loads canonicalized.
+- Floor: bindings / 16×16 / exact C / A packing as documented / ACES display only / saved params exact. No new springs.
+- Gates: Naga 8/8, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,364, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-12-slime-flow-eight/`.
+- Skipped physarum trio (extraBuffer[0..] agents); optical-flow-tracer (binding 13); sand-dunes generative. Five sand/wave files (wave-equation, pixel-sand, sim-sand-dunes, sim-sand-dunes-rgba, cymatic-sand) already shipped this morning.
+
+## 2026-09-12 — Simulation leftover ten (10 shaders)
+
+- IDs: `sim-decay-system`, `sim-decay-system-rgba`, `alpha-erosion-terrain`, `alpha-crystal-growth-phase`, `alpha-fire-temperature`, `alpha-em-field-simulation`, `alpha-multi-state-ecosystem`, `cellular-automata-rgba`, `lenia-on-video`, `digital-moss`.
+- Per shader, the ideas actually added:
+  - sim-decay-system: filiform rust veins along edge tangent; oxide bloom from stored corrosion. Held protection / click rings kept.
+  - sim-decay-system-rgba: paint-flake holes when integrity drops; rust bleed from metal into failed paint.
+  - alpha-erosion-terrain: alluvial fans where slope flattens; stream incision where water concentrates.
+  - alpha-crystal-growth-phase: secondary dendrite arms at high impurity; grain-boundary darkening.
+  - alpha-fire-temperature: side-vorticity from up-advection; age-gated ember sparks from Ember Glow.
+  - alpha-em-field-simulation: LIC streaks along E; recombination flash where +/− meet. Click-parity charges kept.
+  - alpha-multi-state-ecosystem: ecotone ridge where s1≈s2; toxin stain from stored A.
+  - cellular-automata-rgba: herbivore taxis along plant gradient; nutrient patches from local death.
+  - lenia-on-video: anisotropic kernel from video luma gradient; membrane from |∇A|. extraBuffer audio lie deleted.
+  - digital-moss: shade taxis toward darker neighbor; rhizoid threads along luma gradient. Sampler names canonicalized. No new spring.
+- Floor: bindings / 16×16 / exact C / raw A packing / ACES display only / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,364, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM/canvas. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-12-sim-leftover-ten/`.
+- Skipped lighting/geometric/hybrid leftovers (done); kaleido/voronoi eight and drag-glitch eight; sand/slime/physarum/wave-equation leftover; overlay-rich origami/crease/ascii-glyph/neon-quantum-lattice.
 
 ## 2026-09-11 — Lighting-effects ten (10 shaders)
 
@@ -19,6 +89,80 @@
 - Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
 - Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM bridge. Real-GPU visual QA: external.
 - Notes: `agents/swarm-outputs/composer-2026-09-11-lighting-ten/`. Skipped neon-light (hybrid batch) and aurora-rift variants.
+
+## 2026-09-11 — Geometric leftover eight (8 shaders)
+
+- IDs: `hyperbolic-dreamweaver`, `hyperbolic-dreamweaver-julia`, `mouse-hyperbolic-navigator`, `voxel-grid`, `cyber-grid-pulse`, `zipper-reveal`, `quantum-field-visualizer`, `neon-topology`.
+- Per shader, the ideas actually added:
+  - hyperbolic-dreamweaver: angular wrap tiling from `tile_count`; radial chroma + geodesic glow. Stripped leftover clock/IQ overlay. JSON slider roles remapped in WGSL.
+  - hyperbolic-dreamweaver-julia: photo albedo on hit; horocycle fog. plasmaBuffer audio (not zoom_config.x).
+  - mouse-hyperbolic-navigator: horocycle rings; tile mortar at angular wrap. Void early-out writes A.
+  - voxel-grid: mortar AO in `cell_gap`; axis-face photo tint. Exact-C trail kept.
+  - cyber-grid-pulse: dual-lattice vertex dots; traveling X-line packet. Existing extraBuffer[133..138] spring kept.
+  - zipper-reveal: slider puller at local y=0; staggered L/R teeth.
+  - quantum-field-visualizer: barrier + two gaps; held-only collapse (`zoom_config.w`).
+  - neon-topology: slope hachures; hypsometric fill between contours. Click quakes kept.
+- Floor: bindings / 16×16 / ACES display RGBA / saved params exact / additive `updatedParams`. No new springs.
+- Gates: Naga 8/8, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM/canvas. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-11-geometric-leftover-eight/`.
+- Skipped digital-crease, interactive-origami, ascii-glyph, neon-quantum-lattice, kaleido clones, Batch 56 warp_drive, elastic-chromatic. Did not overlap `cursor/geometric-five-2833`.
+
+## 2026-09-11 — Lighting leftover ten (10 shaders)
+
+- IDs: `neon-pulse-edge`, `sim-volumetric-fake-em`, `sim-volumetric-fake`, `volumetric-god-rays`, `neon-flashlight`, `neon-strings`, `neon-edges`, `neon-edge-glow`, `anamorphic-flare`, `neon-echo`.
+- Per shader, the ideas actually added:
+  - neon-pulse-edge: Sobel-tangent tube glow; exact-C edge afterglow. Raw edge field in A.
+  - sim-volumetric-fake-em: Beer–Lambert dust on bent rays; E×B lateral kick. Ripple charges kept. Mouse stash extraBuffer[133..134]. Display RGBA in A.
+  - sim-volumetric-fake: depth occlusion vs the light; discrete dust motes on radial taps.
+  - volumetric-god-rays: photo-luma occluder in the march; sun-disk core. A packing switched to display RGBA.
+  - neon-flashlight: umbra vs penumbra; specular catch on edges inside the cone. JSON slider roles remapped in WGSL.
+  - neon-strings: standing-wave node darkening; nut/bridge end-pins. Packet/click kept.
+  - neon-edges: inverse-square spotlight; Kelvin isotherm bands. Tube-current wave kept. A packing switched to display RGBA.
+  - neon-edge-glow: tube core + dark sheath; 60 Hz mains beat. A packing switched to display RGBA.
+  - anamorphic-flare: threshold-gated highlight streak; blue-line ghost. JSON width/intensity/color/threshold mapped honestly.
+  - neon-echo: exact-C persistence; P7 yellow-green tail. Raw persist in A.
+- Floor: bindings / 16×16 / exact C where C is history / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM/canvas. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-11-lighting-leftover-ten/`.
+- Skipped matrix_digital_rain, aurora pass-2 graphs, Batch 60 neon-pulse, overlay-rich geometric leftovers.
+
+## 2026-09-11 — Ethereal generative ten (10 shaders)
+
+- IDs: `gen-ethereal-cyber-chrono-nebula-phoenix`, `gen-ethereal-cyber-chrono-void-whale`, `gen-ethereal-cyber-plasma-void-dragon`, `gen-ethereal-glass-flora-terrarium`, `gen-ethereal-quantum-glass-nautilus`, `gen-ethereal-quantum-hologram-bonsai`, `gen-ethereal-quantum-holographic-fractal-coral`, `gen-ethereal-quantum-medusa`, `gen-ethereal-silk-veil`, `gen-feedback-echo-chamber`.
+- Per shader, the ideas actually added:
+  - gen-ethereal-cyber-chrono-nebula-phoenix: wing feather filaments on SDF edge; tail ember convection. Spring halo [133..137] kept.
+  - gen-ethereal-cyber-chrono-void-whale: baleen comb striations on ribs; bass sonar ping rings from core.
+  - gen-ethereal-cyber-plasma-void-dragon: breath plasma jet along spine; per-segment scale overlap parallax.
+  - gen-ethereal-glass-flora-terrarium: condensation droplets on shell; dew meniscus on leaf tips.
+  - gen-ethereal-quantum-glass-nautilus: chamber septa walls; pearl nacre luster. Full floor added (ACES/dataA/plasmaBuffer/updatedParams).
+  - gen-ethereal-quantum-hologram-bonsai: prune-cut seal rings; north-facing moss lichen. bass_env [133] kept.
+  - gen-ethereal-quantum-holographic-fractal-coral: polyp mouth pits; zooxanthellae symbiont pulse from exact C.
+  - gen-ethereal-quantum-medusa: nematocyst stinger dots; bell contraction wave from bass phase.
+  - gen-ethereal-silk-veil: selvage fray on ribbon edges; held-crease memory from exact C.
+  - gen-feedback-echo-chamber: harmonic echo ladder at 2× spacing; standing-wave nodal interference. bass_env [133] kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM bridge. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/composer-2026-09-11-ethereal-ten/`.
+
+## 2026-09-11 — Leftover branches older than one day
+
+- Inventory after fetch/prune: today's ethereal/lighting/geometric Cursor branches skipped. Mycelium plan and Claude weekly-dispatch already merged. batch-59 empty. batch-60/61 mostly superseded (graphs already on main; WASM JS would regress TS SoT).
+- Landed unique positives: `liquid-swirl` (restore Lamb-Oseen identity), `liquid-tensor-vortex` (spectral tensor + A write), `rgb-glitch-displacement` (Batch 61 persistence, 16×16). Params exact. Naga 3/3. Real-GPU QA external.
+
+## 2026-09-11 — Fireworks leftover atmospheric six (6 shaders)
+
+- IDs: `gen-fireworks-fan-shell`, `gen-fireworks-comet-trail`, `gen-fireworks-smoke-bloom`, `gen-fireworks-wind-ripple`, `gen-fireworks-nocturne`, `gen-fireworks-audio-symphony`.
+- Per shader, the ideas actually added:
+  - fan-shell: peacock eye spots on even rays; two-row palmette (inner 0.55 / outer 1.0). Batch 37 drag/wind/flutter kept.
+  - comet-trail: ion tail along −velocity; coma halo around the hex head.
+  - smoke-bloom: buoyancy (puff rises as sparks fall); burst-lit smoke from local flash.
+  - wind-ripple: altitude shear; leeward streak only downwind. Click-ripple barrages kept.
+  - nocturne: muzzle flash at launchPos; even round vs odd droop habit.
+  - audio-symphony: onset-only primary (bassPulse gates the big shell); band-tinted stars. extraBuffer[133] envelope kept.
+- Floor: bindings / 16×16 / exact C / ACES display RGBA / saved params exact. No new springs. Nocturne no longer treats `config.y` as dt.
+- Gates: Naga 6/6, extraBuffer 0 new `[0..132]`, dead sliders 0, catalog 1,363, SKIP_WASM_BUILD=1 build green. Jest 652 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
+- Notes: `agents/swarm-outputs/grok-2026-09-11-fireworks-leftover-six/`.
+- Skipped lighting leftovers (`neon-pulse-edge`, `sim-volumetric-fake-em`) and `matrix_digital_rain` (wrong kernel).
 
 ## 2026-09-10 — Fireworks shell taxonomy ten (10 shaders)
 

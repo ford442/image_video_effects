@@ -5,7 +5,9 @@
 //            upgraded-rgba, chromatic-tentacles, temporal-bioluminescence,
 //            audio-sway, depth-output, gravity-attractor, mouse-trail
 //  Complexity: High
-//  Upgraded: 2026-06-28 — Interactivist Batch (gravity wells + feedback loops)
+//  Upgraded: 2026-09-11
+//  Ideas: nematocyst stinger dots along tentacle rim from edge SDF; bell contraction wave from radial phase tied to bass
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -80,7 +82,14 @@ fn map(p: vec3<f32>, time: f32, bass: f32, mids: f32) -> vec2<f32> {
     p1.z += sway_bass * 0.5;
 
     var p_bell = p1;
-    p_bell.y += sin(time + length(p_bell.xz)) * 0.2 * (1.0 + bass * 0.3);
+    // Bell contraction wave from radial phase tied to bass
+    let bellRadius = length(p_bell.xz);
+    let contractPhase = bellRadius * 7.5 - time * 2.2 - bass * 4.5;
+    let contractWave = sin(contractPhase) * 0.14 * (1.0 + bass * 0.45);
+    p_bell.y += sin(time + bellRadius) * 0.2 * (1.0 + bass * 0.3) - contractWave;
+    let bellScale = 1.0 + contractWave * 0.35;
+    p_bell.x *= bellScale;
+    p_bell.z *= bellScale;
     let bell = length(p_bell * vec3<f32>(1.0, 2.0, 1.0)) - 1.0;
 
     var p_tent = p1;
@@ -187,6 +196,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Audio trail feedback: accumulate bass-driven color in feedback buffer
         let trailColor = vec3<f32>(0.6, 0.2, 0.8) * bass * mouse_prox;
         col += trailColor * 0.5;
+
+        // Nematocyst stinger dots along tentacle rim from edge SDF
+        let rimDist = length(p.xz);
+        let tentRim = smoothstep(0.12, 0.32, rimDist) * smoothstep(2.2, 0.7, rimDist) * smoothstep(0.4, -0.1, p.y);
+        let rimAngle = atan2(p.z, p.x);
+        let stingerGrid = fract(rimAngle / TAU * 8.0 * 10.0 + p.y * 7.0 + time * 0.15);
+        let stingers = tentRim * smoothstep(0.9, 0.94, stingerGrid) * smoothstep(0.98, 0.95, stingerGrid);
+        col += vec3<f32>(0.88, 0.95, 1.0) * stingers * (0.55 + treble * 0.25);
     }
 
     // Feedback loop: blend with previous frame for motion trails

@@ -2636,7 +2636,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "vfx",
@@ -2863,6 +2864,40 @@
       "glow",
       "hdr",
       "abstract"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Observation Field",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fluctuation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Energy Level",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Uncertainty",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -3484,6 +3519,40 @@
       "particles",
       "glow",
       "audio-reactive"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Density",
+        "default": 40,
+        "min": 10,
+        "max": 100,
+        "step": 1
+      },
+      {
+        "index": 1,
+        "name": "Touch Radius",
+        "default": 0.4,
+        "min": 0.1,
+        "max": 0.8,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Rotation Force",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Cell Gap",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.4,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -3633,6 +3702,40 @@
       "fabric",
       "chromatic",
       "audio-reactive"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Spread",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Tooth Size",
+        "default": 0.02,
+        "min": 0.005,
+        "max": 0.1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Angle",
+        "default": 0,
+        "min": -1.57,
+        "max": 1.57,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Tooth Amplitude",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   }
 ]

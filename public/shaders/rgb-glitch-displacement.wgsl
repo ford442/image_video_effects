@@ -1,10 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  RGB Glitch Displacement
-//  Category: retro-glitch
-//  Features: mouse-driven, yuv-chroma-subsampling, wavelength-alpha, audio-reactive, upgraded-rgba
-//  Complexity: High
-//  Created: 2026-04-15
-//  Upgraded: 2026-05-23
+//  RGB Glitch Displacement — Batch 61
+//  Offset persistence via textureLoad C, spring epicenter, held/ripples,
+//  ACES display, wavelength semantic alpha. A: offset.xy + glitchEnergy.z
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -183,6 +180,10 @@ fn datamosh(uv: vec2<f32>, mouse: vec2<f32>, time: f32, intensity: f32) -> vec2<
     return uv + vec2<f32>(offsetX, 0.0) * doMosh;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn chromaticAberration(uv: vec2<f32>, intensity: f32, channelOffset: f32) -> vec3<f32> {
     let offsetR = vec2<f32>(channelOffset * intensity, 0.0);
     let offsetG = vec2<f32>(0.0, 0.0);
@@ -197,25 +198,64 @@ fn chromaticAberration(uv: vec2<f32>, intensity: f32, channelOffset: f32) -> vec
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let coord = vec2<i32>(global_id.xy);
+    let maxCoord = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+    let held = u.zoom_config.w > 0.5;
+    let aspect = resolution.x / resolution.y;
 
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let audioPulse = 1.0 + bass * 0.5;
-    let audioOverall = bass * 0.85;
+    let audioPulse = 1.0 + bass * 0.5 + mids * 0.15;
+    let audioOverall = bass * 0.85 + treble * 0.2;
+
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (global_id.x == 0u && global_id.y == 0u) {
+        if (mouse.x == 0.0 && mouse.y == 0.0 && time < 2.0) {
+            mouse = rawMouse;
+            mouseVel = vec2<f32>(0.0);
+        }
+        mouseVel = (mouseVel + (rawMouse - mouse) * 0.16) * 0.74;
+        mouse = mouse + mouseVel;
+        extraBuffer[133] = mouse.x;
+        extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVel.x;
+        extraBuffer[136] = mouseVel.y;
+    }
 
     let chromaMode = i32(clamp(u.zoom_params.x * 3.0 + 0.5, 0.0, 3.0));
-    let glitchIntensity = u.zoom_params.y * audioPulse;
+    let heldMul = select(1.0, 1.45, held);
+    let glitchIntensity = u.zoom_params.y * audioPulse * heldMul;
     let blockSize = mix(2.0, 16.0, u.zoom_params.z);
     let temporalIntensity = u.zoom_params.w * (1.0 + audioOverall * 0.4);
 
-    var p = uv;
+    let histCoord = clamp(coord, vec2<i32>(0), maxCoord);
+    let prevOffset = textureLoad(dataTextureC, histCoord, 0).xy;
+    var offsetAccum = prevOffset * 0.88;
 
-    p = temporalGlitch(p, time, temporalIntensity, resolution);
+    var tearX = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 0.7) {
+            let rDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+            tearX = tearX + smoothstep(0.02, 0.0, abs(rDist - age * 0.35)) * exp(-age * 1.6) * 0.06;
+        }
+    }
+
+    var p = uv + offsetAccum + vec2<f32>(tearX, 0.0);
+
+    let blockBin = (u32(floor(uv.x * 8.0)) % 8u) + 1u;
+    let blockVoice = plasmaBuffer[blockBin].x;
+    let blockMod = 1.0 + blockVoice * 0.35;
+
+    p = temporalGlitch(p, time, temporalIntensity * blockMod, resolution);
     p = waveDisplace(p, mouse, time, glitchIntensity);
     let blockOffset = blockGlitch(p, time, glitchIntensity);
     p = p + blockOffset;
@@ -311,8 +351,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let glitchEnergy = clamp(glitchIntensity + length(p - uv) * 4.0, 0.0, 1.0);
+    let displayRgb = acesToneMap(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(4.0)));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, finalAlpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, vec4<f32>(displayRgb, finalAlpha));
+    textureStore(dataTextureA, coord, vec4<f32>(clamp(p - uv, vec2<f32>(-0.5), vec2<f32>(0.5)), glitchEnergy, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

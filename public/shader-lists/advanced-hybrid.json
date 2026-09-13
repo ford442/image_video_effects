@@ -1364,7 +1364,9 @@
       "bioluminescence",
       "interactive",
       "temporal-persistence",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1400,7 +1402,43 @@
         "step": 0.01
       }
     ],
-    "target_rating": 4.8
+    "target_rating": 4.8,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Spread Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Branch Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Spore Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = growth, heat, 0, 1. ACES display only.",
+    "updated": true
   },
   {
     "id": "bismuth-crystal-growth",
@@ -4943,7 +4981,8 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,
@@ -5025,7 +5064,9 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "feedbackPacking": "A/C = A, B, C, D chemistry. ACES display only.",
+    "updated": true
   },
   {
     "id": "digital-reveal-guided",
@@ -9154,13 +9195,15 @@
       "hyperbolic-geometry",
       "quaternion-julia",
       "raymarched",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "features": [
       "hyperbolic-geometry",
       "quaternion-julia",
       "raymarched",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9198,6 +9241,40 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Morph Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Cycles",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -9588,7 +9665,9 @@
     "features": [
       "mouse-driven",
       "fluid-simulation",
-      "geometric"
+      "geometric",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9628,7 +9707,43 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fold Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fold Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Vortex Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = vx, vy, vorticity, density. Prev mouse extraBuffer[133..134].",
+    "updated": true
   },
   {
     "id": "interactive-pixel-wind-structure",
@@ -10564,7 +10679,7 @@
     "id": "nano-assembler-crystal",
     "name": "Nano Assembler Crystal",
     "url": "shaders/nano-assembler-crystal.wgsl",
-    "description": "Grid-based nanobots assemble into crystalline structures using phase-field dynamics. RGBA stores assembly phase, temperature, crystal orientation, and impurity. Mouse disrupts assembly causing scatter; ripples trigger nucleation. Displays nanobot glow when disassembled and orientation-dependent crystal color when assembled.",
+    "description": "Nanobot grid that phase-field freezes into an oriented crystal. Orientation hex-locks when solid; latent heat lights a recalescence glow on the freeze front.",
     "tags": [
       "nano-assembler",
       "crystal",
@@ -10580,7 +10695,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -10609,6 +10726,42 @@
       },
       {
         "id": "rebuildSpeed",
+        "name": "Rebuild Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = phase, temperature, orientation, impurity. ACES display only.",
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Assembly Progress",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Disruption",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Rebuild Speed",
         "default": 0.5,
         "min": 0,
@@ -11164,7 +11317,7 @@
     "id": "predator-prey-rgba",
     "name": "Predator-Prey RGBA",
     "url": "shaders/predator-prey-rgba.wgsl",
-    "description": "Continuous-density predator-prey ecosystem simulation packed into RGBA32FLOAT. Plants photosynthesize using source image luminance, herbivores graze, carnivores hunt, and toxins accumulate from overpopulation. Species diffuse across the grid creating emergent spatial waves.",
+    "description": "Continuous-density predator-prey field. Carnivores pursue along the herbivore gradient, herbivores flee carnivores, and toxin strength is a live slider. Species persist in dataTextureA.",
     "tags": [
       "predator-prey",
       "ecosystem",
@@ -11179,7 +11332,9 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -11208,6 +11363,42 @@
       },
       {
         "id": "toxinStrength",
+        "name": "Toxin Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "feedbackPacking": "A/C = plants, herbivores, carnivores, toxin. ACES display only.",
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Eat Probability",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Death Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Plant Growth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
         "name": "Toxin Strength",
         "default": 0.5,
         "min": 0,
@@ -13193,7 +13384,48 @@
       "mouse-driven",
       "temporal",
       "rgba-state-machine",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "upgraded-rgba",
+      "exact-load-feedback",
+      "a-only-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
+    "feedbackPacking": "A/C = wave height, velocity, pressure, dye; raw coupled-wave state via exact bounded loads",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wave Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Source Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {

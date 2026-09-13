@@ -1,0 +1,53 @@
+{
+  "id": "gen-sentient-void-silk-nebula",
+  "name": "Sentient Void-Silk Nebula",
+  "author": "Jules",
+  "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads.",
+  "category": "generative",
+  "url": "shaders/gen-sentient-void-silk-nebula.wgsl",
+  "passes": [
+    {
+      "type": "compute",
+      "shader": "gen-sentient-void-silk-nebula.wgsl",
+      "inputs": ["self"],
+      "params": [
+        {
+          "id": "flow_speed",
+          "name": "Flow Speed",
+          "mapping": "zoom_params.x",
+          "default": 0.5,
+          "min": 0.1,
+          "max": 2.0,
+          "step": 0.1
+        },
+        {
+          "id": "thread_density",
+          "name": "Thread Density",
+          "mapping": "zoom_params.y",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "id": "vortex_strength",
+          "name": "Vortex Strength",
+          "mapping": "zoom_params.z",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        },
+        {
+          "id": "iridescence_shift",
+          "name": "Iridescence Shift",
+          "mapping": "zoom_params.w",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.05
+        }
+      ]
+    }
+  ]
+}
