@@ -195,6 +195,42 @@ function checkBridgeSkew() {
 
 checkBridgeSkew();
 
+/**
+ * Toolchain pin (src/contracts/wasm_compile_flags.json emsdkVersion).
+ * Emscripten 6.x minified glue does not embed the emcc version, so this can only
+ * fail if a version string is present and disagrees. The real gate is
+ * scripts/emcc-version-gate.sh, run by build.sh before em++.
+ */
+function checkToolchainPin() {
+  const flagsPath = path.resolve('src/contracts/wasm_compile_flags.json');
+  if (!fs.existsSync(flagsPath)) {
+    errors.push('❌ src/contracts/wasm_compile_flags.json: FILE NOT FOUND (toolchain pin)');
+    allValid = false;
+    return;
+  }
+  const pin = JSON.parse(fs.readFileSync(flagsPath, 'utf8')).emsdkVersion;
+  if (!/^\d+\.\d+\.\d+$/.test(pin || '')) {
+    errors.push(`❌ wasm_compile_flags.json: emsdkVersion must be an exact x.y.z pin, got "${pin}"`);
+    allValid = false;
+    return;
+  }
+  const gluePath = path.resolve('public/wasm/pixelocity_wasm.js');
+  if (!fs.existsSync(gluePath)) return; // reported above
+  const glue = fs.readFileSync(gluePath, 'utf8');
+  const embedded = glue.match(/Emscripten[^\d\n]{0,40}(\d+\.\d+\.\d+)/);
+  if (!embedded) {
+    console.log(`Toolchain pin: emsdk ${pin} (glue embeds no emcc version — gate is scripts/emcc-version-gate.sh)`);
+  } else if (embedded[1] !== pin) {
+    errors.push(`❌ public/wasm/pixelocity_wasm.js: built with Emscripten ${embedded[1]}, pin is ${pin}`);
+    allValid = false;
+  } else {
+    console.log(`Toolchain pin: ✅ glue Emscripten ${embedded[1]} matches pin`);
+  }
+  console.log('');
+}
+
+checkToolchainPin();
+
 // Summary
 console.log('=== Validation Summary ===\n');
 

@@ -41,13 +41,25 @@ To build the WASM renderer locally, you must have the **Emscripten SDK** install
 # Standard setup:
 git clone https://github.com/emscripten-core/emsdk.git
 cd emsdk
-./emsdk install latest
-./emsdk activate latest
+./emsdk install 6.0.9    # pinned — see src/contracts/wasm_compile_flags.json
+./emsdk activate 6.0.9
 source ./emsdk_env.sh
 
 # Then in the image_video_effects repo:
 npm run wasm:build
 ```
+
+## Toolchain pin (2026-09)
+
+The Emscripten version is **pinned**, not `latest` — a moving emsdk silently changes the
+ABI of `public/wasm/pixelocity_wasm.{js,wasm}`.
+
+- **Pin:** `emsdkVersion` in [`src/contracts/wasm_compile_flags.json`](./src/contracts/wasm_compile_flags.json) (currently **6.0.9**). The same file holds `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` — `build.sh` reads it via `scripts/format-wasm-compile-flags.js`, `CMakeLists.txt` via `file(READ)`.
+- **CI:** `setup-emsdk` `version:` must equal the pin; `npm run verify:wasm-invariants` fails on drift or on `-s` flags hardcoded in `build.sh`/CMake.
+- **Local gate:** `build.sh` runs `scripts/emcc-version-gate.sh`; a mismatched emcc fails the build. Emscripten 6.x glue does not embed its version, so `wasm:validate` can only check the pin exists (and would fail if a future glue embeds a mismatched version).
+- **Beware stale SDKs:** `build.sh` sources the first `emsdk_env.sh` it finds (`$REPO_ROOT/emsdk`, `~/emsdk`, …), which can override an already-activated emsdk. The gate catches this.
+- **Cloud VMs / Jules:** `SKIP_WASM_BUILD=1`. Do not compile with 3.1.x.
+- **Bumping:** edit the JSON + `ci.yml` together, rebuild, commit artifacts in the same PR, note size deltas in `wasm_renderer/BUILD_FLAG_EXPERIMENTS.md`.
 
 ## Build Failures: CI vs Local
 
@@ -129,7 +141,7 @@ See [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md) for the full ar
 The `wasm` job runs on every push to `main`/`develop` and on pull requests to `main`:
 
 1. **Setup**: Node.js 24 + npm dependencies
-2. **Emscripten**: Latest emsdk via `mymindstorm/setup-emsdk@v14`
+2. **Emscripten**: emsdk **6.0.9** (pinned) via `mymindstorm/setup-emsdk@v14`
 3. **Build**: `npm run wasm:build` compiles from source (fails if emcc missing)
 4. **Validation**: `npm run wasm:validate` — integrity, bridge sync, freshness
 5. **Smoke**: Jest tests matching `WASM` (bridge API surface)
@@ -149,8 +161,8 @@ Install and activate the Emscripten SDK:
 ```bash
 git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
 cd ~/emsdk
-./emsdk install latest
-./emsdk activate latest
+./emsdk install 6.0.9
+./emsdk activate 6.0.9
 source ./emsdk_env.sh
 ```
 

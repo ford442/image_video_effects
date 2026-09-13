@@ -36,3 +36,56 @@ CI and `npm run wasm:build` use **`build.sh` only**. CMake (`CMakeLists.txt`) is
 
 **2026-07-26:** Removed duplicate `-sGROWABLE_ARRAYBUFFERS=0` from the emcc line (cosmetic; no size change).
 
+
+## Toolchain pin + flag SoT (2026-09-13)
+
+### Which emsdk built the committed artifacts
+
+The earlier sections were measured on emcc 6.0.3, but the artifacts committed at
+`fe860334` (2026-09-08) did **not** come from 6.0.3. Rebuilding those exact sources
+with `build.sh` on each emsdk in a clean `EM_CACHE`:
+
+| emsdk | `.wasm` B | `.js` B | vs committed |
+|-------|----------:|--------:|--------------|
+| 6.0.3 | 148,810 | 80,469 | differ |
+| 6.0.4 | 148,810 | 80,427 | differ |
+| 6.0.5 | 148,810 | 80,427 | differ |
+| 6.0.6 | 148,573 | 80,414 | differ |
+| 6.0.7 | 148,583 | 80,477 | js identical |
+| 6.0.8 | 148,612 | 80,477 | js identical |
+| **6.0.9** | **148,601** | **80,477** | **both byte-identical** |
+
+HEAD (`8f4fb445`, comment-only `device.cpp` change) also rebuilds byte-identical on 6.0.9.
+
+**Decision: pin emsdk 6.0.9** in `src/contracts/wasm_compile_flags.json` (`emsdkVersion`) and
+`.github/workflows/ci.yml` (was `version: latest`). `scripts/emcc-version-gate.sh` (run by
+`build.sh`) refuses any other emcc. The minified glue embeds no emcc version, so
+`wasm:validate` checks the pin exists rather than reading a version out of the artifact.
+Note that 6.0.3 → 6.0.9 moved `.wasm` by −209 B and changed glue layout without any source
+change. That is the drift `latest` would have let through silently.
+
+### Flag SoT
+
+`build.sh` (via `scripts/format-wasm-compile-flags.js`) and `CMakeLists.txt` (`file(READ)` +
+`string(JSON)`) both read `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` from
+`wasm_compile_flags.json`. `verify:wasm-invariants` fails if either hardcodes a `-s` flag or
+`--use-port`, or if CI's emsdk version drifts from the pin. The flag set is unchanged, and so is the output
+(see the byte-identical rebuild above).
+
+### JSPI vs ASYNCIFY: stay on ASYNCIFY (2026-09-13)
+
+No JSPI spike was run: it needs a real GPU + Chrome (#1080 hardware) and none was
+available. **ASYNCIFY stays the committed default.** Before anyone attempts the spike:
+
+- `wgpuInstanceWaitAny(..., UINT64_MAX)` blocks in three places in `device.cpp`: adapter
+  request, device request, **and** the `LoadShader` error-scope pop. Under `-sJSPI` every export
+  that can reach one of them (`_initWasmRenderer`, `_loadShader`, `_reloadShader`, and anything
+  that calls into them) must be listed in `JSPI_EXPORTS` and becomes **promise-returning**. The
+  bridge `ccall`s in `src/wasm/bridge/*.ts` would need `{async: true}` + `await`. That is an ABI
+  change, not a flag flip.
+- `TimedWaitAny` on the instance must stay either way.
+- Gate for merging: `CreateDevice()` succeeds with `-sJSPI` and no `-sASYNCIFY` on ≥1 real GPU;
+  import table still has no `wgpuSurfacePresent`; Safari/Firefox either support JSPI or load a
+  fallback ASYNCIFY build. Never ship a JSPI-only binary.
+- Expected upside is bounded by the table above: ≈ −40 KB `.wasm` (−31%) plus some init time.
+  Record size and init-time numbers in a new dated section here. `-O3` stays a benchmark, not a default.

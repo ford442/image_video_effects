@@ -33,6 +33,20 @@ wasm_renderer/main.cpp + renderer.cpp
 
 `npm run verify:wasm-bridge-sync` fails if the generated trees drift from TypeScript emit.
 
+## Toolchain pin
+
+| What | Value | Where |
+|------|-------|-------|
+| emsdk / emcc | **6.0.9** | `src/contracts/wasm_compile_flags.json` → `emsdkVersion` |
+| std / opt / port / `-s` flags | one list | same JSON (`std`, `opt`, `usePort`, `sFlags`, `jsOutputName`) |
+| Exports | — | `src/contracts/wasm_exports.json` |
+
+- CI `setup-emsdk` `version:` must equal `emsdkVersion` (`npm run verify:wasm-invariants` fails otherwise). Never `latest`.
+- `build.sh` runs `scripts/emcc-version-gate.sh` before `em++` and refuses a mismatched emcc. The minified glue does **not** embed the emcc version, so the gate is on the toolchain, not the artifact.
+- `build.sh` and `CMakeLists.txt` both read the flag JSON; neither may hardcode `-s` flags or `--use-port` (enforced by `verify:wasm-invariants`).
+- Cloud VMs / Jules: keep `SKIP_WASM_BUILD=1`. Never commit artifacts from a non-pinned emcc (e.g. 3.1.x). `ALLOW_EMCC_VERSION_MISMATCH=1` exists for local experiments only.
+- Bumping the pin: change `emsdkVersion` and `ci.yml` together, rebuild, commit artifacts in the same PR.
+
 ## Build commands
 
 ```bash

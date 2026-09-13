@@ -352,8 +352,54 @@ function verifyWasmExports() {
   if (!cmake.includes('wasm_exports.json')) {
     fail('CMakeLists.txt must file(READ) src/contracts/wasm_exports.json');
   }
-  if (!cmake.includes('GROWABLE_ARRAYBUFFERS=0')) {
-    fail('CMakeLists.txt must set -sGROWABLE_ARRAYBUFFERS=0 to match build.sh');
+}
+
+function verifyWasmCompileFlags() {
+  const flags = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_compile_flags.json'), 'utf8'),
+  );
+  const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
+  const cmake = fs.readFileSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'), 'utf8');
+  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
+
+  if (!/^\d+\.\d+\.\d+$/.test(flags.emsdkVersion || '')) {
+    fail(`wasm_compile_flags.json emsdkVersion must be an exact x.y.z pin, got "${flags.emsdkVersion}"`);
+  }
+  if (!flags.sFlags.includes('GROWABLE_ARRAYBUFFERS=0')) {
+    fail('wasm_compile_flags.json must keep GROWABLE_ARRAYBUFFERS=0 (TextDecoder + resizable heap; re-test Dawn first)');
+  }
+
+  // CI setup-emsdk must use the pin, not `latest`.
+  const emsdkStep = ci.match(/uses:\s*mymindstorm\/setup-emsdk@[^\n]*[\s\S]*?version:\s*['"]?([^'"\s]+)/g) || [];
+  if (emsdkStep.length === 0) fail('ci.yml: setup-emsdk step with version: not found');
+  for (const step of emsdkStep) {
+    const v = step.match(/version:\s*['"]?([^'"\s]+)/)[1];
+    if (v !== flags.emsdkVersion) {
+      fail(`ci.yml setup-emsdk version "${v}" must equal wasm_compile_flags.json emsdkVersion "${flags.emsdkVersion}"`);
+    }
+  }
+
+  // build.sh / CMake must read the JSON, not hand-copy -s flags.
+  if (!buildSh.includes('format-wasm-compile-flags.js')) {
+    fail('build.sh must read flags via scripts/format-wasm-compile-flags.js');
+  }
+  if (!buildSh.includes('emcc-version-gate.sh')) {
+    fail('build.sh must run scripts/emcc-version-gate.sh before compiling');
+  }
+  if (!cmake.includes('wasm_compile_flags.json')) {
+    fail('CMakeLists.txt must file(READ) src/contracts/wasm_compile_flags.json');
+  }
+  for (const [name, src] of [['build.sh', buildSh], ['CMakeLists.txt', cmake]]) {
+    const code = src.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+    for (const f of flags.sFlags) {
+      const key = f.split('=')[0];
+      if (new RegExp(`-s${key}\\b`).test(code)) {
+        fail(`${name} hardcodes -s${key}; it belongs in wasm_compile_flags.json`);
+      }
+    }
+    if (/--use-port=emdawnwebgpu/.test(code)) {
+      fail(`${name} hardcodes --use-port; it belongs in wasm_compile_flags.json`);
+    }
   }
 }
 
@@ -498,6 +544,7 @@ if (!ONLY_WASM_INVARIANTS) {
   verifyWorkgroupDispatch();
   verifyEmptyPlaceholder();
 }
+verifyWasmCompileFlags();
 verifyWasmRuntimeInvariants();
 
 if (failed) {
@@ -505,7 +552,7 @@ if (failed) {
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + canvas_configure + wasm_exports + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
+  '✅ Device policy sync OK (limits + optional features + canvas_configure + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
 
 function walkCppFiles(dir) {

@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 project(PixelocityWASM CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+# std / opt / port / -s flags come from src/contracts/wasm_compile_flags.json
+# (same file build.sh reads via format-wasm-compile-flags.js) — do not paste flags here.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../src/contracts/wasm_compile_flags.json" WASM_FLAGS_JSON)
+string(JSON WASM_STD GET "${WASM_FLAGS_JSON}" std)
+string(REGEX REPLACE "^c\\+\\+" "" WASM_STD_NUM "${WASM_STD}")
+set(CMAKE_CXX_STANDARD ${WASM_STD_NUM})
 
 add_executable(pixelocity_wasm
     main.cpp
@@ -15,8 +20,7 @@ add_executable(pixelocity_wasm
     wasm_internal.cpp
 )
 
-target_compile_features(pixelocity_wasm PUBLIC cxx_std_20)
-target_compile_options(pixelocity_wasm PRIVATE -O2)
+target_compile_features(pixelocity_wasm PUBLIC cxx_std_${WASM_STD_NUM})
 
 # ── emdawnwebgpu ──────────────────────────────────────────────────────────────
 #
@@ -80,18 +84,27 @@ foreach(i RANGE ${RT_LAST})
     endif()
 endforeach()
 
+string(JSON WASM_OPT GET "${WASM_FLAGS_JSON}" opt)
+string(JSON WASM_USE_PORT GET "${WASM_FLAGS_JSON}" usePort)
+string(JSON WASM_JS_OUTPUT GET "${WASM_FLAGS_JSON}" jsOutputName)
+string(JSON S_COUNT LENGTH "${WASM_FLAGS_JSON}" sFlags)
+math(EXPR S_LAST "${S_COUNT} - 1")
+set(WASM_S_FLAGS "")
+foreach(i RANGE ${S_LAST})
+    string(JSON SF GET "${WASM_FLAGS_JSON}" sFlags ${i})
+    list(APPEND WASM_S_FLAGS "-s${SF}")
+endforeach()
+
+target_compile_options(pixelocity_wasm PRIVATE ${WASM_OPT})
+
 # Port and all -s flags at link time only
 target_link_options(pixelocity_wasm PRIVATE
-    -O2
-    --use-port=emdawnwebgpu
+    ${WASM_OPT}
+    "--use-port=${WASM_USE_PORT}"
     "-sEXPORTED_FUNCTIONS=${EXPORTED_STR}"
     "-sEXPORTED_RUNTIME_METHODS=${RUNTIME_STR}"
-    "-sALLOW_MEMORY_GROWTH=1"
-    "-sGROWABLE_ARRAYBUFFERS=0"
-    "-sNO_EXIT_RUNTIME=1"
-    "-sMODULARIZE=1"
-    "-sEXPORT_NAME=PixelocityWASM"
-    "-sASYNCIFY"
+    ${WASM_S_FLAGS}
 )
 
-set_target_properties(pixelocity_wasm PROPERTIES SUFFIX ".js")
+get_filename_component(WASM_OUTPUT_BASE "${WASM_JS_OUTPUT}" NAME_WE)
+set_target_properties(pixelocity_wasm PROPERTIES OUTPUT_NAME "${WASM_OUTPUT_BASE}" SUFFIX ".js")

@@ -66,6 +66,12 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Export lists live in src/contracts/wasm_exports.json — do not hardcode them here.
 EXPORTED="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" functions)"
 RUNTIME_METHODS="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" runtime)"
+# Toolchain pin + std/opt/port/-s flags live in src/contracts/wasm_compile_flags.json.
+mapfile -t COMPILE_FLAGS < <(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" args)
+JS_OUTPUT_NAME="$(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" output)"
+WASM_OUTPUT_NAME="${JS_OUTPUT_NAME%.js}.wasm"
+
+bash "$REPO_ROOT/scripts/emcc-version-gate.sh"
 
 # Single-pass compile+link via emcc.
 # --use-port=emdawnwebgpu runs emdawnwebgpu.py's process_args() exactly once
@@ -82,7 +88,8 @@ RUNTIME_METHODS="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" runtime)"
 #   audio_depth.cpp   — image/video upload, depth map, audio bins
 #   wasm_internal.cpp — shared helpers (limits check, workgroup parse)
 #
-# Compile flags review (2026-07):
+# Compile flags review (2026-07). Flags themselves are in
+# src/contracts/wasm_compile_flags.json (2026-09) — the notes below explain them:
 #   -sASYNCIFY          — required for wgpuInstanceWaitAny (adapter/device callbacks).
 #                        Adds binary size + async transform cost; do not remove unless
 #                        emdawn moves to fully synchronous request APIs.
@@ -108,24 +115,18 @@ SOURCES=(
     "$SCRIPT_DIR/audio_depth.cpp"
     "$SCRIPT_DIR/wasm_internal.cpp"
 )
-em++ -std=c++20 -O2 \
-    --use-port=emdawnwebgpu \
+echo "Flags: ${COMPILE_FLAGS[*]}"
+em++ "${COMPILE_FLAGS[@]}" \
     "${SOURCES[@]}" \
     "-I$SCRIPT_DIR" \
     -sEXPORTED_FUNCTIONS="${EXPORTED}" \
     -sEXPORTED_RUNTIME_METHODS="${RUNTIME_METHODS}" \
-    -sALLOW_MEMORY_GROWTH=1 \
-    -sGROWABLE_ARRAYBUFFERS=0 \
-    -sNO_EXIT_RUNTIME=1 \
-    -sMODULARIZE=1 \
-    -sEXPORT_NAME=PixelocityWASM \
-    -sASYNCIFY \
-    -o "$BUILD_DIR/pixelocity_wasm.js"
+    -o "$BUILD_DIR/$JS_OUTPUT_NAME"
 
 # Copy output to public folder (repo-relative path)
 PUBLIC_WASM="$REPO_ROOT/public/wasm"
 mkdir -p "$PUBLIC_WASM"
-cp "$BUILD_DIR/pixelocity_wasm.js" "$BUILD_DIR/pixelocity_wasm.wasm" "$PUBLIC_WASM/"
+cp "$BUILD_DIR/$JS_OUTPUT_NAME" "$BUILD_DIR/$WASM_OUTPUT_NAME" "$PUBLIC_WASM/"
 echo "✅ WASM build complete!"
 echo "   Emscripten output: public/wasm/pixelocity_wasm.{js,wasm}"
 echo "   Bridge copies:     public/wasm/wasm_bridge.js, src/wasm/wasm_bridge.js"

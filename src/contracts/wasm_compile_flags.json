@@ -1,0 +1,16 @@
+{
+  "description": "Single source of truth for the Emscripten toolchain pin and compile/link flags. Consumed by wasm_renderer/build.sh (via scripts/format-wasm-compile-flags.js), wasm_renderer/CMakeLists.txt (file(READ) + string(JSON)), scripts/emcc-version-gate.sh and the CI wasm job (setup-emsdk version must equal emsdkVersion). Export lists live in wasm_exports.json. ASYNCIFY is required by device.cpp WaitAny init — see wasm_renderer/BUILD_FLAG_EXPERIMENTS.md before touching it. GROWABLE_ARRAYBUFFERS=0 is deliberate (TextDecoder + resizable heap); do not flip without a Dawn re-test.",
+  "emsdkVersion": "6.0.9",
+  "std": "c++20",
+  "opt": "-O2",
+  "usePort": "emdawnwebgpu",
+  "sFlags": [
+    "ALLOW_MEMORY_GROWTH=1",
+    "GROWABLE_ARRAYBUFFERS=0",
+    "NO_EXIT_RUNTIME=1",
+    "MODULARIZE=1",
+    "EXPORT_NAME=PixelocityWASM",
+    "ASYNCIFY"
+  ],
+  "jsOutputName": "pixelocity_wasm.js"
+}
