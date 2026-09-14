@@ -1,10 +1,13 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Nebula Light-Trail Swarm - Visualist Upgrade
+// ═══════════════════════════════════════════════════════════════════
+//  Nebula Light-Trail Swarm
 //  Category: generative
-//  Features: OkLab color mixing, Blackbody temperature, Cosine palettes,
-//            Fresnel rim lighting, HDR tone mapping, particle trails, bloom
-//  Upgraded: 2026-06-28
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: Strömgren-sphere ionization stratification around the core star ([O III] teal inner zone, H-alpha red shell, [S II] ionization front; radius ∝ cube root of ionizing flux); recombination afterglow along photon trails (head ionized [O III] white-teal cooling to H-alpha red toward the tail, recombination time set by Trail Decay)
+//  A packing: ACES display RGBA in A (C read back as trail history)
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -20,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Particle Speed, .y = Trail Decay, .z = Curl Strength, .w = Glow Radius
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -92,6 +95,23 @@ fn hash21(p: vec2<f32>) -> vec2<f32> {
     p3 += vec3<f32>(dot(p3, p3.yzx + vec3<f32>(33.33)));
     return fract((p3.xx + p3.yz) * p3.zy);
 }
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), w.x),
+               mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
+}
+
+// Emission-line colours (linear RGB approximations of the nebular lines)
+const HALPHA: vec3<f32> = vec3<f32>(1.0, 0.12, 0.18);  // H-alpha 656.3 nm
+const OIII: vec3<f32> = vec3<f32>(0.1, 0.95, 0.8);     // [O III] 500.7 nm
+const SII: vec3<f32> = vec3<f32>(0.75, 0.02, 0.05);    // [S II] 671.6 nm
+
+fn loadC(p: vec2<i32>, maxC: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), maxC), 0);
+}
+
 fn trailDist(uv: vec2<f32>, p: vec2<f32>, dir: vec2<f32>, len: f32, width: f32) -> f32 {
     let toP = uv - p;
     let proj = dot(toP, dir);
@@ -105,18 +125,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = u.config.zw;
     if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
     let uv = vec2<f32>(id.xy) / res;
+    let coord = vec2<i32>(id.xy);
+    let maxC = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+    let aspect = res.x / max(res.y, 1.0);
     let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
     let speed = u.zoom_params.x * 2.0 + 0.5;
-    let trailDecay = u.zoom_params.y * 0.9 + 0.1;
     let curlStrength = u.zoom_params.z * 3.0;
     let glowRadius = u.zoom_params.w * 0.03 + 0.005;
-    // Mouse Y-flip: screen-top = +Y/up
+    let held = clamp(u.zoom_config.w, 0.0, 1.0);
+    // Mouse: uv space, y=0 top (used as-is)
     let mouse = u.zoom_config.yz;
-    let mouseDist = length(uv - mouse);
+    let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
     let repel = smoothstep(0.2, 0.0, mouseDist);
+    // Recombination time: low Trail Decay = long-lived ionized trails
+    let recombLen = mix(0.35, 0.04, u.zoom_params.y);
     var col = vec3<f32>(0.0);
     var totalGlow = 0.0;
     let numParticles = 20;
@@ -128,13 +153,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (life < 0.01) { continue; }
         let startAngle = fi * 0.618 + seed.y * 6.28318;
         let startRadius = 0.1 + seed.x * 0.3;
-        let startPos = vec2<f32>(cos(startAngle), sin(startAngle)) * startRadius + vec2<f32>(0.5);
+        var startPos = vec2<f32>(cos(startAngle), sin(startAngle)) * startRadius + vec2<f32>(0.5);
+        // Cursor deflects the swarm (repels; held = gravitational well pulls in)
+        let toM = (startPos - mouse) * vec2<f32>(aspect, 1.0);
+        let mInfl = smoothstep(0.35, 0.0, length(toM));
+        startPos = startPos + normalize(toM + vec2<f32>(1e-4)) / vec2<f32>(aspect, 1.0) * mInfl * 0.08 * (1.0 - 2.0 * held);
         let curlPhase = time * speed * 0.5 + fi;
         let curlX = sin(curlPhase + uv.x * curlStrength) * 0.2;
         let curlY = cos(curlPhase + uv.y * curlStrength) * 0.2;
         let dir = normalize(vec2<f32>(cos(startAngle + 1.57), sin(startAngle + 1.57)) + vec2<f32>(curlX, curlY));
-        let endPos = startPos + dir * (0.1 + t * 0.4);
-        let trailLen = t * 0.3;
+        let trailLen = t * 0.3 * mix(1.25, 0.7, u.zoom_params.y);
         let d = trailDist(uv, startPos, dir, trailLen, glowRadius * life);
         let glow = smoothstep(0.02, 0.0, d) * life;
         // Cosine palette + Blackbody temperature based on particle
@@ -142,9 +170,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let cp = cosinePalette(hue + time * 0.05, vec3<f32>(0.5,0.5,0.5), vec3<f32>(0.5,0.5,0.5), vec3<f32>(1.0,0.8,0.6), vec3<f32>(0.0,0.33,0.67));
         let bb = blackbody(mix(4000.0, 12000.0, fi / f32(numParticles)));
         let particleCol = oklab_mix(cp, bb, 0.3 + bass * 0.3);
+        // ── IDEA 2: recombination afterglow ──
+        // The photon head fully ionizes the gas it crosses ([O III] white-teal);
+        // behind it, electrons recombine and cascade through H-alpha, so the
+        // trail cools to red with distance from the head over recombLen.
+        let along = clamp(dot(uv - startPos, dir), 0.0, max(trailLen, 1e-4));
+        let behind = trailLen - along;
+        let ionFrac = exp(-behind / recombLen);
+        let lineCol = mix(HALPHA * 0.8, mix(OIII, vec3<f32>(1.0), 0.35), ionFrac);
+        let afterglow = mix(0.35, 1.0, ionFrac);
+        let trailCol = oklab_mix(particleCol, lineCol, 0.45 + treble * 0.15);
         let audioBoost = 1.0 + bass * 1.5 + treble * 0.5;
-        col = col + particleCol * glow * audioBoost;
-        totalGlow = totalGlow + glow;
+        col = col + trailCol * glow * afterglow * audioBoost;
+        totalGlow = totalGlow + glow * afterglow;
     }
     // Central nebula core with Fresnel-like rim
     let coreDist = length(uv - vec2<f32>(0.5));
@@ -156,6 +194,45 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let bloom = exp(-bloomDist * bloomDist * 3.0) * 0.3 * (0.5 + mids * 0.5);
     let bloomCol = oklab_mix(vec3<f32>(0.6,0.3,0.8), blackbody(6000.0), 0.5);
     col = col + bloomCol * bloom;
+
+    // ── IDEA 1: Strömgren-sphere ionization stratification ──
+    // A hot core star ionizes a sphere whose radius R_s ∝ Q^(1/3) (ionizing
+    // photon rate Q, driven by bass). Inside, high-ionization [O III] glows
+    // teal; H-alpha fills the outer shell; low-ionization [S II] marks the
+    // thin ionization front where neutral gas begins. Clumpy gas density
+    // wrinkles the front.
+    let pc = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+    let rN = length(pc);
+    let gas = valueNoise(pc * 6.0 + vec2<f32>(time * 0.02, -time * 0.015)) * 0.65
+            + valueNoise(pc * 14.0 - vec2<f32>(time * 0.03, 0.0)) * 0.35;
+    let Q = 1.0 + bass * 2.5 + held * 1.0;
+    let Rs = 0.26 * pow(Q, 1.0 / 3.0) * (0.85 + gas * 0.3);
+    let x = rN / Rs;
+    let oiiiZone = exp(-x * x * 3.2) * (0.6 + mids * 0.4);
+    let haZone = smoothstep(0.25, 0.8, x) * smoothstep(1.08, 0.9, x);
+    let front = exp(-(x - 1.0) * (x - 1.0) * 180.0);
+    let emissionGain = gas * 0.32 * (0.6 + mids * 0.4);
+    col = col + OIII * oiiiZone * emissionGain * 0.6;
+    col = col + HALPHA * haZone * emissionGain;
+    col = col + SII * front * (0.4 + treble * 0.4) * gas;
+    let nebulaCover = (oiiiZone * 0.6 + haZone + front * 0.8) * gas;
+
+    // Click → light echo: a scattered-light shell racing outward through dust
+    var echo = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var r: u32 = 0u; r < rippleCount; r = r + 1u) {
+        let rp = u.ripples[r];
+        let age = time - rp.z;
+        if (age > 0.0 && age < 3.0) {
+            let dr = length((uv - rp.xy) * vec2<f32>(aspect, 1.0)) - age * 0.22;
+            echo += exp(-dr * dr * 900.0) * exp(-age * 1.2) * (0.5 + gas);
+        }
+    }
+    echo = min(echo, 2.0);
+    col = col + mix(OIII, vec3<f32>(1.0, 0.95, 0.9), 0.5) * echo * (0.6 + bass * 0.4);
+    // Cursor halo: repel field glows faintly (brighter while held)
+    col = col + vec3<f32>(0.5, 0.6, 1.0) * repel * 0.08 * (1.0 + held * 2.0);
+
     // Starfield with blackbody temperature
     let starNoise = hash(floor(uv * 300.0));
     if (starNoise > 0.997) {
@@ -163,24 +240,33 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let starTemp = mix(3000.0, 10000.0, starNoise);
         col = col + blackbody(starTemp) * starBright * (0.5 + mids * 0.5);
     }
-    // Temporal feedback
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
-    // Chromatic dispersion with OkLab mixing
+    // Temporal feedback (exact load); Trail Decay sets persistence
+    let prev = loadC(coord, maxC);
+    // default (y=0.5) keeps the original 0.03 weight; y=0 -> 0.24, y=1 -> ~0.004
+    let persist = 0.03 * pow(8.0, 1.0 - 2.0 * u.zoom_params.y);
+    col = mix(col, prev.rgb * mix(0.95, 0.85, u.zoom_params.y), persist + bass * 0.01);
+    // Chromatic dispersion with OkLab mixing (integer texel offsets)
     let cStr = 0.003 + bass * 0.005;
     let cDir = normalize(uv - vec2<f32>(0.5) + 0.001);
-    let prevR = textureSampleLevel(dataTextureC, u_sampler, uv + cDir * cStr * (1.0 + mids), 0.0).r;
-    let prevG = textureSampleLevel(dataTextureC, u_sampler, uv + cDir * cStr * (0.5 + treble), 0.0).g;
-    let prevB = textureSampleLevel(dataTextureC, u_sampler, uv - cDir * cStr * (0.8 + bass * 0.5), 0.0).b;
+    let offR = vec2<i32>(round(cDir * cStr * (1.0 + mids) * res));
+    let offG = vec2<i32>(round(cDir * cStr * (0.5 + treble) * res));
+    let offB = vec2<i32>(round(-cDir * cStr * (0.8 + bass * 0.5) * res));
+    let prevR = loadC(coord + offR, maxC).r;
+    let prevG = loadC(coord + offG, maxC).g;
+    let prevB = loadC(coord + offB, maxC).b;
     col.r = mix(col.r, prevR * 0.9, 0.02 + treble * 0.01);
     col.g = mix(col.g, prevG * 0.9, 0.02 + bass * 0.01);
     col.b = mix(col.b, prevB * 0.9, 0.02 + mids * 0.01);
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(3.0));
     // HDR tone mapping
     col = acesToneMap(col * 0.8);
-    let alpha = clamp(totalGlow * 0.5 + coreGlow + bloom, 0.0, 1.0);
-    let depth = 0.5 - coreDist * 0.3;
-    textureStore(writeTexture, id.xy, vec4<f32>(col, alpha));
+    // Alpha = emission coverage: trails, core, bloom, ionized gas, echo; plus
+    // a decaying share of the previous frame's coverage so trails keep alpha.
+    let alpha = clamp(max(totalGlow * 0.5 + coreGlow + bloom + nebulaCover * 0.5 + echo * 0.5,
+                          prev.a * persist * 1.5), 0.0, 1.0);
+    let depth = clamp(0.5 - coreDist * 0.3 + front * gas * 0.1 + totalGlow * 0.05, 0.0, 1.0);
+    let finalColor = vec4<f32>(col, alpha);
+    textureStore(writeTexture, id.xy, finalColor);
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, id.xy, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, id.xy, finalColor);
 }

@@ -1,16 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Mycelium Network - Diffusion-limited aggregation like fungal mycelium
+//  Mycelium Network
 //  Category: generative
-//  Features: procedural, branching, bioluminescent tips, audio-reactive,
-//    mouse-interactive, fast-motion, traveling-pulses, burst-shockwave,
-//    time-warp-growth, temporal-feedback, hdr-clamped, semantic-alpha,
-//    upgraded-rgba
-//  Created: 2026-03-22
-//  Updated: 2026-08-06 (Batch 38 FAST MOTION — Optimizer pass)
-//  Upgraded: 2026-09-13
-//  Ideas: chemotaxis toward mouse nutrient; anastomosis loops between tips
-//  A packing: HDR display history (pre-ACES); ACES on writeTexture only
-//  By: Agent 4A
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: peripheral growth zone with interior autolysis (only the colony rim behind the growth front stays vital; older hyphae stale, fade and lose tip light); click-inoculated spore germination (germ tubes emerge from the clicked spore with linear apical extension and a Spitzenkörper glow)
+//  A packing: ACES display RGBA in A (feedback history kept in display space; rgb = max-decayed network light, a = glow mass)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,13 +25,14 @@
 struct Uniforms {
   config: vec4<f32>,       // .x = time (seconds), .y = rippleCount, .zw = resolution (width, height)
   zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
+  zoom_params: vec4<f32>,  // .x = Growth Rate, .y = Branching Factor, .z = Nutrient Density, .w = Bioluminescence
   ripples: array<vec4<f32>, 50>,
 };
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const HDR_CAP: f32 = 4.0;      // hard bound for feedback history energy
+const GERM_LIFE: f32 = 4.5;    // seconds a clicked spore's germ tubes stay lit
 const CULL_MARGIN: f32 = 0.12; // coarse-cull box margin (covers thickness + glow reach)
 
 // Hash and noise functions
@@ -80,6 +76,41 @@ fn distToSegment(uv: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
     let ba = b - a;
     let h = clamp(dot(pa, ba) / (dot(ba, ba) + 0.0001), 0.0, 1.0);
     return length(pa - ba * h);
+}
+
+// ── IDEA 2: click-inoculated spore germination ──
+// A spore dropped at the click swells, then pushes out 2–4 germ tubes.
+// Hyphae extend only at the apex, at a near-constant rate, so tube length is
+// linear in age; each tube curves gently (bent at its midpoint) and carries a
+// Spitzenkörper — the vesicle supply centre — as a bright point at its tip.
+// Returns (tube mask, tip glow, spore body).
+fn germinate(p: vec2<f32>, spore: vec2<f32>, age: f32, seed: f32, growthRate: f32, branching: f32) -> vec3<f32> {
+    let extend = age * (0.10 + growthRate * 0.12);
+    let reach = extend + 0.08;
+    let rel = p - spore;
+    if (dot(rel, rel) > reach * reach) { return vec3<f32>(0.0); }
+    let life = 1.0 - smoothstep(GERM_LIFE * 0.6, GERM_LIFE, age);
+    let swell = smoothstep(0.0, 0.35, age);
+    let body = exp(-dot(rel, rel) / (0.00018 + swell * 0.00022)) * life;
+    let lag = 0.35;  // germ tubes emerge after the spore has swollen
+    let len = max(age - lag, 0.0) * (0.10 + growthRate * 0.12);
+    var tube = 0.0;
+    var tip = 0.0;
+    let nTubes = 2 + i32(branching * 3.0);
+    for (var k = 0; k < nTubes; k = k + 1) {
+        let hk = hash21(vec2<f32>(seed, f32(k) * 7.13));
+        let ang = seed * TAU + f32(k) * TAU / f32(nTubes) + (hk - 0.5) * 0.9;
+        let dir = vec2<f32>(cos(ang), sin(ang));
+        let perp = vec2<f32>(-dir.y, dir.x);
+        let curl = (hk - 0.5) * 0.35 * len;
+        let mid = spore + dir * len * 0.5 + perp * curl * 0.5;
+        let apex = spore + dir * len + perp * curl;
+        let d = min(distToSegment(p, spore, mid), distToSegment(p, mid, apex));
+        tube = max(tube, smoothstep(0.006, 0.0, d));
+        let ta = p - apex;
+        tip = max(tip, exp(-dot(ta, ta) * 2600.0) * step(0.001, len));
+    }
+    return vec3<f32>(tube * life, tip * life, body);
 }
 
 // Mycelium sample result
@@ -209,30 +240,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(pixel) / resolution;
     let t = u.config.x;
 
-    // Audio (canonical taps) + guarded engine FFT bins 1–8
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
-    var fftLo = 0.0;
-    var fftMid = 0.0;
-    let bufLen = arrayLength(&extraBuffer);
-    if (bufLen > 13u) {
-        fftLo = (extraBuffer[6] + extraBuffer[7] + extraBuffer[8]) * 0.3333;
-        fftMid = (extraBuffer[9] + extraBuffer[10] + extraBuffer[11]) * 0.3333;
-    }
+    // Audio (canonical plasmaBuffer taps only)
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let held = clamp(u.zoom_config.w, 0.0, 1.0);
 
     // ── Bass transient (rising-edge) detector with frame-rate-independent
     //    decay — persistent state in the safe zone [133..135], single writer ──
-    if (global_id.x == 0u && global_id.y == 0u && bufLen > 135u) {
-        let prevBass = extraBuffer[133];
-        let kickEnv = extraBuffer[134];
-        let dt = clamp(t - extraBuffer[135], 0.0, 0.1);
-        let rise = max(bass - prevBass, 0.0);
-        extraBuffer[134] = max(kickEnv * exp(-dt * 5.0), min(rise * 6.0, 2.0));
-        extraBuffer[133] = bass;
-        extraBuffer[135] = t;
+    var kick = 0.0;
+    if (arrayLength(&extraBuffer) > 138u) {
+        if (global_id.x == 0u && global_id.y == 0u) {
+            let prevBass = extraBuffer[133];
+            let kickEnv = extraBuffer[134];
+            let dt = clamp(t - extraBuffer[135], 0.0, 0.1);
+            let rise = max(bass - prevBass, 0.0);
+            extraBuffer[134] = max(kickEnv * exp(-dt * 5.0), min(rise * 6.0, 2.0));
+            extraBuffer[133] = bass;
+            extraBuffer[135] = t;
+        }
+        kick = clamp(extraBuffer[134], 0.0, 2.0);
     }
-    let kick = select(0.0, extraBuffer[134], bufLen > 134u);
 
     // Parameters - safe randomization (all four sliders LIVE)
     let growthRate = mix(0.3, 2.0, u.zoom_params.x);       // Growth Rate → also SPEED
@@ -263,21 +291,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Growth-front visibility: branches ahead of the front are ghosted
     let grow = clamp((frontR - mycel.branchR) * 4.0 + 1.0, 0.15, 1.0);
 
-    // Earthy brown colors for hyphae (get darker with age)
+    // ── IDEA 1: peripheral growth zone + interior autolysis ──
+    // A fungal colony only extends in a band just behind its advancing margin;
+    // the interior stales — vacuolated hyphae autolyse, go grey-translucent and
+    // stop feeding their tips. Richer nutrients (and faster growth) widen the
+    // vital zone. `behind` > 0 means the branch lies inside the front.
+    let behind = frontR - mycel.branchR;
+    let zoneWidth = 0.35 + growthRate * 0.2 + nutrientDensity * 0.35;
+    let vitality = mix(0.22, 1.0, exp(-max(behind - zoneWidth, 0.0) * 2.4));
+
+    // Earthy brown colors for hyphae (get darker with age; stale interior greys out)
     let youngCol = vec3<f32>(0.6, 0.45, 0.3);
     let oldCol = vec3<f32>(0.25, 0.15, 0.1);
-    let hyphaeCol = mix(youngCol, oldCol, age);
+    let staleCol = vec3<f32>(0.16, 0.15, 0.14);
+    let hyphaeCol = mix(staleCol, mix(youngCol, oldCol, age), vitality);
 
     // Thickness varies with generation
     let thickness = 0.003 * (1.0 - generation * 0.1);
 
     // Hyphae visibility
     let hyphaeMask = smoothstep(thickness * 2.0, 0.0, dist) * grow;
-    let hyphaeCore = smoothstep(thickness, 0.0, dist) * grow;
+    let hyphaeCore = smoothstep(thickness, 0.0, dist) * grow * mix(0.4, 1.0, vitality);
 
     // Bioluminescent tips
     let tipPulse = sin(t * 3.0 + age * 10.0) * 0.5 + 0.5;
-    let tipGlow = isTip * exp(-dist * 30.0) * biolumIntensity * (0.5 + tipPulse * 0.5) * grow;
+    let tipGlow = isTip * exp(-dist * 30.0) * biolumIntensity * (0.5 + tipPulse * 0.5) * grow * vitality * vitality * (1.0 + treble * 0.3);
     let tipCol = vec3<f32>(0.2, 0.9, 0.4) * tipGlow;
 
     // ── FAST MOTION: traveling signal pulses racing along the hyphae ──
@@ -286,12 +324,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pulseSpeed = 2.0 + growthRate * 4.0 + bass * 2.0 + kick * 3.0;
     let wave = fract(age * 1.5 - t * pulseSpeed * 0.12);
     let pulseBand = exp(-pow((wave - 0.5) * 5.0, 2.0));
-    let pulseGlow = pulseBand * hyphaeMask * biolumIntensity * 0.55 * (0.6 + mids * 0.4);
+    let pulseGlow = pulseBand * hyphaeMask * biolumIntensity * 0.55 * (0.6 + mids * 0.4) * mix(0.45, 1.0, vitality);
     let pulseCol = vec3<f32>(0.15, 0.8, 0.45) * pulseGlow;
 
     // Nutrient field (background glow, drifting faster, FFT-shimmered)
     let nutrient = fbm(p * 3.0 + vec2<f32>(t * 0.15, -t * 0.1), 4);
-    let nutrientCol = vec3<f32>(0.1, 0.08, 0.05) * nutrient * nutrientDensity * (1.0 + fftMid * 0.6 + treble * 0.15);
+    let nutrientCol = vec3<f32>(0.1, 0.08, 0.05) * nutrient * nutrientDensity * (1.0 + mids * 0.4 + treble * 0.15);
 
     // Mouse = nutrient attractor (stays reactive at speed)
     let mouseD2 = dot(p - mouseP, p - mouseP);
@@ -312,12 +350,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── FAST MOTION: bass-kick spore-burst shockwave ──
     // Ring expands as the kick envelope decays (frame-rate independent);
     // origin follows the mouse while pressed, colony center otherwise.
-    let burstOrigin = select(vec2<f32>(0.0), mouseP, u.zoom_config.w > 0.5);
+    let burstOrigin = select(vec2<f32>(0.0), mouseP, held > 0.5);
     let kickClamped = min(kick, 2.0);
     let burstR = (2.0 - kickClamped) * 1.1;
     let burstD = length(p - burstOrigin) - burstR;
     let burst = exp(-burstD * burstD * 49.0) * min(kick, 1.5);
     col += vec3<f32>(0.3, 0.9, 0.5) * burst * 0.5;
+
+    // Click ripples → spore inoculation (IDEA 2)
+    var germTube = 0.0;
+    var germTip = 0.0;
+    var germBody = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let rAge = t - rp.z;
+        if (rAge >= 0.0 && rAge < GERM_LIFE) {
+            let sporeP = (rp.xy - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
+            let g = germinate(p, sporeP, rAge, hash21(rp.xy * 97.0 + rp.z), growthRate, branching);
+            germTube = max(germTube, g.x);
+            germTip = max(germTip, g.y);
+            germBody = max(germBody, g.z);
+        }
+    }
+    col = mix(col, youngCol * 1.25, germTube * 0.85);
+    col += vec3<f32>(0.25, 1.0, 0.5) * germTip * biolumIntensity * (0.8 + bass * 0.4);
+    col += vec3<f32>(0.75, 0.6, 0.35) * germBody * 0.9;
 
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.5;
@@ -326,18 +384,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Temporal feedback: persistent growth, but BOUNDED ──
     // History is hard-clamped ≤ HDR_CAP and fades quickly near cycle wrap so
     // the old colony clears for the next one (was unbounded max() saturation).
-    let prev = textureLoad(dataTextureC, pixel, 0);
-    let hist = min(prev.rgb, vec3<f32>(HDR_CAP));
+    // History now lives in ACES display space (A = display RGBA), exact load.
+    let maxP = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
+    let prev = textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), maxP), 0);
+    let hist = clamp(prev.rgb, vec3<f32>(0.0), vec3<f32>(1.0));
     let clearFade = smoothstep(1.0, 0.92, growthPhase);
-    col = max(col, hist * mix(0.90, 0.965, clearFade));
+    let decay = mix(0.90, 0.965, clearFade);
+    let display = max(acesToneMap(min(col, vec3<f32>(HDR_CAP)) * (1.0 + bass * 0.1)), hist * decay);
 
-    // Semantic alpha: bioluminescent mass of the network (never constant 1.0)
-    let glowMass = clamp(hyphaeMask * 0.7 + tipGlow * 0.3 + pulseGlow * 0.4 + burst * 0.3, 0.06, 1.0);
+    // Semantic alpha: bioluminescent mass of the network (never constant 1.0),
+    // persisting with the same decay as the colour history.
+    let glowNow = clamp(hyphaeMask * 0.7 + tipGlow * 0.3 + pulseGlow * 0.4 + burst * 0.3 + germTube * 0.6 + germTip * 0.4 + germBody * 0.3, 0.06, 1.0);
+    let glowMass = clamp(max(glowNow, clamp(prev.a, 0.0, 1.0) * decay), 0.06, 1.0);
+    let finalColor = vec4<f32>(display, glowMass);
 
-    // Feedback state written EVERY frame (HDR, clamped)
-    textureStore(dataTextureA, pixel, vec4<f32>(min(col, vec3<f32>(HDR_CAP)), glowMass));
-    textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(col), glowMass));
-    // Real generated depth: hypha relief + age + pulse elevation
-    let relief = clamp(hyphaeCore * 0.5 + age * 0.3 + pulseGlow * 0.2, 0.0, 1.0);
+    textureStore(writeTexture, pixel, finalColor);
+    textureStore(dataTextureA, pixel, finalColor);
+    // Real generated depth: hypha relief + age + pulse elevation + germ tubes
+    let relief = clamp(hyphaeCore * 0.5 + age * 0.3 * vitality + pulseGlow * 0.2 + germTube * 0.35, 0.0, 1.0);
     textureStore(writeDepthTexture, pixel, vec4<f32>(relief, 0.0, 0.0, 0.0));
 }

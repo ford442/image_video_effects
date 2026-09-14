@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Acid Geometry
 //  Category: generative
-//  Features: neon, acid, geometry, audio-reactive, mouse-interactive,
-//            semantic-alpha, upgraded-rgba, temporal, chromatic-aberration
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-09
-//  Ideas: pH on SDF rims only; traveling smin sibling morph
-//  A packing: HDR display RGBA in A; ACES on writeTexture only
+//  Upgraded: 2026-09-14
+//  Ideas: positive-column striations (ionisation waves with Faraday dark spaces travelling along each neon rim); click titration fronts (expanding neutralisation wave with a sigmoid equivalence-point jump in indicator pH)
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse uv, .w = mouse down
+  zoom_params: vec4<f32>,  // .x = Intensity, .y = Speed, .z = Scale, .w = Color Shift
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -145,48 +144,87 @@ fn sdfGlow(d: f32, width: f32, audioIntensity: f32) -> f32 {
     return smoothstep(width, 0.0, d) * audioIntensity;
 }
 
+// ── IDEA 1 helper: positive-column striations ──
+// In a DC glow discharge the positive column breaks into standing/moving
+// ionisation waves: bright luminous striae separated by dark spaces, drifting
+// from anode to cathode. Parameterised by arc position along the tube rim.
+fn striation(arc: f32, phase: f32) -> f32 {
+    let w = 0.5 + 0.5 * cos(arc - phase);
+    // Sharp luminous head, long darker tail (asymmetric ionisation front)
+    return 0.35 + 0.65 * pow(w, 3.0);
+}
+
+// ── IDEA 2 helper: titration curve ──
+// Fraction of equivalence reached (0..1+) → pH relative to neutral via the
+// steep sigmoid jump around the equivalence point (buffer plateau either side).
+fn titrationWeight(eq: f32) -> f32 {
+    return 1.0 / (1.0 + exp(-(eq - 0.5) * 14.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(u.config.z, u.config.w);
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
+    let minRes = min(resolution.x, resolution.y);
+    let uv = (vec2<f32>(pixel) - resolution * 0.5) / minRes;
     let time = u.config.x;
-    let mouseDown = u.zoom_config.w;
-    let mouseNorm = (u.zoom_config.yz - 0.5) * vec2<f32>(resolution.x, resolution.y) / min(resolution.x, resolution.y);
+    let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
+    let mouseNorm = (u.zoom_config.yz - 0.5) * resolution / minRes;
 
-    var audioIntensity = u.zoom_params.x;
+    var intensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
-    let scale = u.zoom_params.z;
+    let scale = max(u.zoom_params.z, 0.05);
     let colorShift = u.zoom_params.w;
 
-    // Audio reactivity
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    // Audio reactivity (plasmaBuffer only, clamped)
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-    let audioSpeed = speed * (0.8 + bass * 0.7);
-    audioIntensity = audioIntensity * (0.85 + treble * 0.6);
-    let audioColor = colorShift + mids * 0.25;
+    intensity = intensity * (1.0 + treble * 0.4);
 
-    // pH oscillation driven by bass: 0→14→0 cycle
-    let phCycle = 7.0 + 7.0 * sin(time * (0.5 + bass * 2.0));
+    // pH oscillation: 0→14→0 cycle; bass nudges phase (no time×audio jitter)
+    let phCycle = 7.0 + 7.0 * sin(time * 0.5 + bass * 1.2);
 
     // Critical-angle refraction distortion (water-air ~48.6°)
     let crit = criticalAngle(1.33, 1.0);
     let refractUV = uv * (1.0 + sin(crit) * 0.1 * bass);
 
+    // ── IDEA 2: click titration fronts ──
+    // Each click drops titrant; a neutralisation front diffuses outward.
+    // Behind the front the solution approaches equivalence and the indicator
+    // snaps toward neutral green through the steep titration-curve jump.
+    var titrant = 0.0;
+    var frontFlash = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 3.0) {
+            let rpos = (rp.xy - 0.5) * resolution / minRes;
+            let dist = length(refractUV - rpos);
+            let front = 0.08 + sqrt(age) * 0.32;          // diffusive spread ∝ √t
+            let decay = exp(-age * 0.9);
+            let eq = smoothstep(front + 0.03, front - 0.08, dist) * 1.2 * decay;
+            titrant = max(titrant, titrationWeight(eq) * smoothstep(0.0, 0.05, eq));
+            frontFlash = max(frontFlash, exp(-pow((dist - front) * 45.0, 2.0)) * decay);
+        }
+    }
+
     var col = vec3<f32>(0.0);
+    var coverage = 0.0;
 
     // Deep psychedelic background tinted by pH
     let bgNoise = fbm(refractUV * 2.0 * scale, time * 0.1 * speed);
     let bgHue = fract(bgNoise * 0.3 + time * 0.04 * speed + colorShift);
-    col += phToColor(fract(bgHue * 14.0)) * bgNoise * 0.15;
+    let bgPH = mix(fract(bgHue * 14.0) * 14.0, 7.0, titrant);
+    col += phToColor(bgPH) * bgNoise * 0.15;
     col += vec3<f32>(0.02, 0.0, 0.04);
 
     // Beat-like rhythm
     let beat = pow(abs(sin(time * 1.5 * speed)), 4.0);
-    let pulse = 1.0 + beat * 0.4 * audioIntensity;
+    let pulse = (1.0 + beat * 0.4 * intensity) * (1.0 + bass * 0.3);
 
     // Grid of shape centers
     let gridCount = 4;
@@ -201,47 +239,59 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let localUV = rot2(rotAngle) * (refractUV - center);
 
             // Scale pulsing
-            let shapeScale = (0.04 + 0.03 * sin(time * 2.0 * speed + seed * 5.0) * audioIntensity) * pulse;
+            let shapeScale = (0.04 + 0.03 * sin(time * 2.0 * speed + seed * 5.0) * intensity) * pulse;
 
             // Select shape type based on seed
             let shapeType = floor(seed * 3.0);
             var shapeDist: f32 = 1000.0;
             var siblingDist: f32 = 1000.0;
-            let morphT = time * audioSpeed * 0.55 + seed * TAU;
+            let morphT = time * speed * 0.55 + bass * 0.6 + seed * TAU;
             let siblingOff = vec2<f32>(cos(morphT), sin(morphT)) * shapeScale * 0.55;
 
             if (shapeType < 1.0) {
                 let melt = vec2<f32>(
-                    vnoise(localUV * 8.0 + time * speed * (2.0 + mids * 3.0)) * 0.015,
-                    vnoise(localUV * 8.0 + time * speed * (2.0 + mids * 3.0) + 50.0) * 0.015
-                ) * audioIntensity;
+                    vnoise(localUV * 8.0 + time * speed * 2.0 + mids * 1.5),
+                    vnoise(localUV * 8.0 + time * speed * 2.0 + mids * 1.5 + 50.0)
+                ) * 0.015 * intensity;
                 shapeDist = sdTriangle(localUV + melt, shapeScale);
                 siblingDist = sdTriangle(localUV + melt - siblingOff, shapeScale * 0.85);
             } else if (shapeType < 2.0) {
                 let melt = vec2<f32>(
-                    vnoise(localUV * 6.0 + time * speed * (1.5 + mids * 2.0)) * 0.012,
-                    vnoise(localUV * 6.0 + time * speed * (1.5 + mids * 2.0) + 30.0) * 0.012
-                ) * audioIntensity;
+                    vnoise(localUV * 6.0 + time * speed * 1.5 + mids * 1.0),
+                    vnoise(localUV * 6.0 + time * speed * 1.5 + mids * 1.0 + 30.0)
+                ) * 0.012 * intensity;
                 shapeDist = sdHexagon(localUV + melt, shapeScale * 1.2);
                 siblingDist = sdHexagon(localUV + melt - siblingOff, shapeScale);
             } else {
-                let wobble = vnoise(localUV * 10.0 + time * speed * 3.0) * 0.01 * audioIntensity;
+                let wobble = vnoise(localUV * 10.0 + time * speed * 3.0) * 0.01 * intensity;
                 shapeDist = sdCircle(localUV, shapeScale + wobble);
                 siblingDist = sdCircle(localUV - siblingOff, shapeScale * 0.9 + wobble);
             }
             shapeDist = smin(shapeDist, siblingDist, 0.028);
 
-            let shapePH = fract(seed + phCycle / 14.0 + colorShift + beat * 0.2) * 14.0;
+            let rawPH = fract(seed + phCycle / 14.0 + colorShift + beat * 0.2) * 14.0;
+            let shapePH = mix(rawPH, 7.0, titrant);
             let shapeCol = phToColor(shapePH);
             let geoFill = mix(vec3<f32>(0.07, 0.09, 0.12), shapeCol * 0.32, 0.4);
 
-            let glow1 = sdfGlow(abs(shapeDist), 0.012 * audioIntensity * pulse, 2.5);
-            let glow2 = sdfGlow(abs(shapeDist), 0.035 * audioIntensity * pulse, 0.8);
+            // ── IDEA 1: positive-column striations along the neon rim ──
+            // Arc coordinate around the tube; integer stria count keeps the
+            // pattern seamless. Striae drift at a rate set by Speed; mids
+            // (field strength) shift their phase; held mouse = higher current,
+            // striae crowd together.
+            let arc = atan2(localUV.y, localUV.x);
+            let striaCount = floor(4.0 + seed * 4.0 + mouseDown * 3.0);
+            let striaPhase = time * speed * (2.0 + seed * 2.0) + mids * 1.5 + seed2 * TAU;
+            let stria = striation(arc * striaCount, striaPhase);
+
+            let glow1 = sdfGlow(abs(shapeDist), 0.012 * intensity * pulse, 2.5) * stria;
+            let glow2 = sdfGlow(abs(shapeDist), 0.035 * intensity * pulse, 0.8) * (0.7 + 0.3 * stria);
             let fill = smoothstep(0.005, -0.005, shapeDist) * 0.6;
 
-            col += shapeCol * glow1 * audioIntensity * 1.5;
-            col += shapeCol * glow2 * audioIntensity * 0.5;
-            col += geoFill * fill * audioIntensity * 0.8;
+            col += shapeCol * glow1 * intensity * 1.5;
+            col += shapeCol * glow2 * intensity * 0.5;
+            col += geoFill * fill * intensity * 0.8;
+            coverage = max(coverage, clamp(glow1 * 0.4 + glow2 * 0.2 + fill * 0.9, 0.0, 1.0));
 
             // Mouse-reactive explosion at cursor with localized pH disturbance
             let toMouse = length(refractUV - mouseNorm);
@@ -251,7 +301,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let mouseGlow = exp(-mouseDist * mouseDist * 80.0) * mouseInfluence;
                 // Mouse toggles between acid (pH 2) and base (pH 12) splashes
                 let mousePH = select(2.0, 12.0, mouseDown > 0.5 && hash1(seed + time) > 0.5);
-                col += phToColor(mousePH) * mouseGlow * audioIntensity * 3.0;
+                col += phToColor(mousePH) * mouseGlow * intensity * 3.0;
+                coverage = max(coverage, clamp(mouseGlow, 0.0, 1.0));
             }
         }
     }
@@ -260,26 +311,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let wave1 = sin(refractUV.x * 8.0 * scale + time * 2.0 * speed) * cos(refractUV.y * 6.0 * scale - time * 1.5 * speed);
     let wave2 = sin(refractUV.x * 5.0 * scale - time * speed + refractUV.y * 7.0 * scale) * 0.5;
     let wave = (wave1 + wave2) * 0.5;
-    let waveGlow = smoothstep(0.3, 0.8, abs(wave)) * 0.15 * audioIntensity;
-    col += phToColor(fract(wave * 7.0 + phCycle * 0.5)) * waveGlow;
+    let waveGlow = smoothstep(0.3, 0.8, abs(wave)) * 0.15 * intensity;
+    col += phToColor(mix(fract(wave * 7.0 + phCycle * 0.5), 7.0, titrant)) * waveGlow;
+
+    // Titration front: indicator flash at the equivalence boundary
+    col += phToColor(7.0 + 2.0 * sin(time * 3.0)) * frontFlash * (0.6 + mids * 0.4) * (0.5 + intensity);
 
     // Treble-driven bubble sparkle
     let sparkle = hash2(vec2<f32>(floor(refractUV * 40.0)));
     let sparkleTrigger = step(1.0 - treble * 0.3, sparkle);
-    col += phToColor(fract(sparkle * 14.0)) * sparkleTrigger * treble * 2.0;
+    col += phToColor(fract(sparkle * 14.0)) * sparkleTrigger * treble * 1.2;
 
-    let prev = textureLoad(dataTextureC, pixel, 0);
+    let maxC = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
+    let prev = textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), maxC), 0);
     col = mix(prev.rgb * 0.96, col, 0.25);
 
-    let caStr = 0.003 * (1.0 + bass);
+    let caStr = 0.003 * (1.0 + bass * 0.5);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
     let vig = 1.0 - dot(uv * 0.7, uv * 0.7);
     col *= clamp(vig, 0.0, 1.0) * 1.3;
 
-    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
-    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
-    let mapped = acesToneMap(col * 1.1);
-    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(length(col) * 0.45, 0.0, 1.0), 0.0, 0.0, 0.0));
+    let mapped = acesToneMap(max(col, vec3<f32>(0.0)) * 1.1);
+    // Alpha = neon-tube coverage (rim glow / fill / splash) + titration front
+    // + sparkle, with a decaying trail memory from the previous frame.
+    let alpha = clamp(max(coverage + frontFlash * 0.4 + sparkleTrigger * treble * 0.3, prev.a * 0.85), 0.06, 1.0);
+    let out = vec4<f32>(mapped, alpha);
+    textureStore(writeTexture, pixel, out);
+    textureStore(dataTextureA, pixel, out);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(coverage * 0.6 + length(mapped) * 0.2, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

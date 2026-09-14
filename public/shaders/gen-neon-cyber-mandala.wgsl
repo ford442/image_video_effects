@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Cyber Mandala
 //  Category: generative
-//  Features: mandala, neon, cyber, audio-reactive, mouse-interactive,
-//            semantic-alpha, upgraded-rgba, temporal, chromatic
-//  Complexity: Medium-High
-//  Upgraded: 2026-09-09
-//  Ideas: φ ring spacing; inner vs outer contra-rotation
-//  A packing: HDR display RGBA in A; ACES on writeTexture only
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: glow-discharge tube anatomy on every ring (cathode negative glow, Faraday dark space, drifting positive-column striations, Ne/Ar-Hg emission lines); click ionization strike fronts that re-ignite rings with recombination afterglow, mouse-held raises discharge current
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Glow Intensity, .y = Rotation Speed, .z = Zoom Scale, .w = Color Shift
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -61,6 +60,31 @@ fn noise(p: vec2<f32>) -> f32 {
     let d = hash2(i + vec2<f32>(1.0, 1.0));
     let u = f * f * (3.0 - 2.0 * f);
     return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+// ─── Glow-discharge tube anatomy ───
+// A cold-cathode neon tube is not uniformly lit: next to the cathode sits a
+// thin bright negative glow, then the Faraday dark space, then the positive
+// column, which at low current breaks into travelling striations whose
+// spacing is set by the electron energy-relaxation length. Higher current
+// smears the striations into a continuous column. `arc` is the angle measured
+// from the tube's cathode (0..TAU), `circ` the tube circumference.
+fn dischargeProfile(arc: f32, circ: f32, time: f32, drift: f32, current: f32) -> f32 {
+    let arcLen = arc / TAU * circ;
+    let negGlow = exp(-pow((arcLen - 0.012) / 0.006, 2.0)) * 1.6;
+    let faraday = smoothstep(0.02, 0.06, arcLen);
+    let striLen = 0.035;
+    let nStri = max(floor(circ / striLen), 3.0);
+    let wave = 0.5 + 0.5 * sin(arc * nStri - time * drift);
+    let contrast = clamp(0.85 / current, 0.15, 0.85);
+    let column = (1.0 - contrast) + contrast * pow(wave, 3.0) * 3.2;
+    return negGlow + faraday * column;
+}
+
+// Gas emission tint: neon (585–640 nm red-orange lines) vs argon + mercury
+// vapour (436 nm blue / 546 nm green) fills, alternating per tube.
+fn gasLine(i: i32) -> vec3<f32> {
+    return select(vec3<f32>(0.30, 0.52, 1.0), vec3<f32>(1.0, 0.32, 0.07), i % 2 == 0);
 }
 
 // Rainbow palette
@@ -160,16 +184,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let time = u.config.x;
     let mousePos = (u.zoom_config.yz - 0.5) * vec2<f32>(res.x, res.y) / min(res.x, res.y);
-    let mouseDown = u.zoom_config.w > 0.5;
+    let held = clamp(u.zoom_config.w, 0.0, 1.0);
     let intensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
     let scale = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
 
     // Audio reactivity
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+
+    // Discharge current: mouse-held closes the ballast, bass surges the supply.
+    let current = 1.0 + held * 0.9 + bass * 0.4;
+    let stripeDrift = 2.0 + speed * 6.0 + mids * 2.0;
+
+    // ─── Ionization strike fronts from click ripples ───
+    // Each click fires a breakdown avalanche expanding from the click point;
+    // tubes behind the front re-ignite and then fade with the ion
+    // recombination time.
+    var strikeFront = 0.0;
+    var reignite = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rpl = u.ripples[ri];
+        let age = time - rpl.z;
+        if (age >= 0.0 && age < 3.0) {
+            let rpos = (rpl.xy - 0.5) * res / min(res.x, res.y);
+            let dist = length(uv - rpos);
+            let frontR = age * 0.9;
+            let fd = dist - frontR;
+            strikeFront += exp(-fd * fd * 900.0) * exp(-age * 1.4);
+            let sincePass = age - dist / 0.9;
+            if (sincePass > 0.0) {
+                reignite += exp(-sincePass * 2.8) * exp(-age * 0.6);
+            }
+        }
+    }
+    let ignition = 1.0 + reignite * 2.2;
 
     let audioSpeed = speed * (0.9 + bass * 0.5);
     let audioIntensity = intensity * (0.85 + treble * 0.6);
@@ -234,7 +286,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let layerP = layerRot * brp;
         
         let ringCol = patternedRing(layerP, innerR, outerR, i % 5, time * (0.5 + speed), ringHue);
-        col += ringCol * intensity * 2.0;
+        // Tube anatomy: cathode at the layer's local angle 0, column runs round the ring.
+        let tubeArc = fract(atan2(layerP.y, layerP.x) / TAU + 1.0) * TAU;
+        let tubeCirc = TAU * (innerR + outerR) * 0.5;
+        let discharge = dischargeProfile(tubeArc, tubeCirc, time, stripeDrift * contra, current);
+        let gasTint = mix(vec3<f32>(1.0), gasLine(i) * 1.6, 0.35 + treble * 0.15);
+        col += ringCol * gasTint * discharge * ignition * sqrt(current) * intensity * 2.0;
         
         // Add geometric shapes on some rings using Fibonacci petal counts
         if (i % 2 == 0) {
@@ -266,7 +323,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 
                 let shapeGlow = exp(-shapeDist * shapeDist * 800.0 * zoom);
                 let shapeCol = neonRainbow(ringHue + fs / f32(numShapes));
-                col += shapeCol * shapeGlow * 0.6 * audioIntensity;
+                col += shapeCol * shapeGlow * 0.6 * audioIntensity * ignition;
             }
         }
         
@@ -338,14 +395,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     col = mix(vec3<f32>(lum), col, 1.2 + intensity * 0.3);
     
+    // Strike front: violet-white breakdown flash (N2/Ar continuum)
+    col += vec3<f32>(0.75, 0.6, 1.0) * strikeFront * (0.8 + intensity);
+
     let caStr = 0.003 * (1.0 + bass);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    let prev = textureLoad(dataTextureC, pixel, 0);
-    let hdr = mix(prev.rgb * 0.96, col, 0.25);
-    let alpha = clamp(length(hdr) * 1.2, 0.2, 0.95);
-    textureStore(dataTextureA, pixel, vec4<f32>(hdr, alpha));
-    let mapped = acesToneMap(hdr * 1.1);
-    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    // Temporal afterglow in display space (A holds ACES display RGBA)
+    let dims = vec2<i32>(i32(res.x), i32(res.y));
+    let prevCoord = clamp(pixel, vec2<i32>(0), dims - vec2<i32>(1));
+    let prev = textureLoad(dataTextureC, prevCoord, 0);
+    let mapped = acesToneMap(max(col, vec3<f32>(0.0)) * 1.1);
+    let display = mix(mapped, max(mapped, prev.rgb * 0.92), 0.6);
+    // Alpha = neon glow coverage: lit tube luminance plus afterglow persistence
+    let glowLum = dot(display, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(max(glowLum * 1.3 + strikeFront * 0.3, prev.a * 0.9), 0.03, 1.0);
+    let finalColor = vec4<f32>(display, alpha);
+    textureStore(writeTexture, pixel, finalColor);
+    textureStore(dataTextureA, pixel, finalColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - d * 0.55, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

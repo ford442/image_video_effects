@@ -66,6 +66,15 @@
     "sprung-gravity-well",
     "click-gravity-rings",
     "temporal-feedback",
-    "depth-output"
+    "depth-output",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    { "id": "rotationSpeed", "name": "Rotation Speed", "default": 1, "min": 0.1, "max": 5, "step": 0.1, "mapping": "zoom_params.x" },
+    { "id": "complexity", "name": "Complexity", "default": 2, "min": 1, "max": 5, "step": 1, "mapping": "zoom_params.y" },
+    { "id": "glowIntensity", "name": "Glow Intensity", "default": 1, "min": 0, "max": 3, "step": 0.1, "mapping": "zoom_params.z" },
+    { "id": "gravityWellStrength", "name": "Gravity Well Strength", "default": 0.5, "min": 0, "max": 2, "step": 0.1, "mapping": "zoom_params.w" }
   ]
 }

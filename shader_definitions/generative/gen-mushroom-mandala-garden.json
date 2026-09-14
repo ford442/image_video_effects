@@ -16,6 +16,6 @@
     { "index": 2, "name": "Gill Detail", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
     { "index": 3, "name": "Bioluminescence", "default": 0.7, "min": 0, "max": 1, "step": 0.01 }
   ],
-  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "fast-motion", "semantic-alpha", "generated-depth", "mycelium-network"],
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "fast-motion", "semantic-alpha", "generated-depth", "mycelium-network", "upgraded-rgba"],
   "tags": ["generative", "psychedelic", "mushroom", "mandala", "bioluminescent", "organic"]
 }

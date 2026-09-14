@@ -25663,7 +25663,8 @@
       "fast-motion",
       "semantic-alpha",
       "generated-depth",
-      "mycelium-network"
+      "mycelium-network",
+      "upgraded-rgba"
     ],
     "tags": [
       "generative",
@@ -25692,6 +25693,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "growthRate",
+        "name": "Growth Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "branchingFactor",
+        "name": "Branching Factor",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "nutrientDensity",
+        "name": "Nutrient Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "bioluminescence",
+        "name": "Bioluminescence",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "updatedParams": [
       {
@@ -25744,7 +25783,9 @@
       "hdr-clamped",
       "aces-tone-map",
       "semantic-alpha",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-driven",
+      "click-reactive"
     ]
   },
   {
@@ -25817,7 +25858,52 @@
       "orbit-camera",
       "ripple-deformation",
       "fft-reactive",
-      "temporal-feedback"
+      "temporal-feedback",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "click-reactive",
+      "depth-aware",
+      "vorticity-confinement",
+      "boussinesq-buoyancy"
+    ],
+    "params": [
+      {
+        "id": "injectionRate",
+        "name": "Injection Rate",
+        "mapping": "zoom_params.x",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "mapping": "zoom_params.y",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "mapping": "zoom_params.z",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "vorticityScale",
+        "name": "Vorticity Scale",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -25877,7 +25963,54 @@
     "updated": true,
     "id": "gen-nebula-light-trail-swarm",
     "url": "shaders/gen-nebula-light-trail-swarm.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "click-reactive",
+      "depth-aware",
+      "temporal",
+      "stromgren-stratification",
+      "recombination-afterglow"
+    ],
+    "params": [
+      {
+        "id": "particleSpeed",
+        "name": "Particle Speed",
+        "mapping": "zoom_params.x",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trailDecay",
+        "name": "Trail Decay",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "curlStrength",
+        "name": "Curl Strength",
+        "mapping": "zoom_params.z",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "mapping": "zoom_params.w",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Nebular Chrono Astrolabe",
@@ -25947,7 +26080,48 @@
       "sprung-gravity-well",
       "click-gravity-rings",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "rotationSpeed",
+        "name": "Rotation Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 2,
+        "min": 1,
+        "max": 5,
+        "step": 1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gravityWellStrength",
+        "name": "Gravity Well Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -26319,7 +26493,52 @@
     "updated": true,
     "id": "gen-neon-neural-network",
     "url": "shaders/gen-neon-neural-network.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "click-reactive",
+      "depth-aware",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "mapping": "zoom_params.x",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "signalSpeed",
+        "name": "Signal Speed",
+        "mapping": "zoom_params.y",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "networkScale",
+        "name": "Network Scale",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "mapping": "zoom_params.w",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Neon-Plasma Biomechanical Hive",
@@ -26390,7 +26609,47 @@
       "raymarched",
       "hdr-output",
       "semantic-alpha",
-      "depth-output"
+      "depth-output",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "hiveBreathingSpeed",
+        "name": "Hive Breathing Speed",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "neonIntensity",
+        "name": "Neon Intensity",
+        "mapping": "zoom_params.y",
+        "default": 2,
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "sporeDensity",
+        "name": "Spore Density",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "magneticPull",
+        "name": "Magnetic Pull",
+        "mapping": "zoom_params.w",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      }
     ]
   },
   {

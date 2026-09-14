@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Nebular Chrono-Astrolabe — Algorithmist Upgrade
+//  Nebular Chrono-Astrolabe
 //  Category: generative
-//  Features: generative, mouse-driven, audio-reactive, temporal,
-//            depth-aware, upgraded-rgba, FBM, domain-warping,
-//            curl-noise, Beer-Lambert, Fresnel-Schlick
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-08-03 (Batch 33)
+//  Upgraded: 2026-09-14
+//  Ideas: Keplerian rete gearing (each ring's angular rate ∝ a^-3/2, inner circles sweep fastest); Strömgren-stratified nebular emission (O III teal inner zone ionised by the hot core, H-alpha red outer shell)
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -20,14 +20,21 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
+    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+    zoom_config: vec4<f32>,  // .x = time, .yz = mouse uv, .w = mouse down
+    zoom_params: vec4<f32>,  // .x = Rotation Speed, .y = Complexity, .z = Glow Intensity, .w = Gravity Well Strength
     ripples: array<vec4<f32>, 50>,
 };
+
+// Per-invocation state set once in main (sprung mouse + clamped audio),
+// so map() never touches extraBuffer or unclamped plasma values.
+var<private> g_mouse: vec2<f32>;
+var<private> g_bass: f32;
+var<private> g_mids: f32;
+var<private> g_treble: f32;
+var<private> g_held: f32;
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -88,14 +95,13 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn map(p: vec3<f32>) -> vec2<f32> {
-    let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let t = u.config.x * u.zoom_params.x;
+    let bass = g_bass; let mids = g_mids; let t = u.config.x * u.zoom_params.x;
     var d = MAX_DIST; var mat_id = 0.0;
     var p1 = p;
-    let raw_mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    let sprung_mouse = select(raw_mouse, vec2<f32>(extraBuffer[133], extraBuffer[134]), extraBuffer[137] > 0.5);
-    let mouse_pos = vec3<f32>((sprung_mouse.x-0.5)*5.0, (sprung_mouse.y-0.5)*5.0, 0.0);
+    let mouse_pos = vec3<f32>((g_mouse.x-0.5)*5.0, (g_mouse.y-0.5)*5.0, 0.0);
     let dtm = length(p1-mouse_pos);
-    p1 += (mouse_pos-p1)/max(dtm,0.001)*(1.0/(dtm*dtm+0.5))*u.zoom_params.w*(1.0+bass*2.0);
+    // Gravity well: slider strength, deepened while the mouse is held.
+    p1 += (mouse_pos-p1)/max(dtm,0.001)*(1.0/(dtm*dtm+0.5))*u.zoom_params.w*(1.0+bass*0.5)*(1.0+g_held*1.5);
     p1 += curl(p1*0.3, t*0.1)*(0.2+mids*0.3);
     let core = sdSphere(p1, 0.5+bass*0.15);
     d = core; mat_id = 1.0;
@@ -104,19 +110,27 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         if (i >= num_rings) { break; }
         let fi = f32(i); var pr = p1;
         pr += vnoise(pr*0.5+fi*0.3)*0.3;
-        let a1 = rot2D(t*0.5+bass*2.0+fi*0.5)*pr.yz; pr.y=a1.x; pr.z=a1.y;
-        let a2 = rot2D(t*0.2*u.zoom_params.x+fi*1.2)*pr.xz; pr.x=a2.x; pr.z=a2.y;
-        let ring = sdTorus(pr, vec2<f32>(1.5+fi*0.4+fi*0.1, 0.05+fi*0.02+bass*0.02));
+        // ── IDEA 1: Keplerian rete gearing ──
+        // Ring semi-major axis a; angular rate follows Kepler's third law
+        // (ω ∝ a^-3/2) relative to the innermost circle, so the rete's inner
+        // almucantars lap the outer ones like a geared astrolabe/orrery.
+        let a = 1.5+fi*0.4+fi*0.1;
+        let kepler = pow(1.5 / a, 1.5);
+        let a1 = rot2D(t*0.5*kepler+bass*0.4+fi*0.5)*pr.yz; pr.y=a1.x; pr.z=a1.y;
+        let a2 = rot2D(t*0.2*u.zoom_params.x*kepler+fi*1.2)*pr.xz; pr.x=a2.x; pr.z=a2.y;
+        let ring = sdTorus(pr, vec2<f32>(a, 0.05+fi*0.02+bass*0.02));
         if (ring < d) { d = smin(d, ring, 0.1+fi*0.05); mat_id = 2.0+fi*0.5; }
     }
-    let sat_pos = vec3<f32>(cos(t*0.3+bass*0.5)*3.0, sin(t*0.3+bass*0.5)*1.5, sin(t*0.21+bass*0.35)*2.0);
+    // Satellite (the rete's pointer) also obeys a Keplerian period at a≈3.
+    let satRate = 0.3 * pow(1.5 / 3.0, 1.5) * 2.0;
+    let sat_pos = vec3<f32>(cos(t*satRate+bass*0.3)*3.0, sin(t*satRate+bass*0.3)*1.5, sin(t*satRate*0.7+bass*0.2)*2.0);
     let sat = sdBox(p1-sat_pos, vec3<f32>(0.1,0.3,0.05));
     if (sat < d) { d = sat; mat_id = 5.0; }
     return vec2<f32>(d, mat_id);
 }
 
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
-    let bass = plasmaBuffer[0].x; let treble = plasmaBuffer[0].z;
+    let bass = g_bass;
     var dO = 0.0; var mat = 0.0; var glow = 0.0;
     let nd = 0.15+u.zoom_params.z*0.1;
     for (var i = 0; i < MAX_STEPS; i++) {
@@ -128,18 +142,35 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     return vec4<f32>(dO, mat, glow, beer(dO, nd));
 }
 
-fn sampleNebula(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
-    let treble = plasmaBuffer[0].z;
+fn sampleNebula(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
+    let treble = g_treble; let bass = g_bass;
     var nebula = vec3<f32>(0.0);
+    var density = 0.0;
+    // Ionising flux of the central star: brighter core → larger Strömgren radius.
+    let stromgren = 2.2 + bass * 0.5 + u.zoom_params.z * 0.4;
     for (var i = 0; i < 8; i = i + 1) {
         let fi = f32(i);
         let p = ro + rd * (1.0 + fi * 1.4);
         let warped = domainWarp(p * 0.18, u.config.x * 0.04);
         let cloud = fbm(warped, 3) * exp(-fi * 0.18);
         let tint = vec3<f32>(0.05, 0.16, 0.38) + vec3<f32>(0.22, 0.04, 0.3) * (0.5 + 0.5 * sin(p.y + u.config.x * 0.1));
-        nebula += tint * cloud * (0.08 + treble * 0.025);
+        // ── IDEA 2: Strömgren-stratified emission lines ──
+        // High-excitation [O III] 500.7nm (teal) lives inside the ionisation
+        // radius near the hot core; recombination H-alpha 656.3nm (red) and
+        // H-beta (blue-green) dominate the outer shell. Line ratio is set by
+        // the ray sample's radius from the astrolabe core.
+        let r = length(p.xy) + abs(p.z) * 0.35;
+        let ion = smoothstep(stromgren * 1.25, stromgren * 0.55, r);
+        let oiii = vec3<f32>(0.05, 0.62, 0.55);
+        let halpha = vec3<f32>(0.62, 0.07, 0.16);
+        let hbeta = vec3<f32>(0.10, 0.28, 0.55);
+        let shell = exp(-pow((r - stromgren) * 1.3, 2.0));
+        let emission = mix(halpha * (0.6 + 0.4 * shell) + hbeta * 0.25, oiii, ion) * (0.7 + treble * 0.4);
+        let lineCol = mix(tint, emission, 0.55);
+        nebula += lineCol * cloud * (0.08 + treble * 0.025) * (1.0 + shell * 0.6);
+        density += cloud * 0.12;
     }
-    return nebula;
+    return vec4<f32>(nebula, clamp(density, 0.0, 1.0));
 }
 
 fn getNormal(p: vec3<f32>) -> vec3<f32> {
@@ -152,24 +183,38 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     let uv = (vec2<f32>(id.xy)*2.0-res)/res.y;
     if (f32(id.x) >= res.x || f32(id.y) >= res.y) { return; }
-    let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    g_bass = bass; g_mids = mids; g_treble = treble;
+    g_held = clamp(u.zoom_config.w, 0.0, 1.0);
     let uv01 = vec2<f32>(id.xy)/res;
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(u.config.x - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    // Existing sprung-mouse state in guarded slots 133..138.
+    var mouse = rawMouse;
+    var mouseVelocity = vec2<f32>(0.0);
+    var springDt = 0.016;
+    if (arrayLength(&extraBuffer) > 138u) {
+        if (extraBuffer[137] > 0.5) {
+            mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+            mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+            springDt = clamp(u.config.x - extraBuffer[138], 0.001, 0.05);
+        }
+    }
     let springOmega = 7.0;
     mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
     mouse += mouseVelocity * springDt;
-    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
-        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-        extraBuffer[137] = 1.0; extraBuffer[138] = u.config.x;
+    if (id.x == 0u && id.y == 0u) {
+        if (arrayLength(&extraBuffer) > 138u) {
+            extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+            extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+            extraBuffer[137] = 1.0; extraBuffer[138] = u.config.x;
+        }
     }
+    g_mouse = mouse;
     let ro = vec3<f32>(0.0, 0.0, -10.0); let rd = normalize(vec3<f32>(uv, 1.0));
     let rm = raymarch(ro, rd); let d = rm.x; let mat = rm.y; let glow = rm.z; let trans = rm.w;
-    var col = vec3<f32>(0.0); var alpha = 0.3;
+    var col = vec3<f32>(0.0); var coverage = 0.0;
     if (d < MAX_DIST) {
         let p = ro + rd * d; let n = getNormal(p);
         let l = normalize(vec3<f32>(1.0, 2.0, -1.0)); let diff = max(dot(n, l), 0.0);
@@ -177,11 +222,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (mat == 1.0) { col = vec3<f32>(0.2,0.8,1.0)*diff+vec3<f32>(0.0,0.4,0.8)*0.5+fres*(0.5+bass*0.5); }
         else if (mat >= 2.0 && mat < 5.0) { let rc = vec3<f32>(1.0,0.8,0.2)*(1.0-(mat-2.0)*0.2); col = rc*diff+vec3<f32>(0.8,0.4,0.0)*0.5+fres*(0.3+mids*0.3); }
         else if (mat == 5.0) { col = vec3<f32>(0.9,0.95,1.0)*diff+fres*0.8; }
-        alpha = 0.85;
+        coverage = 0.85;
     } else { col = vec3<f32>(0.01, 0.02, 0.05); }
-    col += sampleNebula(ro, rd);
+    let neb = sampleNebula(ro, rd);
+    col += neb.rgb;
     col += vec3<f32>(0.1,0.4,0.8)*glow*0.5;
-    col *= trans; col += vec3<f32>(0.05,0.15,0.35)*glow*(1.0+treble);
+    col *= trans; col += vec3<f32>(0.05,0.15,0.35)*glow*(1.0+treble*0.5);
     var clickGravity = 0.0;
     let aspect = res.x / res.y;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -194,11 +240,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         }
     }
     col += vec3<f32>(0.25, 0.65, 1.2) * clickGravity * (0.45 + mids * 0.25);
-    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    let maxC = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+    let prev = textureLoad(dataTextureC, clamp(vec2<i32>(id.xy), vec2<i32>(0), maxC), 0);
     col = mix(col, prev.rgb*0.92, 0.04+bass*0.02);
     col = acesToneMap(max(col, vec3<f32>(0.0)));
-    let lum = dot(col, vec3<f32>(0.299,0.587,0.114));
-    alpha = clamp(lum*0.7+alpha*0.3, 0.0, 1.0);
+    // Alpha = astrolabe coverage + nebular column density + glow halo + click rings.
+    let alpha = clamp(max(coverage, neb.a * 0.6) + clamp(glow, 0.0, 1.0) * 0.25 + clickGravity * 0.3, 0.05, 1.0);
     let out = vec4<f32>(col, alpha);
     textureStore(writeTexture, vec2<i32>(id.xy), out);
     let depth = select(0.0, clamp(1.0-d/MAX_DIST,0.0,1.0), d < MAX_DIST);

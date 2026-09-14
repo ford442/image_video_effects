@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Navier-Stokes Ink - 2D fluid sim + extruded 3D ink geometry
+//  Navier-Stokes Ink
 //  Category: generative
-//  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, temporal, mouse-driven, pressure-stub, hue-preserve-clamp, ign-dither, sdf-vortex-tubes, tessellated-corona, orbit-camera, ripple-deform, fft-reactive
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-30
-//  Upgraded: 2026-06-07
-//  b32 Interactivist: 2026-08-03 — SDF vortex tubes advected by the sim,
-//    tessellated ink-drop coronas, mouse orbit camera, ripple deformation
+//  Upgraded: 2026-09-14
+//  Ideas: vorticity confinement (Fedkiw: eps * (N x omega) from |curl| gradient) re-injects the small eddies advection smears out; negative-buoyancy Boussinesq ink (dense ink sinks, click drops splash in and fall as plume fingers)
+//  A packing: raw sim state (vel.x px/frame, vel.y px/frame, ink density, coverage alpha) — C feeds back as velocity/dye; ACES display RGBA on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Injection Rate, .y = Viscosity, .z = Dispersion, .w = Vorticity Scale
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -49,6 +48,24 @@ fn ign(p: vec2<f32>) -> f32 {
   return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
+// ═══ Exact loads from the previous sim state (no sampler on C) ═══
+fn loadC(p: vec2<i32>, maxC: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), maxC), 0);
+}
+
+// Manual bilinear from 4 clamped exact loads — semi-Lagrangian back-trace
+// needs sub-texel interpolation. pos is in pixel units (texel centres at +0.5).
+fn bilinearC(pos: vec2<f32>, maxC: vec2<i32>) -> vec4<f32> {
+  let q = pos - vec2<f32>(0.5);
+  let i0 = vec2<i32>(floor(q));
+  let f = fract(q);
+  let c00 = loadC(i0, maxC);
+  let c10 = loadC(i0 + vec2<i32>(1, 0), maxC);
+  let c01 = loadC(i0 + vec2<i32>(0, 1), maxC);
+  let c11 = loadC(i0 + vec2<i32>(1, 1), maxC);
+  return mix(mix(c00, c10, f.x), mix(c01, c11, f.x), f.y);
+}
+
 fn rotY(a: f32) -> mat3x3<f32> {
   let s = sin(a); let c = cos(a);
   return mat3x3<f32>(c, 0.0, s, 0.0, 1.0, 0.0, -s, 0.0, c);
@@ -68,56 +85,51 @@ fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  // bounds guard — mandatory (b32 fix: was missing)
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let time = u.config.x;
   let uv = vec2<f32>(global_id.xy) / resolution;
   let coord = vec2<i32>(global_id.xy);
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let maxC = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
   let mouseUV = u.zoom_config.yz; // already normalized 0-1, y=0 top — used as-is
   let mouseDown = step(0.5, u.zoom_config.w);
+  let aspect = resolution.x / resolution.y;
 
   let injectionRate = mix(0.3, 1.2, u.zoom_params.x) * (1.0 + bass * 0.5);
   let viscosity = mix(0.92, 0.65, u.zoom_params.y);
   let dispersion = u.zoom_params.z;
   let vorticityScale = u.zoom_params.w;
 
-  // Real FFT bins (read-only, length-guarded) + smoothed-bass persistent state
-  var fftLow = 0.0;
-  var fftHigh = 0.0;
+  // Smoothed-bass persistent state (slot 133, guarded). Fake extraBuffer
+  // "FFT bins" [8]/[64] removed — real audio comes from plasmaBuffer only.
   var bassS = bass;
-  let ebLen = arrayLength(&extraBuffer);
-  if (ebLen > 132u) {
-    fftLow = extraBuffer[8u];
-    fftHigh = extraBuffer[64u];
-  }
-  if (ebLen > 133u) {
+  if (arrayLength(&extraBuffer) > 138u) {
     bassS = extraBuffer[133u];
     if (global_id.x == 0u && global_id.y == 0u) {
       extraBuffer[133u] = mix(bassS, bass, 0.12);
     }
   }
 
-  let texel = 1.0 / resolution;
   let dt = 0.7;
 
-  let c = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let c = loadC(coord, maxC);
   let vel = c.rg;
 
-  let backUV = uv - vel * texel * dt;
-  let advected = textureSampleLevel(dataTextureC, non_filtering_sampler, backUV, 0.0);
+  // Semi-Lagrangian advection: back-trace in pixel space, bilinear exact loads
+  let backPos = vec2<f32>(coord) + vec2<f32>(0.5) - vel * dt;
+  let advected = bilinearC(backPos, maxC);
   var newVel = advected.rg;
   var newInk = advected.b;
 
   let mouseForce = (mouseUV - uv) * mouseDown * 4.0;
   newVel = newVel + mouseForce * dt;
 
-  let vn = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0);
-  let vs = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(0.0, texel.y), 0.0);
-  let ve = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0);
-  let vw = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0);
+  let vn = loadC(coord + vec2<i32>(0, 1), maxC);
+  let vs = loadC(coord - vec2<i32>(0, 1), maxC);
+  let ve = loadC(coord + vec2<i32>(1, 0), maxC);
+  let vw = loadC(coord - vec2<i32>(1, 0), maxC);
 
   let avgVel = (vn.rg + vs.rg + ve.rg + vw.rg) * 0.25;
   newVel = mix(newVel, avgVel, 1.0 - viscosity);
@@ -128,26 +140,74 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let source = exp(-length(uv - mouseUV) * length(uv - mouseUV) * 600.0) * mouseDown * injectionRate;
   newInk = newInk + source * dt;
-  newInk = newInk * (0.992 - dispersion * 0.02);
 
   let curl = (ve.g - vw.g) - (vn.r - vs.r);
   let vorticity = abs(curl) * vorticityScale;
 
-  // ═══ b32: guarded click ripples → per-pixel deformation wave ═══
+  // ── IDEA 1: vorticity confinement (Fedkiw, Stam & Jensen 2001) ──
+  // Numerical dissipation in semi-Lagrangian advection smears small eddies.
+  // Confinement measures where |omega| peaks (N = grad|omega| / |grad|omega||)
+  // and pushes fluid around those peaks: f = eps * (N x omega z-hat).
+  let dNE = loadC(coord + vec2<i32>(1, 1), maxC);
+  let dSE = loadC(coord + vec2<i32>(1, -1), maxC);
+  let dNW = loadC(coord + vec2<i32>(-1, 1), maxC);
+  let dSW = loadC(coord + vec2<i32>(-1, -1), maxC);
+  let e2 = loadC(coord + vec2<i32>(2, 0), maxC);
+  let w2 = loadC(coord - vec2<i32>(2, 0), maxC);
+  let n2 = loadC(coord + vec2<i32>(0, 2), maxC);
+  let s2 = loadC(coord - vec2<i32>(0, 2), maxC);
+  let curlE = (e2.g - c.g) - (dNE.r - dSE.r);
+  let curlW = (c.g - w2.g) - (dNW.r - dSW.r);
+  let curlN = (dNE.g - dNW.g) - (n2.r - c.r);
+  let curlS = (dSE.g - dSW.g) - (c.r - s2.r);
+  let omegaGrad = vec2<f32>(abs(curlE) - abs(curlW), abs(curlN) - abs(curlS)) * 0.5;
+  let Nw = omegaGrad / (length(omegaGrad) + 1e-5);
+  let confineEps = vorticityScale * 0.18 * (1.0 + bassS * 0.4);
+  newVel = newVel + vec2<f32>(Nw.y * curl, -Nw.x * curl) * confineEps * dt;
+
+  // ═══ Click ripples → per-pixel deformation wave + ink-drop impacts ═══
   var rippleWave = 0.0;
+  var dropInk = 0.0;
+  var dropPush = vec2<f32>(0.0);
   let rippleCount = min(u32(u.config.y), 50u);
-    for (var r: u32 = 0u; r < rippleCount; r = r + 1u) {
+  for (var r: u32 = 0u; r < rippleCount; r = r + 1u) {
     let rp = u.ripples[r];
     let age = time - rp.z;
     if (age > 0.0 && age < 4.0) {
       let rd2 = length(uv - rp.xy);
       rippleWave += exp(-rd2 * 9.0) * sin(rd2 * 40.0 - age * 8.0) * exp(-age * 1.5);
+      // Drop impact: first 0.35 s deposits a dense ink bead and splashes
+      // momentum radially outward (in pixel units).
+      if (age < 0.35) {
+        let k = 1.0 - age / 0.35;
+        let dAsp = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+        let rr = dot(dAsp, dAsp);
+        dropInk += exp(-rr * 2500.0) * k * 0.6 * injectionRate;
+        let dPix = (uv - rp.xy) * resolution;
+        dropPush += dPix / (length(dPix) + 1e-3) * exp(-rr * 900.0) * k * 1.5;
       }
     }
+  }
   rippleWave = clamp(rippleWave, -0.8, 1.5);
+  newInk = newInk + dropInk * dt;
+  newVel = newVel + dropPush * dt;
 
-  // ═══ b32: 3D extrusion — SDF vortex tubes + tessellated ink-drop corona ═══
-  let aspect = resolution.x / resolution.y;
+  // ── IDEA 2: negative-buoyancy Boussinesq ink ──
+  // Ink is denser than the ambient water: f_y = g * (rho_ink - rho_0), with
+  // the excess measured against the local mean so uniform layers stay put and
+  // only density contrasts fall — dropped beads sink and finger into plumes.
+  // Screen y grows downward (y=0 top), so sinking is +y.
+  let inkSat = 1.0 - exp(-newInk * 1.5);
+  let avgInkSat = 1.0 - exp(-(vn.b + vs.b + ve.b + vw.b) * 0.25 * 1.5);
+  let buoyG = 0.22 * (1.0 + mids * 0.3) * (0.6 + (1.0 - viscosity) * 1.2);
+  newVel.y = newVel.y + (inkSat - avgInkSat * 0.6) * buoyG * dt;
+
+  newInk = newInk * (0.992 - dispersion * 0.02);
+  // Stability bound on the carried velocity (px/frame)
+  let vLen = length(newVel);
+  newVel = newVel * min(1.0, 24.0 / max(vLen, 1e-5));
+
+  // ═══ 3D extrusion — SDF vortex tubes + tessellated ink-drop corona ═══
   // Mouse orbit camera (zoom_config.yz used directly, no flip)
   let camRot = rotY((u.zoom_config.y - 0.5) * PI * 1.5) * rotX((u.zoom_config.z - 0.5) * PI * 0.7);
   let ndc = (uv - 0.5) * vec2<f32>(aspect, 1.0);
@@ -165,19 +225,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       fract(0.23 + fi * 0.31 + time * 0.013 * (1.0 + fi * 0.2)),
       fract(0.61 + fi * 0.17 + time * 0.009)
     );
-    let adv = textureSampleLevel(dataTextureC, non_filtering_sampler, anchorUV, 0.0);
+    let adv = loadC(vec2<i32>(anchorUV * resolution), maxC);
     let anchor = vec3<f32>((anchorUV - 0.5) * vec2<f32>(aspect, 1.0) * 1.6, (fi - 1.5) * 0.35);
     let va = atan2(adv.g, adv.r) + twist + fi * 1.7;
     let tubeDir = normalize(vec3<f32>(cos(va), sin(va), 0.3 + 0.3 * sin(time * 0.5 + fi)));
     let halfLen = (0.35 + vorticityScale * 0.3 + bassS * 0.15) * (1.0 + adv.b * 0.5);
     tubeA[i] = anchor - tubeDir * halfLen;
     tubeB[i] = anchor + tubeDir * halfLen;
-    tubeR[i] = max((0.03 + bassS * 0.04 + fftLow * 0.02) * (1.0 + rippleWave * 0.8), 0.006);
+    tubeR[i] = max((0.03 + bassS * 0.04 + bass * 0.02) * (1.0 + rippleWave * 0.8), 0.006);
   }
 
   // Tessellated ink-drop corona at the emitter (mouse-driven)
   let emitPos = vec3<f32>((mouseUV - 0.5) * vec2<f32>(aspect, 1.0) * 1.6, 0.15 * sin(time * 0.8));
-  let coronaBase = 0.14 + injectionRate * 0.06 + bassS * 0.05 + fftHigh * 0.03;
+  let coronaBase = (0.14 + injectionRate * 0.06 + bassS * 0.05 + treble * 0.03) * (1.0 + mouseDown * 0.15);
   let facets = 6.0 + floor(treble * 6.0);
 
   var tRay = 0.0;
@@ -238,22 +298,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(newInk * depth * 1.5 + vorticity * depth * 0.3 + alpha3d, 0.0, 0.95);
 
   let finalColor = mix(inputColor.rgb, outCol, alpha);
-  let finalAlpha = max(inputColor.a, alpha);
-
-  // ═══ CHUNK: pressure-stub — divergence-derived pressure estimate for dataB ═══
-  // One Jacobi-style pressure estimate: p ≈ -div * 0.25 (stub for multi-pass pressure solve)
-  let pressureEst = -div * 0.25;
-  let pressureGrad = vec2<f32>(
-    (ve.r - vw.r) * 0.5 - pressureEst,
-    (vn.g - vs.g) * 0.5 - pressureEst
-  );
+  // Porter-Duff "over": ink/tube coverage over whatever lies beneath
+  let finalAlpha = clamp(alpha + inputColor.a * (1.0 - alpha), 0.0, 1.0);
 
   // Real depth: 2D ink column vs 3D tube/corona surface, whichever is nearer
   let outDepth = clamp(max(newInk * depth, depth3d * 0.9), 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  // Sim state carried to next frame via C (documented A packing)
   textureStore(dataTextureA, coord, vec4<f32>(newVel.x, newVel.y, newInk, alpha));
-  // Store pressure estimate and velocity magnitude for downstream passes
-  textureStore(dataTextureB, coord, vec4<f32>(pressureEst, pressureGrad.x, pressureGrad.y, length(newVel)));
 }
