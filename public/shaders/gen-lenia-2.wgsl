@@ -1,14 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  DNA-Encoded Multi-Species Ecosystem
+// ═══════════════════════════════════════════════════════════════════
+//  Lenia 2.0 - Multi-Species
 //  Category: generative
-//  Description: Advanced 4-species Lenia with DNA-encoded traits,
-//               8-sample radial kernels, and predator-prey dynamics.
-//  Features: 4-species, dna-encoding, predator-prey, caustics, temporal, chromatic, depth-aware
-//  Tags: lenia, multi-species, dna, organic, creature, advanced
-//  Author: ford442
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-03 (Batch 33)
-// ═══════════════════════════════════════════════════════════════
+//  Upgraded: 2026-09-14
+//  Ideas: growth-field membranes — the zero crossing of each species' Lenia growth mapping G(U) is rendered as a glowing cell wall, brighter on the advancing (dM/dt>0) front; mass-field gel relief — per-species mass gradient gives creature normals for diffuse/specular shading with Beer-Lambert absorption through thick bodies
+//  A packing: raw sim state (species R mass, species G mass, species B mass, species A mass) — C feeds back as Lenia state; ACES display RGBA on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,11 +23,16 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Global Growth, y=Kernel Radius, z=Evolution Speed, w=Cross-Species Mix
   ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // Bell growth function (species-specific peak & width)
 fn bell(x: f32, peak: f32, width: f32) -> f32 {
@@ -122,9 +125,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     ) * 0.65;
   }
   let time = u.config.x;
-  let audioBass = plasmaBuffer[0].x;
-  let audioMid = plasmaBuffer[0].y;
-  let audioHigh = plasmaBuffer[0].z;
+  let audioBass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let audioMid = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let audioHigh = clamp(plasmaBuffer[0].z, 0.0, 1.0);
   let audioReactivity = 1.0 + audioBass * 0.5;
   var mouse = u.zoom_config.yz;
   let globalGrowth = u.zoom_params.x;
@@ -139,13 +142,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     conv = conv + ksample * modulate;
   }
   conv = conv / 4.0;
-  // Species-specific growth with DNA trait inheritance
+  // Species-specific growth with DNA trait inheritance.
+  // Bass nudges the growth centre mu upward a little (denser creatures on the beat).
+  let muKick = audioBass * 0.03;
   var growth = vec4<f32>(
-    bell(conv.r, 0.35 + globalGrowth * 0.3, 0.18),
-    bell(conv.g, 0.42 + globalGrowth * 0.25, 0.22),
-    bell(conv.b, 0.28 + globalGrowth * 0.35, 0.15),
-    bell(conv.a, 0.38 + globalGrowth * 0.28, 0.20)
+    bell(conv.r, 0.35 + globalGrowth * 0.3 + muKick, 0.18),
+    bell(conv.g, 0.42 + globalGrowth * 0.25 + muKick, 0.22),
+    bell(conv.b, 0.28 + globalGrowth * 0.35 + muKick, 0.15),
+    bell(conv.a, 0.38 + globalGrowth * 0.28 + muKick, 0.20)
   ) * 2.0 - 1.0;
+  let growthField = growth; // G(U) before predator-prey coupling, used by the membrane render
   // 4-species predator-prey interaction matrix
   var interactions = vec4<f32>(0.0);
   interactions.r = species_interaction(state.r, state.g) + species_interaction(state.r, state.b) + species_interaction(state.r, state.a);
@@ -182,8 +188,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       newState = newState + seedSpecies * inoculation * 0.22;
     }
   }
-  // Audio-reactive global pulse
-  let pulse = sin(time * 12.0 * audioReactivity) * 0.3 + sin(time * 28.0 * audioReactivity) * 0.15;
+  // Audio-reactive global pulse (fixed frequency; bass scales amplitude, no phase jumps)
+  let pulse = (sin(time * 12.0) * 0.3 + sin(time * 28.0) * 0.15) * audioReactivity;
   newState = newState + vec4<f32>(pulse, pulse * 1.3, pulse * 0.8, pulse * 1.1) * 0.015;
   newState = clamp(newState, vec4<f32>(0.0), vec4<f32>(1.0));
   // DNA-based color remapping
@@ -199,11 +205,52 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let chrColor = vec3<f32>(chrR, chrG, chrB);
   finalColor = mix(finalColor, chrColor, 0.2 + audioBass * 0.15);
 
+  // ── Idea 1: growth-field membranes ──
+  // Where a species' growth mapping G(U) crosses zero the creature is at its wall:
+  // inside grows, outside decays. Brighter on the advancing front (dM/dt > 0).
+  let speciesHue = array<vec3<f32>, 4>(
+    vec3<f32>(1.0, 0.25, 0.12), vec3<f32>(0.25, 1.0, 0.35),
+    vec3<f32>(0.15, 0.45, 1.0), vec3<f32>(0.85, 0.35, 1.0)
+  );
+  let dM = newState - state;
+  var membrane = vec3<f32>(0.0);
+  var membraneCov = 0.0;
+  let wallWidth = 0.10 + crossMix * 0.08;
+  for (var s: i32 = 0; s < 4; s = s + 1) {
+    let g = growthField[s];
+    let present = smoothstep(0.03, 0.18, conv[s]);
+    let wall = exp(-(g / wallWidth) * (g / wallWidth)) * present;
+    let front = 0.55 + 0.45 * smoothstep(0.0, 0.01, dM[s]);
+    membrane = membrane + speciesHue[s] * wall * front;
+    membraneCov = max(membraneCov, wall);
+  }
+
+  // ── Idea 2: mass-field gel relief ──
+  // Total mass gradient from 4 exact neighbour loads gives a creature normal;
+  // thick bodies absorb light per Beer-Lambert through their DNA colour.
+  let reliefPx = max(1, i32(kernelRadius * 0.35));
+  let mL = dot(load_state(coord - vec2<i32>(reliefPx, 0), size), vec4<f32>(0.25));
+  let mR = dot(load_state(coord + vec2<i32>(reliefPx, 0), size), vec4<f32>(0.25));
+  let mD = dot(load_state(coord - vec2<i32>(0, reliefPx), size), vec4<f32>(0.25));
+  let mU = dot(load_state(coord + vec2<i32>(0, reliefPx), size), vec4<f32>(0.25));
+  let normal = normalize(vec3<f32>((mL - mR) * 6.0, (mD - mU) * 6.0, 1.0));
+  let lightDir = normalize(vec3<f32>((mouse - vec2<f32>(0.5)) * 1.5 + vec2<f32>(-0.35, -0.45), 0.8));
+  let diffuse = max(dot(normal, lightDir), 0.0);
+  let halfV = normalize(lightDir + vec3<f32>(0.0, 0.0, 1.0));
+  let spec = pow(max(dot(normal, halfV), 0.0), 48.0) * (0.25 + audioHigh * 0.9);
+
   let density = dot(newState, vec4<f32>(0.25));
-  let alpha = clamp(density * 1.35, 0.0, 0.96);
-  let depth = clamp(density, 0.0, 1.0);
-  textureStore(writeTexture, id.xy, vec4<f32>(finalColor, alpha));
+  let thickness = density * 3.0;
+  let absorb = exp(-thickness * (vec3<f32>(1.0) - dnaColor) * 1.2);
+  var litColor = finalColor * (0.7 + 0.5 * diffuse) * mix(vec3<f32>(1.0), absorb, 0.5);
+  litColor = litColor + vec3<f32>(spec) * smoothstep(0.02, 0.12, density);
+  litColor = litColor + membrane * (0.45 + audioMid * 0.5);
+
+  let display = acesToneMap(litColor * 1.25);
+  let alpha = clamp(density * 1.35 + membraneCov * 0.35, 0.0, 0.96);
+  let depth = clamp(density + membraneCov * 0.05, 0.0, 1.0);
+  textureStore(writeTexture, id.xy, vec4<f32>(display, alpha));
   textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  // Primary A payload is deliberately the raw four-species state; host copies A -> C last.
+  // A payload is deliberately the raw four-species state (see header "A packing"); host copies A -> C.
   textureStore(dataTextureA, id.xy, newState);
 }

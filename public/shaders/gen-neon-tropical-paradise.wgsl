@@ -1,17 +1,11 @@
-// Neon Tropical Paradise - Psychedelic tropical scene with neon palms, aurora sky,
-// glowing flowers, bioluminescent water. Hot pinks, electric blues, neon greens, sunset oranges.
-// Upgraded: ocean light attenuation, ACES tone mapping, chromatic aberration, temporal feedback,
-// coral fluorescence, bass wave surge.
-
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Tropical Paradise
 //  Category: generative
-//  Features: tropical, neon, paradise, audio-reactive, mouse-interactive, semantic-alpha,
-//            upgraded-rgba, temporal, ocean-optics
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-05-31
-//  Updated: 2026-06-07
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-09-14
+//  Ideas: underwater caustic net from wave-lens focusing (Jacobian of the refracted light map, depth-attenuated); Noctiluca dinoflagellate mechanical-stress flashes where click ripples, the held mouse and breaking surf shear the water
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -29,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Color Shift
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -199,18 +193,41 @@ fn twinkleStar(uv: vec2<f32>, starPos: vec2<f32>, time: f32, idx: f32) -> vec3<f
   return starColor * star * 1.5;
 }
 
+// Underwater caustics from wave-lens focusing. The wavy surface h(q) refracts
+// sunlight; a ray entering at q lands at q + D*grad(h) on a plane D below.
+// Brightness is the inverse Jacobian of that map: 1/|det(I + D*Hessian(h))|,
+// so light piles up into bright filaments where the surface curvature focuses.
+fn causticNet(q: vec2<f32>, depthD: f32, time: f32, amp: f32) -> f32 {
+  var hxx = 0.0;
+  var hzz = 0.0;
+  var hxz = 0.0;
+  for (var i: i32 = 0; i < 4; i = i + 1) {
+    let fi = f32(i);
+    let ang = fi * 2.39996 + 0.4;
+    let k = vec2<f32>(cos(ang), sin(ang)) * (1.0 + fi * 0.55);
+    let w = sqrt(9.81 * length(k)) * 0.35;           // deep-water dispersion
+    let a = amp / (1.0 + fi * 0.8);
+    let s = -a * sin(dot(k, q) - w * time + fi * 1.7); // second-derivative factor
+    hxx += s * k.x * k.x;
+    hzz += s * k.y * k.y;
+    hxz += s * k.x * k.y;
+  }
+  let det = (1.0 + depthD * hxx) * (1.0 + depthD * hzz) - depthD * depthD * hxz * hxz;
+  return clamp(1.0 / max(abs(det), 0.12), 0.0, 8.0);
+}
+
 // Bioluminescent water with ocean light attenuation
-fn bioWater(uv: vec2<f32>, time: f32, mouseNorm: vec2<f32>, mouseDown: f32, intensity: f32, scale: f32, colorShift: f32, bass: f32, treble: f32) -> vec3<f32> {
+fn bioWater(uv: vec2<f32>, time: f32, mouseNorm: vec2<f32>, mouseDown: f32, intensity: f32, scale: f32, colorShift: f32, bass: f32, treble: f32, rippleStress: f32) -> vec4<f32> {
   let waterY = 0.32;
   if (uv.y < waterY - 0.05) {
-    return vec3<f32>(0.0);
+    return vec4<f32>(0.0);
   }
 
   let waterSurf = uv.y;
   let inWater = smoothstep(waterY + 0.08, waterY - 0.03, waterSurf);
 
   if (inWater < 0.01) {
-    return vec3<f32>(0.0);
+    return vec4<f32>(0.0);
   }
 
   // Ocean light attenuation: red fades fastest, blue penetrates deepest
@@ -268,7 +285,33 @@ fn bioWater(uv: vec2<f32>, time: f32, mouseNorm: vec2<f32>, mouseDown: f32, inte
   let reflect = smoothstep(surfaceLine + 0.01, surfaceLine - 0.01, uv.y);
   color += vec3<f32>(0.4, 0.9, 1.0) * reflect * 0.15;
 
-  return color;
+  // Caustic net on the water column: the focusing depth grows with distance
+  // below the surface, filaments sharpen with bass swell, and the light is
+  // filtered by the same wavelength-dependent attenuation as the water.
+  let below = smoothstep(0.0, 0.012, abs(uv.y - surfaceLine)); // skip the surface line itself
+  let causticQ = vec2<f32>(uv.x * 26.0 * (0.6 + scale * 0.8), (uv.y - waterY) * 40.0);
+  let causticD = 0.25 + min(abs(uv.y - waterY) * 12.0 * scale + waterDepth, 3.0) * 0.12;
+  let caustic = causticNet(causticQ, causticD, time, 0.35 + bass * 0.25);
+  color += vec3<f32>(0.55, 0.95, 1.0) * attenuation * max(caustic - 0.8, 0.0) * 0.35 * below * inWater * (0.5 + intensity);
+
+  // Noctiluca dinoflagellates flash when shear stress deforms their membrane:
+  // each cell has its own mechanical threshold, so a passing ripple front, the
+  // held mouse, or breaking surf sets off a scatter of discrete 475nm sparks.
+  let breaking = nearSurface * smoothstep(0.004, 0.03, abs(wave1 + wave2) + surge);
+  let stress = rippleStress + mouseRipple * 1.4 + breaking * (0.35 + bass * 0.5);
+  let cellGrid = vec2<f32>(140.0, 90.0) * (0.6 + scale * 0.8);
+  let cellId = floor(uv * cellGrid);
+  let cellF = fract(uv * cellGrid) - 0.5;
+  let jitter = hash2(cellId) - 0.5;
+  let thresh = 0.15 + hash1(cellId + 7.3) * 0.75;
+  let fire = smoothstep(thresh, thresh + 0.12, stress);
+  let flicker = 0.6 + 0.4 * sin(time * 40.0 * (0.5 + hash1(cellId + 3.1)) + hash1(cellId) * TAU);
+  let spark = exp(-dot(cellF - jitter * 0.6, cellF - jitter * 0.6) * 30.0);
+  let dinoFlash = fire * spark * flicker * inWater * (1.0 + treble * 0.4);
+  color += vec3<f32>(0.1, 0.5, 1.0) * dinoFlash * (1.5 + intensity * 2.5);
+
+  let emission = clamp(bioGlow * 0.5 + dinoFlash + max(caustic - 1.0, 0.0) * 0.1 * below, 0.0, 1.0);
+  return vec4<f32>(color, emission);
 }
 
 // ---- MAIN ----
@@ -287,7 +330,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uvAspect = vec2<f32>((uv.x - 0.5) * aspect + 0.5, uv.y);
 
   let time = u.config.x;
-  let mouseNorm = u.zoom_config.yz / res;
+  // zoom_config.yz is normalized uv; move into the aspect-corrected scene space
+  let mouseNorm = vec2<f32>((u.zoom_config.y - 0.5) * aspect + 0.5, u.zoom_config.z);
   let mouseDown = u.zoom_config.w;
 
   let intensity = u.zoom_params.x;
@@ -296,9 +340,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let colorShift = u.zoom_params.w;
 
   // Audio reactivity
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
   let audioSpeed = speed * (0.85 + bass * 0.5);
   let audioIntensity = intensity * (0.9 + treble * 0.5);
@@ -306,10 +350,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let t = time * audioSpeed;
 
+  // ---- CLICK RIPPLES ---- rings spreading over the lagoon (shear stress)
+  var rippleStress: f32 = 0.0;
+  var rippleLight: f32 = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 3.0) {
+      let rpos = vec2<f32>((rp.x - 0.5) * aspect + 0.5, rp.y);
+      let rd = length((uvAspect - rpos) * vec2<f32>(1.0, 2.2)); // foreshortened water plane
+      let front = rd - age * 0.35;
+      let env = exp(-front * front * 900.0) * exp(-age * 1.2);
+      rippleStress += env * 1.6;
+      rippleLight += max(sin(front * 160.0), 0.0) * exp(-front * front * 300.0) * exp(-age * 1.5);
+    }
+  }
+
   // ---- SKY ----
   // Psychedelic sunset gradient
   let skyGrad = tropicalSunset(uv.y * 1.5 + sin(t * 0.1) * 0.1);
   var color = skyGrad * 1.2;
+  var auroraGlow: f32 = 0.0;
 
   // ---- AURORA BANDS ----
   for (var i: i32 = 0; i < 5; i = i + 1) {
@@ -317,6 +379,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let width = 0.04 + f32(i) * 0.005;
     let band = auroraBand(uvAspect.x, uvAspect.y, bandY, width, t, audioColor + f32(i) * 0.2);
     color += band * audioIntensity;
+    auroraGlow += dot(band, vec3<f32>(0.333)) * audioIntensity;
   }
 
   // ---- STARS ---- (upper portion only)
@@ -333,6 +396,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ---- GROUND ----
   let groundY = 0.32;
   let inGround = smoothstep(groundY + 0.01, groundY - 0.01, uv.y);
+  var onGroundCov: f32 = 0.0;
   if (inGround > 0.0) {
     // Neon sand/dune
     let dune = fbm(vec2<f32>(uvAspect.x * 8.0, uv.y * 4.0) + t * 0.02, 3) * 0.03;
@@ -345,6 +409,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       fbm(vec2<f32>(uvAspect.x * 20.0, uv.y * 10.0), 2)
     ) * 1.3;
     color = mix(color, sandColor, onGround);
+    onGroundCov = onGround;
   }
 
   // ---- PALM TREES ----
@@ -359,6 +424,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let tree3 = palmTree(uvAspect, 0.5, time + 2.5, 0.018, treeScale * 0.65);
   color += tree3;
+  let foliageCov = clamp(dot(tree1 + tree2 + tree3, vec3<f32>(0.5)), 0.0, 1.0);
 
   // ---- NEON FLOWERS ----
   let flower1 = neonFlower(uvAspect, vec2<f32>(0.25, 0.28), time, 6, 1.2);
@@ -369,10 +435,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let flower3 = neonFlower(uvAspect, vec2<f32>(0.45, 0.24), time + 2.0, 5, 0.8);
   color += flower3;
+  let flowerCov = clamp(dot(flower1 + flower2 + flower3, vec3<f32>(0.25)), 0.0, 1.0);
 
   // ---- BIOLUMINESCENT WATER ----
-  let water = bioWater(uvAspect, time, mouseNorm, mouseDown, audioIntensity, scale, audioColor, bass, treble);
-  color += water;
+  let water = bioWater(uvAspect, time, mouseNorm, mouseDown, audioIntensity, scale, audioColor, bass, treble, rippleStress);
+  color += water.rgb;
+  let waterCov = smoothstep(0.32 + 0.08, 0.32 - 0.03, uvAspect.y);
+  color += vec3<f32>(0.3, 0.8, 1.0) * rippleLight * 0.35 * waterCov * (0.5 + audioIntensity);
 
   // ---- FLOATING PARTICLES ----
   for (var i: i32 = 0; i < 12; i = i + 1) {
@@ -401,10 +470,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ACES tone mapping
   color = acesToneMap(color * 1.1);
 
-  // Semantic alpha
-  let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+  // Semantic alpha: solid scene coverage (sand, water, palms, flowers) over a
+  // translucent sky whose opacity is its aurora glow, plus bioluminescent emission
+  let solidCov = max(max(onGroundCov, waterCov), max(foliageCov, flowerCov));
+  let alpha = clamp(0.25 + solidCov * 0.55 + min(auroraGlow, 1.0) * 0.2 + water.a * 0.2 + rippleLight * 0.1, 0.05, 1.0);
 
-  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
-  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  // Depth: sky far, sea/sand nearer toward the viewer's shore, palms/flowers proud
+  let seaDepth = clamp(0.35 + (uv.y - groundY) * 0.9, 0.35, 1.0) * max(onGroundCov, waterCov);
+  let depth = clamp(max(max(seaDepth, 0.1), max(foliageCov * 0.7, flowerCov * 0.8)), 0.0, 1.0);
+
+  let finalColor = vec4<f32>(color, alpha);
+  textureStore(writeTexture, pixel, finalColor);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, finalColor);
 }

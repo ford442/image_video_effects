@@ -1,25 +1,17 @@
-// ═══════════════════════════════════════════════════════════════
-//  Gen Kimi Crystal - Physical Light Transmission with Alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Kimi Crystal
 //  Category: generative
-//  Features: hexagonal grid, crystal growth, icy transmission,
-//            spectral dispersion, audio-reactive growth, ACES
-//  Animated crystalline structures with physical alpha
-// ═══════════════════════════════════════════════════════════════
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: Nakaya habit transition - hex plates sprout six-fold stellar dendrite arms with 60-degree sidebranches as growth (and treble supersaturation) advances; 22-degree ice halo + parhelia around the mouse "sun" from minimum deviation through 60-degree ice prisms, dispersed by IOR 1.31/1.32/1.33
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 //
-//  Upgrade notes (Batch 17, Optimizer role):
-//   - Standard OOB bounds guard (no longer relies on WebGPU
-//     OOB-store discard for edge invocations).
-//   - Hue-preserving clamp at ~1.2 + ACES tonemap before store
-//     (edgeGlow + sparkle + mouseGlow can push HDR > 1).
-//   - Spectral dispersion: the Fresnel edge glow is split into
-//     three spectral samples with ice-dispersion IORs
-//     (1.31 / 1.32 / 1.33) for chromatic fringing on edges.
-//   - Audio growth: bass (plasmaBuffer[0].x) pulses the crystal
-//     growth cycle; per-bin FFT (plasmaBuffer[1..8]) shimmers
-//     individual hex rows.
-//  The physical transmission block (crystalMask, Fresnel-Schlick
-//  with F0 from IOR_ICE = 1.31, Beer absorption, transmission
-//  product) and the odd-row hex offset logic are preserved.
+//  Preserved core: odd-row hex offset grid, sdHexagon crystals, the
+//  physical transmission block (crystalMask, Fresnel-Schlick with F0
+//  from IOR_ICE = 1.31, Beer absorption, transmission product) and the
+//  spectral-dispersion Fresnel edge glow.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -36,12 +28,13 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Grid Density, y=Crystal Purity, z=Growth Speed, w=Crystal Thickness
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
 // Ice refractive index (mean) - identity constant of this shader.
 const IOR_ICE: f32 = 1.31;
 // Spectral dispersion of ice: slight IOR variation per channel.
@@ -94,6 +87,50 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Distance from p to segment a->b.
+fn sdSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+    return length(pa - ba * h);
+}
+
+// Nakaya stellar dendrite: fold the plane into one 60-degree wedge (six-fold
+// ice symmetry, mirrored), then a tapering main arm along the wedge axis with
+// sidebranches leaving it at 60 degrees - i.e. parallel to the neighbouring
+// arms, as real dendritic snow crystals grow. Returns a signed distance.
+fn sdDendrite(q: vec2<f32>, armLen: f32, width: f32, branchGrowth: f32) -> f32 {
+    let sector = TAU / 6.0;
+    let r = length(q);
+    let a = atan2(q.y, q.x);
+    let af = abs(a - sector * round(a / sector));
+    let f = vec2<f32>(cos(af), sin(af)) * r;
+    let along = clamp(f.x / max(armLen, 1e-4), 0.0, 1.0);
+    var d = sdSegment(f, vec2<f32>(0.0), vec2<f32>(armLen, 0.0)) - width * (1.0 - along * 0.6);
+    let dir = vec2<f32>(0.5, 0.866025404);
+    for (var k = 1; k <= 3; k++) {
+        let x0 = armLen * (0.22 + 0.2 * f32(k));
+        let len = (armLen - x0) * 0.55 * branchGrowth;
+        let db = sdSegment(f, vec2<f32>(x0, 0.0), vec2<f32>(x0, 0.0) + dir * len) - width * 0.55;
+        d = min(d, db);
+    }
+    return d;
+}
+
+// Minimum deviation of light through a 60-degree ice prism (the side faces
+// of a hexagonal column/plate): D = 2*asin(n*sin(A/2)) - A.
+fn prismMinDeviation(n: f32) -> f32 {
+    let A = TAU / 6.0;
+    return 2.0 * asin(n * sin(A * 0.5)) - A;
+}
+
+// Halo radial profile: no refracted light inside minimum deviation (the dark
+// inner sky), a sharp inner edge, and a slow fade outward.
+fn haloProfile(rad: f32, rMin: f32) -> f32 {
+    let inner = smoothstep(rMin - 0.012, rMin, rad);
+    return inner * exp(-max(rad - rMin, 0.0) * 9.0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -108,7 +145,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ═══════════════════════════════════════════════════════════════
     // Parameters via zoom_params (saved-preset contract):
     // x: grid density      -> hex grid scale 2..5
-    // y: crystal purity    -> transmission / absorption 0.3..1
+    // y: crystal purity    -> transmission / absorption 0.3..1, halo clarity
     // z: growth speed      -> animation rate 0.05..0.3
     // w: thickness / depth -> physical light path 0.1..1
     // ═══════════════════════════════════════════════════════════════
@@ -118,22 +155,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let growthSpeed = mix(0.05, 0.3, u.zoom_params.z);
     let crystalThickness = mix(0.1, 1.0, u.zoom_params.w);
 
-    // ── Audio reactivity ────────────────────────────────────────
+    // ── Audio reactivity (plasmaBuffer[0] = bass, mids, treble) ─────
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
     // Bass energy pulses the crystal growth cycle.
-    let bass = plasmaBuffer[0].x;
-    let bassGrowth = 1.0 + bass * 0.6;
+    let bassGrowth = 1.0 + bass * 0.4;
 
     // Mouse interaction
     var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
+    let aspect = resolution.x / resolution.y;
 
     // Center and aspect correct
     var p = uv * 2.0 - 1.0;
-    p.x *= resolution.x / resolution.y;
+    p.x *= aspect;
 
     // Mouse position in crystal space
     var mousePos = mouse * 2.0 - 1.0;
-    mousePos.x *= resolution.x / resolution.y;
+    mousePos.x *= aspect;
 
     // Crystal grid
     let gridScale = gridDensity;
@@ -160,15 +200,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         hexLocal.x -= 0.5;
     }
 
-    // Per-row FFT shimmer: map each hex row onto engine FFT bins 1..8.
+    // Per-row shimmer: mids ripple along the hex rows.
     let rowIndex = i32(hexId.y);
-    let rowBin = 1 + ((rowIndex % 8) + 8) % 8;
-    let rowFFT = plasmaBuffer[rowBin].x;
-    let rowShimmer = rowFFT * (0.5 + 0.5 * sin(time * 6.0 + f32(rowIndex) * 1.7));
+    let rowShimmer = mids * (0.5 + 0.5 * sin(time * 6.0 + f32(rowIndex) * 1.7));
+
+    // ── Click ripples: nucleation fronts ────────────────────────
+    // A click seeds a freezing front; cells it has swept over snap to full
+    // growth and the front itself flashes as a frost ring.
+    let cellCenterP = (hexId + vec2<f32>(0.5 + offset.x, 0.5)) * hexSpacing / gridScale;
+    var frozen = 0.0;
+    var frostFlash = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = u.config.x - rp.z;
+        if (age >= 0.0 && age < 4.0) {
+            var rpos = rp.xy * 2.0 - 1.0;
+            rpos.x *= aspect;
+            let frontR = age * 0.9;
+            let fade = exp(-age * 0.8);
+            frozen = max(frozen, smoothstep(frontR + 0.05, frontR - 0.05, length(cellCenterP - rpos)) * fade);
+            let fd = length(p - rpos) - frontR;
+            frostFlash += exp(-fd * fd * 220.0) * fade;
+        }
+    }
 
     // Animated crystal growth (bass pulses the cycle and the size)
     let hexHash = hash(hexId + floor(time * growthSpeed * bassGrowth));
-    let growthPhase = fract(time * growthSpeed * bassGrowth * 0.5 + hexHash * 10.0);
+    let growthPhase = max(fract(time * growthSpeed * bassGrowth * 0.5 + hexHash * 10.0), frozen * 0.95);
     let sizePulse = 1.0 + bass * 0.15 * sin(time * 4.0 + hexHash * 6.28);
     let crystalSize = smoothstep(0.0, 0.8, growthPhase) * hexSize * 0.8 * sizePulse;
 
@@ -181,8 +240,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rotation = time * 0.2 + hexHash * 6.28 + mouseGlow * 2.0;
     hexLocal = rotate(hexLocal, rotation);
 
-    // Distance to crystal edge
-    let d = sdHexagon(hexLocal, crystalSize);
+    // ── Idea 1: Nakaya habit transition (plate -> stellar dendrite) ──
+    // Low supersaturation keeps a solid hexagonal plate; as the crystal
+    // matures (and treble raises supersaturation) the plate core shrinks and
+    // six dendrite arms with 60-degree sidebranches race outward.
+    let supersat = hash(hexId * 1.37 + vec2<f32>(7.1, 3.3)) * 0.6 + treble * 0.5;
+    let habit = smoothstep(0.35, 0.9, growthPhase) * smoothstep(0.2, 0.7, supersat);
+    let plateD = sdHexagon(hexLocal, crystalSize * mix(1.0, 0.38, habit));
+    let armLen = crystalSize * mix(0.5, 1.15, habit);
+    let armWidth = mix(0.012, 0.03, u.zoom_params.w) * (0.6 + 0.4 * crystalSize / (hexSize * 0.8));
+    let dendD = sdDendrite(hexLocal, armLen, armWidth, smoothstep(0.5, 1.0, habit));
+    let d = mix(plateD, min(plateD, dendD), step(0.001, habit));
 
     // Crystal interior pattern (row shimmer brightens the facets)
     let interiorPattern = (sin(length(hexLocal) * 20.0 - time * 2.0) * 0.5 + 0.5) * (1.0 + rowShimmer * 0.6);
@@ -228,9 +296,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, crystalHighlight, crystalMask * smoothstep(0.0, 0.3, -d) * transmission);
 
     // ── Spectral dispersion edge glow ───────────────────────────
-    // Split the Fresnel edge into 3 spectral samples with the ice
-    // dispersion IORs (1.31/1.32/1.33) and slightly offset edge
-    // distances per channel for cheap chromatic fringing.
     let cosT = max(cosTheta, 0.0);
     let F0r = pow((IOR_ICE_R - 1.0) / (IOR_ICE_R + 1.0), 2.0);
     let F0g = pow((IOR_ICE_G - 1.0) / (IOR_ICE_G + 1.0), 2.0);
@@ -238,7 +303,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeR = smoothstep(0.05, 0.0, abs(d - 0.008)) * fresnelSchlick(cosT, F0r);
     let edgeG = smoothstep(0.05, 0.0, abs(d)) * fresnelSchlick(cosT, F0g);
     let edgeB = smoothstep(0.05, 0.0, abs(d + 0.008)) * fresnelSchlick(cosT, F0b);
-    let spectralEdge = vec3<f32>(edgeR, edgeG, edgeB);
+    let spectralEdge = vec3<f32>(edgeR, edgeG, edgeB) * (1.0 + treble * 0.4);
     color += goldAccent * spectralEdge * 0.8;
 
     // Row shimmer glow on crystal bodies
@@ -253,12 +318,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += vec3<f32>(1.0) * sparkle * fresnel;
 
     // Final intensity adjustment
-    color = pow(color, vec3<f32>(0.9)) * 1.1;
-
-    // HDR safety: hue-preserving clamp at ~1.2, then ACES tonemap
-    // so edgeGlow + sparkle + mouseGlow cannot blow out the store.
+    color = pow(max(color, vec3<f32>(0.0)), vec3<f32>(0.9)) * 1.1;
     color = hueLimit(color, 1.2);
-    color = acesToneMap(color);
 
     // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -266,21 +327,58 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Opacity control - blend crystal over input
     let opacity = 0.9;
+    let body = crystalMask * opacity;
+    var linear = mix(inputColor.rgb, color, body);
 
-    // Calculate alpha based on crystal transmission
-    let crystalAlpha = mix(1.0, transmission, crystalMask);
+    // ── Idea 2: 22-degree halo + parhelia around the mouse "sun" ────
+    // Light refracted through randomly oriented 60-degree ice prisms piles up
+    // at minimum deviation (~21.8 deg for n=1.31), so a ring appears with a red
+    // inner edge and bluer outer skirt (n rises toward blue). Horizontally
+    // settled plates concentrate it into sun dogs left and right of the sun.
+    let haloScale = 1.4;
+    let rMinR = tan(prismMinDeviation(IOR_ICE_R)) * haloScale;
+    let rMinG = tan(prismMinDeviation(IOR_ICE_G)) * haloScale;
+    let rMinB = tan(prismMinDeviation(IOR_ICE_B)) * haloScale;
+    let sunVec = p - mousePos;
+    let sunR = length(sunVec);
+    let haloRGB = vec3<f32>(haloProfile(sunR, rMinR), haloProfile(sunR, rMinG), haloProfile(sunR, rMinB));
+    let dogL = sunVec - vec2<f32>(-rMinG, 0.0);
+    let dogR = sunVec - vec2<f32>(rMinG, 0.0);
+    let dogShape = exp(-dot(dogL * vec2<f32>(3.0, 14.0), dogL * vec2<f32>(3.0, 14.0)))
+                 + exp(-dot(dogR * vec2<f32>(3.0, 14.0), dogR * vec2<f32>(3.0, 14.0)));
+    let dogRGB = vec3<f32>(
+        haloProfile(abs(sunVec.x), rMinR),
+        haloProfile(abs(sunVec.x), rMinG),
+        haloProfile(abs(sunVec.x), rMinB)
+    ) * smoothstep(0.12, 0.0, abs(sunVec.y));
+    let haloStrength = (0.18 + mouseDown * 0.5) * crystalPurity * (1.0 + bass * 0.4);
+    let sunCore = exp(-sunR * sunR * 900.0) * (0.4 + mouseDown * 0.8);
+    let haloLight = (haloRGB * 0.55 + dogRGB * dogShape * 1.3) * haloStrength
+                  + vec3<f32>(1.0, 0.97, 0.9) * sunCore;
+    // Inside minimum deviation the sky is darker (no refracted light there).
+    linear *= 1.0 - smoothstep(rMinR, rMinR * 0.8, sunR) * 0.12 * haloStrength;
+    linear += haloLight * (1.0 - body * 0.5);
 
-    // ═══ BLEND WITH INPUT ═══
-    // Where crystal exists, blend based on transmission
-    // Where no crystal, pass through input
-    let finalColor = mix(inputColor.rgb, color, crystalMask * opacity);
-    let finalAlpha = mix(inputColor.a, crystalAlpha, crystalMask * opacity);
+    // Nucleation frost ring from clicks
+    linear += crystalHighlight * frostFlash * 0.35;
 
-    textureStore(writeTexture, px, vec4<f32>(finalColor, finalAlpha));
-    textureStore(dataTextureA, px, vec4<f32>(finalColor, crystalMask * transmission));
+    // Single ACES pass on the display colour
+    let display = acesToneMap(max(linear, vec3<f32>(0.0)));
+
+    // Alpha: ice coverage (opaque where thick/impure, clearer where
+    // transmissive) plus Fresnel edge, halo light and frost-front glow.
+    let luma = dot(display, vec3<f32>(0.299, 0.587, 0.114));
+    let haloLum = dot(haloLight, vec3<f32>(0.333));
+    let edgeLum = dot(spectralEdge, vec3<f32>(0.333));
+    let alpha = clamp(body * mix(1.0, 0.55, transmission) + edgeLum * 0.3 + haloLum * 0.4
+                      + frostFlash * 0.25 + luma * 0.15, 0.02, 1.0);
+
+    let finalColor = vec4<f32>(display, alpha);
+    textureStore(writeTexture, px, finalColor);
+    textureStore(dataTextureA, px, finalColor);
 
     // Depth based on crystal presence
     let generatedDepth = crystalMask * 0.5 + 0.5;
-    let finalDepth = mix(inputDepth, generatedDepth, crystalMask * opacity);
+    let finalDepth = mix(inputDepth, generatedDepth, body);
     textureStore(writeDepthTexture, px, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

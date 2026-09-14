@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-14T11:22:04.922688",
+  "timestamp": "2026-09-14T11:50:36.135647",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-mushroom-mandala-garden.wgsl",
+      "file": "public/shaders/gen-koch-snowflake-storm.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-mycelium-network.wgsl",
+      "file": "public/shaders/gen-langton-ant.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-navier-stokes-ink.wgsl",
+      "file": "public/shaders/gen-lenia-2.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-nebula-light-trail-swarm.wgsl",
+      "file": "public/shaders/gen-neon-snowfall.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-nebular-chrono-astrolabe.wgsl",
+      "file": "public/shaders/gen-neon-stellated-octahedron.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neon-acid-geometry.wgsl",
+      "file": "public/shaders/gen-neon-tropical-paradise.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neon-cyber-mandala.wgsl",
+      "file": "public/shaders/gen-neural-bioluminescence-matrix.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neon-lotus.wgsl",
+      "file": "public/shaders/gen-neural-dust.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neon-neural-network.wgsl",
+      "file": "public/shaders/gen_kimi_crystal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neon-plasma-biomechanical-hive.wgsl",
+      "file": "public/shaders/gen_kimi_nebula.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

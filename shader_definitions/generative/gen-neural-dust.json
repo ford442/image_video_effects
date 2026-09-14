@@ -12,7 +12,8 @@
     "palette",
     "audio-reactive",
     "mouse-driven",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",

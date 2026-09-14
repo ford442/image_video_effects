@@ -67,6 +67,47 @@
     "deterministic-state-seeding",
     "click-species-inoculation",
     "audio-reactive-evolution",
-    "depth-output"
+    "depth-output",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "globalGrowth",
+      "name": "Global Growth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "kernelRadius",
+      "name": "Kernel Radius",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "evolutionSpeed",
+      "name": "Evolution Speed",
+      "default": 0.33,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "crossSpeciesMix",
+      "name": "Cross-Species Mix",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }
