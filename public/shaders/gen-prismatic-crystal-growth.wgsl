@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Prismatic Crystal Growth
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba, chromatic-aberration, raymarched, distance-lod
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Description: SDF crystal lattice that grows over time with
-//    Fresnel reflectance for glass-like translucency. Alpha encodes
-//    crystal thickness — thin edges are transparent, thick centers
-//    opaque. Audio drives growth rate and rotation.
+//  Upgraded: 2026-09-14
+//  Ideas: Cauchy-dispersion facet fire (per-channel refraction IOR n=A+B/lambda^2); oscillatory growth-zone banding seen through the facet
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Growth Rate, .y = Crystal Density, .z = Prism Intensity, .w = Caustic Strength
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -88,8 +87,7 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 }
 
 // ═══ CHUNK: crystal lattice SDF ═══
-fn crystalLattice(p: vec3<f32>, t: f32, growth: f32) -> vec2<f32> {
-  let spacing = 2.5;
+fn crystalLattice(p: vec3<f32>, t: f32, growth: f32, spacing: f32) -> vec2<f32> {
   let id = floor(p / spacing + 0.5);
   let q = p - id * spacing;
 
@@ -121,8 +119,8 @@ fn crystalLattice(p: vec3<f32>, t: f32, growth: f32) -> vec2<f32> {
 }
 
 // ═══ CHUNK: scene map ═══
-fn map(p: vec3<f32>, t: f32, growth: f32) -> vec2<f32> {
-  let lattice = crystalLattice(p, t, growth);
+fn map(p: vec3<f32>, t: f32, growth: f32, spacing: f32) -> vec2<f32> {
+  let lattice = crystalLattice(p, t, growth, spacing);
   // Ground plane
   let ground = p.y + 2.0;
   if (ground < lattice.x) {
@@ -132,13 +130,56 @@ fn map(p: vec3<f32>, t: f32, growth: f32) -> vec2<f32> {
 }
 
 // ═══ CHUNK: normal calculation ═══
-fn calcNormal(p: vec3<f32>, t: f32, growth: f32) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, t: f32, growth: f32, spacing: f32) -> vec3<f32> {
   let e = vec2<f32>(0.001, 0.0);
   return normalize(vec3<f32>(
-    map(p + e.xyy, t, growth).x - map(p - e.xyy, t, growth).x,
-    map(p + e.yxy, t, growth).x - map(p - e.yxy, t, growth).x,
-    map(p + e.yyx, t, growth).x - map(p - e.yyx, t, growth).x
+    map(p + e.xyy, t, growth, spacing).x - map(p - e.xyy, t, growth, spacing).x,
+    map(p + e.yxy, t, growth, spacing).x - map(p - e.yxy, t, growth, spacing).x,
+    map(p + e.yyx, t, growth, spacing).x - map(p - e.yyx, t, growth, spacing).x
   ));
+}
+
+// ═══ Native idea 1: Cauchy dispersion facet fire ═══
+// Each colour channel refracts through the facet with its own index
+// n(lambda) = A + B / lambda^2 (lambda in micrometres). The transmitted
+// rays fan apart, so the light lobe lands at slightly different angles
+// per channel — red/green/blue "fire" separates along facet edges.
+fn cauchyFire(rd: vec3<f32>, n: vec3<f32>, lightDir: vec3<f32>, cauchyB: f32) -> vec3<f32> {
+  let lambdas = vec3<f32>(0.65, 0.55, 0.45);
+  var fire = vec3<f32>(0.0);
+  for (var c = 0; c < 3; c = c + 1) {
+    let ior = 1.5 + cauchyB / (lambdas[c] * lambdas[c]);
+    let inside = refract(rd, n, 1.0 / ior);
+    // exit through the opposite facet (mirrored normal) back into air
+    let outside = refract(inside, -reflect(n, inside), ior);
+    let dirOut = select(inside, outside, dot(outside, outside) > 0.5);
+    fire[c] = pow(max(dot(normalize(dirOut), lightDir), 0.0), 36.0);
+  }
+  return fire;
+}
+
+// ═══ Native idea 2: oscillatory growth-zone banding ═══
+// Real crystals deposit concentric shells as they grow (oscillatory zoning).
+// Recover the crystal's local frame, look a little way into the facet along
+// the refracted ray, and draw the octahedral shells laid down so far —
+// more shells appear as growth advances.
+fn growthZoning(p: vec3<f32>, rd: vec3<f32>, n: vec3<f32>, t: f32, growth: f32, spacing: f32, crystalRand: f32) -> vec3<f32> {
+  let inner = p + refract(rd, n, 1.0 / 1.55) * 0.12;
+  let id = floor(inner / spacing + 0.5);
+  let q = inner - id * spacing;
+  let rand = hash13(id + vec3<f32>(37.0, 17.0, 53.0));
+  let rand2 = hash13(id + vec3<f32>(73.0, 31.0, 11.0));
+  let rotAngle = t * (0.2 + rand * 0.3) + rand2 * 6.28;
+  let rp = rotX(rand * 2.0) * rotY(rotAngle) * rotZ(rand2 * 3.0) * q;
+  let size = mix(0.1, 0.8, growth) * (0.6 + rand * 0.4);
+  let octaNorm = (abs(rp.x) + abs(rp.y) + abs(rp.z)) / max(size, 1e-3);
+  let zones = 2.0 + growth * 8.0;
+  let zc = clamp(octaNorm, 0.0, 1.0) * zones;
+  let f = fract(zc);
+  let line = (1.0 - smoothstep(0.0, 0.1, min(f, 1.0 - f))) * step(octaNorm, 1.05);
+  // alternating impurity tint per shell
+  let tint = max(hueToRGB(fract(crystalRand + floor(zc) * 0.137)), vec3<f32>(0.25));
+  return tint * line;
 }
 
 // ═══ CHUNK: Fresnel Schlick ═══
@@ -156,11 +197,6 @@ fn crystalCaustics(p: vec3<f32>, n: vec3<f32>, lightDir: vec3<f32>, t: f32) -> f
 }
 
 // ═══ CHUNK: bass envelope smoothing ═══
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-  let k = select(release, attack, bass > prev);
-  return mix(prev, bass, k);
-}
-
 // ═══ CHUNK: branchless hue-to-RGB (replaces if/else cascade) ═══
 fn hueToRGB(hue: f32) -> vec3<f32> {
   let h6 = hue * 6.0;
@@ -188,41 +224,41 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let time = u.config.x;
 
-  // Audio input
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
-  let rms = plasmaBuffer[0].w;
+  // Audio input (plasmaBuffer[0].xyz only)
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
   // Parameters
   let growthRate = mix(0.05, 0.3, u.zoom_params.x);
-  let crystalDensity = mix(0.3, 1.0, u.zoom_params.y);
+  let crystalDensity = clamp(u.zoom_params.y, 0.0, 1.0);
   let prismIntensity = mix(0.2, 1.0, u.zoom_params.z);
   let causticStrength = mix(0.1, 0.8, u.zoom_params.w);
+  // Density: lattice spacing 2.5 at default 0.5 (previous look), 3.125 sparse .. 2.0 dense
+  let spacing = 2.5 * pow(1.25, 1.0 - 2.0 * crystalDensity);
 
-  // Mouse: position controls light source direction
+  // Mouse: position controls light source direction; held = supersaturation
   let mousePos = u.zoom_config.yz;
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
   let lightDir = normalize(vec3<f32>(
     (mousePos.x - 0.5) * 3.0,
     0.8 + (0.5 - mousePos.y) * 0.5,
     -1.0
   ));
 
-  // Audio-reactive: bass drives growth rate, mids drive crystal rotation
-  var prevBass = extraBuffer[2];
-  let smoothBass = bass_env(prevBass, bass, 0.08, 0.02);
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[2] = smoothBass;
-  }
+  // Audio-reactive: bass drives growth rate, mids drive crystal rotation.
+  // Stateless: the renderer re-uploads all of extraBuffer every frame, so
+  // no envelope/growth scalar can persist there.
+  let smoothBass = bass;
 
-  // Time-based growth with audio boost
+  // Time-based growth with audio boost (monotonic in time)
   let growth = clamp((time * growthRate * (1.0 + smoothBass * 0.5)) / 10.0, 0.0, 1.0);
 
-  // Temporal feedback for growth state
-  let prevState = textureLoad(dataTextureC, coord, 0);
-  var storedGrowth = prevState.g;
-  if (time < 0.1) { storedGrowth = 0.0; }
-  storedGrowth = max(storedGrowth, growth);
+  // Held mouse: supersaturated solution — crystals jump ahead in growth
+  let storedGrowth = clamp(growth + held * 0.15 * (1.0 + bass * 0.5), 0.0, 1.0);
+
+  // Temporal feedback (ACES display RGBA from previous frame)
+  let prevState = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
 
   // Camera setup
   let aspect = res.x / res.y;
@@ -243,7 +279,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   for (var i = 0; i < 120; i = i + 1) {
     p = ro + rd * t;
-    let res2 = map(p, time, storedGrowth);
+    let res2 = map(p, time, storedGrowth, spacing);
     let d = res2.x;
     mat = res2.y;
     crystalRand = res2.y;
@@ -267,12 +303,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var thickness = 0.0;
 
   if (hit) {
-    let n = calcNormal(p, time, storedGrowth);
+    let n = calcNormal(p, time, storedGrowth, spacing);
     let v = -rd;
 
     // Thickness estimation: sample slightly inside
     let innerP = p - n * 0.05;
-    let innerD = map(innerP, time, storedGrowth).x;
+    let innerD = map(innerP, time, storedGrowth, spacing).x;
     thickness = clamp(abs(innerD) * 8.0, 0.05, 1.0);
 
     if (mat < 0.1) {
@@ -311,8 +347,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // where causticStrength * thickness is below visibility threshold
       if (causticStrength * thickness > 0.04) {
         let caustic = crystalCaustics(p, n, lightDir, time);
-        color = color + vec3<f32>(0.8, 0.9, 1.0) * caustic * causticStrength;
+        color = color + vec3<f32>(0.8, 0.9, 1.0) * caustic * causticStrength * (1.0 + bass * 0.4);
       }
+
+      // Idea 1: Cauchy dispersion fire — B grows with Prism Intensity, treble sparkles
+      let cauchyB = 0.012 + prismIntensity * 0.05;
+      let fire = cauchyFire(rd, n, lightDir, cauchyB);
+      color = color + fire * prismIntensity * (0.7 + treble * 0.5) * (1.0 + held * 0.5);
+
+      // Idea 2: oscillatory growth zoning visible through the facet
+      let zoning = growthZoning(p, rd, n, time, storedGrowth, spacing, crystalRand);
+      color = color + zoning * 0.22 * (1.0 - fresnelScalar) * (1.0 + mids * 0.4);
 
       // Rim light
       let rim = pow(1.0 - max(dot(n, v), 0.0), 4.0);
@@ -322,6 +367,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       alpha = mix(0.25, 0.95, thickness);
       // Boost alpha where Fresnel is high (edges glow more)
       alpha = mix(alpha, 0.6, fresnelScalar * 0.5);
+      // Dispersion fire adds emissive coverage
+      alpha = alpha + dot(fire, vec3<f32>(0.333)) * 0.15;
     }
   } else {
     // Background
@@ -344,12 +391,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     alpha = alpha + rInfluence * 0.3;
   }
 
-  // Temporal blend for smooth growth transitions
-  let prevColor = prevState.rgb;
-  let prevAlpha = prevState.a;
-  color = mix(color, prevColor, 0.08);
-  alpha = mix(alpha, prevAlpha, 0.05);
-
   color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.5));
   color = color / (1.0 + color * 0.3);
   color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
@@ -358,15 +399,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Depth from raymarch for chromatic + pass-through
   let depthVal = clamp(t / 30.0, 0.0, 1.0);
 
-  // Store state: R=thickness, G=growth, B=unused, A=alpha
-  textureStore(dataTextureA, coord, vec4<f32>(thickness, storedGrowth, 0.0, alpha));
-
-  color = acesToneMap(color * 1.1);
+  color = acesToneMap(color * 1.1 * (1.0 + bass * 0.15));
 
   // Chromatic aberration
   let caStr = 0.003 * (1.0 + smoothBass) + depthVal * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+  color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  // Temporal blend in display space for smooth growth transitions
+  color = mix(color, prevState.rgb, 0.08);
+  alpha = clamp(mix(alpha, prevState.a, 0.05), 0.0, 1.0);
+
+  let finalColor = vec4<f32>(color, alpha);
+  textureStore(writeTexture, coord, finalColor);
+  textureStore(dataTextureA, coord, finalColor);
   textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

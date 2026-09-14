@@ -29280,7 +29280,46 @@
       "click-reactive",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "threadDensity",
+        "name": "Thread Density",
+        "mapping": "zoom_params.x",
+        "default": 10,
+        "min": 1,
+        "max": 50,
+        "step": 1
+      },
+      {
+        "id": "braidComplexity",
+        "name": "Braid Complexity",
+        "mapping": "zoom_params.y",
+        "default": 3,
+        "min": 1,
+        "max": 10,
+        "step": 1
+      },
+      {
+        "id": "cosmicWind",
+        "name": "Cosmic Wind",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "chromaticShift",
+        "name": "Chromatic Shift",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      }
     ]
   },
   {
@@ -29342,7 +29381,52 @@
     "updated": true,
     "id": "gen-prismatic-bismuth-lattice",
     "url": "shaders/gen-prismatic-bismuth-lattice.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "click-reactive",
+      "temporal",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "mapping": "zoom_params.x",
+        "default": 3,
+        "min": 1,
+        "max": 6,
+        "step": 1
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "crystalScale",
+        "name": "Crystal Scale",
+        "mapping": "zoom_params.z",
+        "default": 1,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "fogDensity",
+        "name": "Fog Density",
+        "mapping": "zoom_params.w",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Prismatic Crystal Growth",
@@ -29400,7 +29484,49 @@
     "updated": true,
     "id": "gen-prismatic-crystal-growth",
     "url": "shaders/gen-prismatic-crystal-growth.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "growthRate",
+        "name": "Growth Rate",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "crystalDensity",
+        "name": "Crystal Density",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "prismIntensity",
+        "name": "Prism Intensity",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "causticStrength",
+        "name": "Caustic Strength",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "gen-prismatic-cyber-aether-void-kitsune",
@@ -29463,6 +29589,49 @@
         "max": 3,
         "step": 0.1
       }
+    ],
+    "params": [
+      {
+        "id": "tailDispersion",
+        "name": "Tail Dispersion",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.05
+      },
+      {
+        "id": "currentWarp",
+        "name": "Current Warp",
+        "mapping": "zoom_params.y",
+        "default": 0.6,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "stormDensity",
+        "name": "Storm Density",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "runeGlow",
+        "name": "Rune Glow",
+        "mapping": "zoom_params.w",
+        "default": 1.2,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -29489,6 +29658,62 @@
         "default": 0.2,
         "step": 0.05,
         "mapping": "zoom_params.y"
+      },
+      {
+        "name": "Vein Density",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "name": "Flap Rate",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "params": [
+      {
+        "id": "wingspan",
+        "name": "Wingspan",
+        "mapping": "zoom_params.x",
+        "default": 0.1,
+        "min": 0.05,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "id": "plasmaIntensity",
+        "name": "Plasma Intensity",
+        "mapping": "zoom_params.y",
+        "default": 0.2,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "veinDensity",
+        "name": "Vein Density",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flapRate",
+        "name": "Flap Rate",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "updatedParams": [
@@ -29507,7 +29732,28 @@
         "min": 0.1,
         "max": 1,
         "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Vein Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Flap Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "updated": true
   },
@@ -29527,6 +29773,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "scale",
+        "name": "Scale",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "mapping": "zoom_params.z",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "detail",
+        "name": "Detail",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "updatedParams": [
       {
@@ -29567,7 +29851,11 @@
     "updated": true,
     "id": "gen-prismatic-cyber-auroral-manta-swarm",
     "url": "shaders/gen-prismatic-cyber-auroral-manta-swarm.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-prismatic-cyber-chrono-nebula-peacock",
@@ -29587,32 +29875,40 @@
     ],
     "params": [
       {
+        "id": "plumageSpread",
         "name": "Plumage Spread",
         "type": "range",
+        "mapping": "zoom_params.x",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
+        "id": "quantumGlassRefraction",
         "name": "Quantum Glass Refraction",
         "type": "range",
+        "mapping": "zoom_params.y",
         "default": 1.2,
         "min": 1,
         "max": 2.5,
         "step": 0.01
       },
       {
+        "id": "nebulaDensity",
         "name": "Nebula Density",
         "type": "range",
+        "mapping": "zoom_params.z",
         "default": 0.8,
         "min": 0.1,
         "max": 2,
         "step": 0.05
       },
       {
+        "id": "audioReactivity",
         "name": "Audio Reactivity",
         "type": "range",
+        "mapping": "zoom_params.w",
         "default": 1,
         "min": 0,
         "max": 3,
@@ -29652,6 +29948,11 @@
         "max": 3,
         "step": 0.05
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "updated": true
   },
@@ -29673,28 +29974,36 @@
     "description": "A hyper-majestic, nine-tailed cybernetic space-fox woven from shattering prismatic quantum glass and glowing liquid-aurora.",
     "params": [
       {
+        "id": "tailDispersion",
         "name": "Tail Dispersion",
+        "mapping": "zoom_params.x",
         "default": 1,
         "min": 0.1,
         "max": 3,
         "step": 0.1
       },
       {
+        "id": "riftDensity",
         "name": "Rift Density",
+        "mapping": "zoom_params.y",
         "default": 0.8,
         "min": 0.1,
         "max": 2,
         "step": 0.05
       },
       {
+        "id": "runeIntensity",
         "name": "Rune Intensity",
+        "mapping": "zoom_params.z",
         "default": 1.5,
         "min": 0.5,
         "max": 5,
         "step": 0.1
       },
       {
+        "id": "glassRefraction",
         "name": "Glass Refraction",
+        "mapping": "zoom_params.w",
         "default": 0.7,
         "min": 0,
         "max": 1,
@@ -29734,6 +30043,11 @@
         "max": 1,
         "step": 0.05
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "updated": true
   },
@@ -29756,7 +30070,7 @@
       "hex-grid",
       "depth-aware"
     ],
-    "description": "A colossal biomechanical cosmic tortoise raymarched from smooth-union SDF anatomy — ellipsoid body, six capsule limbs with a swimming gait, head and tail — fused to a chrono-glass shell intersected with a distance-LOD KIFS pocket dimension. The shell carries a hex-scute tessellation whose seams burn with FFT-fed prismatic emissive, while the abyssal quantum sea below drifts with mote fields and engine ripple rings. Time slider sets the chrono phase, Evolution Speed scales the march budget and time, Audio Reactivity drives breath/gait/emissive from live plasma bands, Brightness is the ACES exposure. Real depth, soft shadows, semantic alpha.",
+    "description": "A colossal biomechanical cosmic tortoise raymarched from smooth-union SDF anatomy — ellipsoid body, six capsule limbs with a swimming gait, head and tail — fused to a chrono-glass shell intersected with a distance-LOD KIFS pocket dimension. The shell carries a hex-scute tessellation whose seams burn with treble-fed prismatic emissive, growth annuli and hawksbill amber mottling, while the abyssal quantum sea below drifts with mote fields and engine ripple rings. Time slider sets the chrono phase, Evolution Speed scales the march budget and time, Audio Reactivity drives breath/gait/emissive from live plasma bands, Brightness is the ACES exposure. Real depth, soft shadows, semantic alpha.",
     "workgroup_size": [
       16,
       16,
@@ -29797,6 +30111,49 @@
         "max": 5,
         "step": 0.1
       }
+    ],
+    "params": [
+      {
+        "id": "time",
+        "name": "Time",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "mapping": "zoom_params.y",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "mapping": "zoom_params.z",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.05
+      },
+      {
+        "id": "evolutionSpeed",
+        "name": "Evolution Speed",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "id": "gen-prismatic-cyber-chrono-void-tortoise",
     "url": "shaders/gen-prismatic-cyber-chrono-void-tortoise.wgsl"
@@ -29851,6 +30208,44 @@
         "step": 0.01
       }
     ],
+    "params": [
+      {
+        "id": "duneComplexity",
+        "name": "Dune Complexity",
+        "mapping": "zoom_params.x",
+        "default": 5,
+        "min": 1,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "prismDispersion",
+        "name": "Prism Dispersion",
+        "mapping": "zoom_params.y",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.05
+      },
+      {
+        "id": "geyserHeight",
+        "name": "Geyser Height",
+        "mapping": "zoom_params.z",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "windSpeed",
+        "name": "Wind Speed",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.01
+      }
+    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -29862,7 +30257,8 @@
       "click-reactive",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ]
   },
   {

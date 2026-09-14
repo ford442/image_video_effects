@@ -1,16 +1,21 @@
-// ----------------------------------------------------------------
-// Prismatic Cyber-Aurora Astral-Dragonfly (upgraded)
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Prismatic Cyber-Aurora Astral-Dragonfly
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: chitin wing-membrane thin-film interference (2*n*d*cos theta at 650/532/450 nm); longitudinal costa/radius/media vein spars with nodus and dark pterostigma cell
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
+    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+    zoom_params: vec4<f32>,  // .x = Wingspan, .y = Plasma Intensity, .z = Vein Density, .w = Flap Rate
+    ripples: array<vec4<f32>, 50>, // .xy = click uv, .z = start time
 };
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
@@ -137,6 +142,63 @@ fn sdDragonfly(p: vec2<f32>, wingspan: f32, flap1: f32, flap2: f32) -> f32 {
     return min(min(min(body, head), w1), min(w2, tail));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Wing-local frame of the nearest wing (same transforms as sdDragonfly).
+// Returns (span s: 0 root -> 1 tip, chord c: -1 trailing -> +1 leading, wing SDF, fore/hind 0/1).
+fn wingFrame(p: vec2<f32>, wingspan: f32, flap1: f32, flap2: f32) -> vec4<f32> {
+    let w1uv = rot(flap1) * vec2<f32>(abs(p.x) - 0.08, p.y - 0.12);
+    let e1 = vec2<f32>(w1uv.x * 0.45 / wingspan, w1uv.y * 3.0);
+    let w1 = sdEllipse(e1, vec2<f32>(0.55, 0.12));
+
+    let w2uv = rot(flap2 + 0.4) * vec2<f32>(abs(p.x) - 0.08, p.y + 0.12);
+    let e2 = vec2<f32>(w2uv.x * 0.4 / wingspan, w2uv.y * 3.0);
+    let w2 = sdEllipse(e2, vec2<f32>(0.45, 0.1));
+
+    let hind = w2 < w1;
+    let s = select(e1.x / 0.55, e2.x / 0.45, hind);
+    let c = select(-e1.y / 0.12, -e2.y / 0.1, hind);
+    return vec4<f32>(s, c, min(w1, w2), select(0.0, 1.0, hind));
+}
+
+// Idea 1: chitin membrane thin-film interference.
+// Membrane thickness thickens toward the root and the leading edge and varies per cross-vein cell;
+// optical path difference 2*n*d*cos(theta_t) evaluated at three wavelengths gives structural color.
+fn wingThinFilm(s: f32, c: f32, cellId: f32, flapTilt: f32, bass: f32) -> vec3<f32> {
+    let n = 1.56; // chitin
+    let thicknessNm = 420.0 * (1.25 - 0.45 * clamp(s, 0.0, 1.0)) * (1.0 + 0.12 * c)
+                    + (cellId - 0.5) * 90.0 + bass * 40.0;
+    let sinI = clamp(sin(flapTilt) * 0.9 + abs(c) * 0.25, -0.95, 0.95);
+    let sinT = sinI / n;
+    let cosT = sqrt(max(1.0 - sinT * sinT, 0.0));
+    let opd = 2.0 * n * thicknessNm * cosT;
+    let lambda = vec3<f32>(650.0, 532.0, 450.0);
+    return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(opd * 2.0 * PI / lambda + PI);
+}
+
+// Idea 2: longitudinal vein spars (costa / radius / media / cubitus) converging at the wing root,
+// the nodus kink on the leading edge, and the dark pigmented pterostigma cell near the tip.
+// Returns (spar vein mask, pterostigma mask).
+fn wingVenation(s: f32, c: f32, wingspan: f32) -> vec2<f32> {
+    let sc = clamp(s, 0.0, 1.0);
+    // Spars fan out from root: chord position compressed near root.
+    let fan = c / (0.35 + 0.65 * sc);
+    let nodus = smoothstep(0.42, 0.5, sc) * 0.12;
+    let sparCoord = (fan - nodus) * 2.2 + 0.5;
+    let sparLine = abs(fract(sparCoord) - 0.5);
+    let sparWidth = 0.06 + 0.04 * (1.0 - sc) + (0.1 - wingspan) * 0.1;
+    var spar = smoothstep(sparWidth, sparWidth * 0.3, sparLine);
+    // Costa: thick leading-edge rim.
+    spar = max(spar, smoothstep(0.78, 0.95, c));
+    // Nodus cross-bar.
+    spar = max(spar, smoothstep(0.035, 0.01, abs(sc - 0.46)) * smoothstep(0.2, 0.6, c));
+    let stigma = smoothstep(0.09, 0.05, abs(sc - 0.82)) * smoothstep(0.55, 0.75, c) * smoothstep(1.05, 0.9, c);
+    return vec2<f32>(spar * smoothstep(1.02, 0.9, sc), stigma);
+}
+
 // Strange-attractor crystal particles
 fn attractorParticles(p: vec2<f32>, t: f32, audio: f32) -> f32 {
     var z = p * 3.0;
@@ -170,28 +232,48 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(id.xy) - 0.5 * res) / min(res.x, res.y);
 
     let time = u.config.x;
-    let audio = u.config.y;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
     let mouse = u.zoom_config.yz;
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
     let wingspan = clamp(u.zoom_params.x, 0.05, 0.5);
     let plasma = u.zoom_params.y;
+    let veinDensity = u.zoom_params.z;   // default 0.5 -> 14.0 cross-vein cells (original)
+    let flapRate = u.zoom_params.w;      // default 0.5 -> 18.0 rad/s (original)
 
     let video = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
     let inDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv01, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    let prevCoord = clamp(vec2<i32>(id.xy), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+    let prev = textureLoad(dataTextureC, prevCoord, 0);
+
+    // Click ripples: wing-downwash gust rings from each click
+    var gust = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age < 0.0 || age > 2.5) { continue; }
+        let rd = length((uv01 - rp.xy) * vec2<f32>(res.x / min(res.x, res.y), res.y / min(res.x, res.y)));
+        let ring = exp(-pow((rd - age * 0.45) * 22.0, 2.0));
+        gust += ring * (1.0 - age / 2.5);
+    }
+    gust = clamp(gust, 0.0, 1.5);
 
     // Domain-warped aurora background with curl advection
     let warp = domainWarp(uv * 2.5 + vec2<f32>(0.0, time * 0.04), time * 0.06);
     let curl = curlNoise(uv * 3.0, time * 0.1);
-    let bgNoise = fbm(warp + curl * 0.15, 5);
+    let bgNoise = fbm(warp + curl * 0.15 + vec2<f32>(gust * 0.2), 5);
     let worley = worleyLayers(uv * 4.0, time);
-    let aurora = vec3<f32>(0.1, 0.35, 0.5) * bgNoise * (1.0 + audio * 1.5);
+    let aurora = vec3<f32>(0.1, 0.35, 0.5) * bgNoise * (1.0 + bass * 0.5 + gust * 0.8);
     var bgColor = aurora + vec3<f32>(0.05, 0.0, 0.12) * (1.0 - bgNoise);
-    bgColor += vec3<f32>(0.6, 0.9, 1.0) * worley * audio;
+    bgColor += vec3<f32>(0.6, 0.9, 1.0) * worley * (treble * 0.6 + gust * 0.3);
 
-    // Dragonfly SDF
-    let flapSpeed = time * 18.0 + audio * 40.0;
-    let flap1 = sin(flapSpeed) * 0.35 + 0.45;
-    let flap2 = sin(flapSpeed + 1.8) * 0.3 + 0.35;
+    // Dragonfly SDF (Flap Rate slider; bass deepens the stroke, held mouse hovers faster)
+    let flapSpeed = time * 36.0 * flapRate * (1.0 + held * 0.4);
+    let strokeGain = 1.0 + bass * 0.4;
+    let flap1 = sin(flapSpeed) * 0.35 * strokeGain + 0.45;
+    let flap2 = sin(flapSpeed + 1.8) * 0.3 * strokeGain + 0.35;
     var p = uv;
     p = rot(mouse.x * 1.5) * p;
     let d = sdDragonfly(p, wingspan, flap1, flap2);
@@ -200,7 +282,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let shell = exp(-edge * 14.0);
 
     // Voronoi wing veins (branchless selection via smoothstep)
-    let v = voronoi(p * 14.0 + vec2<f32>(time * 0.2));
+    let veinScale = 6.0 + veinDensity * 16.0;
+    let v = voronoi(p * veinScale + vec2<f32>(time * 0.2));
     let vein = smoothstep(0.06, 0.02, v.x) * (1.0 - smoothstep(0.0, 0.2, p.y));
 
     // Iridescent palette + orbit trap around body axis
@@ -208,34 +291,48 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let irid = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(0.0, 0.33, 0.67) * PI * 2.0 + time * 1.2 + orbit - v.y * 4.0);
     var bodyColor = mix(irid, vec3<f32>(0.05, 0.1, 0.15), vein * 0.8);
 
+    // Wing membrane: thin-film structural color, spar veins and pterostigma (native ideas)
+    let wf = wingFrame(p, wingspan, flap1, flap2);
+    let wingOnly = smoothstep(0.08, 0.0, wf.z) * smoothstep(0.03, 0.1, abs(p.x));
+    let flapTilt = select(flap1, flap2 + 0.4, wf.w > 0.5);
+    let film = wingThinFilm(wf.x, wf.y, v.y, flapTilt, bass);
+    let ven = wingVenation(wf.x, wf.y, wingspan);
+    let filmMix = wingOnly * (0.55 + mids * 0.2);
+    bodyColor = mix(bodyColor, film * 1.15, filmMix * (1.0 - vein * 0.6));
+    bodyColor = mix(bodyColor, vec3<f32>(0.04, 0.07, 0.1), wingOnly * ven.x * (0.4 + veinDensity * 0.5));
+    bodyColor = mix(bodyColor, vec3<f32>(0.12, 0.02, 0.03), wingOnly * ven.y * 0.9);
+    bodyColor += vec3<f32>(1.0, 0.35, 0.2) * wingOnly * ven.y * treble * 0.6;
+
     // Plasma core glow
     let core = smoothstep(0.15, 0.0, length(p - vec2<f32>(0.0, 0.2))) * plasma * 4.0;
-    bodyColor += vec3<f32>(0.2, 0.9, 0.6) * core * (1.0 + audio * 2.0);
+    bodyColor += vec3<f32>(0.2, 0.9, 0.6) * core * (1.0 + bass * 0.5);
 
     // Strange-attractor crystal particles
-    let particles = attractorParticles(uv, time, audio);
-    let particleGlow = vec3<f32>(1.0, 0.85, 0.4) * particles * audio;
+    let particles = attractorParticles(uv, time, treble);
+    let particleGlow = vec3<f32>(1.0, 0.85, 0.4) * particles * (treble * 0.6 + gust * 0.4);
 
-    // Branchless mouse halo
+    // Branchless mouse halo (held intensifies)
     let mouseDist = length(uv01 - mouse);
-    let mouseGlow = exp(-mouseDist * 18.0) * (0.25 + audio);
+    let mouseGlow = exp(-mouseDist * 18.0) * (0.25 + mids * 0.4) * (1.0 + held * 1.5);
 
-    // Composite with temporal feedback from dataTextureC
+    // Composite with temporal feedback from dataTextureC (exact load)
     var color = mix(video.rgb, bodyColor, clamp(density + shell * 0.6, 0.0, 1.0));
     color = mix(color, bgColor, 0.45 * (1.0 - density));
     color += particleGlow;
     color += vec3<f32>(0.4, 0.8, 1.0) * mouseGlow;
-    color = mix(color, prev.rgb, 0.06 + audio * 0.04);
+    color += vec3<f32>(0.5, 0.9, 1.0) * gust * 0.25;
+    color = mix(color, prev.rgb, 0.06 + mids * 0.04);
 
-    // Post-processing: chromatic aberration and gentle tone compression
-    color = chromaticShift(color, uv01, audio * 0.025, time);
-    color = color / (color + vec3<f32>(1.0));
+    // Post-processing: chromatic aberration and ACES display transform
+    color = chromaticShift(color, uv01, treble * 0.025 + held * 0.01, time);
+    color = acesToneMap(color * (1.0 + bass * 0.15));
 
-    // Alpha tied to density, shell and particle emission
-    let alpha = clamp(density + shell * 0.35 + particles * 0.3, 0.0, 1.0);
+    // Alpha: dragonfly coverage, SDF shell proximity, thin-film membrane and particle emission
+    let alpha = clamp(density + shell * 0.35 + wingOnly * 0.15 + particles * 0.3 + gust * 0.2, 0.0, 1.0);
     let depth = mix(inDepth, 0.15 + density * 0.65, clamp(density + shell * 0.6, 0.0, 1.0));
 
-    textureStore(writeTexture, id.xy, vec4<f32>(color, alpha));
+    let finalColor = vec4<f32>(color, alpha);
+    textureStore(writeTexture, id.xy, finalColor);
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, id.xy, vec4<f32>(d, v.x, bgNoise, alpha));
+    textureStore(dataTextureA, id.xy, finalColor);
 }

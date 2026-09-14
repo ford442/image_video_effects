@@ -1,12 +1,12 @@
-// ----------------------------------------------------------------
-// Prismatic Cyber-Aether Void-Kitsune
-// Category: generative
-// Upgraded 2026-08-03 (batch b31, algorithmist):
-//   - Mouse y-flip removed (u.zoom_config.yz is 0-1, y=0 top); canonical header order
-//   - Full 3D SDF library; orbiting octahedral prismatic shard swarm + torus tail-rings (matID 3/4)
-//   - 2D geometric layer: hex-tessellated rune grid on the armor, kaleidoscopic storm backdrop
-//   - Adaptive raymarch, real depth, semantic alpha, dataTextureA output
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Prismatic Cyber-Aether Void-Kitsune
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: kitsune-bi fox-fire flames hovering at the nine tail tips; nine-tail thin-film interference spectrum (each tail a film of different thickness)
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -24,12 +24,17 @@
 struct Uniforms {
   config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
   zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
+  zoom_params: vec4<f32>,  // .x = Tail Dispersion, .y = Current Warp, .z = Storm Density, .w = Rune Glow
   ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
 };
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn rot2D(angle: f32) -> mat2x2<f32> {
     let s = sin(angle);
@@ -135,19 +140,79 @@ fn kaleido(p: vec2<f32>, folds: f32) -> vec2<f32> {
     return vec2<f32>(cos(a), sin(a)) * r;
 }
 
-// Distance, Material ID, Glow Intensity — 1 body, 2 tails, 3 shard swarm, 4 tail-rings
-fn map(p: vec3<f32>) -> vec3<f32> {
-    var p_warp = p;
-    // Mouse current warp — mouse_uv is 0-1, y=0 top; world is y-up
+fn mouseWorld() -> vec2<f32> {
+    // mouse_uv is 0-1, y=0 top; world is y-up
     let mUv = u.zoom_config.yz;
-    let mWorld = vec2<f32>((mUv.x - 0.5) * 6.0, (0.5 - mUv.y) * 6.0);
-    let dist = length(p_warp.xy - mWorld * 0.5);
-    let warp_factor = u.zoom_params.y / (1.0 + dist * dist * 5.0); // Current Warp slider
-    p_warp -= vec3<f32>(mWorld * 0.33, 0.0) * warp_factor;
+    return vec2<f32>((mUv.x - 0.5) * 6.0, (0.5 - mUv.y) * 6.0);
+}
+
+fn heldAmount() -> f32 {
+    return select(0.0, 1.0, u.zoom_config.w > 0.5);
+}
+
+// Mouse current warp (held mouse pulls the aether current harder)
+fn warpPoint(p: vec3<f32>) -> vec3<f32> {
+    let mWorld = mouseWorld();
+    let dist = length(p.xy - mWorld * 0.5);
+    let warp_factor = u.zoom_params.y * (1.0 + heldAmount() * 1.2) / (1.0 + dist * dist * 5.0); // Current Warp slider
+    return p - vec3<f32>(mWorld * 0.33, 0.0) * warp_factor;
+}
+
+// Tail geometry shared by the SDF and the fox-fire tips
+fn tailDir(i: i32, t: f32, tail_disp: f32) -> vec3<f32> {
+    let angle = f32(i) / 9.0 * TAU + sin(t * 0.5) * 0.2;
+    let s = sin(angle);
+    let c = cos(angle);
+    return vec3<f32>(s * tail_disp, sin(t + f32(i)) * 0.5 * tail_disp, -1.5 - c * 0.2 * tail_disp);
+}
+
+// Native idea 1: kitsune-bi — a wisp of fox-fire hovering at each tail tip.
+// Each flame is an emissive Gaussian (stretched vertically into a teardrop);
+// the ray's line integral through it is analytic, so flames never alias
+// between march steps. Occluded by the first SDF hit (tMax).
+fn foxFire(ro: vec3<f32>, rd: vec3<f32>, tMax: f32, t: f32, tail_disp: f32, bass: f32, treble: f32) -> f32 {
+    let tail_origin = vec3<f32>(0.0, -0.1, -1.0);
+    let held = heldAmount();
+    let mWorld = mouseWorld();
+    let k = 55.0;
+    let stretch = vec3<f32>(1.0, 0.6, 1.0); // teardrop: taller than wide
+    let dS = rd * stretch;
+    let dd = max(dot(dS, dS), 1e-4);
+    var acc = 0.0;
+    for (var i = 0; i < 9; i++) {
+        let dir = tailDir(i, t, tail_disp);
+        var tip = tail_origin + normalize(dir) * length(dir) * 1.9;
+        tip.y += 0.25 + sin(t * 2.3 + f32(i) * 1.7) * 0.08;
+        // held mouse: onibi drift toward the cursor
+        tip = mix(tip, vec3<f32>(mWorld * 0.5, tip.z * 0.5), held * 0.3);
+        let w = (ro - tip) * stretch;
+        let sClosest = -dot(w, dS) / dd;
+        if (sClosest < 0.0 || sClosest > tMax) { continue; }
+        let perp2 = max(dot(w, w) - dot(w, dS) * dot(w, dS) / dd, 0.0);
+        let flick = 0.75 + 0.25 * sin(t * 11.0 + f32(i) * 2.9) * (0.4 + treble);
+        acc += exp(-k * perp2) * sqrt(PI / (k * dd)) * flick * (0.7 + bass * 0.5);
+    }
+    return acc;
+}
+
+// Native idea 2: thin-film interference — each tail is a soap-film of its
+// own thickness (nm); reflected colour depends on optical path 2*n*d*cos(theta_t).
+fn thinFilm(cosTheta: f32, thicknessNm: f32) -> vec3<f32> {
+    let nFilm = 1.33;
+    let sinT2 = (1.0 - cosTheta * cosTheta) / (nFilm * nFilm);
+    let cosT = sqrt(max(1.0 - sinT2, 0.0));
+    let opd = 2.0 * nFilm * thicknessNm * cosT;
+    let lambdas = vec3<f32>(650.0, 530.0, 450.0);
+    return 0.5 + 0.5 * cos(TAU * opd / lambdas + PI);
+}
+
+// Distance, Material ID, Glow Intensity — 1 body, 2.x tails (fraction = tail index/10), 3 shard swarm, 4 tail-rings
+fn map(p: vec3<f32>) -> vec3<f32> {
+    let p_warp = warpPoint(p);
 
     let t = u.config.x;
-    let bass = plasmaBuffer[0].x;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
     let tail_disp = u.zoom_params.x; // Tail Dispersion
 
     // 1. Cybernetic Kitsune Body (Mechanical/Crystalline Armor)
@@ -192,6 +257,8 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     // 2. Nine Volumetric Aether Tails
     var d_tails = 100.0;
     var tail_glow = 0.0;
+    var tail_best = 100.0;
+    var tail_idx = 0.0;
     let tail_origin = vec3<f32>(0.0, -0.1, -1.0);
 
     for (var i = 0; i < 9; i++) {
@@ -200,7 +267,7 @@ fn map(p: vec3<f32>) -> vec3<f32> {
         let c = cos(angle);
 
         // Spread tails out backwards and outwards
-        let dir = vec3<f32>(s * tail_disp, sin(t + f32(i)) * 0.5 * tail_disp, -1.5 - c * 0.2 * tail_disp);
+        let dir = tailDir(i, t, tail_disp);
         let dir_norm = normalize(dir);
 
         var p_tail = p_warp - tail_origin;
@@ -216,6 +283,7 @@ fn map(p: vec3<f32>) -> vec3<f32> {
 
         let d_t = length(p_tail) - r;
         d_tails = smin(d_tails, d_t, 0.3);
+        if (d_t < tail_best) { tail_best = d_t; tail_idx = f32(i); }
 
         if (d_t < 0.5) {
             tail_glow += 0.05 / (0.01 + d_t * d_t) * (0.5 + bass * 1.5);
@@ -243,7 +311,7 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     var d_final = d_body;
     var mat_id = 1.0; // 1 = Body, 2 = Tails, 3 = Shards, 4 = Rings
 
-    if (d_tails < d_final) { d_final = d_tails; mat_id = 2.0; }
+    if (d_tails < d_final) { d_final = d_tails; mat_id = 2.0 + tail_idx * 0.1; }
     if (d_shards < d_final) { d_final = d_shards; mat_id = 3.0; }
     if (d_rings < d_final) { d_final = d_rings; mat_id = 4.0; }
 
@@ -269,8 +337,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = (vec2<f32>(pixel) - 0.5 * res) / res.y;
 
     let t = u.config.x;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let tail_disp = u.zoom_params.x;
 
     // Camera setup
     var ro = vec3<f32>(0.0, 1.0, 4.0);
@@ -288,6 +358,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var res_map: vec3<f32>;
     var hit = false;
     var total_glow = 0.0;
+    var fox_fire = 0.0;
 
     let maxSteps = 80 + min(i32(u.zoom_params.z * 60.0), 40);
     let maxDist = 15.0;
@@ -300,6 +371,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (t_dist > maxDist) { break; }
         t_dist += res_map.x * 0.8;
     }
+
+    fox_fire = foxFire(ro, rd, select(maxDist, t_dist, hit), t, tail_disp, bass, treble) * 2.5;
 
     var col = vec3<f32>(0.0);
     let storm_density = u.zoom_params.z;
@@ -315,7 +388,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let spec = pow(max(dot(n, h_vec), 0.0), 32.0);
         let fre = pow(clamp(1.0 - dot(n, v), 0.0, 1.0), 3.0);
 
-        if (res_map.y == 1.0) {
+        let matI = floor(res_map.y + 0.001);
+        if (matI < 1.5) {
             // Body - Prismatic / Crystalline Armor
             let base_col = vec3<f32>(0.1, 0.1, 0.15); // Dark cybernetic
             col = base_col * (dif + amb) + spec * 0.5;
@@ -332,7 +406,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Hex runes
             col += vec3<f32>(0.0, 0.8, 1.0) * res_map.z; // Cyan glow
 
-        } else if (res_map.y == 2.0) {
+        } else if (matI < 2.5) {
             // Tails - Aether Plasma
             let plasma_col = mix(
                 vec3<f32>(1.0, 0.2, 0.8), // Magenta
@@ -341,6 +415,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             );
             col = plasma_col * (0.5 + amb * 0.5) + spec * 0.2;
             col += plasma_col * res_map.z * 0.2; // Self illumination
+
+            // Idea 2: nine-tail thin-film spectrum — tail index sets film thickness,
+            // a slow ripple along the tail modulates it; view angle picks the colour.
+            let tailIndex = round((res_map.y - 2.0) * 10.0);
+            let filmNm = 280.0 + tailIndex * 45.0 + sin(p.z * 3.0 - t * 2.0 + tailIndex) * 40.0 * (1.0 + mids);
+            let film = thinFilm(clamp(dot(n, v), 0.0, 1.0), filmNm);
+            col = mix(col, film * (0.45 + amb * 0.4) + spec * 0.3, 0.35 + fre * 0.4);
 
         } else if (res_map.y == 3.0) {
             // Prismatic shards — glassy rainbow fresnel
@@ -375,19 +456,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bloom_col = mix(vec3<f32>(1.0, 0.0, 0.5), vec3<f32>(0.0, 1.0, 1.0), sin(t) * 0.5 + 0.5);
     col += bloom_col * total_glow * 0.01;
 
-    // Vignette + tone mapping + gamma
+    // Idea 1: kitsune-bi fox-fire — white-blue core fading to spectral violet rim
+    let ffCore = clamp(fox_fire * 1.5, 0.0, 1.0);
+    let ff_col = mix(vec3<f32>(0.35, 0.3, 1.0), vec3<f32>(0.75, 0.95, 1.0), ffCore);
+    col += ff_col * fox_fire * (1.4 + treble * 0.6);
+
+    // Click ripples: a fox-fire flare ring bursting from the click point
+    let uv01 = vec2<f32>(pixel) / res;
+    let aspectV = vec2<f32>(res.x / res.y, 1.0);
+    var ripple_glow = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var r = 0u; r < rippleCount; r++) {
+        let rp = u.ripples[r];
+        let age = t - rp.z;
+        if (age < 0.0 || age > 2.5) { continue; }
+        let rd2 = length((uv01 - rp.xy) * aspectV);
+        let ring = exp(-pow((rd2 - age * 0.35) * 28.0, 2.0)) * exp(-age * 1.6);
+        ripple_glow += ring;
+    }
+    col += thinFilm(clamp(1.0 - ripple_glow, 0.0, 1.0), 380.0 + ripple_glow * 200.0) * ripple_glow * 0.9;
+
+    // Vignette + ACES tone mapping + display gamma
     col *= 1.0 - 0.5 * length(uv);
-    col = col / (1.0 + col);
+    col = acesToneMap(col * (1.25 + bass * 0.2));
     col = pow(col, vec3<f32>(0.4545));
 
     // Real depth: normalized ray distance on hit
     let depth = select(0.0, clamp(1.0 - t_dist / maxDist, 0.0, 1.0), hit);
 
-    // Semantic alpha from luma
-    let luma = dot(clamp(col, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luma * 0.7 + 0.2, 0.0, 1.0);
+    // Semantic alpha: solid coverage on SDF hits, emissive density (fox-fire, glow, storm) in the void
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let emissive = clamp(fox_fire * 0.8 + total_glow * 0.004 + ripple_glow * 0.5, 0.0, 1.0);
+    let alpha = clamp(select(luma * 0.6 + emissive * 0.4, 0.85 + luma * 0.15, hit), 0.0, 1.0);
 
-    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+    let finalColor = vec4<f32>(col, alpha);
+    textureStore(writeTexture, pixel, finalColor);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, pixel, finalColor);
 }

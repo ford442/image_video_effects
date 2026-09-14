@@ -57,5 +57,50 @@
   "updated": true,
   "id": "gen-prismatic-bismuth-lattice",
   "url": "shaders/gen-prismatic-bismuth-lattice.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "click-reactive",
+    "temporal",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "complexity",
+      "name": "Complexity",
+      "mapping": "zoom_params.x",
+      "default": 3,
+      "min": 1,
+      "max": 6,
+      "step": 1
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence",
+      "mapping": "zoom_params.y",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "crystalScale",
+      "name": "Crystal Scale",
+      "mapping": "zoom_params.z",
+      "default": 1,
+      "min": 0.5,
+      "max": 5,
+      "step": 0.1
+    },
+    {
+      "id": "fogDensity",
+      "name": "Fog Density",
+      "mapping": "zoom_params.w",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

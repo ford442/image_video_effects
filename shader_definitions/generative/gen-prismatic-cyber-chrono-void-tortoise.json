@@ -17,7 +17,7 @@
     "hex-grid",
     "depth-aware"
   ],
-  "description": "A colossal biomechanical cosmic tortoise raymarched from smooth-union SDF anatomy — ellipsoid body, six capsule limbs with a swimming gait, head and tail — fused to a chrono-glass shell intersected with a distance-LOD KIFS pocket dimension. The shell carries a hex-scute tessellation whose seams burn with FFT-fed prismatic emissive, while the abyssal quantum sea below drifts with mote fields and engine ripple rings. Time slider sets the chrono phase, Evolution Speed scales the march budget and time, Audio Reactivity drives breath/gait/emissive from live plasma bands, Brightness is the ACES exposure. Real depth, soft shadows, semantic alpha.",
+  "description": "A colossal biomechanical cosmic tortoise raymarched from smooth-union SDF anatomy — ellipsoid body, six capsule limbs with a swimming gait, head and tail — fused to a chrono-glass shell intersected with a distance-LOD KIFS pocket dimension. The shell carries a hex-scute tessellation whose seams burn with treble-fed prismatic emissive, growth annuli and hawksbill amber mottling, while the abyssal quantum sea below drifts with mote fields and engine ripple rings. Time slider sets the chrono phase, Evolution Speed scales the march budget and time, Audio Reactivity drives breath/gait/emissive from live plasma bands, Brightness is the ACES exposure. Real depth, soft shadows, semantic alpha.",
   "workgroup_size": [16, 16, 1],
   "updated": true,
   "supportsDepth": true,
@@ -55,6 +55,13 @@
       "step": 0.1
     }
   ],
+  "params": [
+    { "id": "time", "name": "Time", "mapping": "zoom_params.x", "default": 1.0, "min": 0.0, "max": 10.0, "step": 0.1 },
+    { "id": "audioReactivity", "name": "Audio Reactivity", "mapping": "zoom_params.y", "default": 1.0, "min": 0.0, "max": 5.0, "step": 0.1 },
+    { "id": "brightness", "name": "Brightness", "mapping": "zoom_params.z", "default": 1.0, "min": 0.0, "max": 3.0, "step": 0.05 },
+    { "id": "evolutionSpeed", "name": "Evolution Speed", "mapping": "zoom_params.w", "default": 1.0, "min": 0.1, "max": 5.0, "step": 0.1 }
+  ],
+  "features": ["audio-reactive", "mouse-driven", "upgraded-rgba"],
   "id": "gen-prismatic-cyber-chrono-void-tortoise",
   "url": "shaders/gen-prismatic-cyber-chrono-void-tortoise.wgsl"
 }

@@ -48,6 +48,12 @@
       "step": 0.01
     }
   ],
+  "params": [
+    { "id": "duneComplexity", "name": "Dune Complexity", "mapping": "zoom_params.x", "default": 5, "min": 1, "max": 10, "step": 0.1 },
+    { "id": "prismDispersion", "name": "Prism Dispersion", "mapping": "zoom_params.y", "default": 1.5, "min": 0, "max": 5, "step": 0.05 },
+    { "id": "geyserHeight", "name": "Geyser Height", "mapping": "zoom_params.z", "default": 2, "min": 0, "max": 5, "step": 0.1 },
+    { "id": "windSpeed", "name": "Wind Speed", "mapping": "zoom_params.w", "default": 1, "min": 0, "max": 3, "step": 0.01 }
+  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -59,6 +65,7 @@
     "click-reactive",
     "temporal",
     "fast-motion",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ]
 }

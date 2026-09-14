@@ -1,8 +1,13 @@
-// ----------------------------------------------------------------
-// Prismatic Fractal-Dunes
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Prismatic Fractal-Dunes
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: aeolian impact ripples (asymmetric stoss/lee wind-ripple lamination migrating downwind, with defect bifurcations); quartz saltation glints (hopping grains on windward stoss slopes flash Cauchy-dispersed spectral sparkle, lee slip faces shadowed)
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,11 +21,10 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 struct Uniforms {
     config: vec4<f32>, // x=Time, y=RippleCount, z=ResX, w=ResY
     zoom_config: vec4<f32>, // x=ZoomTime, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>, // x=Dune Complexity, y=Prism Dispersion, z=Geyser Height, w=Wind Speed
+    zoom_params: vec4<f32>, // .x = Dune Complexity, .y = Prism Dispersion, .z = Geyser Height, .w = Wind Speed
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -67,8 +71,42 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Spectral hue for a quartz-grain glint (0..1 across the visible band)
+fn spectrum(h: f32) -> vec3<f32> {
+    return clamp(abs(fract(h + vec3<f32>(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0) - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Exact bilinear history read from dataTextureC (integer textureLoad taps)
+fn loadHistory(uv: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+    let maxC = vec2<i32>(res) - vec2<i32>(1);
+    let fp = uv * res - 0.5;
+    let base = floor(fp);
+    let f = fp - base;
+    let c0 = clamp(vec2<i32>(base), vec2<i32>(0), maxC);
+    let c1 = clamp(vec2<i32>(base) + vec2<i32>(1), vec2<i32>(0), maxC);
+    let a = textureLoad(dataTextureC, vec2<i32>(c0.x, c0.y), 0);
+    let b = textureLoad(dataTextureC, vec2<i32>(c1.x, c0.y), 0);
+    let c = textureLoad(dataTextureC, vec2<i32>(c0.x, c1.y), 0);
+    let d = textureLoad(dataTextureC, vec2<i32>(c1.x, c1.y), 0);
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// Aeolian impact ripple profile: gentle stoss rise, steep lee drop (sawtooth-like)
+fn windRipple(pxz: vec2<f32>, time: f32, windSpeed: f32) -> f32 {
+    let windN = normalize(vec2<f32>(1.15, 0.48));
+    let defect = noise(pxz * 0.7) * 2.2; // bifurcating crest lines
+    let phase = dot(pxz, windN) * 3.2 + defect - time * windSpeed * 0.9;
+    let f = fract(phase);
+    return smoothstep(0.0, 0.82, f) * (1.0 - smoothstep(0.82, 1.0, f));
+}
+
 // --- SCENE MAP ---
 fn map(p: vec3<f32>, time: f32, audio: f32, duneComplexity: f32, windSpeed: f32, geyserHeight: f32, mousePos: vec3<f32>) -> vec2<f32> {
+    let held = u.zoom_config.w;
     var d = p.y;
     var matId = 0.0; // 0 = sand, 1 = prismatic crystal geyser
 
@@ -84,12 +122,16 @@ fn map(p: vec3<f32>, time: f32, audio: f32, duneComplexity: f32, windSpeed: f32,
 
     d -= dune_h;
 
+    // Idea 1 — impact ripple lamination: tiny asymmetric wind ripples ride the dunes,
+    // stronger with wind (none in calm air), migrating downwind.
+    d -= windRipple(p.xz, time, windSpeed) * 0.045 * clamp(windSpeed, 0.0, 2.0);
+
     // Audio-reactive lift
     d -= audio * 0.5 * fbm(p.xz * 2.0, 3);
 
     // Mouse gravity crater (pushes terrain down)
     let mouseDist = length(p.xz - mousePos.xz);
-    let crater = smoothstep(3.0, 0.0, mouseDist) * 2.0;
+    let crater = smoothstep(3.0, 0.0, mouseDist) * (2.0 + held * 1.2); // held = deeper blowout
     d += crater * 1.5;
 
     // === PRISMATIC GEYSERS (KIFS from feature + sparse activation from main) ===
@@ -152,8 +194,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (fragCoord * 2.0 - res) / res.y;
     let time = u.config.x;
-    let audioBands = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
-    let audio = dot(audioBands, vec3<f32>(0.5, 0.3, 0.2));
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let audio = bass * 0.5 + mids * 0.3 + treble * 0.2;
 
     // Parameters from uniform
     let duneComplexity = u.zoom_params.x;
@@ -162,7 +206,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let windSpeed    = u.zoom_params.w;
 
     // === CAMERA (dynamic from feature + slight downward tilt from main) ===
-    var ro = vec3<f32>(time * windSpeed * 1.9, 4.0 + audioBands.x * 0.7, -8.0 + time * windSpeed * 1.05);
+    var ro = vec3<f32>(time * windSpeed * 1.9, 4.0 + bass * 0.4, -8.0 + time * windSpeed * 1.05);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Gentle downward look
@@ -216,9 +260,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Sand dunes
             let sand = vec3<f32>(0.85, 0.68, 0.42);
             col = sand * (diff1 * 1.1 + diff2) * 0.9;
+
+            // Idea 2 — quartz saltation glints: grains hop on windward stoss slopes,
+            // each lit grain splits into a Cauchy-dispersed spectral sparkle; lee slip faces shade.
+            let windN = normalize(vec2<f32>(1.15, 0.48));
+            let stoss = clamp(-dot(n.xz, windN) * 3.0 + 0.3, 0.0, 1.0);
+            let leeShade = clamp(dot(n.xz, windN) * 2.5, 0.0, 1.0);
+            col *= 1.0 - leeShade * 0.35;
+            let gCell = floor(p.xz * 38.0);
+            let gSeed = hash21(gCell);
+            let hop = fract(time * (0.6 + windSpeed * 1.4) + gSeed * 7.0);
+            let hopLift = 4.0 * hop * (1.0 - hop);
+            let grainOn = step(0.93 - treble * 0.05, hash21(gCell + vec2<f32>(3.1, 7.7)));
+            let glintSpec = pow(max(dot(reflect(-light1, n), -rd), 0.0), 6.0);
+            let cauchyHue = fract(gSeed + dot(rd, n) * dispersion * 0.35);
+            let glintCol = mix(vec3<f32>(1.0, 0.95, 0.85), spectrum(cauchyHue), clamp(dispersion * 0.4, 0.0, 1.0));
+            col += glintCol * grainOn * hopLift * stoss * (0.25 + glintSpec * 1.5) * clamp(windSpeed, 0.0, 1.5) * 0.6;
         } else {
             // Prismatic crystal geyser
-            let base = vec3<f32>(0.15, 0.75, 1.0) * (1.0 + audio * 2.5);
+            let base = vec3<f32>(0.15, 0.75, 1.0) * (1.0 + bass * 0.5 + audio * 0.4);
             let fre = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
             col = base * (diff1 * 1.6 + diff2) + vec3<f32>(1.0, 0.3, 0.9) * fre * dispersion * 2.0;
         }
@@ -250,15 +310,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ring = abs(length((screenUV - ripple.xy) * aspectFix) - age * (0.6 + windSpeed * 0.12));
         dustFront += exp(-ring * 48.0) * (1.0 - age / 2.5);
     }
-    col += vec3<f32>(0.95, 0.55, 0.3) * dustFront * (0.25 + audioBands.y * 0.2);
+    col += vec3<f32>(0.95, 0.55, 0.3) * dustFront * (0.25 + mids * 0.2);
 
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(4.0));
+    let display = acesToneMap(col);
+
+    // Wind-advected trails in display space (A/C hold ACES display RGBA, no HDR decode needed)
     let windDir = normalize(vec2<f32>(1.0, 0.35));
     let historyUV = clamp(screenUV - windDir * (0.004 + windSpeed * 0.004), vec2<f32>(0.002), vec2<f32>(0.998));
-    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
-    let temporal = clamp(max(col, previous * 0.89), vec3<f32>(0.0), vec3<f32>(5.0));
+    let previous = loadHistory(historyUV, res);
+    let temporal = clamp(max(display, previous.rgb * 0.89), vec3<f32>(0.0), vec3<f32>(1.0));
+
+    // Semantic alpha: terrain/crystal coverage (fog-thinned) or airborne dust density, with trail persistence
+    let coverage = select(0.0, exp(-0.018 * t), hit);
+    let dustDensity = clamp(sandStreaks * 0.6 + dustFront * 0.8, 0.0, 1.0);
+    let alpha = clamp(max(max(coverage, dustDensity), previous.a * 0.89), 0.08, 1.0);
+
     let depth = select(1.0, clamp(t / 60.0, 0.0, 0.995), hit);
-    textureStore(dataTextureA, id.xy, vec4<f32>(temporal, 1.0));
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(temporal, 1.0));
+    textureStore(dataTextureA, id.xy, vec4<f32>(temporal, alpha));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(temporal, alpha));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

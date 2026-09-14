@@ -1,10 +1,13 @@
-// Prismatic Cyber-Chrono Void-Tortoise — Category: generative
-// Upgraded 2026-08-03 (swarm b31, optimizer): CRITICAL non-canonical Uniforms
-// struct replaced (resolution/time/mouse fields misaligned the 848-byte
-// buffer); sliders remapped off config.yzw (resH/rippleCount!) onto
-// zoom_params.xyzw. Added smooth-union legs/head/tail, hex-scute shell
-// tessellation with emissive seams, KIFS distance-LOD, adaptive raymarch,
-// abyssal mote field, real depth + dataTextureA + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Prismatic Cyber-Chrono Void-Tortoise
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: scute growth annuli (chrono-drifting concentric keratin rings per hex scute); hawksbill tortoiseshell mottling with backlit amber keratin translucency gating the pocket glow
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -22,7 +25,7 @@
 struct Uniforms {
   config: vec4<f32>,       // .x = time (seconds), .y = rippleCount, .zw = resolution
   zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1, y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // x=Time, y=Audio Reactivity, z=Brightness, w=Evolution Speed
+  zoom_params: vec4<f32>,  // .x = Time, .y = Audio Reactivity, .z = Brightness, .w = Evolution Speed
   ripples: array<vec4<f32>, 50>,
 };
 const PI: f32 = 3.14159265359;
@@ -69,6 +72,22 @@ fn hexBorder(p: vec2<f32>) -> f32 {
     let gb = abs(b);
     return 0.5 - min(max(dot(ga, vec2<f32>(0.8660254, 0.5)), ga.x),
                      max(dot(gb, vec2<f32>(0.8660254, 0.5)), gb.x));
+}
+// Hex cell: xy = offset from scute centre, zw = scute cell id (same lattice as hexBorder)
+fn hexCell(p: vec2<f32>) -> vec4<f32> {
+    let r = vec2<f32>(1.0, 1.7320508);
+    let h = r * 0.5;
+    let a = p - floor(p / r) * r - h;
+    let b = (p + h) - floor((p + h) / r) * r - h;
+    let gv = select(b, a, dot(a, a) < dot(b, b));
+    return vec4<f32>(gv, p - gv);
+}
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), w.x),
+               mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
 }
 // Drifting abyssal motes (background particulate layer)
 fn moteField(p: vec2<f32>) -> f32 {
@@ -155,9 +174,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let evoSpeed = u.zoom_params.w;        // "Evolution Speed" — time scale
 
     let time = u.config.x * evoSpeed * 0.4 + timeOffset * 2.0;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
     let audioWobble = bass * audioReact;
 
     // Adaptive march budget scales with Evolution Speed
@@ -212,12 +231,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let sp = vec2<f32>(atan2(p.z, p.x) / TAU + 0.5, p.y * 0.25 + 0.5);
         let scute = hexBorder(sp * vec2<f32>(10.0, 6.0));
         let seam = (1.0 - smoothstep(0.0, 0.05, scute)) * (0.6 + treble * audioReact * 0.5);
-        var fft = 0.0;
-        if (arrayLength(&extraBuffer) > 40u) { fft = extraBuffer[5u + (gid.x + gid.y) % 32u]; }
         let pocketHue = mix(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 0.0, 1.0),
-                            0.5 + 0.5 * sin(time + t * 5.0 + fft * 2.0));
+                            0.5 + 0.5 * sin(time + t * 5.0 + mids * audioReact * 2.0));
+
+        // Idea 1 — scute growth annuli: concentric keratin growth rings inside each
+        // scute, drifting outward with chrono time (one ring laid per chrono "year").
+        let hc = hexCell(sp * vec2<f32>(10.0, 6.0));
+        let hexR = max(dot(abs(hc.xy), vec2<f32>(0.8660254, 0.5)), abs(hc.x)); // 0 centre .. 0.5 border
+        let scuteSeed = hash21(hc.zw);
+        let ringCount = 4.0 + scuteSeed * 3.0;
+        let ringPhase = hexR * ringCount - time * 0.15 - scuteSeed * 4.0;
+        let ringLine = smoothstep(0.78, 0.98 - min(treble * audioReact, 1.0) * 0.1, abs(fract(ringPhase) - 0.5) * 2.0);
+        let annuli = ringLine * smoothstep(0.03, 0.12, hexR);
+
+        // Idea 2 — hawksbill tortoiseshell: per-scute melanin blotches over amber keratin;
+        // amber windows transmit the backlit pocket glow, dark patches occlude it.
+        let mottleN = valueNoise(hc.xy * 5.0 + hc.zw * 1.7 + scuteSeed * 13.0);
+        let melanin = smoothstep(0.42, 0.62, mottleN * 0.8 + scuteSeed * 0.35);
+        let backlit = pow(clamp(1.0 - dif, 0.0, 1.0), 2.0) * (0.6 + bass * audioReact * 0.3);
+        let amber = vec3<f32>(0.95, 0.52, 0.16);
+        let keratinWindow = mix(1.0, 0.25, melanin);
+        let keratin = mix(amber, vec3<f32>(0.12, 0.05, 0.02), melanin) * (0.18 + backlit * 0.35);
+
         let shellCol = vec3<f32>(0.05, 0.1, 0.14) * (0.3 + dif * shadow * 0.8)
-                     + pocketHue * (0.35 + bass * audioReact * 0.5)
+                     + keratin * (0.5 + dif * shadow * 0.5)
+                     + pocketHue * (0.35 + bass * audioReact * 0.5) * keratinWindow * (1.0 - annuli * 0.45)
+                     + amber * annuli * 0.12 * (1.0 - melanin)
                      + pocketHue.brg * seam * 1.2
                      + vec3<f32>(1.0) * spec * 0.8;
 
@@ -244,11 +283,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col += vec3<f32>(0.2, 0.7, 0.9) * rippleGlow * select(0.3, 0.0, hit);
 
     col = acesToneMap(col * (0.6 + brightness * 0.8)); // Brightness = exposure
-    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.12 + luma * 0.9, 0.0, 1.0); // semantic alpha
+    // Semantic alpha: solid anatomy coverage when hit, glow density (motes/rings) in the sea
+    let seaDensity = clamp(0.12 + motes * 0.6 + rippleGlow * 0.5, 0.0, 1.0);
+    let bodyCoverage = clamp(0.8 + 0.2 * (1.0 - t / MAX_DIST), 0.0, 1.0);
+    let alpha = select(seaDensity, bodyCoverage, hit);
     let depth = select(0.0, clamp(1.0 - t / MAX_DIST, 0.0, 1.0), hit);
 
     textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(col, select(0.0, mat, hit)));
+    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
 }

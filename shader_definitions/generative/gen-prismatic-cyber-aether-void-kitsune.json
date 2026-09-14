@@ -59,5 +59,48 @@
       "max": 3.0,
       "step": 0.1
     }
+  ],
+  "params": [
+    {
+      "id": "tailDispersion",
+      "name": "Tail Dispersion",
+      "mapping": "zoom_params.x",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.05
+    },
+    {
+      "id": "currentWarp",
+      "name": "Current Warp",
+      "mapping": "zoom_params.y",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "id": "stormDensity",
+      "name": "Storm Density",
+      "mapping": "zoom_params.z",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "runeGlow",
+      "name": "Rune Glow",
+      "mapping": "zoom_params.w",
+      "default": 1.2,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    }
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
   ]
 }

@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Prismatic Aether-Loom
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Prismatic Aether-Loom
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: plain-weave over-under interlacing (weft and warp threads bob past each other at every crossing); Snell-refracted thin-film thread sheath at true RGB wavelengths
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,7 +20,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
@@ -74,6 +77,17 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
     return a + b * cos(6.28318 * (c * t + d));
 }
 
+// Idea 2: thin-film sheath on each thread. Two-beam interference with Snell
+// refraction into a low-index sheath (n ~ 1.38) evaluated at 650/532/450 nm.
+fn threadFilm(thicknessNm: f32, ndotv: f32) -> vec3<f32> {
+    let nFilm = 1.38;
+    let sinT = sqrt(max(1.0 - ndotv * ndotv, 0.0)) / nFilm;
+    let cosT = sqrt(max(1.0 - sinT * sinT, 0.0));
+    let opd = 2.0 * nFilm * thicknessNm * cosT;
+    let lambda = vec3<f32>(650.0, 532.0, 450.0);
+    return vec3<f32>(0.5) - 0.5 * cos(6.28318 * opd / lambda);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -81,6 +95,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let d = 0.59;
     let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Analytic inverse of acesToneMap so display-space history in C decodes back to linear.
+fn acesInverse(yIn: vec3<f32>) -> vec3<f32> {
+    let y = clamp(yIn, vec3<f32>(0.0), vec3<f32>(0.98));
+    let qa = 2.43 * y - vec3<f32>(2.51);
+    let qb = 0.59 * y - vec3<f32>(0.03);
+    let disc = max(qb * qb - 4.0 * qa * (0.14 * y), vec3<f32>(0.0));
+    return max((-qb - sqrt(disc)) / (2.0 * qa), vec3<f32>(0.0));
 }
 
 // KIFS Fold
@@ -111,7 +134,7 @@ fn map(p: vec3<f32>) -> f32 {
 
     // Cosmic Wind Displacement
     let time = u.config.x;
-    let audio = plasmaBuffer[0].x;
+    let audio = clamp(plasmaBuffer[0].x, 0.0, 1.0);
     let windDisp = fbm(pos * 0.5 + time * wind) * wind * (1.0 + audio * 0.5);
     pos += vec3<f32>(windDisp);
 
@@ -125,10 +148,14 @@ fn map(p: vec3<f32>) -> f32 {
 
     // Cylinders along Z
     let d1 = length(pos.xy) - 0.1;
-    // Cylinders along X
-    let d2 = length(pos.yz) - 0.1;
-    // Cylinders along Y
-    let d3 = length(pos.zx) - 0.1;
+    // Idea 1: plain-weave interlacing. Weft (along X) and warp (along Y) threads
+    // undulate in z with opposite phase, so at every crossing one passes over
+    // the other. Amplitude is capped by spacing to keep the SDF step-safe.
+    let weave = min(0.12 * (1.0 + audio * 0.4), spacing * 0.08);
+    // Cylinders along X (weft)
+    let d2 = length(vec2<f32>(pos.y, pos.z - weave * cos(6.28318 * pos.x / spacing))) - 0.1;
+    // Cylinders along Y (warp)
+    let d3 = length(vec2<f32>(pos.z + weave * cos(6.28318 * pos.y / spacing), pos.x)) - 0.1;
 
     return min(min(d1, d2), d3);
 }
@@ -152,13 +179,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
 
     let time = u.config.x;
-    let audio = plasmaBuffer[0].x;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let audio = bass;
     let chromaticShift = u.zoom_params.w;
 
     // Mouse Interaction
-    let mouseX = (u.zoom_config.y * 2.0 - 1.0) * (res.x / res.y);
-    let mouseY = u.zoom_config.z * 2.0 - 1.0;
+    // uv spans +-0.5 vertically, so map mouse uv into the same centered frame.
+    let mouseX = (u.zoom_config.y - 0.5) * (res.x / res.y);
+    let mouseY = u.zoom_config.z - 0.5;
     let mousePos = vec2<f32>(mouseX, mouseY);
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
     let windSpeed = 0.7 + u.zoom_params.z * 1.8 + audio * 1.1;
     let travel = time * windSpeed;
@@ -169,7 +201,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mouseDist = length(uv - mousePos);
     if (mouseDist < 1.0) {
         let pull = 1.0 - smoothstep(0.0, 1.0, mouseDist);
-        let angle = pull * 2.0;
+        // Holding the mouse twists the braid harder (a tightened shuttle knot).
+        let angle = pull * (2.0 + held * 1.5);
         let rot = rotate2D(angle);
         let rd_xy = rot * rd.xy;
         rd.x = rd_xy.x;
@@ -204,9 +237,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Thin-film interference
         let ndotv = max(dot(n, viewDir), 0.0);
         let phase = ndotv * chromaticShift + time * 0.5;
-        let interference = palette(phase,
+        let paletteFilm = palette(phase,
                                    vec3<f32>(0.5), vec3<f32>(0.5),
                                    vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
+        // Sheath thickness: Chromatic Shift sets the order, mids breathe it,
+        // treble adds a fine shimmer along the thread length.
+        let sheathNm = 180.0 + chromaticShift * 120.0 + mids * 60.0 + sin(p.z * 9.0 + time * 3.0) * treble * 25.0;
+        let interference = mix(paletteFilm, threadFilm(sheathNm, ndotv), 0.45);
 
         // Stable lighting occupancy; the previous d/0.1 term approached zero
         // exactly at a hit and accidentally erased the material.
@@ -251,11 +288,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let trailVelocity = radialDir * (2.0 + windSpeed * 3.0);
     let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
     let historyCoord = clamp(coords - vec2<i32>(trailVelocity), vec2<i32>(0), maxCoord);
-    let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
-    let hdrColor = clamp(col + history * clamp(0.24 + u.zoom_params.z * 0.12, 0.24, 0.46), vec3<f32>(0.0), vec3<f32>(5.0));
-    let alpha = clamp(length(col) * 0.42 + speedLines * 0.35 + clickThread * 0.3, 0.02, 0.96);
+    let historyTex = textureLoad(dataTextureC, historyCoord, 0);
+    let history = acesInverse(historyTex.rgb);
+    let hdrColor = clamp(col + history / 1.2 * clamp(0.24 + u.zoom_params.z * 0.12, 0.24, 0.46), vec3<f32>(0.0), vec3<f32>(5.0));
+    // Alpha = thread luminance coverage + spectral streaks + shuttle waves.
+    let alpha = clamp(length(col) * 0.42 + speedLines * 0.35 + clickThread * (0.3 + held * 0.1), 0.02, 0.96);
     let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
-    textureStore(dataTextureA, coords, vec4<f32>(hdrColor, alpha));
-    textureStore(writeTexture, coords, vec4<f32>(acesToneMap(hdrColor * 1.2), alpha));
+    let outColor = vec4<f32>(acesToneMap(hdrColor * (1.2 + bass * 0.1)), alpha);
+    textureStore(writeTexture, coords, outColor);
+    textureStore(dataTextureA, coords, outColor);
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
