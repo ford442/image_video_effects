@@ -1,8 +1,13 @@
-// ----------------------------------------------------------------
-// Fractal Neuro-Mycelium Lattice
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Fractal Neuro-Mycelium Lattice
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: action-potential runners along Voronoi edges; synapse flash at nodes
+//  A packing: ACES display RGBA (C unused)
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -24,7 +29,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// --- CORE UTILITIES ---
 const MAX_STEPS = 100;
 const MAX_DIST = 30.0;
 const SURF_DIST = 0.01;
@@ -43,11 +47,19 @@ fn hash33(p3_in: vec3<f32>) -> vec3<f32> {
 }
 
 fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    let h = clamp(0.5 + 0.5 * (b - a) / max(k, 0.001), 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// 3D Voronoi edges for the lattice network
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn voronoi_edges(x: vec3<f32>, flow: f32) -> f32 {
     let p = floor(x);
     let f = fract(x);
@@ -60,7 +72,7 @@ fn voronoi_edges(x: vec3<f32>, flow: f32) -> f32 {
         for (var j = -1; j <= 1; j++) {
             for (var k = -1; k <= 1; k++) {
                 let b = vec3<f32>(f32(i), f32(j), f32(k));
-                let r = b - f + hash33(p + b) + sin(flow + hash33(p + b)*10.0)*0.2;
+                let r = b - f + hash33(p + b) + sin(flow + hash33(p + b) * 10.0) * 0.2;
                 let d = dot(r, r);
 
                 if (d < res.x) {
@@ -84,7 +96,7 @@ fn voronoi_edges(x: vec3<f32>, flow: f32) -> f32 {
         for (var j = -2; j <= 2; j++) {
             for (var k = -2; k <= 2; k++) {
                 let b = mb + vec3<f32>(f32(i), f32(j), f32(k));
-                let r = b - f + hash33(p + b) + sin(flow + hash33(p + b)*10.0)*0.2;
+                let r = b - f + hash33(p + b) + sin(flow + hash33(p + b) * 10.0) * 0.2;
                 if (dot(r - center, r - center) > 0.00001) {
                     let d = dot(center + r, normalize(r - center));
                     edge_dist = min(edge_dist, d);
@@ -96,15 +108,14 @@ fn voronoi_edges(x: vec3<f32>, flow: f32) -> f32 {
     return edge_dist;
 }
 
-// --- SDF & NOISE ---
-fn map(p: vec3<f32>, audio: f32) -> vec2<f32> {
+// returns (sdf, edgeDist, nodeDist)
+fn map(p: vec3<f32>, audio: f32) -> vec3<f32> {
     let density = max(u.zoom_params.x, 0.1);
     let flow_speed = u.zoom_params.y;
     let t = u.config.x * flow_speed;
 
     var pos = p;
 
-    // Mouse warp
     let mouse_pos = (u.zoom_config.yz - 0.5) * 2.0;
     let m_dist = length(pos.xy - mouse_pos * 5.0);
     let pull = smoothstep(3.0, 0.0, m_dist);
@@ -115,24 +126,19 @@ fn map(p: vec3<f32>, audio: f32) -> vec2<f32> {
 
     let d_edges = voronoi_edges(pos, t);
 
-    // Smooth the edges to form mycelial tubes
-    // Base tube radius modulated by audio and flow
     let base_radius = 0.05 / density;
     let pulse = sin(p.z * 5.0 - t * 10.0) * 0.5 + 0.5;
     let radius = base_radius + pulse * 0.02 * audio * u.zoom_params.w;
 
     let lattice = abs(d_edges) - radius;
-
-    // Add some larger structural nodes at voronoi centers
-    let nodes = length(fract(pos + 0.5) - 0.5) - radius * 3.0;
+    let node_field = length(fract(pos + 0.5) - 0.5);
+    let nodes = node_field - radius * 3.0;
 
     let d = smin(lattice / density, nodes / density, 0.2 / density);
 
-    // Material ID: distance, density accumulation factor
-    return vec2<f32>(d, d_edges);
+    return vec3<f32>(d, d_edges, node_field);
 }
 
-// --- RAYMARCHING & SHADING ---
 fn get_normal(p: vec3<f32>, audio: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     let n = vec3<f32>(
@@ -143,7 +149,6 @@ fn get_normal(p: vec3<f32>, audio: f32) -> vec3<f32> {
     return normalize(n);
 }
 
-// --- MAIN COMPUTE ---
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -152,15 +157,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     let fragCoord = vec2<f32>(f32(id.x) + 0.5, f32(id.y) + 0.5);
-    let base_uv = fragCoord / resolution;
     let uv = (fragCoord - 0.5 * resolution) / resolution.y;
 
-    // Sample audio
-    let audio_low = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.1, 0.5), 0.0).r;
-    let audio_mid = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.5, 0.5), 0.0).r;
-    let audio = (audio_low + audio_mid) * 0.5;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audioReact = u.zoom_params.w;
+    let audio = (bass * 0.55 + mids * 0.35 + treble * 0.10) * audioReact;
 
-    // Camera setup
     let time = u.config.x * u.zoom_params.y;
     var ro = vec3<f32>(0.0, 0.0, -time * 2.0);
     var ta = vec3<f32>(0.0, 0.0, ro.z - 1.0);
@@ -183,8 +187,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         p = ro + rd * dO;
         let map_res = map(p, audio);
         dS = map_res.x;
-
-        // Volumetric accumulation near edges
         accum += smoothstep(0.1, 0.0, map_res.y) * 0.05;
 
         if (dS < SURF_DIST) {
@@ -197,38 +199,53 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
+    var runner = 0.0;
+    var synapse = 0.0;
+    let hit = dO < MAX_DIST;
 
-    if (dO < MAX_DIST) {
+    if (hit) {
         let n = get_normal(p, audio);
         let light = normalize(vec3<f32>(1.0, 2.0, -1.0));
-
-        // Diffuse
         let dif = max(dot(n, light), 0.0);
 
-        // Fake SSS by stepping into surface
         let sss_dist = 0.1;
         let sss_sample = map(p - n * sss_dist, audio).x;
         let sss = smoothstep(-sss_dist, 0.0, sss_sample);
 
-        // Glow / Emission
+        let hitMap = map(p, audio);
+        let flow_speed = u.zoom_params.y;
+        // Idea 1 — action-potential travels in Voronoi-edge distance, not p.z
+        let apPhase = fract(hitMap.y * 6.0 - u.config.x * (1.4 + flow_speed * 2.2) - bass * 0.4);
+        runner = exp(-pow((apPhase - 0.5) * 9.0, 2.0));
+
+        // Idea 2 — synapse flash at Voronoi sites when the runner arrives
+        let nodeProx = 1.0 - smoothstep(0.0, 0.18, hitMap.z);
+        synapse = nodeProx * smoothstep(0.35, 0.72, runner);
+
         let pulse = sin(p.z * 5.0 - u.config.x * 10.0) * 0.5 + 0.5;
         let emit = pulse * audio * u.zoom_params.w * u.zoom_params.z;
 
         let base_col = vec3<f32>(0.1, 0.3, 0.8) * sss + vec3<f32>(0.8, 0.9, 1.0) * dif * 0.2;
         let glow_col = vec3<f32>(0.0, 1.0, 0.8) * emit;
-
         col = base_col + glow_col;
+        col += vec3<f32>(0.35, 1.0, 0.55) * runner * u.zoom_params.z * 0.85;
+        col += vec3<f32>(1.0, 0.95, 0.55) * synapse * (1.4 + treble);
 
-        // Depth fog
         col = mix(col, vec3<f32>(0.01, 0.02, 0.05), smoothstep(0.0, MAX_DIST, dO));
     }
 
-    // Add volumetric accumulation for organic glow
     col += vec3<f32>(0.1, 0.4, 0.9) * accum * u.zoom_params.z * 0.5;
 
-    // Tonemapping
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(0.4545)); // Gamma correction
-
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    let display = acesToneMap(col);
+    let alpha = clamp(
+        select(0.04, 0.35, hit) + runner * 0.35 + synapse * 0.4 + accum * 0.5,
+        0.04,
+        1.0
+    );
+    let depth = select(0.0, clamp(1.0 - dO / MAX_DIST, 0.0, 1.0), hit);
+    let coord = vec2<i32>(id.xy);
+    let outColor = vec4<f32>(display, alpha);
+    textureStore(writeTexture, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

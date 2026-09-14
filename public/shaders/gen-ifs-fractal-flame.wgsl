@@ -1,10 +1,16 @@
-// ═══ IFS Fractal Flame v5 ════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  IFS Fractal Flame
 //  Category: generative
 //  Features: ifs, flame, bass-envelope, gravity-well, click-burst,
 //            treble-sparkle, luma-spawn, depth-aware, temporal-feedback,
 //            organic-drift, chromatic-aberration, aces-tone-map,
-//            alpha-layered, physical-transmittance, luminance-key
+//            alpha-layered, physical-transmittance, luminance-key,
+//            upgraded-rgba, audio-reactive
 //  Complexity: Medium
+//  Upgraded: 2026-09-13
+//  Ideas: flam3 color-by-transform; final rotate+scale affine
+//  A packing: ACES display RGBA; bass envelope extraBuffer[133]
+// ═══════════════════════════════════════════════════════════════════
 
 // ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
@@ -88,7 +94,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bassRaw = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    let bass = bass_env(extraBuffer[0], bassRaw, 0.8, 0.15);
+    var prevBass = 0.0;
+    if (arrayLength(&extraBuffer) > 133u) {
+        prevBass = extraBuffer[133];
+    }
+    let bass = bass_env(prevBass, bassRaw, 0.8, 0.15);
 
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
@@ -125,6 +135,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var density = 0.0;
     var orbit = vec2<f32>(0.0);
+    var xfColor = 0.0;
 
     for (var i = 0; i < iterations; i++) {
         let seed = hash22(p + vec2<f32>(f32(i) * 1.618, time * 0.05));
@@ -148,15 +159,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             tp = vec2<f32>(tp.x * c - tp.y * s, tp.x * s + tp.y * c);
         }
 
+        // Idea 2 — flam3 final affine (rotate + slight contract after the variation)
+        let fang = 0.11 + time * 0.02;
+        let fc = cos(fang);
+        let fs = sin(fang);
+        tp = vec2<f32>(tp.x * fc - tp.y * fs, tp.x * fs + tp.y * fc) * 0.97;
+
         p = tp;
         let d2 = dot(p, p);
         density += exp(-d2 * 8.0);
         orbit += p;
+        // Idea 1 — color-by-transform (which of the four affine maps last fired)
+        xfColor = mix(xfColor, f32(idx) / 3.0, 0.35);
     }
 
     density = density / f32(iterations) * heat;
     let flameTemp = clamp(density * 3.0, 0.0, 1.0);
-    var color = flamePalette(flameTemp) * (0.3 + density * 2.5);
+    let xformTint = flamePalette(fract(xfColor * 0.85 + flameTemp * 0.4));
+    var color = mix(flamePalette(flameTemp), xformTint, 0.42) * (0.3 + density * 2.5);
 
     // HDR bloom
     color += flamePalette(flameTemp * 0.7) * density * density * 0.8;
@@ -216,6 +236,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 
     if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[0] = bass;
+        if (arrayLength(&extraBuffer) > 133u) {
+            extraBuffer[133] = bass;
+        }
     }
 }

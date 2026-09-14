@@ -1,4 +1,12 @@
-// Kaleidoscopic Synapse Bloom — psychedelic neural petals with drag memory.
+// ═══════════════════════════════════════════════════════════════════
+//  Kaleidoscopic Synapse Bloom
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: axon runner fronts; counter-rotating dendrite web; refractory wake; cleft vesicle release
+//  A packing: ACES display RGBA (C read as colour history)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -38,6 +46,10 @@ fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
     return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
 }
 
+fn hash21(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -66,14 +78,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pulse = time * (1.5 + pulseSpeed * 7.0 + audio.x * 1.5);
     let axon = 0.5 + 0.5 * sin(radius * (32.0 + neuralWarp * 48.0) - pulse + foldedAngle * 17.0);
     let branch = pow(1.0 - abs(2.0 * fract(foldedAngle * (2.0 + neuralWarp * 4.0) + log(radius + 0.03) * 1.7 - time * 0.18) - 1.0), 8.0);
+    // Idea 1 (existing): radial axon runner fronts.
     let runnerPhase = fract(radius * (5.0 + bloomDensity * 8.0) - time * (0.8 + pulseSpeed * 2.8));
     let runner = exp(-pow((runnerPhase - 0.5) / 0.075, 2.0));
-    let nodes = pow(axon, 12.0) * (0.35 + branch * 1.8) + branch * (0.18 + runner * 1.5);
-    // A counter-rotating dendrite web keeps the second pass visually independent
+    // Idea 3: refractory wake — just behind the outward runner front (phase < 0.5)
+    // the axon is hyperpolarised and dim, recovering with distance; bass shortens recovery.
+    let behindFront = select(0.0, runnerPhase / 0.5, runnerPhase < 0.5);
+    let refractory = 1.0 - 0.65 * pow(behindFront, 2.0 + audio.x * 2.0) * (1.0 - runner);
+    let nodes = (pow(axon, 12.0) * (0.35 + branch * 1.8) + branch * (0.18 + runner * 1.5)) * refractory;
+    // Idea 2 (existing): a counter-rotating dendrite web keeps the second pass visually independent
     // from the radial axon runner instead of merely brightening it.
     let counterPhase = angle * (sectors + 3.0) - log(radius + 0.025) * (7.0 + neuralWarp * 7.0) + pulse * 0.72;
     let dendrites = pow(0.5 + 0.5 * cos(counterPhase), 18.0) * exp(-radius * (0.8 + bloomDensity));
     let synapseBridge = exp(-abs(fract(radius * (9.0 + bloomDensity * 12.0) + foldedAngle * 2.0 + time * pulseSpeed) - 0.5) * 20.0) * dendrites;
+
+    // Idea 4: vesicle release — quanta in the folded (angle, log-radius) lattice fire on
+    // continuous per-cell phases where the dendrite web / bridges sit, drifting across the cleft.
+    let cleftCells = vec2<f32>(foldedAngle * (3.0 + bloomDensity * 4.0), log(radius + 0.03) * (6.0 + neuralWarp * 6.0));
+    let cleftId = floor(cleftCells);
+    let cellSeed = hash21(cleftId);
+    let releasePhase = time * (0.9 + pulseSpeed * 2.6) + cellSeed * TAU;
+    let release = pow(0.5 + 0.5 * sin(releasePhase), 10.0);
+    let drift = vec2<f32>(0.0, (fract(releasePhase / TAU) - 0.5) * 0.5);
+    let fromCenter = fract(cleftCells) - 0.5 - drift;
+    let quantum = exp(-dot(fromCenter, fromCenter) * (70.0 - release * 30.0));
+    let vesicles = quantum * release * clamp(dendrites * 1.6 + synapseBridge * 2.0, 0.0, 1.0) * (1.0 + audio.z * 1.5);
 
     var clickBloom = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -91,14 +120,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hdr += palette(hue + 0.35) * runner * branch * (0.6 + audio.x);
     hdr += palette(hue + 0.52) * (dendrites * 0.65 + synapseBridge * 1.4) * (0.6 + audio.y);
     hdr += palette(time * 0.1 + clickBloom) * clickBloom * 1.8;
+    hdr += palette(hue + 0.18) * vesicles * (1.6 + colorFlux);
     hdr += palette(hue + 0.6) * dragMask * (0.5 + neuralWarp * 1.5);
     let historyUV = clamp(uv - normalize(p + vec2<f32>(0.0001)) * (0.003 + pulseSpeed * 0.008), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.12 + neuralWarp * 0.16 + dragMask * 0.16, 0.0, 0.42));
-    let alpha = clamp(0.12 + nodes * 0.75 + dendrites * 0.28 + clickBloom * 0.45 + dragMask * 0.35, 0.0, 1.0);
+    let alpha = clamp(0.12 + nodes * 0.75 + dendrites * 0.28 + vesicles * 0.4 + clickBloom * 0.45 + dragMask * 0.35, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(hdr), alpha);
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);
-    let depth = clamp(0.16 + branch * 0.34 + runner * 0.25 + dendrites * 0.18 + clickBloom * 0.18, 0.0, 0.95);
+    let depth = clamp(0.16 + branch * 0.34 + runner * 0.25 + dendrites * 0.18 + vesicles * 0.12 + clickBloom * 0.18, 0.0, 0.95);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

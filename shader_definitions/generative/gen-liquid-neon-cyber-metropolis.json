@@ -54,5 +54,9 @@
   "updated": true,
   "id": "gen-liquid-neon-cyber-metropolis",
   "url": "shaders/gen-liquid-neon-cyber-metropolis.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

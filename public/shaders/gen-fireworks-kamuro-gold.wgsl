@@ -1,7 +1,12 @@
-// Kamuro Gold — dense slow-falling gold/silver glitter
-// Upgraded: 2026-09-10
-// Ideas: independent twinkle per glitter; hang plateau then resume fall
-// A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+//  Kamuro Gold
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium-High
+//  Upgraded: 2026-09-10
+//  Ideas: independent twinkle per glitter; hang plateau then resume fall
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;

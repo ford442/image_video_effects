@@ -4,14 +4,13 @@
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven,
 //    islamic, star, rose, geometric, girih, tessellation
 //  Complexity: Very High
+//  Upgraded: 2026-09-13
+//  Ideas: nested φ pentagrams; 10-fold rose from 36° sectors
+//  A packing: ACES display RGBA
 //  Wolfram Data: Regular pentagon — interior angle 108° = 3π/5 rad;
 //    central angle 72° = 2π/5 rad; diagonal/edge ratio φ = (1+√5)/2 ≈ 1.618;
 //    height = √(5+2√5)/2 × s ≈ 1.539s;
 //    star polygon {n/k} where k=2 for pentagram
-//  Chunks From: gen-islamic-star-rose (original)
-//  Created: 2026-05-31
-//  Upgraded: 2026-06-07
-//  By: Kimi Agent
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -141,6 +140,7 @@ fn girih_palette(cell_type: f32, edge_glow: f32, p4: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
   let resolution = vec2<f32>(u.config.zw);
+  if (pixel.x >= i32(resolution.x) || pixel.y >= i32(resolution.y)) { return; }
   let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
 
   let time = u.config.x;
@@ -216,7 +216,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       var shape_dist: f32;
       if is_star {
         // Prefer pentagram (5-pointed star) when star is chosen
-        let star_points = 4 + i32(hashf(pattern_seed + 1.0) * 6.0);
+        let star_points = 4 + i32(hashf(pattern_seed + 1.0) * mix(4.0, 8.0, p1));
         if star_points == 5 {
           // Wolfram pentagram: petal length = edge * φ
           let outer = hex_r * 0.7;
@@ -227,15 +227,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let inner_r = hex_r * 0.3;
           shape_dist = sd_star(local, outer_r, inner_r, star_points) / hex_r;
         }
+        // Idea 1 — nested φ pentagram (second star at outer/φ in the same hex)
+        let nestOuter = hex_r * 0.7 / PHI;
+        let nestInner = nestOuter / PHI;
+        let nested = sd_star(local, nestOuter, nestInner, max(star_points, 5)) / hex_r;
+        shape_dist = min(abs(shape_dist), abs(nested));
       } else {
         let ngon_sides = 4 + i32(hashf(pattern_seed + 2.0) * 4.0);
         shape_dist = sd_ngon(local, hex_r * 0.5, ngon_sides) / hex_r;
       }
 
-      // Girih strapwork lines (concentric patterns)
+      // Girih strapwork lines (concentric patterns); p1 adds an inner strap
       let strap1 = abs(hex_dist - 0.6);
       let strap2 = abs(hex_dist - 0.85);
-      let min_strap = min(strap1, strap2);
+      let strap3 = abs(hex_dist - mix(0.45, 0.32, p1));
+      let min_strap = min(strap1, min(strap2, mix(1.0, strap3, p1)));
 
       // Combine shape and strapwork
       let combined_dist = min(abs(shape_dist), min_strap * 0.5);
@@ -261,11 +267,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rosette_edge = smoothstep(0.03, 0.0, abs(rosette));
   color += vec3<f32>(0.95, 0.88, 0.70) * rosette_edge * 0.6;
 
-  // Mouse morphs between star and rose forms
-  let mouseMorph = length(mouse / resolution - vec2<f32>(0.5));
+  // Mouse is already 0–1 UV (y=0 top). Morph amount from distance to center.
+  let mouseMorph = length(mouse - vec2<f32>(0.5));
   let roseDist = sd_pentagon_rosette(ruv, 0.12 * zoom * (1.0 + mouseMorph * 2.0));
   let roseEdge = smoothstep(0.04, 0.0, abs(roseDist));
   color += vec3<f32>(0.75, 0.55, 0.15) * roseEdge * 0.4 * mouseMorph;
+
+  // Idea 2 — 10-fold rose from 36° sectors around the central pentagram
+  let roseAng = atan2(ruv.y, ruv.x);
+  let petals = 0.55 + 0.45 * (0.5 + 0.5 * cos(roseAng * 10.0));
+  let roseR = 0.10 * zoom * petals * (1.0 + mouseMorph * 0.8);
+  let roseOutline = abs(length(ruv) - roseR);
+  color += vec3<f32>(0.82, 0.48, 0.22) * smoothstep(0.018, 0.0, roseOutline) * 0.55;
 
   // Background pattern (subtle repeating motif)
   let bg_pattern = sin(p_uv.x * 20.0) * sin(p_uv.y * 20.0) * 0.5 + 0.5;
@@ -282,15 +295,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let caStr = 0.003 * (1.0 + bass);
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
-  // Temporal feedback
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.5), 0.0);
+  // Temporal feedback — exact C load (display RGBA)
+  let prev = textureLoad(dataTextureC, pixel, 0);
   color = mix(prev.rgb * 0.96, color, 0.25);
 
   // ACES tone mapping + semantic alpha
   color = acesToneMap(color * 1.1);
-  let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+  let alpha = clamp(length(color) * 1.2 + roseEdge * 0.12, 0.2, 0.95);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(0.15 + (1.0 - edge_dist) * 0.55 + roseEdge * 0.2, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

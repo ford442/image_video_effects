@@ -11,7 +11,7 @@
     "fluid-dynamics",
     "rankine"
   ],
-  "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
+  "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Feedback history is advected by the Rankine differential rotation, and the cyclostrophic pressure well condenses a striated funnel haze. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
   "workgroup_size": [
     16,
     16,
@@ -62,6 +62,6 @@
   "updated": true,
   "id": "gen-hyper-rainbow-vortex",
   "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
-  "features": ["upgraded-rgba", "rankine-vortex", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "features": ["upgraded-rgba", "rankine-vortex", "audio-reactive", "mouse-driven", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
   "feedbackPacking": "A/C = raw HDR vortex display RGBA history"
 }

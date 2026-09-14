@@ -16,7 +16,7 @@
     "music",
     "reactive"
   ],
-  "description": "Infinite interlocking brass gears rotating in perfect mechanical sync. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control.",
+  "description": "Infinite interlocking brass gears rotating in perfect mechanical sync, stepping one tooth per escapement tick around ruby jewel bearings. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control.",
   "workgroup_size": [
     16,
     16,
@@ -68,6 +68,8 @@
   "id": "gen-fractal-clockwork",
   "url": "shaders/gen-fractal-clockwork.wgsl",
   "features": [
+    "audio-reactive",
+    "mouse-driven",
     "upgraded-rgba",
     "raymarched-gears",
     "sprung-orbit-camera",

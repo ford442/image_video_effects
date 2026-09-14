@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Luminescent Nebula-Silk Weaver
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Nebula-Silk Weaver
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: plucked-thread standing waves (bass, mouse tension damps); dew beads with treble glint; silk afterglow via exact C history
+//  A packing: linear HDR composite RGB (pre-ACES) + a = accumulated silk density
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -25,6 +30,10 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+
+// Per-frame audio + per-sample bead state (set in main / map)
+var<private> gPluck: f32 = 0.0;
+var<private> gBead: f32 = 0.0;
 
 // --- UTILS ---
 fn rot2D(a: f32) -> mat2x2<f32> {
@@ -140,7 +149,7 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let pull = smoothstep(2.0, 0.0, dMouse) * u.zoom_config.w;
     if (pull > 0.0) {
         // Vortex effect
-        let pullDir = normalize(p - mouseWorld);
+        let pullDir = (p - mouseWorld) / max(dMouse, 0.001);
         var r = p.xy;
         let vAngle = pull * 2.0;
         let s = sin(vAngle);
@@ -172,12 +181,28 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let dLine = length(p - proj);
 
     // We use a periodic structure perturbed by the noise to create multiple ribbons
-    var q = p + curl * 0.5;
+    let qWorld = p + curl * 0.5;
     let spacing = 1.5;
-    q = (fract(q / spacing + 0.5) - 0.5) * spacing;
+    var q = (fract(qWorld / spacing + 0.5) - 0.5) * spacing;
+
+    // Per-thread identity from the grid cell
+    let cell = floor(qWorld / spacing + 0.5);
+    let phase = fract(sin(dot(cell, vec3<f32>(12.9898, 78.233, 37.719))) * 43758.5453) * TAU;
+
+    // IDEA 1 — plucked-thread standing waves: each silk thread vibrates like a
+    // string (node pattern along its length, own phase/direction). Bass plucks
+    // it; the mouse vortex pulls the web taut and damps the vibration.
+    let tension = clamp(pull, 0.0, 1.0);
+    let pluckAmp = gPluck * (1.0 - 0.8 * tension);
+    let standing = sin(qWorld.y * 2.2 + phase) * cos(t * 9.0 + phase);
+    q = vec3<f32>(q.x - cos(phase) * pluckAmp * standing, q.y, q.z - sin(phase) * pluckAmp * standing);
+
+    // IDEA 2 — dew beads: periodic droplet swellings strung along the thread
+    let bead = pow(0.5 + 0.5 * cos(qWorld.y * 7.0 + phase * 3.0), 12.0);
+    gBead = bead;
 
     // Distance to ribbon surface
-    let dRibbon = length(q.xz) - width;
+    let dRibbon = length(q.xz) - width * (1.0 + 1.8 * bead);
 
     // Material ID based on noise
     let matID = snoise(p * 0.5) * 0.5 + 0.5;
@@ -205,22 +230,31 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
     return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
 }
 
-fn raymarch(ro: vec3<f32>, rd: vec3<f32>, audioPulse: f32) -> vec4<f32> {
+struct SilkResult {
+    rgb: vec3<f32>,
+    a: f32,
+    firstHit: f32,
+};
+
+fn raymarch(ro: vec3<f32>, rd: vec3<f32>, audioPulse: f32, treble: f32) -> SilkResult {
     var dO = 0.0;
     var dS: vec2<f32>;
     var col = vec3<f32>(0.0);
     var accumDens = 0.0;
+    var firstHit = -1.0;
 
     let iridescence = u.zoom_params.z; // 0.0 - 3.0
 
     for (var i = 0; i < 80; i++) {
         let p = ro + rd * dO;
         dS = map(p);
+        let beadHere = gBead; // capture before getNormal re-evaluates map
 
         // Volumetric accumulation
         if (dS.x < 0.05) {
             let dens = (0.05 - dS.x) * 10.0; // Density
             accumDens += dens * 0.05;
+            firstHit = select(firstHit, dO, firstHit < 0.0);
 
             // Color based on material ID and time
             let t = u.config.x;
@@ -236,6 +270,9 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, audioPulse: f32) -> vec4<f32> {
             let iriCol = 0.5 + 0.5 * cos(fre * 10.0 + vec3<f32>(0.0, 2.0, 4.0));
             baseCol += iriCol * iridescence * fre;
 
+            // Dew-bead glint: droplets catch starlight at grazing angles, treble sparkles
+            baseCol += vec3<f32>(0.9, 0.95, 1.0) * beadHere * (0.25 + treble * 0.8) * (0.3 + fre * 1.5);
+
             col += baseCol * dens * 0.1 * exp(-dO * 0.2); // Attenuation
         }
 
@@ -245,7 +282,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, audioPulse: f32) -> vec4<f32> {
         dO += max(abs(dS.x), 0.02);
     }
 
-    return vec4<f32>(col, accumDens);
+    return SilkResult(col, accumDens, firstHit);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -278,13 +315,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
 
-    // Audio sampling
-    // Read from dataTextureC (frequency data)
-    let audioSample = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(base_uv.x, 0.5), 0.0).r;
-    let audioPulse = u.zoom_params.w * audioSample; // 0.0 - 2.0
+    // Audio from plasmaBuffer (HEAD misread dataTextureC as frequency data)
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.5);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.5);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.5);
+    let audioSample = clamp(bass * 0.7 + mids * 0.4, 0.0, 1.5);
+    let audioPulse = u.zoom_params.w * audioSample; // 0.0 - 3.0
+    gPluck = (0.015 + bass * 0.09) * u.zoom_params.w;
 
     // Raymarch
-    let result = raymarch(ro, rd, audioPulse);
+    let result = raymarch(ro, rd, audioPulse, treble * u.zoom_params.w);
 
     // Background color (dark blue/purple void)
     var bg = vec3<f32>(0.01, 0.0, 0.03) - length(uv) * 0.01;
@@ -295,8 +335,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Bloom approximation
     color += result.rgb * 0.5;
 
-    // Tone mapping
-    color = aces(color);
+    // IDEA 3 — silk afterglow: woven light lingers and fades toward violet
+    // (trailing max, so it never accumulates past the live frame)
+    let prev = textureLoad(dataTextureC, coords, 0);
+    let decay = 0.9;
+    let lingering = prev.rgb * decay * vec3<f32>(0.88, 0.8, 1.0);
+    let linearOut = min(max(color, lingering), vec3<f32>(8.0));
+    let density = clamp(max(min(result.a, 1.0), prev.a * decay), 0.0, 1.0);
 
-    textureStore(writeTexture, coords, vec4<f32>(color, 1.0));
+    // Tone mapping (display only; A keeps linear)
+    let display = aces(linearOut);
+
+    // Semantic alpha: live silk density, afterglow density, faint void floor
+    let alpha = clamp(min(result.a, 1.0) * 0.85 + density * 0.25 + 0.05, 0.0, 1.0);
+
+    textureStore(writeTexture, coords, vec4<f32>(display, alpha));
+    let depth = select(0.0, 1.0 - clamp(result.firstHit / 20.0, 0.0, 1.0), result.firstHit >= 0.0);
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(linearOut, density));
 }

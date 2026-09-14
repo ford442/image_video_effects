@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chrono-Voronoi Mycelium
 //  Category: generative
-//  Description: Multi-temporal Voronoi fungal growth system with layered
-//  temporal states, organic branching networks that evolve across time.
-//  Audio controls growth vs decay rates. Mouse introduces nutrients/barriers.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, click-reactive
 //  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: clamp connections across generation borders; apothecia cups on high-gen seeds
+//  A packing: HDR display RGBA (pre-ACES in A; ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -108,16 +109,15 @@ fn voronoiLayer(uv: vec2<f32>, scale: f32, timeLayer: f32, growthRate: f32) -> v
     return vec4<f32>(sqrt(minDist1), sqrt(minDist2), border, hash21(minCell));
 }
 
-// Mycelium branch SDF approximation using distance transform
-fn myceliumBranch(uv: vec2<f32>, t: f32, generation: f32, bass: f32) -> f32 {
+// Mycelium branch SDF approximation using distance transform.
+// .x = branch intensity, .y = Voronoi border width (for clamp connections)
+fn myceliumBranch(uv: vec2<f32>, t: f32, generation: f32, bass: f32) -> vec2<f32> {
     let scale = 4.0 + generation * 2.0;
     let v = voronoiLayer(uv, scale, t, 1.0 + bass * 0.5);
 
-    // Branch-like pattern from Voronoi borders
     let border = v.z;
     let cell_id = v.w;
 
-    // Growth mask: cells "activate" based on time layer and cell identity
     let birthTime = cell_id * 3.0;
     let alive = smoothstep(birthTime, birthTime + 0.5, t * 0.2);
     let aged = 1.0 - smoothstep(birthTime + 1.5, birthTime + 2.5, t * 0.2);
@@ -125,7 +125,7 @@ fn myceliumBranch(uv: vec2<f32>, t: f32, generation: f32, bass: f32) -> f32 {
 
     let branchWidth = 0.08 + bass * 0.03;
     let branchIntensity = smoothstep(branchWidth, 0.0, border) * lifeState;
-    return branchIntensity;
+    return vec2<f32>(branchIntensity, border);
 }
 
 // Glowing tip effect at Voronoi seed points
@@ -134,6 +134,16 @@ fn glowingTips(uv: vec2<f32>, t: f32, generation: f32, treble: f32) -> f32 {
     let v = voronoiLayer(uv, scale, t, 1.0);
     let tipRadius = 0.05 + treble * 0.02;
     return smoothstep(tipRadius, 0.0, v.x) * (0.5 + 0.5 * sin(t * 2.0 + v.w * TAU));
+}
+
+// Idea 2 — apothecia cups: dark well + bright rim at high-generation seeds (not tip spark)
+fn apotheciaCups(uv: vec2<f32>, t: f32, generation: f32, treble: f32) -> f32 {
+    let scale = 4.0 + generation * 2.0;
+    let v = voronoiLayer(uv, scale, t, 1.0);
+    let cupR = 0.075 + treble * 0.018;
+    let rim = smoothstep(cupR, cupR * 0.62, v.x) * smoothstep(cupR * 0.12, cupR * 0.42, v.x);
+    let highGen = smoothstep(1.1, 2.5, generation);
+    return rim * highGen * (0.55 + 0.45 * sin(t * 1.6 + v.w * TAU));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -179,25 +189,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var totalMycelium = 0.0;
     var totalGlow = 0.0;
     var generationColor = vec3<f32>(0.0);
+    var clampGlow = 0.0;
+    var cupGlow = 0.0;
+    var prevBorder = -1.0;
+    var prevBranch = 0.0;
 
     let numGen = i32(clamp(generations, 1.0, 4.0));
     for (var g = 0; g < numGen; g++) {
         let gf = f32(g);
-        // Each generation has a different temporal offset and scale
         let timeOffset = gf * 1.7 + bass * 0.3;
         let layerTime = t * growthRate + timeOffset;
 
-        let branches = myceliumBranch(uvAspect, layerTime, gf, bass);
+        let branchRes = myceliumBranch(uvAspect, layerTime, gf, bass);
+        let branches = branchRes.x;
+        let border = branchRes.y;
         let tips = glowingTips(uvAspect, layerTime, gf, treble);
+        let cups = apotheciaCups(uvAspect, layerTime, gf, treble);
 
-        // Nutrient boosts this generation's intensity
         let genStrength = pow(decay, gf) * (1.0 + nutrient * 0.5 + clickSurge * 0.9);
         totalMycelium += branches * genStrength;
         totalGlow += tips * genStrength * glowAmt;
+        cupGlow += cups * genStrength;
 
-        // Each generation has a unique color (age gradient: young=cyan, old=amber)
+        // Idea 1 — clamp connections where two generation borders coincide
+        if (g > 0) {
+            let coincide = 1.0 - smoothstep(0.0, 0.045, abs(border - prevBorder));
+            clampGlow += coincide * min(branches, prevBranch) * genStrength;
+        }
+        prevBorder = border;
+        prevBranch = branches;
+
         let ageHue = gf / max(f32(numGen) - 1.0, 1.0);
-        let genHue = mix(0.5, 0.08, ageHue); // cyan -> amber
+        let genHue = mix(0.5, 0.08, ageHue);
         let genCol = vec3<f32>(
             0.5 + 0.5 * cos(genHue * TAU),
             0.5 + 0.5 * cos(genHue * TAU + 2.094),
@@ -223,6 +246,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Bright glowing tips
     let tipColor = vec3<f32>(0.8 + treble * 0.2, 0.95, 0.6 + mids * 0.3);
     color += tipColor * tipIntensity * 1.5;
+    color += vec3<f32>(0.95, 0.75, 0.35) * clampGlow * 1.35;
+    // Apothecia: warm rim, darker cup well
+    color += vec3<f32>(0.85, 0.35, 0.22) * cupGlow * 1.6;
+    color -= vec3<f32>(0.12, 0.18, 0.10) * cupGlow * 0.45;
 
     // Smooth traveling spores replace the old frame-hash sparkle. The long
     // vertical footprint reads as speed without temporal strobing.
@@ -250,8 +277,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyDecay = clamp(0.76 + decay * 0.12, 0.76, 0.88);
     let trailMask = clamp(networkIntensity * 0.45 + tipIntensity * 0.7 + clickSurge, 0.0, 1.0);
     let hdrColor = clamp(color + history * historyDecay * (0.24 + trailMask * 0.36), vec3<f32>(0.0), vec3<f32>(5.0));
-    let alpha = clamp(networkIntensity * 0.62 + tipIntensity * 0.8 + spore * 0.45 + clickSurge * 0.4, 0.04, 0.96);
-    let depth = clamp(networkIntensity * 0.48 + tipIntensity * 0.38 + clickSurge * 0.24, 0.0, 1.0);
+    let alpha = clamp(networkIntensity * 0.62 + tipIntensity * 0.8 + spore * 0.45 + clickSurge * 0.4 + clampGlow * 0.35 + cupGlow * 0.4, 0.04, 0.96);
+    let depth = clamp(networkIntensity * 0.48 + tipIntensity * 0.38 + clickSurge * 0.24 + clampGlow * 0.15, 0.0, 1.0);
     let coords = vec2<i32>(global_id.xy);
     textureStore(dataTextureA, coords, vec4<f32>(hdrColor, alpha));
     textureStore(writeTexture, coords, vec4<f32>(acesToneMap(hdrColor * 1.15), alpha));

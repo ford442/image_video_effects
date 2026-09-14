@@ -4,9 +4,9 @@
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: Medium-High
 //  Created: 2026-05-31
-//  Updated: 2026-09-06
-//  Ideas: Rankine core/irrotational seam; counter-arm braid beads
-//  A packing: HDR vortex RGBA
+//  Upgraded: 2026-09-13
+//  Ideas: Rankine core/irrotational seam; counter-arm braid beads; differential-rotation feedback advection; cyclostrophic pressure-deficit condensation funnel
+//  A packing: raw HDR display RGBA history (pre-ACES), alpha = vortex energy
 //  By: Kimi Agent
 // ═══════════════════════════════════════════════════════════════════
 //  Wolfram Rankine Vortex Enrichment:
@@ -78,7 +78,7 @@ fn vortexDistort(uv: vec2<f32>, strength: f32) -> vec2<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
   let res = vec2<f32>(u.config.z, u.config.w);
-  let aspect = res.x / res.y;
+  let aspect = res.x / max(res.y, 1.0);
 
   if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) {
     return;
@@ -190,6 +190,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2 — braid beads where counter-rotating arms cross
   let braid = pow(clamp(spiral1 * spiral2, 0.0, 1.0), 1.6);
   color += vec3<f32>(1.0, 0.95, 1.0) * braid * (0.35 + mids * 0.25);
+  // Idea 4 — cyclostrophic pressure-deficit condensation funnel.
+  // Rankine pressure deficit in units of rho*Omega^2*a^2/2: 2-(r/a)^2 inside, (a/r)^2 outside.
+  let rOverA = r / max(coreR, 0.001);
+  let pDeficit = select(2.0 - rOverA * rOverA, 1.0 / max(rOverA * rOverA, 0.0001), r > coreR);
+  let dewPoint = 1.35 - intensity * 0.3 - bass * 0.2;
+  let condense = smoothstep(dewPoint - 0.35, dewPoint + 0.25, pDeficit);
+  let striae = 0.55 + 0.45 * sin(swirlAngle * (4.0 + scale * 4.0) - r * 18.0 + time * speed * 2.0);
+  let funnelHaze = condense * striae * (0.35 + treble * 0.4) * omega * 0.18;
+  color += mix(vec3<f32>(0.85, 0.8, 1.0), neonRainbow(pDeficit * 0.25 + colorShift + 0.6), 0.35) * funnelHaze;
 
   // Clicks launch bounded vortex-energy fronts without auxiliary state.
   var clickEnergy = 0.0;
@@ -210,7 +219,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = max(color, vec3<f32>(0.0));
 
   // ── Temporal feedback ──
-  let prev = textureLoad(dataTextureC, pixel, 0);
+  let prevHere = textureLoad(dataTextureC, pixel, 0);
+  // Idea 3 — differential-rotation advection: fetch history from the back-rotated pixel.
+  // Angular velocity: rigid Omega inside the core, Omega*a^2/r^2 outside (Rankine).
+  let angVel = select(omega, omega * coreR * coreR / max(r * r, 0.0004), r > coreR) + mouseSwirl * 0.5 / max(mouseVortexR, 0.02);
+  let dTheta = clamp(angVel * (0.004 + speed * 0.014), -0.35, 0.35);
+  let cB = cos(-dTheta);
+  let sB = sin(-dTheta);
+  let backLocal = vec2<f32>(local.x * cB - local.y * sB, local.x * sB + local.y * cB);
+  let backUV = (backLocal + vortexCenter) / vec2<f32>(aspect, 1.0) + vec2<f32>(0.5);
+  let backPix = clamp(vec2<i32>(backUV * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+  let prevAdv = textureLoad(dataTextureC, backPix, 0);
+  let prev = mix(prevHere, prevAdv, 0.65);
   color = clamp(mix(prev.rgb * 0.96, color, 0.25 + bass * 0.035), vec3<f32>(0.0), vec3<f32>(7.0));
 
   // ── Chromatic aberration ──
@@ -226,6 +246,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = acesToneMap(color * 1.1);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-  let depth = clamp(vortexEnergy * (0.72 + vorticityMag * 0.08), 0.0, 1.0);
+  // Idea 4 — pressure well carves the depth funnel.
+  let depth = clamp(vortexEnergy * (0.72 + vorticityMag * 0.08) * (1.0 - 0.3 * clamp(pDeficit * 0.5, 0.0, 1.0)), 0.0, 1.0);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

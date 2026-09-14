@@ -10,7 +10,9 @@
     "nebula",
     "audio-reactive",
     "raymarching",
-    "curl-noise"
+    "curl-noise",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "fluid",

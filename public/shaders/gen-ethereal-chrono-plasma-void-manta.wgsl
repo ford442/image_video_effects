@@ -1,9 +1,15 @@
-// ----------------------------------------------------------------
-// Ethereal Chrono-Plasma Void-Manta
-// Category: generative
-// Visualist upgrade: dual auroral light sources, volumetric dark-matter fog,
-// Fresnel-iridescent wing membranes, god rays, ACES + hue clamp + IGN dither.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Ethereal Chrono-Plasma Void-Manta
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+//  Upgraded: 2026-09-13
+//  Ideas: spring-eased manta banking (wings roll/yaw toward the eased mouse,
+//         velocity drives the bank angle); bass-pumped wing flap amplitude
+//         via plasmaBuffer (replaces RippleCount-as-audio bug); treble
+//         chrono-plasma veins pulsing along the wing span at ripple freq
+//  A packing: ACES display RGBA (hue-preserving clamp before tonemap;
+//             alpha = manta/sss or fog coverage; matches exact C read)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,6 +39,9 @@ struct Uniforms {
 // zoom_params.w = Dark Matter Density
 
 const PI: f32 = 3.14159265359;
+
+var<private> g_audio: f32 = 0.0;
+var<private> g_bank: vec2<f32> = vec2<f32>(0.0);
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -128,10 +137,16 @@ fn iridescence(cosTheta: f32, time: f32) -> vec3<f32> {
 fn map(p: vec3<f32>) -> vec2<f32> {
     var pos = p;
     let time = u.config.x * u.zoom_params.x;
-    let audio = u.config.y;
+    let audio = g_audio;
+
+    // Spring banking: roll (xy) and yaw (xz) toward the eased mouse.
+    let rolled = rot(g_bank.x) * pos.xy;
+    pos.x = rolled.x; pos.y = rolled.y;
+    let yawed = rot(g_bank.y) * pos.xz;
+    pos.x = yawed.x; pos.z = yawed.y;
 
     // Manta motion
-    let flap = sin(pos.x * u.zoom_params.z - time * 3.0) * (pos.x * pos.x) * 0.2;
+    let flap = sin(pos.x * u.zoom_params.z - time * 3.0) * (pos.x * pos.x) * (0.2 + audio * 0.15);
     pos.y += flap;
 
     // Core body (flattened sphere)
@@ -173,6 +188,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audio = bass * 0.55 + mids * 0.3 + treble * 0.15;
     let bio = u.zoom_params.y;
     let darkMatter = u.zoom_params.w;
+    g_audio = audio;
+
+    // Spring-eased mouse -> manta bank. State [133..134] pos, [135..136] vel,
+    // [137] init. Guarded; only invocation (0,0) writes.
+    let rawMouse = u.zoom_config.yz - vec2<f32>(0.5);
+    var easedMouse = rawMouse;
+    var mouseVel = vec2<f32>(0.0);
+    let hasSpring = arrayLength(&extraBuffer) > 138u;
+    if (hasSpring && extraBuffer[137] > 0.5) {
+        easedMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        mouseVel = (mouseVel + (rawMouse - easedMouse) * 0.08) * 0.85;
+        easedMouse += mouseVel;
+    }
+    if (hasSpring && coords.x == 0 && coords.y == 0) {
+        extraBuffer[133] = easedMouse.x;
+        extraBuffer[134] = easedMouse.y;
+        extraBuffer[135] = mouseVel.x;
+        extraBuffer[136] = mouseVel.y;
+        extraBuffer[137] = 1.0;
+    }
+    g_bank = vec2<f32>(clamp(-mouseVel.x * 18.0 - easedMouse.x * 0.6, -0.9, 0.9),
+                       clamp(easedMouse.x * 0.8, -1.2, 1.2));
 
     // Exact previous-frame display history.
     let prev = textureLoad(dataTextureC, coords, 0);
@@ -252,7 +290,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
             let iris = iridescence(fresnel, time) * fresnel * 2.2;
 
-            col = base_col * (keyColor * diffKey + fillColor * diffFill)
+            // Treble chrono-plasma veins along the wing span
+            let veinPhase = p.x * u.zoom_params.z * 3.0 + fbm3(p * 2.0) * 4.0 - time * (2.0 + u.zoom_params.x);
+            let vein = pow(1.0 - abs(sin(veinPhase)), 12.0) * (0.3 + treble * 2.5) * bio;
+            col = vec3<f32>(0.3, 0.9, 1.4) * vein
+                + base_col * (keyColor * diffKey + fillColor * diffFill)
                 + glow_col * sss
                 + rimColor * rim * 1.8
                 + iris;
@@ -283,15 +325,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += vec3<f32>(0.2, 0.5, 1.0) * audio * bio * (1.0 / (1.0 + t * t * 0.05));
     col += vec3<f32>(0.95, 0.16 + mids * 0.35, 1.0) * shock * (0.45 + treble * 0.8);
 
-    // Temporal blend with previous frame
-    let hdr = mix(prev.rgb * 0.94, col, 0.3 + bass * 0.03);
-    col = hdr;
+    // HDR clamp preserving hue, then ACES on display RGB
+    let display = aces_tone_map(hue_preserving_clamp(col, 8.0));
 
-    // HDR clamp preserving hue
-    col = hue_preserving_clamp(col, 8.0);
-
-    // ACES tone mapping
-    col = aces_tone_map(col);
+    // Temporal blend in display space with exact previous-frame history
+    col = mix(prev.rgb * 0.94, display, 0.3 + bass * 0.03);
 
     // IGN dither
     let dither = (ign_dither(vec2<f32>(id.xy)) - 0.5) / 255.0;
@@ -303,5 +341,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     textureStore(writeTexture, coords, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, coords, vec4<f32>(clamp(t * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, vec4<f32>(hdr, alpha));
+    textureStore(dataTextureA, coords, vec4<f32>(col, alpha));
 }

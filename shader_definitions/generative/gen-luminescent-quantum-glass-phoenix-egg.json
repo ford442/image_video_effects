@@ -53,5 +53,9 @@
   "updated": true,
   "id": "gen-luminescent-quantum-glass-phoenix-egg",
   "url": "shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

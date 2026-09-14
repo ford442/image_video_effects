@@ -5,6 +5,11 @@
   "url": "shaders/gen-luminescent-quantum-flora-symphony.wgsl",
   "updated": true,
   "supportsDepth": true,
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "workgroup_size": [
     16,
     16,

@@ -54,5 +54,9 @@
   "updated": true,
   "id": "gen-symbiotic-chrono-mycelium-engine",
   "url": "shaders/gen-symbiotic-chrono-mycelium-engine.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

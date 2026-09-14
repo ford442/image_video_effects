@@ -1,7 +1,12 @@
-// Fractured Monolith — levitating cell-fractured slab over liquid floor
-// Upgraded: 2026-09-06
-// Ideas: per-shard identity tint; fracture-plane glints
-// A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+//  Fractured Monolith — levitating cell-fractured slab over liquid floor
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: per-shard identity tint; fracture-plane glints; seam light pool on the liquid; rising seam pulse
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -46,14 +51,14 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 
 // Basic 3D Noise for fracture displacement
 fn noise(p: vec3<f32>) -> f32 {
-    var i = floor(p);
+    let i = floor(p);
     let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    var res = mix(
-        mix(mix(hash31(i + vec3<f32>(0.0, 0.0, 0.0)), hash31(i + vec3<f32>(1.0, 0.0, 0.0)), u.x),
-            mix(hash31(i + vec3<f32>(0.0, 1.0, 0.0)), hash31(i + vec3<f32>(1.0, 1.0, 0.0)), u.x), u.y),
-        mix(mix(hash31(i + vec3<f32>(0.0, 0.0, 1.0)), hash31(i + vec3<f32>(1.0, 0.0, 1.0)), u.x),
-            mix(hash31(i + vec3<f32>(0.0, 1.0, 1.0)), hash31(i + vec3<f32>(1.0, 1.0, 1.0)), u.x), u.y), u.z
+    let w = f * f * (3.0 - 2.0 * f);
+    let res = mix(
+        mix(mix(hash31(i + vec3<f32>(0.0, 0.0, 0.0)), hash31(i + vec3<f32>(1.0, 0.0, 0.0)), w.x),
+            mix(hash31(i + vec3<f32>(0.0, 1.0, 0.0)), hash31(i + vec3<f32>(1.0, 1.0, 0.0)), w.x), w.y),
+        mix(mix(hash31(i + vec3<f32>(0.0, 0.0, 1.0)), hash31(i + vec3<f32>(1.0, 0.0, 1.0)), w.x),
+            mix(hash31(i + vec3<f32>(0.0, 1.0, 1.0)), hash31(i + vec3<f32>(1.0, 1.0, 1.0)), w.x), w.y), w.z
     );
     return res;
 }
@@ -145,7 +150,12 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     // Inner Glow accumulation in cracks
     // When inside the bounding box but outside shards
     if (baseBox < 0.5 && shardDist > 0.05) {
-        glow += 0.01 / (0.01 + abs(shardDist)) * u.zoom_params.z * (1.0 + audioHigh * 0.45);
+        // Idea 4: rising seam pulse — a bass-lifted band climbs the slab's local Y
+        // (-4..4) and boosts crack glow only where it passes; paced by Levitation Speed.
+        let pulsePos = fract(time * (0.15 + levSpeed * 0.2)) * 10.0 - 5.0;
+        let pulseBand = exp(-abs(bp.y - pulsePos) * 2.5);
+        let seamPulse = 1.0 + pulseBand * (0.8 + audioBass * 2.0);
+        glow += 0.01 / (0.01 + abs(shardDist)) * u.zoom_params.z * (1.0 + audioHigh * 0.45) * seamPulse;
     }
 
     return vec3<f32>(d, mat, glow);
@@ -232,6 +242,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 refCol = vec3<f32>(0.1, 0.1, 0.12);
             }
             col = mix(vec3<f32>(0.0, 0.05, 0.1) * dif, refCol, fre * 0.8 + 0.2);
+
+            // Idea 3: seam light pool — crack light leaks onto the liquid through the
+            // same rotated 1.5 cell grid as the fracture (bright seams, shard shadows).
+            let time = u.config.x;
+            let aud = plasmaBuffer[0].xyz;
+            let audioReactivity = 1.0 + (aud.x + aud.y + aud.z) / 3.0 * 0.35;
+            let bob = sin(time * u.zoom_params.y * audioReactivity) * (0.5 + aud.y * 0.12);
+            let slabBottom = bob + 2.0 - 4.0;
+            let gap = max(slabBottom - p.y, 0.0);
+            let q = rot(time * 0.2 * audioReactivity * u.zoom_params.w) * p.xz;
+            let foot = sdBox(vec3<f32>(q.x, 0.0, q.y), vec3<f32>(1.5 + u.zoom_params.x, 1.0, 1.5 + u.zoom_params.x));
+            let footMask = 1.0 - smoothstep(-0.2, 1.6 + gap, foot);
+            let cellF = abs(fract(q / 1.5) - 0.5);
+            let seamDist = 0.5 - max(cellF.x, cellF.y);
+            let seamW = 0.03 + u.zoom_params.x * 0.2;
+            let seam = 1.0 - smoothstep(0.0, seamW, seamDist);
+            let proximity = 1.0 / (1.0 + gap * gap * 1.5);
+            let poolLight = footMask * proximity * (0.25 + seam * 1.6) * u.zoom_params.z * (1.0 + aud.z * 0.4);
+            col += vec3<f32>(0.1, 0.5, 1.0) * poolLight * (0.35 + 0.65 * fre + 0.3 * dif);
         } else if (m == 2.0) {
             // Monolith Material
             var matCol = vec3<f32>(0.05, 0.05, 0.06);

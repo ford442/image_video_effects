@@ -58,5 +58,9 @@
   "updated": true,
   "id": "gen-islamic-star-rose",
   "url": "shaders/gen-islamic-star-rose.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

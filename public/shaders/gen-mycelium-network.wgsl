@@ -3,9 +3,13 @@
 //  Category: generative
 //  Features: procedural, branching, bioluminescent tips, audio-reactive,
 //    mouse-interactive, fast-motion, traveling-pulses, burst-shockwave,
-//    time-warp-growth, temporal-feedback, hdr-clamped, semantic-alpha
+//    time-warp-growth, temporal-feedback, hdr-clamped, semantic-alpha,
+//    upgraded-rgba
 //  Created: 2026-03-22
 //  Updated: 2026-08-06 (Batch 38 FAST MOTION — Optimizer pass)
+//  Upgraded: 2026-09-13
+//  Ideas: chemotaxis toward mouse nutrient; anastomosis loops between tips
+//  A packing: HDR display history (pre-ACES); ACES on writeTexture only
 //  By: Agent 4A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -92,9 +96,10 @@ struct MycelData {
 // bounding-box test (CULL_MARGIN). The walk (noise + direction) must always run
 // — the branch path is sequential — but ~80–95% of segment SDF evaluations are
 // pruned for pixels far from the colony.
-fn generateMycelium(uv: vec2<f32>, t: f32, growthRate: f32, branching: f32, seed: vec2<f32>) -> MycelData {
+fn generateMycelium(uv: vec2<f32>, t: f32, growthRate: f32, branching: f32, seed: vec2<f32>, mouseP: vec2<f32>, nutrientDensity: f32) -> MycelData {
     var minDist = 1000.0;
     var data = MycelData(1000.0, 0.0, 0.0, 0.0, 0.0);
+    var prevTip = vec2<f32>(0.0);
 
     // Generate branching structure
     let numRoots = 3;
@@ -117,7 +122,14 @@ fn generateMycelium(uv: vec2<f32>, t: f32, growthRate: f32, branching: f32, seed
 
             // Wandering direction (smooth noise — temporally coherent)
             let wanderAngle = noise(currentPos * 5.0 + t * 0.1 + fi) * 1.5;
-            currentDir = normalize(currentDir + vec2<f32>(cos(wanderAngle), sin(wanderAngle)) * 0.3);
+            // Idea 1 — chemotaxis: Nutrient Density pulls wander toward the mouse well
+            let toNut = mouseP - currentPos;
+            let nutLen = max(length(toNut), 0.0001);
+            currentDir = normalize(
+                currentDir
+                + vec2<f32>(cos(wanderAngle), sin(wanderAngle)) * 0.3
+                + (toNut / nutLen) * nutrientDensity * 0.28
+            );
 
             let endPos = currentPos + currentDir * segLen;
 
@@ -149,6 +161,19 @@ fn generateMycelium(uv: vec2<f32>, t: f32, growthRate: f32, branching: f32, seed
                         minDist = branchDist;
                         data = MycelData(branchDist, age, isTip * 0.8, generation + 1.0, length(currentPos));
                     }
+
+                    // Idea 2 — anastomosis loop toward the sibling root when the tip is close
+                    let otherAngle = rootAngle + 2.094;
+                    let otherRoot = vec2<f32>(cos(otherAngle), sin(otherAngle)) * 0.1;
+                    let fuseReach = 0.20 + nutrientDensity * 0.22;
+                    if (length(branchEnd - otherRoot) < fuseReach) {
+                        let fuseEnd = mix(branchEnd, otherRoot, 0.55);
+                        let fuseDist = distToSegment(uv, branchEnd, fuseEnd);
+                        if (fuseDist < minDist) {
+                            minDist = fuseDist;
+                            data = MycelData(fuseDist, age, 0.15, generation + 0.5, length(currentPos));
+                        }
+                    }
                 }
             }
 
@@ -156,6 +181,19 @@ fn generateMycelium(uv: vec2<f32>, t: f32, growthRate: f32, branching: f32, seed
             age = fi / f32(maxBranches);
             generation += 0.1;
         }
+
+        // Tip-to-tip fusion with the previous root when they approach
+        if (r > 0) {
+            let tipReach = 0.16 + nutrientDensity * 0.20;
+            if (length(currentPos - prevTip) < tipReach) {
+                let tipFuse = distToSegment(uv, currentPos, prevTip);
+                if (tipFuse < minDist) {
+                    minDist = tipFuse;
+                    data = MycelData(tipFuse, age, 0.2, generation, length(currentPos));
+                }
+            }
+        }
+        prevTip = currentPos;
     }
 
     return data;
@@ -205,6 +243,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Aspect correction
     let aspect = resolution.x / resolution.y;
     let p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
+    let mouse = u.zoom_config.yz;
+    let mouseP = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
 
     // ── FAST MOTION: time-warped growth front (fast-in / smooth-out easing) ──
     let cycle = t * (0.05 + growthRate * 0.12) * (1.0 + bass * 0.3 + kick * 0.4);
@@ -214,7 +254,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let frontR = frontEase * 2.4;
 
     // Get mycelium data (coarse-culled traversal)
-    let mycel = generateMycelium(p, t, growthRate, branching, seed);
+    let mycel = generateMycelium(p, t, growthRate, branching, seed, mouseP, nutrientDensity);
     let dist = mycel.dist;
     let age = mycel.age;
     let isTip = mycel.isTip;
@@ -254,8 +294,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nutrientCol = vec3<f32>(0.1, 0.08, 0.05) * nutrient * nutrientDensity * (1.0 + fftMid * 0.6 + treble * 0.15);
 
     // Mouse = nutrient attractor (stays reactive at speed)
-    let mouse = u.zoom_config.yz;
-    let mouseP = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
     let mouseD2 = dot(p - mouseP, p - mouseP);
     let mouseNut = exp(-mouseD2 * 3.0);
     let mouseCol = vec3<f32>(0.1, 0.25, 0.12) * mouseNut * nutrientDensity * (0.4 + mids * 0.5);

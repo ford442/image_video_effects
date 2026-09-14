@@ -62,6 +62,9 @@
     "symmetry-fold",
     "orbit-trap-shading",
     "temporal-feedback",
-    "depth-output"
+    "depth-output",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ]
 }

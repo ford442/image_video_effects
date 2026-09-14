@@ -1,5 +1,5 @@
 /* App chrome: document root, header, sidebar, and canvas stage.
-   Imported from style.css — keep this file ahead of controls/webcam/roulette. */
+   Imported from styles/index.css — keep this file ahead of controls/webcam/roulette. */
 body {
     font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
     margin: 0;

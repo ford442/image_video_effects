@@ -1,14 +1,12 @@
-// ----------------------------------------------------------------
-// Cybernetic-Mycelium Neural-Web — Batch 63
-// Category: generative
-// A bio-mechanical mycelial net firing at speed: psychedelic pulse
-// spectra, KIFS lattice + hyphal filigree detail, spring-cursor
-// attractor, held bloom, capped click mutation bursts.
-// Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
-//           exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
-//           bounded extraBuffer[133..138] state (the legacy [0..6] writes into
-//           the engine-reserved / FFT zone are gone).
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Cybernetic-Mycelium Neural-Web
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: myelination from four-neighbor history; gap-junction co-spike flash
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 struct Uniforms {
   config      : vec4<f32>,  // x=Time, y=RippleCount, z=ResX, w=ResY
@@ -172,6 +170,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let filigree = 0.5 + 0.5 * sin(trailDensity * 42.0 - flow * 4.0 + hotspot * 60.0);
   let detailedTrails = trailDensity * (0.75 + filigree * 0.5);
 
+  // Exact four-neighbor history (needed for myelination before density)
+  let prevData = textureLoad(dataTextureC, coord, 0);
+  let historyMax = vec2<i32>(i32(u.config.z) - 1, i32(u.config.w) - 1);
+  let prevN = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), historyMax), 0).rgb;
+  let prevS = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), historyMax), 0).rgb;
+  let prevE = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), historyMax), 0).rgb;
+  let prevW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), historyMax), 0).rgb;
+  let neighborHistory = (prevN + prevS + prevE + prevW) * 0.25;
+  let neighborLuma = dot(neighborHistory, vec3<f32>(0.333, 0.333, 0.334));
+  // Idea 1 — myelination: fire-reinforced trails thicken where history is already high
+  let myelin = clamp(neighborLuma * 1.45, 0.0, 1.0);
+
   // Mouse attraction — held and burst both deepen the well
   let toMouse = mouseWorld - uv;
   let mouseDist = length(toMouse);
@@ -185,7 +195,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pulse = exp(-pow(pulsePhase - 0.5, 2.0) * 50.0) * pulseIntensity;
 
   let audioGrowth = 1.0 + bass * 2.0 + mid * 0.8;
-  let totalDensity = detailedTrails * audioGrowth + mouseAttraction + audioTurbulence * 0.3;
+  let totalDensity = detailedTrails * (1.0 + myelin * 0.55) * audioGrowth + mouseAttraction + audioTurbulence * 0.3;
 
   // Decay
   let age2 = fract(hash2(floor(uv * 20.0)) + time * decaySpeed * (1.0 + bass) + mutationSeed);
@@ -211,6 +221,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col += bioLum;
   col += mouseGlow;
   col += mycoPalette(fract(time * 1.1), 1.0) * burst * 1.2;
+  // Idea 2 — gap-junction flash: this pixel and a neighbor both spike (AND, not ridge)
+  let gap = pulse * smoothstep(0.42, 0.78, neighborLuma) * smoothstep(0.35, 0.75, pulse);
+  col += mycoPalette(baseHue + 0.08, 1.0 + treble) * gap * 1.65;
 
   // Organic subsurface scattering approximation
   let sss = fbm(uv * 6.0 + flow * 0.12) * 0.1;
@@ -231,13 +244,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── temporal feedback — exact load, no filtering ────────────────────
   // A four-neighbor ridge measure reinforces connected hyphae while keeping
   // the history payload display-safe RGBA.
-  let prevData = textureLoad(dataTextureC, coord, 0);
-  let historyMax = vec2<i32>(i32(u.config.z) - 1, i32(u.config.w) - 1);
-  let prevN = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), historyMax), 0).rgb;
-  let prevS = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), historyMax), 0).rgb;
-  let prevE = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), historyMax), 0).rgb;
-  let prevW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), historyMax), 0).rgb;
-  let neighborHistory = (prevN + prevS + prevE + prevW) * 0.25;
   let connectivity = clamp(length(prevData.rgb - neighborHistory) * 1.8, 0.0, 1.0);
   let feedbackMix = 0.3 + bass * 0.15;
   col = mix(prevData.rgb * 0.95, col, feedbackMix);
@@ -249,7 +255,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(
     clamp(totalDensity * 0.3, 0.0, 0.7) + luma * 0.45 + pulse * 0.2
-      + burst * 0.25 + connectivity * 0.12 + depthSample * 0.1,
+      + burst * 0.25 + connectivity * 0.12 + myelin * 0.08 + gap * 0.15 + depthSample * 0.1,
     0.0, 1.0);
 
   let outColor = vec4<f32>(col, alpha);

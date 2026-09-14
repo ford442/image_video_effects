@@ -9,7 +9,8 @@
     "animated",
     "temporal",
     "chromatic",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",

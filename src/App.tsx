@@ -36,7 +36,7 @@ import { useThumbnailManifest } from './hooks/useThumbnailManifest';
 import { WEBCAM_FUN_SHADERS, getShaderDefaults } from './app/constants/shaderDefaults';
 import { defaultSlotParams } from './app/constants/defaultSlotParams';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
-import './style.css';
+import './styles/index.css';
 
 function MainApp() {
     const [activeTab, setActiveTab] = useState<'main' | 'live-studio'>('main');

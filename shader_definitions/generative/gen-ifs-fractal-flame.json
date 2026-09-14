@@ -61,6 +61,7 @@
     "depth-aware",
     "alpha-layered",
     "temporal-feedback",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ]
 }

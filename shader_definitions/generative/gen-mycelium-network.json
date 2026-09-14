@@ -67,6 +67,7 @@
     "time-warp-growth",
     "hdr-clamped",
     "aces-tone-map",
-    "semantic-alpha"
+    "semantic-alpha",
+    "upgraded-rgba"
   ]
 }

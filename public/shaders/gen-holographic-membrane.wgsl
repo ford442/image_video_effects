@@ -1,8 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Membrane
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: High
+//  Ideas: two-layer thin-film interference with mouse view-angle shift and
+//         bulge/depression; click impulses that perturb height and normal
+//         and leave a slope-driven specular kick; bass/mids/treble/rms-
+//         driven vibration, iridescence speed, and trough transparency
+//  A packing: raw [membrane height, normal.x, normal.y, alpha] — ACES is
+//             display-only, matches exact dataTextureC read next frame
 //  Description: Thin-film interference membrane that undulates in space.
 //    Alpha encodes membrane depth — peaks are opaque, troughs transparent.
 //    Audio drives vibration and iridescence; mouse controls viewing angle

@@ -1,16 +1,13 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 //  Inverse Mandelbrot Realm
-//  Category: GENERATIVE
-//  Complexity: VERY HIGH
-//  Visual concept: Instead of iterating coordinates in the complex plane, we
-//    iterate color-space vectors through the Mandelbrot map. Each pixel's RGB
-//    becomes a complex number that orbits, accumulates, and escapes — creating
-//    alien fractal color fields that change with every parameter tweak.
-//  Mathematical approach: Treat (R+iG) as a complex number z; iterate
-//    z → z² + c where c is derived from position; track whether the color
-//    vector escapes; use smooth colouring with orbit traps on the B channel.
-//    Result: fractal structure in color-space, not position-space.
-// ─────────────────────────────────────────────────────────────────────────────
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Very High
+//  Upgraded: 2026-09-13
+//  Ideas: Pickover stalks on the color-space orbit; arg(final_z) bands
+//  A packing: raw HDR display RGBA (ACES on writeTexture)
+//  Visual: z0 from RGB-like noise, c from position — fractal in color-space
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -42,6 +39,11 @@ fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
 // ─────────────────────────────────────────────────────────────────────────────
 //  HSV → RGB
 // ─────────────────────────────────────────────────────────────────────────────
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     let c = v * s; let h6 = fract(h) * 6.0;
     let x = c * (1.0 - abs(fract(h6 * 0.5) * 2.0 - 1.0));
@@ -77,34 +79,40 @@ struct MandResult {
     smooth_n: f32,  // smooth iteration count [0, maxIter]
     orbit_min: f32, // minimum |z| during orbit (orbit trap)
     final_z:  vec2<f32>,
+    stalk_min: f32, // Idea 1 — Pickover stalk on the color orbit
 };
 
 fn inverseMandelbrot(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) -> MandResult {
     var z = z0;
     var orbitMin = 1e9;
+    var stalkMin = 1e9;
     var res: MandResult;
     res.escaped  = false;
     res.smooth_n = 0.0;
     res.orbit_min = 0.0;
     res.final_z  = z;
+    res.stalk_min = 0.0;
 
     for (var n = 0; n < maxIter; n++) {
         // Standard Mandelbrot iteration: z → z² + c
         z = cmul(z, z) + c;
         let len2 = dot(z, z);
         orbitMin = min(orbitMin, length(z));
+        stalkMin = min(stalkMin, min(abs(z.x), abs(z.y)));
         if (len2 > bailout * bailout) {
             // Smooth coloring: n + 1 - log2(log2(|z|))
-            let sn = f32(n) + 1.0 - log2(log2(sqrt(len2)));
+            let sn = f32(n) + 1.0 - log2(log2(max(sqrt(len2), 1.0001)));
             res.escaped  = true;
             res.smooth_n = sn;
             res.orbit_min = orbitMin;
             res.final_z  = z;
+            res.stalk_min = stalkMin;
             return res;
         }
     }
     res.orbit_min = orbitMin;
     res.final_z   = z;
+    res.stalk_min = stalkMin;
     return res;
 }
 
@@ -175,7 +183,9 @@ fn escapeNormal(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) -> vec2
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res   = u.config.zw;
-    let uv    = vec2<f32>(gid.xy) / res;
+    let pixel = vec2<i32>(gid.xy);
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+    let uv    = vec2<f32>(pixel) / res;
     let t     = u.config.x;
     let mouse = u.zoom_config.yz;
 
@@ -280,9 +290,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         col = mix(col, col * (0.5 + fbmTex), 0.4);
     }
 
-    col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    // Idea 1 — Pickover stalks on the color-space orbit
+    let stalkGlow = exp(-result.stalk_min * (7.0 + treble * 4.0));
+    col += vec3<f32>(1.05, 0.48, 0.82) * stalkGlow * 0.42;
 
-    let depthOut = select(0.2, result.smooth_n / f32(maxIter), result.escaped);
-    textureStore(writeTexture, gid.xy, vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
+    // Idea 2 — argument bands from the escaped color vector
+    if (result.escaped) {
+        let argZ = atan2(result.final_z.y, result.final_z.x);
+        let argBand = 0.5 + 0.5 * sin(argZ * 8.0 + cmapRot * 3.14159265);
+        col *= 0.72 + argBand * 0.5;
+        col += hsv2rgb(fract(cmapRot + argZ / 6.28318530718), 0.85, 1.0) * argBand * 0.12;
+    }
+
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    col = mix(prev.rgb * 0.92, col, 0.36 + bass * 0.04);
+
+    let mapped = acesToneMap(max(col, vec3<f32>(0.0)) * 1.05);
+    let escapedMask = select(0.0, 1.0, result.escaped);
+    let alpha = clamp(0.06 + escapedMask * 0.48 + (1.0 - escapedMask) * 0.22 + stalkGlow * 0.28, 0.05, 0.98);
+    let depthOut = select(0.2 + stalkGlow * 0.35, result.smooth_n / f32(maxIter), result.escaped);
+    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
 }

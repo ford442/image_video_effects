@@ -1,0 +1,11 @@
+/* Pixelocity global stylesheet barrel — imported once from App.tsx.
+   Order is the correctness contract. The two theme imports come FIRST because
+   the app's own rules in parts/ deliberately override them — see #1228.
+   Every file in parts/ must be listed here (enforced by `npm run verify:css`). */
+@import url('./recording-share.css');
+@import url('./gold-glass-theme.css');
+@import url('./parts/layout.css');
+@import url('./parts/controls.css');
+@import url('./parts/webcam.css');
+@import url('./parts/roulette.css');
+@import url('./parts/storage-modal.css');

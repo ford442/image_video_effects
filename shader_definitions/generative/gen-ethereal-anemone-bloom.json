@@ -62,5 +62,5 @@
   "updated": true,
   "id": "gen-ethereal-anemone-bloom",
   "url": "shaders/gen-ethereal-anemone-bloom.wgsl",
-  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "raymarching", "semantic-alpha", "generated-depth"]
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "raymarching", "semantic-alpha", "generated-depth", "upgraded-rgba"]
 }

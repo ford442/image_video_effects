@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-13
+//  Ideas: hyphal wrapping around the gear; chrono lag vs gear rotation
+//  A packing: ACES display RGBA (C unused)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,29 +23,13 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Mycelial Density, y=Plasma Glow, z=Temporal Warp, w=Unused
+    config: vec4<f32>,       // x=Time, y=rippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=time, yz=mouse_uv, w=mouse_down
+    zoom_params: vec4<f32>,  // x=Mycelial Density, y=Plasma Glow, z=Temporal Warp, w=Mouse Influence
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
-}
-
 
 const PI: f32 = 3.14159265359;
-
-fn rotate2D(angle: f32) -> mat2x2<f32> {
-    let c = cos(angle);
-    let s = sin(angle);
-    return mat2x2<f32>(vec2<f32>(c, -s), vec2<f32>(s, c));
-}
 
 fn rotate3D(axis: vec3<f32>, angle: f32) -> mat3x3<f32> {
     let s = sin(angle);
@@ -61,7 +47,7 @@ fn fbm(p: vec3<f32>) -> f32 {
     var v = 0.0;
     var amp = 0.5;
     var pos = p;
-    for(var i = 0; i < 4; i++) {
+    for (var i = 0; i < 4; i++) {
         v += sin(pos.x + sin(pos.y + sin(pos.z))) * amp;
         pos *= 2.0;
         amp *= 0.5;
@@ -72,7 +58,7 @@ fn fbm(p: vec3<f32>) -> f32 {
 fn sdf_gear(p: vec3<f32>) -> f32 {
     var pos = p;
     pos = rotate3D(vec3<f32>(0.0, 1.0, 0.0), u.config.x * 0.5) * pos;
-    for(var i = 0; i < 4; i++) {
+    for (var i = 0; i < 4; i++) {
         pos = vec3<f32>(abs(pos.x), abs(pos.y), abs(pos.z)) - vec3<f32>(0.2);
         pos = rotate3D(vec3<f32>(1.0, 1.0, 1.0), 0.5) * pos;
     }
@@ -81,27 +67,40 @@ fn sdf_gear(p: vec3<f32>) -> f32 {
 
 fn sdf_mycelium(p: vec3<f32>) -> f32 {
     var pos = p;
-    let density = u.zoom_params.x; // Mycelial Density
-    let audio_react = plasmaBuffer[0].x * 0.5; // bass swells the hyphae
-
+    let density = u.zoom_params.x;
+    let audio_react = plasmaBuffer[0].x * 0.5;
     let warp = u.zoom_params.z;
-    let mouse_offset = vec2<f32>((u.zoom_config.y - 0.5) * 2.0, (u.zoom_config.z - 0.5) * 2.0);
-    pos.x += sin(pos.y * warp + u.config.x) * mouse_offset.x;
-    pos.y += sin(pos.x * warp + u.config.x) * mouse_offset.y;
+    let mouseInf = clamp(u.zoom_params.w, 0.0, 1.0);
+    // Idea 2 — chrono lag: living net trails the gear clock
+    let lagTime = u.config.x - 0.55;
+    let mouse_offset = vec2<f32>((u.zoom_config.y - 0.5) * 2.0, (u.zoom_config.z - 0.5) * 2.0) * mouseInf;
+    pos.x += sin(pos.y * warp + lagTime) * mouse_offset.x;
+    pos.y += sin(pos.x * warp + lagTime) * mouse_offset.y;
 
-    let noise = fbm(pos * density + vec3<f32>(u.config.x)) * (0.5 + audio_react);
+    let noise = fbm(pos * density + vec3<f32>(lagTime)) * (0.5 + audio_react);
     return length(vec2<f32>(pos.x, pos.z)) - 0.1 - noise * 0.2;
 }
 
+// Idea 1 — hyphal wrapping: helical tube coiling around the gear spin axis
+fn sdf_wrap(p: vec3<f32>) -> f32 {
+    let ang = atan2(p.z, p.x) + u.config.x * 0.5;
+    let rad = length(p.xz);
+    let coil = 6.0;
+    let helixY = p.y - sin(ang * coil) * 0.16;
+    let helixR = rad - (0.58 + 0.07 * sin(ang * coil + p.y * 4.0));
+    return length(vec2<f32>(helixR, helixY)) - 0.055;
+}
+
 fn smooth_min(a: f32, b: f32, k: f32) -> f32 {
-    let h = max(k - abs(a - b), 0.0) / k;
+    let h = max(k - abs(a - b), 0.0) / max(k, 0.001);
     return min(a, b) - h * h * k * 0.25;
 }
 
 fn map(p: vec3<f32>) -> f32 {
     let d_gear = sdf_gear(p);
     let d_mycelium = sdf_mycelium(p);
-    return smooth_min(d_gear, d_mycelium, 0.5);
+    let d_wrap = sdf_wrap(p);
+    return smooth_min(smooth_min(d_gear, d_mycelium, 0.5), d_wrap, 0.22);
 }
 
 fn calc_normal(p: vec3<f32>) -> vec3<f32> {
@@ -115,12 +114,12 @@ fn calc_normal(p: vec3<f32>) -> vec3<f32> {
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -132,7 +131,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
-    // Audio reactivity: mids brighten plasma glow, treble adds shimmer
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
@@ -144,7 +142,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var d = 0.0;
     var p = ro;
 
-    for(var i = 0; i < 100; i++) {
+    for (var i = 0; i < 100; i++) {
         p = ro + rd * t;
         d = map(p);
         if (d < 0.001 || t > 20.0) { break; }
@@ -152,9 +150,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
-    let plasma_glow = u.zoom_params.y * (1.0 + mids * 0.6); // Plasma Glow, mid-reactive
+    let plasma_glow = u.zoom_params.y * (1.0 + mids * 0.6);
     let hit = t < 20.0;
     var lum = 0.0;
+    var wrapLit = 0.0;
 
     if (hit) {
         let n = calc_normal(p);
@@ -163,21 +162,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let glow = fbm(p * 5.0 - vec3<f32>(u.config.x * 2.0)) * plasma_glow;
 
         let gear_color = vec3<f32>(0.2, 0.2, 0.3) * diff;
-        let mycelium_color = vec3<f32>(0.0, 1.0, 1.0) * glow * diff + vec3<f32>(1.0, 0.0, 1.0) * (1.0-glow) * diff;
+        let mycelium_color = vec3<f32>(0.0, 1.0, 1.0) * glow * diff + vec3<f32>(1.0, 0.0, 1.0) * (1.0 - glow) * diff;
 
         col = mix(gear_color, mycelium_color, smoothstep(0.0, 1.0, length(p)));
-        col += vec3<f32>(0.8, 0.9, 1.0) * abs(glow) * treble * 0.15; // treble sparkle
-        lum = clamp(diff + abs(glow) * 0.5, 0.0, 1.0);
+        col += vec3<f32>(0.8, 0.9, 1.0) * abs(glow) * treble * 0.15;
+        wrapLit = 1.0 - smoothstep(0.0, 0.08, max(sdf_wrap(p), 0.0));
+        col += vec3<f32>(0.45, 0.95, 0.7) * wrapLit * (0.35 + mids * 0.25);
+        lum = clamp(diff + abs(glow) * 0.5 + wrapLit * 0.3, 0.0, 1.0);
     }
 
-    // Alpha: lit mycelium/gear coverage over the void, never flat 1.0
     let alpha = clamp(select(0.0, 0.3, hit) + lum * 0.6, 0.0, 1.0);
-    let out = vec4<f32>(col, alpha);
+    let display = acesToneMap(col);
+    let outColor = vec4<f32>(display, alpha);
 
-    // Depth: ray-march hit distance (near = closer)
     let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
     let coord = vec2<i32>(id.xy);
-    textureStore(writeTexture, coord, applyGenerativePrimaryControls(out));
+    textureStore(writeTexture, coord, outColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, out);
+    textureStore(dataTextureA, coord, outColor);
 }

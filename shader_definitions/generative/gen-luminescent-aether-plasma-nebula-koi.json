@@ -11,6 +11,11 @@
     "particle systems",
     "audio-reactive"
   ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "parameters": [
     {
       "name": "zoom_params.x",

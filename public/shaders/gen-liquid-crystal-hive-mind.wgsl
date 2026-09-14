@@ -1,13 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Liquid-Crystal Hive-Mind
 //  Category: generative
-//  Features: generative, mouse-driven, audio-reactive, upgraded-rgba,
-//            aces-tone-map, temporal-feedback, chromatic-aberration,
-//            depth-aware, raymarched
-//  Complexity: Very High
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-07
-//  By: Codex F1 flagship reference pass
+//  Upgraded: 2026-09-13
+//  Ideas: crossed-polariser birefringence from the curl director; hive relay wave spreading cell-to-cell from the pointer
+//  A packing: raw sim state (A.rgb = bass/mids/treble envelopes, A.a = hive pulse; not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -168,7 +167,9 @@ struct MapResult {
     d: f32,       // Distance
     mat: f32,     // Material ID (0: Wall, 1: Fluid)
     glow: f32,    // Inner glow intensity
-    hexId: vec2<f32> // ID of the current hex cell
+    hexId: vec2<f32>, // ID of the current hex cell
+    director: f32, // Nematic director angle of the local curl flow
+    relay: f32     // Hive relay wave intensity for this cell
 }
 
 fn map(p: vec3<f32>, bass: f32, mids: f32, hivePulse: f32, mouseField: vec2<f32>) -> MapResult {
@@ -238,6 +239,16 @@ fn map(p: vec3<f32>, bass: f32, mids: f32, hivePulse: f32, mouseField: vec2<f32>
     }
 
     res.hexId = grid.id;
+
+    // Idea 1: the curl flow orients the liquid-crystal director.
+    res.director = atan2(fluidMove.y, fluidMove.x);
+
+    // Idea 2: relay wave — whole cells light in sequence outward from the pointer's cell (hex-id distance).
+    let mouseCell = (rot2D(fieldAngle) * mousePos) / hexSize;
+    let cellDistance = length(grid.id - mouseCell);
+    let relayPhase = cellDistance * 0.9 - t * (1.2 + syncPulse * 1.1);
+    res.relay = pow(0.5 + 0.5 * cos(relayPhase), 10.0) * (0.25 + syncPulse * 0.35) * (1.0 + bass * 0.6)
+        * exp(-cellDistance * 0.08);
     return res;
 }
 
@@ -295,6 +306,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hitWall = false;
     var glowSum = 0.0;
     var depthHit = 1.0;
+    var relaySum = 0.0;
+    var hitRelay = 0.0;
 
     let syncPulse = u.zoom_params.z;
 
@@ -307,6 +320,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Hitting wall
             if (m.d < 0.005) {
                 hitWall = true;
+                hitRelay = m.relay;
                 depthHit = clamp(t_dist / max_t, 0.0, 1.0);
                 break;
             }
@@ -325,11 +339,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let cellHash = fract(sin(dot(m.hexId, vec2<f32>(12.9898, 78.233))) * 43758.5453);
             let colorShift = mix(cellHash, activeHivePulse, syncPulse * 0.4) + u.config.x * (0.08 + mids * 0.04) + treble * 0.08;
 
-            let fluidColor = palette(m.glow + colorShift, a, b, c, d);
+            let paletteColor = palette(m.glow + colorShift, a, b, c, d);
+
+            // Idea 1: crossed-polariser birefringence — sin²(2θ) extinction × per-wavelength retardance fringe.
+            let extinction = pow(sin(2.0 * m.director), 2.0);
+            let retardance = 0.6 + abs(m.glow) * 1.8 * (0.4 + u.zoom_params.y * 0.25) + t_dist * 0.08 + treble * 0.15;
+            let fringe = vec3<f32>(0.5) - vec3<f32>(0.5) * cos(6.28318 * retardance * vec3<f32>(1.0 / 0.65, 1.0 / 0.53, 1.0 / 0.45));
+            let fluidColor = mix(paletteColor, fringe * extinction * 1.3, 0.45);
 
             // Accumulate
             // Deeper fluid = denser accumulation, audio boosts brightness
-            let density = 0.045 * (1.0 + bass * 0.8 + treble * 0.25);
+            let density = 0.045 * (1.0 + bass * 0.8 + treble * 0.25) * (1.0 + m.relay * 1.5);
+            relaySum += m.relay * density;
             fluidAccum += fluidColor * density * exp(-t_dist * 0.2);
             glowSum += m.glow * density;
 
@@ -355,6 +376,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Add rim lighting from the fluid inside
         let rim = 1.0 - max(dot(n, -rd), 0.0);
         col += fluidAccum * pow(rim, 3.0) * 0.5;
+
+        // Idea 2: relay-lit cells flare along their wall rims in the hive's current colour.
+        let relayTint = palette(activeHivePulse + u.config.x * 0.08, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.263, 0.416, 0.557));
+        col += relayTint * hitRelay * pow(rim, 2.0) * 0.6;
     } else {
         // Just the fluid we accumulated
         col = fluidAccum;
@@ -364,7 +389,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col *= 0.5 + 0.5 * pow(16.0 * uv01.x * uv01.y * (1.0 - uv01.x) * (1.0 - uv01.y), 0.25);
 
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
-    let membrane = clamp(glowSum * 2.0 + select(0.0, 0.45, hitWall) + clickPulse * 0.25, 0.0, 1.0);
+    let membrane = clamp(glowSum * 2.0 + select(0.0, 0.45, hitWall) + clickPulse * 0.25 + relaySum * 1.5 + hitRelay * 0.2, 0.0, 1.0);
     let depthSignal = clamp(mix(1.0 - depthHit, inputDepth, 0.25) + membrane * 0.25, 0.0, 1.0);
     let alpha = clamp(0.18 + membrane * 0.72 + bass * 0.08, 0.18, 0.96);
 

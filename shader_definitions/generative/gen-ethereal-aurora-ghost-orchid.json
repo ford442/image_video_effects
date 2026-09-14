@@ -63,5 +63,9 @@
   "updated": true,
   "id": "gen-ethereal-aurora-ghost-orchid",
   "url": "shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

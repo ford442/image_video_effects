@@ -1,7 +1,12 @@
-// Hyperbolic Tessellation Engine — recursive Poincare-disk geometry
-// Upgraded: 2026-09-06
-// Ideas: kaleidoscope ideal vertices; horocycles of constant hyperbolic radius
-// A packing: HDR tessellation RGBA
+// ═══════════════════════════════════════════════════════════════════
+//  Hyperbolic Tessellation Engine — recursive Poincare-disk geometry
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-13
+//  Ideas: kaleidoscope ideal vertices; hyperbolic-radius rings (horocycle bands); {p,5} geodesic edges via circle inversion with Jacobian-true width; Escher two-coloring from inversion parity
+//  A packing: raw HDR tessellation RGB + coverage alpha (C read raw via textureLoad); ACES on display only
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -111,6 +116,43 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let horo = exp(-abs(fract(hypR * 2.4) - 0.5) * 18.0) * diskMask * (1.0 - smoothstep(0.92, 1.0, originalRadius));
   raw += palette(depthPhase + 0.18) * horo * (0.22 + bass * 0.2);
 
+  // Idea 3: true {p,5} Poincare-disk tiling — fold by p-fold rotation, invert in the
+  // edge geodesic (circle orthogonal to the unit circle) until inside the central tile.
+  let pa = TAU * 0.5 / symmetry;
+  let qb = TAU * 0.1;
+  let geoK = max(cos(qb) * cos(qb) - sin(pa) * sin(pa), 0.05);
+  let geoC = cos(qb) / sqrt(geoK);
+  let geoR = sin(pa) / sqrt(geoK);
+  var g = disk;
+  var jac = 1.0;
+  var flips = 0.0;
+  let inDisk = length(disk) < 0.999;
+  if (inDisk) {
+    for (var gi = 0; gi < 16; gi++) {
+      let ga = atan2(g.y, g.x);
+      let wrapped = ga - sectorAngle * floor(ga / sectorAngle + 0.5);
+      g = vec2<f32>(cos(wrapped), sin(wrapped)) * length(g);
+      let dv = g - vec2<f32>(geoC, 0.0);
+      let d2 = dot(dv, dv);
+      if (d2 >= geoR * geoR) { break; }
+      let f = geoR * geoR / max(d2, 1e-6);
+      g = vec2<f32>(geoC, 0.0) + dv * f;
+      jac *= f;
+      flips += 1.0;
+    }
+  }
+  let geoDistScreen = abs(length(g - vec2<f32>(geoC, 0.0)) - geoR) / max(jac, 1e-4);
+  let geoWidth = 0.0035 * (1.0 + treble * 0.4);
+  let geodesic = select(0.0, 1.0 - smoothstep(geoWidth, geoWidth * 3.0, geoDistScreen), inDisk)
+               * (1.0 - smoothstep(0.93, 0.995, length(disk)));
+  raw += palette(depthPhase + 0.62 + flips * 0.04) * geodesic * (0.55 + boundaryGlowCtl * 0.5 + treble * 0.6) * diskMask;
+
+  // Idea 4: Escher two-coloring — each inversion crosses one geodesic edge, so parity alternates tiles.
+  let parity = select(0.0, fract(flips * 0.5) * 2.0, inDisk);
+  let parityMix = parity * (0.18 + depthColor * 0.42) * diskMask;
+  let lum = dot(raw, vec3<f32>(0.299, 0.587, 0.114));
+  raw = mix(raw, palette(depthPhase * (0.35 + depthColor * 2.4) + 0.5 + time * 0.025) * lum * 1.1, parityMix);
+
   var clickGlow = 0.0;
   let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
   for (var ri = 0u; ri < rippleCount; ri++) {
@@ -125,8 +167,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let prev = textureLoad(dataTextureC, pixel, 0);
   raw = clamp(mix(prev.rgb * 0.94, raw, 0.26 + rotationSpeed * 0.07), vec3<f32>(0.0), vec3<f32>(7.0));
-  let coverage = clamp(diskMask * (0.12 + edge * 0.58 + tilePulse * 0.2) + boundary * 0.25 + clickGlow * 0.15, 0.03, 0.98);
-  let depth = clamp(diskMask * (0.15 + depthPhase * 0.62 + edge * 0.2), 0.0, 1.0);
+  let coverage = clamp(diskMask * (0.12 + edge * 0.58 + tilePulse * 0.2) + boundary * 0.25 + clickGlow * 0.15 + geodesic * 0.2, 0.03, 0.98);
+  let depth = clamp(diskMask * (0.15 + depthPhase * 0.62 + edge * 0.2 + geodesic * 0.08 - parity * 0.04), 0.0, 1.0);
   let display = acesToneMap(raw * 1.12);
   textureStore(dataTextureA, pixel, vec4<f32>(raw, coverage));
   textureStore(writeTexture, pixel, vec4<f32>(display, coverage));

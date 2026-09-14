@@ -1,5 +1,5 @@
 {
-  "name": "4th of July \u2014 Crackle Palm",
+  "name": "4th of July — Crackle Palm",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -20,10 +20,42 @@
     1
   ],
   "params": [
-    { "id": "shell-energy", "name": "Shell Energy", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "stage-delay", "name": "Stage Delay", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "crackle", "name": "Crackle", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "palm-spread", "name": "Palm Spread", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+    {
+      "id": "shell-energy",
+      "name": "Shell Energy",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "stage-delay",
+      "name": "Stage Delay",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "crackle",
+      "name": "Crackle",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "palm-spread",
+      "name": "Palm Spread",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ],
   "updatedParams": [
     {
@@ -72,7 +104,9 @@
     "generated-depth",
     "semantic-alpha",
     "aces-tone-map",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "mouse-driven",
+    "audio-reactive"
   ],
   "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

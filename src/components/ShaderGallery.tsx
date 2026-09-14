@@ -4,6 +4,8 @@ import { ShaderMegaMenuOption } from './ShaderMegaMenu';
 import { ShaderStarRating } from './ShaderStarRating';
 import { ShaderThumbPlaceholder } from './ShaderThumbPlaceholder';
 import { useThumbnailManifest } from '../hooks/useThumbnailManifest';
+import { useSemanticShaderSearch } from '../hooks/useSemanticShaderSearch';
+import { substringFilter } from '../services/shaderSearch/semanticIndex';
 import './ShaderGallery.css';
 
 export interface ShaderGalleryProps {
@@ -20,11 +22,16 @@ export interface ShaderGalleryProps {
 /** Number of grid items rendered initially / per "load more" batch. */
 const BATCH_SIZE = 60;
 
+/** Author-only filter for shaders without a healthy thumbnail (see docs/THUMBNAIL_PIPELINE.md). */
+const SHOW_NEEDS_THUMB_FILTER = process.env.NODE_ENV !== 'production';
+
 export const ShaderGallery: React.FC<ShaderGalleryProps> = ({ options, value, onSelect, onClose }) => {
-  const { manifest, hasThumbnail } = useThumbnailManifest();
+  const { manifest, hasThumbnail, hasHealthyThumbnail } = useThumbnailManifest();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [previewOnly, setPreviewOnly] = useState(false);
+  const [needsThumbOnly, setNeedsThumbOnly] = useState(false);
+  const [smartSearch, setSmartSearch] = useState(false);
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -34,20 +41,25 @@ export const ShaderGallery: React.FC<ShaderGalleryProps> = ({ options, value, on
     return Array.from(set);
   }, [options]);
 
+  const optionIds = useMemo(() => options.map(o => o.id), [options]);
+  const semantic = useSemanticShaderSearch(search, smartSearch, optionIds);
+
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return options.filter(o => {
+    const scoped = options.filter(o => {
       if (category && (o.category || 'other') !== category) return false;
       if (previewOnly && !hasThumbnail(o.id)) return false;
-      if (q && !o.name.toLowerCase().includes(q) && !o.id.toLowerCase().includes(q)) return false;
+      if (needsThumbOnly && hasHealthyThumbnail(o.id)) return false;
       return true;
     });
-  }, [options, search, category, previewOnly, hasThumbnail]);
+    if (!semantic.hits) return substringFilter(scoped, search);
+    const byId = new Map(scoped.map(o => [o.id, o]));
+    return semantic.hits.flatMap(hit => byId.get(hit.id) ?? []);
+  }, [options, search, category, previewOnly, needsThumbOnly, hasThumbnail, hasHealthyThumbnail, semantic.hits]);
 
   // Reset pagination when filters change
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
-  }, [search, category, previewOnly]);
+  }, [search, category, previewOnly, needsThumbOnly, semantic.hits]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
@@ -72,9 +84,15 @@ export const ShaderGallery: React.FC<ShaderGalleryProps> = ({ options, value, on
     if (e.key === 'Escape') onClose();
   };
 
-  const countLabel = previewOnly
-    ? `${filtered.length} shader${filtered.length === 1 ? '' : 's'} (preview only)`
-    : `${filtered.length} shader${filtered.length === 1 ? '' : 's'}`;
+  const countLabel = `${filtered.length} shader${filtered.length === 1 ? '' : 's'}${
+    previewOnly ? ' (preview only)' : ''
+  }${needsThumbOnly ? ' (needs thumb)' : ''}${semantic.hits ? ' · ranked' : ''}`;
+  const smartTitle = {
+    off: 'Rank results by meaning (downloads a small CLIP text model on first use)',
+    loading: 'Loading search model…',
+    ready: 'Results ranked by meaning',
+    unavailable: 'Semantic search unavailable here; using name match',
+  }[semantic.status];
 
   return createPortal(
     <div className="shader-gallery-backdrop" onClick={onClose}>
@@ -88,7 +106,7 @@ export const ShaderGallery: React.FC<ShaderGalleryProps> = ({ options, value, on
           <input
             type="text"
             className="shader-gallery-search"
-            placeholder="Search shaders..."
+            placeholder={smartSearch ? 'Describe a look: "oil film + mouse drip"' : 'Search shaders...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
             autoFocus
@@ -111,6 +129,24 @@ export const ShaderGallery: React.FC<ShaderGalleryProps> = ({ options, value, on
             />
             Has preview
           </label>
+          <label className="shader-gallery-preview-toggle" title={smartTitle}>
+            <input
+              type="checkbox"
+              checked={smartSearch}
+              onChange={e => setSmartSearch(e.target.checked)}
+            />
+            Smart search{semantic.status === 'loading' ? ' …' : semantic.status === 'unavailable' ? ' (off)' : ''}
+          </label>
+          {SHOW_NEEDS_THUMB_FILTER && (
+            <label className="shader-gallery-preview-toggle" title="Dev: shaders without a healthy thumbnail">
+              <input
+                type="checkbox"
+                checked={needsThumbOnly}
+                onChange={e => setNeedsThumbOnly(e.target.checked)}
+              />
+              Needs thumb
+            </label>
+          )}
           <span className="shader-gallery-count">{countLabel}</span>
         </div>
 

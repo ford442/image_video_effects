@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Liquid-Neon Cyber-Metropolis
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid-Neon Cyber-Metropolis
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-13
+//  Ideas: liquid neon rivers flowing down tower veins; wet-street neon reflections; gravity-warp horizon ring
+//  A packing: ACES display RGBA (C read back via exact textureLoad as neon persistence history)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -18,19 +23,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
+    config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
     zoom_params: vec4<f32>,  // x=Neon Intensity, y=City Density, z=Audio Reactivity, w=Gravity Warp Strength
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(controlled, color.a);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 
@@ -65,15 +65,18 @@ struct MapResult {
     mat: f32, // 0.0 = concrete, 1.0 = neon
 };
 
-fn map(p_in: vec3<f32>) -> MapResult {
-    var p = p_in;
-
-    // === Gravity Warp (Mouse Interaction) ===
-    let mousePos = vec3<f32>(
+fn gravityMousePos() -> vec3<f32> {
+    return vec3<f32>(
         (u.zoom_config.y - 0.5) * 20.0,
         0.0,
         (u.zoom_config.z - 0.5) * 20.0
     );
+}
+
+// === Gravity Warp (Mouse Interaction) ===
+fn gravityWarp(p_in: vec3<f32>) -> vec3<f32> {
+    var p = p_in;
+    let mousePos = gravityMousePos();
     let distToMouse = length(p.xz - mousePos.xz);
     let warpStrength = u.zoom_params.w;
     if (distToMouse < 12.0 && warpStrength > 0.0) {
@@ -82,19 +85,31 @@ fn map(p_in: vec3<f32>) -> MapResult {
         p.x -= warpDir.x * warpAmt * warpStrength * 6.0;
         p.z -= warpDir.z * warpAmt * warpStrength * 6.0;
     }
+    return p;
+}
 
-    // === City Density & Repetition ===
-    let density = max(1.0, 30.0 - u.zoom_params.y); // higher slider = denser city
-    let repSize = density * 0.22;
+// === City Density & Repetition === (higher slider = denser city; spans the 0-1 slider range,
+// default 0.5 keeps HEAD's ~6.5 cell size)
+fn cityRepSize() -> f32 {
+    return mix(8.0, 5.0, clamp(u.zoom_params.y, 0.0, 1.0));
+}
 
+fn cityHash(p: vec3<f32>, repSize: f32) -> f32 {
     let cellId = floor((p.xz + repSize * 0.5) / repSize);
+    return fract(sin(dot(cellId, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn map(p_in: vec3<f32>) -> MapResult {
+    let p = gravityWarp(p_in);
+
+    let repSize = cityRepSize();
     var q = p;
     q.x = (fract(p.x / repSize + 0.5) - 0.5) * repSize;
     q.z = (fract(p.z / repSize + 0.5) - 0.5) * repSize;
 
     // === Audio Reactivity + Height Variation ===
-    let audioAmp = u.config.y * u.zoom_params.z;
-    let hHash = fract(sin(dot(cellId, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let audioAmp = plasmaBuffer[0].x * u.zoom_params.z;
+    let hHash = cityHash(p, repSize);
     let baseHeight = 2.5 + hHash * 9.0;
     let animHeight = baseHeight + sin(u.config.x * 2.5 + hHash * 12.0) * audioAmp * 3.5;
 
@@ -175,6 +190,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cv = cross(cu, cw);
     let rd = normalize(uv.x * cu + uv.y * cv + 1.2 * cw);
 
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let bloomCol = mix(vec3<f32>(0.0, 0.85, 1.1), vec3<f32>(1.0, 0.1, 0.9), sin(time * 0.8) * 0.5 + 0.5);
+
     // Raymarching
     var t = 0.0;
     var hit = false;
@@ -198,7 +218,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Neon glow accumulation
         if (resMap.mat > 0.5) {
-            glow += 0.012 / (0.08 + abs(resMap.d)) * u.zoom_params.x;
+            glow += 0.012 / (0.08 + abs(resMap.d)) * u.zoom_params.x * (1.0 + treble * 0.3);
         }
     }
 
@@ -208,6 +228,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (hit) {
         let p = ro + rd * t;
         let n = calcNormal(p);
+        let wp = gravityWarp(p);
+        let repSize = cityRepSize();
+        let hHash = cityHash(wp, repSize);
+        let qxz = (fract(wp.xz / repSize + 0.5) - 0.5) * repSize;
 
         let lig = normalize(vec3<f32>(0.6, 1.0, -0.4));
         let dif = max(dot(n, lig), 0.0);
@@ -222,11 +246,54 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             if (scan < 0.04) {
                 col += vec3<f32>(0.0, 0.4, 0.9) * (0.6 - scan * 15.0);
             }
+
+            let groundMask = (1.0 - smoothstep(0.0, 0.6, p.y)) * smoothstep(0.7, 0.95, n.y);
+
+            // Idea 1 (apron): the neon river pools where each vein meets the street.
+            let veinEdge = length(max(abs(qxz) - vec2<f32>(repSize * 0.39), vec2<f32>(0.0)));
+            let apronHue = fract(time * 0.25 + hHash);
+            let apronCol = mix(vec3<f32>(0.0, 1.0, 1.2), vec3<f32>(1.1, 0.0, 1.1), apronHue);
+            col += apronCol * exp(-veinEdge * 3.0) * groundMask * 0.9 * u.zoom_params.x * (1.0 + bass * 0.5);
+
+            // Idea 3: gravity-warp horizon ring — the warp's 12-unit edge glows on the street.
+            let mouseDist = length(p.xz - gravityMousePos().xz);
+            let ringAngle = atan2(p.z - gravityMousePos().z, p.x - gravityMousePos().x);
+            let ringShimmer = 0.7 + 0.3 * sin(ringAngle * 12.0 + time * 3.0) * (0.4 + mids);
+            let ring = exp(-abs(mouseDist - 12.0) * 3.0) * groundMask * u.zoom_params.w * ringShimmer;
+            col += bloomCol * ring * 1.4;
+
+            // Idea 2: wet-street neon reflections — a short glossy march off the puddled
+            // ground re-accumulates the same neon glow term as the primary march.
+            let puddle = smoothstep(0.1, 0.6, 0.5 + 0.5 * sin(p.x * 0.43 + 1.3) * sin(p.z * 0.37 - 0.7));
+            let wet = groundMask * puddle;
+            if (wet > 0.01) {
+                let rippleN = normalize(vec3<f32>(
+                    sin(p.x * 3.1 + time * 1.7) * 0.03,
+                    1.0,
+                    cos(p.z * 2.7 - time * 1.3) * 0.03
+                ));
+                let rrd = reflect(rd, rippleN);
+                var rt = 0.1;
+                var rglow = 0.0;
+                for (var j = 0; j < 40; j++) {
+                    let rMap = map(p + vec3<f32>(0.0, 0.06, 0.0) + rrd * rt);
+                    if (rMap.d < 0.002 || rt > 40.0) { break; }
+                    rglow += select(0.0, 0.012 / (0.08 + abs(rMap.d)), rMap.mat > 0.5);
+                    rt += max(rMap.d * 0.8, 0.05);
+                }
+                col += bloomCol * rglow * 0.1 * u.zoom_params.x * wet;
+            }
         } else {
             // Neon
             let hue = fract(p.y * 0.04 + time * 0.25);
             let neonCol = mix(vec3<f32>(0.0, 1.0, 1.2), vec3<f32>(1.1, 0.0, 1.1), hue);
             col = neonCol * (1.8 + sin(time * 8.0 + p.y * 10.0) * 0.6) * u.zoom_params.x;
+
+            // Idea 1: liquid neon rivers — bright packets flow down each tower's vein,
+            // per-tower phase from the cell hash, speed lifted by bass.
+            let flowPhase = fract(p.y * 0.25 + time * (0.6 + bass * 0.8) + hHash * 7.0);
+            let packet = pow(flowPhase, 8.0);
+            col += neonCol * packet * 2.5 * u.zoom_params.x;
         }
 
         // Fake specular reflection
@@ -238,16 +305,27 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Global neon bloom
-    let bloomCol = mix(vec3<f32>(0.0, 0.85, 1.1), vec3<f32>(1.0, 0.1, 0.9), sin(time * 0.8) * 0.5 + 0.5);
     col += bloomCol * glow * 0.13;
 
     // Fog
     col = mix(col, vec3<f32>(0.008, 0.012, 0.035), 1.0 - exp(-0.0008 * t * t));
 
     // Tonemapping + gamma
-    col = col / (1.0 + col);
+    col = aces(col);
     col = pow(col, vec3<f32>(0.4545));
 
-    textureStore(writeTexture, vec2<i32>(id.xy), applyGenerativePrimaryControls(vec4<f32>(col, 1.0)));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    // Neon persistence: bright veins leave a short decaying afterglow from exact colour history.
+    let coord = vec2<i32>(id.xy);
+    let previous = textureLoad(dataTextureC, coord, 0);
+    col = max(col, previous.rgb * 0.3);
+
+    let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let hitMask = select(0.0, 1.0, hit);
+    let neonMask = select(0.0, 1.0, hit && mat > 0.5);
+    let alpha = clamp(0.15 + hitMask * 0.55 + neonMask * 0.15 + luma * 0.2 + glow * 0.02, 0.0, 1.0);
+    let depth = select(1.0, clamp(t / maxDist, 0.0, 0.995), hit);
+
+    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
 }

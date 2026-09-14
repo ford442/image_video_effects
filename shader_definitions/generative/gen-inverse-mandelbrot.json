@@ -58,5 +58,9 @@
   "updated": true,
   "id": "gen-inverse-mandelbrot",
   "url": "shaders/gen-inverse-mandelbrot.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

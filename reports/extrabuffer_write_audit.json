@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-13T00:44:22.080111+00:00",
+  "generated": "2026-09-13T07:34:53.860416+00:00",
   "files_scanned": 1409,
   "new_violations": [],
   "known_violations": [
@@ -38,14 +38,6 @@
     {
       "file": "public/shaders/gen-chrono-mycelial-tapestry.wgsl",
       "line": 181,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-ifs-fractal-flame.wgsl",
-      "line": 219,
       "expr": "0",
       "op": "=",
       "index": 0,

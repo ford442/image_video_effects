@@ -4,7 +4,9 @@
 //  Features: generative, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-13
+//  Ideas: orientation-reversing glide seam; walker footprint trail from C
+//  A packing: ACES display RGBA (C read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -101,32 +103,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.zw);
     let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     
+    // Slider roles follow the JSON: x Walk Speed, y Texture Density, z Light Intensity, w Color Shift
     let param1 = u.zoom_params.x;
     let param2 = u.zoom_params.y;
     let param3 = u.zoom_params.z;
     let param4 = u.zoom_params.w;
     
     // Walk position on Klein bottle surface
-    let walkSpeed = mix(0.1, 0.5, param2);
+    let walkSpeed = mix(0.1, 0.5, param1);
     let walkU = time * walkSpeed + uv.x * 6.283185;
     let walkV = time * walkSpeed * 0.7 + uv.y * 6.283185;
     
     let kb = kleinBottlePoint(walkU, walkV, 1.0 + bass * 0.3);
     
-    // Surface texture from FBM
-    let texCoord = vec2<f32>(walkU / 6.283185, walkV / 6.283185);
-    let surfaceNoise = fbm(texCoord * mix(4.0, 16.0, param3) + vec2<f32>(time * 0.05), 4);
+    // Idea 1: orientation-reversing seam — each wrap of v returns the surface mirror-flipped
+    let loopV = walkV / 6.283185;
+    let flipped = (floor(loopV) % 2.0 + 2.0) % 2.0;
+    let orient = 1.0 - 2.0 * flipped;
+    let seamDist = abs(fract(loopV + 0.5) - 0.5);
+    let seamGlow = exp(-seamDist * mix(90.0, 55.0, bass)) * (0.8 + treble * 0.6);
+    
+    // Surface texture from FBM (texture u mirrored on the flipped sheet)
+    let texCoord = vec2<f32>(orient * walkU / 6.283185, loopV);
+    let surfaceNoise = fbm(texCoord * mix(4.0, 16.0, param2) + vec2<f32>(time * 0.05), 4);
     
     // Curvature approximation for lighting
     let kb_u = kleinBottlePoint(walkU + 0.01, walkV, 1.0);
     let kb_v = kleinBottlePoint(walkU, walkV + 0.01, 1.0);
     let du = kb_u - kb;
     let dv = kb_v - kb;
-    let normal = normalize(cross(du, dv));
+    // Idea 1: normal inverted on the flipped sheet — the lit side becomes the far side
+    let normal = normalize(cross(du, dv)) * orient;
     
+    let lightGain = mix(0.4, 1.6, param3);
     let lightDir = normalize(vec3<f32>(sin(time * 0.2), cos(time * 0.15), 0.8));
-    let diffuse = max(dot(normal, lightDir), 0.0);
-    let specular = pow(max(dot(normal, normalize(lightDir + vec3<f32>(0.0, 0.0, 1.0))), 0.0), 32.0);
+    let diffuse = max(dot(normal, lightDir), 0.0) * lightGain;
+    let specular = pow(max(dot(normal, normalize(lightDir + vec3<f32>(0.0, 0.0, 1.0))), 0.0), 32.0) * lightGain;
     
     // Audio-driven color
     let hue = fract(kb.z * 0.3 + surfaceNoise * 0.4 + time * 0.02 + mids * 0.1);
@@ -135,10 +147,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat) * val;
     let specColor = vec3<f32>(1.0, 0.9, 0.7) * specular * (1.0 + treble);
+    let seamColor = mix(vec3<f32>(1.0, 0.55, 0.2), hue2rgb(hue + 0.5), 0.35) * seamGlow * 1.5;
     
-    let finalRGB = rgb * val + specColor;
-    let alpha = clamp(diffuse * 0.5 + surfaceNoise * 0.3 + specular * 0.2 + 0.15, 0.0, 1.0);
-    let finalColor = vec4<f32>(acesToneMap(finalRGB * 1.1), alpha);
+    let finalRGB = rgb * val + specColor + seamColor;
+    let displayRGB = acesToneMap(finalRGB * 1.1);
+    
+    // Idea 2: walker footprint trail — highlights from last frame lag behind the scrolling walk
+    let coord = vec2<i32>(global_id.xy);
+    let scrollDir = normalize(vec2<f32>(1.0, 0.7));
+    let trailLen = mix(2.0, 6.0, param1) * (1.0 + bass * 0.5);
+    let trailCoord = clamp(vec2<i32>(vec2<f32>(coord) + scrollDir * trailLen),
+                           vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+    let prev = textureLoad(dataTextureC, trailCoord, 0);
+    let prevLum = dot(prev.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let trailMask = smoothstep(0.55, 0.9, prevLum);
+    let trailRGB = max(displayRGB, prev.rgb * 0.88 * trailMask);
+    let trailAmt = max(max(trailRGB.r, trailRGB.g), trailRGB.b) - max(max(displayRGB.r, displayRGB.g), displayRGB.b);
+    
+    let alpha = clamp(diffuse * 0.5 + surfaceNoise * 0.3 + specular * 0.2 + seamGlow * 0.3 + trailAmt * 0.5 + 0.15, 0.0, 1.0);
+    let finalColor = vec4<f32>(trailRGB, alpha);
     
     let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
     

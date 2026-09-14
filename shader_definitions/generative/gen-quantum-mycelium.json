@@ -56,5 +56,9 @@
   "updated": true,
   "id": "gen-quantum-mycelium",
   "url": "shaders/gen-quantum-mycelium.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }
