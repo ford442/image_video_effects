@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Prism Tide — Visualist Enhanced Edition
+//  Prism Tide
 //  Category: generative
-//  Features: procedural, audio-reactive, mouse-driven, temporal,
-//            chromatic, upgraded-rgba, aces-tone-map, depth-aware,
-//            caustics, prism-dispersion, oklab-mixing, mie-scattering
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-05-31
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-09-14
+//  Ideas: Cauchy prism dispersion splitting RGB wavefronts at refracted crests; click tide packets with water-wave dispersion (w^2 = g k tanh(k h)) and Miche breaking foam
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Wave Scale, .y = Refraction, .z = Pulse, .w = Saturation
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -153,6 +152,28 @@ fn caustics(p: vec2<f32>, t: f32) -> f32 {
   return 0.5 + 0.5 * sin(fbm(p + t * 0.05) * 8.0 + t) * (f1 + f2) * 0.5;
 }
 
+// Native idea 2: a single click launches a tide packet that obeys the finite-depth
+// water-wave dispersion relation w^2 = g k tanh(k h). Each of a few wavenumbers
+// travels at its own phase speed, so the packet spreads (long waves outrun short).
+// Returns (height, steepness) so the caller can apply the Miche breaking limit.
+fn tidePacket(d: f32, age: f32) -> vec2<f32> {
+  let g = 9.81;
+  let depthH = 0.08;
+  var h = 0.0;
+  var slope = 0.0;
+  for (var j = 0; j < 4; j = j + 1) {
+    let k = 18.0 + f32(j) * 14.0;
+    let w = sqrt(g * k * tanh(k * depthH));
+    let cph = w / k;
+    let env = exp(-pow((d - cph * age * 0.9) * 9.0, 2.0));
+    let amp = 1.0 / (1.0 + f32(j) * 0.6);
+    h = h + amp * env * sin(k * d - w * age * 0.9);
+    slope = slope + amp * env * k * abs(cos(k * d - w * age * 0.9));
+  }
+  let decay = exp(-age * 0.9) / (1.0 + d * 3.0);
+  return vec2<f32>(h, slope * 0.02) * decay;
+}
+
 // ── Main ──────────────────────────────────────────────────────────
 
 @compute @workgroup_size(16, 16, 1)
@@ -163,10 +184,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = (vec2<f32>(gid.xy) + 0.5) / vec2<f32>(dims);
   let coord = vec2<i32>(gid.xy);
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
+  let mouseDown = u.zoom_config.w;
 
   let waveScale = mix(1.0, 9.0, u.zoom_params.x);
   let refractAmt = mix(0.0, 0.15, u.zoom_params.y);
@@ -178,9 +200,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   p.x = p.x * aspect;
   p = p + mouse * vec2<f32>(0.3, 0.2);
 
+  // Click tide packets (floor: ripples) — accumulated height perturbs the tide phase
+  var packetH = 0.0;
+  var packetSteep = 0.0;
+  let clickCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < clickCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    if (age <= 0.0 || age > 4.0) { continue; }
+    var cp = rp.xy * 2.0 - 1.0;
+    cp.x = cp.x * aspect;
+    cp = cp + mouse * vec2<f32>(0.3, 0.2);
+    let tp = tidePacket(length(p - cp), age);
+    packetH = packetH + tp.x;
+    packetSteep = packetSteep + tp.y;
+  }
+
+  // Mouse held: the cursor acts as a denser prism lens, locally boosting refraction
+  let mouseP = vec2<f32>(mouse.x * aspect, mouse.y) + mouse * vec2<f32>(0.3, 0.2);
+  let lens = mouseDown * exp(-dot(p - mouseP, p - mouseP) * 6.0);
+
   let n = noise2(p * 3.0 + vec2<f32>(time * 0.1, -time * 0.14));
-  let refracted = p + vec2<f32>(sin(p.y * 8.0 + time), cos(p.x * 7.0 - time)) * refractAmt * (0.4 + n);
-  let phase = length(refracted) * waveScale - time * (0.7 + bass * 0.8);
+  let refractField = vec2<f32>(sin(p.y * 8.0 + time), cos(p.x * 7.0 - time)) * (refractAmt * (1.0 + lens * 2.5) + lens * 0.05) * (0.4 + n);
+  let refracted = p + refractField;
+  let phase = length(refracted) * waveScale - time * (0.7 + bass * 0.8) + packetH * 1.6;
+
+  // Native idea 1: Cauchy prism dispersion. Each channel refracts by n(lambda) = A + B/lambda^2,
+  // so the refracted wavefront position splits per wavelength (violet bends most).
+  // Scaled by the local refraction field, so the split vanishes where refraction is zero.
+  let lambdaRGB = vec3<f32>(0.65, 0.55, 0.45);
+  let cauchyN = vec3<f32>(1.0) + vec3<f32>(0.012) / (lambdaRGB * lambdaRGB);
+  let splitPhase = (cauchyN - vec3<f32>(cauchyN.g)) * length(refractField) * waveScale * (60.0 + treble * 40.0);
 
   // ═══════════════════════════════════════════════════════════════
   //  VISUALIST: Enhanced prism dispersion — wavelength-dependent
@@ -189,12 +239,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dispersionG = 1.0 + mids * 0.2;
   let dispersionB = 1.0 + bass * 0.15;
 
-  let r = 0.5 + 0.5 * sin(phase * dispersionR + pulse * 1.7 + treble * 1.2);
-  let g = 0.5 + 0.5 * sin(phase * dispersionG + 2.094 + pulse * 1.1 + mids * 1.5 + bass * 0.1);
-  let b = 0.5 + 0.5 * sin(phase * dispersionB + 4.188 + pulse * 1.4 + bass * 1.6 + treble * 0.1);
+  let r = 0.5 + 0.5 * sin(phase * dispersionR + splitPhase.r + pulse * 1.7 + treble * 1.2);
+  let g = 0.5 + 0.5 * sin(phase * dispersionG + splitPhase.g + 2.094 + pulse * 1.1 + mids * 1.5 + bass * 0.1);
+  let b = 0.5 + 0.5 * sin(phase * dispersionB + splitPhase.b + 4.188 + pulse * 1.4 + bass * 1.6 + treble * 0.1);
 
   let crest = smoothstep(0.55, 1.0, max(max(r, g), b));
-  let foam = smoothstep(0.65, 1.0, sin(phase * 2.3 + n * 2.0));
+  // Miche breaking limit: packets steeper than H/L ~ 0.142 spill white foam
+  let breaking = smoothstep(0.142, 0.35, packetSteep);
+  let foam = sat(smoothstep(0.65, 1.0, sin(phase * 2.3 + n * 2.0)) + breaking * 0.8);
   let sparkle = 0.5 + 0.5 * sin(time * (4.0 + treble * 22.0) + n * 15.0);
 
   var color = vec3<f32>(r, g, b) * saturation;
@@ -202,7 +254,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color * (0.75 + crest * 0.75) * (0.85 + sparkle * 0.25);
 
   // Temporal tide persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prevCoord = clamp(coord, vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+  let prev = textureLoad(dataTextureC, prevCoord, 0);
   color = mix(color, prev.rgb * 0.9, foam * 0.06 + bass * 0.01);
 
   // ═══════════════════════════════════════════════════════════════
@@ -263,6 +316,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dither = ignDither(vec2<f32>(gid.xy), time) * 0.0039;
   color = color + vec3<f32>(dither);
 
+  // Semantic alpha: wave-crest / foam coverage
   let presence = sat(crest * 0.85 + foam * 0.5);
   let bloomAlpha = pow(max(0.0, luma - 0.6), 2.0) * 3.0;
   let alpha = sat(0.1 + presence * 0.9 + bloomAlpha * 0.1);
@@ -273,5 +327,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   textureStore(writeTexture, coord, out);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(crest, foam, sparkle, alpha));
+  textureStore(dataTextureA, coord, out);
 }

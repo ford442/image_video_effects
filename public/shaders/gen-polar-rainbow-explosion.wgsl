@@ -1,13 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Polar Rainbow Explosion
 //  Category: generative
-//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: Mach split ahead vs behind shockR; wavelength-scaled ray width
-//  A packing: HDR display RGBA in A; ACES on writeTexture only
+//  Upgraded: 2026-09-14
+//  Ideas: Cauchy-dispersed click shock rings (n = A + B/lambda^2, red leads violet); Descartes primary/secondary rainbow bows with Alexander's dark band
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
-//  Wolfram Spherical Shock-Wave Enrichment:
 //  Shock front propagates radially: r_shock = r0 + speed*time
 //  Gaussian intensity profile: I = exp(-|r - r_shock| * 10)
 //  High-frequency ripple: sin(r*50 - time*10) * treble
@@ -28,9 +27,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Intensity, .y = Speed, .z = Scale, .w = Color Shift
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -41,6 +40,17 @@ const TAU: f32 = 6.283185307179586;
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Analytic inverse of the ACES fit (positive root of (a-cy)x^2 + (b-dy)x - ey = 0).
+// Recovers the HDR trail from the display RGBA stored in A.
+fn acesInverse(y_in: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  let y = clamp(y_in, vec3<f32>(0.0), vec3<f32>(0.995));
+  let qa = vec3<f32>(a) - c * y;
+  let qb = vec3<f32>(b) - d * y;
+  let disc = max(qb * qb + 4.0 * qa * e * y, vec3<f32>(0.0));
+  return max((-qb + sqrt(disc)) / (2.0 * qa), vec3<f32>(0.0));
 }
 
 // Hash functions
@@ -118,9 +128,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // ── Audio reads ──
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
     let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
     let time = u.config.x;
@@ -240,6 +250,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ripple color modulation
     col += vec3<f32>(0.8, 0.9, 1.0) * ripple * exp(-radius * radius * 2.0) * 0.3;
 
+    // ---- NATIVE IDEA 1: Cauchy-dispersed click shock rings ----
+    // Each click launches a polar shock front whose per-channel radius follows
+    // v / n(lambda), n = A + B / lambda^2: red (low n) leads, violet trails.
+    let lambdaRGB = vec3<f32>(0.65, 0.55, 0.45);
+    let nRGB = vec3<f32>(1.0) + vec3<f32>(0.04) / (lambdaRGB * lambdaRGB);
+    let ringSpeed = 0.35 + speed * 0.5;
+    let clickCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < clickCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age <= 0.0 || age > 3.0) { continue; }
+        let clickPos = (rp.xy - 0.5) * resolution / min(resolution.x, resolution.y);
+        let dClick = length(uv - clickPos);
+        let ringR = vec3<f32>(age * ringSpeed) / nRGB;
+        let band = exp(-abs(vec3<f32>(dClick) - ringR) * 45.0);
+        let fade = exp(-age * 1.4) * (1.0 + bass * 0.4);
+        col += band * neonSpectrum(fract(colorShift + age * 0.2)) * 1.6 * fade * (0.4 + intensity);
+    }
+
+    // ---- NATIVE IDEA 2: Descartes rainbow bows around the explosion origin ----
+    // Deflection angles map to radius r = 0.5 * tan(theta). Primary bow red outside
+    // (42.3deg) -> violet inside (40.6deg); secondary reversed (50.4 -> 53.4deg).
+    // Alexander's dark band sits between; sky inside the primary is brightened.
+    let primR = 0.5 * tan(vec3<f32>(42.3, 41.5, 40.6) * PI / 180.0);
+    let secR = 0.5 * tan(vec3<f32>(50.4, 51.9, 53.4) * PI / 180.0);
+    let bowGain = (0.2 + mids * 0.5) * intensity * exp(-radius * 0.8);
+    let primBow = exp(-abs(vec3<f32>(radius) - primR) * 90.0);
+    let secBow = exp(-abs(vec3<f32>(radius) - secR) * 110.0) * 0.45;
+    let alexander = smoothstep(primR.r, primR.r + 0.02, radius) * smoothstep(secR.r, secR.r - 0.02, radius);
+    let insideGlow = smoothstep(primR.b, primR.b - 0.25, radius) * 0.06;
+    col *= 1.0 - alexander * 0.3 * (0.4 + mids * 0.6);
+    col += (primBow + secBow) * bowGain + vec3<f32>(insideGlow) * bowGain;
+
     // Mouse interaction - extra burst from cursor
     if (mouseDown > 0.5) {
         let mouseDist = length(uv - mouseNorm);
@@ -253,14 +296,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col *= clamp(vig, 0.0, 1.0) * 1.4;
 
     let prev = textureLoad(dataTextureC, pixel, 0);
-    col = mix(prev.rgb * 0.96, col, 0.25);
+    let prevHdr = acesInverse(prev.rgb) / 1.1;
+    col = mix(prevHdr * 0.96, col, 0.25);
 
     let caStr = 0.003 * (1.0 + bass);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
+    // Semantic alpha: emitted radiance density (dark space -> low coverage)
     let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
-    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
     let mapped = acesToneMap(col * 1.1);
-    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
+    let finalColor = vec4<f32>(mapped, alpha);
+    textureStore(writeTexture, pixel, finalColor);
+    textureStore(dataTextureA, pixel, finalColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - radius * 0.7, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

@@ -1,0 +1,10 @@
+SHADER: gen-phase-transition-memory-weave
+IDENTITY: Landau order-parameter field switching between fluid (blue), chaotic (red-purple) and crystalline (white-gold hex lattice) phases, with true hysteresis via dataTextureC feedback (order relaxes toward a diffused copy of its past), spring-smoothed mouse stir/press nucleation, click crystallization fronts.
+KEEP VERBATIM: orderParameter, fluidFlow, chaoticPattern, phaseColor, 5-tap C diffusion + memK relaxation, spring mouse in extraBuffer[133..138], ripple nucleation fronts, memory-weave ghost, vignette, slider mappings.
+ADD (2 native ideas):
+  1. Schmitt-latch hysteresis loop: per-pixel phase latch (A.b) freezes only above freezeT=0.5+w and melts only below meltT=0.5-w (w=0.12, narrowed by bass); latched crystal persists down to meltT. Transitions release (+) / absorb (-) latent heat stored signed in A.a, decaying 0.93/frame -> warm flash on freezing, cold flash on melting.
+  2. Polycrystalline grains: Voronoi of hashed nucleation sites gives each grain its own hex-lattice orientation (0..60 deg); crystallineLattice now rotated per grain; grain boundaries suppress lattice and glow as seams in crystalline regions (treble-scaled).
+FLOOR FIXES: removed fake-audio/forbidden extraBuffer[6..13] FFT reads (replaced by plasmaBuffer[0].y/.z proxies); plasmaBuffer bands clamped 0..1; extraBuffer 133..138 guarded with literal arrayLength(&extraBuffer) > 138u; ACES tone map added (replaces hard clamp); straight semantic alpha (luma + phase boundary + crystal fraction) instead of premultiplied output; header/uniform comments standardized; JSON params array + features added.
+FORBID: extraBuffer outside 133..138, textureStore to dataTextureB/C, replacing the order-field feedback, scaling clicks by ripple.w.
+A PACKING: raw sim state (R=order, G=memory weave, B=hysteresis latch 0/1, A=signed latent heat); ACES display RGBA on writeTexture (A must stay state so the C hysteresis feedback survives)
+VERIFY: naga ok / gate ok / extraBuffer ok / sliders x (viscosity: memK + weave), y (phase scale), z (transition sharpness), w (glow) live

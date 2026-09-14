@@ -1,10 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Photonic Crystal-Brain - Visualist Upgrade
+// ═══════════════════════════════════════════════════════════════════
+//  Photonic Crystal-Brain
 //  Category: generative
-//  Features: OkLab color mixing, Blackbody temperature, Cosine palettes,
-//            Fresnel rim lighting, HDR tone mapping, raymarching, ambient glow
-//  Upgraded: 2026-06-28
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: Bragg-reflection structural color (lambda = 2 n d cos theta from lattice spacing); line-defect waveguide spikes (photon packets travelling along sparse firing rods)
+//  A packing: ACES display RGBA in A (C unused)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -20,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=MouseInfluence
+    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+    zoom_params: vec4<f32>,  // .x = Intensity, .y = Speed, .z = Scale, .w = Mouse Influence
     ripples: array<vec4<f32>, 50>,
 };
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
@@ -109,7 +111,11 @@ fn hash3(p: vec3<f32>) -> vec3<f32> {
     q += vec3<f32>(dot(q, q.yxz + vec3<f32>(33.33)));
     return fract((q.xxy + q.yxx) * q.zyx);
 }
-fn map(p_in: vec3<f32>) -> vec2<f32> {
+fn crystalSpacing() -> f32 {
+    return 4.0 / max(u.zoom_params.x, 0.05);
+}
+// Lattice-space warp shared by the SDF and the waveguide spikes.
+fn crystalWarp(p_in: vec3<f32>) -> vec3<f32> {
     var p = p_in;
     // Mouse Y-flip: screen-top (zoom_config.z=0) = +Y/up
     let mx = (u.zoom_config.y * 2.0 - 1.0) * 5.0;
@@ -117,11 +123,19 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let mousePos = vec3<f32>(mx, my, p.z);
     let distToMouse = length(p - mousePos);
     let pull = exp(-distToMouse * 0.5) * 2.0;
-    p = mix(p, mousePos, pull * 0.2);
+    // Mouse Influence (w): default 0.5 == old 0.2 pull; holding the mouse draws the lattice in harder
+    let held = step(0.5, u.zoom_config.w);
+    let pullGain = 0.4 * u.zoom_params.w * (1.0 + held * 1.2);
+    p = mix(p, mousePos, clamp(pull * pullGain, 0.0, 0.9));
     let distortion = u.zoom_params.z;
     p.x += sin(p.y * 2.0 + u.config.x) * 0.1 * distortion;
     p.y += cos(p.x * 2.0 + u.config.x) * 0.1 * distortion;
-    let spacing = 4.0 / u.zoom_params.x;
+    return p;
+}
+fn map(p_in: vec3<f32>) -> vec2<f32> {
+    var p = crystalWarp(p_in);
+    let distortion = u.zoom_params.z;
+    let spacing = crystalSpacing();
     let id = floor(p / spacing);
     p = fract(p / spacing) * spacing - spacing * 0.5;
     let cylX = length(p.yz) - 0.1;
@@ -144,6 +158,46 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
         map(p + e.yyx).x - map(p - e.yyx).x
     ));
 }
+// Idea 1: Bragg reflection in a photonic crystal. Reflected peak wavelength
+// lambda = 2 * n_eff * d * cos(theta); d follows the lattice spacing slider.
+// Outside the visible band the stop-band leaves the eye -> no structural color.
+fn spectralRGB(lambdaNm: f32) -> vec3<f32> {
+    let x = (lambdaNm - 380.0) / 400.0;
+    let r = exp(-pow((x - 0.78) / 0.16, 2.0)) + 0.35 * exp(-pow((x - 0.08) / 0.08, 2.0));
+    let g = exp(-pow((x - 0.47) / 0.15, 2.0));
+    let b = exp(-pow((x - 0.18) / 0.13, 2.0));
+    let vis = smoothstep(0.0, 0.05, x) * (1.0 - smoothstep(0.95, 1.0, x));
+    return vec3<f32>(r, g, b) * vis;
+}
+fn braggStructuralColor(cosTheta: f32, spacing: f32, bass: f32) -> vec3<f32> {
+    let nEff = 1.45;
+    let dNm = 260.0 * clamp(spacing / 8.0, 0.35, 2.5) * (1.0 + bass * 0.04);
+    let lam1 = 2.0 * nEff * dNm * cosTheta;       // first order
+    let lam2 = lam1 * 0.5;                        // second order
+    return spectralRGB(lam1) + spectralRGB(lam2) * 0.5;
+}
+
+// Idea 2: line-defect waveguides. Sparse hashed cells carry a photon packet
+// travelling along one of their three rods (a firing axon). Returns glow.
+fn waveguideSpike(p: vec3<f32>, t: f32, mids: f32) -> f32 {
+    let wp = crystalWarp(p);
+    let spacing = crystalSpacing();
+    let cid = floor(wp / spacing);
+    let q = fract(wp / spacing) * spacing - spacing * 0.5;
+    let h = hash3(cid + vec3<f32>(7.13, 1.71, 3.37));
+    if (h.y < 0.55) { return 0.0; }
+    let axis = i32(floor(h.x * 2.999));
+    var along = q.x;
+    var radial = length(q.yz);
+    if (axis == 1) { along = q.y; radial = length(q.xz); }
+    if (axis == 2) { along = q.z; radial = length(q.xy); }
+    let a01 = along / spacing + 0.5;
+    let phase = fract(t * (0.25 + mids * 0.5) * (0.6 + h.z) + h.x * 5.0);
+    let dir = select(a01, 1.0 - a01, h.z > 0.5);
+    let packet = exp(-pow((dir - phase) * 10.0, 2.0));
+    return packet * 0.004 / (radial * radial + 0.004);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -156,12 +210,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let rotY = rotate2D(cos(u.config.x * 0.3) * 0.1);
     let rdYZ = rotX * vec2<f32>(rd.y, rd.z); rd.y = rdYZ.x; rd.z = rdYZ.y;
     let rdXZ = rotY * vec2<f32>(rd.x, rd.z); rd.x = rdXZ.x; rd.z = rdXZ.y;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let screenUV = vec2<f32>(id.xy) / res;
+    let spikeCol = vec3<f32>(0.55, 0.85, 1.0);
+    // Click ripples: action-potential shells expanding through the lattice (world XY, same map as mouse)
+    let nRip = min(u32(u.config.y), 50u);
     var t = 0.0; var d = 0.0; var m = 0.0; var glow = vec3<f32>(0.0);
     for (var i = 0; i < 80; i++) {
         let p = ro + rd * t;
         let res_map = map(p);
         d = res_map.x; m = res_map.y;
-        let audioPulse = plasmaBuffer[0].x * 0.5;
+        // Glow was plasma-bass-only (black at silence); now a floor + bass gain keeps sliders live
+        let audioPulse = 0.25 + bass * 0.35;
         let pulseSpeed = u.zoom_params.y;
         let glowIntens = u.zoom_params.w;
         let pulse = sin(p.z * 2.0 - u.config.x * 5.0 * pulseSpeed) * 0.5 + 0.5;
@@ -170,10 +232,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let cp2 = cosinePalette(m + sin(u.config.x) + 0.3, vec3<f32>(0.5,0.5,0.5), vec3<f32>(0.5,0.5,0.5), vec3<f32>(0.8,1.0,1.0), vec3<f32>(0.2,0.5,0.8));
         let glowColor = oklab_mix(cp1, cp2, 0.5 + 0.5 * sin(u.config.x * 0.5));
         glow += glowColor * (0.01 / (d * d + 0.01)) * pulse * audioPulse * glowIntens;
+        if (d < 0.3) {
+            glow += spikeCol * waveguideSpike(p, u.config.x, mids) * 0.35 * (0.5 + glowIntens) * (1.0 + treble * 0.3);
+            var fire = 0.0;
+            for (var r = 0u; r < nRip; r++) {
+                let rip = u.ripples[r];
+                let age = u.config.x - rip.z;
+                if (age <= 0.0 || age > 3.0) { continue; }
+                let rc = vec2<f32>((rip.x * 2.0 - 1.0) * 5.0, (rip.y * 2.0 - 1.0) * 5.0);
+                let shell = length(p.xy - rc) - age * 4.0;
+                fire += exp(-shell * shell * 3.0) * (1.0 - age / 3.0);
+            }
+            glow += vec3<f32>(1.0, 0.75, 0.45) * min(fire, 2.0) * (0.01 / (d * d + 0.01)) * 0.15;
+        }
         if (d < 0.001 || t > 20.0) { break; }
         t += d * 0.5;
     }
     var col = vec3<f32>(0.0);
+    var coverage = 0.0;
     if (t < 20.0) {
         let p = ro + rd * t;
         let n = calcNormal(p);
@@ -189,20 +265,32 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Multi-layer Fresnel rim with cosine palette
         let rimPalette = cosinePalette(m + u.config.x * 0.1, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0,0.8,0.6), vec3<f32>(0.0,0.33,0.67));
         col += fresnel * oklab_mix(rimPalette, vec3<f32>(0.5,0.8,1.0), 0.5) * 0.5;
+        // Bragg stop-band structural color (idea 1)
+        let cosTheta = clamp(abs(dot(rd, n)), 0.0, 1.0);
+        col += braggStructuralColor(cosTheta, crystalSpacing(), bass) * (0.22 + treble * 0.18) * (0.4 + 0.6 * diff);
         // Ambient occlusion approximation
         let ao = exp(-t * 0.15);
         col *= ao;
         // Secondary bounce light from glow
         col += glow * 0.3 * (1.0 - ao);
+        coverage = ao;
     }
     col += glow;
     // HDR fog with tone mapping
     col = mix(col, vec3<f32>(0.0, 0.0, 0.05), 1.0 - exp(-t * 0.1));
+    // Mouse held: stimulated region brightens (synaptic excitation)
+    let held = step(0.5, u.zoom_config.w);
+    let mDist = length(screenUV - u.zoom_config.yz);
+    col += vec3<f32>(0.35, 0.6, 1.0) * held * exp(-mDist * mDist * 40.0) * 0.25 * (1.0 + bass * 0.4);
     col = acesToneMap(col);
-    let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, coords, applyGenerativePrimaryControls(vec4<f32>(col, _alpha)));
-    let _depth_uv = clamp(vec2<f32>(coords) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    // Semantic alpha: crystal coverage (fogged by distance) + synaptic glow density
+    let glowDensity = clamp(dot(glow, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
+    let _alpha = clamp(0.1 + coverage * 0.6 + glowDensity * 0.5, 0.0, 1.0);
+    let controlled = applyGenerativePrimaryControls(vec4<f32>(col, _alpha));
+    let finalColor = vec4<f32>(clamp(controlled.rgb, vec3<f32>(0.0), vec3<f32>(1.0)), controlled.a);
+    textureStore(writeTexture, coords, finalColor);
+    textureStore(dataTextureA, coords, finalColor);
+    // Raymarched depth (near = 1)
+    let _depth = clamp(1.0 - t / 20.0, 0.0, 1.0);
     textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-14T12:47:12.873224",
+  "timestamp": "2026-09-14T13:45:17.092186",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 10,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-neural-fractal.wgsl",
+      "file": "public/shaders/gen-percolation-threshold.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neural-network-glow-synaptic-pulse.wgsl",
+      "file": "public/shaders/gen-phase-transition-memory-weave.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neuro-cosmos.wgsl",
+      "file": "public/shaders/gen-photonic-crystal-brain.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neuro-fluid-plasma-lotus.wgsl",
+      "file": "public/shaders/gen-phyllotaxis-galaxy-spiral.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neuro-kinetic-bloom.wgsl",
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl",
+      "file": "public/shaders/gen-plasma-mandala.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neutron-star-magnetic-spindle.wgsl",
+      "file": "public/shaders/gen-plasma-psychedelic-wormhole.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-newton-fractal.wgsl",
+      "file": "public/shaders/gen-polar-rainbow-explosion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-obsidian-echo-chamber.wgsl",
+      "file": "public/shaders/gen-prism-tide.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -147,7 +147,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-opal-circuit.wgsl",
+      "file": "public/shaders/gen_orb.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

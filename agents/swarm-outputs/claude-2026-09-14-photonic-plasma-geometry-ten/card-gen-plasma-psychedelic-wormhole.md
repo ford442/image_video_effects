@@ -1,0 +1,10 @@
+SHADER: gen-plasma-psychedelic-wormhole
+IDENTITY: 1/r wormhole tunnel with contra-rotating multi-octave plasma, fbm swirl, radial bands and spiral arms, blackbody-temperature palettes (bass drives K), Doppler hue along travel, center glow, edge rings, streaming stars/streaks, temporal trail.
+KEEP VERBATIM: blackbodyColor/plasmaPalette/hotPlasmaPalette, noise/fbm/stars, tunnel coordinate math, contra-rotating octave loop, Doppler hue, all existing layers, slider usage (intensity/speed/scale/colorShift), decay 0.96 / mix 0.25 trail, ACES(temporal*1.1), presence alpha.
+ADD (2 native ideas):
+  1. Photon-sphere subrings at the throat — three nested rings around throatR = 0.09 + scale*0.03 whose offsets/widths shrink by e^-pi per extra half-orbit (unstable circular orbit Lyapunov exponent); blackbody 6500..10000K with treble, scaled by Brightness.
+  2. Click-spawned transient lensing masses — each ripple drops a point mass; thin-lens deflection alpha = thetaE^2/b pulls the tunnel coordinates toward it, with a hot Einstein-ring caustic; thetaE blooms then evaporates over 3s (bass +40%).
+FLOOR FIXES: A previously held the raw HDR trail (differed from writeTexture) — now the same ACES display RGBA goes to writeTexture and dataTextureA; feedback recovers the HDR trail via analytic inverse ACES (/1.1) so the trail integration and look are preserved. dataTextureC load coords clamped. plasmaBuffer[0].xyz clamped 0..1. Added click-ripple response (had none). Depth store uses i32 pixel. Uniforms comment lists slider names; header refreshed (dropped legacy "temporal" from header Features line to match contract format; JSON features untouched). Already OK: 13 bindings, no extraBuffer, no fake audio, no dataTextureB writes, 4 sliders live, JSON params present.
+FORBID: fake audio, extraBuffer outside 133..138, dataTextureB writes, textureSampleLevel on C, replacing the tunnel motif, renaming param ids.
+A PACKING: ACES display RGBA in A (feedback recovers HDR trail via analytic inverse ACES)
+VERIFY: naga ok / gate ok / extraBuffer ok (AUDIT PASS) / sliders x,y,z,w live

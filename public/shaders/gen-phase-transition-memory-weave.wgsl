@@ -1,14 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Phase-Transition Memory Weave — Interactivist upgrade (Batch 36)
+//  Phase-Transition Memory Weave
 //  Category: generative
-//  Description: Viscous history-dependent field undergoing phase
-//  transitions between fluid, crystalline, and chaotic states.
-//  TRUE hysteresis via dataTextureC feedback: the order field relaxes
-//  toward a diffused copy of its own past (domains coarsen over time —
-//  emergent spinodal-like behavior). Spring-smoothed mouse stirs the
-//  fluid phase with its velocity; click-hold nucleates crystal. Clicks
-//  seed expanding crystallization fronts. Smoothed bass lags thresholds.
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
+//  Upgraded: 2026-09-14
+//  Ideas: Schmitt-latch hysteresis loop with latent-heat release/absorption flashes; polycrystalline grains (nucleation-site Voronoi rotates the hex lattice, grain boundaries glow)
+//  A packing: raw sim state (R=order field, G=memory weave, B=hysteresis phase latch 0/1, A=signed latent heat -1..1); ACES display RGBA on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Viscosity, .y = Phase Scale, .z = Transition Sharpness, .w = Glow Intensity
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -82,8 +79,10 @@ fn orderParameter(uv: vec2<f32>, t: f32, bass: f32, mids: f32, treble: f32,
 }
 
 // Crystalline lattice pattern for high-order regions
-fn crystallineLattice(uv: vec2<f32>, t: f32, latticeScale: f32, treble: f32) -> f32 {
-    let lp = uv * latticeScale;
+fn crystallineLattice(uv: vec2<f32>, t: f32, latticeScale: f32, treble: f32, grainAngle: f32) -> f32 {
+    let ca = cos(grainAngle);
+    let sa = sin(grainAngle);
+    let lp = vec2<f32>(ca * uv.x - sa * uv.y, sa * uv.x + ca * uv.y) * latticeScale;
     // Hexagonal lattice approximation
     let q = vec2<f32>(lp.x + lp.y * 0.5773, lp.y * 1.1547);
     let qr = fract(q);
@@ -96,6 +95,37 @@ fn crystallineLattice(uv: vec2<f32>, t: f32, latticeScale: f32, treble: f32) -> 
     // Lattice oscillates with treble
     let pulsing = latticeIntensity * (0.7 + 0.3 * sin(t * 3.0 + treble * PI));
     return pulsing;
+}
+
+// Polycrystalline grains (idea 2): each nucleation site grows a grain whose
+// hex lattice has its own orientation (0..60deg, hexagonal symmetry).
+// Returns (orientation angle, grain-boundary proximity 0..1).
+fn grainField(p: vec2<f32>, t: f32) -> vec2<f32> {
+    let n = floor(p);
+    let f = fract(p);
+    var d1 = 8.0;
+    var d2 = 8.0;
+    var ang = 0.0;
+    for (var j = -1; j <= 1; j++) {
+        for (var i = -1; i <= 1; i++) {
+            let g = vec2<f32>(f32(i), f32(j));
+            let cell = n + g;
+            let h = hash12(cell);
+            let h2 = hash12(cell + vec2<f32>(17.3, 5.1));
+            let site = g + vec2<f32>(h, h2) * 0.8 + 0.1
+                     + 0.06 * vec2<f32>(sin(t * 0.05 + h * TAU), cos(t * 0.04 + h2 * TAU));
+            let dd = length(site - f);
+            if (dd < d1) {
+                d2 = d1;
+                d1 = dd;
+                ang = hash12(cell + vec2<f32>(3.7, 11.9)) * PI / 3.0;
+            } else if (dd < d2) {
+                d2 = dd;
+            }
+        }
+    }
+    let boundary = 1.0 - smoothstep(0.0, 0.08, d2 - d1);
+    return vec2<f32>(ang, boundary);
 }
 
 // Fluid flow field for low-order regions
@@ -112,6 +142,11 @@ fn chaoticPattern(uv: vec2<f32>, t: f32, bass: f32, mids: f32) -> f32 {
     let ch = hash13(vec3<f32>(uv * 20.0, timeSlice));
     let ch2 = hash13(vec3<f32>(uv * 30.0, timeSlice + 1.0));
     return ch * ch2 * mids;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Color map: fluid=blue-cyan, crystalline=white-gold, chaotic=red-purple
@@ -141,9 +176,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uvA = vec2<f32>(uv.x * aspect, uv.y);
 
     let t = u.config.x;
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
     let viscosity    = u.zoom_params.x;               // 0..1 material memory
     let phaseScale   = u.zoom_params.y * 1.5 + 0.5;  // 0.5..2.0
@@ -151,11 +186,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glowAmt      = u.zoom_params.w * 2.0 + 0.5;  // 0.5..2.5
 
     // ── Persistent state: spring mouse [133..136], prevDown [137], smoothed bass [138] ──
-    let sbLen = arrayLength(&extraBuffer);
-    let canState = sbLen > 138u;
     let rawMouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let mouseDown = u.zoom_config.w;
-    if (global_id.x == 0u && global_id.y == 0u && canState) {
+    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
         let h = 0.016;
         let spx = extraBuffer[133];
         let spy = extraBuffer[134];
@@ -173,19 +206,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var sm = rawMouse;
     var smVel = vec2<f32>(0.0, 0.0);
     var bassSmooth = bass;
-    if (canState) {
+    if (arrayLength(&extraBuffer) > 138u) {
         sm = vec2<f32>(extraBuffer[133], extraBuffer[134]);
         smVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
         bassSmooth = extraBuffer[138];
     }
 
-    // ── Guarded FFT bands (engine bins 1-8 at extraBuffer[6..13]) ──
-    var fftLo = 0.0;
-    var fftHi = 0.0;
-    if (sbLen > 13u) {
-        fftLo = (extraBuffer[6] + extraBuffer[7] + extraBuffer[8]) * 0.3333;
-        fftHi = (extraBuffer[11] + extraBuffer[12] + extraBuffer[13]) * 0.3333;
-    }
+    // Band proxies from plasmaBuffer[0] (old out-of-range FFT buffer reads removed)
+    let fftLo = mids;
+    let fftHi = treble;
 
     // ── Feedback: previous order/memory field + 4-tap diffusion ──
     // Domains coarsen over time (emergent, history-dependent coarsening).
@@ -233,14 +262,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let memK = mix(0.55, 0.96, viscosity);
     order = clamp(mix(order, lapOrder, memK), 0.0, 1.0);
 
+    // ── Idea 1: Schmitt-latch hysteresis loop + latent heat ──
+    // A supercooled cell freezes only above freezeT; a crystal melts only below
+    // meltT. Bass agitation narrows the loop. Freezing releases latent heat
+    // (+, warm flash); melting absorbs it (-, cold flash). Both persist in A.
+    let prevLatch = step(0.5, prevState.b);
+    let loopHalf = 0.12 * (1.0 - bass * 0.4);
+    let freezeT = 0.5 + loopHalf;
+    let meltT = 0.5 - loopHalf;
+    var latch = prevLatch;
+    if (prevLatch > 0.5) {
+        if (order < meltT) { latch = 0.0; }
+    } else {
+        if (order > freezeT) { latch = 1.0; }
+    }
+    let freezeEvent = max(latch - prevLatch, 0.0);
+    let meltEvent = max(prevLatch - latch, 0.0);
+    let latent = clamp(prevState.a * 0.93 + freezeEvent - meltEvent, -1.0, 1.0);
+
     // Phase identification (with hysteresis-like sharp transitions)
-    let fluidFraction    = smoothstep(0.4, 0.2, order);
-    let crystallineFraction = smoothstep(0.6, 0.8, order) *
-                              pow(smoothstep(0.55, 0.9, order), transitionSharpness * 0.1);
+    let fluidFraction    = smoothstep(0.4, 0.2, order) * (1.0 - latch * 0.5);
+    let crystallineFraction = max(smoothstep(0.6, 0.8, order) *
+                              pow(smoothstep(0.55, 0.9, order), transitionSharpness * 0.1),
+                              latch * smoothstep(meltT, 0.6, order) * 0.7);
     let chaoticFraction  = smoothstep(0.25, 0.45, order) * (1.0 - smoothstep(0.55, 0.75, order));
 
     // Structural patterns per phase (FFT bins sharpen lattice detail)
-    let lattice = crystallineLattice(uvA * phaseScale, t, 8.0 + treble * 4.0 + fftHi * 6.0, treble);
+    // Idea 2: grain orientation from nucleation-site Voronoi
+    let grain = grainField(uvA * phaseScale * 3.0, t);
+    let lattice = crystallineLattice(uvA * phaseScale, t, 8.0 + treble * 4.0 + fftHi * 6.0, treble, grain.x)
+                * (1.0 - grain.y * 0.7);
     let flow = fluidFlow(uvA * phaseScale, t, bass + stir * mouseForce);
     let chaos = chaoticPattern(uvA * phaseScale, t, bass, mids);
 
@@ -267,6 +318,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, color * 0.4 + phaseColor(mem, t, bass, mids, treble) * 0.6,
                 viscosity * 0.4);
 
+    // Grain boundaries: disordered seams between differently oriented crystallites
+    color += vec3<f32>(1.0, 0.8, 0.55) * grain.y * crystallineFraction * glowAmt * 0.35 * (0.7 + treble * 0.3);
+
+    // Latent heat: warm release on freezing, cold absorption on melting
+    color += vec3<f32>(1.0, 0.55, 0.2) * max(latent, 0.0) * 0.45 * (1.0 + bass * 0.3);
+    color -= vec3<f32>(0.25, 0.12, 0.0) * max(-latent, 0.0) * 0.6;
+    color += vec3<f32>(0.1, 0.3, 0.6) * max(-latent, 0.0) * 0.25;
+    color = max(color, vec3<f32>(0.0));
+
     // Phase boundary glow (hysteresis + nucleation front visualization)
     let phaseBoundary = select(0.0, 1.0, abs(order - 0.5) < 0.08);
     color += vec3<f32>(1.0, 0.9, 0.7) * phaseBoundary * (mids * 0.6 + boundaryBoost * 0.8);
@@ -280,16 +340,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color *= vig;
 
     // Semantic alpha: luminous phase structure carries coverage, dark voids recede
-    let finalCol = clamp(color * glowAmt, vec3<f32>(0.0), vec3<f32>(1.0));
+    let finalCol = acesToneMap(color * glowAmt * (1.0 + bass * 0.15));
     let luma = dot(finalCol, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let alpha = clamp(0.3 + luma * 1.2 + phaseBoundary * 0.15, 0.0, 1.0);
-    textureStore(writeTexture, px, vec4<f32>(finalCol * alpha, alpha));
+    let alpha = clamp(0.3 + luma * 1.2 + phaseBoundary * 0.15 + crystallineFraction * 0.1, 0.0, 1.0);
+    textureStore(writeTexture, px, vec4<f32>(finalCol, alpha));
 
     // Relief depth: crystalline order and lattice sit near (near = 1)
     let depth = clamp(0.1 + order * 0.5 + lattice * crystallineFraction * 0.25 +
                       mouseForce * press * 0.15, 0.0, 1.0);
     textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    // State for next frame: r = order field, g = memory weave, b = flow magnitude
-    textureStore(dataTextureA, px, vec4<f32>(order, mem, length(flow), 1.0));
+    // State for next frame: r = order field, g = memory weave, b = phase latch, a = latent heat
+    textureStore(dataTextureA, px, vec4<f32>(order, mem, latch, latent));
 }

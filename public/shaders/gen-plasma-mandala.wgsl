@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Plasma Mandala
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: fold-seam highlight on the sector cut; radial plasma advection along r
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-14
+//  Ideas: diocotron-instability ring (azimuthal mode locked to the dihedral petal count, bass-grown); dihedral-symmetric click pulses (each click folded into the fundamental sector so its wave appears in every petal)
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,15 +25,9 @@
 struct Uniforms {
   config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_params: vec4<f32>,  // x=Symmetry, y=Spin Speed, z=Zoom, w=Glow Scale
   ripples: array<vec4<f32>, 50>,
 };
-
-// ACES filmic tonemap
-fn aces(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
 
 // 2D hash
 fn hash21(p: vec2<f32>) -> f32 {
@@ -95,9 +89,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
 
   let t = u.config.x;
-  let bass   = plasmaBuffer[0].x;
-  let mids   = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
   // Parameters
   let symmetry   = mix(3.0,  12.0, u.zoom_params.x); // petal count
@@ -149,17 +143,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Radial vignette and glow ring
   let vignette = 1.0 - smoothstep(0.6, 1.4, r);
-  let ring_glow = exp(-abs(r - 0.5) * 6.0) * glow_scale;
+
+  // Idea 1 — diocotron instability: the glow ring is a hollow plasma column whose
+  // edge develops azimuthal modes. The mode is locked to the petal group (one
+  // full wavelength per mirrored sector => l = symmetry), rotates with the E x B
+  // drift (spin), and its amplitude grows with bass like an unstable eigenmode.
+  let sector_phase = folded_angle / sector_angle;               // 0..1 across a half-petal, mirror-continuous
+  let dioco_amp = 0.035 * (0.35 + bass * 0.9);
+  let dioco = dioco_amp * cos(sector_phase * 3.14159265 * 2.0 + spin * 1.7 - t * 0.6)
+            + dioco_amp * 0.35 * cos(sector_phase * 3.14159265 * 4.0 - t * 1.1);  // first harmonic roll-up
+  let ring_r = 0.5 + dioco;
+  let ring_glow = exp(-abs(r - ring_r) * 6.0) * glow_scale;
+  let vortex_core = exp(-abs(r - ring_r) * 28.0) * smoothstep(0.2, 1.0, cos(sector_phase * 3.14159265 * 2.0 + spin * 1.7 - t * 0.6) * 0.5 + 0.5);
+
+  // Idea 2 — dihedral click pulses: each ripple origin is folded into the same
+  // D_n fundamental domain as the pixel, so one click echoes in every petal.
+  var pulse = 0.0;
+  let q_local = vec2<f32>(r * cos(folded_angle), r * sin(folded_angle));
+  let ripple_count = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < ripple_count; i = i + 1u) {
+    let rip = u.ripples[i];
+    let age = t - rip.z;
+    if (age >= 0.0 && age < 2.5) {
+      let rp = (rip.xy * 2.0 - 1.0) * vec2<f32>(aspect, 1.0) - mouse_pull;
+      let rr = length(rp) * zoom_amt;
+      let ra = atan2(rp.y, rp.x);
+      let rfa = abs(fract(ra / (2.0 * sector_angle) + 0.5) * 2.0 * sector_angle - sector_angle);
+      let rq = vec2<f32>(rr * cos(rfa), rr * sin(rfa));
+      let d = length(q_local - rq);
+      let front = age * 0.9;
+      pulse += exp(-abs(d - front) * 18.0) * exp(-age * 1.6);
+    }
+  }
+  pulse = min(pulse, 2.0);
 
   col = col * vignette + vec3<f32>(ring_glow * 0.3 * (1.0 + treble * 0.5));
   col += vec3<f32>(1.0, 0.92, 0.85) * seam * 0.28 * (0.6 + treble * 0.4);
+  col += vec3<f32>(0.55, 0.85, 1.0) * vortex_core * 0.22 * (0.5 + bass * 0.8) * glow_scale;
+  col += (vec3<f32>(1.0) - col * 0.5) * pulse * 0.45 * (0.8 + treble * 0.4);
 
   let spark = hash21(uv + vec2<f32>(t * 0.01)) * treble * 0.15;
   col += spark;
 
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let mouse_influence = length(mouse_pull) * 0.3;
-  let alpha = clamp(luma * 0.7 + ring_glow * 0.2 + mouse_influence * 0.1 + seam * 0.15, 0.0, 1.0);
+  let alpha = clamp(luma * 0.7 + ring_glow * 0.2 + mouse_influence * 0.1 + seam * 0.15 + pulse * 0.25 + vortex_core * 0.1, 0.0, 1.0);
   let depth = clamp(1.0 - r * 0.5, 0.0, 1.0);
 
   let mapped = acesToneMap(col * glow_scale * 1.05);

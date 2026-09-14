@@ -1,0 +1,10 @@
+SHADER: gen-percolation-threshold
+IDENTITY: Site percolation on an 80x60 square lattice near p_c ≈ 0.5927; iterative min-label connected-component flood fill, jewel-tone cluster colours, HDR bloom on the spanning cluster.
+KEEP VERBATIM: hash12, acesToneMap, p = p_c + bass/slider shift, latticeZoom/bloom/grain mappings, jewel hue from label, edgeCount rim tint + chromatic offset, grain, clusterProxy alpha, depth output.
+ADD (2 native ideas):
+  1. Backbone conduction pulses — on the spanning cluster, current pulses travel left->right (bass speeds them, treble brightens); weight (1 − edgeCount/4)^2 so dangling ends carry little current.
+  2. Critical opalescence — multi-scale (1/4/16-site) fluctuation haze on empty sites and milky tint on finite clusters, strength exp(−40|p − p_c|) so it blooms as threshold slider / bass push p to p_c.
+FLOOR FIXES: removed all extraBuffer use (extraBuffer[gid.y], [latticeH+gid.y], [i]/[latticeH+j] reads — forbidden indices, stomped by audio upload). Spanning now detected via touchesLeft/touchesRight flags propagated through the flood fill in texture state (A->C exact textureLoad). Epoch stamp in state resets labels/flags on reseed (old code leaked min labels across epochs). Occupancy made a stateless function (hash + mouse/ripple doping) shared by sim and display. Mouse paint (previously overwritten next frame = dead) -> held mouse forces a 2.5-site doped disk; click ripples added (expanding doped rings, 3 s). plasmaBuffer clamped, mids/treble used. Background branch now ACES-mapped, writes A and depth (previously early-return without A). JSON: params array added, features = audio-reactive, mouse-driven, upgraded-rgba (was []).
+FORBID: extraBuffer outside 133..138 (none used), dataTextureB writes, textureSampleLevel on C.
+A PACKING: texels [0..79]x[0..59] = (cluster label, epoch stamp, touchesLeft, touchesRight) raw sim state; all other texels = ACES display RGBA
+VERIFY: naga ok / gate ok / extraBuffer ok / sliders x(threshold),y(zoom),z(bloom),w(grain) live

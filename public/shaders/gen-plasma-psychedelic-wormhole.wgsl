@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Plasma Psychedelic Wormhole
 //  Category: generative
-//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: contra-rotating inner vs outer plasma octaves; Doppler hue along 1/r travel
-//  A packing: HDR trail RGB in A; ACES on writeTexture only
+//  Upgraded: 2026-09-14
+//  Ideas: photon-sphere subrings at the wormhole throat (nested lensed images shrinking by e^-pi); click-spawned transient lensing masses (point-mass deflection + Einstein ring) bending the tunnel coordinates
+//  A packing: ACES display RGBA in A (feedback recovers HDR trail via analytic inverse ACES)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
+  zoom_config: vec4<f32>,  // x=time, yz=mouse uv, w=mouse down
+  zoom_params: vec4<f32>,  // x=Brightness, y=Travel Speed, z=Tunnel Scale, w=Color Shift
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -35,6 +35,17 @@ const TAU: f32 = 6.283185307179586;
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Analytic inverse of the ACES fit (positive root of (a-cy)x^2 + (b-dy)x - ey = 0).
+// Lets the HDR trail be recovered from the display RGBA stored in A.
+fn acesInverse(y_in: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  let y = clamp(y_in, vec3<f32>(0.0), vec3<f32>(0.995));
+  let qa = vec3<f32>(a) - c * y;
+  let qb = vec3<f32>(b) - d * y;
+  let disc = max(qb * qb + 4.0 * qa * e * y, vec3<f32>(0.0));
+  return max((-qb + sqrt(disc)) / (2.0 * qa), vec3<f32>(0.0));
 }
 
 // ═══ CHUNK: blackbodyColor (Wolfram Alpha: peak 499.6nm at 5800K) ═══
@@ -128,11 +139,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scale = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
 
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-    let prev = textureLoad(dataTextureC, pixel, 0);
+    let prevCoord = clamp(pixel, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+    let prevDisplay = textureLoad(dataTextureC, prevCoord, 0);
+    // A holds ACES(trail * 1.1); undo it so the trail integrates in HDR as before.
+    let prevHdr = acesInverse(prevDisplay.rgb) / 1.1;
 
     let audioSpeed = speed * (0.85 + bass * 0.8);
     let audioIntensity = intensity * (0.8 + treble * 0.7);
@@ -143,7 +157,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         tunnelShift = mouseNorm * 0.5;
     }
 
-    let p = uv + tunnelShift;
+    // Idea 2 — transient lensing masses: each click drops a point mass whose
+    // thin-lens deflection alpha = thetaE^2 / b pulls the tunnel coordinates toward
+    // it; the Einstein radius thetaE blooms then evaporates with age.
+    var p = uv + tunnelShift;
+    var einsteinRing = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rip = u.ripples[i];
+        let age = time - rip.z;
+        if (age >= 0.0 && age < 3.0) {
+            let lensPos = (rip.xy - 0.5) * res / min(res.x, res.y);
+            let bvec = uv - lensPos;
+            let bimp = length(bvec) + 1e-3;
+            let thetaE = 0.11 * smoothstep(0.0, 0.25, age) * exp(-age * 0.9) * (1.0 + bass * 0.4);
+            p -= bvec / bimp * (thetaE * thetaE / bimp);
+            einsteinRing += exp(-abs(bimp - thetaE) * 90.0) * smoothstep(0.0, 0.25, age) * exp(-age * 0.9);
+        }
+    }
+    einsteinRing = min(einsteinRing, 2.0);
+
     let r = length(p);
     let theta = atan2(p.y, p.x);
 
@@ -208,6 +241,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let centerGlow = exp(-r * r * 12.0) * (0.5 + 0.5 * sin(time * 2.0));
     col += blackbodyColor(mix(5800.0, 10000.0, bass)) * centerGlow * intensity;
 
+    // Idea 1 — photon-sphere subrings at the throat: light orbiting the throat
+    // n extra half-turns forms nested images whose widths/offsets shrink by e^-pi
+    // (Lyapunov exponent of the unstable circular orbit). Brightness via treble.
+    let throatR = 0.09 + scale * 0.03;
+    var photonRing = 0.0;
+    for (var n = 0; n < 3; n++) {
+        let k = exp(-PI * f32(n));
+        let ringR = throatR * (1.0 + 0.35 * k);
+        let width = 0.012 * k + 0.0015;
+        photonRing += exp(-abs(r - ringR) / width) * (0.6 + 0.4 * k);
+    }
+    let photonFlicker = 0.75 + 0.25 * sin(theta * 3.0 - time * (2.0 + speed * 3.0));
+    col += blackbodyColor(mix(6500.0, 10000.0, treble)) * photonRing * photonFlicker * 0.35 * intensity * (1.0 + treble * 0.6);
+
     // Tunnel edge rings
     let ringFreq = 6.0;
     let rings = sin(tunnelDepth * ringFreq - time * 3.0) * 0.5 + 0.5;
@@ -230,6 +277,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let streakHue = fract(theta / TAU + time * 0.1 + audioColor);
     col += plasmaPalette(streakHue, plasmaTemp) * streaks * 0.3 * intensity;
 
+    // Einstein rings of the click lenses (hot white-blue caustic)
+    col += blackbodyColor(9000.0) * einsteinRing * 0.9 * (0.4 + intensity * 0.6);
+
     // Vignette and radial falloff
     let vignette = smoothstep(1.2, 0.0, r);
     col *= vignette * 1.5;
@@ -242,12 +292,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
     let decay = 0.96;
-    let temporal = mix(prev.rgb * decay, col, 0.25);
+    let temporal = mix(prevHdr * decay, max(col, vec3<f32>(0.0)), 0.25);
+    // alpha = trail presence (luminous density of the tunnel plasma)
     let presence = clamp(length(temporal) * 1.2, 0.0, 1.0);
     let alpha = clamp(presence * 0.8, 0.2, 0.95);
-    textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
 
     let mapped = acesToneMap(temporal * 1.1);
-    textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - r * 0.55, 0.0, 1.0), 0.0, 0.0, 0.0));
+    let finalColor = vec4<f32>(mapped, alpha);
+    textureStore(writeTexture, pixel, finalColor);
+    textureStore(dataTextureA, pixel, finalColor);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(1.0 - r * 0.55, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

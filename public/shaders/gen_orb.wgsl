@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Lorenz Strange Attractor v2 - Audio-reactive chaotic particle system
+//  Lorenz Strange Attractor
 //  Category: generative
-//  Features: upgraded-rgba, depth-aware, procedural, mathematical-art,
-//            particles, audio-reactive, temporal
-//  Scientific: Lorenz system - classic chaotic attractor (σ, ρ, β)
-//  Upgraded: 2026-05-02 (Tier-1 integration pass)
-//  Creative additions: persistent scent trails, bioluminescent depth bloom
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: lobe-switch sparks where trajectories cross between the two wings; unstable fixed-point eyes C± = (±√(β(ρ−1)), ±√(β(ρ−1)), ρ−1)
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Sigma (σ), .y = Rho (ρ), .z = Beta (β), .w = Trail Persistence
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -53,6 +53,15 @@ fn rk4Step(pos: vec3<f32>, dt: f32, sigma: f32, rho: f32, beta: f32) -> vec3<f32
     return pos + (k1 + 2.0 * k2 + 2.0 * k3 + k4) * dt / 6.0;
 }
 
+// Shared camera projection (Y rotation then X tilt) into screen space.
+fn projectLorenz(q: vec3<f32>, cosY: f32, sinY: f32, cosX: f32, sinX: f32, camDist: f32) -> vec3<f32> {
+    var rotated = vec3<f32>(q.x * cosY - q.z * sinY, q.y, q.x * sinY + q.z * cosY);
+    rotated = vec3<f32>(rotated.x, rotated.y * cosX - rotated.z * sinX, rotated.y * sinX + rotated.z * cosX);
+    let z = rotated.z + camDist;
+    let scale = 15.0 / max(z, 0.1);
+    return vec3<f32>(rotated.x * scale * 0.0015, rotated.y * scale * 0.0015, z);
+}
+
 fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -65,17 +74,16 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let coord = vec2<i32>(global_id.xy);
     let time = u.config.x;
 
-    // ═══ Audio reactivity from plasmaBuffer (NOT u.config.yzw) ═══
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    // ═══ Audio reactivity from plasmaBuffer[0] ═══
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-    // ═══ Sample input ═══
-    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // ═══ Aspect / pixel coordinate ═══
@@ -89,13 +97,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let beta = mix(1.0, 5.0, u.zoom_params.z);     // geometric factor
     let trailPersistence = clamp(u.zoom_params.w, 0.0, 0.98);
 
+    // ═══ Mouse: hold and drag to orbit / tilt the camera ═══
+    let mouse = u.zoom_config.yz;
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    let orbitOffset = (mouse.x - 0.5) * 3.14159 * held;
+    let tilt = 0.3 + (mouse.y - 0.5) * 1.2 * held;
+
+    // ═══ Click ripples: butterfly-effect kicks perturb every trajectory ═══
+    var kick = 0.0;
+    var rippleRing = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var r = 0u; r < rippleCount; r = r + 1u) {
+        let rp = u.ripples[r];
+        let age = time - rp.z;
+        if (age < 0.0 || age > 4.0) { continue; }
+        let fade = exp(-age * 1.5);
+        kick = kick + fade;
+        var rc = rp.xy * 2.0 - 1.0;
+        rc.x = rc.x * aspect;
+        let rd = length(p - rc);
+        rippleRing = rippleRing + exp(-abs(rd - age * 0.6) * 40.0) * fade;
+    }
+    kick = min(kick, 2.0);
+
     // Mids modulate camera rotation speed
-    let rotSpeed = time * (0.15 + mids * 0.45);
+    let rotSpeed = time * (0.15 + mids * 0.45) + orbitOffset;
     let camDist = 35.0;
     let cosY = cos(rotSpeed);
     let sinY = sin(rotSpeed);
-    let cosX = cos(0.3);
-    let sinX = sin(0.3);
+    let cosX = cos(tilt);
+    let sinX = sin(tilt);
 
     // Background - deep space
     var generatedColor = vec3<f32>(0.02, 0.02, 0.04);
@@ -107,8 +138,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let stepsPerStream = 400;
     let glowBoost = 1.0 + bass * 0.9;
 
-    // Treble jitter amplitude (in attractor space)
-    let jitterAmp = treble * 0.35;
+    // Treble jitter amplitude (in attractor space) + click kicks
+    let jitterAmp = treble * 0.35 + kick * 0.8;
+
+    var sparks = 0.0;
 
     for (var s = 0; s < 14; s = s + 1) {
         if (s >= streamCount) { break; }
@@ -136,7 +169,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let currentPos = pos;
             pos = rk4Step(pos, 0.008, sigma, rho, beta);
 
-            // Treble jitter
+            // Treble jitter / click kick
             if (jitterAmp > 0.001) {
                 let j = hash3(vec3<f32>(f32(s) * 7.13, f32(i) * 0.21, time * 5.0)) * 2.0 - 1.0;
                 pos = pos + j * jitterAmp;
@@ -146,25 +179,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let avgVel = (vel + prevVel) * 0.5;
             prevVel = vel;
 
-            // 3D rotate (Y then X)
-            var rotated = vec3<f32>(
-                currentPos.x * cosY - currentPos.z * sinY,
-                currentPos.y,
-                currentPos.x * sinY + currentPos.z * cosY
-            );
-            rotated = vec3<f32>(
-                rotated.x,
-                rotated.y * cosX - rotated.z * sinX,
-                rotated.y * sinX + rotated.z * cosX
-            );
-
-            let z = rotated.z + camDist;
+            let proj = projectLorenz(currentPos, cosY, sinY, cosX, sinX, camDist);
+            let z = proj.z;
             if (z > 0.1) {
-                let scale = 15.0 / z;
-                let screenPos = vec2<f32>(
-                    rotated.x * scale * 0.0015,
-                    rotated.y * scale * 0.0015
-                );
+                let screenPos = proj.xy;
 
                 let dist = length(p - screenPos);
                 let depth = 1.0 - (z / 60.0);
@@ -202,6 +220,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     accumColor = accumColor + rgb * lineGlow * trailFade * depth * 0.1 * glowBoost;
                 }
 
+                // ─── Idea 1: lobe-switch sparks — the chaotic hop between wings (x changes sign) ───
+                if (currentPos.x * pos.x < 0.0) {
+                    sparks = sparks + 0.000004 / (dist * dist + 0.000004) * trailFade * depth;
+                }
+
                 prevScreenPos = screenPos;
             }
         }
@@ -213,34 +236,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     accumColor = accumColor + vec3<f32>(0.8, 0.3, 0.9) * wingGlow1 * 0.2;
     accumColor = accumColor + vec3<f32>(0.3, 0.7, 0.9) * wingGlow2 * 0.2;
 
+    // ─── Idea 2: unstable fixed-point eyes C± that the wings spiral around ───
+    let fpR = sqrt(max(beta * (rho - 1.0), 0.0));
+    let cPlus = projectLorenz(vec3<f32>(fpR, fpR, rho - 1.0), cosY, sinY, cosX, sinX, camDist);
+    let cMinus = projectLorenz(vec3<f32>(-fpR, -fpR, rho - 1.0), cosY, sinY, cosX, sinX, camDist);
+    let eyeRadius = fpR * 0.0003 * (1.0 + bass * 0.4);
+    let dPlus = length(p - cPlus.xy);
+    let dMinus = length(p - cMinus.xy);
+    let eyeCore = 0.000002 / (dPlus * dPlus + 0.000002) + 0.000002 / (dMinus * dMinus + 0.000002);
+    let eyeRing = exp(-abs(dPlus - eyeRadius) * 800.0) + exp(-abs(dMinus - eyeRadius) * 800.0);
+    accumColor = accumColor + vec3<f32>(1.0, 0.85, 0.55) * eyeCore * 2.0;
+    accumColor = accumColor + vec3<f32>(0.4, 0.9, 1.0) * eyeRing * (0.6 + mids * 0.4);
+
+    accumColor = accumColor + vec3<f32>(1.0, 0.95, 0.9) * sparks * (1.5 + treble * 1.5);
+    accumColor = accumColor + vec3<f32>(0.6, 0.8, 1.0) * rippleRing * 0.5;
+
     generatedColor = generatedColor + accumColor;
 
-    // ─── Persistent scent trail: read previous accumulated frame from dataTextureC ───
-    let prevTrail = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let decayed = prevTrail.rgb * trailPersistence;
-    let newTrail = max(decayed, generatedColor * 0.85);
-    generatedColor = max(generatedColor, decayed);
-
-    // ACES tone mapping (replaces simple x/(1+x*0.5))
+    // ACES tone mapping
     generatedColor = acesToneMapping(generatedColor * 1.1);
 
     // Subtle vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.5;
     generatedColor = generatedColor * vignette;
 
-    // Alpha calculated from presence
-    let luma = dot(generatedColor, vec3<f32>(0.299, 0.587, 0.114));
+    // ─── Persistent scent trail: exact load of previous display frame from dataTextureC ───
+    let prevTrail = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0);
+    let decayed = prevTrail.rgb * trailPersistence;
+    let displayColor = max(generatedColor, decayed);
+
+    // Alpha = glow presence (luminous coverage of attractor + trail)
+    let luma = dot(displayColor, vec3<f32>(0.299, 0.587, 0.114));
     let presence = smoothstep(0.02, 0.18, luma);
-    let opacity = 0.85;
-    let alpha = presence;
+    let alpha = clamp(max(presence * 0.85, prevTrail.a * trailPersistence), 0.0, 1.0);
 
-    let finalColor = mix(inputColor.rgb, generatedColor, alpha * opacity);
-    let finalAlpha = max(inputColor.a, alpha * opacity);
-    let finalDepth = mix(inputDepth, maxDepth, alpha * opacity);
+    let finalDepth = mix(inputDepth, maxDepth, presence * 0.85);
+    let finalColor = vec4<f32>(displayColor, alpha);
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeTexture, coord, finalColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
-
-    // Persist screen-space glow for next frame's temporal accumulation
-    textureStore(dataTextureA, coord, vec4<f32>(newTrail, alpha));
+    textureStore(dataTextureA, coord, finalColor);
 }

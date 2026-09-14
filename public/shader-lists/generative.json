@@ -28306,6 +28306,44 @@
       16,
       1
     ],
+    "params": [
+      {
+        "id": "thresholdShift",
+        "name": "Threshold Shift",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "latticeZoom",
+        "name": "Lattice Zoom",
+        "mapping": "zoom_params.y",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloom",
+        "name": "Bloom",
+        "mapping": "zoom_params.z",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "grain",
+        "name": "Grain",
+        "mapping": "zoom_params.w",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -28345,7 +28383,11 @@
     "updated": true,
     "id": "gen-percolation-threshold",
     "url": "shaders/gen-percolation-threshold.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Phase-Transition Memory Weave",
@@ -28408,7 +28450,49 @@
     "updated": true,
     "id": "gen-phase-transition-memory-weave",
     "url": "shaders/gen-phase-transition-memory-weave.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "phaseScale",
+        "name": "Phase Scale",
+        "mapping": "zoom_params.y",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "transitionSharpness",
+        "name": "Transition Sharpness",
+        "mapping": "zoom_params.z",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "mapping": "zoom_params.w",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Photonic Crystal-Brain",
@@ -28466,7 +28550,49 @@
     "updated": true,
     "id": "gen-photonic-crystal-brain",
     "url": "shaders/gen-photonic-crystal-brain.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mouseInfluence",
+        "name": "Mouse Influence",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Phyllotaxis Galaxy Spiral",
@@ -28488,6 +28614,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "starSpread",
+        "name": "Star Spread",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "starSize",
+        "name": "Star Size",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diskRotation",
+        "name": "Disk Rotation",
+        "mapping": "zoom_params.z",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "waveDensity",
+        "name": "Wave Density",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "updatedParams": [
       {
@@ -28528,7 +28692,11 @@
     "updated": true,
     "id": "gen-phyllotaxis-galaxy-spiral",
     "url": "shaders/gen-phyllotaxis-galaxy-spiral.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Physarum (Slime Mold) Sacred Geometry",
@@ -28545,6 +28713,44 @@
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mouseInfluence",
+        "name": "Mouse Influence",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "updatedParams": [
       {
@@ -28585,7 +28791,11 @@
     "updated": true,
     "id": "gen-physarum-sacred-geometry",
     "url": "shaders/gen-physarum-sacred-geometry.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Plasma Mandala",
@@ -28969,6 +29179,44 @@
       "prism-dispersion",
       "oklab-mixing",
       "mie-scattering"
+    ],
+    "params": [
+      {
+        "id": "waveScale",
+        "name": "Wave Scale",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "refraction",
+        "name": "Refraction",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "pulse",
+        "name": "Pulse",
+        "default": 0.47,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.58,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
