@@ -28999,6 +28999,59 @@
     ]
   },
   {
+    "id": "gen-quantum-liquid-gold-cymatic-vortex",
+    "name": "Quantum Liquid-Gold Cymatic-Vortex",
+    "type": "generative",
+    "category": "generative",
+    "url": "shaders/gen-quantum-liquid-gold-cymatic-vortex.wgsl",
+    "tags": [
+      "liquid",
+      "gold",
+      "vortex",
+      "cymatic",
+      "audio-reactive",
+      "metallic"
+    ],
+    "params": [
+      {
+        "id": "vortex_speed",
+        "name": "Vortex Speed",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "cymatic_intensity",
+        "name": "Cymatic Intensity",
+        "mapping": "zoom_params.z",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "gold_purity",
+        "name": "Gold Purity",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0.5,
+        "max": 1.5,
+        "step": 0.05
+      }
+    ]
+  },
+  {
     "id": "gen-quantum-liquid-metal-chronosphere",
     "name": "Quantum Liquid-Metal Chronosphere",
     "category": "generative",
