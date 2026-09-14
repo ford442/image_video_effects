@@ -1,6 +1,22 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-14 (local luminescent/magnetic + fractal/evolutionary tens rebased onto origin #1272 vortex)
+**Last updated:** 2026-09-14 (alternate-branch union: unique work already on main; leftover branches deleted)
+
+## 2026-09-14 — Alternate-branch union + delete
+
+- User asked to merge every leftover branch into `main` and delete them.
+- Inventory after prune: 6 remote + 1 local-only (`upgrade/batch-59-cyber-digital`, remote already gone). Zero open PRs.
+- Leftover-union policy: keep later native ideas on main; skip reports/queue regressions, WASM JS, 8×8, `dataTextureB` writes.
+- Result: **no unique clean WGSL left to land.** Unique positives from 09-11/09-13 unions already on main.
+  - `upgrade/batch-59-cyber-digital`: 0 ahead (fully contained).
+  - `claude/nice-bardeen-tkw3h7`: squash-merged as `#1259` (`23e569d5`); weekly_plan correction already on main.
+  - `claude/nice-bardeen-cwoaom` (`#1252` closed): reports + `shader_plans/queue.json` only — skip (would un-complete vortex/orchid/nebula).
+  - `cursor/cyber-em-hybrid-ten-f7bd` (`#1247`): 10/10 WGSL identical to main.
+  - `cursor/geometric-ten-f7bd` (`#1246`): 9/10 identical; keep main `hyperbolic-dreamweaver` (tile_count tiling + geodesic glow) not PR `{7,3}` bands.
+  - `upgrade/batch-60-heat-echo-elastic` / `batch-61-cyber-glitch`: remaining diffs older than main (heat-haze Batch 67, elastic 09-08, cyber-scan-gabor 09-11, vhs Batch 62, datamosh Batch 67) or contract-regress (B writes on swirl/tensor/zoom, 8×8 on rgb-glitch). Already-taken 09-11: swirl Lamb-Oseen, tensor A-write, rgb-glitch 16×16.
+- Deleted local: `upgrade/batch-59-cyber-digital`, `upgrade/batch-60-heat-echo-elastic`, `upgrade/batch-61-cyber-glitch`.
+- Deleted remote: `claude/nice-bardeen-cwoaom`, `claude/nice-bardeen-tkw3h7`, `cursor/cyber-em-hybrid-ten-f7bd`, `cursor/geometric-ten-f7bd`, `upgrade/batch-60-heat-echo-elastic`, `upgrade/batch-61-cyber-glitch`.
+- Did not merge reports, queue, WASM `public/wasm/bridge/*.js`, or package.json from Aug-23 batches.
 
 ## 2026-09-14 — Pull/push union (ahead 1 / behind 1)
 
