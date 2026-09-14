@@ -1,6 +1,26 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-13 (origin Grok-2 eldritch + hyper/grav tens unioned with local Grok-1 ice/Julia + mycelium eight + #1228 / #1234 / PR union / optical audit)
+**Last updated:** 2026-09-14 (local luminescent/magnetic + fractal/evolutionary tens rebased onto origin #1272 vortex)
+
+## 2026-09-14 — Pull/push union (ahead 1 / behind 1)
+
+- Rebased local `8e22b85c` (`push fix`: two Claude tens) onto origin `adaeed81` (`Implemented Quantum Liquid-Gold Cymatic-Vortex shader (#1272)`).
+- Overlap: only `public/shader-lists/generative.json`. Auto-merged. No WGSL conflicts.
+- Took both sides in full. Regenerated lists; README 1,365 → **1,367** (generative 470 → 472). `verify:catalog-counts` passed.
+- Queue: vortex completed on origin. Real-GPU QA external.
+
+## 2026-09-14 — Luminescent / magnetic generative ten
+
+- IDs: gen-luminescent-quantum-silicate-diatom, gen-luminescent-quantum-void-anglerfish, gen-luminescent-quantum-void-astral-turtle, gen-luminescent-silica-diatom-swarm, gen-luminous-cauldron, gen-luminous-fluid-chladni-resonator, gen-magnetic-dipole-field, gen-magnetic-ferrofluid-sculpture, gen-magnetic-ferrofluid, gen-magnetic-field-lines.
+- Two native ideas each; identities kept; no new springs. Cauldron bass_env extraBuffer[0]→[133].
+- Cards: `agents/swarm-outputs/claude-2026-09-14-luminescent-magnetic-ten/`.
+
+## 2026-09-14 — Magnetic / fractal / evolutionary generative ten
+
+- IDs: gen-magnetic-field-warp, gen-magnetic-kelp, gen-magnetic-storm, gen-mandelbox-explorer, gen-metaball-soft-body, gen-micro-cosmos, gen-minimal-surface-soap-iridescence, gen-molten-planetary-core, gen-multi-scale-evolutionary-cellular-gardens, gen-murmuration-phantom.
+- Two native ideas each; identities kept; no new springs. Kelp/metaball bass_env extraBuffer[0]→[133].
+- Cards mandelbox-explorer and magnetic-field-warp off the 09-13 classic math/CA leftover list.
+- Cards: `agents/swarm-outputs/claude-2026-09-14-magnetic-fractal-evolutionary-ten/`.
 
 ## 2026-09-13 — Pull/push union (ahead 1 / behind 3)
 
@@ -60,14 +80,14 @@
 - Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
 - Gates: Naga 5/5, extraBuffer 0 new, dead sliders 0, catalog 1,365 unified / 1,378 defs, SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing WASM `bridge/api.js`. Real-GPU visual QA: external.
 - Cards: `agents/swarm-outputs/grok-2026-09-13-simpler-gen-ice-julia-ten/`.
-- Did not substitute. Classic math/CA ten (mandelbox / diffraction / Langton / Klein / Verlet cloth / Koch / phyllotaxis / Sierpinski tet / magnetic-field-warp / Newton) still uncarded.
+- Did not substitute. Classic math/CA leftover after 09-14 (mandelbox + field-warp carded): diffraction / Langton / Klein / Verlet cloth / Koch / phyllotaxis / Sierpinski tet / Newton.
 
 ## 2026-09-13 — Grok-1 simpler generative leftover ten (0 upgrades — stale list)
 
 - Requested IDs: gen-fireworks-nocturne, gen-fireworks-ring-shell, gen-fireworks-roman-candle, gen-fireworks-smoke-bloom, gen-fireworks-strobe-shell, gen-fireworks-willow-cascade, gen-fireworks-wind-ripple, gen-fluffy-raincloud, gen-fourier-epicycles, gen-grid.
 - All 10 already have dated `Ideas:` headers and those ideas are in the WGSL (09-10 shell taxonomy, 09-11 atmospheric six, 09-06 kinetic ten A/B). JSON already tagged `upgraded-rgba`. Underscore-backed: `gen_grid.wgsl`, `gen_fluffy_raincloud.wgsl`.
 - Action: skip all. No date bump, no metadata pass, no substitute IDs.
-- Real leftover simpler-gen (not started): mandelbox-explorer, rgb-diffraction, langton-ant, klein-bottle-walk, verlet-cloth-wind, koch-snowflake-storm, phyllotaxis-galaxy-spiral, sierpinski-tetrahedron, magnetic-field-warp, newton-fractal. Skip percolation (extraBuffer[0..] FFT zone).
+- Real leftover simpler-gen after 09-14 magnetic/fractal ten (mandelbox-explorer + magnetic-field-warp carded): rgb-diffraction, langton-ant, klein-bottle-walk, verlet-cloth-wind, koch-snowflake-storm, phyllotaxis-galaxy-spiral, sierpinski-tetrahedron, newton-fractal. Skip percolation (extraBuffer[0..] FFT zone).
 - Cards: `agents/swarm-outputs/grok-2026-09-13-simpler-gen-leftover-ten/`.
 - Real-GPU visual QA: n/a (no visuals changed).
 
