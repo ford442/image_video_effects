@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-09-13T09:35:04.350405",
-  "naga_bin": "/root/.cargo/bin/naga",
+  "timestamp": "2026-09-13T08:27:59.178168",
+  "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
   "passed": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-lorenz-attractor.wgsl",
+      "file": "public/shaders/gen-cybernetic-plasma-orchid-nexus.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
