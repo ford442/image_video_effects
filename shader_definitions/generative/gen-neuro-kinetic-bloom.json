@@ -15,6 +15,44 @@
     16,
     1
   ],
+  "params": [
+    {
+      "id": "bloomExtension",
+      "name": "Bloom Extension",
+      "default": 1,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "repulsionRadius",
+      "name": "Repulsion Radius",
+      "default": 3,
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "veinGlow",
+      "name": "Vein Glow",
+      "default": 1,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "cameraZoom",
+      "name": "Camera Zoom",
+      "default": 0,
+      "min": -10,
+      "max": 10,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -55,11 +93,17 @@
   "id": "gen-neuro-kinetic-bloom",
   "url": "shaders/gen-neuro-kinetic-bloom.wgsl",
   "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
     "raymarched-branching-flora",
     "sprung-mouse-repulsion",
     "click-bloom-rings",
     "multi-band-vein-lighting",
     "semantic-alpha",
-    "depth-output"
+    "depth-output",
+    "dendritic-bifurcation",
+    "saltatory-action-potentials",
+    "aces-tonemap"
   ]
 }

@@ -51,6 +51,12 @@
       "step": 0.01
     }
   ],
+  "params": [
+    {"id": "zoom", "name": "Zoom", "mapping": "zoom_params.x", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"id": "polynomialDegree", "name": "Polynomial Degree", "mapping": "zoom_params.y", "default": 0.45, "min": 0, "max": 1, "step": 0.01},
+    {"id": "iterationPrecision", "name": "Iteration Precision", "mapping": "zoom_params.z", "default": 0.55, "min": 0, "max": 1, "step": 0.01},
+    {"id": "boundaryDistortion", "name": "Boundary Distortion", "mapping": "zoom_params.w", "default": 0.5, "min": 0, "max": 1, "step": 0.01}
+  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -64,6 +70,8 @@
     "audio-reactive",
     "chromatic-aberration",
     "aces-tone-map",
-    "depth"
+    "depth",
+    "mouse-driven",
+    "upgraded-rgba"
   ]
 }

@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neuro-Kinetic Bloom
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-03 (Batch 33)
+//  Upgraded: 2026-09-14
+//  Ideas: dendritic bifurcation (tertiary spine forks off every side-branch tip); saltatory action potentials hopping node-to-node along the axon
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -19,11 +21,10 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
     zoom_params: vec4<f32>,  // x=Bloom Extension, y=Repulsion Radius, z=Vein Glow, w=Camera Zoom
     ripples: array<vec4<f32>, 50>,
 };
@@ -41,12 +42,15 @@ fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
     return length(pa - ba * h) - r;
 }
 
-fn map(p: vec3<f32>) -> vec2<f32> {
+fn hash31(c: vec3<f32>) -> f32 {
+    return fract(sin(dot(c, vec3<f32>(12.9898, 78.233, 37.719))) * 43758.5453);
+}
+
+// Returns (distance, vein MatID, saltatory action-potential intensity).
+fn map(p: vec3<f32>, sprung_mouse: vec2<f32>, held: f32) -> vec3<f32> {
     var pos = p;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let raw_mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    let sprung_mouse = select(raw_mouse, vec2<f32>(extraBuffer[133], extraBuffer[134]), extraBuffer[137] > 0.5);
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
     let mouse_rot = (sprung_mouse * 2.0 - 1.0) * 3.14;
 
     let rot_xz = pos.xz * rot(u.config.x * 0.1 + mouse_rot.x);
@@ -68,11 +72,11 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     pos.x = twisted_xy.x;
     pos.y = twisted_xy.y;
 
-    // Mouse Repulsion
+    // Mouse Repulsion (holding the pointer shoves the flora harder)
     let mouse_pos = vec3<f32>((sprung_mouse * 2.0 - 1.0) * 10.0, 0.0);
     let dist_to_mouse = length(p - mouse_pos);
     if (dist_to_mouse < u.zoom_params.y) {
-        let push = (p - mouse_pos) / max(dist_to_mouse, 0.001) * (u.zoom_params.y - dist_to_mouse) * 0.5;
+        let push = (p - mouse_pos) / max(dist_to_mouse, 0.001) * (u.zoom_params.y - dist_to_mouse) * (0.5 + held * 0.4);
         pos = pos + push;
     }
 
@@ -80,21 +84,41 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let d_branch = sdCapsule(pos, vec3<f32>(0.0, 0.0, -branch_length), vec3<f32>(0.0, 0.0, branch_length), 0.3);
     let sideA = sdCapsule(pos, vec3<f32>(0.0), vec3<f32>(branch_length * 0.65, branch_length * 0.25, 0.0), 0.18);
     let sideB = sdCapsule(pos, vec3<f32>(0.0), vec3<f32>(-branch_length * 0.65, -branch_length * 0.2, 0.0), 0.18);
-    let bloomBranch = min(d_branch, min(sideA, sideB));
+
+    // Native idea 1: dendritic bifurcation — each side branch forks again at its
+    // tip into two thinner spines (second-generation dendrites).
+    let tipA = vec3<f32>(branch_length * 0.65, branch_length * 0.25, 0.0);
+    let tipB = vec3<f32>(-branch_length * 0.65, -branch_length * 0.2, 0.0);
+    let forkLen = branch_length * 0.28;
+    let spineA1 = sdCapsule(pos, tipA, tipA + vec3<f32>(forkLen * 0.8, forkLen * 0.55, forkLen * 0.6), 0.1);
+    let spineA2 = sdCapsule(pos, tipA, tipA + vec3<f32>(forkLen * 0.8, forkLen * 0.35, -forkLen * 0.6), 0.1);
+    let spineB1 = sdCapsule(pos, tipB, tipB + vec3<f32>(-forkLen * 0.8, -forkLen * 0.5, forkLen * 0.6), 0.1);
+    let spineB2 = sdCapsule(pos, tipB, tipB + vec3<f32>(-forkLen * 0.8, -forkLen * 0.3, -forkLen * 0.6), 0.1);
+    let spines = min(min(spineA1, spineA2), min(spineB1, spineB2));
+    let bloomBranch = min(min(d_branch, min(sideA, sideB)), spines);
+
+    // Native idea 2: saltatory conduction — a spike front sweeps the axon but only
+    // lights up at discrete nodes of Ranvier, so the glow hops node to node.
+    let nodeSpacing = 0.9;
+    let conductionPhase = fract(u.config.x * (0.35 + bass * 0.25) + hash31(cell));
+    let zFront = -branch_length + conductionPhase * 2.0 * branch_length;
+    let nodeFront = floor(zFront / nodeSpacing) * nodeSpacing;
+    let onAxon = exp(-max(d_branch - 0.05, 0.0) * 12.0);
+    let actionPotential = exp(-abs(pos.z - nodeFront) * 5.0) * onAxon;
 
     // Vein displacement
     let vein = sin(pos.z * 10.0 - u.config.x * 5.0) * sin(atan2(pos.y, pos.x) * 6.0);
     let final_d = bloomBranch - vein * 0.05 * u.zoom_params.z;
 
-    return vec2<f32>(final_d * 0.5, vein); // Distance and MatID (vein intensity)
+    return vec3<f32>(final_d * 0.5, vein, actionPotential);
 }
 
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, m: vec2<f32>, held: f32) -> vec3<f32> {
     let e = vec2<f32>(1.0, -1.0) * 0.5773 * 0.001;
-    return normalize( e.xyy*map( p + e.xyy ).x +
-                      e.yyx*map( p + e.yyx ).x +
-                      e.yxy*map( p + e.yxy ).x +
-                      e.xxx*map( p + e.xxx ).x );
+    return normalize( e.xyy*map( p + e.xyy, m, held ).x +
+                      e.yyx*map( p + e.yyx, m, held ).x +
+                      e.yxy*map( p + e.yxy, m, held ).x +
+                      e.xxx*map( p + e.xxx, m, held ).x );
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -113,15 +137,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (coords.x >= i32(dims.x) || coords.y >= i32(dims.y)) { return; }
 
     // Audio reactivity: bass = bloom pulse, mids = vein growth, treble = glow sparkle
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
+    // Sprung cursor state: [133..134] pos, [135..136] vel, [137] init flag, [138] last time.
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(u.config.x - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    var mouse = rawMouse;
+    var mouseVelocity = vec2<f32>(0.0);
+    var springDt = 0.016;
+    if (arrayLength(&extraBuffer) > 138u) {
+        if (extraBuffer[137] > 0.5) {
+            mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+            mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+            springDt = clamp(u.config.x - extraBuffer[138], 0.001, 0.05);
+        }
+    }
     let springOmega = 8.0;
     mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
     mouse += mouseVelocity * springDt;
@@ -138,11 +170,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var t = 0.0;
     var mat_id = 0.0;
+    var actionPotential = 0.0;
     for(var i = 0; i < 80; i++) {
         let p = ro + rd * t;
-        let res = map(p);
+        let res = map(p, mouse, held);
         if(res.x < 0.001 || t > 50.0) {
             mat_id = res.y;
+            actionPotential = res.z;
             break;
         }
         t += max(res.x, 0.002);
@@ -153,7 +187,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var glowMass = 0.0;
     if (hit) {
         let p = ro + rd * t;
-        let n = calcNormal(p);
+        let n = calcNormal(p, mouse, held);
         let lig = normalize(vec3<f32>(0.8, 0.7, -0.6));
         let dif = clamp(dot(n, lig), 0.0, 1.0);
 
@@ -161,8 +195,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let veinColor = vec3<f32>(0.0, 1.0, 0.5) * max(0.0, mat_id) * (2.0 + mids * 3.0 + treble * 1.5);
 
         col = baseColor * dif + veinColor * u.zoom_params.z * (1.0 + bass * 0.5);
+        // Saltatory spike: cool white-cyan flash at the firing node of Ranvier
+        col += vec3<f32>(0.55, 0.95, 1.0) * actionPotential * (1.1 + bass * 0.5) * (0.5 + u.zoom_params.z * 0.5);
         col = mix(col, vec3<f32>(0.01, 0.02, 0.05), 1.0 - exp(-0.02 * t * t));
-        glowMass = clamp(max(0.0, mat_id) * u.zoom_params.z + dif * 0.3, 0.0, 1.0);
+        glowMass = clamp(max(0.0, mat_id) * u.zoom_params.z + dif * 0.3 + actionPotential * 0.4, 0.0, 1.0);
     }
 
     var clickBloom = 0.0;

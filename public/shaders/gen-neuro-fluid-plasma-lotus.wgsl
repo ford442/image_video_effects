@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neuro-Fluid Plasma-Lotus
 //  Category: generative
-//  Features: raymarched, volumetric, audio-reactive, mouse-driven,
-//            liquid-neon, chromatic-dispersion, upgraded-rgba,
-//            depth-aware, aces-tone-map
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-06-28
+//  Upgraded: 2026-09-14
+//  Ideas: golden-angle phyllotaxis stamen florets (8/13 Fibonacci parastichies) on the plasma core; twisted MHD flux-rope field lines carrying Alfven wave packets
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=PetalCurl, y=BloomPulse, z=CoreHeat, w=Dispersion
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Petal Curl, y=Bloom Pulse, z=Core Heat, w=Dispersion
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -115,6 +115,32 @@ struct MapResult {
 var<private> g_time: f32;
 var<private> g_audio: f32;
 var<private> g_mouse: vec2<f32>;
+var<private> g_held: f32;
+var<private> g_mids: f32;
+var<private> g_treble: f32;
+
+// Native idea 1: phyllotaxis. Sunflower/lotus receptacle florets sit on the
+// intersections of 8 clockwise and 13 counter-clockwise parastichies (consecutive
+// Fibonacci numbers, the signature of golden-angle 137.5 deg packing). Integer
+// spiral counts keep the lattice seamless in azimuth.
+fn phyllotaxisFlorets(theta: f32, phi: f32) -> f32 {
+  let cw = 0.5 + 0.5 * cos(8.0 * theta - 21.0 * phi);
+  let ccw = 0.5 + 0.5 * cos(13.0 * theta + 21.0 * phi);
+  return pow(cw * ccw, 2.0);
+}
+
+// Native idea 2: MHD flux rope. Helical magnetic field lines wind around the
+// lotus on a cylindrical sheath (pitch set by the magnetic twist); Alfven wave
+// packets travel along each line at a constant Alfven speed.
+fn fluxRopeEmission(vp: vec3<f32>, twist: f32, time: f32, bass: f32) -> f32 {
+  let rCyl = length(vp.xz);
+  let ang = atan2(vp.z, vp.x);
+  let sheath = exp(-(rCyl - 2.3) * (rCyl - 2.3) * 3.0) * exp(-vp.y * vp.y * 0.12);
+  let fieldPhase = 6.0 * ang - vp.y * (1.4 + twist * 0.4);
+  let line = pow(0.5 + 0.5 * cos(fieldPhase), 6.0);
+  let packet = pow(0.5 + 0.5 * sin(vp.y * 2.2 - time * 1.8 + ang * 6.0), 4.0);
+  return sheath * line * (0.35 + packet * (0.65 + bass * 0.8));
+}
 
 fn map(p_in: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreHeat: f32, dispersion: f32) -> MapResult {
   var p = p_in;
@@ -129,7 +155,7 @@ fn map(p_in: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreHeat: f32, dispersi
   // Mouse phototropic offset - petals reach toward cursor
   let mouseWorld = vec3<f32>(g_mouse.x * 3.0, (0.5 - g_mouse.y) * 3.0, 0.0);
   let mouseDist = length(p - mouseWorld);
-  let reach = max(0.0, 1.0 - mouseDist / 4.0) * 0.4;
+  let reach = max(0.0, 1.0 - mouseDist / 4.0) * (0.4 + g_held * 0.35);
   p = p + normalize(p - mouseWorld + vec3<f32>(0.0, 0.5, 0.0)) * reach;
 
   // Convert to spherical-like coords for petal shaping
@@ -143,7 +169,7 @@ fn map(p_in: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreHeat: f32, dispersi
 
   // Petal ridges via sinusoidal displacement on sphere
   let numPetals = 8.0;
-  let petalWave = sin(theta * numPetals + g_time * 0.5) * cos(phi * 2.0);
+  let petalWave = sin(theta * numPetals + g_time * 0.5) * cos(phi * 2.0) * (1.0 + g_mids * 0.3);
   let petalAmp = 0.3 * petalCurl;
   let petalDist = r - baseRadius - petalWave * petalAmp - bloomPulse * 0.2;
 
@@ -158,7 +184,8 @@ fn map(p_in: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreHeat: f32, dispersi
   // Inner glowing core (stamen)
   let coreRadius = 0.4 + coreHeat * 0.15;
   let coreNoise = fbm3(p * 3.0 + vec3<f32>(g_time * 0.3)) * 0.1;
-  let coreDist = r - coreRadius - coreNoise;
+  let florets = phyllotaxisFlorets(theta, phi);
+  let coreDist = r - coreRadius - coreNoise - florets * (0.03 + coreHeat * 0.012);
 
   // Material and glow
   var mat = 1.0; // 1.0 = petal
@@ -221,6 +248,11 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreH
         let coreCol = vec3<f32>(1.0, 0.85, 0.6) * coreHeat * 2.0;
         let plasmaSwirl = fbm3(p * 2.0 + vec3<f32>(g_time * 0.5, 0.0, 0.0));
         col = coreCol * (1.0 + plasmaSwirl * 0.5);
+        // Floret tips glow hotter than the valleys between parastichies.
+        let rC = length(p);
+        let fl = phyllotaxisFlorets(atan2(p.z, p.x), acos(clamp(p.y / max(rC, 0.001), -1.0, 1.0)));
+        col += vec3<f32>(1.0, 0.75, 0.35) * fl * coreHeat * 0.6;
+        col *= mix(0.8, 1.0, fl);
         col += vec3<f32>(0.3, 0.6, 1.0) * g_audio * 2.0;
         alpha = 0.95;
       } else {
@@ -264,7 +296,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreH
     // Deep abyss background with iridescent dust
     let abyss = vec3<f32>(0.01, 0.005, 0.02);
     let dust = hash21(vec2<f32>(ro.x + rd.x * 10.0, ro.z + rd.y * 10.0 + g_time * 0.1));
-    let dustSparkle = step(0.97, dust) * (0.3 + g_audio * 0.5);
+    let dustSparkle = step(0.97 - g_treble * 0.02, dust) * (0.3 + g_audio * 0.5 + g_treble * 0.4);
     col = abyss + vec3<f32>(0.3, 0.2, 0.5) * dustSparkle;
     depth = 30.0;
     alpha = 0.0;
@@ -282,16 +314,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(gid.xy);
   let time = u.config.x;
 
-  // Audio
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  // Audio (plasmaBuffer[0] only)
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-  // Smooth bass via extraBuffer
-  var prevBass = extraBuffer[0];
-  let smoothBass = bass_env(prevBass, bass, 0.15, 0.02);
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[0] = smoothBass;
+  // Smooth bass envelope, state relocated to guarded extraBuffer[133]
+  var smoothBass = bass;
+  if (arrayLength(&extraBuffer) > 138u) {
+    let prevBass = clamp(extraBuffer[133], 0.0, 1.0);
+    smoothBass = bass_env(prevBass, bass, 0.15, 0.02);
+    if (gid.x == 0u && gid.y == 0u) {
+      extraBuffer[133] = smoothBass;
+    }
   }
 
   // Parameters
@@ -305,9 +340,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
   g_mouse = vec2<f32>((mouseUV.x - 0.5) * 2.0 * aspect, (0.5 - mouseUV.y) * 2.0);
+  g_held = step(0.5, u.zoom_config.w);
 
   g_time = time;
   g_audio = smoothBass;
+  g_mids = mids;
+  g_treble = treble;
 
   // Camera orbit
   let camDist = 5.0 + sin(time * 0.2) * 0.5;
@@ -329,8 +367,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var col = result.rgb;
   var alpha = result.a;
 
-  // Volumetric plasma glow from core
+  // Click ripples: magnetic reconnection bursts launch an expanding
+  // Alfvenic shock ring that brightens the flux ropes it crosses.
+  var shock = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 2.5) {
+      let dv = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+      let front = length(dv) - age * 0.55;
+      shock += exp(-front * front * 180.0) * exp(-age * 1.4);
+    }
+  }
+  shock = min(shock, 2.0);
+
+  // Volumetric plasma glow from core + MHD flux-rope field lines
   var volGlow = vec3<f32>(0.0);
+  var fieldGlow = vec3<f32>(0.0);
+  let twist = time * 0.2 + smoothBass * 0.5;
   let numVol = 16;
   let volStep = 15.0 / f32(numVol);
   for (var i: i32 = 0; i < numVol; i = i + 1) {
@@ -339,22 +394,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vfbm = fbm3(vp * 0.8 + vec3<f32>(time * 0.2, 0.0, 0.0));
     let vg = sat(0.5 - vfbm) * exp(-vt * 0.1);
     volGlow += vec3<f32>(0.4, 0.1, 0.5) * vg * (0.05 + smoothBass * 0.1);
+    // Field lines are occluded once the ray passes the lotus surface.
+    let occl = select(1.0, 0.0, alpha > 0.0 && vt > length(ro) - 1.2);
+    let fr = fluxRopeEmission(vp, twist, time, smoothBass);
+    fieldGlow += vec3<f32>(0.15, 0.55, 1.0) * fr * exp(-vt * 0.08) * occl * (0.03 + shock * 0.08) * (0.6 + dispersion * 0.3);
   }
-  col = col + volGlow;
+  col = col + volGlow + fieldGlow;
+  col = col + vec3<f32>(0.35, 0.6, 1.0) * shock * 0.12;
 
   // Audio-reactive bloom on petals
   col = col + vec3<f32>(0.3, 0.0, 0.5) * smoothBass * 0.15 * alpha;
 
-  // Temporal persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Temporal persistence (exact integer load from C)
+  let prevCoord = clamp(coord, vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+  let prev = textureLoad(dataTextureC, prevCoord, 0);
   col = mix(col, prev.rgb * 0.92, 0.04);
 
   // Tone map
-  col = acesToneMap(col * 1.2);
+  col = acesToneMap(col * (1.2 + bass * 0.1));
 
-  // Output
-  let presence = sat(alpha + length(volGlow) * 2.0);
-  let finalAlpha = 1.0;
+  // Output: alpha = petal/core coverage plus volumetric plasma + field density
+  let presence = sat(alpha + length(volGlow) * 2.0 + length(fieldGlow) * 1.5 + shock * 0.1);
+  let finalAlpha = presence;
   let finalDepth = sat(0.95 - alpha * 0.5);
 
   textureStore(writeTexture, coord, vec4<f32>(col, finalAlpha));

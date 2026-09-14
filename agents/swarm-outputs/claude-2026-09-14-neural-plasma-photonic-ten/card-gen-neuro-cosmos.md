@@ -1,0 +1,10 @@
+SHADER: gen-neuro-cosmos
+IDENTITY: Raymarched 3D Voronoi web that reads both as a neural network (somas at cell centres, axon strands on F2-F1 edges) and as the cosmic web; mouse-orbit camera, volumetric proximity glow, distance fog into deep space.
+KEEP VERBATIM: hash33, voronoiMap, map (smooth union of web + neuron SDF), calcNormal, orbit camera from mouse yaw/pitch + drift, 80-step volumetric march, colour palette (warm core / blue outer / cyan synapse / deep-space bg), sin(f1*10 - t*speed) strand pulse, rim light, fog.
+ADD (2 native ideas):
+  1. Saltatory conduction: strands carry nodes of Ranvier (f1 * 12 lattice); the action potential hops node-to-node in discrete flashes (floor(node) - t*speed phase) while the smooth pulse persists dimmer on the myelinated internodes. Pulse Speed drives hop rate; mids and evoked stimulation brighten node flashes.
+  2. Integrate-and-fire somas: each neuron (cell hash) charges its membrane potential linearly, spikes at threshold, then shows a refractory afterglow. Bass (and click/held stimulation) lowers the firing threshold; treble brightens spikes.
+FLOOR FIXES: header replaced; Uniforms comment names the 4 sliders and correct config.y/zoom_config.w meanings; added plasmaBuffer[0].xyz audio (bass -> glow gain + tone-map gain + firing threshold, mids -> strand pulse/node flash, treble -> rim + spikes); ACES tone map; semantic alpha (fog-attenuated surface coverage max volumetric glow density) replacing hardcoded 1.0; added dataTextureA writeback (same RGBA as writeTexture); no dataTextureB/C/extraBuffer use; added click ripples (expanding depolarization front, loop to min(config.y,50)) and mouse-held stimulating electrode at cursor (previously neither existed); JSON params array + features added.
+FORBID: textureStore to dataTextureB/C; extraBuffer outside 133..138; config.y/time as audio; replacing the Voronoi web motif; generic noise/bloom overlays.
+A PACKING: ACES display RGBA in A
+VERIFY: naga ok / gate ok / extraBuffer ok (AUDIT PASS, 0 violations) / sliders x,y,z,w live (x=map scale, y=pulse + saltatory hop speed, z=volumetric glow, w=strand/soma thickness)

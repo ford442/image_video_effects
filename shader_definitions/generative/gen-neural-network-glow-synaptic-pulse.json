@@ -12,9 +12,47 @@
   ],
   "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers.",
   "workgroup_size": [
-    8,
-    8,
+    16,
+    16,
     1
+  ],
+  "params": [
+    {
+      "id": "pulseSpeed",
+      "name": "Pulse Speed",
+      "mapping": "zoom_params.x",
+      "default": 0.5,
+      "min": 0,
+      "max": 2,
+      "step": 0.01
+    },
+    {
+      "id": "glowIntensity",
+      "name": "Glow Intensity",
+      "mapping": "zoom_params.y",
+      "default": 1,
+      "min": 0,
+      "max": 3,
+      "step": 0.01
+    },
+    {
+      "id": "trailDecay",
+      "name": "Trail Decay",
+      "mapping": "zoom_params.z",
+      "default": 0.93,
+      "min": 0.8,
+      "max": 0.99,
+      "step": 0.01
+    },
+    {
+      "id": "mouseInfluence",
+      "name": "Mouse Influence",
+      "mapping": "zoom_params.w",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ],
   "updatedParams": [
     {
@@ -55,5 +93,9 @@
   "updated": true,
   "id": "gen-neural-network-glow-synaptic-pulse",
   "url": "shaders/gen-neural-network-glow-synaptic-pulse.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

@@ -1,0 +1,10 @@
+SHADER: gen-newton-fractal
+IDENTITY: Newton's-method basins of z^n - 1 with fbm domain warp, noise-perturbed iteration, multi-shape orbit traps, multi-root colour blend, SDF root halos and a reaction-diffusion accent on basin boundaries; mouse pans the view.
+KEEP VERBATIM: cpower/cdiv/complexNoise, domainWarp, root palette, orbit traps, smooth iteration, multi-root accumulation, SDF halo, RD update rule, chromatic shift, ACES, parameter mappings.
+ADD (2 native ideas):
+  1. Convergence-order sheen: per-pixel peak estimate q = log|dz_k| / log|dz_(k-1)|; quadratic (q~2) regions get warm isochrone glints (bands every 2 smooth steps), linear-convergence regions (damped or noise-inexact Newton, q~1) shade violet with isochrones. Iteration Precision scales the violet shading.
+  2. Damped-Newton relaxation waves: z -= a f/f' with a = 1 + expanding ring from each click ripple (over-relaxation, bass-scaled) and a < 1 under the held mouse (under-relaxation); basins visibly reshape and the order sheen reveals the lost quadratic convergence.
+FLOOR FIXES: plasmaBuffer[0] clamped 0..1; dataTextureA previously held telemetry (rdState, orbitMin, iterRatio, alpha) differing from writeTexture -> now the same final RGBA in both, with RD state packed into the sub-1/256 fraction of alpha (alpha still = convergence*vignette to within 1/256); RD neighbour loads clamped; "temporal feedback" from readTexture (input image, via textureSampleLevel) -> exact textureLoad of C colour history; added click ripple + mouse-held response (none existed); uniforms comment lists sliders; header replaced; JSON params array added, features + mouse-driven, upgraded-rgba. updatedParams byte-identical.
+FORBID: extraBuffer, dataTextureB writes, textureSample of C, IQ palettes over the basin colours.
+A PACKING: ACES display RGBA in A; A.a = floor(convAlpha*255)/256 + rdState*(0.999/256)
+VERIFY: naga ok / gate ok / extraBuffer ok / sliders x (zoom), y (degree), z (max iterations/tolerance + order-sheen strength), w (warp, perturbation, bloom, halo radius) live

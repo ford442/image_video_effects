@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Newton Fractal — Algorithmist upgrade
+//  Newton Fractal
 //  Category: generative
-//  Features: newton-basin, orbit-traps, smooth-iteration,
-//            multi-root-accumulation, fbm-domain-warp, sdf-halo,
-//            reaction-diffusion-boundaries, audio-reactive,
-//            chromatic-aberration, aces-tone-map, depth
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-05-30
-//  Upgraded: 2026-06-29
+//  Upgraded: 2026-09-14
+//  Ideas: convergence-order sheen (estimated order q from successive Newton steps: quadratic glints, linear/relaxed zones shade violet with step isochrones); damped-Newton relaxation waves from clicks / held mouse reshaping the basins
+//  A packing: ACES display RGBA in A; A.a = floor(convergenceAlpha*255)/256 + reactionState*(0.999/256) (reaction-diffusion state rides in the sub-1/256 fraction of alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Zoom, .y = Polynomial Degree, .z = Iteration Precision, .w = Boundary Distortion
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -119,9 +117,15 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 }
 
 // ── Reaction-diffusion sampling ───────────────────────────────────
+// Reaction state is packed into the sub-1/256 fraction of A.a (see header).
+fn unpackState(a: f32) -> f32 {
+    return clamp(fract(a * 256.0) / 0.999, 0.0, 1.0);
+}
+
 fn sampleState(c: vec2<i32>, dims: vec2<i32>, fallback: f32) -> f32 {
     let inside = c.x >= 0 && c.x < dims.x && c.y >= 0 && c.y < dims.y;
-    return select(fallback, textureLoad(dataTextureC, c, 0).r, inside);
+    let cc = clamp(c, vec2<i32>(0), dims - vec2<i32>(1));
+    return select(fallback, unpackState(textureLoad(dataTextureC, cc, 0).a), inside);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -132,9 +136,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv01 = vec2<f32>(pixel) / res;
     let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
     let mouse = u.zoom_config.yz;
 
     let p1 = u.zoom_params.x;
@@ -171,21 +175,52 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nRoots = clamp(i32(floor(degree + 0.5)), 3, MAX_ROOTS);
     let rootStep = TAU / degree;
 
+    // Native idea 2: damped-Newton relaxation waves. z -= a * f/f'; a = 1 is
+    // classic Newton, a != 1 (from click ripples / held mouse) turns quadratic
+    // convergence linear and makes the basin boundaries breathe.
+    var relax = 1.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 3.0) {
+            let dist = length((uv01 - rp.xy) * vec2<f32>(aspect, 1.0));
+            let band = (dist - age * 0.35) * 12.0;
+            relax += exp(-band * band) * exp(-age * 1.1) * 0.55 * (1.0 + bass * 0.3);
+        }
+    }
+    if (u.zoom_config.w > 0.5) {
+        let md = length((uv01 - mouse) * vec2<f32>(aspect, 1.0));
+        relax -= exp(-md * md * 18.0) * 0.4;
+    }
+    relax = clamp(relax, 0.45, 1.8);
+
     // Newton iteration with orbit trapping
     var z = p;
     var iters = 0;
     var orbitMin = 1e9;
     var orbitSecond = 1e9;
     var lastDz = vec2<f32>(0.0);
+    var prevStep = 1.0;
+    var convOrder = 0.0; // peak observed local convergence order
 
     for (var i = 0; i < maxIter; i = i + 1) {
         let zn = cpower(z, degree);
         let znm1 = cpower(z, degree - 1.0);
         let perturb = complexNoise(z, time, perturbStrength);
-        let dz = cdiv(zn - vec2<f32>(1.0, 0.0) + perturb, degree * znm1);
+        let dz = cdiv(zn - vec2<f32>(1.0, 0.0) + perturb, degree * znm1) * relax;
         z = z - dz;
         lastDz = dz;
         iters = i;
+
+        // Native idea 1: local convergence order q = log|dz_k| / log|dz_k-1|.
+        let stepLen = length(dz);
+        // Quadratic Newton climbs toward q=2 as steps shrink; damped or inexact
+        // (noise-perturbed) Newton decays toward q=1, so keep the peak estimate.
+        if (prevStep < 0.3 && prevStep > 1e-9 && stepLen > 1e-12 && stepLen < prevStep) {
+            convOrder = max(convOrder, clamp(log(stepLen) / log(prevStep), 0.5, 3.0));
+        }
+        prevStep = stepLen;
 
         // Multi-shape orbit trap
         let r = length(z);
@@ -248,9 +283,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sdfGlow = exp(-abs(sdf) * (5.0 + bloom * 8.0));
     color = color + vec3<f32>(0.55, 0.9, 1.0) * sdfGlow * bloom * 0.85;
 
+    // Convergence-order sheen: quadratic (q~2) glints, linear (q~1) shades violet,
+    // with isochrone contours of the smooth step count.
+    let orderQ = select(convOrder, 1.0, convOrder <= 0.0); // never contracted -> treat as linear
+    let linearity = 1.0 - smoothstep(1.4, 1.8, orderQ);
+    let quadratic = smoothstep(1.75, 1.95, orderQ);
+    let isochrone = pow(1.0 - abs(fract(smoothIter * 0.5) - 0.5) * 2.0, 10.0);
+    color = color + vec3<f32>(0.45, 0.25, 0.95) * linearity * (0.22 + isochrone * 0.6) * (0.6 + p3 * 0.8) * convergence;
+    color = color + vec3<f32>(1.0, 0.9, 0.7) * quadratic * isochrone * 0.18 * (1.0 + treble * 0.6);
+
     // Reaction-diffusion accent on basin boundaries
     let idims = vec2<i32>(res);
-    let c0 = textureLoad(dataTextureC, pixel, 0).r;
+    let prevTex = textureLoad(dataTextureC, pixel, 0);
+    let c0 = unpackState(prevTex.a);
     let cR = sampleState(pixel + vec2<i32>(1, 0), idims, c0);
     let cL = sampleState(pixel + vec2<i32>(-1, 0), idims, c0);
     let cT = sampleState(pixel + vec2<i32>(0, 1), idims, c0);
@@ -262,7 +307,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color + vec3<f32>(0.95, 0.2, 0.35) * rdState * (0.4 + bloom * 0.6);
 
     // Subtle temporal color feedback
-    let prevColor = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
+    let prevColor = prevTex.rgb;
     color = mix(color, prevColor * 0.96, 0.03);
 
     // Chromatic aberration + ACES
@@ -272,10 +317,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Semantic alpha & depth
     let vignette = clamp(1.0 - length(uv01 - vec2<f32>(0.5)) * 1.15, 0.0, 1.0);
-    let alpha = convergence * (1.0 - trapGlow * 0.25) * vignette;
+    let convAlpha = clamp(convergence * (1.0 - trapGlow * 0.25) * vignette, 0.0, 1.0);
+    let alpha = floor(convAlpha * 255.0) / 256.0 + rdState * (0.999 / 256.0);
     let depth = convergence * (0.8 + iterRatio * 0.2);
+    let finalRGBA = vec4<f32>(color, alpha);
 
-    textureStore(dataTextureA, pixel, vec4<f32>(rdState, orbitMin, iterRatio, alpha));
+    textureStore(writeTexture, pixel, finalRGBA);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 1.0));
-    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    textureStore(dataTextureA, pixel, finalRGBA);
 }

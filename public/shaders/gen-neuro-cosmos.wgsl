@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-//  Neuro-Cosmos - Generative visualization of neural/cosmic web
+// ═══════════════════════════════════════════════════════════════════
+//  Neuro-Cosmos
 //  Category: generative
-//  Features: mouse-driven, 3d raymarching, voronoi
-// ----------------------------------------------------------------
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: saltatory conduction hopping between nodes of Ranvier on web strands; integrate-and-fire soma spiking with refractory afterglow per neuron
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -19,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Density, y=PulseSpeed, z=Glow, w=Thickness
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>,  // x=Network Density, y=Pulse Speed, z=Glow Intensity, w=Connection Thickness
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -122,17 +126,58 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Native idea 1: saltatory conduction. Myelinated strands only conduct at
+// the nodes of Ranvier, so the action potential hops node-to-node instead of
+// sliding smoothly. f1 parametrizes position along a strand away from the soma.
+// Returns (node flash, node mask).
+fn saltatoryConduction(f1: f32, time: f32, pulseSpeed: f32, cellHash: f32) -> vec2<f32> {
+    let nodeFreq = 12.0;
+    let nodeCoord = f1 * nodeFreq;
+    let nodeMask = smoothstep(0.16, 0.0, abs(fract(nodeCoord) - 0.5));
+    // Node index advances in whole steps; each node fires, then decays while
+    // the depolarization jumps down the myelinated internode.
+    let wave = floor(nodeCoord) - time * pulseSpeed * 1.6 + cellHash * 5.0;
+    let flash = exp(-fract(wave) * 5.0);
+    return vec2<f32>(flash * nodeMask, nodeMask);
+}
+
+// Native idea 2: integrate-and-fire soma. Each neuron (cell hash) charges its
+// membrane potential linearly; when it crosses threshold it spikes, resets and
+// glows through a refractory afterglow. Bass lowers the firing threshold.
+// Returns (charge, spike, refractory glow).
+fn integrateAndFire(cellHash: f32, time: f32, threshold: f32) -> vec3<f32> {
+    let rate = 0.22 + cellHash * 0.35;
+    let potential = fract(time * rate + cellHash * 7.31);
+    let spike = smoothstep(threshold, 1.0, potential);
+    let refractory = exp(-potential * 14.0);
+    return vec3<f32>(potential, spike, refractory);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
+    let coord = vec2<i32>(global_id.xy);
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    let uv01 = vec2<f32>(global_id.xy) / resolution;
+    let aspect = resolution.x / max(resolution.y, 1.0);
+
+    // Audio (plasmaBuffer[0] only)
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
     // Camera Control
     var mouse = u.zoom_config.yz; // 0..1
+    let mouseDown = u.zoom_config.w;
 
     // Orbit camera
     let yaw = (mouse.x - 0.5) * 6.28;
@@ -154,6 +199,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let rd = normalize(forward + right * uv.x + up * uv.y);
 
+    // Evoked stimulation: click ripples are electrode pulses that launch an
+    // expanding depolarization front; holding the mouse is a sustained
+    // stimulating electrode at the cursor.
+    var evoked = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = u.config.x - rp.z;
+        if (age >= 0.0 && age < 2.5) {
+            let dv = (uv01 - rp.xy) * vec2<f32>(aspect, 1.0);
+            let front = length(dv) - age * 0.5;
+            evoked += exp(-front * front * 220.0) * exp(-age * 1.3);
+        }
+    }
+    let md = (uv01 - mouse) * vec2<f32>(aspect, 1.0);
+    let electrode = step(0.5, mouseDown) * exp(-dot(md, md) * 40.0);
+    evoked = min(evoked + electrode * 0.8, 2.0);
+
     // Raymarching
     var t = 0.0;
     var col = vec3<f32>(0.0);
@@ -162,6 +225,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hit_data = vec4<f32>(0.0);
 
     // Volumetric march
+    let glow_intensity = u.zoom_params.z * (1.0 + bass * 0.4);
     for(var i=0; i<80; i++) {
         var p = camPos + rd * t;
         let data = map(p);
@@ -170,7 +234,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Accumulate glow based on proximity to structure
         // The closer we are (smaller d), the more glow
         // Intensity controlled by param Z
-        let glow_intensity = u.zoom_params.z;
         glow += (0.02 * glow_intensity) / (abs(d) + 0.05);
 
         if (d < 0.002) {
@@ -189,6 +252,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let col_synapse = vec3<f32>(0.1, 0.8, 0.9); // Cyan web
     let bg_col = vec3<f32>(0.02, 0.0, 0.05); // Deep space
 
+    var surfaceCoverage = 0.0;
+    var firing = 0.0;
+
     if (hit) {
         var p = camPos + rd * t;
         var n = calcNormal(p);
@@ -206,7 +272,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Pulse travels along strands based on distance from center (f1)
         let pulse_speed = u.zoom_params.y * 5.0;
         let pulse = sin(f1 * 10.0 - u.config.x * pulse_speed);
-        let pulse_strength = smoothstep(0.8, 1.0, pulse);
+        let pulse_strength = smoothstep(0.8, 1.0, pulse) * (1.0 + mids * 0.4);
 
         // Determine if Neuron or Web
         // Based on f1 value (small f1 = closer to center)
@@ -217,15 +283,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Add core glow to neuron
         object_col = mix(object_col, col_neuron_core, is_neuron * smoothstep(0.1, 0.0, f1));
 
-        // Add pulse to web
-        object_col += col_synapse * pulse_strength * (1.0 - is_neuron);
+        // Saltatory conduction: smooth pulse persists dimly on the myelin,
+        // while nodes of Ranvier flash in discrete hops.
+        let salt = saltatoryConduction(f1, u.config.x, u.zoom_params.y, hash);
+        let web = 1.0 - is_neuron;
+        object_col += col_synapse * pulse_strength * web * mix(0.55, 1.0, salt.y);
+        object_col += vec3<f32>(0.55, 1.0, 0.95) * salt.x * web * (0.6 + mids * 0.4 + evoked * 0.8);
+
+        // Integrate-and-fire soma spiking (bass / stimulation lower threshold).
+        let threshold = clamp(0.93 - bass * 0.22 - evoked * 0.3, 0.45, 0.97);
+        let iaf = integrateAndFire(hash, u.config.x, threshold);
+        let somaCharge = is_neuron * iaf.x * 0.25;
+        firing = is_neuron * (iaf.y + iaf.z * 0.8);
+        object_col = mix(object_col, col_neuron_core, somaCharge);
+        object_col += vec3<f32>(1.0, 0.95, 0.85) * firing * (1.2 + treble * 0.6);
 
         col = object_col * diff;
 
+        // Evoked depolarization front lights up whatever it crosses.
+        col += vec3<f32>(0.9, 0.7, 1.0) * evoked * 0.6;
+
         // Rim lighting for 3D feel
         let rim = 1.0 - max(dot(n, -rd), 0.0);
-        col += vec3<f32>(0.2, 0.4, 1.0) * pow(rim, 3.0);
+        col += vec3<f32>(0.2, 0.4, 1.0) * pow(rim, 3.0) * (1.0 + treble * 0.5);
 
+        surfaceCoverage = clamp(0.7 + (1.0 - rim) * 0.2 + firing * 0.1, 0.0, 1.0);
     } else {
         col = bg_col;
     }
@@ -234,10 +316,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Glow color changes slightly based on view direction or time
     let glow_col = vec3<f32>(0.1, 0.2, 0.5) + vec3<f32>(0.1, 0.0, 0.2) * sin(u.config.x);
     col += glow * glow_col;
+    col += vec3<f32>(0.25, 0.2, 0.5) * evoked * 0.25 * (1.0 - surfaceCoverage);
 
     // Distance fog
-    col = mix(col, bg_col, 1.0 - exp(-t * 0.1));
+    let fog = 1.0 - exp(-t * 0.1);
+    col = mix(col, bg_col, fog);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(t / 20.0, 0.0, 0.0, 0.0));
+    col = acesToneMap(col * (1.0 + bass * 0.12));
+
+    // Alpha: surface coverage attenuated by fog, plus volumetric glow density.
+    let glowDensity = 1.0 - exp(-glow * 0.08);
+    let alpha = clamp(max(surfaceCoverage * (1.0 - fog * 0.6), glowDensity * 0.8) + evoked * 0.1, 0.0, 1.0);
+    let finalColor = vec4<f32>(col, alpha);
+
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(t / 20.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, finalColor);
 }

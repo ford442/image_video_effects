@@ -1,0 +1,10 @@
+SHADER: gen-neutron-star-magnetic-spindle
+IDENTITY: Raymarched neutron star / compact core with frame-dragged accretion torus, polar fbm jets, step-wise gravitational lensing and blackbody volumetrics; mouse orbits/tilts the camera.
+KEEP VERBATIM: map() (core sphere, twisted torus, jets, smin), calcNormal, blackbody, fbm/noise3/hash3, lensing loop, Doppler core shading + rim, vignette, mouse orbit/tilt camera.
+ADD (2 native ideas):
+  1. Dipole magnetosphere field lines: co-rotating oblique (0.9 rad tilt) magnetic frame, tubes on quantized L-shells of r = L sin^2(theta) x 8 magnetic longitudes, closed only inside the light cylinder R_LC ~ c/Omega (shrinks with Spin Rate); emissivity ~ 1/r^3, colour from curvature-radiation energy ~ 1/rho using the exact dipole radius of curvature; charge bunches stream along lines.
+  2. Pulsar beams: open polar-cap field lines (L > R_LC) emit a pale-blue coherent beam along the tilted magnetic axis, sweeping with the spin; lighthouse pulse flash (beam + core temperature + halo) when the magnetic axis crosses the line of sight.
+FLOOR FIXES: removed fake audio (textureSampleLevel(dataTextureC,...).r used as "audio") -> plasmaBuffer[0].xyz clamped (bass: core/jet pulse + exposure, mids: disk heat + afterglow, treble: field line/beam brightness); Reinhard+gamma -> ACES; hardcoded alpha 1.0 -> surface coverage + volumetric density + magnetospheric glow; added dataTextureA writeback (same RGBA) and depth write; exact textureLoad C phosphor afterglow; added click ripples (starquake Alfven ring + field-line flare) and mouse-held magnetar flare (field lines x1.8); Doppler normalize NaN guard on the spin axis; header replaced (COPY PASTE junk removed); JSON features added. No extraBuffer use. JSON has no updatedParams (none existed; not added). params unchanged.
+FORBID: extraBuffer, dataTextureB writes, textureSample of C, replacing the torus/jet motif with generic glow.
+A PACKING: ACES display RGBA in A
+VERIFY: naga ok / gate ok / extraBuffer ok / sliders x (core radius+lensing), y (frame drag, Doppler, pulsar period, light cylinder), z (jets + beam brightness), w (disk scale) live

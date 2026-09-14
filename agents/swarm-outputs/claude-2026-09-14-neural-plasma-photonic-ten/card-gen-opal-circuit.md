@@ -1,0 +1,10 @@
+SHADER: gen-opal-circuit
+IDENTITY: Iridescent opal-toned PCB lattice: hashed horizontal/vertical traces and vias, per-cell travelling data packets, hex-grid overlay, fbm iridescent substrate, bass-enveloped signal pulse.
+KEEP VERBATIM: hash/noise/fbm, bass_env envelope follower, hexDistance, iridescentSubstrate, trace/via/packet generation, opalR/G/B trace colouring, slider mappings (traceScale/pulseRate/iridescence/bloom), light temporal mix.
+ADD (2 native ideas):
+  1. Bragg play-of-colour: Voronoi opal domains, each with its own silica-sphere plane spacing (205-262nm) and lattice tilt; lambda = 2 d n_eff cos(theta) (n_eff 1.36) mapped through a spectral RGB curve with infrared fade, flashing only near Bragg alignment. View tilt follows the mouse + treble; bass swells the lattice spacing (colour shift). Tints traces and the substrate, scaled by Iridescence.
+  2. Manhattan-routed signal propagation: clicks launch edges that travel L1 grid distance at a Pulse-Rate-dependent velocity, followed by damped transmission-line ringing, gated to copper traces. Holding the mouse makes the cursor a clock driver emitting square-wave edges with overshoot.
+FLOOR FIXES: extraBuffer[0] (unguarded, bass envelope) relocated to guarded extraBuffer[133]; textureSampleLevel(dataTextureC) replaced by exact textureLoad; hardcoded alpha 1.0 replaced by copper coverage + signal + diffraction alpha; A now holds final display RGBA (was packed trace/signal/packet/hex data); depth now traces/vias height (was 0); plasma audio clamped; click ripples + mouse-held added (none existed); header replaced; JSON params array + features added; updatedParams unchanged.
+FORBID: generic IQ-palette overlay, writes to dataTextureB/C, extraBuffer outside 133..138, FFT bins beyond plasmaBuffer[0].
+A PACKING: ACES display RGBA in A
+VERIFY: naga ok / gate ok / extraBuffer ok (133 guarded) / sliders x=Trace Scale (grid density, hex scale, ripple/clock cell mapping), y=Pulse Rate (signal pulse speed, edge velocity, clock Hz), z=Iridescence (substrate/trace opal + Bragg strength), w=Bloom (via glow, bus-edge glow) live

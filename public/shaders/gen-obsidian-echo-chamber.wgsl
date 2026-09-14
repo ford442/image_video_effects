@@ -1,8 +1,13 @@
-// ----------------------------------------------------------------
-// Obsidian Echo-Chamber
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Obsidian Echo-Chamber
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: conchoidal fracture shells on monolith faces; reverberant echo taps (early reflections + decaying tail)
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,11 +21,10 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+    config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
+    zoom_config: vec4<f32>,  // x=time, yz=mouse uv, w=mouse down
     zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Mouse Influence
     ripples: array<vec4<f32>, 50>,
 };
@@ -100,6 +104,54 @@ fn rayMarch(ro: vec3<f32>, rd: vec3<f32>) -> f32 {
     return dO;
 }
 
+// Native idea 1: conchoidal fracture. Volcanic glass breaks in smooth,
+// shell-like concentric ribs around an impact point (Hertzian cone), with rib
+// spacing widening outward. Each monolith cell gets one hashed impact scar;
+// the rib height field bends the shading normal and lights the rib crests.
+// Returns xyz = perturbed normal, w = rib-crest glint mask.
+fn conchoidalFracture(p: vec3<f32>, n: vec3<f32>, objectScale: f32, motionTime: f32) -> vec4<f32> {
+    let spacing = 7.5;
+    var pos = p / objectScale;
+    let id_x = floor((pos.x + spacing * 0.5) / spacing);
+    let id_z = floor((pos.z + spacing * 0.5) / spacing);
+    pos.x = (pos.x + spacing * 0.5) % spacing - spacing * 0.5;
+    pos.z = (pos.z + spacing * 0.5) % spacing - spacing * 0.5;
+    let hash = fract(sin(id_x * 12.9898 + id_z * 78.233) * 43758.5453);
+    pos.y += sin(p.x * 0.1 + motionTime + hash * 6.28) * 2.0;
+
+    let h2 = fract(hash * 173.31 + 0.137);
+    let h3 = fract(hash * 91.77 + 0.519);
+    let radius = 1.6 + fract(hash * 57.13) * 2.6;
+
+    let an = abs(n);
+    var fc = vec2<f32>(pos.x, pos.y);
+    var axisU = vec3<f32>(1.0, 0.0, 0.0);
+    var axisV = vec3<f32>(0.0, 1.0, 0.0);
+    var center = vec2<f32>((h2 - 0.5) * 1.4, (h3 - 0.5) * 14.0);
+    if (an.y > an.x && an.y > an.z) {
+        fc = vec2<f32>(pos.x, pos.z);
+        axisV = vec3<f32>(0.0, 0.0, 1.0);
+        center = vec2<f32>((h2 - 0.5) * 1.4, (h3 - 0.5) * 1.4);
+    } else if (an.x > an.z) {
+        fc = vec2<f32>(pos.z, pos.y);
+        axisU = vec3<f32>(0.0, 0.0, 1.0);
+    }
+
+    let delta = fc - center;
+    let r = length(delta) + 1e-4;
+    let dir = delta / r;
+    let phase = sqrt(r) * 9.0;
+    let scar = 1.0 - smoothstep(radius * 0.8, radius, r);
+    let env = exp(-r * 0.35) * scar;
+    // Height h = sin(phase) * env; slope dh/dr drives the normal tilt.
+    let slope = cos(phase) * 4.5 / sqrt(r) * env;
+    let tilt = (axisU * dir.x + axisV * dir.y) * slope * 0.06;
+    let bentN = normalize(n - tilt);
+    let crest = pow(abs(sin(phase)), 10.0) * env;
+    let lip = exp(-abs(r - radius * 0.9) * 6.0) * scar;
+    return vec4<f32>(bentN, crest + lip * 0.6);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -111,9 +163,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let speed = clamp(u.zoom_params.y, 0.0, 1.0);
     let mouseInfluence = clamp(u.zoom_params.w, 0.0, 1.0);
     let motionTime = u.config.x * mix(0.45, 2.4, speed);
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let objectScale = mix(0.72, 1.45, clamp(u.zoom_params.z, 0.0, 1.0));
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
     // Wrapped fly-through keeps the corridor moving quickly without precision
     // loss at long run times.
@@ -151,8 +204,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if (d < MAX_DIST) {
         let p = ro + rd * d;
-        let n = getNormal(p);
+        let nGeo = getNormal(p);
         let viewDir = normalize(ro - p);
+
+        // Native idea 1: conchoidal fracture shells bend the glossy normal.
+        let fracture = conchoidalFracture(p, nGeo, objectScale, motionTime);
+        let n = fracture.xyz;
 
         // Base obsidian material
         let albedo = vec3<f32>(0.005, 0.005, 0.01);
@@ -168,7 +225,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Vibrant neon gradient (cyan to magenta)
         let rippleColor = mix(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), sin(distFromCam * 0.2) * 0.5 + 0.5);
-        let rippleEmission = rippleColor * baseIntensity * audioIntensity * 10.0;
+        var rippleEmission = rippleColor * baseIntensity * audioIntensity * 10.0;
+
+        // Native idea 2: reverberation. Irregular early-reflection taps trail the
+        // direct sonar front; each tap decays geometrically (RT60-like, longer
+        // with mids and Intensity), diffuses wider, and loses treble to wall
+        // absorption so the tail darkens toward deep violet.
+        let decay = clamp(0.34 + mids * 0.22 + intensity * 0.14, 0.0, 0.78);
+        var tapGain = 1.0;
+        for (var k = 1; k <= 3; k = k + 1) {
+            let fk = f32(k);
+            tapGain = tapGain * decay;
+            let tapDelay = 0.13 * fk + 0.03 * fk * fk;
+            let tapPhase = fract(ripplePhase + tapDelay);
+            let tapBand = smoothstep(0.9 - 0.035 * fk, 1.0, tapPhase);
+            let absorbed = mix(rippleColor, vec3<f32>(0.35, 0.05, 0.75), clamp(fk * 0.3 - treble * 0.2, 0.0, 1.0));
+            rippleEmission += absorbed * tapBand * tapGain * audioIntensity * 6.0;
+        }
 
         // Basic lighting
         let lightDir = normalize(vec3<f32>(0.5, 1.0, -0.5));
@@ -200,8 +273,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let refEnv = mix(vec3<f32>(0.015, 0.025, 0.055), vec3<f32>(0.15, 0.9, 1.5), reflectedBand) *
                      (0.45 + fresnel + treble * 0.35);
 
+        // Fracture rib crests catch the passing sonar light and treble shimmer.
+        let ribGlint = vec3<f32>(0.55, 0.75, 1.0) * fracture.w *
+                       (0.04 + baseIntensity * audioIntensity * 0.6 + treble * 0.05) * (0.4 + u.zoom_params.z);
+
         // Combine material
-        col = albedo * diff + caSpec + fresnelColor * refEnv * u.zoom_params.z + rippleEmission;
+        col = albedo * diff + caSpec + fresnelColor * refEnv * u.zoom_params.z + rippleEmission + ribGlint;
 
         // Volumetric fog blending
         let fogDensity = 0.04;
@@ -213,20 +290,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Click echoes add fast radial reflection shocks without persistent state.
+    // Each click also returns one delayed, softer wall reflection (idea 2).
     var clickEcho = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     let screenUv = fragCoord / res;
+    let aspectVec = vec2<f32>(res.x / res.y, 1.0);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let age = u.config.x - ripple.z;
         if (age >= 0.0 && age < 1.6) {
-            let delta = (screenUv - ripple.xy) * vec2<f32>(res.x / res.y, 1.0);
-            clickEcho = max(clickEcho, exp(-abs(length(delta) - age * 0.52) * 64.0) * exp(-age * 1.6));
+            let delta = (screenUv - ripple.xy) * aspectVec;
+            let direct = exp(-abs(length(delta) - age * 0.52) * 64.0) * exp(-age * 1.6);
+            let echoAge = max(age - 0.22, 0.0);
+            let reflected = exp(-abs(length(delta) - echoAge * 0.52) * 40.0) * exp(-age * 2.2) * 0.45 * step(0.22, age);
+            clickEcho = max(clickEcho, direct + reflected);
         }
+    }
+
+    // Mouse held: the cursor becomes a continuous sonar emitter pinging the chamber.
+    if (u.zoom_config.w > 0.5) {
+        let md = length((screenUv - u.zoom_config.yz) * aspectVec);
+        let pingPhase = fract(u.config.x * 1.6 - md * 2.2);
+        let ping = smoothstep(0.88, 1.0, pingPhase) * exp(-md * 2.5) * (0.35 + max(mouseInfluence, 0.3) * 0.65);
+        clickEcho = max(clickEcho, ping * (0.8 + bass * 0.4));
     }
     col += vec3<f32>(0.18, 0.8, 1.4) * clickEcho * (0.65 + treble * 0.7);
 
     // Forward-advected, bounded reflection history forms corridor speed trails.
+    // History in C is the ACES display RGBA written to A last frame.
     let historyVelocity = vec2<f32>(mouseX * 2.0, -(2.0 + speed * 5.0 + bass * 2.0));
     let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
     let historyCoord = clamp(vec2<i32>(id.xy) - vec2<i32>(historyVelocity), vec2<i32>(0), maxCoord);
@@ -236,7 +327,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let alpha = clamp(select(0.025, 0.28 + length(hdrColor) * 0.22, hit) + clickEcho * 0.22, 0.02, 0.96);
     let depth = select(0.0, clamp(1.0 - d / MAX_DIST, 0.0, 1.0), hit);
     let coord = vec2<i32>(id.xy);
-    textureStore(dataTextureA, coord, vec4<f32>(hdrColor, alpha));
-    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(hdrColor), alpha));
+    let finalColor = vec4<f32>(acesToneMap(hdrColor), alpha);
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(dataTextureA, coord, finalColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

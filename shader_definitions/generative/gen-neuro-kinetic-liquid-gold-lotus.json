@@ -94,12 +94,15 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
+    "upgraded-rgba",
     "click-reactive",
     "temporal",
     "fast-motion",
     "depth-aware",
     "semantic-alpha",
-    "aces-tonemap"
+    "aces-tonemap",
+    "conductor-fresnel-gold",
+    "phyllotaxis-florets"
   ],
-  "feedbackPacking": "A/C = linear HDR display RGBA history; exact torque-advected loads"
+  "feedbackPacking": "A/C = ACES display RGBA; rgb = max(ACES(frame), exact torque-advected C load * decay), a = semantic coverage"
 }

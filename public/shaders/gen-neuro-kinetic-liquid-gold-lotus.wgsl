@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Neuro-Kinetic Liquid-Gold Lotus
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Neuro-Kinetic Liquid-Gold Lotus
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: conductor Fresnel on liquid gold (spectral F0 tint at normal, white at grazing); golden-angle phyllotaxis stamen florets firing in spiral order on the core
+//  A packing: ACES display RGBA in A (rgb = max(ACES(frame), torque-advected C history * decay), a = semantic coverage)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -19,7 +24,7 @@
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
+    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
     zoom_params: vec4<f32>,  // x=Bloom Radius, y=Plasma Intensity, z=Gold Smoothness, w=Mouse Influence
     ripples: array<vec4<f32>, 50>,
 };
@@ -131,6 +136,36 @@ fn map(p: vec3<f32>, time: f32, audio_val: f32, bloom: f32, torque: f32) -> f32 
     return opSmoothUnion(core, petals, 0.4);
 }
 
+// Native idea 1: Fresnel for a conductor. Gold's complex IOR gives a strongly
+// tinted normal-incidence reflectance (F0) that desaturates toward white at grazing.
+fn goldConductorFresnel(cosTheta: f32) -> vec3<f32> {
+    let f0 = vec3<f32>(1.0, 0.71, 0.29);
+    let m = pow(1.0 - clamp(cosTheta, 0.0, 1.0), 5.0);
+    return f0 + (vec3<f32>(1.0) - f0) * m;
+}
+
+// Native idea 2: golden-angle (137.5 deg) Vogel phyllotaxis florets over the core,
+// seen from above. Returns (floret proximity, floret index 0..1).
+fn phyllotaxisFlorets(p: vec3<f32>) -> vec2<f32> {
+    let golden = 2.39996323;
+    let spread = 0.075;
+    let r = length(p.xz);
+    let kEst = (r / spread) * (r / spread);
+    let k0 = i32(floor(kEst));
+    var best = 1e5;
+    var bestK = 0.0;
+    for (var o = -21; o <= 21; o++) {
+        let k = f32(max(k0 + o, 0));
+        let rk = spread * sqrt(k);
+        let ak = k * golden;
+        let c = vec2<f32>(cos(ak), sin(ak)) * rk;
+        let dd = length(p.xz - c);
+        if (dd < best) { best = dd; bestK = k; }
+    }
+    let prox = exp(-best * best * 900.0);
+    return vec2<f32>(prox, bestK / 60.0);
+}
+
 fn getNormal(p: vec3<f32>, time: f32, audio_val: f32, bloom: f32, torque: f32) -> vec3<f32> {
     let e = vec2<f32>(0.01, 0.0);
     let n = vec3<f32>(
@@ -143,13 +178,13 @@ fn getNormal(p: vec3<f32>, time: f32, audio_val: f32, bloom: f32, torque: f32) -
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let res = vec2<f32>(u.config.z, u.config.w);
+    let res = vec2<f32>(textureDimensions(writeTexture));
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
 
     let uv = (fragCoord - 0.5 * res) / res.y;
     let time = u.config.x;
-    let audioBands = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+    let audioBands = clamp(vec3<f32>(plasmaBuffer[0].x, plasmaBuffer[0].y, plasmaBuffer[0].z), vec3<f32>(0.0), vec3<f32>(1.0));
 
     let bloom_radius = u.zoom_params.x;
     let plasma_int = u.zoom_params.y;
@@ -160,21 +195,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Persistent cursor spring: [133..134] position, [135..136] velocity,
     // [137] held-gravity envelope, [138] initialization flag.
-    let springInitialized = extraBuffer[138] > 0.5;
     var springPos = u.zoom_config.yz;
     var springVel = vec2<f32>(0.0);
     var heldGravity = select(0.0, 1.0, mouseDown);
-    if (springInitialized) {
-        springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        heldGravity = extraBuffer[137];
+    if (arrayLength(&extraBuffer) > 138u) {
+        if (extraBuffer[138] > 0.5) {
+            springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+            springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+            heldGravity = extraBuffer[137];
+        }
     }
     let springOmega = mix(7.0, 15.0, mouseInfluence);
     let springAccel = springOmega * springOmega * (u.zoom_config.yz - springPos) - 2.0 * springOmega * springVel;
     let nextSpringVel = springVel + springAccel * 0.016;
     let nextSpringPos = springPos + nextSpringVel * 0.016;
     let nextHeldGravity = mix(heldGravity, select(0.0, 1.0, mouseDown), 0.14);
-    if (id.x == 0u && id.y == 0u) {
+    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
         extraBuffer[133] = nextSpringPos.x;
         extraBuffer[134] = nextSpringPos.y;
         extraBuffer[135] = nextSpringVel.x;
@@ -201,7 +237,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ripple = u.ripples[gi];
         let age = time - ripple.z;
         if (age < 0.0 || age > 2.0) { continue; }
-        let rippleStrength = clamp(ripple.w, 0.0, 1.0) * exp(-age * 1.6);
+        // ripple.w is engine padding (always 0), so every live click pulls at full strength.
+        let rippleStrength = exp(-age * 1.6);
         let rippleWell = (ripple.xy - 0.5) * vec2<f32>(screenAspect, 1.0);
         gravityAim = (gravityAim * gravityWeight + rippleWell * rippleStrength) / max(gravityWeight + rippleStrength, 0.001);
         gravityWeight += rippleStrength;
@@ -249,6 +286,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Lighting
         let diff = max(dot(n, l), 0.0);
         let spec = pow(max(dot(n, h), 0.0), mix(8.0, 96.0, gold_smooth));
+        let fresnel = goldConductorFresnel(max(dot(n, v), 0.0));
         let rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
 
         // Plasma veins logic using fbm
@@ -260,7 +298,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let mixed_plasma = mix(plasma_col, plasma_col2, sin(time)*0.5+0.5);
 
         // Combine lighting and material
-        col = base_gold * (diff * 0.5 + 0.2) + vec3<f32>(1.0) * spec + base_gold * rim * 0.5;
+        // Metals have no diffuse-white highlight: specular and rim are Fresnel-tinted.
+        col = base_gold * (diff * 0.5 + 0.2) + fresnel * spec * (1.0 + audioBands.z * 0.3) + fresnel * rim * 0.5 * (0.6 + gold_smooth * 0.5);
+
+        // Stamen florets on the upper core, firing one after another in spiral (k) order.
+        let florets = phyllotaxisFlorets(p);
+        let coreMask = smoothstep(1.0, 0.55, length(p)) * smoothstep(-0.2, 0.25, p.y);
+        let firing = pow(0.5 + 0.5 * cos((florets.y * 6.28318 - time * (1.5 + audioBands.x * 0.5)) * 3.0), 6.0);
+        let anther = florets.x * coreMask * (0.35 + firing * (0.8 + audioBands.z * 0.5)) * (0.5 + plasma_int);
+        col += vec3<f32>(1.0, 0.85, 0.45) * anther * 1.4;
 
         // Overlay plasma
         col = mix(col, mixed_plasma * 2.0, plasma_factor);
@@ -279,7 +325,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let age = time - ripple.z;
         if (age < 0.0 || age > 2.0) { continue; }
         let radius = length((screenUV - ripple.xy) * aspectFix);
-        blossomShock += exp(-abs(radius - age * 0.72) * 60.0) * (1.0 - age * 0.5) * clamp(ripple.w, 0.0, 1.0);
+        blossomShock += exp(-abs(radius - age * 0.72) * 60.0) * (1.0 - age * 0.5);
     }
     col += vec3<f32>(1.0, 0.42, 0.12) * blossomShock * (0.4 + plasma_int * 0.25);
 
@@ -290,11 +336,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let historySize = vec2<i32>(textureDimensions(dataTextureC));
     let historyCoord = clamp(vec2<i32>(floor(historyUV * vec2<f32>(historySize))), vec2<i32>(0), historySize - vec2<i32>(1));
     let previous = textureLoad(dataTextureC, historyCoord, 0).rgb;
-    let temporal = clamp(max(col, previous * (0.86 + gold_smooth * 0.08)), vec3<f32>(0.0), vec3<f32>(6.0));
+    // History in C is already ACES display RGB, so trails decay in display space.
+    let temporal = clamp(max(acesToneMap(col), previous * (0.86 + gold_smooth * 0.08)), vec3<f32>(0.0), vec3<f32>(1.0));
     let depth = select(1.0, clamp(t / 20.0, 0.0, 0.995), hit);
     let temporalLuma = dot(temporal, vec3<f32>(0.2126, 0.7152, 0.0722));
     let semanticAlpha = clamp(select(0.08 + smoothstep(0.02, 0.4, temporalLuma) * 0.35, 0.72 + blossomShock * 0.2, hit), 0.0, 1.0);
-    textureStore(dataTextureA, id.xy, vec4<f32>(temporal, semanticAlpha));
-    textureStore(writeTexture, vec2<i32>(i32(id.x), i32(id.y)), vec4<f32>(acesToneMap(temporal), semanticAlpha));
+    let finalColor = vec4<f32>(temporal, semanticAlpha);
+    textureStore(writeTexture, vec2<i32>(i32(id.x), i32(id.y)), finalColor);
+    textureStore(dataTextureA, id.xy, finalColor);
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,10 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Neural Fractal - Visualist Upgrade
+// ═══════════════════════════════════════════════════════════════════
+//  Neural Fractal
 //  Category: generative
-//  Features: OkLab color mixing, Blackbody temperature, Cosine palettes,
-//            Fresnel rim lighting, HDR tone mapping, neural activation fractals
-//  Upgraded: 2026-06-28
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: dendritic arborization stalk-trap with advancing growth cone; activation-saturation firing-rate glow
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -20,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Zoom Level, .y = Color Cycling, .z = Iteration Depth, .w = Mutation Factor
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -131,18 +133,25 @@ fn multiTrapColor(z: vec2<f32>, trap1: f32, trap2: f32, time: f32, bass: f32) ->
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
+    let coord = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let t = u.config.x;
-    let bass = plasmaBuffer[0].x;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
     // Mouse Y-flip: screen-top = +Y/up
     let mouseX = u.zoom_config.y;
     let mouseY = u.zoom_config.z;
+    let mouseHeld = clamp(u.zoom_config.w, 0.0, 1.0);
     let mouseDist = length(uv - vec2<f32>(mouseX, mouseY));
     let mouseInfluence = smoothstep(0.5, 0.0, mouseDist);
 
     let zoom = mix(0.5, 3.0, u.zoom_params.x);
     let colorSpeed = mix(0.1, 1.0, u.zoom_params.y);
+    // Color Cycling: default (0.5 -> 0.55) reproduces the original palette drift rate
+    let colorT = t * colorSpeed / 0.55;
     let iterations = i32(mix(30.0, 100.0, u.zoom_params.z));
     let mutation = mix(0.0, 0.5, u.zoom_params.w);
     let aspect = resolution.x / resolution.y;
@@ -151,16 +160,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let center = vec2<f32>(sin(t * 0.05) * 0.1, cos(t * 0.07) * 0.1);
     var p = (uv - 0.5) * vec2<f32>(scale * aspect, scale) + center;
     p = domainWarp(p, t);
-    // Mouse warps the domain too
-    p += (uv - vec2<f32>(mouseX, mouseY)) * mouseInfluence * 0.3;
+    // Mouse warps the domain too (held = stronger pull)
+    p += (uv - vec2<f32>(mouseX, mouseY)) * mouseInfluence * (0.3 + mouseHeld * 0.3);
 
-    let juliaC = vec2<f32>(sin(t * 0.1) * 0.5 + mutation * sin(p.x * 10.0), cos(t * 0.08) * 0.5 + mutation * cos(p.y * 10.0));
+    // Click ripples: stimulus waves that depolarize the local domain
+    var stimulus = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = t - rp.z;
+        if (age >= 0.0 && age < 3.0) {
+            let dv = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+            let rd = length(dv);
+            let front = age * 0.4;
+            let ring = exp(-(rd - front) * (rd - front) * 180.0) * exp(-age * 1.4);
+            p += dv / max(rd, 0.001) * ring * 0.06;
+            stimulus += ring;
+        }
+    }
+    stimulus = clamp(stimulus, 0.0, 2.0);
+
+    let heldShift = (vec2<f32>(mouseX, mouseY) - 0.5) * mouseHeld * 0.15;
+    let juliaC = vec2<f32>(sin(t * 0.1) * 0.5 + mutation * (1.0 + stimulus * 0.5) * sin(p.x * 10.0), cos(t * 0.08) * 0.5 + mutation * (1.0 + stimulus * 0.5) * cos(p.y * 10.0)) + heldShift;
     var z = p;
     var iter = 0;
     var trap1 = 1000.0;
     var trap2 = 1000.0;
     var sumZ = vec2<f32>(0.0);
     var minZ = vec2<f32>(1000.0);
+    // Idea 1: dendritic stalk trap (distance to activation axes) + branch order
+    var dendTrap = 1000.0;
+    var dendIter = 0;
+    // Idea 2: saturated activations = "fired" neurons
+    var fireCount = 0.0;
     for (iter = 0; iter < iterations; iter++) {
         let activationType = (iter / 10) % 4;
         z = neuralLayer(z, juliaC, activationType);
@@ -170,27 +202,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         trap2 = min(trap2, d2);
         minZ = min(minZ, abs(z));
         sumZ = sumZ + z;
+        let stalk = min(abs(z.x - 0.5), abs(z.y));
+        if (stalk < dendTrap) { dendTrap = stalk; dendIter = iter; }
+        if (max(abs(z.x), abs(z.y)) > 0.9) { fireCount += 1.0; }
         if (length(z) > 10.0) { break; }
     }
     let iterRatio = f32(iter) / f32(iterations);
 
     // Multi-trap coloring with OkLab and Blackbody
-    var col = multiTrapColor(z, trap1, trap2, t, bass);
+    var col = multiTrapColor(z, trap1, trap2, colorT, bass);
 
     // Glow from orbit traps with Fresnel-like rim
     let glow1 = exp(-trap1 * 5.0) * 0.5;
     let glow2 = exp(-trap2 * 4.0) * 0.4;
     let rim = fresnelRim(normalize(vec3<f32>(uv - 0.5, 0.1)), vec3<f32>(0.0, 0.0, 1.0), 3.0);
-    col += oklab_mix(vec3<f32>(0.4, 0.2, 0.6), blackbody(10000.0), 0.5) * (glow1 + glow2 * 0.5) * (1.0 + rim * 0.3);
+    col += oklab_mix(vec3<f32>(0.4, 0.2, 0.6), blackbody(10000.0), 0.5) * (glow1 + glow2 * 0.5) * (1.0 + rim * 0.3) * (1.0 + bass * 0.4);
 
     // Structure from sum with cosine palette modulation
     let structure = length(sumZ) * 0.01;
-    let structCol = cosinePalette(structure + t * 0.02, vec3<f32>(0.5), vec3<f32>(0.3), vec3<f32>(1.0,0.9,0.7), vec3<f32>(0.1,0.4,0.6));
-    col = mix(col, col * (1.0 + structure) + structCol * 0.1, 0.3);
+    let structCol = cosinePalette(structure + colorT * 0.02, vec3<f32>(0.5), vec3<f32>(0.3), vec3<f32>(1.0,0.9,0.7), vec3<f32>(0.1,0.4,0.6));
+    col = mix(col, col * (1.0 + structure) + structCol * (0.1 + mids * 0.1), 0.3);
 
     // Add detail from minZ
     let detail = length(minZ) * 2.0;
     col += oklab_mix(blackbody(3000.0), blackbody(7000.0), detail) * detail * 0.1;
+
+    // Idea 1: dendritic arborization. Branches of order dendIter only exist once the
+    // growth cone (an advancing iteration front) has passed them; trunk = warm, tips = cool.
+    let growthFront = f32(iterations) * (0.55 + 0.45 * sin(t * 0.15)) + stimulus * 10.0 + mouseHeld * mouseInfluence * 20.0;
+    let grown = smoothstep(growthFront, growthFront - 4.0, f32(dendIter));
+    let branchOrder = f32(dendIter) / f32(iterations);
+    let dendWidth = 60.0 / (1.0 + bass * 0.4);
+    let dendrite = exp(-dendTrap * dendWidth) * grown * (1.0 - branchOrder * 0.6);
+    let coneTip = exp(-abs(f32(dendIter) - growthFront) * 0.6) * exp(-dendTrap * dendWidth);
+    let dendCol = oklab_mix(blackbody(2600.0), blackbody(11000.0), branchOrder);
+    col += dendCol * dendrite * 0.35 + vec3<f32>(0.9, 0.95, 1.0) * coneTip * 0.3;
+
+    // Idea 2: firing-rate glow. Fraction of iterations with a saturated activation
+    // (|output| > 0.9) marks "firing" neurons; they flicker with treble-driven spike trains.
+    let fireRate = fireCount / max(f32(iter), 1.0);
+    let firing = smoothstep(0.4, 0.85, fireRate);
+    let spikeTrain = pow(0.5 + 0.5 * sin(t * (5.0 + treble * 9.0) + trap1 * 25.0 + trap2 * 13.0), 6.0);
+    let fireGlow = firing * (0.08 + spikeTrain * (0.15 + treble * 0.35) + stimulus * 0.2);
+    col += oklab_mix(vec3<f32>(0.2, 0.8, 1.0), vec3<f32>(1.0, 0.3, 0.8), spikeTrain) * fireGlow;
 
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.8;
@@ -199,8 +253,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // HDR tone mapping with audio boost
     col = acesToneMap(col * (1.0 + bass * 0.3));
 
-    let _luma_q = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha_q = clamp(_luma_q * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, _alpha_q));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    // Alpha = neural activation density: orbit-trap glow + dendrite coverage + firing
+    let alpha = clamp(0.12 + (glow1 + glow2) * 0.6 + dendrite * 0.5 + fireGlow * 0.6 + (1.0 - iterRatio) * 0.1, 0.0, 1.0) * clamp(vignette + 0.3, 0.0, 1.0);
+    let finalColor = vec4<f32>(col, clamp(alpha, 0.0, 1.0));
+    let depth = clamp(1.0 - iterRatio * 0.8 - dendrite * 0.1, 0.0, 1.0);
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(dataTextureA, coord, finalColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
