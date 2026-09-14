@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Murmuration Phantom
 //  Category: generative
-//  Features: curl-noise, flock-density, golden-ratio-spirals, twilight-palette, audio-reactive,
-//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration, trail-accumulation, hue-preserve-clamp, ign-dither
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-31
-//  Upgraded: 2026-06-07
-//  By: Kimi Code CLI
+//  Upgraded: 2026-09-14
+//  Ideas: predator-triggered banking agitation waves (dark/light bands propagating through the flock as birds tilt wing-on vs edge-on); marginal-opacity self-regulation (flock optical depth saturates so ~30% of twilight sky transmits through the core)
+//  A packing: ACES display RGBA in A (alpha = flock sky-coverage 1-T plus glint/scatter;
+//    C.rgb read back as colour history, C.a inverted as approximate trail density)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -23,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Flock Size, .y = Shape Morph, .z = Glint Intensity, .w = Cohesion
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -93,31 +93,64 @@ fn ign(p: vec2<f32>) -> f32 {
   return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
+
+// Marginal opacity: optical depth saturates toward TAU_MARGINAL (T ≈ 0.18..0.3
+// at the core) instead of going fully black — starling flocks self-organise
+// so light still passes through (Pearce et al. 2014).
+const TAU_MARGINAL: f32 = 1.35;
+const TAU_KNEE: f32 = 0.15;
+
+fn flockOpticalDepth(d: f32, tauMax: f32) -> f32 {
+  let dd = max(d, 0.0);
+  return tauMax * dd / (dd + TAU_KNEE);
+}
+
+// Approximate inverse of coverage = 1 - exp(-flockOpticalDepth(d)) for feedback
+fn densityFromCoverage(cov: f32, tauMax: f32) -> f32 {
+  let tau = -log(max(1.0 - clamp(cov, 0.0, 0.999), 1e-3));
+  let tn = min(tau / tauMax, 0.95);
+  return TAU_KNEE * tn / (1.0 - tn);
+}
+
+// Banking agitation wave: birds tilting in sequence expose wings broadside
+// (dark) or edge-on (light); the wave propagates outward from the predator.
+fn bankingWave(distToPredator: f32, t: f32, agitation: f32) -> f32 {
+  let front = sin(distToPredator * 18.0 - t * 6.0);
+  let band = smoothstep(-0.2, 0.9, front);
+  return mix(1.0, mix(0.35, 1.25, band), clamp(agitation, 0.0, 1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
   if(f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) { return; }
   let coord = vec2<i32>(global_id.xy);
+  let dims = vec2<i32>(textureDimensions(dataTextureC));
   let uv = (vec2<f32>(global_id.xy) - 0.5 * res) / res.y;
   let t = u.config.x;
-  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
   let flockSize = mix(0.3, 1.2, u.zoom_params.x);
-  let shapeMorph = u.zoom_params.y;
+  let shapeMorph = clamp(u.zoom_params.y + mids * 0.15, 0.0, 1.0);
   let glintIntensity = u.zoom_params.z;
   let cohesion = u.zoom_params.w;
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
   let mouse = (u.zoom_config.yz - 0.5) * vec2<f32>(res.x / res.y, 1.0);
   var center = vec2<f32>(sin(t * 0.2) * 0.3, cos(t * 0.15) * 0.2);
   let mDist = length(uv - mouse);
-  center += normalize(uv - mouse + vec2<f32>(0.001)) * exp(-mDist * 4.0) * 0.5;
+  // Predator disturbance: hovering pushes the flock, holding is a stoop (stronger, wider)
+  center += normalize(uv - mouse + vec2<f32>(0.001)) * exp(-mDist * mix(4.0, 2.5, held)) * (0.5 + held * 0.35);
   var scatter = 0.0;
-  let rc = u32(u.config.y);
-  for(var i = 0; i < 50; i++) {
-    if(u32(i) >= rc) { break; }
+  var waveSeed = 0.0;
+  let rc = min(u32(u.config.y), 50u);
+  for(var i = 0u; i < rc; i++) {
     let rp = u.ripples[i];
     let elapsed = t - rp.z;
     if(elapsed > 0.0 && elapsed < 2.0) {
       let rd = length(uv - (rp.xy - 0.5) * vec2<f32>(res.x / res.y, 1.0));
       scatter += exp(-rd * 8.0) * sin(elapsed * 10.0) * exp(-elapsed * 2.0);
+      waveSeed = max(waveSeed, exp(-elapsed * 1.5));
     }
   }
   var p = (uv - center) / flockSize;
@@ -137,11 +170,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mask = smoothstep(0.15, -0.05, shape) * spiral;
   let n1 = fbm3(vec3<f32>(p * 3.0, t * 0.2));
   let n2 = fbm3(vec3<f32>(p * 6.0 + flow * 3.0, t * 0.15));
-  let density = (n1 * 0.7 + n2 * 0.3) * mask * cohesion * (1.0 + bass * 0.5);
+  var density = (n1 * 0.7 + n2 * 0.3) * mask * cohesion * (1.0 + bass * 0.5);
+
+  // ── Idea 1: banking agitation waves radiating from the predator ──
+  // Always faintly present near the predator; a held stoop or a click drives full waves.
+  let agitation = (0.25 + held * 0.75 + waveSeed * 0.6 + bass * 0.2) * exp(-mDist * 1.2) * smoothstep(0.0, 0.05, mask);
+  let bank = bankingWave(mDist, t, agitation);
+  density *= bank;
+
   let ex = 0.01;
   let dx = fbm3(vec3<f32>((p + vec2<f32>(ex, 0.0)) * 3.0, t * 0.2)) * mask -
            fbm3(vec3<f32>((p - vec2<f32>(ex, 0.0)) * 3.0, t * 0.2)) * mask;
-  let edge = abs(dx) * 25.0 * treble * glintIntensity;
+  // Edge-on birds on the light side of a banking band catch the low sun
+  let edge = abs(dx) * 25.0 * treble * glintIntensity * (1.0 + max(bank - 1.0, 0.0) * 2.0);
   let indigo = vec3<f32>(0.098, 0.098, 0.439);
   let violet = vec3<f32>(0.541, 0.169, 0.886);
   let sunset = vec3<f32>(1.0, 0.271, 0.0);
@@ -153,23 +194,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let shadow = 1.0 - smoothstep(0.0, 0.5, density);
   col = mix(col, col * vec3<f32>(0.6, 0.7, 1.0), shadow * 0.5);
   col += vec3<f32>(0.8, 0.7, 0.9) * scatter * 0.5;
-  // ═══ CHUNK: trail-accumulation — blend current density into persistent trail ═══
-  let prevTrail = textureSampleLevel(dataTextureC, u_sampler, (vec2<f32>(coord) + 0.5) / u.config.zw, 0.0);
+
+  // ═══ trail-accumulation — exact load of previous A (display RGBA) ═══
+  let tauMax = TAU_MARGINAL * mix(0.8, 1.4, cohesion);
+  let prevTrail = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  let prevDensity = densityFromCoverage(prevTrail.a, tauMax);
   let trailDecay = 0.93 - bass * 0.04;
-  let trailDensity = max(density, prevTrail.a * trailDecay);
+  let trailDensity = max(density, prevDensity * trailDecay);
   col = mix(col, prevTrail.rgb * 0.92, 0.05 + bass * 0.01);
+
+  // ── Idea 2: marginal opacity — sky transmits through the saturated flock ──
+  let tau = flockOpticalDepth(trailDensity, tauMax);
+  let transmit = exp(-tau);
+  let skyY = uv.y / 0.5;
+  let twilightSky = mix(sunset * 0.55 + violet * 0.15, indigo * 0.8, smoothstep(-1.0, 1.0, skyY));
+  let silhouette = vec3<f32>(0.03, 0.025, 0.06);
+  // Birds absorb (dark silhouettes); the transmitted fraction keeps sky glow alive in the core
+  let flockLayer = mix(col, silhouette + twilightSky * transmit, (1.0 - transmit) * 0.45);
+  col = mix(col, flockLayer, smoothstep(0.0, 0.1, trailDensity));
 
   let caStr = 0.003 * (1.0 + bass) + density * 0.001;
   col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
   var outCol = acesToneMap(huePreserveClamp(col * 1.2, 2.5));
   outCol += (ign(vec2<f32>(coord)) - 0.5) / 255.0;
-  let alpha = clamp(trailDensity * 1.5 + edge * 0.8 + abs(scatter) * 0.3, 0.0, 1.0);
-  let a = clamp(alpha, 0.0, 1.0);
-  textureStore(writeTexture, coord, vec4<f32>(outCol * a, a));
+  outCol = clamp(outCol, vec3<f32>(0.0), vec3<f32>(1.0));
+  // Semantic alpha: flock sky-coverage (1 - T), plus glints and click scatter
+  let coverage = 1.0 - transmit;
+  let a = clamp(coverage + (edge * 0.8 + abs(scatter) * 0.3) * transmit, 0.0, 1.0);
+  let finalColor = vec4<f32>(outCol, a);
+  textureStore(writeTexture, coord, finalColor);
+  textureStore(dataTextureA, coord, finalColor);
   textureStore(writeDepthTexture, coord, vec4<f32>(density * 0.5, 0.0, 0.0, 0.0));
-  // State: current frame color+density for trail feedback
-  textureStore(dataTextureA, coord, vec4<f32>(outCol, trailDensity));
-  // Trail: accumulated density map for next-frame read
-  textureStore(dataTextureB, coord, vec4<f32>(density, edge, scatter, trailDensity));
 }

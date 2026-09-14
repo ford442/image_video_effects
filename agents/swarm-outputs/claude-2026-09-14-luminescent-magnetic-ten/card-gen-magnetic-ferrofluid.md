@@ -1,0 +1,10 @@
+SHADER: gen-magnetic-ferrofluid
+IDENTITY: Raymarched dark-metal ferrofluid sphere with sin-product spikes, orbiting merge droplet, sprung orbit camera, iridescent fresnel, click magnetic shells, temporal polish.
+KEEP VERBATIM: map() base sphere + sin-product spike displacement + oscillation + orbiting droplet smin; calcNormal; sprung mouse camera (extraBuffer[133..138] state); lighting/iridescence/env reflection; click-shell ripple loop; vignette; dataTextureC temporal mix.
+ADD (2 native ideas):
+  1. Rosensweig hexagonal spike lattice — three plane waves 120 deg apart (triplanar over the mass), sharpened into cusps; appears only above critical field Hc=0.22 (H = Magnetic Strength * (1 + bass*0.45)) with supercritical sqrt(H-Hc) amplitude; spacing set by capillary wavenumber kc from Fluid Density, tightening slightly with field excess. Peak tips get field-aligned glint (treble).
+  2. Labyrinthine fingering instability — while mouse held the field tips tangential: the hex lattice gives way to meandering, branching stripe domains (domain-warped cos stripes at the critical wavelength, animated by Oscillation Speed); domain walls glow magenta.
+FLOOR FIXES: header replaced with contract format; extraBuffer[133..138] READS now guarded by arrayLength > 138 (writes already guarded, state kept); plasmaBuffer bass/mids/treble clamped 0..1 and reused (no raw plasmaBuffer[0].y/z inline); no fake audio found (u.config.y only ripple count, z/w only resolution); mouse held (zoom_config.w) now honored (tangential field); alpha = hit coverage + peak/wall density + click shell; march step 0.75 -> 0.62 for added relief Lipschitz; Uniforms comment lists slider names. JSON: added params array + audio-reactive/mouse-driven/upgraded-rgba features (updatedParams untouched).
+FORBID: dataTextureB writes; extraBuffer outside 133..138; generic noise/bloom overlays; replacing the sin-product spikes.
+A PACKING: ACES display RGBA in A
+VERIFY: naga ok / gate ok / extraBuffer audit PASS / sliders x (spikes + Rosensweig onset), y (radius, kc spacing), z (speed, labyrinth drift), w (iridescence) live

@@ -37,5 +37,78 @@
       "max": 1.0,
       "step": 0.01
     }
-  ]
+  ],
+  "params": [
+    {
+      "id": "poreDensity",
+      "name": "Pore Density",
+      "mapping": "zoom_params.x",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "pulseSpeed",
+      "name": "Pulse Speed",
+      "mapping": "zoom_params.y",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "iridescenceSpread",
+      "name": "Iridescence Spread",
+      "mapping": "zoom_params.z",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "bioluminescenceShift",
+      "name": "Bioluminescence Shift",
+      "mapping": "zoom_params.w",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Pore Density",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Pulse Speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Iridescence Spread",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Bioluminescence Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "features": ["audio-reactive", "mouse-driven", "upgraded-rgba"]
 }

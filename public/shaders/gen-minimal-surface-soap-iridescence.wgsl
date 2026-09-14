@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Minimal Surface Soap Iridescence — Visualist Upgrade
+//  Minimal Surface Soap Iridescence
 //  Category: generative
-//  Features: hdr, aces-tone-mapping, fresnel-rim, specular,
-//            volumetric-fog, subsurface-scattering, thin-film-iridescence,
-//            caustics, split-tone, color-temperature, film-grain,
-//            chromatic-aberration, temporal-feedback, audio-reactive,
-//            depth-output
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-29
+//  Upgraded: 2026-09-14
+//  Ideas: Gravity drainage with Marangoni marginal-regeneration plumes and Newton black film; Culick rupture holes with Rayleigh-Plateau rim beading on click
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,10 +23,10 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
+  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
+  zoom_config: vec4<f32>,  // x=time, yz=mouse uv, w=mouse down
+  zoom_params: vec4<f32>,  // x=Bonnet Rotation, y=Surface Tension, z=Y Rotation, w=Caustic Glow
+  ripples: array<vec4<f32>, 50>, // xy=pos, z=start time
 };
 
 const PI: f32 = 3.14159265359;
@@ -179,9 +177,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mouse = u.zoom_config.yz;
     let mousePressed = u.zoom_config.w > 0.5;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let aspect = res.x / max(res.y, 1.0);
     let p1 = u.zoom_params.x;
     let p2 = u.zoom_params.y;
     let p3 = u.zoom_params.z;
@@ -229,7 +228,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Curvature / film thickness proxy
     let area = length(cross(pu, pv));
     let curvature = area * 0.35;
-    let filmThick = 0.22 + mids * 0.55 + curvature * 0.28 + bass * 0.08;
+    let filmBase = 0.22 + mids * 0.55 + curvature * 0.28 + bass * 0.08;
+
+    // ── Idea 1: gravity drainage + Marangoni marginal regeneration ──
+    // Film drains under gravity: Mysels-type profile h ∝ sqrt(depth below
+    // the top edge), thin at the top, wedge-thick at the bottom. Surface
+    // tension gradients pull thin film up from the bottom border as rising,
+    // swirling plumes (marginal regeneration). Where h → 0 the film turns
+    // into Newton black film: no interference, nearly no reflection.
+    let tension = p2;
+    let height = clamp(uv01.y, 0.0, 1.0);             // 0 = top edge, 1 = bottom
+    let drainProfile = sqrt(height + 0.015);
+    let swirl = sin(uv01.y * 7.0 + time * 0.6 + fbm(uv01 * 3.0, 2) * 4.0) * (0.06 + mids * 0.05);
+    let plumeCoord = vec2<f32>((uv01.x + swirl) * 9.0 * aspect, uv01.y * 2.5 + time * (0.12 + tension * 0.25));
+    let plumeNoise = fbm(plumeCoord, 3);
+    let marangoni = smoothstep(0.52, 0.8, plumeNoise) * smoothstep(0.15, 0.85, height) * (0.5 + tension * 0.6);
+    let filmThick = max(0.0, filmBase * mix(0.18, 1.3, drainProfile) - marangoni * 0.22 * filmBase);
+    let blackFilm = (1.0 - smoothstep(0.035, 0.11, filmThick)) * (0.85 + treble * 0.15);
 
     // View-dependent thin-film phase
     let V = vec3<f32>(0.0, 0.0, 1.0);
@@ -246,6 +261,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         hsv2rgb(fract(phaseG * phaseScale), 0.55 + mids * 0.25, 0.88).g,
         hsv2rgb(fract(phaseB * phaseScale), 0.55 + mids * 0.25, 0.88).b
     );
+    // Newton black film: path difference << wavelength, reflectance ∝ sin²(2πnh/λ) → 0
+    irid *= 1.0 - blackFilm * 0.93;
 
     // Cinematic lighting
     let lightPos = normalize(vec3<f32>(
@@ -281,6 +298,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += sss;
     color += causticColor;
 
+    // ── Idea 2: Culick rupture holes from click ripples ──
+    // A click punctures the film. The hole opens at the Culick speed
+    // v = sqrt(2σ / (ρ h)): faster in thin (drained / black) film, slower in
+    // the thick bottom wedge, so holes elongate toward the top. Liquid swept
+    // from the hole piles into a toroidal rim that beads into droplets
+    // (Rayleigh–Plateau instability of the rim cylinder). The film re-wets
+    // after a few seconds.
+    var holeCover = 0.0;
+    var rimGlow = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age > 0.0 && age < 3.5) {
+            let dv = (uv01 - rp.xy) * vec2<f32>(aspect, 1.0);
+            let d = length(dv);
+            let culick = 0.045 * sqrt((0.5 + tension) / max(filmThick, 0.04));
+            let radius = age * culick * (1.0 + bass * 0.3);
+            let heal = 1.0 - smoothstep(2.2, 3.5, age);
+            let inside = 1.0 - smoothstep(radius - 0.006, radius, d);
+            let rimW = 0.004 + 0.02 * sqrt(radius);
+            let beads = 5.0 + floor(radius * 60.0);
+            let ang = atan2(dv.y, dv.x);
+            let beading = 0.55 + 0.45 * cos(ang * beads + hashf(rp.z) * TAU);
+            let rimBand = exp(-pow((d - radius) / rimW, 2.0)) * mix(1.0, beading, smoothstep(0.03, 0.15, radius));
+            holeCover = max(holeCover, inside * heal);
+            rimGlow += rimBand * heal;
+        }
+    }
+    rimGlow = min(rimGlow, 2.0);
+    let holeBg = vec3<f32>(0.03, 0.045, 0.07);
+    color = mix(color, holeBg, holeCover);
+    color += vec3<f32>(0.95, 0.97, 1.0) * rimGlow * (0.6 + p4 * 1.2 + treble * 0.4);
+
     // HDR bloom threshold
     let exposure = 1.05 + p4 * 0.55;
     color *= exposure;
@@ -289,7 +340,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += bloom * (0.45 + p4 * 0.35);
 
     // Temporal surface memory
-    let prev = textureLoad(dataTextureC, pixel, 0);
+    let cDims = vec2<i32>(textureDimensions(dataTextureC));
+    let prevCoord = clamp(pixel, vec2<i32>(0), cDims - vec2<i32>(1));
+    let prev = textureLoad(dataTextureC, prevCoord, 0);
     let decay = 0.96 - p4 * 0.03;
     let trail = mix(prev.rgb * decay, color, 0.1 + bass * 0.05);
     color = mix(color, trail, 0.3);
@@ -318,10 +371,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = acesToneMap(color);
 
     // Semantic alpha
-    let alpha = clamp(filmThick * curvature * safeDepth * 3.0, 0.0, 0.98);
+    // film coverage: thickness × curvature × depth, lost in black film and
+    // rupture holes, regained on the liquid rims
+    let filmCover = clamp(filmThick * curvature * safeDepth * 3.0, 0.0, 0.98) * (1.0 - blackFilm * 0.6);
+    let alpha = clamp(filmCover * (1.0 - holeCover) + rimGlow * 0.35, 0.0, 0.98);
 
     // Output
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth * (1.0 - holeCover), 0.0, 0.0, 0.0));
 }

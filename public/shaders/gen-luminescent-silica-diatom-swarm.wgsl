@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Luminescent Silica Diatom Swarm
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Silica Diatom Swarm
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: colony chain linkage (interlocking linking spines join frustules into Skeletonema-style chains); chloroplast plastid chlorophyll-a fluorescence (685 nm red) excited by the mouse light
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -78,6 +83,20 @@ fn map(p: vec3<f32>, audioReact: f32) -> vec2<f32> { // returns (distance, mater
   let cellIndex = floor(q / scale);
   q = (fract(q / scale) - 0.5) * scale;
 
+  // Native idea 1: colony chain linkage. Whole columns of cells (world-y) form
+  // Skeletonema-style chains: each frustule sends linking spines up and down that
+  // interlock with its neighbour's at the cell boundary (built in unrotated cell space
+  // so the spines meet seamlessly across cells).
+  let chainH = hash33(vec3<f32>(cellIndex.x, 0.0, cellIndex.z));
+  var link = 1e5;
+  if (chainH.z > 0.45) {
+    let boundary = abs(abs(q.y) - 0.5 * scale);
+    let collar = exp(-boundary * boundary / (0.004 * scale * scale));
+    let spineR = (0.022 + 0.03 * collar + 0.01 * audioReact) * scale;
+    let spineLen = abs(q.y) - 0.5 * scale;
+    link = max(length(q.xz) - spineR, spineLen);
+  }
+
   // Add some rotation variation per cell
   let h = hash33(cellIndex);
   let rM1 = rot(time * 0.5 + h.x * 6.28);
@@ -114,11 +133,19 @@ fn map(p: vec3<f32>, audioReact: f32) -> vec2<f32> { // returns (distance, mater
   // inner glowing core
   let core = length(q) - (0.15 * scale);
 
-  // material: 1.0 = silica shell, 2.0 = glowing core
-  if (core < d) {
+  // material: 1.0 = silica shell, 2.0 = glowing core, 3.0 = chain linking spine
+  if (core < d && core < link) {
     return vec2<f32>(core, 2.0);
   }
+  if (link < d) {
+    return vec2<f32>(link, 3.0);
+  }
   return vec2<f32>(d, 1.0);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Normal calculation
@@ -135,6 +162,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let texSize = textureDimensions(writeTexture);
   if (global_id.x >= texSize.x || global_id.y >= texSize.y) { return; }
 
+  let coord = vec2<i32>(global_id.xy);
   let fragCoord = vec2<f32>(global_id.xy);
   let res = vec2<f32>(texSize);
 
@@ -142,11 +170,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let time = u.config.x;
 
-  // Audio reactivity sampling
-  // Sample frequency data from dataTextureC
-  let audioUV = vec2<f32>(abs(uv.x) * 0.5 + 0.25, 0.5);
-  let audioSample = textureSampleLevel(dataTextureC, non_filtering_sampler, audioUV, 0.0).r;
-  let audioIntensity = audioSample * u.zoom_params.w;
+  // Audio reactivity (plasmaBuffer)
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+  let audioIntensity = (bass * 0.35 + mids * 0.15) * u.zoom_params.w;
 
   // Camera setup
   var ro = vec3<f32>(0.0, 0.0, time * 2.0); // Moving forward
@@ -182,6 +210,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let maxD = 30.0;
 
   var hit = false;
+  var alpha = 0.0;
   var minDistanceToCore = 100.0;
 
   for (var i = 0; i < 100; i++) {
@@ -216,14 +245,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseWorldPos = ro + normalize(mouseUV.x * cu + mouseUV.y * cv + 1.2 * cw) * t;
     let distToMouseWorld = length(p - mouseWorldPos);
     let mouseColorInfluence = exp(-distToMouseWorld * 0.5) * u.zoom_config.w;
+    let mouseProx = exp(-distToMouseWorld * 0.35) * 0.35; // hover light also excites plastids
 
+    var alphaHit = 0.0;
     if (mat == 1.0) {
       // Silica Shell (Glassy Refraction/Reflection)
       let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));
       let diff = max(dot(n, lightDir), 0.0);
       let viewDir = -rd;
       let refl = reflect(-lightDir, n);
-      let spec = pow(max(dot(viewDir, refl), 0.0), 32.0);
+      let spec = pow(max(dot(viewDir, refl), 0.0), 32.0) * (1.0 + treble * 0.4);
 
       // Fresnel effect
       let f0 = 0.04;
@@ -233,7 +264,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let refrFactor = u.zoom_params.z - 1.0;
 
       let shellColor = vec3<f32>(0.2, 0.5, 0.6) * diff + vec3<f32>(1.0) * spec * fresnel;
-      col = shellColor + fresnel * 0.5 * refrFactor;
+      // Glass refraction of the input through the frustule
+      let refrUV = clamp(fragCoord / res + n.xy * 0.05 * refrFactor, vec2<f32>(0.0), vec2<f32>(1.0));
+      let refrCol = textureSampleLevel(readTexture, u_sampler, refrUV, 0.0).rgb;
+      col = shellColor + fresnel * 0.5 * refrFactor + refrCol * 0.08 * refrFactor;
+      alphaHit = clamp(0.45 + fresnel * 0.4 + diff * 0.15, 0.0, 1.0);
 
     } else if (mat == 2.0) {
       // Glowing Core
@@ -246,8 +281,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       // Audio reactive intensity and hue
       baseGlow += vec3<f32>(audioIntensity * 0.5, audioIntensity * 0.2, 0.0);
 
+      // Native idea 2: chloroplast plastids with chlorophyll-a fluorescence.
+      // Two parietal plastid plates lie against the valves; blue-ish excitation
+      // (the mouse light, plus bass pulses) makes them re-emit deep red ~685 nm.
+      let plastid = smoothstep(0.35, 0.75, abs(n.y)) * (0.75 + 0.25 * sin(dot(p, vec3<f32>(9.0, 3.0, 5.0)) + time));
+      let excitation = clamp(0.15 + mouseColorInfluence * 1.2 + bass * 0.5 + mouseProx * 0.6, 0.0, 2.0);
+      let chlorophyllRed = vec3<f32>(0.95, 0.06, 0.1);
+      let plastidGold = vec3<f32>(0.55, 0.45, 0.08); // fucoxanthin-brown plastid body
+      let fluor = chlorophyllRed * excitation * plastid;
+      baseGlow = mix(baseGlow, plastidGold * 1.6, plastid * 0.45) + fluor;
+
       col = baseGlow * u.zoom_params.y * 2.0;
+      alphaHit = clamp(0.7 + plastid * 0.3, 0.0, 1.0);
+    } else {
+      // Linking spines: silica rods sheathed in faintly glowing mucilage
+      let viewDir = -rd;
+      let rim = pow(1.0 - max(dot(n, viewDir), 0.0), 2.0);
+      col = vec3<f32>(0.15, 0.35, 0.4) * (0.3 + 0.7 * max(dot(n, normalize(vec3<f32>(1.0, 1.0, -1.0))), 0.0))
+          + vec3<f32>(0.1, 0.7, 0.8) * rim * u.zoom_params.y * 0.4 * (1.0 + mids * 0.5);
+      alphaHit = clamp(0.35 + rim * 0.5, 0.0, 1.0);
     }
+    alpha = alphaHit;
   }
 
   // Subsurface Bioluminescent Glow (volumetric integration approx)
@@ -262,6 +316,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
       let glowStr = exp(-minDistanceToCore * 4.0) * u.zoom_params.y;
       col += glowCol * glowStr * (1.0 + audioIntensity);
+      alpha = clamp(glowStr, 0.0, 0.8);
+  }
+
+  // Click ripples: phototactic flash wave — cells light up as the pulse passes
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var r = 0u; r < rippleCount; r++) {
+    let rp = u.ripples[r];
+    let age = time - rp.z;
+    if (age < 0.0 || age > 2.5) { continue; }
+    let rc = (rp.xy * res - 0.5 * res) / min(res.x, res.y);
+    let ring = exp(-pow((length(uv - rc) - age * 0.7) * 12.0, 2.0)) * (1.0 - age / 2.5);
+    col += vec3<f32>(0.1, 0.8, 0.9) * ring * 0.4 * u.zoom_params.y * (1.0 + bass * 0.5);
+    alpha = max(alpha, ring * 0.6);
   }
 
   // Fog / Depth of field approximation (fade to background)
@@ -269,9 +336,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bgColor = vec3<f32>(0.01, 0.02, 0.05);
   col = mix(col, bgColor, clamp(fogFactor, 0.0, 1.0));
 
-  // Tone mapping and gamma correction
-  col = col / (1.0 + col);
-  col = pow(col, vec3<f32>(1.0 / 2.2));
+  // Exact temporal feedback from C (faint mucilage glide trails)
+  let dims = vec2<i32>(textureDimensions(dataTextureC));
+  let prevCoord = clamp(coord, vec2<i32>(0), dims - vec2<i32>(1));
+  let previous = textureLoad(dataTextureC, prevCoord, 0);
+  col = mix(col, previous.rgb * 0.9, 0.06 + mids * 0.03);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+  col = acesToneMap(col * (1.1 + bass * 0.2));
+  let finalAlpha = clamp(alpha * (1.0 - fogFactor * 0.5) + previous.a * 0.05, 0.0, 1.0);
+  let finalColor = vec4<f32>(col, finalAlpha);
+
+  var depth = 0.0;
+  if (hit) {
+    depth = clamp(1.0 - t / maxD, 0.0, 1.0);
+  }
+
+  textureStore(writeTexture, coord, finalColor);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, finalColor);
 }

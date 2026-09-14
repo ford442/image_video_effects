@@ -11,8 +11,8 @@
   ],
   "description": "A mesmerizing, bioluminescent liquid surface that physically organizes itself into hyper-complex, evolving Chladni resonant figures driven by low-frequency audio interference patterns.",
   "workgroup_size": [
-    8,
-    8,
+    16,
+    16,
     1
   ],
   "updatedParams": [
@@ -54,5 +54,47 @@
   "updated": true,
   "id": "gen-luminous-fluid-chladni-resonator",
   "url": "shaders/gen-luminous-fluid-chladni-resonator.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "modeN",
+      "name": "Mode N",
+      "mapping": "zoom_params.x",
+      "default": 3,
+      "min": 1,
+      "max": 10,
+      "step": 0.1
+    },
+    {
+      "id": "modeM",
+      "name": "Mode M",
+      "mapping": "zoom_params.y",
+      "default": 5,
+      "min": 1,
+      "max": 10,
+      "step": 0.1
+    },
+    {
+      "id": "fluidity",
+      "name": "Fluidity",
+      "mapping": "zoom_params.z",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.05
+    },
+    {
+      "id": "glowIntensity",
+      "name": "Glow Intensity",
+      "mapping": "zoom_params.w",
+      "default": 1.5,
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1
+    }
+  ]
 }

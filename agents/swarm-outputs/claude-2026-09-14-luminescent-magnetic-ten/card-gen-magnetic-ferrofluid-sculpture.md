@@ -1,0 +1,10 @@
+SHADER: gen-magnetic-ferrofluid-sculpture
+IDENTITY: Raymarched liquid-metal sculpture: noise-rippled sphere with 6 orbiting cone spikes, fine spherical-harmonic spikes, mouse magnetic bulge, orbiting droplet, 3-light chrome + thin-film iridescence.
+KEEP VERBATIM: ferrofluid() sphere/noise/cone spike loop/fine spikes/mouse bulge/orbiting droplet; iridescent(); lighting stack; depth fog; temporal persistence.
+ADD (2 native ideas):
+  1. Taylor-cone droplet pinch-off — on bass (eject = sat((bass-0.3)*2.2)) each spike tip ejects a droplet along its spike axis on a per-spike phase; a capsule neck thins and snaps at cycle ~0.55 (Rayleigh-Plateau); Fluid Viscosity slows the cycle and fattens the neck.
+  2. Field-induced dipole chain bridges — beaded chains (head-to-tail particle chains) bridging neighbouring spike tips in a ring, bowing outward along field lines, bead pattern crawling; strength from Magnetic Pull, boosted while mouse held and by bass. Off-bulk surfaces (chains/droplets) get a cyan field-line glint.
+FLOOR FIXES: textureSampleLevel(dataTextureC) -> clamped exact textureLoad; out-of-range extraBuffer[0] bass envelope relocated to guarded extraBuffer[133]; hardcoded alpha 1.0 -> semantic (coverage faded by fog depth + pulse glow + prev.a); added click ripples (loop to min(u32(config.y),50): magnetic field pulse raises a travelling surface swell ring on the fluid + screen shell); mouse held now boosts magnetic pull + chains; plasmaBuffer clamped; dead AO constant replaced by march-step AO; header/Uniforms comments per contract; u.config.z/w only resolution (no fake audio). JSON: added params array + features (was empty); updatedParams untouched.
+FORBID: dataTextureB writes; extraBuffer outside 133..138; textureSampleLevel on dataTextureC; generic overlays; removing cone spikes.
+A PACKING: ACES display RGBA in A
+VERIFY: naga ok / gate ok / extraBuffer audit PASS / sliders x (spike count/noise freq), y (viscosity: spike width, pinch speed/neck), z (iridescence), w (mouse pull + chain strength) live

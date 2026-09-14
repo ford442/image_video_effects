@@ -56,5 +56,47 @@
   "updated": true,
   "id": "gen-metaball-soft-body",
   "url": "shaders/gen-metaball-soft-body.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "ballCount",
+      "name": "Ball Count",
+      "mapping": "zoom_params.x",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "surfaceRoughness",
+      "name": "Surface Roughness",
+      "mapping": "zoom_params.y",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "metalHue",
+      "name": "Metal Hue",
+      "mapping": "zoom_params.z",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "causticStrength",
+      "name": "Caustic Strength",
+      "mapping": "zoom_params.w",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

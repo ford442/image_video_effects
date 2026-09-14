@@ -54,5 +54,50 @@
   "updated": true,
   "id": "gen-magnetic-kelp",
   "url": "shaders/gen-magnetic-kelp.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "click-reactive",
+    "depth-aware",
+    "temporal"
+  ],
+  "params": [
+    {
+      "id": "strandDensity",
+      "name": "Strand Density",
+      "mapping": "zoom_params.x",
+      "default": 0.44,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "currentSpeed",
+      "name": "Current Speed",
+      "mapping": "zoom_params.y",
+      "default": 0.47,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "magnetism",
+      "name": "Magnetism",
+      "mapping": "zoom_params.z",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "biolume",
+      "name": "Biolume",
+      "mapping": "zoom_params.w",
+      "default": 0.52,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

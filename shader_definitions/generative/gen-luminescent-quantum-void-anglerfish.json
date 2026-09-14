@@ -55,5 +55,47 @@
   "updated": true,
   "id": "gen-luminescent-quantum-void-anglerfish",
   "url": "shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
-  "features": []
+  "params": [
+    {
+      "id": "jawRotation",
+      "name": "Jaw Rotation",
+      "mapping": "zoom_params.x",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "lureIntensity",
+      "name": "Lure Intensity",
+      "mapping": "zoom_params.y",
+      "default": 1.0,
+      "min": 0.5,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "voidDensity",
+      "name": "Void Density",
+      "mapping": "zoom_params.z",
+      "default": 0.8,
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "id": "fractalRust",
+      "name": "Fractal Rust",
+      "mapping": "zoom_params.w",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+    }
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

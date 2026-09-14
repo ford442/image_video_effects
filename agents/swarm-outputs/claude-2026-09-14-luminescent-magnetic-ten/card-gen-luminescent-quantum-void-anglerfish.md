@@ -1,0 +1,10 @@
+SHADER: gen-luminescent-quantum-void-anglerfish
+IDENTITY: Raymarched biomechanical deep-space anglerfish (brass capsule body + tail, hinged hollow jaw with needle-teeth instances, cyan esca lure, magenta aether-particle swarm, translucent sin-wave fins) in a Beer's-law dark-matter void.
+KEEP VERBATIM: rot/smin/hash33/sdSphere/sdBox/sdCapsule, body/tail/jaw/teeth/lure/particle/fin SDFs, mouse gaze rotation of body + camera, 100-step march, material palette, Beer's-law absorption.
+ADD (2 native ideas):
+  1. Esca bacterial pulse (escaBacterialPulse): symbiotic-bacteria colonies (cell hash over the esca bulb) flicker on individual phases; a quorum-sensing sync term pulls them into one breathing pulse, sync strength rises with bass; click shock flares the lure.
+  2. Lateral-line photophores (lateralLinePhotophores): two rows of spaced photophore spots on the body flanks (body-space position carried out of map via new MapData.bp), lit by a head-to-tail travelling wave; treble sparkles, click ripples send a flash down the line.
+FLOOR FIXES: removed fake audio u.config.y (lure bloom "audio") and fract(u.config.y) shockwave -> plasmaBuffer bass/mids/treble (clamped, gains 0.2-0.45) + real u.ripples loop (min(u32(config.y),50u)) driving swarm shockwave and screen rings; mouse held (zoom_config.w) gapes jaw wider; Reinhard+alpha 1.0 -> ACES + semantic alpha (hit coverage/diffuse/spec + photophore + volumetric glow, attenuated by void absorption); same RGBA to writeTexture + dataTextureA; real depth (1 - t/30) instead of 0; afterglow via clamped textureLoad(dataTextureC); no dataTextureB write; no extraBuffer use; dead unused noiseVec removed. Header standardized. JSON: updatedParams byte-exact, params array added, features [] -> audio-reactive/mouse-driven/upgraded-rgba.
+FORBID: u.config.y/zw or zoom_config.x as audio; textureSampleLevel on dataTextureC; dataTextureB writes; extraBuffer outside 133..138; replacing the anglerfish SDFs.
+A PACKING: ACES display RGBA in A
+VERIFY: naga ok / gate ok / extraBuffer ok (AUDIT PASS) / sliders x (jaw), y (lure, photophores, rings), z (void density), w (rust) live

@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Multi-Scale Evolutionary Cellular Gardens
 //  Category: generative
-//  Description: Multi-state cellular automata with evolving rules.
-//  Audio drives genetic pressure; mouse seeds invasive species or
-//  protected zones. Organic plant-like structures emerge and slowly
-//  change their fundamental behavior over time.
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-14
+//  Ideas: mycorrhizal hyphal transport (fungal species conducts substrate across the far neighbourhood); Red Queen frequency-dependent rule drift (locally dominant species' evolved thresholds shift against it)
+//  A packing: ACES display RGBA in A — display is an exactly invertible
+//    encoding of the sim: RGB = ACES(gain * vignette * speciesColor(s1,s2,s3,res)),
+//    alpha = 1 - exp(-(0.9*pop + 0.45*res + 0.05)) (canopy+substrate optical
+//    coverage). Next frame decodes (s1,s2,s3,res) from C via inverse ACES +
+//    inverse pigment matrix, so no flourish that would corrupt state is drawn.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,14 +27,15 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Mutation Rate, .y = Species Competition, .z = Fertility, .w = Diversity
   ripples: array<vec4<f32>, 50>,
 };
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+const ENC_GAIN: f32 = 1.1;
 
 // ─── Hash utilities ───────────────────────────────────────────────
 fn hash12(p: vec2<f32>) -> f32 {
@@ -42,7 +47,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     let p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
     let p4 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.xx + p3.yz) * p3.zy);
+    return fract((p4.xx + p4.yz) * p4.zy);
 }
 
 fn hash13(p: vec3<f32>) -> f32 {
@@ -82,21 +87,9 @@ fn growthKernel(selfDensity: f32, neighborAvg: f32, rulePhase: f32,
     return growthImpulse - selfDensity * decayRate;
 }
 
-// ─── Multi-scale neighbourhood sampling ───────────────────────────
-fn sampleNeighbourhood(uv: vec2<f32>, ps: vec2<f32>, scale: f32) -> vec4<f32> {
-    let offset = ps * scale;
-    let n0 = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( offset.x, 0.0), 0.0);
-    let n1 = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>( offset.x, 0.0), 0.0);
-    let n2 = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0,  offset.y), 0.0);
-    let n3 = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(0.0,  offset.y), 0.0);
-    let n4 = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( offset.x,  offset.y), 0.0);
-    let n5 = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>( offset.x,  offset.y), 0.0);
-    let n6 = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( offset.x, -offset.y), 0.0);
-    let n7 = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>( offset.x, -offset.y), 0.0);
-    return (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) * 0.125;
-}
-
 // ─── Species coloring ─────────────────────────────────────────────
+// Linear in (s1,s2,s3,res) for a fixed phase — this is what makes the
+// display RGBA invertible back into sim state.
 fn speciesColor(s1: f32, s2: f32, s3: f32, resourceLevel: f32,
                 rulePhase: f32, t: f32) -> vec3<f32> {
     // Species 1: green-teal coral growth
@@ -115,20 +108,88 @@ fn speciesColor(s1: f32, s2: f32, s3: f32, resourceLevel: f32,
     return c1 + c2 + c3 + rCol + iridescence * (s1 + s2 + s3) * 0.3;
 }
 
+// Pigment matrix equivalent of speciesColor's species terms (columns = species)
+fn pigmentMatrix(rulePhase: f32, t: f32) -> mat3x3<f32> {
+    let shift = sin(rulePhase * TAU + t * 0.3) * 0.15;
+    let irid = vec3<f32>(shift, -shift * 0.5, shift * 0.7) * 0.3;
+    return mat3x3<f32>(
+        vec3<f32>(0.1, 0.7, 0.5) + irid,
+        vec3<f32>(0.7, 0.2, 0.6) + irid,
+        vec3<f32>(0.8, 0.6, 0.1) + irid
+    );
+}
+
+fn inverse3(m: mat3x3<f32>) -> mat3x3<f32> {
+    let a = m[0]; let b = m[1]; let c = m[2];
+    let r0 = cross(b, c);
+    let r1 = cross(c, a);
+    let r2 = cross(a, b);
+    let det = dot(a, r0);
+    let invDet = 1.0 / select(det, 1e-4, abs(det) < 1e-4);
+    return transpose(mat3x3<f32>(r0, r1, r2)) * invDet;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Exact inverse of the ACES fit on [0, 0.999]
+fn acesInverse(yIn: vec3<f32>) -> vec3<f32> {
+    let y = clamp(yIn, vec3<f32>(0.0), vec3<f32>(0.999));
+    let a = 2.43 * y - 2.51;
+    let b = 0.59 * y - 0.03;
+    let c = 0.14 * y;
+    let disc = max(b * b - 4.0 * a * c, vec3<f32>(0.0));
+    return max((-b - sqrt(disc)) / (2.0 * a), vec3<f32>(0.0));
+}
+
+fn gardenVignette(uv: vec2<f32>) -> f32 {
+    let vig = 1.0 - smoothstep(0.35, 0.8, length(uv - 0.5) * 1.3);
+    return mix(0.35, 1.0, vig); // floored so the encoding stays invertible
+}
+
+// Decode (s1, s2, s3, resource) from the previous frame's display RGBA
+fn decodeState(coord: vec2<i32>, dims: vec2<i32>, res: vec2<f32>, pigInv: mat3x3<f32>) -> vec4<f32> {
+    let cc = clamp(coord, vec2<i32>(0), dims - vec2<i32>(1));
+    let texel = textureLoad(dataTextureC, cc, 0);
+    let uvc = (vec2<f32>(cc) + 0.5) / res;
+    let lin = acesInverse(texel.rgb) / (ENC_GAIN * gardenVignette(uvc));
+    let rVec = vec3<f32>(0.15, 0.25, 0.15) * 0.5;
+    let w = transpose(pigInv) * vec3<f32>(1.0);          // row sums of inverse
+    let depthOpt = -log(max(1.0 - clamp(texel.a, 0.0, 0.999999), 1e-6));
+    let denom = 0.45 - 0.9 * dot(w, rVec);
+    let substrate = clamp((depthOpt - 0.05 - 0.9 * dot(w, lin)) / denom, 0.0, 1.2);
+    let s = clamp(pigInv * (lin - rVec * substrate), vec3<f32>(0.0), vec3<f32>(1.5));
+    return vec4<f32>(s, substrate);
+}
+
+// ─── Multi-scale neighbourhood sampling (exact texel loads) ───────
+fn sampleNeighbourhood(coord: vec2<i32>, dims: vec2<i32>, res: vec2<f32>, scale: i32, pigInv: mat3x3<f32>) -> vec4<f32> {
+    let n0 = decodeState(coord + vec2<i32>( scale, 0), dims, res, pigInv);
+    let n1 = decodeState(coord - vec2<i32>( scale, 0), dims, res, pigInv);
+    let n2 = decodeState(coord + vec2<i32>(0,  scale), dims, res, pigInv);
+    let n3 = decodeState(coord - vec2<i32>(0,  scale), dims, res, pigInv);
+    let n4 = decodeState(coord + vec2<i32>( scale,  scale), dims, res, pigInv);
+    let n5 = decodeState(coord - vec2<i32>( scale,  scale), dims, res, pigInv);
+    let n6 = decodeState(coord + vec2<i32>( scale, -scale), dims, res, pigInv);
+    let n7 = decodeState(coord - vec2<i32>( scale, -scale), dims, res, pigInv);
+    return (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) * 0.125;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = vec2<f32>(u.config.zw);
     if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / res;
+    let coord = vec2<i32>(global_id.xy);
+    let dims = vec2<i32>(textureDimensions(dataTextureC));
+    let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
     let aspect = res.x / res.y;
-    let uvA = vec2<f32>(uv.x * aspect, uv.y);
-    let ps = 1.0 / res;
 
     let t = u.config.x;
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
     // User parameters
     let mutationRate = u.zoom_params.x * 2.0 + 0.2;   // 0.2..2.2
@@ -142,8 +203,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseDist = length(uv - mousePos);
     let mouseInfluence = smoothstep(0.15, 0.0, mouseDist) * mouseDown;
 
-    // Read previous state from temporal feedback
-    let state = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Audio-free colour phase: shared by encode (this frame) and decode (next frame)
+    let colorPhase = fract(t * 0.01 * mutationRate);
+    let pigInv = inverse3(pigmentMatrix(colorPhase, t));
+
+    // Read previous state from temporal feedback (exact decode of A via C)
+    let state = decodeState(coord, dims, res, pigInv);
     let s1 = state.r;       // Species 1 density
     let s2 = state.g;       // Species 2 density
     let s3 = state.b;       // Species 3 density
@@ -156,8 +221,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rulePhase3 = fract(rulePhase + 0.67 + mids * 0.12);
 
     // Multi-scale neighbourhood averages (near + far = multi-scale competition)
-    let nearNeighbours = sampleNeighbourhood(uv, ps, 1.0);
-    let farNeighbours  = sampleNeighbourhood(uv, ps, 3.0);
+    let nearNeighbours = sampleNeighbourhood(coord, dims, res, 1, pigInv);
+    let farNeighbours  = sampleNeighbourhood(coord, dims, res, 3, pigInv);
 
     // Weighted neighbourhood for each species (multi-scale awareness)
     let nearWeight = 0.7;
@@ -167,20 +232,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let avgS3 = nearNeighbours.b * nearWeight + farNeighbours.b * farWeight;
     let avgRes = nearNeighbours.a * nearWeight + farNeighbours.a * farWeight;
 
+    // ── Idea 2: Red Queen frequency-dependent selection ──
+    // The locally dominant species' evolved thresholds drift against it
+    // (parasites/grazers track the commonest genotype), curbing monocultures.
+    let localPop = s1 + s2 + s3 + 1e-3;
+    let redQueen = 0.25 * (0.5 + u.zoom_params.x) * (1.0 + treble * 0.4);
+    let rq1 = min(rulePhase  + (s1 / localPop) * redQueen, 1.3);
+    let rq2 = min(rulePhase2 + (s2 / localPop) * redQueen, 1.3);
+    let rq3 = min(rulePhase3 + (s3 / localPop) * redQueen, 1.3);
+
     // Apply evolving growth kernels per species
-    let grow1 = growthKernel(s1, avgS1, rulePhase, resourceLevel, fertility);
-    let grow2 = growthKernel(s2, avgS2, rulePhase2, resourceLevel, fertility * 0.9);
-    let grow3 = growthKernel(s3, avgS3, rulePhase3, resourceLevel, fertility * 0.85) * diversity;
+    let grow1 = growthKernel(s1, avgS1, rq1, resourceLevel, fertility);
+    let grow2 = growthKernel(s2, avgS2, rq2, resourceLevel, fertility * 0.9);
+    let grow3 = growthKernel(s3, avgS3, rq3, resourceLevel, fertility * 0.85) * diversity;
 
     // Inter-species competition
     let comp12 = s1 * s2 * competition;
     let comp13 = s1 * s3 * competition * 0.8;
     let comp23 = s2 * s3 * competition * 0.9;
 
-    // Audio-driven genetic pressure modifies growth rates
-    let audioPressure1 = bass * 0.06;
-    let audioPressure2 = mids * 0.05;
-    let audioPressure3 = treble * 0.04;
+    // Audio-driven genetic pressure modifies growth rates — acts only on
+    // populations already present (no spontaneous fill of bare substrate)
+    let audioPressure1 = bass * 0.03 * smoothstep(0.02, 0.25, avgS1);
+    let audioPressure2 = mids * 0.025 * smoothstep(0.02, 0.25, avgS2);
+    let audioPressure3 = treble * 0.02 * smoothstep(0.02, 0.25, avgS3) * diversity;
 
     // Update species densities
     var newS1 = s1 + grow1 - comp12 - comp13 + audioPressure1;
@@ -191,6 +266,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let totalConsumption = (newS1 + newS2 + newS3) * 0.012;
     let regeneration = 0.015 * fertility + avgRes * 0.01;
     var newRes = resourceLevel + regeneration - totalConsumption;
+
+    // ── Idea 1: mycorrhizal hyphal transport ──
+    // The fungal species forms a conductive network: where hyphae are dense,
+    // substrate flows from the far (3-texel) neighbourhood toward local deficit.
+    let hyphalConductance = smoothstep(0.05, 0.6, avgS2) * (0.2 + mids * 0.1);
+    newRes += hyphalConductance * (farNeighbours.a - resourceLevel);
+    // Mutualism: coral fed by the network grows slightly where hyphae connect
+    newS1 += hyphalConductance * max(farNeighbours.a - resourceLevel, 0.0) * s1 * 0.5;
 
     // Mouse interaction: seeds invasive burst or creates protected zone
     if (mouseInfluence > 0.01) {
@@ -205,9 +288,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         newRes += mouseInfluence * 0.3; // Inject resources
     }
 
+    // Click ripples: founder-spore rings seed the locally rarest species
+    let rippleCount = min(u32(u.config.y), 50u);
+    var founder = 0.0;
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = t - rp.z;
+        if (age > 0.0 && age < 1.5) {
+            let d = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+            let ringD = d - age * 0.22;
+            founder += exp(-ringD * ringD / 0.0004) * (1.0 - age / 1.5);
+        }
+    }
+    if (founder > 0.01) {
+        if (newS3 <= newS1 && newS3 <= newS2) {
+            newS3 += founder * 0.25;
+        } else if (newS2 <= newS1) {
+            newS2 += founder * 0.25;
+        } else {
+            newS1 += founder * 0.25;
+        }
+        newRes += founder * 0.15;
+    }
+
     // Random seeding for new growth when population is low
-    let totalPop = newS1 + newS2 + newS3;
-    if (totalPop < 0.05) {
+    let totalPopPre = newS1 + newS2 + newS3;
+    if (totalPopPre < 0.05) {
         let seed = hash13(vec3<f32>(uv * 100.0, floor(t * 2.0)));
         if (seed > 0.97) {
             let which = hash12(uv * 57.3 + t);
@@ -223,34 +329,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     newS2 = clamp(newS2, 0.0, 1.5);
     newS3 = clamp(newS3, 0.0, 1.5);
     newRes = clamp(newRes, 0.0, 1.2);
+    let totalPop = newS1 + newS2 + newS3;
 
-    // Store state for next frame temporal feedback
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(newS1, newS2, newS3, newRes));
+    // ─── Visualization = invertible state encoding ────────────────
+    // Colour is purely the pigment mix (+ substrate glow + iridescence,
+    // all linear), vignetted, then ACES. Bass never touches the encoding
+    // gain (it would break decode); audio acts through the sim instead.
+    let color = speciesColor(newS1, newS2, newS3, newRes, colorPhase, t);
+    let display = acesToneMap(color * ENC_GAIN * gardenVignette(uv));
 
-    // ─── Visualization ────────────────────────────────────────────
-    var color = speciesColor(newS1, newS2, newS3, newRes, rulePhase, t);
+    // Semantic alpha: Beer-Lambert canopy + substrate coverage
+    let alpha = 1.0 - exp(-(0.9 * totalPop + 0.45 * newRes + 0.05));
 
-    // Growth tip glow (where species are actively expanding)
-    let growthActivity = max(grow1, max(grow2, grow3));
-    let tipGlow = smoothstep(0.0, 0.04, growthActivity);
-    color += vec3<f32>(0.9, 0.95, 0.8) * tipGlow * 0.5;
-
-    // Competition boundary highlighting
-    let boundaryGlow = comp12 + comp13 + comp23;
-    color += vec3<f32>(1.0, 0.3, 0.2) * smoothstep(0.0, 0.02, boundaryGlow) * 0.3;
-
-    // Resource substrate visibility
-    let resGlow = smoothstep(0.5, 1.0, newRes);
-    color += vec3<f32>(0.2, 0.4, 0.1) * resGlow * 0.2;
-
-    // Vignette for focus
-    let vig = 1.0 - smoothstep(0.35, 0.8, length(uv - 0.5) * 1.3);
-    color *= vig;
-
-    // Overall intensity modulation
-    let alpha = clamp(totalPop * 0.6 + newRes * 0.3 + 0.05, 0.0, 1.0);
-    color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
-
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color * alpha, alpha));
+    let finalColor = vec4<f32>(display, alpha);
+    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(dataTextureA, global_id.xy, finalColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(totalPop * 0.4, 0.0, 0.0, 0.0));
 }

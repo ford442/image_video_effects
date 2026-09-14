@@ -11,8 +11,8 @@
   ],
   "description": "Charged particles warped by a magnetic field with domain-warped FBM turbulence, curl-noise vortices, and Clifford strange-attractor modulation.",
   "workgroup_size": [
-    8,
-    8,
+    16,
+    16,
     1
   ],
   "updatedParams": [
@@ -54,5 +54,49 @@
   "updated": true,
   "id": "gen-magnetic-field-warp",
   "url": "shaders/gen-magnetic-field-warp.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "click-reactive",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "warpStrength",
+      "name": "Warp Strength",
+      "mapping": "zoom_params.x",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "plasmaMix",
+      "name": "Plasma Mix",
+      "mapping": "zoom_params.y",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "mapping": "zoom_params.z",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "attractorMix",
+      "name": "Attractor Mix",
+      "mapping": "zoom_params.w",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

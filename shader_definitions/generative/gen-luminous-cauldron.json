@@ -54,5 +54,47 @@
   "updated": true,
   "id": "gen-luminous-cauldron",
   "url": "shaders/gen-luminous-cauldron.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "boilRate",
+      "name": "Boil Rate",
+      "mapping": "zoom_params.x",
+      "default": 0.48,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "convection",
+      "name": "Convection",
+      "mapping": "zoom_params.y",
+      "default": 0.44,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "foam",
+      "name": "Foam",
+      "mapping": "zoom_params.z",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "radiance",
+      "name": "Radiance",
+      "mapping": "zoom_params.w",
+      "default": 0.52,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

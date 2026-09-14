@@ -1,0 +1,10 @@
+SHADER: gen-luminescent-quantum-silicate-diatom
+IDENTITY: Raymarched lattice of octahedral silica frustules with simplex pores, volumetric bioluminescent cytoplasm, Fresnel iridescence, mouse-held micro-gravity well, camera drifting at Pulse Speed.
+KEEP VERBATIM: rot, hash33, simplex3d, octahedron+simplex-pore map core, get_normal, cytoplasm volumetric accumulation, Fresnel iridescent_col, bio_col shift, mouse gravity well (factored into frustuleLocal), fog + soft bloom.
+ADD (2 native ideas):
+  1. Hexagonal areolae pore lattice — each octahedral valve face is flattened onto the plane orthogonal to (1,1,1) and tiled with a hex lattice; areolae pits are carved into the shell band (density follows Pore Density, depth pulses with bass) and leak cytoplasm light through the open pores.
+  2. Frustule valve-thickness thin-film interference — silica n=1.43, optical path 2*n*d*cos(theta_t) evaluated at 650/530/450 nm; valve is thin in areolae and thick on ribs (range scaled by Iridescence Spread, treble nudges thickness), blended 65% into the existing Fresnel iridescence.
+FLOOR FIXES: fake audio textureSampleLevel(dataTextureC) removed -> plasmaBuffer[0].xyz bass/mids/treble with controlled gains (u.config.z/w only used for aspect/bounds, not audio); exact clamped textureLoad(dataTextureC) mild afterglow; ACES tone map; semantic alpha (shell coverage/Fresnel/rib vs pore, cytoplasm density on miss, ripple rings); same RGBA to writeTexture + dataTextureA; depth written; click ripples added (silica-deposition rings, loop to min(u32(u.config.y),50u)); header replaced. No extraBuffer use. JSON: original "parameters" kept byte-exact; params + updatedParams (same values) + features added.
+FORBID: generic noise/bloom overlays, dataTextureB writes, extraBuffer outside 133..138, changing slider defaults/ranges.
+A PACKING: ACES display RGBA in A
+VERIFY: naga ok / gate ok / extraBuffer ok (AUDIT PASS) / sliders x (pores+areolae), y (pulse/time), z (iridescence+film thickness), w (bio shift + ripple tint) live

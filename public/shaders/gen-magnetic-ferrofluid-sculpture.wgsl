@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Magnetic Ferrofluid-Sculpture
 //  Category: generative
-//  Features: raymarched, ferrofluid, magnetic-spikes, iridescence,
-//            audio-reactive, mouse-driven, liquid-metal, upgraded-rgba,
-//            depth-aware, chromatic
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-06-28
+//  Upgraded: 2026-09-14
+//  Ideas: Taylor-cone droplet pinch-off from spike tips on bass; field-induced dipole chain bridges between neighbouring spike tips (Magnetic Pull / mouse held)
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +23,10 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Spike Density, .y = Fluid Viscosity, .z = Iridescence, .w = Magnetic Pull
+
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -59,6 +60,48 @@ fn sdCone(p: vec3<f32>, h: f32, r: f32) -> f32 {
   return length(max(vec2<f32>(d1, d2), vec2<f32>(0.0))) + min(max(d1, d2), 0.0);
 }
 
+fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+  let pa = p - a; let ba = b - a;
+  let h = sat(dot(pa, ba) / max(dot(ba, ba), 1e-5));
+  return length(pa - ba * h) - r;
+}
+
+// Native idea 1: Taylor-cone pinch-off. Under a strong field pulse the spike
+// tip sharpens into a cone that ejects a droplet; the neck thins as the
+// droplet travels outward and snaps (Rayleigh–Plateau) once it is too slender.
+// More viscous fluid slows the ejection cycle and fattens the neck.
+fn taylorConeDroplet(p: vec3<f32>, tip: vec3<f32>, dir: vec3<f32>, eject: f32,
+                     cycle: f32, viscosity: f32) -> f32 {
+  let travel = cycle * (0.55 + eject * 0.55);
+  let dropC = tip + dir * travel;
+  let dropR = (0.05 + eject * 0.06) * (1.0 - cycle * 0.35);
+  var d = sdSphere(p - dropC, dropR);
+  // Neck radius collapses to zero at the pinch point (cycle ~0.55).
+  let neckR = 0.03 * eject * viscosity * (1.0 - smoothstep(0.25, 0.55, cycle));
+  if (neckR > 0.002) {
+    d = smin(d, sdCapsule(p, tip, dropC, neckR), 0.04);
+  }
+  return d;
+}
+
+// Native idea 2: field-induced chain bridges. In a strong applied field the
+// suspended magnetite particles align head-to-tail into dipole chains that
+// bridge neighbouring spike tips as strings of beads along the field line.
+fn dipoleChain(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, strength: f32, time: f32) -> f32 {
+  let ba = b - a;
+  let len = max(length(ba), 1e-4);
+  let h = sat(dot(p - a, ba) / (len * len));
+  // Field lines sag outward between tips.
+  let mid = normalize(a + b + vec3<f32>(1e-4));
+  let bow = mid * sin(h * 3.14159) * 0.35 * strength;
+  let c = a + ba * h + bow;
+  let beads = max(4.0, floor(len * 9.0));
+  let bead = abs(cos(h * beads * 3.14159 + time * 2.0));
+  let r = (0.012 + 0.03 * strength) * (0.45 + 0.55 * bead);
+  // Conservative bound: bow bends the capsule so under-step slightly.
+  return (length(p - c) - r) * 0.8;
+}
+
 fn smin(a: f32, b: f32, k: f32) -> f32 {
   let h = sat(0.5 + 0.5 * (b - a) / k);
   return mix(b, a, h) - k * h * (1.0 - h);
@@ -85,7 +128,7 @@ fn noise3(p: vec3<f32>) -> f32 {
 
 // ─── Ferrofluid SDF ───
 fn ferrofluid(p: vec3<f32>, time: f32, bass: f32, spikeDensity: f32,
-              viscosity: f32, magneticPull: f32, mousePos: vec3<f32>) -> f32 {
+              viscosity: f32, magneticPull: f32, mousePos: vec3<f32>, pulse: vec4<f32>) -> f32 {
   var pos = p;
 
   // Base sphere with organic noise displacement
@@ -107,6 +150,12 @@ fn ferrofluid(p: vec3<f32>, time: f32, bass: f32, spikeDensity: f32,
   let numSpikes = 16.0 + spikeDensity * 32.0;
   let spikeBaseHeight = 0.3 + bass * 0.8;
 
+  let held = sat(u.zoom_config.w);
+  let eject = sat((bass - 0.3) * 2.2);
+  let chainStrength = sat(magneticPull * (0.55 + held * 0.8) + bass * 0.2);
+  var firstTip = vec3<f32>(0.0);
+  var prevTip = vec3<f32>(0.0);
+  var extras = 1e5;
   for (var i: i32 = 0; i < 6; i = i + 1) {
     let fi = f32(i);
     let spikeAngle = fi * 6.28318 / numSpikes + time * 0.1 * (1.0 + fi * 0.1);
@@ -115,7 +164,24 @@ fn ferrofluid(p: vec3<f32>, time: f32, bass: f32, spikeDensity: f32,
     let spikeTip = spikeDir * (baseRadius + spikeBaseHeight * (1.0 + sin(time * 2.0 + fi) * 0.3));
     let spikeD = sdCone(pos - spikeTip + spikeDir * spikeBaseHeight * 0.5, spikeBaseHeight * 0.5, 0.08 * viscosity);
     d = smin(d, spikeD, 0.15 * viscosity);
+
+    // Taylor-cone ejection on bass (per-spike phase offset).
+    if (eject > 0.01) {
+      let cycle = fract(time * (0.35 + bass * 0.6) * (1.6 - viscosity) + fi * 0.37);
+      extras = min(extras, taylorConeDroplet(pos, spikeTip, spikeDir, eject, cycle, viscosity));
+    }
+    // Dipole chain bridging this tip to the previous one.
+    if (i == 0) {
+      firstTip = spikeTip;
+    } else if (chainStrength > 0.05) {
+      extras = min(extras, dipoleChain(pos, prevTip, spikeTip, chainStrength, time));
+    }
+    prevTip = spikeTip;
   }
+  if (chainStrength > 0.05) {
+    extras = min(extras, dipoleChain(pos, prevTip, firstTip, chainStrength, time));
+  }
+  d = smin(d, extras, 0.03);
 
   // Secondary fine spikes (high frequency)
   let fineSpikes = sin(phi * 20.0 + time) * cos(theta * 15.0 - time * 1.3) * 0.15 * bass;
@@ -132,6 +198,14 @@ fn ferrofluid(p: vec3<f32>, time: f32, bass: f32, spikeDensity: f32,
     d = smin(d, bulge, 0.3);
   }
 
+  // Click ripple: a magnetic field pulse from the clicked point raises a
+  // travelling ring of surface swell on the fluid.
+  if (pulse.w > 0.0) {
+    let pd = length(pos - pulse.xyz);
+    let ring = exp(-abs(pd - pulse.w * 2.2) * 5.0) * exp(-pulse.w * 1.6);
+    d -= ring * 0.12;
+  }
+
   // Orbiting droplets
   let dropletOrbit = 2.2 + bass * 0.5;
   let dropletPos = vec3<f32>(
@@ -146,21 +220,21 @@ fn ferrofluid(p: vec3<f32>, time: f32, bass: f32, spikeDensity: f32,
 }
 
 fn map(p: vec3<f32>, time: f32, bass: f32, spikeDensity: f32,
-       viscosity: f32, magneticPull: f32, mousePos: vec3<f32>) -> vec2<f32> {
-  let d = ferrofluid(p, time, bass, spikeDensity, viscosity, magneticPull, mousePos);
+       viscosity: f32, magneticPull: f32, mousePos: vec3<f32>, pulse: vec4<f32>) -> vec2<f32> {
+  let d = ferrofluid(p, time, bass, spikeDensity, viscosity, magneticPull, mousePos, pulse);
   return vec2<f32>(d, 1.0);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, bass: f32, spikeDensity: f32,
-              viscosity: f32, magneticPull: f32, mousePos: vec3<f32>) -> vec3<f32> {
+              viscosity: f32, magneticPull: f32, mousePos: vec3<f32>, pulse: vec4<f32>) -> vec3<f32> {
   let e = vec2<f32>(0.001, 0.0);
   return normalize(vec3<f32>(
-    map(p + e.xyy, time, bass, spikeDensity, viscosity, magneticPull, mousePos).x -
-    map(p - e.xyy, time, bass, spikeDensity, viscosity, magneticPull, mousePos).x,
-    map(p + e.yxy, time, bass, spikeDensity, viscosity, magneticPull, mousePos).x -
-    map(p - e.yxy, time, bass, spikeDensity, viscosity, magneticPull, mousePos).x,
-    map(p + e.yyx, time, bass, spikeDensity, viscosity, magneticPull, mousePos).x -
-    map(p - e.yyx, time, bass, spikeDensity, viscosity, magneticPull, mousePos).x
+    map(p + e.xyy, time, bass, spikeDensity, viscosity, magneticPull, mousePos, pulse).x -
+    map(p - e.xyy, time, bass, spikeDensity, viscosity, magneticPull, mousePos, pulse).x,
+    map(p + e.yxy, time, bass, spikeDensity, viscosity, magneticPull, mousePos, pulse).x -
+    map(p - e.yxy, time, bass, spikeDensity, viscosity, magneticPull, mousePos, pulse).x,
+    map(p + e.yyx, time, bass, spikeDensity, viscosity, magneticPull, mousePos, pulse).x -
+    map(p - e.yyx, time, bass, spikeDensity, viscosity, magneticPull, mousePos, pulse).x
   ));
 }
 
@@ -188,15 +262,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = (vec2<f32>(gid.xy) + 0.5) / vec2<f32>(dims);
   let coord = vec2<i32>(gid.xy);
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  let mid = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mid = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
   // Parameters
   let spikeDensity = clamp(u.zoom_params.x, 0.0, 1.0);
   let viscosity = mix(0.5, 1.0, clamp(u.zoom_params.y, 0.0, 1.0));
   let iridescence = clamp(u.zoom_params.z, 0.0, 1.0);
-  let magneticPull = clamp(u.zoom_params.w, 0.0, 1.0);
+  let held = clamp(u.zoom_config.w, 0.0, 1.0);
+  // Holding the mouse energises the electromagnet: stronger pull.
+  let magneticPull = clamp(u.zoom_params.w, 0.0, 1.0) * (1.0 + held * 0.6);
 
   // Mouse in 3D - screen top = UP, flip Y
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -222,15 +298,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   p.x = p.x * aspect;
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
 
+  // Strongest live click pulse, projected onto the z=0 plane like the mouse.
+  var pulse = vec4<f32>(0.0);
+  var pulseScreen = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  var bestAge = 1e3;
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age >= 0.0 && age < 2.0) {
+      let delta = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+      pulseScreen = max(pulseScreen, exp(-abs(length(delta) - age * 0.3) * 60.0) * exp(-age * 2.0));
+      if (age < bestAge) {
+        bestAge = age;
+        pulse = vec4<f32>((rp.x * 2.0 - 1.0) * 3.0 * aspect, (rp.y * 2.0 - 1.0) * 3.0, 0.0, max(age, 1e-3));
+      }
+    }
+  }
+
   // Raymarch
   var t = 0.0;
   var hit = false;
   var hitPos = vec3<f32>(0.0);
   var depth = 0.0;
+  var steps = 0.0;
 
   for (var i: i32 = 0; i < 100; i = i + 1) {
     let pos = ro + rd * t;
-    let res = map(pos, time, bass, spikeDensity, viscosity, magneticPull, mousePos);
+    let res = map(pos, time, bass, spikeDensity, viscosity, magneticPull, mousePos, pulse);
+    steps = f32(i);
     if (res.x < 0.005) {
       hit = true;
       hitPos = pos;
@@ -245,7 +341,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += vec3<f32>(0.02, 0.03, 0.05) * max(rd.y, 0.0);
 
   if (hit) {
-    let n = calcNormal(hitPos, time, bass, spikeDensity, viscosity, magneticPull, mousePos);
+    let n = calcNormal(hitPos, time, bass, spikeDensity, viscosity, magneticPull, mousePos, pulse);
     let viewDir = -rd;
     let nDotV = sat(dot(n, viewDir));
 
@@ -286,8 +382,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col = col + vec3<f32>(0.5, 0.3, 0.8) * spikeHighlight;
 
     // Deep ambient occlusion in valleys
-    let ao = 1.0 - f32(100) / f32(100) * 0.3;
+    let ao = 1.0 - sat(steps / 100.0) * 0.6;
     col = col * (0.3 + 0.7 * ao);
+
+    // Field-line glint on chain beads / freshly pinched droplets: surfaces far
+    // from the bulk sphere radius are the ejected or bridged fluid.
+    let offBulk = sat((length(hitPos) - (1.2 + bass * 0.3) - 0.35) * 2.0);
+    col = col + vec3<f32>(0.35, 0.7, 1.0) * offBulk * (spec * 1.5 + fresnel) * (0.4 + treble * 0.6);
 
     // Depth fog
     col = mix(col, vec3<f32>(0.01, 0.015, 0.025), 1.0 - exp(-0.03 * depth));
@@ -295,18 +396,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     depth = 20.0;
   }
 
-  // Temporal persistence (extraBuffer for bass_env smoothing)
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  let bassEnv = extraBuffer[0];
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[0] = mix(bassEnv, bass, 0.05);
+  col = col + vec3<f32>(0.3, 0.55, 1.1) * pulseScreen * (0.6 + mid * 0.4);
+
+  // Temporal persistence (bass envelope relocated to guarded extraBuffer[133])
+  let prevCoord = clamp(coord, vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+  let prev = textureLoad(dataTextureC, prevCoord, 0);
+  var bassEnv = bass;
+  if (arrayLength(&extraBuffer) > 138u) {
+    bassEnv = extraBuffer[133];
+    if (gid.x == 0u && gid.y == 0u) {
+      extraBuffer[133] = mix(bassEnv, bass, 0.05);
+    }
   }
-  col = mix(col, prev.rgb * 0.95, 0.03 + extraBuffer[0] * 0.02);
+  col = mix(col, prev.rgb * 0.95, 0.03 + sat(bassEnv) * 0.02);
 
   // Tone map
   col = acesToneMap(col * 1.3);
 
-  let alpha = 1.0;
+  // Alpha = fluid coverage, fading with fog depth, plus rim/pulse glow.
+  let hitA = select(0.0, 1.0, hit);
+  let alpha = sat(hitA * (0.6 + 0.35 * exp(-0.03 * depth)) + (1.0 - hitA) * 0.06 + pulseScreen * 0.25 + prev.a * 0.04);
   let finalDepth = sat(0.95 - depth * 0.04);
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));

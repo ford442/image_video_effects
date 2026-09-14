@@ -1,0 +1,10 @@
+SHADER: gen-luminescent-silica-diatom-swarm
+IDENTITY: Fly-through of a domain-repeated swarm of spinning porous (Voronoi-punched) silica sphere-shells with glowing cyan cores, subsurface glow halo, mouse-held ray warp and warm hue shift, deep-ocean fog.
+KEEP VERBATIM: rot, hash33, voronoi3D, map shell/holes/core construction and per-cell rotation, calcNormal, raymarch loop, shell Fresnel/spec shading, core warm-glow mouse shift, subsurface glow block, mouse warp, fog.
+ADD (2 native ideas):
+  1. Colony chain linkage — columns of cells (hash on cellIndex.xz) form Skeletonema-style chains: linking spines (new material 3) run along world-y in unrotated cell space with an interlocking collar where neighbours meet; spines thicken slightly with audio and get a mucilage rim glow (Bioluminescence, mids).
+  2. Chloroplast plastid chlorophyll-a fluorescence — two parietal plastid plates (banded by |n.y|) tint the core fucoxanthin-gold and re-emit deep red ~685 nm proportional to excitation from the mouse light (hover proximity + held influence) and bass.
+FLOOR FIXES: fake audio textureSampleLevel(dataTextureC) removed -> plasmaBuffer[0].xyz (Audio Reactivity scales bass/mids; treble on spec); Reinhard+gamma replaced by ACES; exact clamped textureLoad(dataTextureC) faint glide-trail feedback; semantic alpha (shell Fresnel coverage, plastid core, spine rim, glow density, fog-attenuated); same RGBA to writeTexture + dataTextureA; depth written; Glass Refraction now also refracts readTexture; click ripples added (flash wave, loop to min(u32(u.config.y),50u)); header replaced. No extraBuffer use. JSON: original "uniforms" kept byte-exact; params + updatedParams (same values) + features added.
+FORBID: generic noise/bloom overlays, dataTextureB writes, extraBuffer outside 133..138, changing slider defaults/ranges.
+A PACKING: ACES display RGBA in A
+VERIFY: naga ok / gate ok / extraBuffer ok (AUDIT PASS) / sliders x (density/scale), y (core, glow, spines, ripples), z (refraction), w (audio gain) live

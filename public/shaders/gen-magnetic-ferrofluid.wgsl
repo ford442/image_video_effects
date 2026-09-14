@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Magnetic Ferrofluid
 //  Category: generative
-//  Features: raymarched, mouse-driven, audio-reactive
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-03 (Batch 34)
-//  upgraded-rgba
+//  Upgraded: 2026-09-14
+//  Ideas: Rosensweig hexagonal spike lattice with critical-field onset and capillary-wavenumber spacing; labyrinthine fingering instability when the field is tipped tangential (mouse held)
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -19,12 +20,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=SpikeHeight, y=Density, z=Speed, w=ColorShift
+    zoom_params: vec4<f32>,  // x=Magnetic Strength (Spikes), y=Fluid Density, z=Oscillation Speed, w=Iridescence Shift
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -36,8 +36,47 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// Pseudo-random and Noise functions
-// ... (hash33, snoise, etc.) ...
+// Native idea 1: Rosensweig normal-field instability. Above the critical
+// field Hc the flat interface breaks into a hexagonal lattice of peaks whose
+// spacing is set by the capillary wavenumber kc = sqrt(rho*g/sigma); the
+// amplitude grows as a supercritical sqrt(H - Hc) bifurcation. Evaluated
+// triplanar over the fluid mass: three plane waves 120 degrees apart.
+fn hexLattice2(q: vec2<f32>, k: f32) -> f32 {
+    let k1 = vec2<f32>(1.0, 0.0);
+    let k2 = vec2<f32>(-0.5, 0.8660254);
+    let k3 = vec2<f32>(-0.5, -0.8660254);
+    let h = cos(k * dot(q, k1)) + cos(k * dot(q, k2)) + cos(k * dot(q, k3));
+    // h in [-1.5, 3]; peaks (3) are the hexagonal spike sites.
+    return clamp((h + 1.5) / 4.5, 0.0, 1.0);
+}
+
+fn rosensweigLattice(p: vec3<f32>, kc: f32) -> f32 {
+    let w = pow(abs(normalize(p + vec3<f32>(1e-5))), vec3<f32>(4.0));
+    let ws = w / (w.x + w.y + w.z);
+    let h = hexLattice2(p.yz, kc) * ws.x + hexLattice2(p.zx, kc) * ws.y + hexLattice2(p.xy, kc) * ws.z;
+    // Sharpen into cusped Rosensweig peaks.
+    return pow(h, 3.0);
+}
+
+// Native idea 2: labyrinthine fingering. When the applied field lies in the
+// film plane the hexagonal lattice is no longer selected; the thin film breaks
+// into meandering, branching stripe domains (magnetic labyrinth) whose width
+// is again set by the critical wavelength and whose walls repel each other.
+fn labyrinthFingers(p: vec3<f32>, kc: f32, time: f32) -> f32 {
+    // Low-frequency domain warp makes stripes meander and branch.
+    let warp = vec3<f32>(
+        sin(p.y * 1.7 + time * 0.23) + sin(p.z * 2.3 - time * 0.17),
+        sin(p.z * 1.9 - time * 0.19) + sin(p.x * 2.1 + time * 0.21),
+        sin(p.x * 1.6 + time * 0.13) + sin(p.y * 2.5 - time * 0.27)
+    ) * 0.35;
+    let q = p + warp;
+    // Stripes run perpendicular to the in-plane (tangential) field direction.
+    let fieldDir = normalize(vec3<f32>(1.0, 0.35, 0.2));
+    let s1 = cos(kc * dot(q, fieldDir));
+    let s2 = cos(kc * 0.93 * dot(q, normalize(vec3<f32>(0.2, 1.0, -0.4))) + 1.3);
+    let stripes = max(s1, s2 * 0.85);
+    return smoothstep(0.1, 0.95, stripes);
+}
 
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = max(k - abs(a - b), 0.0) / k;
@@ -59,7 +98,8 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 fn map(p: vec3<f32>) -> vec2<f32> {
     var pos = p;
     let time = u.config.x * u.zoom_params.z; // Speed control
-    let bass = plasmaBuffer[0].x;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let held = clamp(u.zoom_config.w, 0.0, 1.0);
 
     // Base fluid mass
     let fluidRadius = 1.15 + u.zoom_params.y * 0.65;
@@ -75,7 +115,25 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Add time-based oscillation to the spikes
     let oscillation = sin(time + length(pos) * 4.0 + bass * 3.0) * 0.5 + 0.5;
 
-    d += spikeDisplacement * oscillation;
+    d += spikeDisplacement * oscillation * 0.55;
+
+    // Rosensweig onset: field H from Magnetic Strength, kicked by bass.
+    let fieldH = u.zoom_params.x * (1.0 + bass * 0.45);
+    let criticalH = 0.22;
+    let supercrit = sqrt(max(fieldH - criticalH, 0.0));
+    // Capillary wavenumber: denser fluid -> shorter wavelength; slight
+    // tightening with field excess as in the nonlinear regime.
+    let kc = (5.0 + u.zoom_params.y * 7.0) * (1.0 + supercrit * 0.25);
+    let latticeAmp = supercrit * 0.42;
+    // Field orientation: normal (hexagonal peaks) -> tangential (labyrinth) while held.
+    let tangential = held;
+    if (latticeAmp > 0.0) {
+        let hexPeaks = rosensweigLattice(pos, kc);
+        let fingers = labyrinthFingers(pos, kc * 0.8, time);
+        let relief = mix(hexPeaks * latticeAmp, fingers * latticeAmp * 0.35, tangential);
+        // Lipschitz-safe scaling: surface relief pulls the surface outward.
+        d -= relief * 0.4;
+    }
 
     // Optional: Add smaller orbiting fluid droplets that merge smoothly
     let dropletPos = vec3<f32>(sin(time)*2.0, cos(time*1.3)*1.5, sin(time*0.8)*2.0);
@@ -100,7 +158,10 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
-    let bass = plasmaBuffer[0].x;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let held = clamp(u.zoom_config.w, 0.0, 1.0);
     let fragCoord = vec2<f32>(id.xy);
 
     if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) {
@@ -114,10 +175,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Normalized top-down pointer drives a sprung camera orbit.
     let time = u.config.x;
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    var mouse = rawMouse;
+    var mouseVelocity = vec2<f32>(0.0);
+    var springDt = 0.016;
+    if (arrayLength(&extraBuffer) > 138u) {
+        if (extraBuffer[137] > 0.5) {
+            mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+            mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+            springDt = clamp(time - extraBuffer[138], 0.001, 0.05);
+        }
+    }
     let springOmega = 8.0;
     mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
     mouse += mouseVelocity * springDt;
@@ -156,10 +223,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         m = res.y;
         if (d < 0.001) { hit = true; break; }
         if (t > 20.0) { break; }
-        t += max(abs(d) * 0.75, 0.002);
+        t += max(abs(d) * 0.62, 0.002);
     }
 
     var col = vec3<f32>(0.05, 0.05, 0.08); // Background color
+    var peakGlow = 0.0;
 
     if (hit) {
         var p = ro + rd * t;
@@ -182,7 +250,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         matCol = mix(matCol, iriCol, vec3<f32>(fre * 0.5));
 
-        col = matCol * dif * (1.5 + bass * 0.4) + vec3<f32>(1.0) * spec * (1.5 + plasmaBuffer[0].z) + matCol * fre;
+        col = matCol * dif * (1.5 + bass * 0.4) + vec3<f32>(1.0) * spec * (1.5 + treble) + matCol * fre;
+
+        // Rosensweig peak tips / labyrinth domain walls catch field-aligned light.
+        let fieldH = u.zoom_params.x * (1.0 + bass * 0.45);
+        let supercrit = sqrt(max(fieldH - 0.22, 0.0));
+        if (supercrit > 0.0) {
+            let kc = (5.0 + u.zoom_params.y * 7.0) * (1.0 + supercrit * 0.25);
+            let tipMask = pow(rosensweigLattice(p, kc), 2.0);
+            let fingers = labyrinthFingers(p, kc * 0.8, time * u.zoom_params.z);
+            let wallMask = 1.0 - abs(fingers * 2.0 - 1.0);
+            peakGlow = mix(tipMask, wallMask * 0.6, held) * supercrit;
+            let tipCol = mix(vec3<f32>(0.55, 0.75, 1.1), vec3<f32>(1.0, 0.45, 0.9), held);
+            col += tipCol * peakGlow * (0.35 + treble * 0.3) * (0.4 + spec * 2.0 + fre);
+        }
 
         // Add fake environment reflection (simple gradient mapping)
         let refl = reflect(rd, n);
@@ -202,15 +283,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             magneticPulse = max(magneticPulse, shell);
         }
     }
-    col += vec3<f32>(0.25, 0.8, 1.25) * magneticPulse * (0.7 + plasmaBuffer[0].y * 0.35);
+    col += vec3<f32>(0.25, 0.8, 1.25) * magneticPulse * (0.7 + mids * 0.35);
 
     // Subtle vignette
     col = col * (1.0 - 0.2 * length(uv));
     let coord = vec2<i32>(id.xy);
     let prev = textureLoad(dataTextureC, coord, 0);
-    col = mix(max(col, vec3<f32>(0.0)), prev.rgb * 0.9, clamp(0.025 + plasmaBuffer[0].y * 0.008, 0.0, 0.05));
+    col = mix(max(col, vec3<f32>(0.0)), prev.rgb * 0.9, clamp(0.025 + mids * 0.008, 0.0, 0.05));
     col = acesToneMap(col * 1.1);
-    let _alpha = clamp(select(0.08, 0.78, hit) + magneticPulse * 0.18, 0.0, 0.96);
+    // Alpha = fluid coverage + field-concentrated peak/wall density + click shell.
+    let _alpha = clamp(select(0.08, 0.72, hit) + peakGlow * 0.2 + magneticPulse * 0.18, 0.0, 0.98);
     let outColor = vec4<f32>(col, _alpha);
     let _depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
     textureStore(writeTexture, coord, outColor);

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Luminous-Fluid Chladni-Resonator
 //  Category: generative
-//  Features: audio-reactive, Chladni, curl-fluid, Voronoi, upgraded-rgba, aces-tone-map
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-09
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-14
+//  Ideas: sand grains bounced off antinodes and packed onto nodal lines; Faraday subharmonic surface ripples above a bass drive threshold
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Mode N, .y = Mode M, .z = Fluidity, .w = Glow Intensity
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -105,6 +106,29 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Sand on a Chladni plate: grains are thrown off vibrating antinodes and settle
+// where displacement vanishes. Returns grain coverage at this pixel.
+fn sandGrains(p: vec2<f32>, amp: f32, t: f32, agitation: f32) -> f32 {
+    let cellScale = 180.0;
+    let cell = floor(p * cellScale);
+    let rnd = hash21(cell);
+    let rnd2 = hash21(cell + vec2<f32>(31.7, 5.3));
+    // Grains survive where the plate is still; antinode grains are airborne (sparse flicker)
+    let nodal = exp(-amp * amp * 90.0);
+    let packed = step(1.0 - nodal * 0.85, rnd);
+    let bounce = step(0.985 - agitation * 0.01, rnd2) * step(0.5, fract(t * 6.0 + rnd * 7.0)) * (1.0 - nodal);
+    let grainShape = smoothstep(0.5, 0.15, length(fract(p * cellScale) - 0.5));
+    return clamp((packed + bounce * 0.6) * grainShape, 0.0, 1.0);
+}
+
+// Faraday instability: a vertically driven liquid layer answers at HALF the drive
+// frequency with a square standing-wave lattice once the drive exceeds threshold.
+fn faradayRipples(p: vec2<f32>, driveT: f32, k: f32) -> f32 {
+    let sub = cos(driveT * 0.5);
+    let lattice = cos(k * p.x) + cos(k * p.y);
+    return sub * lattice * 0.5;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
@@ -112,10 +136,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(coord) / res;
     let t = u.config.x * 0.5;
+    let aspect = res.x / max(res.y, 1.0);
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
     let param_n = u.zoom_params.x;
     let param_m = u.zoom_params.y;
@@ -126,28 +151,63 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv_dist = uv + velocity * param_fluid * 0.05 * (1.0 + bass * 0.5 + mids * 0.3);
     let n = param_n + bass * 2.0 * sin(t);
     let m = param_m + bass * 2.0 * cos(t * PHI);
-    let c_val = chladni_multi(uv_dist * 2.0 - vec2<f32>(1.0), n, m, t * 2.0);
+    var c_val = chladni_multi(uv_dist * 2.0 - vec2<f32>(1.0), n, m, t * 2.0);
+
+    // Click ripples: a tap on the plate injects a decaying circular flexural wave
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var k: u32 = 0u; k < rippleCount; k = k + 1u) {
+        let rp = u.ripples[k];
+        let age = u.config.x - rp.z;
+        if (age < 0.0 || age > 3.0) { continue; }
+        var dv = uv - rp.xy;
+        dv.x = dv.x * aspect;
+        let dr = length(dv);
+        let front = age * 0.35;
+        c_val += sin((dr - front) * 60.0) * exp(-abs(dr - front) * 14.0) * (1.0 - age / 3.0) * 0.6;
+    }
+
+    // Faraday subharmonic ripples ride the antinodes once bass drive crosses threshold
+    let faradayGain = smoothstep(0.35, 0.8, bass) * (0.4 + param_fluid);
+    let faraday = faradayRipples((uv_dist - 0.5) * vec2<f32>(aspect, 1.0), t * 24.0, 70.0 + (n + m) * 3.0);
+    let antinode = smoothstep(0.2, 0.8, abs(c_val));
+    c_val += faraday * faradayGain * antinode * 0.25;
+
     let ridge = 1.0 - smoothstep(0.0, 0.18, voronoiRidge(uv * 8.0 + velocity * 0.2));
     let mouse_uv = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let d_mouse = distance(uv, mouse_uv);
-    let damp = smoothstep(0.0, 0.2, d_mouse);
+    // A held finger presses harder on the plate: wider damped zone
+    let pressR = select(0.2, 0.32, u.zoom_config.w > 0.5);
+    let damp = smoothstep(0.0, pressR, d_mouse);
     let depthAttn = exp(-d_mouse * 1.5);
     let final_val = abs(c_val) * damp + ridge * 0.35 * depthAttn;
-    let prior = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+
+    // Temporal settle from exact previous frame; alpha in A is high on nodal lines,
+    // so invert it back into a displacement-like field.
+    let prevCoord = clamp(coord, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+    let priorA = textureLoad(dataTextureC, prevCoord, 0);
+    let prior = (1.0 - priorA.a) * 0.3;
     let settled = mix(prior, final_val, 0.35);
-    let intensity = smoothstep(0.18, 0.0, settled) * param_glow * (1.0 + bass + treble * 0.3);
+    let intensity = smoothstep(0.18, 0.0, settled) * param_glow * (1.0 + bass * 0.5 + treble * 0.3);
+
+    // Sand accumulation on nodal lines
+    let sand = sandGrains(uv * vec2<f32>(aspect, 1.0), abs(c_val) * damp, u.config.x, treble);
+
     let warm = blackbodyRGB(3500.0 + bass * 3000.0 + sin(t * 0.7) * 1000.0) * intensity * 3.0;
     let cool = blackbodyRGB(8500.0 + cos(t * 0.4) * 2000.0) * (intensity * 0.6 + ridge * 0.8);
-    let hdr = mixOkLab(warm, cool, ridge * 0.5 + 0.25) * (1.0 + intensity);
+    var hdr = mixOkLab(warm, cool, ridge * 0.5 + 0.25) * (1.0 + intensity);
+    let sandCol = vec3<f32>(1.0, 0.86, 0.6) * (0.35 + intensity * 0.5) * min(param_glow, 2.5);
+    hdr = hdr + sandCol * sand * 0.8;
+    hdr = hdr + vec3<f32>(0.4, 0.8, 1.0) * max(faraday, 0.0) * faradayGain * antinode * 0.5 * param_glow;
     let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let alpha = clamp(intensity * 0.7 + luma * 0.25 + ridge * 0.15, 0.0, 1.0);
+    let alpha = clamp(intensity * 0.7 + luma * 0.25 + ridge * 0.15 + sand * 0.2, 0.0, 1.0);
     let mapped = aces(hdr) + vec3<f32>((ign(vec2<f32>(coord)) - 0.5) / 255.0);
-    let gamma = pow(mapped, vec3<f32>(1.0 / 2.2));
+    let gamma = pow(max(mapped, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
     let finalColor = vec4<f32>(acesToneMap((gamma * alpha) * 1.1), alpha);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // Depth: plate displacement (nodal lines sit at mid height), grains raise it slightly
+    let depth = clamp(0.5 + c_val * 0.25 * damp + sand * 0.05, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(dataTextureA, coord, finalColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
