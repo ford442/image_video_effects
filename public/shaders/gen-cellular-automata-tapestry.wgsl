@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cellular Automata Tapestry
 //  Category: generative
-//  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha, temporal, chromatic, depth-aware
+//  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha, temporal, chromatic, depth-aware, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-05-31, 2026-09-15
+//  Ideas: kill-rate contour banding on the growth front; slow-rotating diffusion-anisotropy striping
+//  A packing: raw sim (nextA, nextB, 0, 1)
 //  By: Grok (deep visual/audio flourish — seasonal plasma color climate, stronger mouse nutrient injector, semantic alpha from chemical energy + glow, richer final glaze)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -28,6 +30,11 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
@@ -47,7 +54,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let currentCenter = textureLoad(dataTextureC, coord, 0).xy;
 
-    // Convolution 3x3
+    // Convolution 3x3 — exact loads: C is rgba32float history, never filtered.
     for(var i = -1; i <= 1; i++) {
         for(var j = -1; j <= 1; j++) {
             let offsetCoord = coord + vec2<i32>(i, j);
@@ -64,6 +71,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             sumB += val.y * weight;
         }
     }
+
+    // Idea 2 — diffusion-anisotropy warp: a slow-rotating directional bias on
+    // the axis taps grows oriented Turing stripes. Weights still sum to 1.0,
+    // so the solver stays stable while the pattern gains a grain direction.
+    let anisoPh = u.config.x * 0.12;
+    let wAx = 0.25 + 0.12 * cos(anisoPh);
+    let wAy = 0.25 - 0.12 * cos(anisoPh);
+    let eC = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), res - vec2<i32>(1)), 0).xy;
+    let wC = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), res - vec2<i32>(1)), 0).xy;
+    let nC = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), res - vec2<i32>(1)), 0).xy;
+    let sC = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), res - vec2<i32>(1)), 0).xy;
+    sumA += (eC.x + wC.x) * (wAx - weightAdjacent) + (nC.x + sC.x) * (wAy - weightAdjacent);
+    sumB += (eC.y + wC.y) * (wAx - weightAdjacent) + (nC.y + sC.y) * (wAy - weightAdjacent);
 
     var diffA = u.zoom_params.x;
     var diffB = u.zoom_params.y;
@@ -95,9 +115,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var nextA = A + (diffA * sumA - reaction + feed * (1.0 - A)) * dt;
     var nextB = B + (diffB * sumB + reaction - (kill + feed) * B) * dt;
 
-    // Mouse interaction
+    // Mouse interaction — nutrient injector gated on press (zoom_config.w),
+    // preserving the injector intent without flooding B whenever the cursor
+    // merely rests near the canvas.
+    let mouseDown = u.zoom_config.w > 0.5;
     let mouseDist = distance(uv, u.zoom_config.yz);
-    if (mouseDist < 0.02 && u.zoom_config.z > 0.0) {
+    if (mouseDist < 0.02 && mouseDown) {
         nextB = 1.0; // Inject chemical B at mouse
     }
 
@@ -127,9 +150,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Composite with audio-reactive weight
     let energy = nextB * (0.9 + bass * 0.4 + treble * 0.25);
     var outColor = mix(vidColor, mappedColor, energy * 1.35);
+    outColor = acesToneMap(outColor);
 
-    // ═══ Temporal feedback ═══
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Idea 1 — kill-rate contour banding: isochrone bands of B concentration
+    // over the growth front, so band spacing reads local wave speed — a native
+    // reaction-diffusion visualization, not a palette overlay.
+    let bandF = fract(nextB * 6.0 + mids * 0.2);
+    let bandEdge = smoothstep(0.0, 0.10, bandF) * smoothstep(1.0, 0.90, bandF);
+    outColor = outColor + vec3<f32>(0.10, 0.14, 0.20) * (1.0 - bandEdge) * energy;
+
+    // ═══ Temporal feedback (exact load: C is rgba32float history) ═══
+    let prev = textureLoad(dataTextureC, coord, 0);
     outColor = mix(outColor, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
     // Semantic alpha: chemical concentration + audio "glow" gives transparent background areas

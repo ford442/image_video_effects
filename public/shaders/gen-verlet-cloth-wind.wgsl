@@ -5,7 +5,9 @@
 //            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-06, 2026-09-15
+//  Ideas: gust-front propagation sweeping wind across the lattice; thread-tension sheen along warp/weft
+//  A packing: raw sim (h, v, 0, 0) on the 64x64 lattice (C read as fields there); ACES display RGBA elsewhere (unread)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -83,9 +85,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let e = textureLoad(dataTextureC, clamp(gCoord + vec2<i32>(1, 0), vec2<i32>(0), vec2<i32>(gridRes - 1)), 0).r;
       let w = textureLoad(dataTextureC, clamp(gCoord + vec2<i32>(-1, 0), vec2<i32>(0), vec2<i32>(gridRes - 1)), 0).r;
       let laplacian = (n + s + e + w) * 0.25 - h;
-      let windX = noise(vec2<f32>(f32(gCoord.x) * 0.1, time * 0.5)) * 2.0 - 1.0;
-      let windY = noise(vec2<f32>(f32(gCoord.y) * 0.1 + 50.0, time * 0.3)) * 2.0 - 1.0;
-      let wind2 = noise(vec2<f32>(f32(gCoord.x) * 0.3 + 100.0, time * 1.2)) * 2.0 - 1.0;
+      // Idea 1 — gust-front propagation: the wind field sweeps across the cloth
+      // as a traveling front (phase-delayed by lattice x) instead of striking
+      // uniformly, so gusts visibly cross the fabric from one edge to the other.
+      let frontT = time * (0.5 + windStr * 0.5) - f32(gCoord.x) * 0.06;
+      let windX = noise(vec2<f32>(f32(gCoord.x) * 0.1, frontT * 0.5)) * 2.0 - 1.0;
+      let windY = noise(vec2<f32>(f32(gCoord.y) * 0.1 + 50.0, frontT * 0.3)) * 2.0 - 1.0;
+      let wind2 = noise(vec2<f32>(f32(gCoord.x) * 0.3 + 100.0, frontT * 1.2)) * 2.0 - 1.0;
       let wind = (windX * 0.3 + windY * 0.1 + wind2 * 0.15) * windStr;
       let mouse = u.zoom_config.yz * f32(gridRes);
       let toMouse = mouse - vec2<f32>(f32(gCoord.x), f32(gCoord.y));
@@ -123,6 +129,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sss = max(0.0, -dot(normal, light)) * 0.15;
   color = color + vec3<f32>(0.4, 0.1, 0.3) * sss;
   color = color + vec3<f32>(0.3, 0.1, 0.4) * abs(h) * windStr * 0.5;
+  // Idea 2 — thread-tension sheen: local stretch brightens anisotropic
+  // warp/weft thread highlights along the lattice axes, so strained regions
+  // read as woven threads under tension rather than smooth rubber.
+  let stretch = length(vec2<f32>(dx, dy));
+  let warpHi = pow(1.0 - abs(fract(cUV.x) - 0.5) * 2.0, 8.0) * stretch;
+  let weftHi = pow(1.0 - abs(fract(cUV.y) - 0.5) * 2.0, 8.0) * stretch;
+  color = color + vec3<f32>(0.5, 0.65, 0.9) * (warpHi + weftHi) * (0.6 + bass * 0.8);
   let weave = hash12(uv * 300.0) * 0.05;
   color = color * (1.0 + weave);
   let vignetteUV = uv * (1.0 - uv);
@@ -132,9 +145,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   color = acesToneMap(color * 1.1);
-  let stretch = abs(h) * 0.3;
+  let stretchAlpha = abs(h) * 0.3;
   let density = smoothstep(-0.5, 0.5, diff);
-  let alpha = clamp(density * (1.0 + stretch) * (0.5 + depth * 0.5), 0.0, 1.0);
+  let alpha = clamp(density * (1.0 + stretchAlpha) * (0.5 + depth * 0.5), 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth * 0.5 + stretch * 0.3, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth * 0.5 + stretchAlpha * 0.3, 0.0, 0.0, 0.0));
+  // Floor: every pixel writes A every frame. Lattice pixels already stored raw
+  // sim above; all other pixels store display RGBA (never read back — C reads
+  // clamp into the 64x64 lattice, so this region is write-only display state).
+  if (gid.x >= u32(gridRes) || gid.y >= u32(gridRes)) {
+    textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
+  }
 }

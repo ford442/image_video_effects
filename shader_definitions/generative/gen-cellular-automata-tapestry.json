@@ -52,7 +52,11 @@
   "updated": true,
   "id": "gen-cellular-automata-tapestry",
   "url": "shaders/gen-cellular-automata-tapestry.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "diffusion_a",

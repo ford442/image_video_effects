@@ -4,9 +4,12 @@
 //  Features: procedural, fractal, sierpinski, tetrahedron, 3d-projection,
 //            audio-reactive, mouse-driven, chromatic-aberration, aces-tonemap,
 //            temporal-feedback, depth-aware, domain-warping, multi-orbit-trap,
-//            lod-noise, branchless-argmin, squared-sdf
+//            lod-noise, branchless-argmin, squared-sdf, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-09-15
+//  Ideas: iteration-depth shelving bands on settled faces; audio-paced edge-current pulses along tetra edges
+//  A packing: raw trap state (minTrap, trapIdx, density, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -151,21 +154,24 @@ let pixel = vec2<i32>(global_id.xy);
   var bassVel = 0.0;
   var midsVel = 0.0;
   var trebleVel = 0.0;
-  let bass = spring_damper(extraBuffer[0], bassRaw, &bassVel, 0.12, 0.08);
-  let mids = spring_damper(extraBuffer[1], midsRaw, &midsVel, 0.1, 0.09);
-  let treble = spring_damper(extraBuffer[2], trebleRaw, &trebleVel, 0.14, 0.07);
+  // Persistent smoothing state lives in the safe zone [133..138]: indices
+  // [0..5] are engine-reserved / FFT bins and get stomped every frame audio
+  // is active. Single writer at (0,0) below.
+  let bass = spring_damper(extraBuffer[133], bassRaw, &bassVel, 0.12, 0.08);
+  let mids = spring_damper(extraBuffer[134], midsRaw, &midsVel, 0.1, 0.09);
+  let treble = spring_damper(extraBuffer[135], trebleRaw, &trebleVel, 0.14, 0.07);
   if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[0] = bass;
-    extraBuffer[1] = mids;
-    extraBuffer[2] = treble;
+    extraBuffer[133] = bass;
+    extraBuffer[134] = mids;
+    extraBuffer[135] = treble;
   }
 
   let clickPulse = select(0.0, 1.0, u.zoom_config.w > 0.5);
   if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[3] = mix(extraBuffer[3], mouse.x, 0.15);
-    extraBuffer[4] = mix(extraBuffer[4], mouse.y, 0.15);
+    extraBuffer[136] = mix(extraBuffer[136], mouse.x, 0.15);
+    extraBuffer[137] = mix(extraBuffer[137], mouse.y, 0.15);
   }
-  extraBuffer[5] = mix(extraBuffer[5], clickPulse, 0.2);
+  extraBuffer[138] = mix(extraBuffer[138], clickPulse, 0.2);
 
   // Distance-based LOD: lower quality at the screen edges.
   let centerDist = length(uv01 - 0.5);
@@ -191,7 +197,7 @@ let pixel = vec2<i32>(global_id.xy);
   var p = (uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
   p += (warpField - 0.5) * (0.04 + bass * 0.04);
   p += curlField * (0.03 + mids * 0.02);
-  p += (mouse - vec2<f32>(0.5)) * extraBuffer[5] * 0.08;
+  p += (mouse - vec2<f32>(0.5)) * extraBuffer[138] * 0.08;
 
   let yaw = (mouse.x - 0.5) * TAU + time * rotSpeed;
   let pitch = (mouse.y - 0.5) * PI * 0.8 + sin(time * 0.3) * 0.2;
@@ -217,6 +223,7 @@ let pixel = vec2<i32>(global_id.xy);
   var point = rp;
   var minTrapSq = 1e9;
   var trapIdx = 0.0;
+  var settleIters = 0;
 
   for (var i = 0; i < recursion; i = i + 1) {
     let d0 = dot(point - V[0], point - V[0]);
@@ -249,6 +256,7 @@ let pixel = vec2<i32>(global_id.xy);
     if (minTrapSq < 1e-6) { break; }
 
     point = (point + V[vi]) * 0.5;
+    settleIters = i + 1;
   }
 
   let prev = textureLoad(dataTextureC, pixel, 0);
@@ -262,6 +270,22 @@ let pixel = vec2<i32>(global_id.xy);
   let spec = pow(edge, 4.0) * (0.8 + bass * 0.5);
   color = color + vec3<f32>(0.9, 0.85, 0.8) * spec;
 
+  // Idea 1 — iteration-depth shelving: band the faces by how many chaos-game
+  // steps it took to settle, so deep quick-settling regions separate from slow
+  // boundary zones in strata with contour lines at the shelf edges.
+  let depthShelf = f32(settleIters) / max(f32(recursion), 1.0);
+  color = color * (0.72 + 0.55 * depthShelf);
+  let shelfFract = fract(depthShelf * 3.0);
+  let shelfEdge = smoothstep(0.0, 0.07, shelfFract) * smoothstep(1.0, 0.93, shelfFract);
+  color = color + vec3<f32>(0.10, 0.13, 0.18) * (1.0 - shelfEdge) * density;
+
+  // Idea 2 — edge-current flow: audio-paced brightness pulses traveling along
+  // the tetra edges, phased by trap distance so the current rides the existing
+  // edge glow instead of floating over the picture.
+  let currentPhase = fract(time * (0.35 + bass * 0.45) + minTrap * 9.0 + trapIdx * 0.25);
+  let current = smoothstep(0.0, 0.12, currentPhase) * smoothstep(0.42, 0.12, currentPhase);
+  color = color + vec3<f32>(0.40, 0.70, 1.0) * current * edge * (0.45 + treble * 0.6);
+
   let viewDir = normalize(vec3<f32>(p.x, p.y, 1.0));
   let fresnel = schlickFresnel(clamp(dot(viewDir, vec3<f32>(0.0, 0.0, 1.0)), 0.0, 1.0), 0.04);
   color = color + vec3<f32>(0.85, 0.92, 1.0) * fresnel * density * (0.35 + treble * 0.2);
@@ -274,7 +298,7 @@ let pixel = vec2<i32>(global_id.xy);
   color = acesToneMap(color * (1.2 + treble * 0.1));
   color = color + vec3<f32>(ignDither(pixel));
 
-  let alpha = clamp(density * (f32(recursion) / 10.0) * depthFactor * (0.85 + extraBuffer[5] * 0.15), 0.0, 1.0);
+  let alpha = clamp(density * (f32(recursion) / 10.0) * depthFactor * (0.85 + extraBuffer[138] * 0.15), 0.0, 1.0);
   let depthOut = clamp(0.3 + density * 0.7, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));

@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  RGB Diffraction
 //  Category: generative
-//  Features: audio-reactive, psychedelic, procedural, temporal, chromatic, depth-aware
+//  Features: audio-reactive, mouse-driven, psychedelic, procedural, temporal, chromatic, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-05-31, 2026-09-15
+//  Ideas: single-slit diffraction envelope over the multi-slit fringes; blaze-angle steering of principal maxima by mouse
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Simulates a diffraction grating: multiple virtual slits produce
 //  sinusoidal interference fringes whose spatial frequency, tilt
@@ -40,6 +42,11 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
   let p = abs(fract(c.xxx + k.xyz) * 6.0 - k.www);
   return c.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Apply k-fold rotational symmetry to a 2D point
@@ -102,12 +109,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let chromOffsetG = vec2<f32>(0.0, mids * 0.02);
   let chromOffsetB = vec2<f32>(-treble * 0.02, treble * 0.02);
 
+  // Idea 2 — blaze-angle steering: a phase ramp across the aperture steers the
+  // principal maxima off-axis, exactly like a blazed grating. The ramp vector
+  // follows the pointer so dragging sweeps the burst sideways.
+  let mouseUv = u.zoom_config.yz;
+  let blazeVec = (mouseUv - vec2<f32>(0.5)) * TAU * 0.5;
+  let blazePhase = dot(p, blazeVec);
+
   for (var si: i32 = 0; si < SLITS; si = si + 1) {
     let sf      = f32(si);
     let slitAngle = sf / f32(SLITS) * TAU + time * speed * 0.05;
     let axis    = vec2<f32>(cos(slitAngle), sin(slitAngle));
     let slitPos = (sf - f32(SLITS) * 0.5) * 0.18;
-    let phase   = time * speed * (0.6 + sf * 0.23) + bass * TAU * 0.4;
+    let phase   = time * speed * (0.6 + sf * 0.23) + bass * TAU * 0.4 + blazePhase;
 
     r = r + slitIntensity(p + chromOffsetR, slitPos, axis, freq * lambdaR, phase, lambdaR);
     g = g + slitIntensity(p + chromOffsetG, slitPos, axis, freq * lambdaG, phase + 0.3, lambdaG);
@@ -118,6 +132,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let norm    = 1.0 / max(f32(SLITS) * 0.6, 1.0);
   var color   = vec3<f32>(r, g, b) * norm * brightness * (1.0 + mids * 0.4);
 
+  // Idea 1 — single-slit diffraction envelope: in a real grating the fine
+  // multi-slit fringes sit inside one broad sinc envelope centered on the
+  // optical axis. Multiplying by it gives the burst a physical center-to-edge
+  // falloff instead of uniform fringe energy to the corners.
+  let axisRad = length(p);
+  let envArg = axisRad * freq * 0.10;
+  let envSinc = select(1.0, sin(envArg) / envArg, abs(envArg) > 0.001);
+  color = color * (envSinc * envSinc);
+
   // Add a global hue shimmer
   let shimHue = fract(time * speed * 0.04 + treble * 0.2);
   let shimRgb = hsv2rgb(vec3<f32>(shimHue, 0.4, 1.0));
@@ -126,10 +149,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Vignette
   let vign  = 1.0 - smoothstep(0.6, 1.2, length(p * 0.5));
   color = color * vign;
-  color = clamp(color, vec3<f32>(0.0), vec3<f32>(3.0));
+  color = acesToneMap(color);
 
-  // ═══ Temporal feedback ═══
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // ═══ Temporal feedback (exact load: C is rgba32float history) ═══
+  let prev = textureLoad(dataTextureC, coord, 0);
   color = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
   let depth = clamp((r + g + b) * norm * 0.4, 0.0, 1.0);

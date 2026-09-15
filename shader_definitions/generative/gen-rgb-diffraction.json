@@ -57,5 +57,9 @@
   "updated": true,
   "id": "gen-rgb-diffraction",
   "url": "shaders/gen-rgb-diffraction.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

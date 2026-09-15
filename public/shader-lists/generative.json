@@ -7404,7 +7404,11 @@
     "updated": true,
     "id": "gen-cellular-automata-tapestry",
     "url": "shaders/gen-cellular-automata-tapestry.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "diffusion_a",
@@ -33047,7 +33051,11 @@
     "updated": true,
     "id": "gen-rgb-diffraction",
     "url": "shaders/gen-rgb-diffraction.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Sentient Aether-Flora Biosphere",
@@ -33945,7 +33953,11 @@
     "updated": true,
     "id": "gen-sierpinski-tetrahedron",
     "url": "shaders/gen-sierpinski-tetrahedron.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Silica Tsunami",
@@ -35939,7 +35951,11 @@
     "updated": true,
     "id": "gen-verlet-cloth-wind",
     "url": "shaders/gen-verlet-cloth-wind.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Vitreous Chrono-Chandelier",
