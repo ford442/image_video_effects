@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  sim-heat-haze-blackbody
 //  Category: advanced-hybrid
-//  Features: simulation, blackbody-radiation, temperature-field, convection
+//  Features: simulation, blackbody-radiation, temperature-field, convection,
+//            upgraded-rgba
 //  Complexity: High
 //  Chunks From: sim-heat-haze-field.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-1 — Spectral & Physical Light Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: vorticity shimmer; mirage inversion band
+//  A packing: raw temperature field vec4(newTemp, 0, 0, 1)
 // ═══════════════════════════════════════════════════════════════════
 //  Temperature field convection simulation with physically-correct
 //  blackbody thermal glow. Hot ground and rising convection plumes
@@ -135,11 +139,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let grad = vec2<f32>(tempRight - tempLeft, tempUp - tempDown);
 
+    // Idea 1 taps — vorticity shimmer: diagonal taps give a curl estimate
+    // applied to the displacement below (convection turbulence).
+    let tempNE = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 1u), 0).r;
+    let tempSW = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 1u), 0).r;
+    let curlT = (tempNE - tempSW) * 0.7071 - (tempRight - tempLeft + tempUp - tempDown) * 0.5;
+    let gradMag = max(length(grad), 0.0001);
+
     // Hot air rises (buoyancy creates upward displacement)
     var displacement = vec2<f32>(
         grad.x * distortion,
         -newTemp * distortion * convectionSpeed * 0.5
     );
+    displacement += vec2<f32>(-grad.y, grad.x) / gradMag * curlT * distortion * 1.5;
 
     // Add shimmer noise
     let shimmer = hash12(uv * 50.0 + time * 5.0) * newTemp * distortion * 0.3;
@@ -148,6 +160,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Sample image with displacement
     let displacedUV = clamp(uv + displacement, vec2<f32>(0.0), vec2<f32>(1.0));
     var color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+    // Idea 2 — mirage inversion band: the near-ground hot layer mirrors
+    // the image vertically (real inferior-mirage optics).
+    let mirageBand = smoothstep(0.12, 0.0, uv.y) * smoothstep(0.35, 0.75, newTemp);
+    let mirageUV = clamp(vec2<f32>(uv.x, uv.y * -0.6 + 0.06), vec2<f32>(0.0), vec2<f32>(1.0));
+    let mirage = textureSampleLevel(readTexture, u_sampler, mirageUV, 0.0).rgb;
+    color = mix(color, mirage, mirageBand * 0.5);
 
     // ═══ Blackbody thermal glow based on temperature field ═══
     // Map temperature 0..1 to Kelvin 800K..7000K
@@ -183,7 +201,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = mix(color, vec3<f32>(luma), newTemp * 0.2);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = mix(0.9, 1.0, newTemp * 0.2);
+    let alpha = clamp(0.35 + smoothstep(0.1, 0.6, newTemp) * 0.65, 0.0, 1.0);
 
     textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

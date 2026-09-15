@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  gamma-ray-burst-blackbody
 //  Category: advanced-hybrid
-//  Features: radial-blur, blackbody-thermal, mouse-driven, HDR, exposure-burst
+//  Features: radial-blur, blackbody-thermal, mouse-driven, HDR,
+//            exposure-burst, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: gamma-ray-burst.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-19 — Lighting & Energy Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: afterglow persistence; light-curve flicker
+//  A packing: ACES display RGBA + burst alpha
 // ═══════════════════════════════════════════════════════════════════
 //  Intense gamma-ray burst with physically-correct blackbody thermal
 //  coloring. Radial blur samples are mapped to temperature via luminance,
@@ -90,6 +94,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let dir = uv - mouse;
     let dist = length(dir * vec2<f32>(aspect, 1.0));
+    // Idea 1 — afterglow persistence: the prior frame decays exponentially
+    // (GRB afterglows fade; HEAD wrote A but never read C).
+    let prevBurst = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
 
     // Radial blur with thermal coloring
     let samples = 20;
@@ -126,7 +133,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Central overexposure with thermal peak
     let glare = 1.0 / (dist * 10.0 + 0.1);
-    let coreTemp = mix(tempRangeHigh * 0.8, tempRangeHigh, smoothstep(0.1, 0.0, dist));
+    // Idea 2 — light-curve flicker: spiky prompt-emission pulses on the
+    // core temperature.
+    let spike = pow(0.5 + 0.5 * sin(time * 17.0 + sin(time * 7.3) * 2.0 + dist * 24.0), 6.0);
+    let flicker = 0.75 + spike * 0.6 * exposure * 0.5;
+    let coreTemp = mix(tempRangeHigh * 0.8, tempRangeHigh * flicker, smoothstep(0.1, 0.0, dist));
     let coreColor = mix(vec3<f32>(1.0, 0.95, 0.8), blackbodyColor(coreTemp) * thermalIntensity, 0.5);
     finalColor += coreColor * glare * exposure * 0.5;
 
@@ -135,9 +146,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     finalColor = toneMapACES(finalColor);
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    // Afterglow blend (Idea 1): prior frame decays under the fresh burst.
+    let afterglowDecay = clamp(decay - 0.03, 0.5, 0.97);
+    finalColor = max(finalColor, prevBurst.rgb * afterglowDecay);
+
+    let burstAlpha = clamp(glare * 0.35 + smoothstep(0.5, 0.0, dist) * 0.65, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, burstAlpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, dist));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, burstAlpha));
 }

@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  chroma-kinetic-blackbody
 //  Category: advanced-hybrid
-//  Features: chroma-kinetic, blackbody-thermal, physical-color
+//  Features: chroma-kinetic, blackbody-thermal, physical-color,
+//            mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Chunks From: chroma-kinetic, spec-blackbody-thermal
 //  Created: 2026-04-18
 //  By: Agent CB-12 — Chroma & Spectral Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: heat-driven split width; gradient-axis split
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse-driven kinetic RGB split combined with physically-correct
 //  blackbody thermal coloring. Luminance drives temperature; velocity
@@ -85,8 +89,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let diffAspect = diff * vec2<f32>(aspect, 1.0);
     let dist = length(diffAspect);
 
-    var dir = vec2<f32>(0.0);
-    if (dist > 0.001) { dir = normalize(diffAspect); }
+    var dir = select(vec2<f32>(0.0), normalize(diffAspect), dist > 0.001);
 
     let c = cos(rotation);
     let s = sin(rotation);
@@ -97,7 +100,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let luma = dot(baseColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
     let falloff = smoothstep(radius, 0.0, dist);
     let modFactor = max(0.0, 1.0 + (luma - 0.5) * luma_inf * 2.0);
-    let finalOffset = uvOffsetDir * strength * falloff * modFactor;
+
+    // Blackbody temperature first: the split ideas below are heat-driven.
+    var temperature = mix(tempRangeLow, tempRangeHigh, luma);
+    let mouseDown = u.zoom_config.w > 0.5;
+    let mouseDistT = length(uv - mousePos);
+    let mouseHeatT = exp(-mouseDistT * mouseDistT * 400.0) * select(0.0, 1.0, mouseDown);
+    temperature += mouseHeatT * tempRangeHigh * 0.5;
+    let tempNormSplit = clamp((temperature - tempRangeLow) / max(tempRangeHigh - tempRangeLow, 1.0), 0.0, 1.0);
+
+    // Idea 2 — gradient-axis split: blend the radial axis toward the local
+    // luma-gradient direction (true lateral-chromatic behavior).
+    let lumaGradX = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.004, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114)) - luma;
+    let lumaGradY = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, 0.004), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114)) - luma;
+    let gradAspect = vec2<f32>(lumaGradX, lumaGradY) * vec2<f32>(aspect, 1.0);
+    let gradMag = length(gradAspect);
+    let gradDirUv = select(vec2<f32>(0.0), gradAspect / max(gradMag, 0.0001) / vec2<f32>(aspect, 1.0), gradMag > 0.0001);
+    let blendedAxis = mix(uvOffsetDir, gradDirUv * length(uvOffsetDir), 0.45);
+    // Idea 1 — heat-driven split width: hot pixels separate wider.
+    let finalOffset = blendedAxis * strength * falloff * modFactor * (0.6 + tempNormSplit * 0.9);
 
     let uvR = uv - finalOffset;
     let uvB = uv + finalOffset;
@@ -107,15 +128,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
     var color = vec3<f32>(r, g, b);
 
-    // Blackbody thermal coloring
-    var temperature = mix(tempRangeLow, tempRangeHigh, luma);
-    let mouseDown = u.zoom_config.w > 0.5;
-    if (mouseDown) {
-        let mouseDist = length(uv - mousePos);
-        let mouseHeat = exp(-mouseDist * mouseDist * 400.0);
-        temperature += mouseHeat * tempRangeHigh * 0.5;
-    }
-
+    // Blackbody thermal coloring (temperature with pointer heat is above)
     var thermalColor = blackbodyColor(temperature) * thermalIntensity;
 
     if (glowAmount > 0.01) {
@@ -139,8 +152,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Blend kinetic RGB split with thermal coloring
     let blend = mix(color, displayColor, 0.6);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(blend, temperature / 15000.0));
+    let bbAlpha = clamp(temperature / 15000.0, 0.0, 1.0);
+    textureStore(writeTexture, gid.xy, vec4<f32>(blend, bbAlpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(blend, bbAlpha));
 }

@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  stellar-plasma-blackbody
 //  Category: advanced-hybrid
-//  Features: generative, blackbody-radiation, procedural, audio-reactive
+//  Features: generative, blackbody-radiation, procedural, audio-reactive,
+//            upgraded-rgba
 //  Complexity: High
 //  Chunks From: stellar-plasma.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-1 — Spectral & Physical Light Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: spectral-class banding; differential-rotation shear
+//  A packing: ACES display RGBA + tempNorm alpha
 // ═══════════════════════════════════════════════════════════════════
 //  Cosmic nebula domain-warped FBM blended with Planck's law
 //  blackbody thermal coloring. Energy intensity drives temperature
@@ -115,8 +119,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lodFactor = smoothstep(1.5, 2.5, dist);
 
     if (dist > 3.0) {
-        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
+        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 0.0));
         textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
         return;
     }
 
@@ -126,10 +131,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scale = mix(1.0, 4.0, u.zoom_params.z);
     let thermalIntensity = mix(0.5, 3.0, u.zoom_params.w);
 
-    // Audio reactivity
-    let audioLow = u.config.y;
-    let audioMid = u.config.z;
-    let audioHigh = u.config.w;
+    // Audio reactivity (plasmaBuffer; HEAD read rippleCount/resolution here)
+    let audioLow = plasmaBuffer[0].x;
+    let audioMid = plasmaBuffer[0].y;
+    let audioHigh = plasmaBuffer[0].z;
     let audioReactivity = 1.0 + audioMid * 0.3;
     let time = u.config.x * speed * audioReactivity;
 
@@ -140,6 +145,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse_influence = exp(-dist_to_mouse * 3.0) * select(0.0, 1.0, u.zoom_config.w > 0.5);
 
     var q_pos = p * scale + mouse_influence;
+    // Idea 2 — differential-rotation shear: the core twists faster than
+    // the rim (accretion-native).
+    let shearAngle = (time * 0.35 + audioLow * 0.2) / (dist + 0.35);
+    let shearC = cos(shearAngle);
+    let shearS = sin(shearAngle);
+    q_pos = mat2x2<f32>(vec2<f32>(shearC, shearS), vec2<f32>(-shearS, shearC)) * q_pos;
     let octaves = i32(mix(6.0, 3.0, lodFactor));
 
     // Domain warping
@@ -160,8 +171,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var temperature = mix(1200.0, 12000.0, energy + tempShift * 0.3 + audioHeatBoost);
     temperature = clamp(temperature, 800.0, 15000.0);
 
-    // Blackbody thermal color
-    var thermalColor = blackbodyColor(temperature) * thermalIntensity;
+    // Blackbody thermal color with Idea 1 — spectral-class banding:
+    // O/B/A/F/G/K/M anchor tints on the blackbody ramp.
+    let classT = clamp((temperature - 800.0) / (15000.0 - 800.0), 0.0, 1.0);
+    let classTint = mix(vec3<f32>(1.0, 0.45, 0.25), vec3<f32>(0.65, 0.75, 1.15), smoothstep(0.15, 0.85, classT));
+    var thermalColor = blackbodyColor(temperature) * thermalIntensity * mix(vec3<f32>(1.0), classTint, 0.35);
+    let stellarAlpha = clamp(temperature / 15000.0, 0.0, 1.0);
 
     // Add localized hotspot glow around high-energy regions
     let glowRadius = 0.02;
@@ -183,17 +198,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Tone map HDR output
     let displayColor = toneMapACES(thermalColor);
 
-    // Mouse creates local super-hotspot
-    if (u.zoom_config.w > 0.5) {
-        let mouseDistUV = length(uv - u.zoom_config.yz);
-        let mouseHeat = exp(-mouseDistUV * mouseDistUV * 400.0);
-        let hotspot = blackbodyColor(15000.0 * mouseHeat) * thermalIntensity;
-        let finalWithHotspot = displayColor + toneMapACES(hotspot);
-        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalWithHotspot, 1.0));
-    } else {
-        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(displayColor, 1.0));
-    }
+    // Mouse creates local super-hotspot (branchless held-gate)
+    let mouseDownS = u.zoom_config.w > 0.5;
+    let mouseDistUV = length(uv - u.zoom_config.yz);
+    let mouseHeatS = exp(-mouseDistUV * mouseDistUV * 400.0) * select(0.0, 1.0, mouseDownS);
+    let hotspot = blackbodyColor(clamp(15000.0 * mouseHeatS, 800.0, 15000.0)) * thermalIntensity;
+    let outColor = displayColor + toneMapACES(hotspot) * select(0.0, 1.0, mouseDownS);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, stellarAlpha));
 
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(thermalColor, temperature / 15000.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(thermalColor, stellarAlpha));
 }

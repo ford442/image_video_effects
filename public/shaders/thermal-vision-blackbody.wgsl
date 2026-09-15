@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  thermal-vision-blackbody
 //  Category: advanced-hybrid
-//  Features: blackbody-radiation, thermal-vision, mouse-driven, HDR
+//  Features: blackbody-radiation, thermal-vision, mouse-driven, HDR,
+//            upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: thermal-vision.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-8 — Thermal & Atmospheric Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: isotherm contour bands; NETD temperature-dependent grain
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Physically-correct thermal vision using blackbody radiation.
 //  Maps image luminance to temperature via Planck's law, replacing
@@ -107,6 +111,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var thermalColor = blackbodyColor(temperature);
 
+    // Idea 1 — isotherm contour bands: quantized temperature bands with
+    // bright edge lines (classic thermal-camera isotherm display).
+    let tempNormV = clamp((temperature - tempRangeLow) / max(tempRangeHigh - tempRangeLow, 1.0), 0.0, 1.0);
+    let bandCount = 9.0;
+    let bandPos = fract(tempNormV * bandCount);
+    let isoLine = smoothstep(0.05, 0.0, min(bandPos, 1.0 - bandPos));
+    let bandTemp = (floor(tempNormV * bandCount) + 0.5) / bandCount * (tempRangeHigh - tempRangeLow) + tempRangeLow;
+    thermalColor = mix(thermalColor, blackbodyColor(bandTemp), 0.25);
+    thermalColor += isoLine * blackbodyColor(9000.0) * 0.3;
+
     // Add ember glow around bright regions
     let glowRadius = 0.03;
     var glowAccum = vec3<f32>(0.0);
@@ -125,11 +139,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Tone map HDR output
     let displayColor = toneMapACES(thermalColor);
 
-    // Sensor noise (subtle grain)
-    let noise = hash(uv + fract(time * 0.1)) * 0.03 - 0.015;
+    // Sensor noise: Idea 2 — NETD grain is stronger in cold regions,
+    // cleaner in hot ones (real microbolometer behavior).
+    let netdAmp = mix(0.05, 0.008, tempNormV);
+    let noise = (hash(uv + fract(time * 0.1)) - 0.5) * 2.0 * netdAmp;
     let finalColor = displayColor + noise;
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
+    let visAlpha = clamp(0.15 + tempNormV * 0.85, 0.0, 1.0);
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, visAlpha));
     textureStore(dataTextureA, gid.xy, vec4<f32>(thermalColor, temperature / 15000.0));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

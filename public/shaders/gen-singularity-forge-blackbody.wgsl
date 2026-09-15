@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Singularity Forge Blackbody
 //  Category: advanced-hybrid
-//  Features: generative, raymarched, blackbody-radiation, HDR
+//  Features: generative, raymarched, blackbody-radiation, HDR,
+//            audio-reactive, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: gen-singularity-forge.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-23 — Generative Abstract Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: gravitational redshift; doppler beaming asymmetry
+//  A packing: ACES display + exposure alpha
 // ═══════════════════════════════════════════════════════════════════
 //  Raymarched black hole with accretion disk where thermal energy is
 //  rendered via physically-accurate blackbody radiation. Disk
@@ -129,7 +133,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let spaghettification = u.config.y;
 
   let time = u.config.x * timeDilation * 0.5;
-  let audioOverall = u.config.y;
+  // Floor: HEAD read rippleCount (u.config.y) as audio — now plasmaBuffer.
+  let audioOverall = plasmaBuffer[0].x;
   let audioReactivity = 1.0 + audioOverall * 0.5;
 
   var ro = vec3<f32>(0.0, 1.5, -4.0);
@@ -187,8 +192,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = vec3<f32>(0.0);
       } else if (d == dDisk) {
         let diskDist = length(pDisk.xz);
-        let temp = diskTemperature(diskDist, diskDensity, jetIntensity);
-        let thermal = blackbodyColor(temp);
+        var beamTemp = diskTemperature(diskDist, diskDensity, jetIntensity);
+        // Idea 2 — doppler beaming: approaching side hotter/bluer,
+        // receding side cooler/dimmer.
+        let orbitDir = normalize(vec3<f32>(-pDisk.z, 0.0, pDisk.x) + vec3<f32>(0.0001, 0.0, 0.0));
+        let beam = dot(orbitDir, rd);
+        beamTemp *= 1.0 + beam * 0.22 * (0.5 + jetIntensity * 0.5);
+        // Idea 1 — gravitational redshift: cooling toward the horizon.
+        let rs = 0.8;
+        let gravRed = clamp(sqrt(max(1.0 - rs / max(distToOrigin, rs + 0.05), 0.0)), 0.0, 1.0);
+        beamTemp *= mix(0.55, 1.0, gravRed);
+        let thermal = blackbodyColor(clamp(beamTemp, 800.0, 20000.0));
         // Heat increases toward inner disk
         let heat = clamp(1.0 - (diskDist - 1.0) * 0.3, 0.0, 1.0);
         col = thermal * heat * 2.0;
