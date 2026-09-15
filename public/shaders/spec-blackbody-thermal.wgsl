@@ -2,7 +2,11 @@
 //  Blackbody Thermal
 //  Category: advanced-hybrid
 //  Features: blackbody-radiation, HDR, physical-color, audio-reactive,
-//            temporal-ember-persistence, chromatic-temperature-gradient, depth-output
+//            temporal-ember-persistence, chromatic-temperature-gradient,
+//            depth-output, upgraded-rgba
+//  Upgraded: 2026-09-15
+//  Ideas: depth-conductive pointer heat; Wien-fringe temperature edges
+//  A packing: raw thermal HDR rgb + tempNorm alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -71,7 +75,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let mousePos = u.zoom_config.yz;
     let mouseDist = length(uv - mousePos);
-    let mouseHeat = exp(-mouseDist * mouseDist * 400.0) * held;
+    // Idea 1 — depth-conductive ambient: near geometry conducts pointer
+    // heat, far pixels stay cooler.
+    let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let conduction = mix(1.25, 0.45, clamp(sceneDepth, 0.0, 1.0));
+    let mouseHeat = exp(-mouseDist * mouseDist * 400.0) * held * conduction;
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let luma = dot(baseColor, vec3<f32>(0.299, 0.587, 0.114));
@@ -94,7 +102,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             clickHeat += smoothstep(0.02, 0.0, abs(rd - age * 0.35)) * exp(-age * 1.5);
         }
     }
-    temperature += clickHeat * tempRangeHigh * 0.25;
+    temperature += clickHeat * tempRangeHigh * 0.25 * conduction;
 
     var thermalColor = blackbodyColor(temperature) * thermalIntensity;
 
@@ -102,6 +110,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let chromaR = thermalColor * vec3<f32>(1.1, 0.95, 0.85) * (1.0 + treble * 0.15);
     let chromaB = thermalColor * vec3<f32>(0.85, 0.95, 1.1) * (1.0 + bass * 0.15);
     thermalColor = mix(chromaB, chromaR, tempNorm);
+
+    // Idea 2 — Wien-fringe edges: temperature-gradient magnitude fringes
+    // hot edges blue and cool edges red.
+    let lumaR = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.004, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let lumaU = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, 0.004), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let tempGrad = clamp(length(vec2<f32>(lumaR - luma, lumaU - luma)) * 12.0, 0.0, 1.0);
+    let wienTint = mix(vec3<f32>(1.15, 0.9, 0.75), vec3<f32>(0.75, 0.9, 1.15), tempNorm);
+    thermalColor *= mix(vec3<f32>(1.0), wienTint, tempGrad * 0.35);
 
     let prevCoord = vec2<i32>(gid.xy);
     let prev = textureLoad(dataTextureC, prevCoord, 0);
@@ -127,7 +143,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     let displayColor = toneMapACES(thermalColor);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = sceneDepth;
     let alpha = clamp(temperature / 15000.0 * (1.0 + bass * 0.1), 0.0, 1.0);
 
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

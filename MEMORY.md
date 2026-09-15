@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-15 (compact generative resonance eight)
+**Last updated:** 2026-09-15 (compact generative resonance eight + merge context)
 
 ## 2026-09-15 — Compact generative resonance eight
 
@@ -32,6 +32,48 @@
   WASM `bridge/api.js`.
 - Cards: `agents/swarm-outputs/sol-2026-09-15-compact-resonance-eight/`.
 - Real-GPU visual QA external.
+
+## 2026-09-15 — Classic geometry leftover six (6 shaders)
+
+- IDs: gen-3d-sierpinski-chaos, gen-aperiodic-monotile, gen-chromatic-zonohedron, gen-zeta-function-landscape, gen-prismatic-mobius-helix, gen-voronoi-crystal.
+- Per shader, the ideas actually added:
+  - gen-3d-sierpinski-chaos: repeat-vertex corner flares; opposite-face chroma. Params kept. No spring.
+  - gen-aperiodic-monotile: reflected hats on odd cells; chevron brim. Relief sculpture kept.
+  - gen-chromatic-zonohedron: fourth golden-ratio generator; generator-pair face IDs. Packing lie fixed.
+  - gen-zeta-function-landscape: known-zero rails; |ζ|=1 iso-contours. Eta continuation kept.
+  - gen-prismatic-mobius-helix: half-twist seam; centerline core. Packing lie fixed.
+  - gen-voronoi-crystal: triple-junction vertices; L∞ facet flats. Existing pointer spring kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved slider names exact. No new springs.
+- Gates: Naga 6/6, extraBuffer 0, dead sliders 0 (3 defs with `params`; 3 use `updatedParams` only), catalog 1,367, SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing WASM `bridge/api.js`.
+- #1274/#1276 already took the morning sixes — did not restamp those IDs.
+- Cards: `agents/swarm-outputs/grok-2026-09-15-classic-geometry-six/`.
+- Real-GPU visual QA: external.
+**Last updated:** 2026-09-15 (pull/push union origin #1278 unique spec+thermal-touch)
+
+## 2026-09-15 — Pull/push union (ahead 1 / behind 1, origin #1278)
+
+- Rebased local chrono-cosmic docs (`0f943326` `push fix`) onto origin `eda2ea97` (`#1278` blackbody/thermal eight).
+- Six overlapping WGSL kept local Phase-C / Radial-BH ideas (already landed; do not restamp):
+  - chroma-kinetic-blackbody, thermal-vision-blackbody, stellar-plasma-blackbody, sim-heat-haze-blackbody, gamma-ray-burst-blackbody, gen-singularity-forge-blackbody.
+- Unique origin kept: spec-blackbody-thermal (depth-conductive pointer heat; Wien fringe) and thermal-touch-blackbody (conduction halo; cooling-ember streak tint).
+- Did not take `#1278` leftover note claiming encaustic/energy-shield/hyper-space/warp-drive are still open — those four already landed locally.
+- Honey-melt and melting-oil stay skipped (Codex idea-rich). Catalog 1,367. Real-GPU QA external.
+
+## 2026-09-15 — Selected sentient / radiant cosmic entities eight (not yet implemented)
+
+- Follow-on selection after the reserved chrono-cosmic mechanisms eight.
+- IDs: gen-sentient-aether-plasma-nebula-moth, gen-sentient-bismuth-hypercrystal, gen-sentient-cyber-aurora-void-owl, gen-sentient-quantum-chrono-leviathan-moth, gen-radiant-chrono-glass-nautilus, gen-radiant-cyber-chrono-void-stag, gen-radiant-quantum-crystalline-forge, gen-radiant-quantum-plasma-kraken-core.
+- Exact 4+4 prefix cohort of cosmic fauna/crystalline entities. All eight lack `Ideas:` headers; no substantive prior swarm cards/closeouts found; no extraBuffer[0..132].
+- Exclusions: sentient serpent/heart/flora and radiant colossus/griffin have prior substantive batch work; sentient ferro/silk use forbidden low extraBuffer slots.
+- Floor watch-outs: seven definitions need canonical `params` added without changing existing control meanings; bismuth hypercrystal reads C as fake audio; several need honest A packing and ACES. Plumbing is not the upgrade.
+
+## 2026-09-15 — Selected chrono-cosmic mechanisms eight (not yet implemented)
+
+- IDs: gen-chronos-crystal-labyrinth, gen-aetherial-plasma-loom, gen-celestial-yggdrasil-matrix, gen-chrono-kinetic-fractal-engine, gen-celestial-clockwork-plasma-loom, gen-chronos-biomechanical-void-leviathan, gen-chronomorphic-glass-tesseract, gen-quantum-liquid-metal-chronosphere.
+- Coherent time / clockwork / loom / 4D / cosmic-mechanism family. All eight lack `Ideas:` cards and no substantive prior batch cards were found for these exact WGSL paths.
+- Do not substitute `gen-chromatic-singularity-loom`: despite no `Ideas:` line, its Kimi notes document four real existing native ideas (temporal accretion, chromatic lensing, audio thread chaos, bass mass pulse), so it is already idea-rich.
+- Implementation floor watch-outs: Chronos Crystal reads C as fake audio; several older files need honest A packing and ACES; Chronosphere has four controls under legacy `parameters`, so preserve their meanings while adding canonical metadata. Plumbing is not the upgrade.
+- Provisional native directions: refractive time faults; plasma heddle sequencing; phyllotactic Yggdrasil buds; escapement/backlash; Keplerian astrolabe gears; segmented leviathan undulation; 4D face-crossing caustics; liquid-metal capillary modes.
 
 ## 2026-09-15 — Radial / BH blackbody leftover four
 

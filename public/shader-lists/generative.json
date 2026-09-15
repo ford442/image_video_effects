@@ -3559,7 +3559,8 @@
       "raymarch",
       "audio-reactive",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -37205,7 +37206,8 @@
       "audio-iridescent-facets",
       "click-crystal-fractures",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ]
   },
   {
@@ -37577,7 +37579,8 @@
       "mouse-driven",
       "click-reactive",
       "temporal",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ]
   },
   {

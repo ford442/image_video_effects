@@ -13145,7 +13145,8 @@
       "click-reactive",
       "fast-motion",
       "temporal-trail",
-      "HDR"
+      "HDR",
+      "upgraded-rgba"
     ],
     "params": [
       {

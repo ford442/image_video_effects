@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  thermal-touch-blackbody
 //  Category: advanced-hybrid
-//  Features: stylized-blackbody-palette, mouse-heat-source, thermal-touch, temporal-streaks
+//  Features: stylized-blackbody-palette, mouse-heat-source, thermal-touch,
+//            temporal-streaks, upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: thermal-touch.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-8 — Thermal & Atmospheric Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: conduction halo around cursor; cooling-ember streak tint
+//  A packing: ACES display RGBA + tempNorm alpha
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse-driven thermal camera with a stylized blackbody-inspired
 //  palette. The cursor acts as a localized heat source, and image
@@ -86,6 +90,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Mouse heat influence
     let mouseHeat = (1.0 - smoothstep(0.0, radius, dist)) * heatIntensity * (1.0 + audio.x * 0.25);
+    // Idea 1 — conduction halo: wide faint secondary spread so heat visibly
+    // conducts outward through the material.
+    let halo = exp(-dist * dist / max(radius * radius * 9.0, 0.0001)) * heatIntensity * 0.35 * (1.0 + audio.x * 0.25);
+    let mouseHeatTotal = mouseHeat + halo;
 
     var clickHeatFront = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -108,7 +116,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var temperature = mix(tempRangeLow, tempRangeHigh, luminance);
 
     // Add mouse heat
-    temperature += (mouseHeat + clickHeatFront * (0.35 + heatIntensity * 0.25)) * tempRangeHigh * 0.4;
+    temperature += (mouseHeatTotal + clickHeatFront * (0.35 + heatIntensity * 0.25)) * tempRangeHigh * 0.4;
 
     // Ambient temperature blending
     if (ambientTemp > 0.0) {
@@ -128,7 +136,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let historyHeat = clamp(history.a, 0.0, 1.0);
     let streakPhase = fract(uv.y * 7.0 + time * (1.7 + audio.y));
     let streak = exp(-pow((streakPhase - 0.5) / 0.16, 2.0)) * historyHeat;
-    finalColor = max(finalColor, clamp(history.rgb, vec3<f32>(0.0), vec3<f32>(4.0)) * (0.45 + streak * 0.35));
+    // Idea 2 — cooling-ember streak tint: cooling history shifts toward
+    // deep ember red instead of persisting white-hot.
+    let emberTint = mix(vec3<f32>(1.0, 0.22, 0.05), vec3<f32>(1.0), clamp(historyHeat, 0.0, 1.0));
+    finalColor = max(finalColor, clamp(history.rgb, vec3<f32>(0.0), vec3<f32>(4.0)) * emberTint * (0.45 + streak * 0.35));
 
     // Tone map
     finalColor = toneMapACES(finalColor);
@@ -136,7 +147,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Original Blend is continuous over the full slider range.
     finalColor = mix(finalColor, texColor, clamp(colorMode, 0.0, 1.0));
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, clamp(temperature / 15000.0, 0.0, 1.0)));
     textureStore(dataTextureA, gid.xy, vec4<f32>(finalColor, clamp(temperature / 15000.0, 0.0, 1.0)));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -64,7 +64,8 @@
     "raymarch",
     "audio-reactive",
     "temporal-feedback",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba"
   ],
   "params": [
     {
