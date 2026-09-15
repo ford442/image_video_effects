@@ -1,6 +1,21 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-15 (compact generative resonance eight + merge context)
+**Last updated:** 2026-09-15 (sentient/radiant cosmic entities eight)
+
+## 2026-09-15 — Sentient / radiant cosmic entities eight
+
+- IDs: nebula-moth, bismuth-hypercrystal, cyber-aurora-void-owl,
+  quantum-chrono-leviathan-moth, chrono-glass-nautilus, cyber-chrono-void-stag,
+  quantum-crystalline-forge, quantum-plasma-kraken-core.
+- Ideas: wing venation + trailing scale-dust; hopper terraces + riser film;
+  feather barbs + iris rings; voronoi veins + antennae; chamber septa + nacre;
+  antler pearls + hoof-trail pulses; recalescence + hopper terraces; suckers +
+  chromatophores.
+- Floor only: plasmaBuffer, UV mouse, ACES A, canonical params. Forge helper
+  deleted. Kraken zoom clamp removed. No new springs.
+- Gates: Naga 8/8, extraBuffer/dead sliders 0, catalog 1,367, build green.
+  Jest 689/6 WASM `bridge/api.js` pre-existing. Real-GPU QA external.
+- Cards: `agents/swarm-outputs/sol-2026-09-15-sentient-radiant-eight/`.
 
 ## 2026-09-15 — Compact generative resonance eight
 
