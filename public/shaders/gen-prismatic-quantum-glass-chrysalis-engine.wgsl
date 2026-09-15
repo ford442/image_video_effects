@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Prismatic Quantum-Glass Chrysalis-Engine
-// Category: generative
-// ----------------------------------------------------------------
-
+// ═══════════════════════════════════════════════════════════════════
+//  Prismatic Quantum-Glass Chrysalis-Engine
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-15
+//  Ideas: chrysalis chamber ribs; internal TIR caustics
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -18,16 +22,10 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  resolution: vec2<f32>,
-  time: f32,
-  frame: u32,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  view_matrix: mat4x4<f32>,
-  proj_matrix: mat4x4<f32>,
-  camera_pos: vec3<f32>,
-  config: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
+  zoom_params: vec4<f32>,  // Refraction Index, Plasma Intensity, Core Rotation Speed, Chromatic Dispersion
+  ripples: array<vec4<f32>, 50>, // .xy = ripple uv, .z = start time, .w = padding
 };
 
 fn rot(a: f32) -> mat2x2<f32> {
@@ -83,24 +81,46 @@ fn voronoi3(x: vec3<f32>) -> vec2<f32> {
     return sqrt(res);
 }
 
-fn map(p: vec3<f32>) -> f32 {
-    let mouse = u.zoom_config.yz;
-    let rSpeed = u.zoom_params.z; // Core Rotation Speed
+fn chrysalisSpace(p: vec3<f32>) -> vec3<f32> {
+    let time = u.config.x;
+    let rotationSpeed = u.zoom_params.z;
+    let rotatedXY = rot(time * rotationSpeed * 0.5) * p.xy;
+    let xyPosition = vec3<f32>(rotatedXY, p.z);
+    let rotatedYZ = rot(time * rotationSpeed * 0.7) * xyPosition.yz;
+    return vec3<f32>(xyPosition.x, rotatedYZ);
+}
 
-    var pos = p;
-    pos = vec3<f32>(rot(u.time * rSpeed * 0.5) * pos.xy, pos.z);
-    pos = vec3<f32>(pos.x, rot(u.time * rSpeed * 0.7) * pos.yz);
+// Idea 1: transverse tapered rings occupy only the original crystal volume.
+// They bridge Voronoi openings as nested metamorphic chamber ribs.
+fn chamberRibDistance(pos: vec3<f32>) -> f32 {
+    let spacing = 0.46;
+    let ribCenter = clamp(round(pos.z / spacing), -3.0, 3.0) * spacing;
+    let localZ = pos.z - ribCenter;
+    let axialTaper = clamp(1.0 - abs(ribCenter) / 1.8, 0.0, 1.0);
+    let ribRadius = 0.52 + axialTaper * 0.76;
+    let ringDistance = abs(length(pos.xy) - ribRadius)
+      - (0.035 + axialTaper * 0.018);
+    let transverseSlice = abs(localZ) - 0.032;
+    return max(ringDistance, transverseSlice);
+}
+
+fn map(p: vec3<f32>) -> f32 {
+    let pos = chrysalisSpace(p);
 
     let d1 = sdOctahedron(pos, 2.0);
     let d2 = sdHexPrism(pos, vec2<f32>(1.5, 1.8));
-    var d = max(d1, d2);
+    let baseChrysalis = max(d1, d2);
 
-    // cuts
+    // Preserve the original Voronoi-cut shell.
     let v = voronoi3(pos * 2.0);
     let crack = (v.y - v.x) * 0.5;
-    d = max(d, -crack + 0.1);
+    let cutShell = max(baseChrysalis, -crack + 0.1);
 
-    return d;
+    // The max confines every rib inside the octahedron/prism intersection;
+    // min reveals those ribs only where the original Voronoi cuts open.
+    let containedRibs = max(chamberRibDistance(pos), baseChrysalis + 0.01);
+
+    return min(cutShell, containedRibs);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -112,30 +132,42 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp(
+      (x * (a * x + b)) / (x * (c * x + d) + e),
+      vec3<f32>(0.0),
+      vec3<f32>(1.0)
+    );
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dims = vec2<f32>(textureDimensions(writeTexture));
-    let id = vec2<f32>(global_id.xy);
-    if (id.x >= dims.x || id.y >= dims.y) { return; }
+    let coord = vec2<i32>(global_id.xy);
+    let dims = vec2<f32>(u.config.zw);
+    if (coord.x >= i32(dims.x) || coord.y >= i32(dims.y)) { return; }
 
-    let uv = (id - 0.5 * dims) / min(dims.x, dims.y);
+    let uv = (vec2<f32>(coord) - 0.5 * dims) / min(dims.x, dims.y);
     let mouse = u.zoom_config.yz;
+    let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
 
     // Parameters
-    let ior = mix(1.0, 2.5, u.zoom_params.x);
-    let plasmaIntensity = mix(0.0, 3.0, u.zoom_params.y);
-    let chromDisp = mix(0.0, 1.0, u.zoom_params.w);
-
-    // Audio ripple impact (audio-reactive)
-    var audioReact = 0.0;
-    if (u.ripples[0].x > 0.0) {
-       audioReact = u.ripples[0].x * 0.1;
-    }
+    let ior = clamp(u.zoom_params.x, 1.0, 2.5);
+    let plasmaIntensity = clamp(u.zoom_params.y, 0.0, 3.0);
+    let rotationSpeed = clamp(u.zoom_params.z, 0.0, 2.0);
+    let chromDisp = clamp(u.zoom_params.w, 0.0, 1.0);
 
     // Camera
-    var ro = vec3<f32>(0.0, 0.0, -5.0 + audioReact);
-    ro = vec3<f32>(rot(mouse.x * 6.28) * ro.xz, ro.y).xzy;
-    ro = vec3<f32>(ro.x, rot(mouse.y * 3.14) * ro.yz);
+    var ro = vec3<f32>(0.0, 0.0, -5.0);
+    let orbitXZ = rot(mouse.x * 6.2831853) * ro.xz;
+    ro = vec3<f32>(orbitXZ.x, ro.y, orbitXZ.y);
+    let orbitYZ = rot(mouse.y * 3.1415927) * ro.yz;
+    ro = vec3<f32>(ro.x, orbitYZ);
     let ta = vec3<f32>(0.0, 0.0, 0.0);
 
     let cw = normalize(ta - ro);
@@ -157,31 +189,73 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = vec3<f32>(0.0);
     let bgCol = vec3<f32>(0.02, 0.0, 0.08) - length(uv)*0.1;
     col = bgCol;
+    var surfaceAlpha = 0.0;
+    var sceneDepth = 1.0;
 
     if (hit) {
         let p = ro + rd * t;
         let n = calcNormal(p);
+        let localP = chrysalisSpace(p);
 
-        // internal liquid plasma (volumetric-like estimation via SDF value deep inside)
-        let internalP = p - n * 0.1;
+        // Refraction Index keeps its saved physical role by steering the
+        // interior sample ray rather than remapping the saved value.
+        let refractedRay = refract(rd, n, 1.0 / max(ior, 1.001));
+        let internalP = p + refractedRay * (0.10 + chromDisp * 0.08);
         let plasmaDist = map(internalP);
-        let plasmaCol = vec3<f32>(1.0, 0.2, 0.8) * exp(-abs(plasmaDist) * 5.0) * plasmaIntensity;
-        let cyanCore = vec3<f32>(0.0, 0.8, 1.0) * exp(-abs(plasmaDist) * 10.0) * plasmaIntensity * 2.0;
+        let plasmaGain = plasmaIntensity * (1.0 + audio.x * 0.25);
+        let plasmaCol = vec3<f32>(1.0, 0.2, 0.8)
+          * exp(-abs(plasmaDist) * 5.0) * plasmaGain;
+        let cyanCore = vec3<f32>(0.0, 0.8, 1.0)
+          * exp(-abs(plasmaDist) * 10.0) * plasmaGain * 2.0;
 
         // Refraction / thin film
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
+        let filmPhase = fresnel * (10.0 + chromDisp * 10.0)
+          + time * rotationSpeed * 0.08 + audio.y * 0.15;
         let thinFilm = vec3<f32>(
-           sin(fresnel * 10.0 + chromDisp) * 0.5 + 0.5,
-           sin(fresnel * 15.0) * 0.5 + 0.5,
-           sin(fresnel * 20.0 - chromDisp) * 0.5 + 0.5
+           sin(filmPhase + chromDisp * 2.1) * 0.5 + 0.5,
+           sin(filmPhase * 1.23) * 0.5 + 0.5,
+           sin(filmPhase * 1.47 - chromDisp * 2.1) * 0.5 + 0.5
         ) * 0.5;
 
         let glass = mix(vec3<f32>(0.1, 0.1, 0.2), thinFilm, fresnel);
-        col = glass + plasmaCol + cyanCore;
+        let ribMask = exp(-abs(chamberRibDistance(localP)) * 34.0);
+        let ribLight = vec3<f32>(0.24, 0.62, 0.78) * ribMask
+          * (0.35 + fresnel * 0.65);
 
-        // Chromatic aberration fake trail
-        col += vec3<f32>(chromDisp * 0.2, 0.0, 0.0) * fract(u.time);
+        // Idea 2: wavelength-separated caustic threads follow the interior
+        // Voronoi cut lips and intensify at grazing, TIR-like angles.
+        let internalLocal = chrysalisSpace(internalP);
+        let interiorCells = voronoi3(internalLocal * 2.0);
+        let interiorCrack = (interiorCells.y - interiorCells.x) * 0.5;
+        let cutLip = exp(-abs(interiorCrack - 0.1) * 52.0);
+        let grazing = pow(1.0 - abs(dot(refractedRay, n)), 2.0);
+        let tirFocus = smoothstep(
+          0.08,
+          0.82,
+          grazing * (0.55 + 0.45 * (ior - 1.0) / 1.5)
+        );
+        let causticPhase = dot(internalLocal, vec3<f32>(9.0, 13.0, 7.0))
+          - time * (0.35 + rotationSpeed * 0.15) + audio.y * 0.4;
+        let spectralOffset = chromDisp * 2.0943951;
+        let causticThreads = vec3<f32>(
+          pow(0.5 + 0.5 * sin(causticPhase + spectralOffset), 6.0),
+          pow(0.5 + 0.5 * sin(causticPhase), 6.0),
+          pow(0.5 + 0.5 * sin(causticPhase - spectralOffset), 6.0)
+        ) * cutLip * tirFocus * (1.0 + audio.z * 0.4);
+
+        col = glass + plasmaCol + cyanCore + ribLight + causticThreads;
+        surfaceAlpha = clamp(
+          0.32 + fresnel * 0.38 + ribMask * 0.18 + cutLip * tirFocus * 0.22,
+          0.0,
+          1.0
+        );
+        sceneDepth = clamp(t / 20.0, 0.0, 1.0);
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    let displayColor = acesToneMap(max(col, vec3<f32>(0.0)));
+    let display = vec4<f32>(displayColor, surfaceAlpha);
+    textureStore(writeTexture, coord, display);
+    textureStore(writeDepthTexture, coord, vec4<f32>(sceneDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, display);
 }
