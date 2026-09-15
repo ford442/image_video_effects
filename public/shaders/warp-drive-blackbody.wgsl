@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  warp-drive-blackbody
+//  Warp Drive Blackbody
 //  Category: advanced-hybrid
-//  Features: radial-blur, blackbody-radiation, HDR, physical-color, mouse-driven
+//  Features: radial-blur, blackbody-radiation, HDR, physical-color, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: warp_drive, spec-blackbody-thermal
 //  Created: 2026-04-18
-//  By: Agent CB-15 — Visual Effects & Distortion Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: Alcubierre warp-bubble wall; bow/wake Doppler on the aberration axis
+//  A packing: raw HDR RGB + normalized avgTemp
 // ═══════════════════════════════════════════════════════════════════
 //  Warp drive radial blur combined with physically-correct blackbody
 //  radiation coloring. Warp velocity maps to temperature — higher speed
@@ -39,7 +41,7 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
   let c = 2.43;
   let d = 0.59;
   let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
@@ -66,11 +68,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
+  let coord = vec2<i32>(global_id.xy);
   let uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
+  let aspect = resolution.x / max(resolution.y, 0.001);
 
-  let intensity = u.zoom_params.x * 0.2;
-  let aberration = u.zoom_params.y * 0.05;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let intensity = u.zoom_params.x * 0.2 * (1.0 + bass * 0.4);
+  let aberration = u.zoom_params.y * 0.05 * (1.0 + treble * 0.3);
   let brightness = u.zoom_params.z * 2.0;
   let samples = i32(u.zoom_params.w * 30.0 + 5.0);
 
@@ -97,20 +104,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let weight = 1.0 - percent;
     let samplePos = uv + dir * percent * intensity;
 
-    let rPos = samplePos + dir * aberration * percent;
-    let bPos = samplePos - dir * aberration * percent;
+    // Idea 2 — bow/wake Doppler fused to the existing R/B aberration axis:
+    // bow (toward mouse) is blue-shifted; wake (away) is red-shifted.
+    let bowPos = clamp(samplePos + dir * aberration * percent, vec2<f32>(0.0), vec2<f32>(1.0));
+    let midPos = clamp(samplePos, vec2<f32>(0.0), vec2<f32>(1.0));
+    let wakePos = clamp(samplePos - dir * aberration * percent, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let sampleR = textureSampleLevel(readTexture, u_sampler, rPos, 0.0);
-    let sampleG = textureSampleLevel(readTexture, u_sampler, samplePos, 0.0);
-    let sampleB = textureSampleLevel(readTexture, u_sampler, bPos, 0.0);
+    let sampleB = textureSampleLevel(readTexture, u_sampler, bowPos, 0.0);
+    let sampleG = textureSampleLevel(readTexture, u_sampler, midPos, 0.0);
+    let sampleR = textureSampleLevel(readTexture, u_sampler, wakePos, 0.0);
 
-    // Warp speed maps to temperature
     let sampleLuma = dot(vec3<f32>(sampleR.r, sampleG.g, sampleB.b), vec3<f32>(0.299, 0.587, 0.114));
-    let temperature = mix(tempRangeLow, tempRangeHigh, sampleLuma * (1.0 + percent * intensity * 5.0));
+    let bowWake = percent * 2.0 - 1.0;
+    let temperature = mix(tempRangeLow, tempRangeHigh, sampleLuma * (1.0 + percent * intensity * 5.0))
+      * (1.0 + bowWake * u.zoom_params.y * 0.55);
     let thermalColor = blackbodyColor(temperature) * thermalIntensity;
 
-    let doppler = 1.0 + intensity * percent * 0.5;
-    let sampleColor = mix(vec3<f32>(sampleR.r, sampleG.g, sampleB.b), thermalColor, percent * intensity * 5.0) * doppler;
+    let doppler = 1.0 + intensity * percent * 0.5 + max(bowWake, 0.0) * 0.35;
+    let photo = vec3<f32>(sampleR.r, sampleG.g, sampleB.b);
+    let sampleColor = mix(photo, thermalColor, clamp(percent * intensity * 5.0, 0.0, 1.0))
+      * doppler
+      * vec3<f32>(1.0 + max(-bowWake, 0.0) * 0.25, 1.0, 1.0 + max(bowWake, 0.0) * 0.35);
 
     let sampleAlpha = (sampleR.a + sampleG.a + sampleB.a) / 3.0;
     let blurAlpha = sampleAlpha * weight * pow(decay, f32(i)) * (0.5 + (1.0 - percent) * 0.5);
@@ -121,30 +135,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     totalWeight += weight;
   }
 
-  var finalColor = colorSum / totalWeight;
-  var finalAlpha = alphaSum / totalWeight;
-  let avgTemp = tempSum / totalWeight;
+  let invW = 1.0 / max(totalWeight, 0.001);
+  var finalColor = colorSum * invW;
+  var finalAlpha = alphaSum * invW;
+  let avgTemp = tempSum * invW;
 
-  // Center glow (engine heat)
+  // Center glow (engine heat) — floor look, kept
   let distAspect = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
   let glow = exp(-distAspect * 5.0) * brightness;
   let glowTemp = mix(tempRangeHigh, tempRangeHigh * 2.0, glow);
   finalColor += blackbodyColor(glowTemp) * thermalIntensity * glow * 0.3;
   finalAlpha = min(finalAlpha + glow * 0.3, 1.0);
 
-  // Mouse hotspot
-  if (isMouseDown) {
-    let mouseDist = length(uv - mouse);
-    let mouseHeat = exp(-mouseDist * mouseDist * 400.0);
-    let mouseTemp = tempRangeHigh * (1.0 + mouseHeat * 0.5);
-    finalColor = mix(finalColor, blackbodyColor(mouseTemp) * thermalIntensity, mouseHeat * 0.4);
-  }
+  // Idea 1 — Alcubierre warp-bubble wall (thin annulus, not a second center glow)
+  let bubbleR = mix(0.14, 0.42, u.zoom_params.x);
+  let wall = exp(-pow((distAspect - bubbleR) * 16.0, 2.0));
+  let wallTemp = mix(tempRangeLow * 1.4, tempRangeHigh, wall);
+  finalColor += blackbodyColor(wallTemp) * thermalIntensity * wall * 0.45 * (1.0 + mids * 0.4);
+  finalAlpha = min(finalAlpha + wall * 0.25, 1.0);
+
+  // Mouse hotspot — floor look, kept
+  let mouseDist = length(uv - mouse);
+  let mouseHeat = exp(-mouseDist * mouseDist * 400.0) * select(0.0, 1.0, isMouseDown);
+  let mouseTemp = tempRangeHigh * (1.0 + mouseHeat * 0.5);
+  finalColor = mix(finalColor, blackbodyColor(mouseTemp) * thermalIntensity, mouseHeat * 0.4);
 
   let displayColor = toneMapACES(finalColor);
+  let alpha = clamp(finalAlpha, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(displayColor, finalAlpha));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, avgTemp / 15000.0));
+  textureStore(writeTexture, coord, vec4<f32>(displayColor, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(finalColor, avgTemp / 15000.0));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

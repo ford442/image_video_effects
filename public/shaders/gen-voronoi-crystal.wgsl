@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Voronoi Crystal - Animated crystal growth using Voronoi diagrams
+//  Voronoi Crystal
 //  Category: generative
-//  Features: procedural, animated, crystal growth simulation, audio-reactive, depth-aware, temporal, upgraded-rgba
-//  Created: 2026-03-22
-//  Updated: 2026-08-03 (Batch 34)
-//  By: Agent 4A
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-15
+//  Ideas: triple-junction grain corners; L∞ facet flats
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -59,6 +60,7 @@ fn voronoiCrystal(uv: vec2<f32>, t: f32, crystalCount: f32, irregularity: f32) -
     
     var f1 = 10.0;  // Distance to closest seed
     var f2 = 10.0;  // Distance to second closest
+    var f3 = 10.0;  // Idea 1 — third nearest (triple junctions)
     var cellId = vec2<f32>(0.0);
     var seedPos = vec2<f32>(0.0);
     
@@ -83,20 +85,27 @@ fn voronoiCrystal(uv: vec2<f32>, t: f32, crystalCount: f32, irregularity: f32) -
             
             // Distance with optional stretching
             let stretch = mix(1.0, 0.5 + baseSeed.y, irregularity);
-            let d = length(vec2<f32>(rotated.x, rotated.y / stretch));
+            let euclid = length(vec2<f32>(rotated.x, rotated.y / stretch));
+            // Idea 2 — L∞ mix so cell interiors facet instead of rounding.
+            let linf = max(abs(rotated.x), abs(rotated.y / stretch));
+            let d = mix(euclid, linf, 0.48);
             
             if (d < f1) {
+                f3 = f2;
                 f2 = f1;
                 f1 = d;
                 cellId = cell;
                 seedPos = o;
             } else if (d < f2) {
+                f3 = f2;
                 f2 = d;
+            } else if (d < f3) {
+                f3 = d;
             }
         }
     }
     
-    return vec4<f32>(f1, f2, cellId.x + cellId.y * 0.1, hash21(cellId));
+    return vec4<f32>(f1, f2, f3, hash21(cellId));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -144,11 +153,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let voro = voronoiCrystal(p, t * growthSpeed * (1.0 + bass * 0.18), crystalCount, irregularity);
     let f1 = voro.x;
     let f2 = voro.y;
+    let f3 = voro.z;
     let cellHash = voro.w;
     
     // Edge detection (facet boundaries)
     let edge = f2 - f1;
     let edgeMask = smoothstep(0.15, 0.0, edge);
+    // Idea 1 — triple-junction vertices where three crystals meet.
+    let triple = 1.0 - smoothstep(0.0, 0.07, (f2 - f1) + (f3 - f2));
     
     // Crystal depth simulation (cell age/size)
     let cellAge = fract(cellHash + t * 0.05);
@@ -183,6 +195,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rings = sin(f1 * 20.0 + cellAge * 6.28);
     let ringMask = smoothstep(0.0, 0.1, rings) * smoothstep(0.3, 0.0, f1);
     col = col + crystalCol * ringMask * 0.3;
+    col = col + vec3<f32>(1.0, 0.92, 0.65) * triple * glowIntensity * 0.7;
     
     // Specular highlight at seed center
     let specular = exp(-f1 * 10.0) * (0.5 + 0.5 * sin(t + cellHash * 10.0));
@@ -210,8 +223,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureLoad(dataTextureC, coord, 0);
     col = mix(col, prev.rgb * 0.9, clamp(0.02 + mids * 0.008, 0.0, 0.05));
     col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.08);
-    let reliefDepth = clamp(0.18 + edgeMask * 0.58 + specular * 0.18 + clickCrack * 0.06, 0.0, 1.0);
-    let alpha = clamp(0.22 + edgeMask * 0.58 + specular * 0.15 + clickCrack * 0.15, 0.0, 0.96);
+    let reliefDepth = clamp(0.18 + edgeMask * 0.58 + specular * 0.18 + clickCrack * 0.06 + triple * 0.12, 0.0, 1.0);
+    let alpha = clamp(0.22 + edgeMask * 0.58 + specular * 0.15 + clickCrack * 0.15 + triple * 0.12, 0.0, 0.96);
     let outColor = vec4<f32>(col, alpha);
     textureStore(writeTexture, coord, outColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(reliefDepth, 0.0, 0.0, 0.0));

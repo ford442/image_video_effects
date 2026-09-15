@@ -5,6 +5,20 @@
   "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads.",
   "category": "generative",
   "url": "shaders/gen-sentient-void-silk-nebula.wgsl",
+  "workgroup_size": [16, 16, 1],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-feedback",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map",
+    "upgraded-rgba"
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history",
   "passes": [
     {
       "type": "compute",
@@ -48,6 +62,78 @@
           "step": 0.05
         }
       ]
+    }
+  ],
+  "params": [
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "mapping": "zoom_params.x",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "id": "thread_density",
+      "name": "Thread Density",
+      "mapping": "zoom_params.y",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "vortex_strength",
+      "name": "Vortex Strength",
+      "mapping": "zoom_params.z",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "id": "iridescence_shift",
+      "name": "Iridescence Shift",
+      "mapping": "zoom_params.w",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Thread Density",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Vortex Strength",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "index": 3,
+      "name": "Iridescence Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
     }
   ]
 }

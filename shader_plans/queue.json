@@ -564,11 +564,6 @@
       "filename": "2026-09-12_cybernetic-plasma-orchid-nexus.md",
       "title": "Cybernetic Plasma-Orchid Nexus",
       "added": "2026-09-12T15:12:23.018457"
-    },
-    {
-      "filename": "2026-09-14_symbiotic-bismuth-crystal-dragon-core.md",
-      "title": "Symbiotic Bismuth-Crystal Dragon-Core",
-      "added": "2026-09-14T15:32:27.521166"
     }
   ],
   "current": null,
@@ -1074,6 +1069,13 @@
       "added": "2026-09-14T07:52:34.241600+00:00",
       "status": "completed",
       "completed_at": "2026-09-14T07:52:34.241618+00:00"
+    },
+    {
+      "filename": "2026-09-14_symbiotic-bismuth-crystal-dragon-core.md",
+      "title": "Symbiotic Bismuth-Crystal Dragon-Core",
+      "added": "2026-09-14T15:32:27.521166",
+      "status": "completed",
+      "completed_at": "2026-09-15T07:59:27.173839+00:00"
     }
   ],
   "rejected": [],

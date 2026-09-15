@@ -26,16 +26,6 @@ struct Uniforms {
     zoom_params: vec4<f32>,  // x=Density, y=Chroma, z=Fog, w=Unused
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
-}
-
 
 const MAX_STEPS: i32 = 80;
 const MAX_DIST: f32 = 50.0;
@@ -46,6 +36,9 @@ fn rotate(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     return mat2x2<f32>(c, -s, s, c);
 }
+
+var<private> g_fold: vec3<f32> = vec3<f32>(0.0);
+var<private> g_hopper: f32 = 0.0;
 
 fn mapSDF(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
@@ -70,7 +63,11 @@ fn mapSDF(p_in: vec3<f32>) -> vec2<f32> {
         scale *= s;
     }
 
-    let d = (length(p) - 1.0) / scale;
+    g_fold = p;
+    // Idea 2: hopper terraces on the forge crystal
+    let hopper = abs(fract(p.y * 6.0) - 0.5);
+    g_hopper = hopper;
+    let d = (length(p) - 1.0 - (0.5 - hopper) * 0.12) / scale;
     return vec2<f32>(d, 1.0);
 }
 
@@ -103,12 +100,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Mouse Interaction: Gravity well distortion
-    var m = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) - vec2<f32>(0.5) * res) / res.y;
+    // Mouse Interaction: Gravity well distortion — UV y=0 bottom, Mouse Influence slider
+    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    var m = (mouse - vec2<f32>(0.5)) * vec2<f32>(res.x / res.y, 1.0);
     let mDist = length(uv - m);
-    if (mDist < 0.5 && u.zoom_config.y > 0.0) {
-        let force = (0.5 - mDist) * 2.0;
-        uv += normalize(uv - m) * force * 0.1 * sin(u.config.x * 2.0);
+    if (mDist < 0.5) {
+        let force = (0.5 - mDist) * 2.0 * u.zoom_params.w;
+        uv += normalize(uv - m + vec2<f32>(0.0001)) * force * 0.1 * sin(u.config.x * 2.0);
     }
 
     let ro = vec3<f32>(0.0, 0.0, -8.0 + u.config.x * 2.0);
@@ -155,6 +153,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let baseCol = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(u.config.x) + p.xyz * 0.5 + vec3<f32>(0.0, 2.0, 4.0));
 
         col = baseCol * diff + spec * vec3<f32>(1.0) + fresnel * vec3<f32>(0.5, 0.8, 1.0) * chroma;
+        // Idea 1: recalescence on KIFS fold crests
+        let ax = abs(g_fold);
+        let crest = pow(1.0 - min(min(ax.x, ax.y), ax.z) / (length(g_fold) + 0.001), 4.0);
+        col += vec3<f32>(1.0, 0.32, 0.06) * crest * 1.4;
+        col += vec3<f32>(1.0, 0.55, 0.2) * (0.5 - g_hopper) * 0.35;
     }
 
     // Add fog
@@ -167,12 +170,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Alpha: crystal surface coverage + volumetric fog density, never flat 1.0
     let alpha = clamp(select(0.0, 0.4, hit) + surfFresnel * 0.4 + clamp(glow, 0.0, 1.0) * 0.4, 0.0, 1.0);
-    let out = vec4<f32>(col, alpha);
+    let outc = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     // Depth: ray-march hit distance (near = closer)
     let depth = select(0.0, clamp(1.0 - dO / MAX_DIST, 0.0, 1.0), hit);
     let coord = vec2<i32>(global_id.xy);
-    textureStore(writeTexture, coord, applyGenerativePrimaryControls(out));
+    textureStore(writeTexture, coord, outc);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, out);
+    textureStore(dataTextureA, coord, outc);
 }

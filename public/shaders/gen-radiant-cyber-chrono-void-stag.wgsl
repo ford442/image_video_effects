@@ -110,15 +110,16 @@ fn map(pos_in: vec3<f32>) -> MapResult {
     var res = MapResult(MAX_DIST, 0, vec3<f32>(0.0));
     var p = pos_in;
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
 
     // Scale from params
     let scale = u.zoom_params.x;
     p /= scale;
 
-    // Global transform via mouse
-    let mx = (u.zoom_config.y / u.config.z - 0.5) * 6.0;
-    let my = (u.zoom_config.z / u.config.w - 0.5) * 6.0;
+    // Global transform via mouse — UV y=0 bottom
+    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    let mx = (mouse.x - 0.5) * 6.0;
+    let my = (mouse.y - 0.5) * 6.0;
     let p_xz_tmp = rot(-mx) * p.xz;
 p.x = p_xz_tmp.x;
 p.z = p_xz_tmp.y;
@@ -202,6 +203,9 @@ p_antler.y = p_antler_xy_tmp.y;
         if (i > complexity) { break; }
         let segment_d = sdCapsule(branch_p, vec3<f32>(0.0), vec3<f32>(0.0, branch_len, 0.0), branch_r);
         antler_d = smin(antler_d, segment_d, 0.05);
+        // Idea 1: antler velvet / pearling along branches
+        let pearl = length(branch_p - vec3<f32>(0.0, branch_len * 0.55, 0.0)) - branch_r * 1.85;
+        antler_d = min(antler_d, pearl);
 
         branch_p.y -= branch_len;
         let branch_xy_tmp = rot(0.4 + sin(time)*0.1) * branch_p.xy;
@@ -262,10 +266,13 @@ branch_p.z = branch_yz_tmp.y;
     // Fade trail over distance
     let trail_fade = clamp((-p_trail.z + trail_p0.z) / trail_len, 0.0, 1.0);
     trail_d += trail_fade * 0.2; // Expand radius over distance roughly
+    // Idea 2: hoof-trail gait pulses
+    let trail_pulse = pow(1.0 - abs(fract(-p_trail.z * 0.35 + time * 0.55) - 0.5) * 2.0, 4.0);
 
     if (trail_d < res.d) {
         res.d = trail_d;
         res.mat = 4;
+        res.glow = vec3<f32>(1.0, 0.2, 0.6) * trail_pulse * 0.8;
     }
 
     res.d *= scale; // Scale back the distance
@@ -279,6 +286,15 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
         map(p + e.yxy).d - map(p - e.yxy).d,
         map(p + e.yyx).d - map(p - e.yyx).d
     ));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn rayMarch(ro: vec3<f32>, rd: vec3<f32>) -> MapResult {
@@ -367,29 +383,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let refr_col = getNebula(p, refr_rd);
             let baseColor = vec3<f32>(0.8, 0.9, 1.0); // Icy blue/white
             col = mix(refr_col, baseColor, 0.3) + spec * 2.0 + fresnel * vec3<f32>(0.5, 0.8, 1.0);
-
-            // Audio reactive glow based on interaction/ripples
-            var glow_intensity = u.config.y; // audio
-            // Add click interaction
-            for (var i = 0u; i < 10u; i++) {
-                let ripple = u.ripples[i];
-                if (ripple.w > 0.0) {
-                   let r_uv = (ripple.xy - 0.5 * vec2<f32>(resX, resY)) / resY;
-                   let r_rd = normalize(vec3<f32>(r_uv.x, r_uv.y, 1.0));
-                   // rough collision
-                   let dist_to_ripple = length(cross(r_rd, p - ro));
-                   if (dist_to_ripple < 1.0) {
-                       glow_intensity += ripple.z * 5.0 * (1.0 - dist_to_ripple);
-                   }
-                }
-            }
-            col += vec3<f32>(0.0, 0.8, 1.0) * glow_intensity * 0.5;
+            col += vec3<f32>(0.85, 0.95, 1.0) * 0.25; // velvet pearl catchlight
+            col += vec3<f32>(0.0, 0.8, 1.0) * plasmaBuffer[0].x * 0.5;
 
         } else if (map_res.mat == 3) { // Core
             col = vec3<f32>(0.0, 0.8, 1.0) * 2.0; // Neon Cyan
         } else if (map_res.mat == 4) { // Trails
             col = vec3<f32>(1.0, 0.0, 0.5) * 1.5; // Neon Magenta/Gold
             col *= (1.0 - fresnel); // Soften edges
+            col += map_res.glow;
         }
     } else {
         col = getNebula(ro, rd);
@@ -399,10 +401,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += map_res.glow * 0.05;
 
     // Tone mapping
-    col = col / (1.0 + col);
-    // Gamma correction
-    col = pow(col, vec3<f32>(1.0/2.2));
-
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    col = acesToneMap(col);
+    let hit = map_res.d < MAX_DIST;
+    let alpha = clamp(select(0.12, 0.5, hit) + length(map_res.glow) * 0.08 + plasmaBuffer[0].z * 0.06, 0.0, 1.0);
+    let outc = vec4<f32>(col, alpha);
+    let depth = select(0.0, clamp(1.0 - map_res.d / MAX_DIST, 0.0, 1.0), hit);
+    textureStore(writeTexture, vec2<i32>(id.xy), outc);
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), outc);
 }

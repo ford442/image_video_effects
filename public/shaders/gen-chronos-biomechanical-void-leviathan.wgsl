@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Chronos Biomechanical Void-Leviathan
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Chronos Biomechanical Void-Leviathan
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-15
+//  Ideas: vertebral phase-lag undulation; auroral vortex wake
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -18,16 +22,10 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    resolution: vec2<f32>,
-    time: f32,
-    frame: u32,
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
+    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
+    zoom_params: vec4<f32>,  // .x = Time Offset, .y = Audio Reactivity, .z = Aurora, .w = Evolution Speed
     ripples: array<vec4<f32>, 50>,
-    view_matrix: mat4x4<f32>,
-    proj_matrix: mat4x4<f32>,
-    camera_pos: vec3<f32>,
 };
 
 // --- GLOBALS & MATH ---
@@ -103,10 +101,19 @@ fn sdEllipsoid(p: vec3<f32>, r: vec3<f32>) -> f32 {
 // --- DOMAIN WARPING & KIFS ---
 fn swimDistortion(p_in: vec3<f32>, time: f32) -> vec3<f32> {
     var p = p_in;
-    // Graceful swimming motion via sine wave across Z axis
+
+    // Idea 1: adjacent vertebral segments inherit a delayed swimming phase.
     let swimFreq = 0.5;
     let swimAmp = 0.8;
-    p.x += sin(p.z * swimFreq - time * 2.0) * swimAmp * smoothstep(-5.0, 5.0, p.z);
+    let vertebra = (p.z + 5.0) * 1.5;
+    let segment_id = floor(vertebra);
+    let segment_mix = smoothstep(0.15, 0.85, fract(vertebra));
+    let phase_a = segment_id * 0.24;
+    let phase_b = (segment_id + 1.0) * 0.24;
+    let phase_lag = mix(phase_a, phase_b, segment_mix);
+    let body_mask = smoothstep(-5.0, 5.0, p.z);
+    p.x += sin(p.z * swimFreq - time * 2.0 - phase_lag) * swimAmp * body_mask;
+    p.y += cos(p.z * swimFreq * 0.7 - time * 1.45 - phase_lag) * swimAmp * 0.18 * body_mask;
 
     // Mouse orbit
     let mouse = u.zoom_config.yz;
@@ -132,7 +139,7 @@ fn map(p_in: vec3<f32>, time: f32) -> f32 {
 
     // 1. Build leviathan SDF
     // Main Body (capsule)
-    var d = sdCapsule(p, vec3<f32>(0.0, 0.0, -4.0), vec3<f32>(0.0, 0.0, 4.0), 1.2 - p.z*0.1);
+    var d = sdCapsule(p, vec3<f32>(0.0, 0.0, -4.0), vec3<f32>(0.0, 0.0, 4.0), max(0.35, 1.2 - p.z*0.1));
 
     // Head (ellipsoid)
     let head = sdEllipsoid(p - vec3<f32>(0.0, 0.0, 4.5), vec3<f32>(1.0, 0.8, 1.5));
@@ -173,6 +180,18 @@ fn map_glow(p_in: vec3<f32>, time: f32) -> f32 {
      return sdCapsule(ribP, vec3<f32>(0.0, -1.2, 0.0), vec3<f32>(0.0, 1.2, 0.0), 0.1);
 }
 
+fn map_wake_glow(p: vec3<f32>, time: f32) -> f32 {
+    // Idea 2: twin auroral helices coil through the existing KIFS wake.
+    let phase = p.z * 1.35 - time * 2.2;
+    let radius = 0.55 + 0.12 * sin(p.z * 0.7 - time);
+    let helix_a = vec2<f32>(cos(phase), sin(phase)) * radius;
+    let helix_b = -helix_a;
+    let filament_a = abs(length(p.xy - helix_a) - 0.055);
+    let filament_b = abs(length(p.xy - helix_b) - 0.055);
+    let behind_tail = 1.0 - smoothstep(-2.4, -1.5, p.z);
+    return min(filament_a, filament_b) + (1.0 - behind_tail) * 5.0;
+}
+
 // --- NORMAL CALCULATION ---
 fn getNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
@@ -188,6 +207,7 @@ fn getNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
 struct MarchResult {
     dist: f32,
     glow: f32,
+    wake_glow: f32,
     steps: f32,
     hit: bool,
 }
@@ -195,6 +215,7 @@ struct MarchResult {
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32) -> MarchResult {
     var dO = 0.0;
     var glow = 0.0;
+    var wake_glow = 0.0;
     var steps = 0.0;
     var hit = false;
 
@@ -205,6 +226,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32) -> MarchResult {
         // Accumulate glow near ribs
         let dGlow = map_glow(p, time);
         glow += 0.01 / (0.01 + dGlow * dGlow);
+        let dWake = map_wake_glow(p, time);
+        wake_glow += 0.004 / (0.004 + dWake * dWake);
 
         if (abs(dS) < SURF_DIST) {
             hit = true;
@@ -219,7 +242,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32) -> MarchResult {
         }
     }
 
-    return MarchResult(dO, glow, steps, hit);
+    return MarchResult(dO, glow, wake_glow, steps, hit);
 }
 
 // --- MAIN COMPUTE SHADER ---
@@ -233,8 +256,9 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
     let uv = (vec2<f32>(GlobalInvocationID.xy) - 0.5 * texSize) / texSize.y;
 
     // Parameters
-    let time = u.time * u.zoom_params.w + u.zoom_params.x;
-    let audioReact = plasmaBuffer[0].x * u.zoom_params.y;
+    let time = u.config.x * u.zoom_params.w + u.zoom_params.x;
+    let audio = plasmaBuffer[0].xyz;
+    let audioReact = audio.x * u.zoom_params.y;
     let brightness = u.zoom_params.z;
 
     // Camera Setup
@@ -277,14 +301,26 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
 
     // Add Bioluminescent Glow (Acoustic Symbiosis)
     // Base cyan/magenta, pulsing with audio
-    let glowCol = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(1.0, 0.0, 0.8), sin(time * 0.5) * 0.5 + 0.5);
+    let glowCol = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(1.0, 0.0, 0.8),
+        sin(time * 0.5 + audio.y * 0.2) * 0.5 + 0.5);
     col += glowCol * res.glow * 0.05 * (1.0 + audioReact * 2.0) * brightness;
+    let wakeCol = mix(vec3<f32>(0.1, 0.65, 1.0), vec3<f32>(0.9, 0.12, 1.0),
+        0.5 + 0.5 * sin(time * 0.7));
+    col += wakeCol * res.wake_glow * 0.022 * (1.0 + audio.y * 0.6 + audio.z * 0.35) * brightness;
 
     // Atmospheric fog
     col = mix(col, vec3<f32>(0.01, 0.02, 0.03), 1.0 - exp(-0.02 * res.dist));
 
     // Tone mapping (ACES approx)
-    col = (col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14);
+    col = clamp((col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14),
+        vec3<f32>(0.0), vec3<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(col, 1.0));
+    let coord = vec2<i32>(GlobalInvocationID.xy);
+    let alpha = clamp(select(0.04, 0.3, res.hit) + res.glow * 0.01 + res.wake_glow * 0.018, 0.0, 1.0);
+    let display = vec4<f32>(col, alpha);
+    let source_depth = textureLoad(readDepthTexture, coord, 0).r;
+    let depth = select(source_depth, clamp(1.0 - res.dist / MAX_DIST, 0.0, 1.0), res.hit);
+    textureStore(writeTexture, coord, display);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, display);
 }

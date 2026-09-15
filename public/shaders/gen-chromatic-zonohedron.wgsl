@@ -2,9 +2,12 @@
 //  Chromatic Zonohedron
 //  Category: generative
 //  Features: rhombic zonohedron facets, spectral face colors, dual-grid
-//            wireframe, mouse warp, audio pulse, domain-warped background
+//            wireframe, mouse warp, audio pulse, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-07-12
+//  Upgraded: 2026-09-15
+//  Ideas: fourth golden-ratio generator; generator-axis dichroism; generator-pair face IDs; 3-space vertex stars
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -48,27 +51,53 @@ fn rot2(a: f32) -> mat2x2<f32> {
   return mat2x2<f32>(c, -s, s, c);
 }
 
-// Rhombic zonohedron in 2D projection: sum of 3 axis rhomb tilings
+// Rhombic zonohedron in 2D projection: Minkowski sum of generator axes.
 fn zonoFacet(p: vec2<f32>, axis: vec2<f32>, width: f32) -> f32 {
   let n = vec2<f32>(-axis.y, axis.x);
-  let u = dot(p, axis);
-  let v = dot(p, n);
-  let du = abs(fract(u / width + 0.5) - 0.5) * width;
-  let dv = abs(fract(v / width + 0.5) - 0.5) * width;
+  let uu = dot(p, axis);
+  let vv = dot(p, n);
+  let du = abs(fract(uu / width + 0.5) - 0.5) * width;
+  let dv = abs(fract(vv / width + 0.5) - 0.5) * width;
   return max(du, dv);
 }
 
-fn zonoSDF(p: vec2<f32>, scale: f32) -> vec2<f32> {
+fn zonoSDF(p: vec2<f32>, scale: f32) -> vec4<f32> {
   let a0 = vec2<f32>(1.0, 0.0);
   let a1 = vec2<f32>(0.5, 0.8660254);
   let a2 = vec2<f32>(-0.5, 0.8660254);
+  // Idea 1 — fourth generator (golden-ratio direction) → 4-vector zono rhombs.
+  let a3 = vec2<f32>(0.80901699, 0.58778525);
   let w = scale * 0.22;
   let f0 = zonoFacet(p, a0, w);
   let f1 = zonoFacet(p, a1, w);
   let f2 = zonoFacet(p, a2, w);
-  let cell = min(min(f0, f1), f2);
-  let edge = min(min(abs(f0 - f1), abs(f1 - f2)), abs(f2 - f0));
-  return vec2<f32>(cell, edge);
+  let f3 = zonoFacet(p, a3, w);
+  let cell = min(min(f0, f1), min(f2, f3));
+  let d01 = abs(f0 - f1);
+  let d02 = abs(f0 - f2);
+  let d03 = abs(f0 - f3);
+  let d12 = abs(f1 - f2);
+  let d13 = abs(f1 - f3);
+  let d23 = abs(f2 - f3);
+  let edge = min(min(min(d01, d02), min(d03, d12)), min(d13, d23));
+
+  var winner = 0u;
+  var best = f0;
+  if (f1 < best) { best = f1; winner = 1u; }
+  if (f2 < best) { best = f2; winner = 2u; }
+  if (f3 < best) { best = f3; winner = 3u; }
+
+  var runner = select(0u, 1u, winner == 0u);
+  var second = select(f0, f1, winner == 0u);
+  if (winner != 1u && f1 < second) { second = f1; runner = 1u; }
+  if (winner != 2u && f2 < second) { second = f2; runner = 2u; }
+  if (winner != 3u && f3 < second) { runner = 3u; }
+
+  let lo = min(winner, runner);
+  let hi = max(winner, runner);
+  let pairId = f32(lo * 4u + hi);
+  let star = max(max(max(d01, d02), max(d03, d12)), max(d13, d23));
+  return vec4<f32>(cell, edge, f32(winner) + pairId * 0.125, star);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -79,9 +108,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let uv01 = vec2<f32>(pixel) / res;
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
   let mouse = u.zoom_config.yz;
 
   let facetScale = mix(0.8, 2.2, u.zoom_params.x) * (1.0 + bass * 0.2);
@@ -95,8 +124,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   p = rot2(spin + mids * 0.3) * p;
 
   let z = zonoSDF(p, facetScale);
-  let facetId = floor(p.x * 3.7 + p.y * 2.3 + time * 0.1);
-  let hue = fract(facetId * 0.13 + colorCycle + length(p) * 0.2 + treble * 0.15);
+  // Idea 1: generator-axis dichroism — hue locked to the winning rhomb family
+  let hue = fract(z.z * 0.333 + colorCycle + length(p) * 0.08 + treble * 0.15);
 
   let facetFill = smoothstep(edgeWidth * 2.0, 0.0, z.x);
   let edgeLine = smoothstep(edgeWidth, 0.0, z.y) * (1.0 - facetFill * 0.3);
@@ -111,14 +140,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let shimmer = hash21(floor(p * facetScale * 8.0)) * treble * 0.2;
   color += spectral(hue + shimmer) * facetFill * shimmer;
 
+  // Idea 2: 3-space vertex stars — all three generator distances match
+  let star = smoothstep(edgeWidth * 2.4, 0.0, z.w) * (1.0 + bass * 0.5);
+  color += vec3<f32>(1.0, 0.96, 0.85) * star * 0.85;
+
   let prev = textureLoad(dataTextureC, pixel, 0);
   color = mix(color, prev.rgb, 0.03);
   color = acesToneMap(color * (1.2 + mids * 0.15));
 
-  let alpha = clamp(facetFill * 0.7 + edgeLine * 0.9 + 0.05, 0.0, 1.0);
-  let depthOut = clamp(facetFill * 0.5 + edgeLine * 0.3, 0.0, 1.0);
+  let alpha = clamp(facetFill * 0.7 + edgeLine * 0.9 + star * 0.35 + 0.05, 0.0, 1.0);
+  let depthOut = clamp(facetFill * 0.5 + edgeLine * 0.3 + star * 0.2, 0.0, 1.0);
+  let outCol = vec4<f32>(color, alpha);
 
-  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+  textureStore(writeTexture, pixel, outCol);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(z.x, hue, alpha, facetFill));
+  textureStore(dataTextureA, pixel, outCol);
 }
