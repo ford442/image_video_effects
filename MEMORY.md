@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-15 (classic geometry leftover six)
+**Last updated:** 2026-09-15 (classic geometry leftover six + pull/push union context)
 
 ## 2026-09-15 — Classic geometry leftover six (6 shaders)
 
@@ -18,6 +18,51 @@
 - Cards: `agents/swarm-outputs/grok-2026-09-15-classic-geometry-six/`.
 - Real-GPU visual QA: external.
 
+## 2026-09-15 — Pull/push union (ahead 1 / behind 3)
+
+- Rebased local `309128f8` (`push fix`: blackbody Phase-C six + classic math/CA eight) onto origin `adba7c9c` (`#1276` field/plasma six, `#1274` math/CA six, `#1273` symbiotic bismuth dragon-core plan).
+- WGSL overlaps (6): kept origin #1274/#1276 (already merged PRs), did not restamp local eight:
+  - rgb-diffraction, verlet-cloth-wind, sierpinski-tetrahedron, turing-morphogenesis, buddhabrot-aura, quasicrystal-iridescence.
+- Unique local kept: blackbody Phase-C six + gen-3d-sierpinski-chaos + gen-chromatic-zonohedron.
+- Unique origin kept: cellular-automata-tapestry, field/plasma five, dragon-core plan/queue.
+- Unique draft #1275 kept (not the overlapping four): gen-audio-spirograph-julia, gen-belousov-zhabotinsky. Did not take #1275 restamp of rgb/verlet/tet/tapestry, nor tet extraBuffer[133..138] springs (origin deleted [0..5]).
+- Catalog stays 1,367. Real-GPU QA external.
+
+## 2026-09-15 — Unique leftover two from #1275
+
+- IDs: gen-audio-spirograph-julia, gen-belousov-zhabotinsky.
+- Per shader, the ideas actually added:
+  - gen-audio-spirograph-julia: hypotrochoid inner-loop on even harmonics; Julia orbit-trap filaments. Real plasmaBuffer (was zoom_config.x time proxy).
+  - gen-belousov-zhabotinsky: refractory-tail shading; pacemaker excitability gradient. Raw A/B packing kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs.
+- Cards: `agents/swarm-outputs/muse-2026-09-15-classic-math-leftover-six/`.
+- Real-GPU visual QA: external.
+
+## 2026-09-15 — Blackbody Phase-C leftover six
+
+- User asked for a batch of 6. Took six uncarded April 2026 `spec-blackbody-thermal` hybrids with distinct identities.
+- IDs: thermal-vision-blackbody, chroma-kinetic-blackbody, energy-shield-blackbody, stellar-plasma-blackbody, sim-heat-haze-blackbody, encaustic-wax-blackbody.
+- Per shader, the ideas actually added:
+  - thermal-vision: NUC/scanline banding; hot-object lag from C.a. Camera params kept. No spring.
+  - chroma-kinetic: λ-scaled RGB split; C luma-delta kinetic boost. Wrote display A. No spring.
+  - energy-shield: discrete hex-cell strikes; edge Faraday current. Exact C trail. No new spring.
+  - stellar-plasma: |∇f| filaments; warp-advected C heat. plasmaBuffer audio (not config.yzw).
+  - heat-haze: Schlieren along ∇T; plume shear from dT/dy. Raw T in A.r.
+  - encaustic-wax: cooling skin; iron/brush ridges. Display A; scene depth (not melt_thickness).
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs. Did not stamp another ember-glow ring.
+- Gates: Naga 6/6, extraBuffer 0, dead sliders 0, catalog 1,367, Jest 689/6 WASM pre-existing, SKIP_WASM_BUILD=1 build green.
+- Real-GPU visual QA: external.
+- Cards: `agents/swarm-outputs/grok-2026-09-15-blackbody-phase-c-six/`.
+- Next leftover: radial/BH blackbody four (`warp-drive-blackbody`, `hyper-space-jump-blackbody`, `gamma-ray-burst-blackbody`, `gen-singularity-forge-blackbody`). Still skip tropism mycelium, physarum agents, idea-rich `crt-clear-zone` and liquid-small.
+
+## 2026-09-15 — Unique local math remainder (from classic math/CA eight)
+
+- Concurrent with origin #1274/#1276. Six overlapping IDs kept origin. Unique two landed:
+  - gen-3d-sierpinski-chaos: attractor-biased die; iteration-age hue. Chaos game kept. extraBuffer FFT/[133] deleted.
+  - gen-chromatic-zonohedron: generator-axis dichroism; 3-space vertex stars. Packing lie fixed to display RGBA.
+- Historical cards for the whole eight (including superseded overlaps): `agents/swarm-outputs/grok-2026-09-15-classic-math-ca-eight/`.
+- Real-GPU visual QA: external.
+
 ## 2026-09-15 — Classic field / plasma / crystal leftover six (6 shaders)
 
 - IDs: gen-strange-field-flow, gen-solar-wind-ribbons, gen-prismatic-ion-cascade, gen-crystal-lattice-growth, gen-topological-acoustic-knots, gen-quasicrystal-iridescence.
@@ -32,6 +77,19 @@
 - Gates: Naga 6/6, extraBuffer 0, dead sliders 0, catalog 1,367, SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing WASM `bridge/api.js`.
 - #1274 already took the math/CA six — did not restamp those IDs.
 - Cards: `agents/swarm-outputs/grok-2026-09-15-classic-field-plasma-six/`.
+- Real-GPU visual QA: external.
+
+## 2026-09-15 — Classic math/CA leftover six (#1274)
+
+- IDs: gen-rgb-diffraction, gen-verlet-cloth-wind, gen-sierpinski-tetrahedron, gen-cellular-automata-tapestry, gen-turing-morphogenesis, gen-buddhabrot-aura.
+- Per shader, the ideas actually added:
+  - rgb-diffraction: blazed grating (+1 order); spectral order ghosts at m=±1.
+  - verlet-cloth: warp/weft thread ridges; fold creases from |Laplacian|.
+  - sierpinski-tet: face-centroid orbit trap; generation-index jewel. extraBuffer[0..5] deleted.
+  - CA tapestry: warp/weft from A/B chemicals; Pearson glaze. plasmaBuffer LUT + config.y dt lie removed.
+  - turing: inhibitor halo; chemical-front ridges.
+  - buddhabrot: Nebulabrot early/mid/late channels; anti-Buddhabrot interior dust.
+- Cards: `agents/swarm-outputs/grok-2026-09-15-classic-math-ca-six/`.
 - Real-GPU visual QA: external.
 
 ## 2026-09-14 — Alternate-branch union + delete

@@ -15,7 +15,8 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {

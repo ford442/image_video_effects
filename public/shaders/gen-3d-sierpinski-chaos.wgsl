@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  3D Sierpinski Chaos Game
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: sierpinski, chaos-game, 3d-fractal, audio-reactive, mouse-interactive, semantic-alpha, upgraded-rgba
 //  Complexity: Medium-High
+//  Created: 2026-05-31 — Kimi Agent (Bright batch)
 //  Upgraded: 2026-09-15
-//  Ideas: repeat-vertex corner flares; opposite-face chroma
+//  Ideas: attractor-biased chaos; repeat-vertex corner flares; iteration-age hue; opposite-face chroma
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -63,7 +64,11 @@ fn palette(h: f32) -> vec3<f32> {
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
@@ -101,24 +106,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let colorShift = u.zoom_params.w; // Color Shift → palette phase
 
   // ── Audio: canonical bands + guarded FFT bins 1–8 ───────────────
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-  // Persistent smoothed bass (safe zone [133], single writer + length guard).
-  var bassSmooth = bass;
-  if (arrayLength(&extraBuffer) > 133u) {
-    bassSmooth = extraBuffer[133];
-    if (global_id.x == 0u && global_id.y == 0u) {
-      extraBuffer[133] = mix(bassSmooth, bass, 0.12);
-    }
-  }
-
-  var fft = 0.0;
-  if (arrayLength(&extraBuffer) > 12u) {
-    for (var bin = 1u; bin <= 8u; bin++) { fft += extraBuffer[4u + bin]; }
-    fft *= 0.125;
-  }
+  var fft = mids * 0.5 + treble * 0.5;
 
   // ── Click ripples: bounded (≤50), finite lifetime, spatially local ──
   var rippleGlow = 0.0;
@@ -133,7 +125,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rippleGlow += exp(-band * band * 220.0) * exp(-age * 2.2);
   }
 
-  let audioSpeed = speed * (0.9 + bassSmooth * 0.5);
+  let audioSpeed = speed * (0.9 + bass * 0.5);
   let hueBase = colorShift + mids * 0.2 + fft * 0.1 + rippleGlow * 0.12;
 
   // ── View rotation (mouse drag overrides auto-orbit) ─────────────
@@ -164,6 +156,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     vec3<f32>(0.0, -0.333, -1.155)
   );
 
+  // Idea 1: held mouse biases the die toward the tet vertex nearest the cursor
+  var attractor = 0u;
+  if (mouseDown) {
+    let mouseUV = (mouse - vec2<f32>(0.5)) * vec2<f32>(1.0, -1.0);
+    var best = 1e9;
+    for (var k = 0u; k < 4u; k = k + 1u) {
+      let rpV = vec3<f32>(dot(m0, vertices[k]), dot(m1, vertices[k]), dot(m2, vertices[k]));
+      let pz = max(CAMERA_DIST + rpV.z, 0.15);
+      let d2 = dot(mouseUV - rpV.xy / pz, mouseUV - rpV.xy / pz);
+      let closer = d2 < best;
+      best = select(best, d2, closer);
+      attractor = select(attractor, k, closer);
+    }
+  }
+
   // ── Chaos game: bounded, adaptive, early-exit ────────────────────
   let seedU = global_id.x * 1973u + global_id.y * 9277u + 1u;
   var point = vec3<f32>(
@@ -188,8 +195,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   for (var i = 0; i < numPoints; i++) {
     if (count > SATURATION_COUNT) { break; }  // pixel fully lit — stop early
-    let vi = pickVertex(seedU + u32(i) * 747796405u);
-    // Idea 1 — consecutive same-index picks flare the tet corners.
+    var vi = pickVertex(seedU + u32(i) * 747796405u);
+    // Idea 1: biased die — ~40% of picks snap to the attractor vertex while held.
+    let bias = hashf(f32(seedU) + f32(i) * 11.3);
+    vi = select(vi, attractor, mouseDown && bias < 0.4);
+    // Idea 2: consecutive same-index picks flare the tet corners.
     let repeatCorner = select(0.0, 1.0, vi == lastVi);
     lastVi = vi;
     point = (point + vertices[vi]) * 0.5;
@@ -206,7 +216,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let influence = 1.0 - distSq / pointRadius;
     let depthWeight = 1.0 / projZ;
-    // Idea 2 — farthest vertex names the opposite face (four-face chroma).
+    // Idea 3: farthest vertex names the opposite face (four-face chroma).
     let dv0 = dot(point - vertices[0], point - vertices[0]);
     let dv1 = dot(point - vertices[1], point - vertices[1]);
     let dv2 = dot(point - vertices[2], point - vertices[2]);
@@ -216,7 +226,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     farIdx = select(farIdx, 1u, dv1 > farD); farD = max(farD, dv1);
     farIdx = select(farIdx, 2u, dv2 > farD); farD = max(farD, dv2);
     farIdx = select(farIdx, 3u, dv3 > farD);
-    let hue = fract(f32(vi) * 0.12 + f32(farIdx) * 0.25 + hueBase + rp.y * 0.15);
+    let age = f32(i) / max(f32(numPoints), 1.0);
+    let hue = fract(f32(vi) * 0.12 + f32(farIdx) * 0.25 + hueBase + rp.y * 0.15 + age * 0.18);
     // Point twinkle keeps the cloud from looking like flat splats.
     let twinkle = 0.85 + 0.3 * hashf(f32(seedU) + f32(i) * 3.7);
     acc += palette(hue) * (depthWeight * influence * twinkle * (1.0 + repeatCorner * 2.2));
