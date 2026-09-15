@@ -16,7 +16,8 @@
     "audio-reactive",
     "mouse-control",
     "volumetric",
-    "raymarching"
+    "raymarching",
+    "upgraded-rgba"
   ],
   "params": [
     {

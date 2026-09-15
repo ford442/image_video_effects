@@ -108,6 +108,9 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map",
     "upgraded-rgba"
   ],
   "supportsDepth": true,
