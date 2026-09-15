@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Encaustic Wax Blackbody
 //  Category: advanced-hybrid
-//  Features: encaustic-wax, blackbody-radiation, HDR, mouse-driven
+//  Features: encaustic-wax, blackbody-radiation, HDR, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: encaustic-wax.wgsl, spec-blackbody-thermal.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-22 — Artistic & Texture Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: cooling skin on waxDetail; iron/brush ridges along height tangent
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Combines physical encaustic wax simulation with blackbody thermal
 //  radiation coloring. Wax thickness maps to temperature — thick
@@ -35,7 +35,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash (from encaustic-wax.wgsl) ═══
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
@@ -62,7 +61,6 @@ fn fbm(p: vec2<f32>) -> f32 {
     return v;
 }
 
-// ═══ CHUNK: blackbodyColor (from spec-blackbody-thermal.wgsl) ═══
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
     var r: f32;
@@ -95,32 +93,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
 
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+    let aspect = resolution.x / max(resolution.y, 1.0);
     var mouse = u.zoom_config.yz;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Parameters
     let waxThickness = u.zoom_params.x * 10.0;
     let textureStrength = u.zoom_params.y;
     let meltRadius = u.zoom_params.z;
     let thermalIntensity = mix(0.5, 3.0, u.zoom_params.w);
 
-    // Calculate Melting from Mouse
     let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
-    let meltFactor = smoothstep(meltRadius + 0.1, meltRadius, dist) * 1.0;
+    let meltFactor = smoothstep(meltRadius + 0.1, meltRadius, dist) * (1.0 + bass * 0.15);
 
     let currentBlur = waxThickness + meltFactor * 10.0;
     let currentTexture = textureStrength * (1.0 - meltFactor * 0.5);
 
-    // Generate Wax Texture
     let waxHeight = fbm(uv * 10.0);
     let waxDetail = fbm(uv * 25.0 + 100.0) * 0.5;
     let totalWaxHeight = waxHeight + waxDetail * 0.3;
 
     let distortUV = uv + vec2<f32>(waxHeight - 0.5) * 0.01 * currentTexture;
 
-    // Blur Loop
     var colorSum = vec3<f32>(0.0);
     var totalWeight = 0.0;
     let texel = 1.0 / resolution;
@@ -136,7 +134,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var finalColor = colorSum / totalWeight;
 
-    // Specular highlights for wax surface
     let h1 = fbm((uv + vec2<f32>(texel.x, 0.0)) * 10.0);
     let h2 = fbm((uv + vec2<f32>(0.0, texel.y)) * 10.0);
     let normal = normalize(vec3<f32>(h1 - waxHeight, h2 - waxHeight, 0.1));
@@ -144,7 +141,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spec = pow(max(dot(normal, lightDir), 0.0), 10.0) * currentTexture * 0.5;
     finalColor += spec;
 
-    // Wax thickness calculation
+    // Idea 2 — iron / brush ridges along height-field tangent
+    let g2 = vec2<f32>(h1 - waxHeight, h2 - waxHeight);
+    let tdir = normalize(vec2<f32>(g2.y, -g2.x) + vec2<f32>(1.0e-5, 0.0));
+    let ridge = pow(abs(sin(dot(uv * resolution, tdir) * 0.22 + totalWaxHeight * 6.0)), 8.0);
+    finalColor += vec3<f32>(1.04, 0.96, 0.82) * ridge * currentTexture * (0.18 + treble * 0.08);
+
     let base_thickness = 0.3 + totalWaxHeight * 0.7;
     let melt_thickness = base_thickness + meltFactor * 0.4;
     var wax_alpha = mix(0.35, 0.92, melt_thickness * (0.5 + textureStrength * 0.5));
@@ -156,48 +158,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edge_mask = smoothstep(0.0, 0.15, melt_thickness);
     wax_alpha *= edge_mask;
 
-    // ═══ BLACKBODY THERMAL COLORING ═══
-    // Map wax thickness to temperature: thick = hotter
     let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
     let tempRangeLow = 800.0;
     let tempRangeHigh = 6000.0;
     var temperature = mix(tempRangeLow, tempRangeHigh, melt_thickness * 0.7 + luma * 0.3);
 
-    // Mouse creates local hotspots
+    // Idea 1 — cooling skin: high-frequency waxDetail is cooler than valleys
+    let skin = clamp(waxDetail * 2.0, 0.0, 1.0);
+    temperature *= mix(1.12, 0.78, skin);
+
     let isMouseDown = u.zoom_config.w > 0.5;
     if (isMouseDown) {
         let mouseDist = length(uv - mouse);
         let mouseHeat = exp(-mouseDist * mouseDist * 400.0);
         temperature += mouseHeat * tempRangeHigh * 0.5;
     }
+    temperature = clamp(temperature, 800.0, 12000.0);
 
-    var thermalColor = blackbodyColor(temperature) * thermalIntensity;
-
-    // Ember glow around thick wax regions
-    let glowRadius = 0.03;
-    var glowAccum = vec3<f32>(0.0);
-    let glowSamples = 8;
-    for (var i: i32 = 0; i < glowSamples; i = i + 1) {
-        let angle = f32(i) * 0.785398 + time * 0.3;
-        let offset = vec2<f32>(cos(angle), sin(angle)) * glowRadius;
-        let s = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
-        let sLuma = dot(s, vec3<f32>(0.299, 0.587, 0.114));
-        let sTemp = mix(tempRangeLow, tempRangeHigh, sLuma);
-        glowAccum += blackbodyColor(sTemp) * thermalIntensity;
-    }
-    glowAccum /= f32(glowSamples);
-
-    // Blend thermal glow with wax color based on thickness
+    let thermalColor = blackbodyColor(temperature) * thermalIntensity;
     let thermalBlend = smoothstep(0.4, 0.8, melt_thickness) * 0.6;
     finalColor = mix(finalColor, toneMapACES(thermalColor), thermalBlend);
-    finalColor = mix(finalColor, toneMapACES(glowAccum), thermalBlend * 0.3);
 
-    // Warm amber tint for wax medium
     let wax_tint = vec3<f32>(1.02, 0.98, 0.92);
     finalColor *= mix(vec3<f32>(1.0), wax_tint, melt_thickness * 0.5);
     let depth_darken = mix(1.0, 0.85, melt_thickness * textureStrength);
     finalColor *= depth_darken;
 
+    wax_alpha = clamp(wax_alpha + ridge * 0.08 + mids * 0.03, 0.0, 1.0);
+
     textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, wax_alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(melt_thickness, 0.0, 0.0, wax_alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, wax_alpha));
+
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

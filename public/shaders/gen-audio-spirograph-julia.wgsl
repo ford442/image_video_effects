@@ -1,10 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Gen Audio Spirograph Julia
 //  Category: advanced-hybrid
-//  Features: audio-reactive, fractal, mouse-driven, procedural, temporal
+//  Features: audio-reactive, fractal, mouse-driven, procedural, temporal, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: gen-audio-spirograph.wgsl, mouse-julia-morph.wgsl
 //  Created: 2026-04-18
+//  Upgraded: 2026-09-15
+//  Ideas: hypotrochoid inner-loop ring family on even harmonics; Julia orbit-trap filaments along the curves
+//  A packing: ACES display RGBA
 //  By: Agent CB-5 — Generative & Hybrid Enhancer
 // ═══════════════════════════════════════════════════════════════════
 //  Audio-reactive spirograph curves that unfold into mouse-driven
@@ -61,6 +64,33 @@ fn epitrochoid(t: f32, R: f32, r: f32, d: f32) -> vec2<f32> {
   return vec2<f32>(x, y);
 }
 
+// Idea 1 companion — hypotrochoid: the inner-rolling sister curve (Spirograph
+// ring held fixed outside). Same (R, r, d) roles, loop family differs.
+fn hypotrochoid(t: f32, R: f32, r: f32, d: f32) -> vec2<f32> {
+  let k = R / max(r, 0.0001);
+  let x = (R - r) * cos(t) + d * cos((k - 1.0) * t);
+  let y = (R - r) * sin(t) - d * sin((k - 1.0) * t);
+  return vec2<f32>(x, y);
+}
+
+// Idea 2 companion — Julia orbit trap: minimum orbit radius over the escape
+// walk. Small values mean the orbit stayed bounded (filament core).
+fn juliaTrap(z0: vec2<f32>, c: vec2<f32>, maxIter: i32) -> f32 {
+  var z = z0;
+  var trap = length(z0);
+  for (var i = 0; i < maxIter; i = i + 1) {
+    if (dot(z, z) > 4.0) { break; }
+    z = vec2<f32>(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+    trap = min(trap, length(z));
+  }
+  return trap;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn distToSegment(uv: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
   let pa = uv - a;
   let ba = b - a;
@@ -114,10 +144,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
   let juliaC = mix(mouseC, autoC, 0.3);
 
-  // Audio
-  let audio = u.zoom_config.x;
-  let audioMod = 1.0 + audio * 2.0;
+  // Audio — real FFT bands (HEAD read u.zoom_config.x, which is time, not audio).
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let audioMod = 1.0 + bass * 0.6;
 
   // Background accumulation for trails
   let prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
@@ -142,8 +173,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let speed = 0.5 + f32(i) * 0.1;
     let time = t * speed;
 
-    let pos = epitrochoid(time, R, r, d);
-    let prevPos = epitrochoid(time - 0.05, R, r, d);
+    // Idea 1 — two curve families: odd harmonics roll outside (epitrochoid),
+    // even harmonics roll inside (hypotrochoid). Parity-selected, no param
+    // theft, immediately visible as loop-vs-lobe ring character.
+    let isEven = (i % 2) == 0;
+    let pos = select(epitrochoid(time, R, r, d), hypotrochoid(time, R, r, d), isEven);
+    let prevPos = select(epitrochoid(time - 0.05, R, r, d), hypotrochoid(time - 0.05, R, r, d), isEven);
 
     let dist = distToSegment(uv, pos, prevPos);
 
@@ -152,18 +187,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let jResult = julia(z0, juliaC, 30);
     let jIter = jResult.x;
 
+    // Idea 2 — orbit-trap filaments: where the Julia orbit stays bounded the
+    // curve glow condenses into neon filaments; escaped zones stay diffuse.
+    let trap = juliaTrap(z0, juliaC, 30);
+    let filament = smoothstep(0.45, 0.05, trap);
+
     let hue = fract(f32(i) * 0.2 + t * 0.05 + jIter * 0.02);
-    let sat = 0.7 + audio * 0.3;
-    let light = 0.5 + audio * 0.3;
-    let col = hsl2rgb(hue, sat, light);
+    let sat = 0.7 + mids * 0.3;
+    let light = 0.5 + treble * 0.3;
+    let col = hsl2rgb(hue, sat, light) * (0.35 + 1.4 * filament);
 
     let intensity = 1.0 / (1.0 + f32(i) * 0.5);
-    if (dist < minDist) {
-      minDist = dist;
-      curveColor = col * intensity;
-      totalIntensity = intensity;
-      juliaIter = jIter;
-    }
+    let closer = dist < minDist;
+    minDist = select(minDist, dist, closer);
+    curveColor = select(curveColor, col * intensity, closer);
+    totalIntensity = select(totalIntensity, intensity, closer);
+    juliaIter = select(juliaIter, jIter, closer);
   }
 
   // Create glow effect
@@ -190,9 +229,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Vignette
   let vignette = 1.0 - length(uv) * 0.8;
   col = col * vignette;
+  col = acesToneMap(col * 1.1);
+
+  // Semantic alpha from curve energy (was hardcoded 1.0); truthful depth
+  // from the same energy (was 0.0).
+  let alphaOut = clamp(glow * 0.7 + core * 0.5 + juliaMix * 0.2, 0.05, 0.95);
+  let depthOut = clamp(glow * 0.6 + core * 0.4, 0.0, 1.0);
 
   // Store for feedback
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col * 0.95, 1.0));
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col * 0.95, alphaOut));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, alphaOut));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

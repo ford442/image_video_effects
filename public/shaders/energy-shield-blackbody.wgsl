@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  energy-shield-blackbody
+//  Energy Shield Blackbody
 //  Category: advanced-hybrid
-//  Features: hex-grid, blackbody-thermal, mouse-driven, HDR
+//  Features: hex-grid, blackbody-thermal, mouse-driven, HDR, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: energy-shield.wgsl, spec-blackbody-thermal.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-19 — Lighting & Energy Enhancer
+//  Upgraded: 2026-09-15
+//  Ideas: discrete hex-cell strikes; edge Faraday current
+//  A packing: raw trail scalar in A.r
 // ═══════════════════════════════════════════════════════════════════
 //  Hexagonal energy shield with physically-correct blackbody thermal
 //  coloring. Shield impacts heat up cells from deep red embers through
@@ -33,7 +33,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: blackbodyColor (from spec-blackbody-thermal.wgsl) ═══
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
     var r: f32;
@@ -52,7 +51,6 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b) * radiance;
 }
 
-// ═══ CHUNK: toneMapACES (from spec-blackbody-thermal.wgsl) ═══
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -71,25 +69,34 @@ fn modulo(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
     return x - y * floor(x / y);
 }
 
+fn hash(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn loadC(coord: vec2<i32>, max_coord: vec2<i32>) -> vec4<f32> {
+    let c = clamp(coord, vec2<i32>(0), max_coord);
+    return textureLoad(dataTextureC, c, 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
+    let coord = vec2<i32>(gid.xy);
+    let max_coord = vec2<i32>(res) - vec2<i32>(1);
     let uv = vec2<f32>(gid.xy) / res;
-    let aspect = res.x / res.y;
+    let aspect = res.x / max(res.y, 1.0);
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Params
     let hexScale = 5.0 + u.zoom_params.x * 45.0;
     let rippleSpeed = u.zoom_params.y * 5.0;
     let impactStrength = u.zoom_params.z;
     let decay = u.zoom_params.w;
-    let tempRangeLow = mix(800.0, 2500.0, u.zoom_params.x);
-    let tempRangeHigh = mix(4000.0, 15000.0, u.zoom_params.y);
-    let thermalIntensity = mix(0.5, 3.0, u.zoom_params.z);
 
-    // Hex grid
     let r = vec2<f32>(1.0, 1.73);
     let h = r * 0.5;
     var scaledUV = uv * hexScale;
@@ -102,30 +109,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var hexCenterUV = hexCenter / hexScale;
     hexCenterUV.x = hexCenterUV.x / aspect;
 
-    // Mouse interaction
     let mousePos = u.zoom_config.yz;
     let distVec = (hexCenterUV - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
     let wave = sin(dist * 20.0 - time * rippleSpeed);
-    let mouseIntensity = smoothstep(0.4, 0.0, dist);
-    let activeHex = mouseIntensity + wave * 0.2 * impactStrength;
 
-    // Hex edges
+    // Idea 1 — discrete hex-cell strikes (whole cell on/off, hashed radius)
+    let cellRand = hash(hexCenter);
+    let cellRadius = 0.18 + 0.16 * cellRand + bass * 0.04;
+    let cellHit = select(0.0, 1.0, dist < cellRadius);
+    let activeHex = cellHit * mix(0.7, 1.15, cellRand) + wave * 0.2 * impactStrength;
+
     let hexD = hexDist(gv);
-    let edge = smoothstep(0.48, 0.5, hexD);
-    let glow = smoothstep(0.4, 0.5, hexD) * activeHex;
+    let edge = smoothstep(0.46, 0.5, hexD);
+    let fill = 1.0 - smoothstep(0.0, 0.40, hexD);
 
-    // Distort UV
+    // Idea 2 — edge Faraday current (hot mesh, cooler fill)
+    let edgeCurrent = edge * (0.45 + activeHex * 1.2 + treble * 0.15);
+    let fillTemp = mix(800.0, 2800.0, activeHex * 0.35);
+    let edgeTemp = mix(2500.0, 11000.0, clamp(edgeCurrent, 0.0, 1.0));
+    let thermalIntensity = 0.7 + activeHex * 1.4 + mids * 0.2;
+    var thermalColor = blackbodyColor(fillTemp) * fill * 0.35 * thermalIntensity;
+    thermalColor += blackbodyColor(edgeTemp) * edgeCurrent * thermalIntensity;
+
     let distortAmt = activeHex * 0.05 * impactStrength;
     let distortedUV = uv + (gv / hexScale) * distortAmt;
     let color = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).rgb;
 
-    // ═══ Blackbody thermal coloring on shield cells ═══
-    // Map activation to temperature
-    let activationTemp = mix(tempRangeLow, tempRangeHigh, activeHex * impactStrength);
-    var thermalColor = blackbodyColor(activationTemp) * thermalIntensity;
-
-    // Ripple heat: older ripples cool down
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
@@ -133,25 +143,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let age = time - ripple.z;
         if (age > 0.0 && age < 3.0) {
             let heatBoost = smoothstep(0.3, 0.0, rDist) * exp(-age * 0.8);
-            thermalColor += blackbodyColor(tempRangeHigh * 0.8) * heatBoost * thermalIntensity;
+            thermalColor += blackbodyColor(9000.0) * heatBoost * thermalIntensity * edge;
         }
     }
 
-    thermalColor = toneMapACES(thermalColor);
+    let mapped = toneMapACES(thermalColor);
+    let gridColor = mix(vec3<f32>(0.0, 0.8, 1.0), mapped, clamp(activeHex, 0.0, 1.0));
+    let glow = edgeCurrent * 0.85 + cellHit * 0.2;
+    var finalColor = mix(color, gridColor, glow);
+    finalColor = finalColor + gridColor * cellHit * 0.2;
 
-    let gridColor = mix(vec3<f32>(0.0, 0.8, 1.0), thermalColor, activeHex);
-    var finalColor = mix(color, gridColor, glow * 0.8);
-    finalColor = finalColor + gridColor * mouseIntensity * 0.2;
-
-    // Trail persistence
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
-    let activation = mouseIntensity;
-    let newTrail = max(prev * decay, activation);
+    let prev = loadC(coord, max_coord);
+    let activation = cellHit;
+    let newTrail = max(prev.r * decay, activation);
     finalColor = finalColor + vec3<f32>(0.0, 0.5, 1.0) * newTrail * 0.5;
     textureStore(dataTextureA, gid.xy, vec4<f32>(newTrail, 0.0, 0.0, 1.0));
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    let alpha = clamp(0.35 + glow * 0.5 + newTrail * 0.2 + cellHit * 0.1, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, alpha));
 
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let d = textureLoad(readDepthTexture, coord, 0).r;
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(d, 0.0, 0.0, 0.0));
 }

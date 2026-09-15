@@ -4,7 +4,9 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, temporal, mouse-driven, hue-preserve-clamp, ign-dither
 //  Complexity: Medium
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-06-07, 2026-09-15
+//  Ideas: refractory-tail shading behind the wavefront; pacemaker excitability gradient forming target-wave zones
+//  A packing: raw sim (newA, newB, waveFront, alpha) + B detail (lapA, lapB, oxidized, waveFront^2)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -53,6 +55,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let time = u.config.x;
   let uv = vec2<f32>(global_id.xy) / resolution;
   let coord = vec2<i32>(global_id.xy);
@@ -65,31 +68,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let Db = mix(0.2, 0.8, u.zoom_params.z);
   let feed = mix(0.01, 0.05, u.zoom_params.w);
 
-  let texel = 1.0 / resolution;
+  let resI = vec2<i32>(resolution);
+  let lo = vec2<i32>(0);
+  let hi = resI - vec2<i32>(1);
 
-  let c = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Exact loads: C is rgba32float history, never filtered.
+  let c = textureLoad(dataTextureC, coord, 0);
   var a = c.r;
   var b = c.g;
 
-  if (a + b < 0.01) {
-    let cx = uv.x - 0.5;
-    let cy = uv.y - 0.5;
-    let ang = atan2(cy, cx);
-    let spiral = sin(ang * 3.0 + length(vec2<f32>(cx, cy)) * 20.0);
-    a = 0.3 + spiral * 0.2 + hash12(uv * 100.0) * 0.1;
-    b = 0.2 - spiral * 0.1;
-  }
+  // Spiral seed, branchless: dead medium reseeds instead of branching.
+  let needsSeed = (a + b) < 0.01;
+  let cx = uv.x - 0.5;
+  let cy = uv.y - 0.5;
+  let ang = atan2(cy, cx);
+  let spiral = sin(ang * 3.0 + length(vec2<f32>(cx, cy)) * 20.0);
+  let seedA = 0.3 + spiral * 0.2 + hash12(uv * 100.0) * 0.1;
+  let seedB = 0.2 - spiral * 0.1;
+  a = select(a, seedA, needsSeed);
+  b = select(b, seedB, needsSeed);
 
-  let n = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0);
-  let s = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(0.0, texel.y), 0.0);
-  let e = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0);
-  let w = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0);
+  let n = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), lo, hi), 0);
+  let s = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), lo, hi), 0);
+  let e = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), lo, hi), 0);
+  let w = textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), lo, hi), 0);
 
   let lapA = (n.r + s.r + e.r + w.r) * 0.25 - a;
   let lapB = (n.g + s.g + e.g + w.g) * 0.25 - b;
 
-  var newA = a + epsilon * (Da * lapA + a * (1.0 - a * a) - b + feed);
-  var newB = b + epsilon * (Db * lapB + (a - b) * 0.5);
+  // Idea 2 — pacemaker excitability gradient: a slow concentric gradient on
+  // epsilon forms target-wave pacemaker zones where waves originate, the way
+  // real BZ dishes are paced by heterogeneities.
+  let paceR = length((uv - 0.5) * 2.0);
+  let epsilonField = epsilon * (1.0 + 0.35 * cos(paceR * 5.0 - time * 0.4));
+
+  var newA = a + epsilonField * (Da * lapA + a * (1.0 - a * a) - b + feed);
+  var newB = b + epsilonField * (Db * lapB + (a - b) * 0.5);
 
   let mouseDist = length(uv - mouseUV);
   let seed = mouseDown * exp(-mouseDist * mouseDist * 800.0) * 0.5;
@@ -116,6 +130,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = mix(col, orange, t2);
 
   col = col + vec3<f32>(1.0, 0.7, 0.4) * waveFront * waveFront * 0.5;
+
+  // Idea 1 — refractory-tail shading: excitable media go refractory behind the
+  // front. Where inhibitor is high but the front already passed, lay a dark
+  // recovery band trailing the wave instead of flat color.
+  let refractory = clamp(newB * 0.85 - waveFront * 0.12, 0.0, 1.0);
+  col = mix(col, vec3<f32>(0.02, 0.03, 0.10), refractory * 0.55);
 
   let tipDist = length(uv - vec2<f32>(0.5 + 0.2 * cos(time * 0.3), 0.5 + 0.2 * sin(time * 0.4)));
   let spiralTip = 0.002 / (tipDist * tipDist + 0.001);

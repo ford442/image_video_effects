@@ -2324,7 +2324,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "depth-output",
-      "hdr-ready"
+      "hdr-ready",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8126,7 +8127,8 @@
       "geometry",
       "audio-reactive",
       "mouse-driven",
-      "spectral-color"
+      "spectral-color",
+      "upgraded-rgba"
     ],
     "params": [
       {

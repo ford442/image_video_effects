@@ -61,7 +61,8 @@
     "geometry",
     "audio-reactive",
     "mouse-driven",
-    "spectral-color"
+    "spectral-color",
+    "upgraded-rgba"
   ],
   "params": [
     {
