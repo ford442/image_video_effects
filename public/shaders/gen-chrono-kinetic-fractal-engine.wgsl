@@ -91,7 +91,7 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     let mouse = u.zoom_config.yz * 2.0 - vec2<f32>(1.0);
     // Remap mouse to same space as pos
     let aspect = u.config.z / u.config.w;
-    let m_pos = vec3<f32>(mouse.x * aspect, -mouse.y, 0.0) * 5.0; // Scale to scene
+    let m_pos = vec3<f32>(mouse.x * aspect, mouse.y, 0.0) * 5.0; // Scale to scene
 
     let dist_to_mouse = length(pos.xy - m_pos.xy);
     let warp_strength = u.zoom_params.y;
@@ -194,17 +194,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var escapement_glow = 0.0;
     let audio = plasmaBuffer[0].xyz;
 
-    // Chromatic Aberration offsets
-    let offsets = array<vec2<f32>, 3>(
-        vec2<f32>(0.005, 0.0), // R
-        vec2<f32>(0.0, 0.0),   // G
-        vec2<f32>(-0.005, 0.0) // B
-    );
-
     let iridescence = u.zoom_params.z;
 
     for (var i = 0; i < 3; i++) {
-        let rd_uv = uv + offsets[i] * iridescence * 0.5;
+        let channel_offset = (1.0 - f32(i)) * 0.005;
+        let rd_uv = uv + vec2<f32>(channel_offset, 0.0) * iridescence * 0.5;
         let rd = normalize(rd_uv.x * cu + rd_uv.y * cv + 1.5 * cw);
 
         var dO = 0.0;

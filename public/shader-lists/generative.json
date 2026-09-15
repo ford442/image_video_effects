@@ -3109,6 +3109,11 @@
     "name": "Aetherial Plasma Loom",
     "url": "/shaders/gen-aetherial-plasma-loom.wgsl",
     "category": "generative",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "density",
@@ -6526,6 +6531,11 @@
     "category": "generative",
     "type": "generative",
     "url": "shaders/gen-celestial-clockwork-plasma-loom.wgsl",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "tags": [
       "mechanical",
       "cosmic",
@@ -7316,7 +7326,11 @@
     "updated": true,
     "id": "gen-celestial-yggdrasil-matrix",
     "url": "shaders/gen-celestial-yggdrasil-matrix.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "branch_complexity",
@@ -8281,6 +8295,11 @@
     "category": "generative",
     "url": "shaders/gen-chrono-kinetic-fractal-engine.wgsl",
     "description": "A highly dynamic, continuously unfolding 4D mechanism where temporal gears and non-euclidean clockwork structures weave together into an infinite, hypnotic mandala of light and motion.",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "complexity",
@@ -8779,7 +8798,8 @@
       "4d-tesseract",
       "raymarching",
       "audio-reactive",
-      "mouse-interaction"
+      "mouse-interaction",
+      "upgraded-rgba"
     ]
   },
   {
@@ -8800,7 +8820,8 @@
       "audio-reactive",
       "mouse-control",
       "volumetric",
-      "raymarching"
+      "raymarching",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8900,7 +8921,8 @@
       "raymarching",
       "refraction",
       "audio-reactive",
-      "mouse-interaction"
+      "mouse-interaction",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -31546,6 +31568,45 @@
         "id": "zoom_params_w",
         "name": "Iridescence Shift",
         "type": "slider",
+        "default": 0,
+        "min": 0,
+        "max": 6.28,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "zoom_params_x",
+        "name": "Fluid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "zoom_params_y",
+        "name": "Surface Tension",
+        "default": 0.3,
+        "min": 0.1,
+        "max": 2,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "zoom_params_z",
+        "name": "Flow Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "zoom_params_w",
+        "name": "Iridescence Shift",
         "default": 0,
         "min": 0,
         "max": 6.28,

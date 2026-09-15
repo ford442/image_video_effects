@@ -176,7 +176,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Orbiting particle leaves swarming with mouse (treble animates the swarm)
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    let mouse = (u.zoom_config.yz - vec2<f32>(0.5)) * vec2<f32>(res.x / res.y, 1.0);
     let m_dist = length(uv - mouse);
     let swarm = smoothstep(0.5, 0.0, m_dist) * treble;
 
