@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Buddhabrot Aura
 //  Category: generative
-//  Features: buddhabrot, fractal, generative, audio-reactive, mouse-interactive, semantic-alpha, upgraded-rgba, temporal
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-05-30
-//  Updated: 2026-06-01
-//  By: Kimi Agent (4-Agent Swarm Upgrade)
+//  Upgraded: 2026-09-15
+//  Ideas: Nebulabrot early/mid/late escape channels; anti-Buddhabrot interior dust
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // x=Orbit Threshold, y=Density Scale, z=Mouse Zoom, w=Aura Intensity
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -54,9 +54,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
   let uv01 = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
   let orbitThreshold = u.zoom_params.x;
   let densityScale = u.zoom_params.y;
@@ -75,47 +75,66 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var escapeVel = 0.0;
   var orbitColor = vec3<f32>(0.0);
   var bloom = vec3<f32>(0.0);
+  var nebulaRGB = vec3<f32>(0.0);
+  var interior = 0.0;
 
   let samples = 4u;
   let h0 = hash22(vec2<f32>(f32(global_id.x), f32(global_id.y)) + fract(time) * 13.37);
 
-  // Golden ratio φ for quasi-random sampling offsets
   let phi = 1.6180339887;
 
+  // Click ripples kick c (a probe into nearby orbits).
+  var cKick = vec2<f32>(0.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age < 0.0 || age > 2.5) { continue; }
+    let dist = length(uv01 - rp.xy);
+    let envelope = exp(-dist * 7.0) * exp(-age * 1.3);
+    cKick = cKick + (uv01 - rp.xy) * envelope * 0.08;
+  }
+
   for (var s: u32 = 0u; s < samples; s = s + 1u) {
-    // Buddhabrot: probability density of escaping orbits
-    // Mandelbrot escape radius |z|>2 (dist > 4.0 in squared magnitude)
     let h = hash22(h0 + vec2<f32>(f32(s) * phi, f32(s) * 2.718));
     let offset = (h - 0.5) * 0.002;
-    let c = center + offset;
+    let c = center + offset + cKick;
 
     var z = vec2<f32>(0.0);
     var orbit = vec3<f32>(0.0);
-    var pathLen = 0.0;
+    var escaped = false;
 
-    // Escape count statistics accumulate orbit trajectory density
     for (var i: i32 = 0; i < baseIter; i = i + 1) {
       z = vec2<f32>(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
-      pathLen = pathLen + 1.0;
       let dist = dot(z, z);
-
       orbit += orbitTrapColor(z, vec2<f32>(0.35, 0.12));
 
       if (dist > 4.0) {
+        escaped = true;
         escapeVel = escapeVel + 1.0;
         let esc = f32(i) / f32(baseIter);
         density += esc * (1.0 + bass * 0.5);
         bloom += orbit * esc * esc * (0.3 + treble * 0.4);
+        // Idea 1 — Nebulabrot: early / mid / late escape bands → R / G / B.
+        let tEsc = esc;
+        let early = 1.0 - smoothstep(0.22, 0.38, tEsc);
+        let mid   = smoothstep(0.22, 0.38, tEsc) * (1.0 - smoothstep(0.58, 0.78, tEsc));
+        let late  = smoothstep(0.58, 0.78, tEsc);
+        nebulaRGB += vec3<f32>(early, mid, late) * esc;
         break;
       }
     }
     orbitColor += orbit * (1.0 / f32(baseIter));
+    // Idea 2 — anti-Buddhabrot interior dust for orbits that never escape.
+    interior += select(1.0, 0.0, escaped);
   }
 
   density = density / f32(samples);
   escapeVel = escapeVel / f32(samples);
   orbitColor = orbitColor / f32(samples);
   bloom = bloom / f32(samples);
+  nebulaRGB = nebulaRGB / f32(samples);
+  interior = interior / f32(samples);
 
   let dMap = density * densityScale * 3.0;
   let nebula = vec3<f32>(
@@ -126,25 +145,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var color = mix(nebula, orbitColor, 0.35) * (0.5 + aura * 1.2);
   color += bloom * aura * 2.5;
+  color += nebulaRGB * vec3<f32>(1.15, 0.85, 1.35) * aura * 1.4;
+  color += vec3<f32>(0.18, 0.10, 0.28) * interior * aura * (0.7 + mids * 0.4);
 
   let centerGlow = length(uv - mouseC * 0.25);
   color += vec3<f32>(0.2, 0.15, 0.35) * smoothstep(0.9, 0.15, centerGlow) * aura * (0.6 + bass * 0.4);
 
-  // Standard chromatic aberration
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   color = acesToneMap(color * (1.0 + densityScale * 0.4));
 
-  let semantic_alpha = clamp(density * escapeVel * (0.4 + depth * 0.6), 0.25, 0.98);
+  let semantic_alpha = clamp(density * escapeVel * (0.4 + depth * 0.6) + interior * 0.35, 0.25, 0.98);
 
-  // Temporal feedback
   let coord = vec2<i32>(global_id.xy);
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+  let dims = textureDimensions(dataTextureC);
+  let prevCoord = clamp(coord, vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+  let prev = textureLoad(dataTextureC, prevCoord, 0);
   let decay = 0.96;
   let temporal = mix(prev.rgb * decay, color, 0.25);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(temporal, semantic_alpha));
+  textureStore(writeTexture, coord, vec4<f32>(temporal, semantic_alpha));
   textureStore(dataTextureA, coord, vec4<f32>(temporal, semantic_alpha));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(density * 0.7, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(density * 0.7 + interior * 0.2, 0.0, 0.0, 0.0));
 }
