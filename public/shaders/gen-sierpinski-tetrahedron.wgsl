@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sierpinski Tetrahedron
 //  Category: generative
-//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Features: procedural, fractal, sierpinski, tetrahedron, 3d-projection,
+//            audio-reactive, mouse-driven, chromatic-aberration, aces-tonemap,
+//            temporal-feedback, depth-aware, domain-warping, multi-orbit-trap,
+//            lod-noise, branchless-argmin, squared-sdf, upgraded-rgba
 //  Complexity: High
+//  Created: 2026-05-31
 //  Upgraded: 2026-09-15
-//  Ideas: face-centroid orbit trap; generation-index jewel layers
-//  A packing: raw telemetry (minTrap, trapIdx, density, alpha); ACES on writeTexture only
+//  Ideas: iteration-depth shelving bands on settled faces; audio-paced edge-current pulses along tetra edges
+//  A packing: raw trap state (minTrap, trapIdx, density, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +27,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // x=Recursion Depth, y=Rotation Speed, z=Perspective, w=Chromatic Aberration
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -92,6 +96,13 @@ fn schlickFresnel(cosTheta: f32, r0: f32) -> f32 {
   return r0 + (1.0 - r0) * pow(1.0 - cosTheta, 5.0);
 }
 
+fn spring_damper(prev: f32, goal: f32, vel: ptr<function, f32>, k: f32, d: f32) -> f32 {
+  let force = (goal - prev) * k;
+  (*vel) = (*vel) + force;
+  (*vel) = (*vel) * (1.0 - d);
+  return prev + (*vel);
+}
+
 fn ignDither(pixel: vec2<i32>) -> f32 {
   return fract(52.9829189 * fract(0.06711056 * f32(pixel.x) + 0.00583715 * f32(pixel.y))) * 2.0 / 255.0;
 }
@@ -135,11 +146,32 @@ let pixel = vec2<i32>(global_id.xy);
   let uv01 = vec2<f32>(pixel) / res;
   let time = u.config.x;
 
-  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
-  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
-  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+  let bassRaw = plasmaBuffer[0].x;
+  let midsRaw = plasmaBuffer[0].y;
+  let trebleRaw = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
+
+  var bassVel = 0.0;
+  var midsVel = 0.0;
+  var trebleVel = 0.0;
+  // Persistent smoothing state lives in the safe zone [133..138]: indices
+  // [0..5] are engine-reserved / FFT bins and get stomped every frame audio
+  // is active. Single writer at (0,0) below.
+  let bass = spring_damper(extraBuffer[133], bassRaw, &bassVel, 0.12, 0.08);
+  let mids = spring_damper(extraBuffer[134], midsRaw, &midsVel, 0.1, 0.09);
+  let treble = spring_damper(extraBuffer[135], trebleRaw, &trebleVel, 0.14, 0.07);
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[133] = bass;
+    extraBuffer[134] = mids;
+    extraBuffer[135] = treble;
+  }
+
   let clickPulse = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[136] = mix(extraBuffer[136], mouse.x, 0.15);
+    extraBuffer[137] = mix(extraBuffer[137], mouse.y, 0.15);
+  }
+  extraBuffer[138] = mix(extraBuffer[138], clickPulse, 0.2);
 
   // Distance-based LOD: lower quality at the screen edges.
   let centerDist = length(uv01 - 0.5);
@@ -165,7 +197,7 @@ let pixel = vec2<i32>(global_id.xy);
   var p = (uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
   p += (warpField - 0.5) * (0.04 + bass * 0.04);
   p += curlField * (0.03 + mids * 0.02);
-  p += (mouse - vec2<f32>(0.5)) * clickPulse * 0.08;
+  p += (mouse - vec2<f32>(0.5)) * extraBuffer[138] * 0.08;
 
   let yaw = (mouse.x - 0.5) * TAU + time * rotSpeed;
   let pitch = (mouse.y - 0.5) * PI * 0.8 + sin(time * 0.3) * 0.2;
@@ -180,13 +212,6 @@ let pixel = vec2<i32>(global_id.xy);
     vec2<u32>(0u, 1u), vec2<u32>(0u, 2u), vec2<u32>(0u, 3u),
     vec2<u32>(1u, 2u), vec2<u32>(1u, 3u), vec2<u32>(2u, 3u)
   );
-  // Idea 1 — face centroids of the four triangular faces.
-  let F = array<vec3<f32>, 4>(
-    (V[1] + V[2] + V[3]) / 3.0,
-    (V[0] + V[2] + V[3]) / 3.0,
-    (V[0] + V[1] + V[3]) / 3.0,
-    (V[0] + V[1] + V[2]) / 3.0
-  );
 
   // Inline rotation to keep matrix math out of the fractal loop.
   let cx = cos(pitch); let sx = sin(pitch);
@@ -198,7 +223,7 @@ let pixel = vec2<i32>(global_id.xy);
   var point = rp;
   var minTrapSq = 1e9;
   var trapIdx = 0.0;
-  var genIdx = 0.0;
+  var settleIters = 0;
 
   for (var i = 0; i < recursion; i = i + 1) {
     let d0 = dot(point - V[0], point - V[0]);
@@ -218,26 +243,20 @@ let pixel = vec2<i32>(global_id.xy);
       edgeTrapSq = min(edgeTrapSq, sdCapsuleSq(point, V[ab.x], V[ab.y]));
     }
 
-    var faceTrapSq = 1e9;
-    for (var f = 0u; f < 4u; f = f + 1u) {
-      let df = point - F[f];
-      faceTrapSq = min(faceTrapSq, dot(df, df));
-    }
-
     let lenP = length(point);
     let shellD = abs(lenP - 0.9);
-    let trapSq = min(min(min(nearest, edgeTrapSq * 0.49), shellD * shellD * 0.25), faceTrapSq * 0.72);
+    let trapSq = min(min(nearest, edgeTrapSq * 0.49), shellD * shellD * 0.25);
 
     // Branchless update of best orbit trap.
     let better = trapSq < minTrapSq;
     minTrapSq = select(minTrapSq, trapSq, better);
     trapIdx = select(trapIdx, f32(vi), better);
-    genIdx = select(genIdx, f32(i), better);
 
     // Early exit once we are already extremely close to the structure.
     if (minTrapSq < 1e-6) { break; }
 
     point = (point + V[vi]) * 0.5;
+    settleIters = i + 1;
   }
 
   let prev = textureLoad(dataTextureC, pixel, 0);
@@ -247,12 +266,25 @@ let pixel = vec2<i32>(global_id.xy);
   let density = exp(-minTrap * 12.0);
   let edge = exp(-abs(minTrap - 0.05) * 30.0);
 
-  // Idea 2 — jewel by IFS generation of closest approach, layered with vertex index.
-  let genNorm = genIdx / max(f32(recursion), 1.0);
-  var color = jewelColor(trapIdx * 0.18 + genNorm * 0.55 + mids * 0.1 + treble * 0.05, 0.7 + density * 0.6);
-  color = color + vec3<f32>(0.15, 0.22, 0.35) * genNorm * density * 0.45;
+  var color = jewelColor(trapIdx * 0.25 + mids * 0.1 + treble * 0.05, 0.7 + density * 0.6);
   let spec = pow(edge, 4.0) * (0.8 + bass * 0.5);
   color = color + vec3<f32>(0.9, 0.85, 0.8) * spec;
+
+  // Idea 1 — iteration-depth shelving: band the faces by how many chaos-game
+  // steps it took to settle, so deep quick-settling regions separate from slow
+  // boundary zones in strata with contour lines at the shelf edges.
+  let depthShelf = f32(settleIters) / max(f32(recursion), 1.0);
+  color = color * (0.72 + 0.55 * depthShelf);
+  let shelfFract = fract(depthShelf * 3.0);
+  let shelfEdge = smoothstep(0.0, 0.07, shelfFract) * smoothstep(1.0, 0.93, shelfFract);
+  color = color + vec3<f32>(0.10, 0.13, 0.18) * (1.0 - shelfEdge) * density;
+
+  // Idea 2 — edge-current flow: audio-paced brightness pulses traveling along
+  // the tetra edges, phased by trap distance so the current rides the existing
+  // edge glow instead of floating over the picture.
+  let currentPhase = fract(time * (0.35 + bass * 0.45) + minTrap * 9.0 + trapIdx * 0.25);
+  let current = smoothstep(0.0, 0.12, currentPhase) * smoothstep(0.42, 0.12, currentPhase);
+  color = color + vec3<f32>(0.40, 0.70, 1.0) * current * edge * (0.45 + treble * 0.6);
 
   let viewDir = normalize(vec3<f32>(p.x, p.y, 1.0));
   let fresnel = schlickFresnel(clamp(dot(viewDir, vec3<f32>(0.0, 0.0, 1.0)), 0.0, 1.0), 0.04);
@@ -266,7 +298,7 @@ let pixel = vec2<i32>(global_id.xy);
   color = acesToneMap(color * (1.2 + treble * 0.1));
   color = color + vec3<f32>(ignDither(pixel));
 
-  let alpha = clamp(density * (f32(recursion) / 10.0) * depthFactor * (0.85 + clickPulse * 0.15), 0.0, 1.0);
+  let alpha = clamp(density * (f32(recursion) / 10.0) * depthFactor * (0.85 + extraBuffer[138] * 0.15), 0.0, 1.0);
   let depthOut = clamp(0.3 + density * 0.7, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
