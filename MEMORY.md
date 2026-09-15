@@ -13,6 +13,7 @@
   - gen-topological-acoustic-knots: pair annihilation; Schlieren brushes. ±1/2 defects kept.
   - gen-quasicrystal-iridescence: phason strain; Ammann lattice lines. n-fold + thin-film kept.
 - Floor: bindings / 16×16 / exact C / A packing as documented / saved slider names exact. No new springs.
+- Gates: Naga 6/6, extraBuffer 0, dead sliders 0, catalog 1,367, SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing WASM `bridge/api.js`.
 - #1274 already took the math/CA six — did not restamp those IDs.
 - Cards: `agents/swarm-outputs/grok-2026-09-15-classic-field-plasma-six/`.
 - Real-GPU visual QA: external.
