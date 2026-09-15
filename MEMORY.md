@@ -1,6 +1,22 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-15 (classic field / plasma / crystal leftover six)
+**Last updated:** 2026-09-15 (classic geometry leftover six)
+
+## 2026-09-15 — Classic geometry leftover six (6 shaders)
+
+- IDs: gen-3d-sierpinski-chaos, gen-aperiodic-monotile, gen-chromatic-zonohedron, gen-zeta-function-landscape, gen-prismatic-mobius-helix, gen-voronoi-crystal.
+- Per shader, the ideas actually added:
+  - gen-3d-sierpinski-chaos: repeat-vertex corner flares; opposite-face chroma. Params kept. No spring.
+  - gen-aperiodic-monotile: reflected hats on odd cells; chevron brim. Relief sculpture kept.
+  - gen-chromatic-zonohedron: fourth golden-ratio generator; generator-pair face IDs. Packing lie fixed.
+  - gen-zeta-function-landscape: known-zero rails; |ζ|=1 iso-contours. Eta continuation kept.
+  - gen-prismatic-mobius-helix: half-twist seam; centerline core. Packing lie fixed.
+  - gen-voronoi-crystal: triple-junction vertices; L∞ facet flats. Existing pointer spring kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved slider names exact. No new springs.
+- Gates: Naga 6/6. extraBuffer / dead sliders / catalog / Jest / build pending closeout.
+- #1274/#1276 already took the morning sixes — did not restamp those IDs.
+- Cards: `agents/swarm-outputs/grok-2026-09-15-classic-geometry-six/`.
+- Real-GPU visual QA: external.
 
 ## 2026-09-15 — Classic field / plasma / crystal leftover six (6 shaders)
 

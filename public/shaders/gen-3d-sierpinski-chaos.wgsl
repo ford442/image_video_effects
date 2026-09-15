@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  3D Sierpinski Chaos Game
 //  Category: generative
-//  Features: sierpinski, chaos-game, 3d-fractal, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium-High
-//  Created: 2026-05-31 — Kimi Agent (Bright batch)
-//  Upgraded: 2026-08-05 — Batch 35 (Optimizer)
-//    · rotation matrix hoisted out of the chaos loop (zero trig per sample)
-//    · integer-hash vertex picking + saturation early-exit
-//    · bounded adaptive iteration budget, guarded FFT audio, real depth
+//  Upgraded: 2026-09-15
+//  Ideas: repeat-vertex corner flares; opposite-face chroma
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -62,6 +60,11 @@ fn pickVertex(seed: u32) -> u32 {
 // Branchless cosine palette (replaces the 6-way HSV branch chain).
 fn palette(h: f32) -> vec3<f32> {
   return 0.5 + 0.5 * cos(TAU * (h + vec3<f32>(0.0, 0.33, 0.67)));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Cheap 2-octave value noise — background nebula only (never in hot loop).
@@ -181,10 +184,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var glowAcc = 0.0;
   var count = 0.0;
   var nearestZ = 1e5;
+  var lastVi = 4u;
 
   for (var i = 0; i < numPoints; i++) {
     if (count > SATURATION_COUNT) { break; }  // pixel fully lit — stop early
     let vi = pickVertex(seedU + u32(i) * 747796405u);
+    // Idea 1 — consecutive same-index picks flare the tet corners.
+    let repeatCorner = select(0.0, 1.0, vi == lastVi);
+    lastVi = vi;
     point = (point + vertices[vi]) * 0.5;
     if (i < WARMUP_ITERS) { continue; }       // convergence discard, folded in
 
@@ -199,11 +206,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let influence = 1.0 - distSq / pointRadius;
     let depthWeight = 1.0 / projZ;
-    let hue = fract(f32(vi) * 0.25 + hueBase + rp.y * 0.15);
+    // Idea 2 — farthest vertex names the opposite face (four-face chroma).
+    let dv0 = dot(point - vertices[0], point - vertices[0]);
+    let dv1 = dot(point - vertices[1], point - vertices[1]);
+    let dv2 = dot(point - vertices[2], point - vertices[2]);
+    let dv3 = dot(point - vertices[3], point - vertices[3]);
+    var farIdx = 0u;
+    var farD = dv0;
+    farIdx = select(farIdx, 1u, dv1 > farD); farD = max(farD, dv1);
+    farIdx = select(farIdx, 2u, dv2 > farD); farD = max(farD, dv2);
+    farIdx = select(farIdx, 3u, dv3 > farD);
+    let hue = fract(f32(vi) * 0.12 + f32(farIdx) * 0.25 + hueBase + rp.y * 0.15);
     // Point twinkle keeps the cloud from looking like flat splats.
     let twinkle = 0.85 + 0.3 * hashf(f32(seedU) + f32(i) * 3.7);
-    acc += palette(hue) * (depthWeight * influence * twinkle);
-    glowAcc += depthWeight * influence;
+    acc += palette(hue) * (depthWeight * influence * twinkle * (1.0 + repeatCorner * 2.2));
+    glowAcc += depthWeight * influence * (1.0 + repeatCorner);
     count += influence;
     nearestZ = min(nearestZ, projZ);
   }
@@ -236,7 +253,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ── Temporal accumulation (stochastic sampler converges over frames) ──
   let temporal = mix(prev.rgb * HISTORY_DECAY, color, 0.3);
-  textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
-  textureStore(writeTexture, pixel, vec4<f32>(max(temporal, vec3<f32>(0.0)), alpha));
+  let mapped = acesToneMap(max(temporal, vec3<f32>(0.0)));
+  textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(mapped, alpha));
 }

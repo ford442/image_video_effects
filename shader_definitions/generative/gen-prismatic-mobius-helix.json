@@ -15,5 +15,5 @@
   "updated": true,
   "id": "gen-prismatic-mobius-helix",
   "url": "shaders/gen-prismatic-mobius-helix.wgsl",
-  "features": ["generative", "geometry", "audio-reactive", "mouse-driven", "iridescent"]
+  "features": ["generative", "geometry", "audio-reactive", "mouse-driven", "iridescent", "upgraded-rgba"]
 }

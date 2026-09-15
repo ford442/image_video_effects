@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chromatic Zonohedron
 //  Category: generative
-//  Features: rhombic zonohedron facets, spectral face colors, dual-grid
-//            wireframe, mouse warp, audio pulse, domain-warped background
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-07-12
+//  Upgraded: 2026-09-15
+//  Ideas: fourth golden-ratio generator; generator-pair face IDs
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -48,7 +49,7 @@ fn rot2(a: f32) -> mat2x2<f32> {
   return mat2x2<f32>(c, -s, s, c);
 }
 
-// Rhombic zonohedron in 2D projection: sum of 3 axis rhomb tilings
+// Rhombic zonohedron in 2D projection: Minkowski sum of generator axes.
 fn zonoFacet(p: vec2<f32>, axis: vec2<f32>, width: f32) -> f32 {
   let n = vec2<f32>(-axis.y, axis.x);
   let u = dot(p, axis);
@@ -58,17 +59,25 @@ fn zonoFacet(p: vec2<f32>, axis: vec2<f32>, width: f32) -> f32 {
   return max(du, dv);
 }
 
-fn zonoSDF(p: vec2<f32>, scale: f32) -> vec2<f32> {
+fn zonoSDF(p: vec2<f32>, scale: f32) -> vec3<f32> {
   let a0 = vec2<f32>(1.0, 0.0);
   let a1 = vec2<f32>(0.5, 0.8660254);
   let a2 = vec2<f32>(-0.5, 0.8660254);
+  // Idea 1 — fourth generator (golden-ratio direction) → 4-vector zono rhombs.
+  let a3 = vec2<f32>(0.80901699, 0.58778525);
   let w = scale * 0.22;
   let f0 = zonoFacet(p, a0, w);
   let f1 = zonoFacet(p, a1, w);
   let f2 = zonoFacet(p, a2, w);
-  let cell = min(min(f0, f1), f2);
-  let edge = min(min(abs(f0 - f1), abs(f1 - f2)), abs(f2 - f0));
-  return vec2<f32>(cell, edge);
+  let f3 = zonoFacet(p, a3, w);
+  let cell = min(min(f0, f1), min(f2, f3));
+  let edge = min(min(abs(f0 - f1), abs(f1 - f2)), min(abs(f2 - f0), abs(f3 - cell)));
+  // Idea 2 — hue from which generator wins, not floor(p.x).
+  var win = 0.0;
+  win = select(win, 1.0, f1 <= f0 && f1 <= f2 && f1 <= f3);
+  win = select(win, 2.0, f2 <= f0 && f2 <= f1 && f2 <= f3);
+  win = select(win, 3.0, f3 <= f0 && f3 <= f1 && f3 <= f2);
+  return vec3<f32>(cell, edge, win);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -95,8 +104,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   p = rot2(spin + mids * 0.3) * p;
 
   let z = zonoSDF(p, facetScale);
-  let facetId = floor(p.x * 3.7 + p.y * 2.3 + time * 0.1);
-  let hue = fract(facetId * 0.13 + colorCycle + length(p) * 0.2 + treble * 0.15);
+  let hue = fract(z.z * 0.25 + colorCycle + length(p) * 0.2 + treble * 0.15);
 
   let facetFill = smoothstep(edgeWidth * 2.0, 0.0, z.x);
   let edgeLine = smoothstep(edgeWidth, 0.0, z.y) * (1.0 - facetFill * 0.3);
@@ -119,6 +127,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depthOut = clamp(facetFill * 0.5 + edgeLine * 0.3, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(z.x, hue, alpha, facetFill));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 }
