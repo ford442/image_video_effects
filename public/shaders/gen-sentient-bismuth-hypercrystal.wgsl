@@ -41,6 +41,9 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return -log2(res) / k;
 }
 
+var<private> g_fold_q: vec3<f32> = vec3<f32>(0.0);
+var<private> g_hopper: f32 = 0.0;
+
 // 2. Map Function (SDF)
 fn map(p_in: vec3<f32>, time: f32, audio: f32, mouse_pos: vec3<f32>) -> f32 {
     var p = p_in;
@@ -87,10 +90,17 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, mouse_pos: vec3<f32>) -> f32 {
         scale *= 1.5;
     }
 
+    g_fold_q = q;
+
     // Cuboid SDF
     let b = vec3<f32>(1.0, 1.0, 1.0) * base_scale / scale;
     let qq = abs(q) - b;
     d = length(max(qq, vec3<f32>(0.0))) + min(max(qq.x, max(qq.y, qq.z)), 0.0);
+
+    // Idea 1: hopper terraces — stair treads on the Menger cuboid
+    let hopper = abs(fract(q.y * 8.0) - 0.5);
+    g_hopper = hopper;
+    d -= (0.5 - hopper) * 0.035;
 
     return d;
 }
@@ -139,11 +149,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let time = u.config.x;
 
-    // Audio Sampling
-    let audio_val = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.5, 0.5), 0.0).r;
+    let audio_val = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Mouse setup
-    let mouse_ndc = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(resolution.x / resolution.y, -1.0);
+    // Mouse setup — UV y=0 bottom
+    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    let mouse_ndc = (mouse * 2.0 - 1.0) * vec2<f32>(resolution.x / resolution.y, 1.0);
     // Project mouse onto a plane in 3D space roughly where the object is
     let mouse_pos = vec3<f32>(mouse_ndc * 5.0, 0.0);
 
@@ -198,12 +210,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ndotv = max(dot(n, v), 0.0);
         let film_thickness = ndotv + audio_val * 0.5 * u.zoom_params.y + sin(p.x * 2.0 + p.y * 3.0 + p.z * 1.5 + time) * 0.1;
         let irid_col = palette(film_thickness * iridescence_strength);
-
-        // Fresnel
         let fresnel = pow(1.0 - max(dot(n, v), 0.0), 5.0);
 
-        // Combine lighting and iridescence
+        // Idea 2: stair-riser rainbow film keyed to hopper risers
+        let riser = 1.0 - smoothstep(0.0, 0.12, g_hopper);
+        let riser_film = palette(film_thickness * iridescence_strength + g_fold_q.y * 0.35 + mids);
         col = irid_col * (diff + amb) + vec3<f32>(1.0) * fresnel * 0.5;
+        col = mix(col, riser_film * (0.6 + diff), riser * 0.65);
 
         // Specular
         let r_dir = reflect(-light_dir, n);
@@ -228,8 +241,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blend_factor = 0.8; // High blend for slow mutation feel
     col = mix(col, prev_color, blend_factor);
 
-    // Tonemapping
     col = acesToneMap(col);
-
-    textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
+    let alpha = clamp(select(0.12, 0.5 + (0.5 - g_hopper) * 0.4, hit) + treble * 0.08, 0.0, 1.0);
+    let outc = vec4<f32>(col, alpha);
+    let depth = select(0.0, clamp(1.0 - dO / MAX_DIST, 0.0, 1.0), hit);
+    textureStore(writeTexture, global_id.xy, outc);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, outc);
 }
