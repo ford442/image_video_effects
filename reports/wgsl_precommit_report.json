@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-15T04:39:32.859293",
+  "timestamp": "2026-09-15T06:25:36.450235",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/chroma-kinetic-blackbody.wgsl",
+      "file": "public/shaders/hyper-space-jump-blackbody.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

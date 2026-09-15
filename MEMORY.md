@@ -1,6 +1,21 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-15 (pull/push union — origin #1273/#1274/#1276 + local unique + #1275 unique two)
+**Last updated:** 2026-09-15 (radial / BH blackbody leftover four)
+
+## 2026-09-15 — Radial / BH blackbody leftover four
+
+- User asked to choose another batch. Took the remaining April 2026 radial/BH blackbody hybrids that Phase-C skipped.
+- IDs: warp-drive-blackbody, hyper-space-jump-blackbody, gamma-ray-burst-blackbody, gen-singularity-forge-blackbody.
+- Per shader, the ideas actually added:
+  - warp-drive: Alcubierre warp-bubble wall; bow/wake Doppler on the aberration axis. Dual-use params kept. Raw HDR A.
+  - hyper-space-jump: Lorentz length-contracted streaks; relativistic beaming on dir_norm chroma. Depth pass-through (HEAD wrote 0).
+  - gamma-ray-burst: bipolar jet lobes; afterglow from exact C. Raw energy A (not ACES+dist). Semantic alpha.
+  - singularity-forge: Keplerian Doppler beaming; photon-ring caustic at 1.5 Rs. plasmaBuffer audio (not config.y). config.y spaghettification kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs. Did not stamp another ember-glow ring.
+- Gates: Naga 4/4, extraBuffer 0, dead sliders 0, catalog 1,367, Jest 689/6 WASM pre-existing, SKIP_WASM_BUILD=1 build green.
+- Real-GPU visual QA: external.
+- Cards: `agents/swarm-outputs/grok-2026-09-15-radial-bh-blackbody-four/`.
+- April blackbody hybrid cluster is done. Still skip tropism mycelium, physarum agents, idea-rich `crt-clear-zone` and liquid-small.
 
 ## 2026-09-15 — Pull/push union (ahead 1 / behind 3)
 
@@ -37,7 +52,7 @@
 - Gates: Naga 6/6, extraBuffer 0, dead sliders 0, catalog 1,367, Jest 689/6 WASM pre-existing, SKIP_WASM_BUILD=1 build green.
 - Real-GPU visual QA: external.
 - Cards: `agents/swarm-outputs/grok-2026-09-15-blackbody-phase-c-six/`.
-- Next leftover: radial/BH blackbody four (`warp-drive-blackbody`, `hyper-space-jump-blackbody`, `gamma-ray-burst-blackbody`, `gen-singularity-forge-blackbody`). Still skip tropism mycelium, physarum agents, idea-rich `crt-clear-zone` and liquid-small.
+- Next leftover was the radial/BH four — now complete (2026-09-15). Still skip tropism mycelium, physarum agents, idea-rich `crt-clear-zone` and liquid-small.
 
 ## 2026-09-15 — Unique local math remainder (from classic math/CA eight)
 
