@@ -87,17 +87,17 @@ fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
 fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
     var p = p_in;
     let t = u.config.x * 0.5;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
 
-    // UI Sliders mapped (clamp zoom_params to normalized range)
-    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-    let twist_amount = mix(0.0, 1.0, zparams.x); // Tentacle Twist
-    let core_heat = mix(0.0, 1.0, zparams.z);    // Core Heat
+    // UI sliders — raw zoom_params (JSON ranges, no 0–1 re-clamp)
+    let twist_amount = u.zoom_params.x;
+    let core_heat = u.zoom_params.z;
 
-    // Mouse Interaction (Gravitational distortion)
-    let mx = (u.zoom_config.y - 0.5) * 2.0;
-    let my = (u.zoom_config.z - 0.5) * 2.0;
-    let click_pull = smoothstep(0.0, 1.0, length(vec2<f32>(mx, my)) * 2.0); // Simple proxy for intensity based on mouse distance from center
+    // Mouse Interaction (Gravitational distortion) — UV y=0 bottom
+    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    let mx = (mouse.x - 0.5) * 2.0;
+    let my = (mouse.y - 0.5) * 2.0;
+    let click_pull = smoothstep(0.0, 1.0, length(vec2<f32>(mx, my)) * 2.0);
 
     // Add overall temporal and mouse rotation
     let rotY = rot(t * 0.2 + mx * 2.0);
@@ -157,7 +157,13 @@ fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
         // Use a capsule for the base shape
         let d_t = sdCapsule(p_tentacle, t_start, t_end, t_radius);
 
-        d_tentacles = smin(d_tentacles, d_t, 0.3);
+        // Idea 1: sucker discs along each tentacle
+        let sucker_n = floor(p_tentacle.x * 2.2);
+        let sucker_c = vec3<f32>(sucker_n / 2.2, t_radius * 0.85, 0.0);
+        let d_sucker = length(p_tentacle - sucker_c) - t_radius * 0.42;
+        let d_armed = min(d_t, d_sucker);
+
+        d_tentacles = smin(d_tentacles, d_armed, 0.3);
     }
 
     // Determine which part is glowing more
@@ -182,6 +188,15 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     return normalize(vec3<f32>(nx, ny, nz));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -193,11 +208,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (fragCoord.xy - 0.5 * res) / res.y;
     let t = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-    let plasma_glow = mix(0.0, 2.0, zparams.y); // Plasma Glow
-    let void_depth = mix(0.0, 1.0, zparams.w);  // Void Depth
+    let plasma_glow = u.zoom_params.y;
+    let void_depth = u.zoom_params.w;
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, 10.0 + (void_depth * 5.0)); // Zoom out based on void depth
@@ -259,6 +275,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         var mat_col = mix(tentacle_col, core_col, is_light);
 
+        // Idea 2: chromatophore pulses on tentacle skin
+        let chroma = 0.5 + 0.5 * sin(t * 3.2 + p.x * 2.4 + p.y * 1.7 + mids * 4.0);
+        mat_col = mix(mat_col, vec3<f32>(0.2, 0.95, 0.55) * (0.6 + treble), chroma * (1.0 - is_light) * 0.55);
+
         // Fresnel for quantum glass refraction look on surface
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
 
@@ -280,10 +300,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Distance fog
     col = mix(col, bg_color, 1.0 - exp(-0.02 * d * d));
 
-    // Tone mapping and gamma correction
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
-
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    col = acesToneMap(col);
+    let alpha = clamp(select(0.1, 0.5, hit) + acc * 0.08 + treble * 0.06, 0.0, 1.0);
+    let outc = vec4<f32>(col, alpha);
+    textureStore(writeTexture, vec2<i32>(id.xy), outc);
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(1.0 - clamp(d / 30.0, 0.0, 1.0), 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), outc);
 }

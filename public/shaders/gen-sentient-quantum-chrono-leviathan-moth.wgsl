@@ -107,10 +107,10 @@ fn sdGyroid(p: vec3<f32>, scale: f32, thickness: f32, bias: f32) -> f32 {
 fn map(pos: vec3<f32>) -> vec2<f32> {
     var p = pos;
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
 
-    // Mouse rotation (acts as gravitational chronal anomaly)
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0;
+    // Mouse rotation (acts as gravitational chronal anomaly) — UV y=0 bottom
+    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z) * 2.0 - 1.0;
     let rotXZ = rot(mouse.x * PI) * p.xz;
 p.x = rotXZ.x;
 p.z = rotXZ.y;
@@ -127,6 +127,12 @@ p.z = rotYZ.y;
     var dBody = sdCapsule(pBody, vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(0.0, 0.0, -1.0), bodyRadius);
     // Fractal displacement
     dBody -= 0.1 * fbm(pBody * 4.0 + time * 0.5);
+
+    // Idea 2: antennae from the head
+    var ap = p;
+    ap.x = abs(ap.x);
+    let antenna = sdCapsule(ap, vec3<f32>(0.05, 0.12, 0.85), vec3<f32>(0.28, 0.42, 1.45), 0.018);
+    dBody = smin(dBody, antenna, 0.08);
 
     // Wings
     var pWings = p;
@@ -149,6 +155,8 @@ pWings.y = rotXY.y;
     // Wing pattern/crystalline structure
     let wingNoise = voronoi(pWings * 8.0 - vec3<f32>(0.0, 0.0, time * 2.0));
     dWings += 0.02 * wingNoise;
+    // Idea 1: voronoi vein ridges (raised venation)
+    dWings -= pow(1.0 - clamp(wingNoise * 2.0, 0.0, 1.0), 3.0) * 0.028;
     // Add chrono distortion ripples
     dWings += chronoDistortion * 0.05 * sin(length(pWings.xz) * 20.0 - time * 10.0);
 
@@ -204,7 +212,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let aspect = dim.x / dim.y;
 
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Camera
     var ro = vec3<f32>(0.0, 1.0, -4.0);
@@ -273,6 +283,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Glowing lines
             let wingGlow = smoothstep(0.4, 0.5, voronoi(p * 15.0));
             col += wingGlow * vec3<f32>(0.5, 1.0, 1.0) * u.zoom_params.y;
+            col += pow(1.0 - clamp(voronoi(p * 8.0), 0.0, 1.0), 3.0) * vec3<f32>(0.9, 0.6, 1.0) * 0.35;
 
             // Shedding dust (approximated along trailing axis)
             glow += 0.5 * u.zoom_params.y * smoothstep(0.0, 1.0, p.z);
@@ -298,8 +309,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         var dustDens = smoothstep(0.6, 1.0, dustNoise) * trailMask;
 
         // Mouse click/drag interaction increases dust
-        let clickVal = u.config.y; // Simplified
-        dustDens *= 1.0 + clickVal * 2.0;
+        dustDens *= 1.0 + audio * 2.0 + mids;
 
         let dustColor = blackbody(dustNoise * 2.0 * u.zoom_params.y);
         vCol += dustDens * dustColor * 0.2;
@@ -316,9 +326,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     col += glow * vec3<f32>(0.1, 0.5, 1.0);
 
-    // Post-processing
     col = acesToneMap(col);
-
-    textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    let alpha = clamp(select(clamp(length(vCol), 0.0, 0.4), 0.55 + glow * 0.2, hit) + treble * 0.08, 0.0, 1.0);
+    let outc = vec4<f32>(col, alpha);
+    let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
+    textureStore(writeTexture, id.xy, outc);
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, id.xy, outc);
 }

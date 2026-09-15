@@ -59,8 +59,8 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     // Audio drives chamber breathing (bass) scaled by the Audio Reactivity param
     let audio = plasmaBuffer[0].x * u.zoom_params.w;
 
-    // Gravity well interaction
-    let mouse = u.zoom_config.yz;
+    // Gravity well interaction — UV y=0 bottom
+    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
     let mouseDist = length(p.xy - (mouse * 2.0 - 1.0) * 2.0);
     p = rotate3D(vec3<f32>(0.0, 0.0, 1.0), mouseDist * 0.5) * p;
 
@@ -77,11 +77,17 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let interior = length(vec2<f32>(fract(spiral_a * 1.5 + 0.5) - 0.5, z * 2.0)) - 0.15 + audio * 0.2;
 
     // Smoothly combine chambers
-    let dist = smin(shell, interior, 0.2);
+    var dist = smin(shell, interior, 0.2);
+
+    // Idea 1: chamber septa — thin walls at logarithmic spiral compartment boundaries
+    let seam = abs(fract(spiral_a * 1.5 + 0.5) - 0.5);
+    let d_septa = length(vec2<f32>(seam * 2.2, z * 2.0)) - 0.028;
+    dist = min(dist, d_septa);
 
     // ID mapping
     var id = 1.0;
-    if (shell > interior) { id = 2.0; } // 1.0 = shell, 2.0 = interior
+    if (shell > interior && d_septa > min(shell, interior)) { id = 2.0; } // 1.0 = shell, 2.0 = interior
+    if (d_septa < min(shell, interior)) { id = 1.0; }
     return vec2<f32>(dist * 0.5, id);
 }
 
@@ -151,6 +157,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col = select(interior, shell, id == 1.0);
         // Mid-frequency chromatic shimmer across the glass
         col += vec3<f32>(0.2, 0.05, 0.3) * f * mids;
+        // Idea 2: nacre iridescence keyed to chamber index
+        let pa = atan2(p.y, p.x);
+        let pr = max(length(p.xy), 0.001);
+        let spiral_hit = pa * u.zoom_params.x + log(pr) * 2.0 + u.config.x * 0.5;
+        let chamber_idx = floor(spiral_hit * 1.5);
+        let nacre = 0.5 + 0.5 * cos(chamber_idx * 0.73 + f * 8.0);
+        col += vec3<f32>(0.95, 0.75, 1.0) * nacre * f * 0.35;
     }
 
     col += vec3<f32>(0.0, 0.5, 1.0) * glow * 0.1;
