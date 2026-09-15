@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Aetherial Plasma Loom
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Aetherial Plasma Loom
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-15
+//  Ideas: alternating heddle lanes; plasma shuttle necking
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -65,11 +70,20 @@ fn rotZ(angle: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-fn map(p: vec3<f32>) -> f32 {
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn map(p: vec3<f32>) -> vec3<f32> {
     var pos = p;
 
     // Mouse Interaction
-    let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 2.0, -(u.zoom_config.z - 0.5) * 2.0, 0.0);
+    let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 2.0, (u.zoom_config.z - 0.5) * 2.0, 0.0);
     let d_mouse = length(pos.xy - mouse_pos.xy);
 
     // Twist
@@ -86,11 +100,20 @@ fn map(p: vec3<f32>) -> f32 {
     let flow = u.config.x * u.zoom_params.y;
     let fbm_val = fbm3(pos * 0.5 + vec3<f32>(0.0, 0.0, flow));
 
-    // Create ribbons
-    let d_ribbon = length(pos.xy) - 1.0 + fbm_val * twist_amount;
+    let strand_angle = atan2(pos.y, pos.x);
 
-    // Return distance
-    return abs(d_ribbon) - 0.1;
+    // Idea 1: alternating heddle lanes lift neighboring warp strands over/under.
+    let heddle = 0.5 + 0.5 * sin(strand_angle * 8.0 + pos.z * 1.7 - flow * 1.4);
+    let heddle_offset = (heddle - 0.5) * 0.16 * (0.4 + twist_amount * 0.15);
+
+    // Idea 2: a longitudinal shuttle pinches the ribbon and leaves bright knots.
+    let shuttle_phase = 0.5 + 0.5 * cos(pos.z * 3.2 - flow * 2.8 + strand_angle);
+    let shuttle = pow(shuttle_phase, 8.0);
+    let neck = 1.0 - shuttle * 0.38;
+
+    let d_ribbon = length(pos.xy) - 1.0 + fbm_val * twist_amount * 0.35 + heddle_offset;
+    let thickness = (0.055 + 0.07 * heddle) * neck;
+    return vec3<f32>(abs(d_ribbon) - thickness, heddle, shuttle);
 }
 
 fn palette(t: f32) -> vec3<f32> {
@@ -112,8 +135,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     let clip = (uv * 2.0 - vec2<f32>(1.0)) * vec2<f32>(aspect, 1.0);
 
-    // Audio Reactivity
-    let audio_val = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(uv.x, 0.5), 0.0).r;
+    let audio = plasmaBuffer[0].xyz;
 
     // Ray setup
     let ro = vec3<f32>(0.0, 0.0, -3.0);
@@ -122,16 +144,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Density integration loop
     var t = 0.0;
     var density = 0.0;
+    var heddle_light = 0.0;
+    var shuttle_light = 0.0;
+    var first_depth = 10.0;
     let max_steps = 60;
 
     let density_param = u.zoom_params.x;
 
     for (var i = 0; i < max_steps; i++) {
         let p = ro + rd * t;
-        let d = map(p);
+        let sample = map(p);
+        let d = sample.x;
 
         if (d < 0.1) {
-            density += (0.1 - d) * density_param * (1.0 + audio_val * 0.5);
+            let contribution = (0.1 - d) * density_param * (1.0 + audio.x * 0.35);
+            density += contribution;
+            heddle_light += contribution * sample.y;
+            shuttle_light += contribution * sample.z;
+            first_depth = min(first_depth, t);
         }
 
         t += max(d * 0.5, 0.02);
@@ -147,12 +177,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if (density > 0.0) {
         let normalized_density = clamp(density * 0.1, 0.0, 1.0);
-        let col = palette(normalized_density + u.config.x * 0.1);
-        final_color = col * density * core_bright * 0.05;
+        let col = palette(normalized_density + u.config.x * 0.1 + audio.y * 0.04);
+        let weave_color = mix(vec3<f32>(0.15, 0.35, 1.0), vec3<f32>(1.0, 0.18, 0.75),
+            clamp(heddle_light / max(density, 0.001), 0.0, 1.0));
+        let shuttle_knot = clamp(shuttle_light / max(density, 0.001), 0.0, 1.0);
+        final_color = (col + weave_color * 0.45) * density * core_bright * 0.045;
+        final_color += vec3<f32>(1.0, 0.78, 0.3) * shuttle_knot * core_bright *
+            (0.15 + audio.z * 0.08);
     }
 
     // Subtle background
     final_color += vec3<f32>(0.05, 0.0, 0.1) * (1.0 - length(clip));
 
-    textureStore(writeTexture, id.xy, vec4<f32>(final_color, 1.0));
+    let normalized_density = clamp(density * 0.1, 0.0, 1.0);
+    let display = vec4<f32>(
+        acesToneMap(max(final_color, vec3<f32>(0.0))),
+        clamp(normalized_density * 0.8 + shuttle_light * 0.08, 0.0, 1.0)
+    );
+    let coord = vec2<i32>(id.xy);
+    let source_depth = textureLoad(readDepthTexture, coord, 0).r;
+    let has_volume = first_depth < 10.0;
+    let depth = select(source_depth, clamp(1.0 - first_depth / 10.0, 0.0, 1.0), has_volume);
+    textureStore(writeTexture, coord, display);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, display);
 }

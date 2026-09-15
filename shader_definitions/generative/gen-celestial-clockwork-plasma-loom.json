@@ -6,6 +6,11 @@
   "category": "generative",
   "type": "generative",
   "url": "shaders/gen-celestial-clockwork-plasma-loom.wgsl",
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
   "tags": [
     "mechanical",
     "cosmic",

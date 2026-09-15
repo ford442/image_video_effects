@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Chrono-Kinetic Fractal Engine
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Chrono-Kinetic Fractal Engine
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-15
+//  Ideas: escapement tooth gates; alternating backlash lag
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -67,14 +71,21 @@ fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 {
   return length(vec3<f32>(q.x, q.y - s + k, q.z - k));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
-fn map(p: vec3<f32>) -> vec2<f32> {
+fn map(p: vec3<f32>) -> vec3<f32> {
     var pos = p;
     let t = u.config.x * u.zoom_params.w;
 
-    // Audio Reactive element
-    let audio_level = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.5, 0.5), 0.0).r;
-    let audio_burst = audio_level * 0.5;
+    let audio = plasmaBuffer[0].xyz;
+    let audio_burst = audio.x * 0.18;
 
     // Mouse Interaction (Gravity Well / Time-dilation)
     let mouse = u.zoom_config.yz * 2.0 - vec2<f32>(1.0);
@@ -91,7 +102,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Fractal space folding
     let spacing = vec3<f32>(4.0);
-    pos = (pos % spacing + spacing) % spacing - spacing * 0.5; // True modulo domain repetition
+    pos = pos - spacing * floor(pos / spacing) - spacing * 0.5;
 
     // 4D Rotation applied to 3D space with an imaginary W dimension
     var p4 = vec4<f32>(pos, 1.0);
@@ -99,6 +110,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     pos = p4.xyz;
 
     var orbit_trap = 100.0;
+    var escapement_trap = 0.0;
 
     let complexity = i32(u.zoom_params.x * 5.0) + 2;
     let max_i = clamp(complexity, 2, 7);
@@ -109,11 +121,26 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     for(var i = 0; i < max_i; i++) {
         let fi = f32(i);
         pos = abs(pos) - vec3<f32>(0.5 + audio_burst);
-        pos = vec3<f32>(rot(t * 0.2 + fi * 0.5) * pos.xy, pos.z);
-        pos = vec3<f32>(pos.x, rot(t * 0.3 - fi * 0.3) * pos.yz);
 
-        let t_d = sdTorus(pos, vec2<f32>(1.0 + sin(t+fi)*0.2, 0.1));
+        // Idea 2: adjacent gear layers reverse and carry a small elastic backlash lag.
+        let gear_direction = select(-1.0, 1.0, (i % 2) == 0);
+        let backlash = sin(t * 2.1 + fi * 1.7) * (0.06 + 0.025 * fi) *
+            (0.35 + 0.65 * abs(cos(t * 0.5 + fi)));
+        let gear_phase = gear_direction * t * (0.18 + fi * 0.035) + fi * 0.5 + backlash;
+        pos = vec3<f32>(rot(gear_phase) * pos.xy, pos.z);
+        pos = vec3<f32>(pos.x, rot(-gear_phase * 0.72) * pos.yz);
+
+        // Idea 1: angular teeth and a pallet contact articulate each temporal torus.
+        let gear_angle = atan2(pos.z, pos.x);
+        let tooth_count = 10.0 + fi * 2.0;
+        let tooth_phase = abs(fract(gear_angle / (2.0 * PI) * tooth_count) - 0.5);
+        let tooth = 1.0 - smoothstep(0.22, 0.46, tooth_phase);
+        let t_d = sdTorus(pos, vec2<f32>(1.0 + sin(t + fi) * 0.2, 0.075 + tooth * 0.035));
         let o_d = sdOctahedron(pos, 0.8);
+        let pallet_phase = abs(sin(gear_angle - gear_phase * 1.6));
+        let pallet_contact = (1.0 - smoothstep(0.02, 0.12, pallet_phase)) *
+            exp(-abs(t_d) * 35.0);
+        escapement_trap = max(escapement_trap, pallet_contact);
 
         // Complex boolean with smin
         let step_d = smin(t_d, o_d, 0.2);
@@ -122,7 +149,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         orbit_trap = min(orbit_trap, length(pos));
     }
 
-    return vec2<f32>(d, orbit_trap);
+    return vec3<f32>(d, orbit_trap, escapement_trap);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -162,6 +189,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cv = cross(cu, cw);
 
     var col = vec3<f32>(0.0);
+    var nearest_depth = MAX_DIST;
+    var hit_coverage = 0.0;
+    var escapement_glow = 0.0;
+    let audio = plasmaBuffer[0].xyz;
 
     // Chromatic Aberration offsets
     let offsets = array<vec2<f32>, 3>(
@@ -178,6 +209,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         var dO = 0.0;
         var m = 0.0;
+        var escapement = 0.0;
         var p = vec3<f32>(0.0);
 
         for (var i_step = 0; i_step < MAX_STEPS; i_step++) {
@@ -185,6 +217,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let dS = map(p);
             dO += dS.x;
             m = dS.y;
+            escapement = max(escapement, dS.z);
             if (dS.x < SURF_DIST || dO > MAX_DIST) {
                 break;
             }
@@ -215,6 +248,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             // Add a neon bloom mask
             channel_col += exp(-m * 5.0) * 0.5; // Glow based on orbit trap
+            channel_col += escapement * (0.35 + audio.z * 0.15);
+            nearest_depth = min(nearest_depth, dO);
+            hit_coverage = max(hit_coverage, clamp(diff * 0.65 + fresnel * 0.5, 0.0, 1.0));
+            escapement_glow = max(escapement_glow, escapement);
         } else {
             // Background / Void
             channel_col = 0.01;
@@ -223,12 +260,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col[i] = channel_col;
     }
 
-    // Tone mapping and gamma correction
-    col = col / (vec3<f32>(1.0) + col);
-    col = pow(col, vec3<f32>(1.0/2.2));
-
-    let outColor = vec4<f32>(col, 1.0);
-    let outDepth = select(1.0, clamp(dO / MAX_DIST, 0.0, 1.0), dO < MAX_DIST);
+    col += vec3<f32>(1.0, 0.42 + audio.y * 0.08, 0.08) * escapement_glow * 0.25;
+    let display_rgb = acesToneMap(max(col, vec3<f32>(0.0)));
+    let alpha = clamp(0.04 + hit_coverage * 0.72 + escapement_glow * 0.3, 0.0, 1.0);
+    let outColor = vec4<f32>(display_rgb, alpha);
+    let source_depth = textureLoad(readDepthTexture, coords, 0).r;
+    let outDepth = select(source_depth, clamp(1.0 - nearest_depth / MAX_DIST, 0.0, 1.0), nearest_depth < MAX_DIST);
 
     textureStore(writeTexture, coords, outColor);
     textureStore(dataTextureA, coords, outColor);

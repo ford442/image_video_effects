@@ -59,6 +59,7 @@
     "4d-tesseract",
     "raymarching",
     "audio-reactive",
-    "mouse-interaction"
+    "mouse-interaction",
+    "upgraded-rgba"
   ]
 }
