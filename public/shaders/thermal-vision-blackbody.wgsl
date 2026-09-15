@@ -1,15 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  thermal-vision-blackbody
+//  Thermal Vision Blackbody
 //  Category: advanced-hybrid
-//  Features: blackbody-radiation, thermal-vision, mouse-driven, HDR,
-//            upgraded-rgba
+//  Features: blackbody-radiation, thermal-vision, mouse-driven, HDR, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Chunks From: thermal-vision.wgsl, spec-blackbody-thermal.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-8 — Thermal & Atmospheric Enhancer
 //  Upgraded: 2026-09-15
-//  Ideas: isotherm contour bands; NETD temperature-dependent grain
-//  A packing: ACES display RGBA
+//  Ideas: NUC/scanline banding; hot-object lag stored in C.a
+//  A packing: raw thermal RGB + normalized T
 // ═══════════════════════════════════════════════════════════════════
 //  Physically-correct thermal vision using blackbody radiation.
 //  Maps image luminance to temperature via Planck's law, replacing
@@ -38,7 +34,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: toneMapACES (from spec-blackbody-thermal.wgsl) ═══
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -48,7 +43,6 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
 }
 
-// ═══ CHUNK: blackbodyColor (from spec-blackbody-thermal.wgsl) ═══
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
     var r: f32;
@@ -67,9 +61,13 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b) * radiance;
 }
 
-// ═══ CHUNK: hash (from thermal-vision.wgsl pattern) ═══
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn loadC(coord: vec2<i32>, max_coord: vec2<i32>) -> vec4<f32> {
+    let c = clamp(coord, vec2<i32>(0), max_coord);
+    return textureLoad(dataTextureC, c, 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -77,10 +75,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
+    let coord = vec2<i32>(gid.xy);
+    let max_coord = vec2<i32>(res) - vec2<i32>(1);
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Parameters
     let tempRangeLow = mix(800.0, 2500.0, u.zoom_params.x);
     let tempRangeHigh = mix(4000.0, 12000.0, u.zoom_params.y);
     let contrast = mix(0.2, 5.0, u.zoom_params.z);
@@ -92,36 +94,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     var lum = dot(base.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Contrast
-    lum = pow(lum, contrast);
+    lum = pow(lum, contrast * (1.0 + bass * 0.12));
 
-    // Map luminance to temperature
-    var temperature = mix(tempRangeLow, tempRangeHigh, lum);
+    // Idea 1 — NUC / scanline banding (row-correlated sensor noise + calibration bars)
+    let row = floor(uv.y * res.y);
+    let rowNoise = hash(vec2<f32>(row * 0.17, floor(time * 7.0))) - 0.5;
+    lum += rowNoise * 0.045 * (0.55 + treble * 0.45);
+    let nucBar = step(0.94, fract(uv.y * 18.0 + time * 0.015));
+    lum = mix(lum, lum * 0.82 + 0.04, nucBar * 0.4);
 
-    // Mouse heat influence (from thermal-vision)
-    let aspect = res.x / res.y;
+    var temperature = mix(tempRangeLow, tempRangeHigh, clamp(lum, 0.0, 1.0));
+
+    let aspect = res.x / max(res.y, 1.0);
     let dist = distance(uv * vec2<f32>(aspect, 1.0), mousePos * vec2<f32>(aspect, 1.0));
     let heatRadius = 0.25;
-    let heatIntensity = select(0.0, 1.5, isMouseDown);
+    let heatIntensity = select(0.0, 1.5, isMouseDown) * (1.0 + bass * 0.2);
     let mouseHeat = smoothstep(heatRadius, 0.0, dist) * heatIntensity;
     temperature += mouseHeat * tempRangeHigh * 0.3;
 
-    // Optional color shift rotates through temperature space
     temperature = temperature * (0.8 + shift * 0.4);
+
+    // Idea 2 — hot-object lag from exact C (previous Kelvin in .a)
+    let prev = loadC(coord, max_coord);
+    let prevT = prev.a * 15000.0;
+    let lagT = max(temperature, prevT * 0.94);
+    temperature = mix(temperature, lagT, 0.65);
+    temperature = clamp(temperature, 800.0, 15000.0);
 
     var thermalColor = blackbodyColor(temperature);
 
-    // Idea 1 — isotherm contour bands: quantized temperature bands with
-    // bright edge lines (classic thermal-camera isotherm display).
-    let tempNormV = clamp((temperature - tempRangeLow) / max(tempRangeHigh - tempRangeLow, 1.0), 0.0, 1.0);
-    let bandCount = 9.0;
-    let bandPos = fract(tempNormV * bandCount);
-    let isoLine = smoothstep(0.05, 0.0, min(bandPos, 1.0 - bandPos));
-    let bandTemp = (floor(tempNormV * bandCount) + 0.5) / bandCount * (tempRangeHigh - tempRangeLow) + tempRangeLow;
-    thermalColor = mix(thermalColor, blackbodyColor(bandTemp), 0.25);
-    thermalColor += isoLine * blackbodyColor(9000.0) * 0.3;
-
-    // Add ember glow around bright regions
     let glowRadius = 0.03;
     var glowAccum = vec3<f32>(0.0);
     let glowSamples = 12;
@@ -136,19 +137,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     glowAccum /= f32(glowSamples);
     thermalColor = mix(thermalColor, glowAccum, 0.3);
 
-    // Tone map HDR output
     let displayColor = toneMapACES(thermalColor);
-
-    // Sensor noise: Idea 2 — NETD grain is stronger in cold regions,
-    // cleaner in hot ones (real microbolometer behavior).
-    let netdAmp = mix(0.05, 0.008, tempNormV);
-    let noise = (hash(uv + fract(time * 0.1)) - 0.5) * 2.0 * netdAmp;
+    let noise = hash(uv + fract(time * 0.1)) * 0.03 - 0.015;
     let finalColor = displayColor + noise;
 
-    let visAlpha = clamp(0.15 + tempNormV * 0.85, 0.0, 1.0);
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, visAlpha));
+    let heatAmt = clamp((temperature - tempRangeLow) / max(tempRangeHigh - tempRangeLow, 1.0), 0.0, 1.0);
+    let alpha = clamp(0.42 + heatAmt * 0.48 + mouseHeat * 0.12 + mids * 0.04, 0.0, 1.0);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, alpha));
     textureStore(dataTextureA, gid.xy, vec4<f32>(thermalColor, temperature / 15000.0));
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

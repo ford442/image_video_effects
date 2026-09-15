@@ -2,7 +2,7 @@
   "id": "sim-heat-haze-blackbody",
   "name": "Heat Haze Blackbody",
   "url": "shaders/sim-heat-haze-blackbody.wgsl",
-  "description": "Temperature field convection simulation with physically-correct blackbody thermal glow. Hot ground and rising convection plumes radiate with Planck's law colors \u2014 cool air stays neutral while intense heat sources glow from red ember to blue-white.",
+  "description": "Temperature field convection simulation with physically-correct blackbody thermal glow. Hot ground and rising convection plumes radiate with Planck's law colors — cool air stays neutral while intense heat sources glow from red ember to blue-white.",
   "tags": [
     "blackbody",
     "thermal",
@@ -19,6 +19,7 @@
     "convection",
     "mouse-driven",
     "HDR",
+    "audio-reactive",
     "upgraded-rgba"
   ],
   "params": [

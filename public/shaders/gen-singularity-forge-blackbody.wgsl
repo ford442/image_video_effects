@@ -1,15 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Singularity Forge Blackbody
 //  Category: advanced-hybrid
-//  Features: generative, raymarched, blackbody-radiation, HDR,
-//            audio-reactive, upgraded-rgba
+//  Features: generative, raymarched, blackbody-radiation, HDR, audio-reactive, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: gen-singularity-forge.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
-//  By: Agent CB-23 — Generative Abstract Enhancer
 //  Upgraded: 2026-09-15
-//  Ideas: gravitational redshift; doppler beaming asymmetry
-//  A packing: ACES display + exposure alpha
+//  Ideas: Keplerian Doppler beaming on the disk; photon-ring caustic at 1.5 Rs
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Raymarched black hole with accretion disk where thermal energy is
 //  rendered via physically-accurate blackbody radiation. Disk
@@ -37,7 +35,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: rotate2D (from gen-singularity-forge.wgsl) ═══
 fn rotate2D(angle: f32) -> mat2x2<f32> {
   let c = cos(angle);
   let s = sin(angle);
@@ -78,7 +75,6 @@ fn sdTorus(p: vec3<f32>, t: vec2<f32>) -> f32 {
   return length(q) - t.y;
 }
 
-// ═══ CHUNK: blackbodyColor (from spec-blackbody-thermal.wgsl) ═══
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
   let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
   var r: f32;
@@ -106,14 +102,11 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Map disk distance to blackbody temperature
 fn diskTemperature(diskDist: f32, diskDensity: f32, jetIntensity: f32) -> f32 {
-  // Inner disk = hotter, outer = cooler
   let innerTemp = 12000.0;
   let outerTemp = 2000.0;
-  let normalizedDist = clamp((diskDist - 1.0) / (3.0 * diskDensity), 0.0, 1.0);
+  let normalizedDist = clamp((diskDist - 1.0) / max(3.0 * diskDensity, 0.001), 0.0, 1.0);
   var temp = mix(innerTemp, outerTemp, normalizedDist);
-  // Jet regions get extra heat
   temp += jetIntensity * 2000.0 * exp(-abs(diskDist - 2.0));
   return temp;
 }
@@ -123,7 +116,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let res = vec2<f32>(u.config.z, u.config.w);
   if (f32(id.x) >= res.x || f32(id.y) >= res.y) { return; }
   let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
-  let uv = (fragCoord * 2.0 - res) / res.y;
+  let uv = (fragCoord * 2.0 - res) / max(res.y, 0.001);
   let screenUV = fragCoord / res;
 
   let diskDensity = u.zoom_params.x;
@@ -132,10 +125,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let timeDilation = u.zoom_params.w;
   let spaghettification = u.config.y;
 
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let time = u.config.x * timeDilation * 0.5;
-  // Floor: HEAD read rippleCount (u.config.y) as audio — now plasmaBuffer.
-  let audioOverall = plasmaBuffer[0].x;
-  let audioReactivity = 1.0 + audioOverall * 0.5;
+  let audioReactivity = 1.0 + bass * 0.45 + mids * 0.2;
 
   var ro = vec3<f32>(0.0, 1.5, -4.0);
   var rd = normalize(vec3<f32>(uv, 1.0));
@@ -155,18 +149,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   rd.x = temp_rd_xz.x;
   rd.z = temp_rd_xz.y;
 
-  let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
+  let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / max(res.y, 0.001);
   let mouseY = u.zoom_config.z * 2.0 - 1.0;
   let mousePos = vec3<f32>(mouseX * 5.0, mouseY * 5.0, 0.0);
   let mouseDist = distance(ro, mousePos);
-  if (mouseDist > 0.1) {
-    let mouseGravityStrength = 0.5;
-    rd = normalize(rd + (mousePos - ro) * (mouseGravityStrength / pow(mouseDist, 2.0)));
-  }
+  let mousePull = select(0.0, 1.0, mouseDist > 0.1);
+  rd = normalize(rd + (mousePos - ro) * (0.5 * mousePull / max(mouseDist * mouseDist, 0.01)));
 
   var col = vec3<f32>(0.0);
   var t = 0.0;
   var glow = vec3<f32>(0.0);
+  let horizonR = 0.8;
+  let photonR = horizonR * 1.5;
 
   for(var i=0; i<100; i++) {
     var p = ro + rd * t;
@@ -175,7 +169,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       p += normalize(p) * (gravityWarp * 0.5 / distToOrigin);
     }
 
-    let dBlackHole = length(p) - 0.8;
+    let dBlackHole = length(p) - horizonR;
     var pDisk = p;
     pDisk.y *= 5.0;
     var dDisk = sdTorus(pDisk, vec2<f32>(2.0, 0.4 * diskDensity));
@@ -192,37 +186,35 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = vec3<f32>(0.0);
       } else if (d == dDisk) {
         let diskDist = length(pDisk.xz);
-        var beamTemp = diskTemperature(diskDist, diskDensity, jetIntensity);
-        // Idea 2 — doppler beaming: approaching side hotter/bluer,
-        // receding side cooler/dimmer.
-        let orbitDir = normalize(vec3<f32>(-pDisk.z, 0.0, pDisk.x) + vec3<f32>(0.0001, 0.0, 0.0));
-        let beam = dot(orbitDir, rd);
-        beamTemp *= 1.0 + beam * 0.22 * (0.5 + jetIntensity * 0.5);
-        // Idea 1 — gravitational redshift: cooling toward the horizon.
-        let rs = 0.8;
-        let gravRed = clamp(sqrt(max(1.0 - rs / max(distToOrigin, rs + 0.05), 0.0)), 0.0, 1.0);
-        beamTemp *= mix(0.55, 1.0, gravRed);
-        let thermal = blackbodyColor(clamp(beamTemp, 800.0, 20000.0));
-        // Heat increases toward inner disk
+        let temp = diskTemperature(diskDist, diskDensity, jetIntensity);
+        // Idea 1 — Keplerian Doppler: v_phi around Y; approaching side hotter
+        let vPhi = vec3<f32>(-p.z, 0.0, p.x);
+        let vLen = max(length(vPhi), 0.001);
+        let los = -rd;
+        let betaDoppler = clamp(dot(vPhi / vLen, los) * 0.35 / max(sqrt(diskDist), 0.4), -0.6, 0.6);
+        let tempD = temp * (1.0 + betaDoppler);
+        let thermal = blackbodyColor(tempD);
         let heat = clamp(1.0 - (diskDist - 1.0) * 0.3, 0.0, 1.0);
-        col = thermal * heat * 2.0;
+        col = thermal * heat * 2.0 * (1.0 + max(betaDoppler, 0.0) * 0.8);
       }
       break;
     }
 
-    // Photon sphere bloom - white-hot
     glow += vec3<f32>(1.0, 0.9, 1.0) * 0.02 / (abs(dBlackHole) + 0.05);
-    // Jets - blue-white
+    // Idea 2 — photon-ring caustic, thin ring at 1.5 Rs (not the volumetric haze)
+    let photonDist = abs(distToOrigin - photonR);
+    let ring = exp(-photonDist * photonDist * 90.0);
+    glow += blackbodyColor(18000.0) * ring * 0.07 * (1.0 + treble * 0.4);
+
     let jetTemp = 15000.0;
     let jetColor = blackbodyColor(jetTemp);
     glow += jetColor * (0.01 * jetIntensity * (1.0 + sin(spaghettification))) / (abs(dJet) + 0.05);
-    // Disk ambient - warm
     let ambTemp = 4000.0;
     let ambColor = blackbodyColor(ambTemp);
     glow += ambColor * 0.005 / (abs(dDisk) + 0.1);
 
     t += d * 0.5;
-    if (distToOrigin < 0.8) {
+    if (distToOrigin < horizonR) {
       col = vec3<f32>(0.0);
       break;
     }
@@ -232,14 +224,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   col += glow;
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  // Tone map the HDR blackbody output
   col = toneMapACES(col * 1.5);
 
   let maxChannel = max(col.r, max(col.g, col.b));
   let exposure = max(0.0, maxChannel - 1.0);
+  let alpha = clamp(exposure + length(col) * 0.45 + 0.12, 0.0, 1.0);
 
-  textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, exposure));
-  textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, exposure + 0.1));
+  textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, alpha));
+  textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screenUV, 0.0).r;
   textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

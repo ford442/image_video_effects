@@ -1,15 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  stellar-plasma-blackbody
+//  Stellar Plasma Blackbody
 //  Category: advanced-hybrid
-//  Features: generative, blackbody-radiation, procedural, audio-reactive,
-//            upgraded-rgba
+//  Features: generative, blackbody-radiation, procedural, audio-reactive, mouse-driven, HDR, upgraded-rgba
 //  Complexity: High
-//  Chunks From: stellar-plasma.wgsl, spec-blackbody-thermal.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-1 — Spectral & Physical Light Enhancer
 //  Upgraded: 2026-09-15
-//  Ideas: spectral-class banding; differential-rotation shear
-//  A packing: ACES display RGBA + tempNorm alpha
+//  Ideas: |∇f| magnetic filaments; warp-advected C heat
+//  A packing: raw thermal RGB + normalized T
 // ═══════════════════════════════════════════════════════════════════
 //  Cosmic nebula domain-warped FBM blended with Planck's law
 //  blackbody thermal coloring. Energy intensity drives temperature
@@ -32,13 +28,12 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=TempShift, y=Speed, z=ZoomScale, w=ThermalIntensity
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash & fbm (from stellar-plasma.wgsl) ═══
 const HASH_CONST1: vec3<f32> = vec3<f32>(0.1031, 0.1031, 0.1031);
 const HASH_CONST2: vec3<f32> = vec3<f32>(33.33, 33.33, 33.33);
 
@@ -75,7 +70,6 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
     return v;
 }
 
-// ═══ CHUNK: toneMapACES (from spec-blackbody-thermal.wgsl) ═══
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -85,7 +79,6 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
 }
 
-// ═══ CHUNK: blackbodyColor (from spec-blackbody-thermal.wgsl) ═══
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
     var r: f32;
@@ -104,6 +97,11 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b) * radiance;
 }
 
+fn loadC(coord: vec2<i32>, max_coord: vec2<i32>) -> vec4<f32> {
+    let c = clamp(coord, vec2<i32>(0), max_coord);
+    return textureLoad(dataTextureC, c, 0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
@@ -111,9 +109,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
+    let coord = vec2<i32>(global_id.xy);
+    let max_coord = vec2<i32>(res) - vec2<i32>(1);
     var uv = vec2<f32>(global_id.xy) / res;
     var p = uv * 2.0 - 1.0;
-    p.x *= res.x / res.y;
+    p.x *= res.x / max(res.y, 1.0);
 
     let dist = length(p);
     let lodFactor = smoothstep(1.5, 2.5, dist);
@@ -125,35 +125,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    // Parameters
     let tempShift = u.zoom_params.x;
     let speed = mix(0.5, 2.0, u.zoom_params.y);
     let scale = mix(1.0, 4.0, u.zoom_params.z);
     let thermalIntensity = mix(0.5, 3.0, u.zoom_params.w);
 
-    // Audio reactivity (plasmaBuffer; HEAD read rippleCount/resolution here)
-    let audioLow = plasmaBuffer[0].x;
-    let audioMid = plasmaBuffer[0].y;
-    let audioHigh = plasmaBuffer[0].z;
-    let audioReactivity = 1.0 + audioMid * 0.3;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audioReactivity = 1.0 + mids * 0.3;
     let time = u.config.x * speed * audioReactivity;
 
-    // Mouse interaction
     var mouse_pos = u.zoom_config.yz * 2.0 - 1.0;
-    mouse_pos.x *= res.x / res.y;
+    mouse_pos.x *= res.x / max(res.y, 1.0);
     let dist_to_mouse = length(p - mouse_pos);
     let mouse_influence = exp(-dist_to_mouse * 3.0) * select(0.0, 1.0, u.zoom_config.w > 0.5);
 
     var q_pos = p * scale + mouse_influence;
-    // Idea 2 — differential-rotation shear: the core twists faster than
-    // the rim (accretion-native).
-    let shearAngle = (time * 0.35 + audioLow * 0.2) / (dist + 0.35);
-    let shearC = cos(shearAngle);
-    let shearS = sin(shearAngle);
-    q_pos = mat2x2<f32>(vec2<f32>(shearC, shearS), vec2<f32>(-shearS, shearC)) * q_pos;
     let octaves = i32(mix(6.0, 3.0, lodFactor));
 
-    // Domain warping
     var q = vec2<f32>(
         fbm(q_pos + vec2<f32>(0.0, time * 0.2), octaves),
         fbm(q_pos + vec2<f32>(1.0, 2.0) + time * 0.2, octaves)
@@ -164,48 +154,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     var f = fbm(q_pos + 4.0 * r, octaves);
 
-    // Map plasma energy to temperature (800K - 15000K)
-    // f is in ~0..1 range from FBM; boost with audio and structure
+    // Idea 1 — filaments along |∇f|
+    let f2 = fbm(q_pos + vec2<f32>(0.04, 0.03) + 4.0 * r, octaves);
+    let gradMag = abs(f2 - f) / 0.05;
+    let filament = smoothstep(0.12, 0.55, gradMag);
+
     let energy = clamp(f * f * f + 0.4 * f * f + 0.3 * length(q) + 0.2 * length(r.x), 0.0, 1.0);
-    let audioHeatBoost = (audioLow - audioHigh) * 0.15;
+    let audioHeatBoost = (bass - treble) * 0.15;
     var temperature = mix(1200.0, 12000.0, energy + tempShift * 0.3 + audioHeatBoost);
     temperature = clamp(temperature, 800.0, 15000.0);
 
-    // Blackbody thermal color with Idea 1 — spectral-class banding:
-    // O/B/A/F/G/K/M anchor tints on the blackbody ramp.
-    let classT = clamp((temperature - 800.0) / (15000.0 - 800.0), 0.0, 1.0);
-    let classTint = mix(vec3<f32>(1.0, 0.45, 0.25), vec3<f32>(0.65, 0.75, 1.15), smoothstep(0.15, 0.85, classT));
-    var thermalColor = blackbodyColor(temperature) * thermalIntensity * mix(vec3<f32>(1.0), classTint, 0.35);
-    let stellarAlpha = clamp(temperature / 15000.0, 0.0, 1.0);
+    // Idea 2 — warp-advected C heat along existing r
+    let advectUV = clamp(uv - r * 0.035, vec2<f32>(0.0), vec2<f32>(1.0));
+    let prevCoord = vec2<i32>(advectUV * res);
+    let prev = loadC(prevCoord, max_coord);
+    let prevT = prev.a * 15000.0;
+    temperature = mix(temperature, max(temperature, prevT), 0.32);
 
-    // Add localized hotspot glow around high-energy regions
-    let glowRadius = 0.02;
-    var glowAccum = vec3<f32>(0.0);
-    let glowSamples = 12;
-    for (var i: i32 = 0; i < glowSamples; i = i + 1) {
-        let angle = f32(i) * 0.523599 + time * 0.3;
-        let offset = vec2<f32>(cos(angle), sin(angle)) * glowRadius;
-        let sUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-        // Approximate energy at offset using fast noise
-        let sP = sUV * 2.0 - 1.0;
-        let sEnergy = clamp(fbm(sP * scale, 3) * 0.7 + 0.3, 0.0, 1.0);
-        let sTemp = mix(1200.0, 12000.0, sEnergy + tempShift * 0.3);
-        glowAccum += blackbodyColor(clamp(sTemp, 800.0, 15000.0)) * thermalIntensity;
+    var thermalColor = blackbodyColor(temperature) * thermalIntensity;
+    thermalColor = mix(thermalColor, prev.rgb, 0.18);
+    thermalColor += blackbodyColor(clamp(temperature * 1.12, 800.0, 15000.0)) * filament * 0.55;
+
+    if (u.zoom_config.w > 0.5) {
+        let mouseDistUV = length(uv - u.zoom_config.yz);
+        let mouseHeat = exp(-mouseDistUV * mouseDistUV * 400.0);
+        thermalColor += blackbodyColor(15000.0) * mouseHeat * thermalIntensity;
     }
-    glowAccum /= f32(glowSamples);
-    thermalColor = mix(thermalColor, glowAccum, 0.35);
 
-    // Tone map HDR output
     let displayColor = toneMapACES(thermalColor);
+    let alpha = clamp(0.28 + energy * 0.5 + filament * 0.22 + mids * 0.04, 0.0, 1.0);
 
-    // Mouse creates local super-hotspot (branchless held-gate)
-    let mouseDownS = u.zoom_config.w > 0.5;
-    let mouseDistUV = length(uv - u.zoom_config.yz);
-    let mouseHeatS = exp(-mouseDistUV * mouseDistUV * 400.0) * select(0.0, 1.0, mouseDownS);
-    let hotspot = blackbodyColor(clamp(15000.0 * mouseHeatS, 800.0, 15000.0)) * thermalIntensity;
-    let outColor = displayColor + toneMapACES(hotspot) * select(0.0, 1.0, mouseDownS);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, stellarAlpha));
-
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(thermalColor, stellarAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(displayColor, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(energy, 0.0, 1.0), 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(thermalColor, temperature / 15000.0));
 }

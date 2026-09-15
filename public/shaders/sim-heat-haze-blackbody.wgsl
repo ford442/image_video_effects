@@ -1,15 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  sim-heat-haze-blackbody
+//  Heat Haze Blackbody
 //  Category: advanced-hybrid
-//  Features: simulation, blackbody-radiation, temperature-field, convection,
-//            upgraded-rgba
+//  Features: simulation, blackbody-radiation, temperature-field, convection, mouse-driven, HDR, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: sim-heat-haze-field.wgsl, spec-blackbody-thermal.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-1 — Spectral & Physical Light Enhancer
 //  Upgraded: 2026-09-15
-//  Ideas: vorticity shimmer; mirage inversion band
-//  A packing: raw temperature field vec4(newTemp, 0, 0, 1)
+//  Ideas: Schlieren along ∇T; buoyant plume shear from dT/dy
+//  A packing: raw temperature in A.r
 // ═══════════════════════════════════════════════════════════════════
 //  Temperature field convection simulation with physically-correct
 //  blackbody thermal glow. Hot ground and rising convection plumes
@@ -32,20 +28,18 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Temperature, y=ConvectionSpeed, z=Distortion, w=ThermalIntensity
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from sim-heat-haze-field.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
-// ═══ CHUNK: toneMapACES (from spec-blackbody-thermal.wgsl) ═══
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -55,7 +49,6 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
 }
 
-// ═══ CHUNK: blackbodyColor (from spec-blackbody-thermal.wgsl) ═══
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
     var r: f32;
@@ -74,42 +67,41 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b) * radiance;
 }
 
+fn loadTemp(coord: vec2<i32>, max_coord: vec2<i32>) -> f32 {
+    let c = clamp(coord, vec2<i32>(0), max_coord);
+    return textureLoad(dataTextureC, c, 0).r;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
+    let coord = vec2<i32>(gid.xy);
+    let max_coord = vec2<i32>(resolution) - vec2<i32>(1);
     let uv = vec2<f32>(gid.xy) / resolution;
-    let pixel = 1.0 / resolution;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Parameters
     let temperature = mix(0.2, 1.0, u.zoom_params.x);
     let convectionSpeed = mix(0.5, 3.0, u.zoom_params.y);
     let distortion = mix(0.0, 0.05, u.zoom_params.z);
     let heatSources = mix(1.0, 5.0, u.zoom_params.w);
     let thermalIntensity = mix(0.5, 2.0, temperature);
 
-    // Read previous temperature field
-    let prevTemp = textureLoad(dataTextureC, gid.xy, 0).r;
-
-    // Diffuse temperature
     var sum = 0.0;
     for (var y: i32 = -1; y <= 1; y++) {
         for (var x: i32 = -1; x <= 1; x++) {
-            let neighbor = gid.xy + vec2<u32>(u32(x), u32(y));
-            sum += textureLoad(dataTextureC, neighbor, 0).r;
+            sum += loadTemp(coord + vec2<i32>(x, y), max_coord);
         }
     }
     let diffused = sum / 9.0;
-
-    // Cool over time
     let cooled = diffused * 0.98;
 
-    // Heat source at bottom (ground heating)
-    let groundHeat = smoothstep(0.15, 0.0, uv.y) * temperature;
+    let groundHeat = smoothstep(0.15, 0.0, uv.y) * temperature * (1.0 + bass * 0.2);
 
-    // Multiple heat sources (simulated)
     var sourceHeat = 0.0;
     for (var i: i32 = 0; i < i32(heatSources); i++) {
         let fi = f32(i);
@@ -120,88 +112,48 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         sourceHeat += smoothstep(0.1, 0.0, dist) * temperature * 0.5;
     }
 
-    // Mouse heat source
     let mousePos = u.zoom_config.yz;
     let mouseDist = length(uv - mousePos);
     let mouseHeat = smoothstep(0.1, 0.0, mouseDist) * temperature * 0.3;
 
-    // New temperature
     let newTemp = min(cooled + groundHeat + sourceHeat + mouseHeat, 1.0);
-
-    // Store temperature
     textureStore(dataTextureA, gid.xy, vec4<f32>(newTemp, 0.0, 0.0, 1.0));
 
-    // Calculate temperature gradient for refraction
-    let tempRight = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 0u), 0).r;
-    let tempLeft = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 0u), 0).r;
-    let tempUp = textureLoad(dataTextureC, gid.xy + vec2<u32>(0u, 1u), 0).r;
-    let tempDown = textureLoad(dataTextureC, gid.xy - vec2<u32>(0u, 1u), 0).r;
-
+    let tempRight = loadTemp(coord + vec2<i32>(1, 0), max_coord);
+    let tempLeft = loadTemp(coord + vec2<i32>(-1, 0), max_coord);
+    let tempUp = loadTemp(coord + vec2<i32>(0, 1), max_coord);
+    let tempDown = loadTemp(coord + vec2<i32>(0, -1), max_coord);
     let grad = vec2<f32>(tempRight - tempLeft, tempUp - tempDown);
 
-    // Idea 1 taps — vorticity shimmer: diagonal taps give a curl estimate
-    // applied to the displacement below (convection turbulence).
-    let tempNE = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 1u), 0).r;
-    let tempSW = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 1u), 0).r;
-    let curlT = (tempNE - tempSW) * 0.7071 - (tempRight - tempLeft + tempUp - tempDown) * 0.5;
-    let gradMag = max(length(grad), 0.0001);
-
-    // Hot air rises (buoyancy creates upward displacement)
     var displacement = vec2<f32>(
         grad.x * distortion,
         -newTemp * distortion * convectionSpeed * 0.5
     );
-    displacement += vec2<f32>(-grad.y, grad.x) / gradMag * curlT * distortion * 1.5;
+    // Idea 2 — plume shear: horizontal lean from dT/dy
+    displacement.x += grad.y * distortion * convectionSpeed * 0.4;
 
-    // Add shimmer noise
     let shimmer = hash12(uv * 50.0 + time * 5.0) * newTemp * distortion * 0.3;
     displacement += vec2<f32>(shimmer);
 
-    // Sample image with displacement
     let displacedUV = clamp(uv + displacement, vec2<f32>(0.0), vec2<f32>(1.0));
     var color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
-    // Idea 2 — mirage inversion band: the near-ground hot layer mirrors
-    // the image vertically (real inferior-mirage optics).
-    let mirageBand = smoothstep(0.12, 0.0, uv.y) * smoothstep(0.35, 0.75, newTemp);
-    let mirageUV = clamp(vec2<f32>(uv.x, uv.y * -0.6 + 0.06), vec2<f32>(0.0), vec2<f32>(1.0));
-    let mirage = textureSampleLevel(readTexture, u_sampler, mirageUV, 0.0).rgb;
-    color = mix(color, mirage, mirageBand * 0.5);
 
-    // ═══ Blackbody thermal glow based on temperature field ═══
-    // Map temperature 0..1 to Kelvin 800K..7000K
+    // Idea 1 — Schlieren streaks along ∇T
+    let schlieren = clamp((grad.x * 0.7 + grad.y * 1.3) * 12.0, -0.3, 0.3);
+    color = color * (1.0 + schlieren * (0.85 + treble * 0.3));
+
     let kelvin = mix(800.0, 7000.0, newTemp);
-    var thermalColor = blackbodyColor(kelvin) * thermalIntensity;
-
-    // Ember glow in hot regions using surrounding temperature
-    if (newTemp > 0.15) {
-        let glowRadius = 0.02;
-        var glowAccum = vec3<f32>(0.0);
-        let glowSamples = 8;
-        for (var i: i32 = 0; i < glowSamples; i = i + 1) {
-            let angle = f32(i) * 0.785398 + time * 0.3;
-            let offset = vec2<f32>(cos(angle), sin(angle)) * glowRadius;
-            let sUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-            let sTemp = textureLoad(dataTextureC, vec2<u32>(u32(sUV.x * resolution.x), u32(sUV.y * resolution.y)), 0).r;
-            let sKelvin = mix(800.0, 7000.0, sTemp);
-            glowAccum += blackbodyColor(sKelvin) * thermalIntensity;
-        }
-        glowAccum /= f32(glowSamples);
-        thermalColor = mix(thermalColor, glowAccum, newTemp * 0.4);
-    }
-
+    let thermalColor = blackbodyColor(kelvin) * thermalIntensity;
     let toneMapped = toneMapACES(thermalColor);
 
-    // Blend thermal glow over the displaced image
-    // Hotter = more thermal overlay
     let thermalBlend = smoothstep(0.1, 0.6, newTemp) * 0.75;
     color = mix(color, toneMapped, thermalBlend);
 
-    // Desaturate in very hot areas (air shimmer effect)
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     color = mix(color, vec3<f32>(luma), newTemp * 0.2);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = clamp(0.35 + smoothstep(0.1, 0.6, newTemp) * 0.65, 0.0, 1.0);
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
+    let alpha = mix(0.55, 0.98, newTemp * 0.55 + abs(schlieren) * 0.2 + mids * 0.04);
 
     textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
