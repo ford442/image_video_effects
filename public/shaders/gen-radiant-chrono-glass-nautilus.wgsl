@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-15
+//  Ideas: logarithmic chamber septa; birefringent growth lamellae
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,8 +23,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
+    zoom_config: vec4<f32>,  // x=time, yz=mouse_uv (y=0 top), w=mouse_down
     zoom_params: vec4<f32>,  // x=Spiral Tightness, y=Plasma Bloom, z=Glass Refraction, w=Audio Reactivity
     ripples: array<vec4<f32>, 50>,
 };
@@ -66,22 +68,30 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     // Spiral domain
     let a = atan2(p.y, p.x);
-    let r = length(p.xy);
+    let r = max(length(p.xy), 0.001);
     let z = p.z;
 
     let tightness = u.zoom_params.x; // 0.1 to 1.0
     let spiral_a = a * tightness + log(r) * 2.0 + t * 0.5;
 
     // Create nautilus chambers
-    let shell = length(vec2<f32>(fract(spiral_a * 1.5) - 0.5, z * 2.0)) - 0.2 - audio * 0.1;
+    let chamberPhase = fract(spiral_a * 1.5);
+    let shell = length(vec2<f32>(chamberPhase - 0.5, z * 2.0)) - 0.2 - audio * 0.1;
     let interior = length(vec2<f32>(fract(spiral_a * 1.5 + 0.5) - 0.5, z * 2.0)) - 0.15 + audio * 0.2;
 
-    // Smoothly combine chambers
-    let dist = smin(shell, interior, 0.2);
+    // Logarithmic chamber septa: walls at chamber-phase boundaries, thickening with radius
+    let wallPhase = min(chamberPhase, 1.0 - chamberPhase);
+    let septumThick = 0.014 + clamp(r, 0.0, 4.0) * 0.010;
+    let septum = length(vec2<f32>(wallPhase * 1.8, z * 2.2)) - septumThick;
+
+    // Smoothly combine chambers + septa
+    var dist = smin(shell, interior, 0.2);
+    dist = smin(dist, septum, 0.06);
 
     // ID mapping
     var id = 1.0;
     if (shell > interior) { id = 2.0; } // 1.0 = shell, 2.0 = interior
+    if (septum < min(shell, interior)) { id = 3.0; } // 3.0 = septum
     return vec2<f32>(dist * 0.5, id);
 }
 
@@ -149,6 +159,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let shell = vec3<f32>(0.1, 0.8, 0.9) * f + vec3<f32>(0.9, 0.1, 0.5) * (1.0 - f);
         let interior = vec3<f32>(0.2, 0.0, 0.8) + vec3<f32>(0.0, 0.8, 1.0) * glow;
         col = select(interior, shell, id == 1.0);
+        if (id == 3.0) {
+            col = vec3<f32>(0.85, 0.92, 1.0) * (0.35 + f);
+        }
+        // Birefringent growth lamellae: paired spectral lobes from spiral phase + n·v
+        let spiralPhase = atan2(p.y, p.x);
+        let nDotV = max(dot(n, -rd), 0.0);
+        let opticalSep = refraction * 4.0;
+        let lobeA = 0.5 + 0.5 * sin(spiralPhase * 6.0 + nDotV * opticalSep);
+        let lobeB = 0.5 + 0.5 * sin(spiralPhase * 6.0 - nDotV * opticalSep + 1.2);
+        col += vec3<f32>(lobeA, 0.18 * (lobeA + lobeB), lobeB) * f * 0.22;
         // Mid-frequency chromatic shimmer across the glass
         col += vec3<f32>(0.2, 0.05, 0.3) * f * mids;
     }

@@ -1,6 +1,10 @@
 // ----------------------------------------------------------------
 // Radiant Quantum-Plasma Kraken-Core
 // Category: generative
+// Features: mouse-driven, audio-reactive, upgraded-rgba
+// Upgraded: 2026-09-15
+// Ideas: paired sucker-current rows; core-to-arm peristaltic discharge
+// A packing: ACES display RGBA
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -18,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Tentacle Twist, y=Plasma Glow, z=Core Heat, w=Void Depth
+    config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=held
+    zoom_params: vec4<f32>,  // x=Tentacle Twist 0-5, y=Plasma Glow 0-5, z=Core Heat 0.1-3, w=Void Depth 0-1
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -69,6 +73,19 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+var<private> g_arm_tpos: f32 = 0.0;
+var<private> g_arm_local: vec3<f32> = vec3<f32>(0.0);
+var<private> g_peri: f32 = 0.0;
+
 // Box SDF for domain repetition
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
   let d = abs(p) - b;
@@ -85,24 +102,23 @@ fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
 
 // --- Map Function ---
 fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
-    var p = p_in;
     let t = u.config.x * 0.5;
-    let audio = u.config.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
 
-    // UI Sliders mapped (clamp zoom_params to normalized range)
-    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-    let twist_amount = mix(0.0, 1.0, zparams.x); // Tentacle Twist
-    let core_heat = mix(0.0, 1.0, zparams.z);    // Core Heat
+    // Range-aware sliders: Twist 0–5, Heat 0.1–3 (do not flatten to 0–1)
+    let twist_amount = u.zoom_params.x;
+    let core_heat = u.zoom_params.z;
 
     // Mouse Interaction (Gravitational distortion)
     let mx = (u.zoom_config.y - 0.5) * 2.0;
     let my = (u.zoom_config.z - 0.5) * 2.0;
-    let click_pull = smoothstep(0.0, 1.0, length(vec2<f32>(mx, my)) * 2.0); // Simple proxy for intensity based on mouse distance from center
+    let click_pull = smoothstep(0.0, 1.0, length(vec2<f32>(mx, my)) * 2.0);
 
     // Add overall temporal and mouse rotation
     let rotY = rot(t * 0.2 + mx * 2.0);
     let rotX = rot(t * 0.1 + my * 2.0);
-    var p_rot = p;
+    var p_rot = p_in;
     let p_rot_xz = rotY * p_rot.xz;
     p_rot.x = p_rot_xz.x;
     p_rot.z = p_rot_xz.y;
@@ -112,63 +128,67 @@ fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
 
     // Distort space slightly based on audio and noise
     let n1 = fbm(p_rot * 1.5 + vec3<f32>(t)) * 0.5;
-    let p_distorted = p_rot + normalize(p_rot) * n1 * audio * 0.5;
+    let p_len = max(length(p_rot), 0.001);
+    let p_distorted = p_rot + (p_rot / p_len) * n1 * bass * 0.5;
 
     // --- Core Entity (Sphere) ---
-    // The core pulsates with audio and core heat
-    let core_radius = 1.0 + (audio * 0.5) + (core_heat * 0.2);
+    let core_radius = 1.0 + (bass * 0.5) + (core_heat * 0.2);
     let noise_core = fbm(p_distorted * 3.0 - vec3<f32>(t * 2.0)) * 0.4;
     let d_core = length(p_distorted) - core_radius - noise_core;
 
     // --- Tentacles ---
     var d_tentacles = 100.0;
     let num_tentacles = 8.0;
+    var nearest_tpos = 0.0;
+    var nearest_local = vec3<f32>(0.0);
+    var nearest_peri = 0.0;
 
     for (var i = 0.0; i < num_tentacles; i = i + 1.0) {
-        // Angle for each tentacle around the core
         let angle = (i / num_tentacles) * PI * 2.0;
         var p_tentacle = p_rot;
 
-        // Rotate local space for this tentacle
         let p_tentacle_xz = rot(angle) * p_tentacle.xz;
         p_tentacle.x = p_tentacle_xz.x;
         p_tentacle.z = p_tentacle_xz.y;
 
-        // Twist tentacle along its length
         let tentacle_length_pos = p_tentacle.x;
-        // Domain warping / Twisting
         let twist = (t + click_pull * 2.0) * 0.5 * twist_amount;
         let p_tentacle_yz = rot(tentacle_length_pos * 0.5 + twist) * p_tentacle.yz;
         p_tentacle.y = p_tentacle_yz.x;
         p_tentacle.z = p_tentacle_yz.y;
 
-        // Wavy motion (bioluminescent waves)
-        p_tentacle.y = p_tentacle.y + sin(p_tentacle.x * 2.0 - t * 3.0) * 0.3 * (1.0 + audio);
-        p_tentacle.z = p_tentacle.z + cos(p_tentacle.x * 1.5 - t * 2.5) * 0.3 * (1.0 + audio);
+        p_tentacle.y = p_tentacle.y + sin(p_tentacle.x * 2.0 - t * 3.0) * 0.3 * (1.0 + bass);
+        p_tentacle.z = p_tentacle.z + cos(p_tentacle.x * 1.5 - t * 2.5) * 0.3 * (1.0 + bass);
 
-        // Tentacle length and shape
-        let t_start = vec3<f32>(0.5, 0.0, 0.0); // Start near the core
-        let t_end = vec3<f32>(6.0, 0.0, 0.0);   // Extend outwards
+        let t_start = vec3<f32>(0.5, 0.0, 0.0);
+        let t_end = vec3<f32>(6.0, 0.0, 0.0);
 
-        // Taper radius
         let t_pos = clamp(p_tentacle.x / 6.0, 0.0, 1.0);
-        let t_radius = mix(0.4, 0.02, t_pos) + fbm(p_tentacle * 5.0) * 0.05 * audio;
+        // Core-to-arm peristaltic discharge: travelling constriction
+        let peri = sin(t_pos * 14.0 - u.config.x * 3.2);
+        let t_radius = mix(0.4, 0.02, t_pos) * (1.0 + peri * 0.14)
+            + fbm(p_tentacle * 5.0) * 0.05 * bass;
 
-        // Use a capsule for the base shape
         let d_t = sdCapsule(p_tentacle, t_start, t_end, t_radius);
-
+        if (d_t < d_tentacles) {
+            nearest_tpos = t_pos;
+            nearest_local = p_tentacle;
+            nearest_peri = peri;
+        }
         d_tentacles = smin(d_tentacles, d_t, 0.3);
     }
 
-    // Determine which part is glowing more
+    g_arm_tpos = nearest_tpos;
+    g_arm_local = nearest_local;
+    g_peri = nearest_peri;
+
     if (d_core < d_tentacles) {
-        *is_light = 1.0; // Core
+        *is_light = 1.0;
     } else {
-        // Tentacles glow more near the base and based on noise
         *is_light = 0.2 + fbm(p_distorted * 2.0 + vec3<f32>(t)) * 0.8;
+        *is_light = *is_light + max(nearest_peri, 0.0) * 0.35 * (0.4 + mids);
     }
 
-    // Blend core and tentacles
     return smin(d_core, d_tentacles, 0.8);
 }
 
@@ -193,11 +213,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (fragCoord.xy - 0.5 * res) / res.y;
     let t = u.config.x;
-    let audio = u.config.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
-    let plasma_glow = mix(0.0, 2.0, zparams.y); // Plasma Glow
-    let void_depth = mix(0.0, 1.0, zparams.w);  // Void Depth
+    let plasma_glow = u.zoom_params.y; // 0–5
+    let void_depth = u.zoom_params.w;  // 0–1
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, 10.0 + (void_depth * 5.0)); // Zoom out based on void depth
@@ -226,7 +247,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Volumetric accumulation (Bloom/Glow)
         // Subsurface scattering proxy
-        let glow_strength = 0.05 * plasma_glow * (1.0 + audio * 0.5);
+        let glow_strength = 0.05 * plasma_glow * (1.0 + bass * 0.5);
         acc = acc + glow_strength / (1.0 + abs(dist) * 10.0) * is_light;
 
         if (abs(dist) < 0.001) {
@@ -245,45 +266,52 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if (hit) {
         let n = calcNormal(p);
+        var dummyHit = 0.0;
+        let hitDist = map(p, &dummyHit);
 
-        // Lighting
         let lightDir1 = normalize(vec3<f32>(5.0, 5.0, 5.0));
         let lightDir2 = normalize(vec3<f32>(-5.0, -2.0, -3.0));
 
         let diff1 = max(dot(n, lightDir1), 0.0);
         let diff2 = max(dot(n, lightDir2), 0.0);
 
-        // Base colors
-        let core_col = vec3<f32>(1.0, 0.2, 0.8) * u.zoom_params.z; // Neon magenta + gold heat
-        let tentacle_col = vec3<f32>(0.1, 0.6, 1.0); // Bioluminescent blue
+        let core_col = vec3<f32>(1.0, 0.2, 0.8) * u.zoom_params.z;
+        let tentacle_col = vec3<f32>(0.1, 0.6, 1.0);
 
         var mat_col = mix(tentacle_col, core_col, is_light);
 
-        // Fresnel for quantum glass refraction look on surface
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
 
-        // Audio reactive flash
-        mat_col = mat_col + vec3<f32>(audio * 0.5 * is_light);
+        mat_col = mat_col + vec3<f32>(bass * 0.5 * is_light);
+
+        // Paired sucker-current rows along the nearest arm underside
+        let underside = smoothstep(-0.05, 0.15, -g_arm_local.y);
+        let ringA = fract(g_arm_tpos * 16.0);
+        let ringB = fract(g_arm_tpos * 16.0 + 0.5);
+        let suckA = exp(-pow((ringA - 0.5) / 0.09, 2.0));
+        let suckB = exp(-pow((ringB - 0.5) / 0.09, 2.0));
+        let suckers = (suckA + suckB) * underside * (1.0 - is_light) * (0.55 + treble);
+        mat_col += vec3<f32>(0.2, 0.95, 1.0) * suckers;
+        mat_col += vec3<f32>(1.0, 0.45, 0.85) * max(g_peri, 0.0) * (1.0 - is_light) * (0.35 + mids);
 
         col = mat_col * (diff1 * 0.8 + diff2 * 0.4 + 0.2) + fresnel * vec3<f32>(0.8, 0.9, 1.0);
+        col += vec3<f32>(0.12) * clamp(-hitDist, 0.0, 1.0);
     } else {
-        // Fog / Void Background
         let star_noise = fbm(rd * 100.0) * fbm(rd * 200.0);
-        let stars = smoothstep(0.7, 1.0, star_noise) * vec3<f32>(0.8, 0.9, 1.0) * (1.0 + audio);
+        let stars = smoothstep(0.7, 1.0, star_noise) * vec3<f32>(0.8, 0.9, 1.0) * (1.0 + bass);
         col = bg_color + stars;
     }
 
-    // Add accumulated glow
-    let glow_col = vec3<f32>(1.0, 0.3, 0.9); // Radiant magenta glow
+    let glow_col = vec3<f32>(1.0, 0.3, 0.9);
     col = col + glow_col * acc * 0.02;
 
-    // Distance fog
     col = mix(col, bg_color, 1.0 - exp(-0.02 * d * d));
 
-    // Tone mapping and gamma correction
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
-
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(1.0 - clamp(d / 30.0, 0.0, 1.0), 0.0, 0.0, 1.0));
+    let alpha = clamp(select(0.0, 0.7, hit) + clamp(acc, 0.0, 2.0) * 0.12, 0.0, 1.0);
+    let out = vec4<f32>(acesToneMap(col), alpha);
+    let depth = select(0.0, clamp(1.0 - d / 30.0, 0.0, 1.0), hit);
+    let coord = vec2<i32>(id.xy);
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

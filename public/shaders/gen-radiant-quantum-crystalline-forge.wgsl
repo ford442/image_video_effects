@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-15
+//  Ideas: crystallographic twin facets; accretion weld seams
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,19 +25,9 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Density, y=Chroma, z=Fog, w=Unused
+    zoom_params: vec4<f32>,  // x=Density, y=Chroma, z=Fog, w=Mouse Influence
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
-}
-
 
 const MAX_STEPS: i32 = 80;
 const MAX_DIST: f32 = 50.0;
@@ -47,6 +39,8 @@ fn rotate(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
+var<private> g_seam: f32 = 1.0;
+
 fn mapSDF(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
     let t = u.config.x * 0.5;
@@ -57,9 +51,15 @@ fn mapSDF(p_in: vec3<f32>) -> vec2<f32> {
     p.y += cos(p.x * 0.2 + t) * 0.5;
 
     var scale: f32 = 1.0;
+    var twin = 0.0;
+    var seam = 10.0;
     let iter = 6;
     for(var i = 0; i < iter; i++) {
+        let plane = min(abs(p.x), min(abs(p.y), abs(p.z)));
+        let edge = min(min(abs(abs(p.x) - abs(p.y)), abs(abs(p.y) - abs(p.z))), abs(abs(p.z) - abs(p.x)));
+        seam = min(seam, (plane + edge) / max(scale, 0.001));
         p = abs(p) - vec3<f32>(1.2, 0.8, 1.5) * density * (1.0 + audio * 0.2);
+        twin = f32(i & 1);
         let rot = rotate(t * 0.2 + f32(i) * 0.5);
         p = vec3<f32>(rot * p.xy, p.z);
         let rot2 = rotate(t * 0.3);
@@ -70,8 +70,9 @@ fn mapSDF(p_in: vec3<f32>) -> vec2<f32> {
         scale *= s;
     }
 
+    g_seam = seam;
     let d = (length(p) - 1.0) / scale;
-    return vec2<f32>(d, 1.0);
+    return vec2<f32>(d, twin);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -103,12 +104,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Mouse Interaction: Gravity well distortion
-    var m = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) - vec2<f32>(0.5) * res) / res.y;
+    // Mouse Interaction: Gravity well distortion (normalized UV)
+    var m = (u.zoom_config.yz - vec2<f32>(0.5)) * vec2<f32>(res.x / max(res.y, 1.0), 1.0);
     let mDist = length(uv - m);
-    if (mDist < 0.5 && u.zoom_config.y > 0.0) {
-        let force = (0.5 - mDist) * 2.0;
-        uv += normalize(uv - m) * force * 0.1 * sin(u.config.x * 2.0);
+    if (mDist < 0.5) {
+        let force = (0.5 - mDist) * 2.0 * u.zoom_params.w;
+        uv += normalize(uv - m + vec2<f32>(1e-4)) * force * 0.1 * sin(u.config.x * 2.0);
     }
 
     let ro = vec3<f32>(0.0, 0.0, -8.0 + u.config.x * 2.0);
@@ -128,6 +129,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Volumetric Fog accumulation
         glow += 0.01 * fogInt / (1.0 + dS.x * dS.x * 100.0) * (1.0 + mids * 0.8);
+        glow += 0.008 * fogInt * exp(-g_seam * 14.0);
 
         if(dS.x < SURF_DIST) {
             hit = true;
@@ -142,6 +144,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     if(hit) {
         let n = calcNormal(p);
+        let hitMap = mapSDF(p);
         let l = normalize(vec3<f32>(1.0, 2.0, -3.0));
         let view = normalize(ro - p);
         let h = normalize(l + view);
@@ -153,8 +156,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Iridescent chromatic dispersion based on normals and time
         let baseCol = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(u.config.x) + p.xyz * 0.5 + vec3<f32>(0.0, 2.0, 4.0));
-
-        col = baseCol * diff + spec * vec3<f32>(1.0) + fresnel * vec3<f32>(0.5, 0.8, 1.0) * chroma;
+        let twinA = vec3<f32>(0.55, 0.85, 1.0);
+        let twinB = vec3<f32>(1.0, 0.55, 0.35);
+        let twinTint = mix(twinA, twinB, hitMap.y);
+        col = mix(baseCol, twinTint, 0.45 * chroma) * diff + spec * vec3<f32>(1.0) + fresnel * twinTint * chroma;
+        let weld = exp(-g_seam * 18.0);
+        col += mix(vec3<f32>(1.0, 0.95, 0.75), vec3<f32>(0.55, 0.2, 1.0), fract(u.config.x * 0.15 + g_seam * 4.0)) * weld * (0.8 + treble);
     }
 
     // Add fog
@@ -167,12 +174,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Alpha: crystal surface coverage + volumetric fog density, never flat 1.0
     let alpha = clamp(select(0.0, 0.4, hit) + surfFresnel * 0.4 + clamp(glow, 0.0, 1.0) * 0.4, 0.0, 1.0);
-    let out = vec4<f32>(col, alpha);
-
-    // Depth: ray-march hit distance (near = closer)
+    let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
     let depth = select(0.0, clamp(1.0 - dO / MAX_DIST, 0.0, 1.0), hit);
     let coord = vec2<i32>(global_id.xy);
-    textureStore(writeTexture, coord, applyGenerativePrimaryControls(out));
+    textureStore(writeTexture, coord, out);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, out);
 }

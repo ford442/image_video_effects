@@ -49,5 +49,47 @@
   "updated": true,
   "id": "gen-radiant-cyber-chrono-void-stag",
   "url": "shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "stag_scale",
+      "name": "Stag Scale",
+      "default": 1.0,
+      "min": 0.5,
+      "max": 2.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "antler_complexity",
+      "name": "Antler Complexity",
+      "default": 3.0,
+      "min": 1.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "nebula_density",
+      "name": "Nebula Density",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.05,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "core_pulse_intensity",
+      "name": "Core Pulse Intensity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Sentient Bismuth Hypercrystal
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Sentient Bismuth Hypercrystal
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-15
+//  Ideas: recursive hopper terraces; crystallographic oxide zoning
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -41,6 +46,14 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return -log2(res) / k;
 }
 
+var<private> g_hopper: f32 = 0.0;
+var<private> g_facet: f32 = 0.0;
+
+fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
+    let q = abs(p) - b;
+    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
 // 2. Map Function (SDF)
 fn map(p_in: vec3<f32>, time: f32, audio: f32, mouse_pos: vec3<f32>) -> f32 {
     var p = p_in;
@@ -72,9 +85,10 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, mouse_pos: vec3<f32>) -> f32 {
         // Folding
         q = abs(q) - vec3<f32>(1.5, 1.0, 1.2) * growth / scale;
 
-        // Rotation based on time and audio
-        let rx = rot(time * 0.1 + audio * 0.1);
-        let ry = rot(time * 0.15 - audio * 0.2);
+        // Rotation based on time and audio, gated by Audio React
+        let ax = audio * audio_react;
+        let rx = rot(time * 0.1 + ax * 0.1);
+        let ry = rot(time * 0.15 - ax * 0.2);
 
         let qz = q.z;
         let q_xy = rx * q.xy;
@@ -89,8 +103,22 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, mouse_pos: vec3<f32>) -> f32 {
 
     // Cuboid SDF
     let b = vec3<f32>(1.0, 1.0, 1.0) * base_scale / scale;
-    let qq = abs(q) - b;
-    d = length(max(qq, vec3<f32>(0.0))) + min(max(qq.x, max(qq.y, qq.z)), 0.0);
+    d = sdBox(q, b);
+
+    // Recursive hopper terraces: nested square cavities on the folded cuboid
+    let aq = abs(q);
+    let dominant = max(aq.x, max(aq.y, aq.z));
+    g_facet = dominant;
+    var hopper = 0.0;
+    for (var k = 0; k < 3; k++) {
+        let band = 0.22 + f32(k) * 0.22;
+        let cavity = 0.55 - f32(k) * 0.12;
+        let inner = sdBox(q, b * cavity);
+        let lip = abs(dominant / max(b.x, 0.001) - band);
+        hopper = max(hopper, (cavity * 0.08 - inner) * (1.0 - smoothstep(0.0, 0.08, lip)));
+    }
+    g_hopper = hopper;
+    d = d + hopper * 0.35;
 
     return d;
 }
@@ -139,8 +167,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let time = u.config.x;
 
-    // Audio Sampling
-    let audio_val = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.5, 0.5), 0.0).r;
+    // Three-band audio; Audio React slider gates modulation
+    let audio_react = u.zoom_params.y;
+    let audio_val = (plasmaBuffer[0].x * 0.5 + plasmaBuffer[0].y * 0.3 + plasmaBuffer[0].z * 0.2) * audio_react;
 
     // Mouse setup
     let mouse_ndc = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(resolution.x / resolution.y, -1.0);
@@ -194,9 +223,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Iridescence
         let iridescence_strength = u.zoom_params.w;
-        // Dot product of normal and view, modulated by audio and time to simulate shifting thin film
         let ndotv = max(dot(n, v), 0.0);
-        let film_thickness = ndotv + audio_val * 0.5 * u.zoom_params.y + sin(p.x * 2.0 + p.y * 3.0 + p.z * 1.5 + time) * 0.1;
+        // Crystallographic oxide zoning: thickness follows dominant facet + hopper band
+        let hitD = map(p, time, audio_val, mouse_pos);
+        let facetTerm = g_facet * 0.35;
+        let hopperBand = g_hopper * 2.4;
+        let film_thickness = ndotv * 0.55 + facetTerm + hopperBand
+            + audio_val * 0.25 + sin(p.x * 2.0 + p.y * 3.0 + p.z * 1.5 + time) * 0.1
+            + clamp(hitD, -0.05, 0.05) * 0.02;
         let irid_col = palette(film_thickness * iridescence_strength);
 
         // Fresnel
@@ -231,5 +265,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Tonemapping
     col = acesToneMap(col);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
+    let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let alpha = clamp(select(0.12, 0.42, hit) + luma * 0.45 + f32(hit) * 0.15, 0.08, 0.96);
+    let depth = select(0.0, clamp(1.0 - dO / MAX_DIST, 0.0, 1.0), hit);
+    let outCol = vec4<f32>(col, alpha);
+    let pix = vec2<i32>(global_id.xy);
+    textureStore(writeTexture, pix, outCol);
+    textureStore(writeDepthTexture, pix, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pix, outCol);
 }
