@@ -3109,7 +3109,7 @@
     "name": "Aetherial Plasma Loom",
     "url": "/shaders/gen-aetherial-plasma-loom.wgsl",
     "category": "generative",
-    "description": "A ray-integrated, FBM-warped plasma loom with counter-woven ribbons and white-hot reconnection knots that vent cyan and magenta exhaust.",
+    "description": "A ray-integrated, FBM-warped plasma loom with alternating heddle lanes and bright shuttle-necking knots.",
     "workgroup_size": [
       16,
       16,
@@ -6579,6 +6579,11 @@
     "category": "generative",
     "type": "generative",
     "url": "shaders/gen-celestial-clockwork-plasma-loom.wgsl",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "tags": [
       "mechanical",
       "cosmic",
@@ -7369,7 +7374,11 @@
     "updated": true,
     "id": "gen-celestial-yggdrasil-matrix",
     "url": "shaders/gen-celestial-yggdrasil-matrix.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "branch_complexity",
@@ -8334,6 +8343,11 @@
     "category": "generative",
     "url": "shaders/gen-chrono-kinetic-fractal-engine.wgsl",
     "description": "A highly dynamic, continuously unfolding 4D mechanism where temporal gears and non-euclidean clockwork structures weave together into an infinite, hypnotic mandala of light and motion.",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "complexity",
@@ -8832,7 +8846,8 @@
       "4d-tesseract",
       "raymarching",
       "audio-reactive",
-      "mouse-interaction"
+      "mouse-interaction",
+      "upgraded-rgba"
     ]
   },
   {
@@ -8853,7 +8868,8 @@
       "audio-reactive",
       "mouse-control",
       "volumetric",
-      "raymarching"
+      "raymarching",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8953,7 +8969,8 @@
       "raymarching",
       "refraction",
       "audio-reactive",
-      "mouse-interaction"
+      "mouse-interaction",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -31844,6 +31861,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
       "upgraded-rgba"
     ],
     "supportsDepth": true,

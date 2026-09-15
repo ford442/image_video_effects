@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Celestial Clockwork Plasma-Loom
-// Category: generative
-// Tags: ["mechanical", "cosmic", "plasma", "clockwork", "fractal", "audio-reactive"]
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Celestial Clockwork Plasma-Loom
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-15
+//  Ideas: Keplerian astrolabe gearing; over-under plasma shuttle
+//  A packing: ACES display RGBA with exact-C temporal blend
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -68,6 +72,7 @@ fn sdSphere(p: vec3<f32>, s: f32) -> f32 {
 struct Context {
     glow: f32,
     mat_id: f32, // 1.0: gears, 2.0: plasma, 3.0: singularity
+    shuttle: f32,
 }
 
 var<private> ctx: Context;
@@ -82,7 +87,10 @@ fn map(p_in: vec3<f32>) -> f32 {
     let rotSpeed = u.zoom_params.z;    // Loom Rotation Speed
     let timeDilat = u.zoom_params.w;   // Time Dilation Intensity
 
-    let bass = plasmaBuffer[0].x;
+    let audio = plasmaBuffer[0].xyz;
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
     // Mouse Interaction (Time Dilation Field)
     let mouse = u.zoom_config.yz;
@@ -111,9 +119,14 @@ fn map(p_in: vec3<f32>) -> f32 {
         let thickness = 0.15;
 
         var gp = p;
-        // Independent rotation for each ring
-        gp = vec3<f32>(rot(g_rot * (1.0 + fi * 0.2) * ((fi%2.0)*2.0-1.0)) * gp.xz, gp.y).xzy;
-        gp = vec3<f32>(gp.x, rot(g_rot * 0.7 * fi) * gp.yz);
+        // Idea 1: Keplerian ring rates slow with radius and alternate direction.
+        let gear_direction = select(-1.0, 1.0, (i % 2) == 0);
+        let kepler_rate = gear_direction / pow(max(radius, 0.5), 1.5);
+        let ring_phase = g_rot * kepler_rate * 5.0;
+        let gear_xz = rot(ring_phase) * gp.xz;
+        gp = vec3<f32>(gear_xz.x, gp.y, gear_xz.y);
+        let gear_yz = rot(ring_phase * (0.8 + fi * 0.12)) * gp.yz;
+        gp = vec3<f32>(gp.x, gear_yz.x, gear_yz.y);
 
         // Base ring
         var ring_d = sdTorus(gp, vec2<f32>(radius, thickness));
@@ -135,8 +148,20 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // 2. Plasma Threads
     let plasma_noise = noise(p * 0.5 + vec3<f32>(0.0, time * 0.5, 0.0));
-    let plasma_base = sdTorus(p, vec2<f32>(3.0 + sin(time)*0.5, 0.2 + bass * audioReact * 0.3));
-    let d_plasma = plasma_base + plasma_noise * 1.5 * (0.5 + audioReact);
+    let plasma_angle = atan2(p.z, p.x);
+
+    // Idea 2: opposed threads weave over/under while a shuttle crosses their necks.
+    let weave_count = mix(3.0, 7.0, gearComplex);
+    let weave_lift = sin(plasma_angle * weave_count - time * (0.7 + rotSpeed * 2.0)) *
+        (0.12 + audioReact * 0.18);
+    let thread_radius = 3.0 + sin(time) * 0.5;
+    let thread_width = 0.13 + bass * audioReact * 0.18;
+    let thread_a = sdTorus(p - vec3<f32>(0.0, weave_lift, 0.0), vec2<f32>(thread_radius, thread_width));
+    let thread_b = sdTorus(p + vec3<f32>(0.0, weave_lift, 0.0), vec2<f32>(thread_radius, thread_width));
+    let d_plasma = min(thread_a, thread_b) + plasma_noise * 0.9 * (0.45 + audioReact);
+    let shuttle_phase = 0.5 + 0.5 * cos(plasma_angle - time * (1.2 + rotSpeed * 3.0) - mids * 0.2);
+    let shuttle = pow(shuttle_phase, 14.0) * exp(-abs(d_plasma) * 20.0);
+    ctx.shuttle = max(ctx.shuttle, shuttle * (0.7 + treble * 0.3));
 
     // 3. Singularity Core
     let d_core = sdSphere(p, 0.5 + bass * audioReact * 0.2);
@@ -197,6 +222,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Reset context
     ctx.glow = 0.0;
     ctx.mat_id = 0.0;
+    ctx.shuttle = 0.0;
 
     // Camera setup
     let ro = vec3<f32>(0.0, 0.0, -8.0);
@@ -244,6 +270,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Plasma Threads
             let base_col = vec3<f32>(1.0, 0.4, 0.1); // Searing solar orange
             col = base_col * (dif + 0.5) + vec3<f32>(1.0, 0.8, 0.4) * fre;
+            col += vec3<f32>(0.35, 0.75, 1.0) * ctx.shuttle * 1.8;
         } else if (mat == 3.0) {
             // Singularity Core (Black hole + accretion disk)
             let emit = vec3<f32>(1.0, 0.9, 0.5) * fre * 5.0; // Bright rim
@@ -258,7 +285,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bloom_col_plasma = vec3<f32>(1.0, 0.3, 0.05);
     let bloom_col_core = vec3<f32>(0.5, 0.7, 1.0);
 
-    col += ctx.glow * 0.1 * bloom_col_plasma;
+    col += ctx.glow * 0.1 * mix(bloom_col_plasma, bloom_col_core, clamp(ctx.shuttle, 0.0, 1.0));
 
     // ACES tone mapping
     let a = 2.51;
@@ -272,10 +299,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let history = textureLoad(dataTextureC, px, 0);
     let historyBlend = 0.86;
     let historyDecay = 0.94;
-    let alphaFloor = 0.35;
     let color = mix(history.rgb, col, historyBlend);
-    let alpha = max(history.a * historyDecay, alphaFloor);
     let has_hit = t < max_dist;
+    let current_alpha = clamp(select(0.04, 0.28, has_hit) + ctx.glow * 0.015 + ctx.shuttle * 0.45, 0.0, 1.0);
+    let alpha = max(history.a * historyDecay, current_alpha);
     let depth = select(0.0, clamp(1.0 - t / max_dist, 0.0, 1.0), has_hit);
 
     textureStore(writeTexture, px, vec4<f32>(color, alpha));

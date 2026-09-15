@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-15T07:28:40.420233",
+  "timestamp": "2026-09-15T08:10:34.774683",
   "naga_bin": "/home/runner/.cargo/bin/naga",
   "naga_available": false,
   "total": 8,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-3d-sierpinski-chaos.wgsl",
+      "file": "public/shaders/gen-aetherial-plasma-loom.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-aperiodic-monotile.wgsl",
+      "file": "public/shaders/gen-celestial-clockwork-plasma-loom.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-chromatic-zonohedron.wgsl",
+      "file": "public/shaders/gen-celestial-yggdrasil-matrix.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-prismatic-mobius-helix.wgsl",
+      "file": "public/shaders/gen-chrono-kinetic-fractal-engine.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-voronoi-crystal.wgsl",
+      "file": "public/shaders/gen-chronomorphic-glass-tesseract.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-zeta-function-landscape.wgsl",
+      "file": "public/shaders/gen-chronos-biomechanical-void-leviathan.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spec-blackbody-thermal.wgsl",
+      "file": "public/shaders/gen-chronos-crystal-labyrinth.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/thermal-touch-blackbody.wgsl",
+      "file": "public/shaders/gen-quantum-liquid-metal-chronosphere.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
