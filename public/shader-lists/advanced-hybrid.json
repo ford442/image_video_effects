@@ -7305,7 +7305,10 @@
       "generative",
       "quasicrystal",
       "thin-film-interference",
-      "spectral"
+      "spectral",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7345,7 +7348,41 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Symmetry",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pattern Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Cycle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Projection Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "gen-raptor-mini-flow",

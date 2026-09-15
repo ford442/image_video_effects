@@ -6373,7 +6373,11 @@
     "updated": true,
     "id": "gen-buddhabrot-aura",
     "url": "shaders/gen-buddhabrot-aura.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "orbit_threshold",
@@ -10049,7 +10053,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -30321,7 +30326,49 @@
     "updated": true,
     "id": "gen-prismatic-ion-cascade",
     "url": "shaders/gen-prismatic-ion-cascade.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "stream_density",
+        "name": "Stream Density",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "cascade_speed",
+        "name": "Cascade Speed",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "spectral_spread",
+        "name": "Spectral Spread",
+        "mapping": "zoom_params.z",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ion_thickness",
+        "name": "Ion Thickness",
+        "mapping": "zoom_params.w",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Prismatic Möbius Helix",
@@ -33055,6 +33102,44 @@
       "audio-reactive",
       "mouse-driven",
       "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "evolution_speed",
+        "name": "Evolution Speed",
+        "mapping": "zoom_params.x",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fringe_frequency",
+        "name": "Fringe Frequency",
+        "mapping": "zoom_params.y",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
+        "mapping": "zoom_params.z",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -33957,6 +34042,44 @@
       "audio-reactive",
       "mouse-driven",
       "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "recursion_depth",
+        "name": "Recursion Depth",
+        "mapping": "zoom_params.x",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
+        "mapping": "zoom_params.y",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "perspective",
+        "name": "Perspective",
+        "mapping": "zoom_params.z",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromatic_aberration",
+        "name": "Chromatic Aberration",
+        "mapping": "zoom_params.w",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -34150,7 +34273,49 @@
     "updated": true,
     "id": "gen-solar-wind-ribbons",
     "url": "shaders/gen-solar-wind-ribbons.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "ribbon_count",
+        "name": "Ribbon Count",
+        "mapping": "zoom_params.x",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "twist",
+        "name": "Twist",
+        "mapping": "zoom_params.y",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "mapping": "zoom_params.z",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "mapping": "zoom_params.w",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "gen-sonic-lava-flow",
@@ -34694,7 +34859,48 @@
     "updated": true,
     "id": "gen-strange-field-flow",
     "url": "shaders/gen-strange-field-flow.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "drift_speed",
+        "name": "Drift Speed",
+        "mapping": "zoom_params.x",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chaos_blend",
+        "name": "Chaos Blend",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "orbit_density",
+        "name": "Orbit Density",
+        "mapping": "zoom_params.z",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trail_persistence",
+        "name": "Trail Persistence",
+        "mapping": "zoom_params.w",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "String Theory",
@@ -35502,7 +35708,49 @@
     "updated": true,
     "id": "gen-topological-acoustic-knots",
     "url": "shaders/gen-topological-acoustic-knots.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "defect_density",
+        "name": "Defect Density",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "defect_speed",
+        "name": "Defect Speed",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flow_strength",
+        "name": "Flow Strength",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Topological Phase Weave",
@@ -35824,7 +36072,49 @@
     "updated": true,
     "id": "gen-turing-morphogenesis",
     "url": "shaders/gen-turing-morphogenesis.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "feed_rate",
+        "name": "Feed Rate",
+        "mapping": "zoom_params.x",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "evolution_speed",
+        "name": "Evolution Speed",
+        "mapping": "zoom_params.y",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "pattern_scale",
+        "name": "Pattern Scale",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "mapping": "zoom_params.w",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Velocity Bloom",
@@ -35955,6 +36245,44 @@
       "audio-reactive",
       "mouse-driven",
       "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "wind_strength",
+        "name": "Wind Strength",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fabric_weight",
+        "name": "Fabric Weight",
+        "mapping": "zoom_params.y",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "stiffness",
+        "name": "Stiffness",
+        "mapping": "zoom_params.z",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "sheen",
+        "name": "Sheen",
+        "mapping": "zoom_params.w",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {

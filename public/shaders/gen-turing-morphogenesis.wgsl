@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Turing Morphogenesis
 //  Category: generative
-//  Features: reaction-diffusion, organic, audio-reactive, mouse-interactive,
-//    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-31
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-09-15
+//  Ideas: inhibitor halo around spots; chemical-front ridges where activator ≈ scaled inhibitor
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // x=Feed Rate, y=Evolution Speed, z=Pattern Scale, w=Color Shift
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -74,6 +74,7 @@ fn organicColor(t: f32, p4: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
   let resolution = vec2<f32>(u.config.zw);
+  if (pixel.x >= i32(resolution.x) || pixel.y >= i32(resolution.y)) { return; }
   let uv = vec2<f32>(pixel) / resolution;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
@@ -82,7 +83,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let p2 = u.zoom_params.y;
   let p3 = u.zoom_params.z;
   let p4 = u.zoom_params.w;
-  let bass = plasmaBuffer[0].x;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let prev = textureLoad(dataTextureC, pixel, 0);
 
@@ -122,11 +125,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let patternDensity = clamp(dot(pattern, vec3<f32>(0.333)), 0.0, 1.0);
   let boundCurve = clamp(dot(curvature, vec3<f32>(0.333)), 0.0, 1.0);
 
+  // Idea 1 — inhibitor halo around spots (Turing's inhibitor field, not a vignette).
+  let gDiff = gAI.x - gAI.y * (kill / max(feed, 0.001));
+  let spotMask = smoothstep(0.15, 0.35, gDiff) * (1.0 - smoothstep(0.35, 0.6, gDiff));
+  let halo = smoothstep(0.18, 0.42, gAI.y) * (1.0 - spotMask) * (0.55 + mids * 0.35);
+
+  // Idea 2 — chemical-front ridges where activator ≈ scaled inhibitor.
+  let front = exp(-abs(gDiff) * 14.0) * (0.35 + treble * 0.4);
+
   var color = vec3<f32>(
     organicColor(pattern.r, p4).r,
     organicColor(pattern.g, p4 + 0.05).g,
     organicColor(pattern.b, p4 + 0.1).b
   );
+  color = color * (1.0 - halo * 0.55) + vec3<f32>(0.12, 0.08, 0.05) * halo;
+  color += vec3<f32>(0.95, 0.88, 0.62) * front;
 
   let bloom = smoothstep(0.3, 0.7, boundCurve) * 0.15 * (1.0 + bass);
   color += vec3<f32>(0.85, 0.75, 0.55) * bloom;
@@ -139,12 +152,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   color = acesToneMap(color * 1.2);
 
-  let alpha = patternDensity * boundCurve * depth;
+  let alpha = clamp(patternDensity * boundCurve * max(depth, 0.15) + halo * 0.2 + front * 0.25, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(patternDensity, 0.0, 0.0, 0.0));
 
-  // ═══ CHUNK: multi-pass state packing — persist color for `prev.rgb * persistence` feedback ═══
-  // Without this write, dataTextureC always reads zero and the persistence trail is dead code.
-  textureStore(dataTextureA, pixel, vec4<f32>(color, patternDensity));
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 }
