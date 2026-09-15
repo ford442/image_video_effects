@@ -3506,7 +3506,8 @@
       "raymarch",
       "audio-reactive",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -30435,7 +30436,8 @@
       "geometry",
       "audio-reactive",
       "mouse-driven",
-      "iridescent"
+      "iridescent",
+      "upgraded-rgba"
     ]
   },
   {
@@ -36688,7 +36690,8 @@
       "audio-iridescent-facets",
       "click-crystal-fractures",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ]
   },
   {
@@ -37060,7 +37063,8 @@
       "mouse-driven",
       "click-reactive",
       "temporal",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ]
   },
   {

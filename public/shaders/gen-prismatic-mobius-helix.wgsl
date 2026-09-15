@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Prismatic Möbius Helix
 //  Category: generative
-//  Features: möbius-strip SDF helix, thin-film iridescence, spectral
-//            edge glow, audio twist, mouse focal orbit, temporal trails
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-07-12
+//  Upgraded: 2026-09-15
+//  Ideas: half-twist identification seam; centerline core spine
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -54,18 +55,23 @@ fn rotX(v: vec3<f32>, a: f32) -> vec3<f32> {
   return vec3<f32>(v.x, c * v.y - s * v.z, s * v.y + c * v.z);
 }
 
-// Möbius strip SDF (IQ-style approximation)
-fn sdMobius(p: vec3<f32>, R: f32, w: f32) -> f32 {
+// Möbius strip SDF. Returns (distance, centerline core, half-twist seam).
+fn sdMobius(p: vec3<f32>, R: f32, w: f32) -> vec3<f32> {
   let t = atan2(p.z, p.x);
   let r = length(p.xz);
   let u = t * 0.5;
   let twist = vec3<f32>(cos(u) * (r - R), p.y, sin(u) * (r - R));
-  return length(twist) - w;
+  let d = length(twist) - w;
+  // Idea 2 — spine before thickness.
+  let core = length(vec2<f32>(r - R, p.y));
+  // Idea 1 — identification seam where the half-twist meets (sin(t/2) ≈ 0).
+  let seam = abs(sin(u));
+  return vec3<f32>(d, core, seam);
 }
 
 // Helical offset: stack multiple möbius rings along Y
-fn mobiusHelixSDF(p: vec3<f32>, coils: f32, R: f32, w: f32, twist: f32) -> f32 {
-  var md = 1e9;
+fn mobiusHelixSDF(p: vec3<f32>, coils: f32, R: f32, w: f32, twist: f32) -> vec3<f32> {
+  var best = vec3<f32>(1e9, 1e9, 1.0);
   let n = i32(coils);
   for (var i = 0; i < n; i = i + 1) {
     let fi = f32(i);
@@ -73,9 +79,11 @@ fn mobiusHelixSDF(p: vec3<f32>, coils: f32, R: f32, w: f32, twist: f32) -> f32 {
     let offset = vec3<f32>(sin(phase) * 0.15, fi * 0.35 - coils * 0.175, cos(phase) * 0.15);
     let q = p - offset;
     let ringR = R + sin(fi * 1.3) * 0.08;
-    md = min(md, sdMobius(q, ringR, w));
+    let hit = sdMobius(q, ringR, w);
+    let take = hit.x < best.x;
+    best = select(best, hit, take);
   }
-  return md;
+  return best;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -103,7 +111,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   p = rotY(rotX(p, pitch), yaw);
 
   let twist = time * mix(0.3, 1.2, u.zoom_params.x) + bass * 0.5;
-  let d = mobiusHelixSDF(p, coilCount, helixRadius, ribbonWidth * 0.5, twist);
+  let hit = mobiusHelixSDF(p, coilCount, helixRadius, ribbonWidth * 0.5, twist);
+  let d = hit.x;
+  let core = hit.y;
+  let seam = hit.z;
 
   let edge = exp(-abs(d) * 60.0);
   let surface = exp(-max(d, 0.0) * 20.0);
@@ -114,6 +125,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var color = vec3<f32>(0.015, 0.01, 0.04);
   color += film * edge * (1.5 + bass * 0.6);
   color += spectral(hue + 0.25) * surface * 0.4;
+  // Idea 2 — centerline core spine.
+  color += vec3<f32>(1.0, 0.88, 0.65) * exp(-core * 42.0) * (0.45 + treble * 0.35);
+  // Idea 1 — half-twist seam on the ribbon.
+  let seamGlow = (1.0 - smoothstep(0.0, 0.16, seam)) * edge;
+  color += spectral(hue + 0.7) * seamGlow * (0.8 + bass * 0.4);
 
   // Helix trail glow along Y
   let trail = exp(-abs(p.y) * 1.5) * spectral(hue + 0.5) * 0.15 * (1.0 + treble * 0.3);
@@ -123,10 +139,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = mix(color, prev.rgb, 0.05 + mids * 0.02);
   color = acesToneMap(color * (1.1 + bass * 0.15));
 
-  let alpha = clamp(edge * 0.85 + surface * 0.3 + length(trail), 0.0, 1.0);
+  let alpha = clamp(edge * 0.85 + surface * 0.3 + length(trail) + seamGlow * 0.2, 0.0, 1.0);
   let depthOut = clamp(1.0 - d * 2.0, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(d, hue, alpha, edge));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 }

@@ -6,7 +6,7 @@
 //  Complexity: High
 //  Created: 2026-07-12
 //  Upgraded: 2026-09-15
-//  Ideas: generator-axis dichroism; 3-space vertex stars
+//  Ideas: fourth golden-ratio generator; generator-axis dichroism; generator-pair face IDs; 3-space vertex stars
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -51,7 +51,7 @@ fn rot2(a: f32) -> mat2x2<f32> {
   return mat2x2<f32>(c, -s, s, c);
 }
 
-// Rhombic zonohedron in 2D projection: sum of 3 axis rhomb tilings
+// Rhombic zonohedron in 2D projection: Minkowski sum of generator axes.
 fn zonoFacet(p: vec2<f32>, axis: vec2<f32>, width: f32) -> f32 {
   let n = vec2<f32>(-axis.y, axis.x);
   let uu = dot(p, axis);
@@ -65,16 +65,39 @@ fn zonoSDF(p: vec2<f32>, scale: f32) -> vec4<f32> {
   let a0 = vec2<f32>(1.0, 0.0);
   let a1 = vec2<f32>(0.5, 0.8660254);
   let a2 = vec2<f32>(-0.5, 0.8660254);
+  // Idea 1 — fourth generator (golden-ratio direction) → 4-vector zono rhombs.
+  let a3 = vec2<f32>(0.80901699, 0.58778525);
   let w = scale * 0.22;
   let f0 = zonoFacet(p, a0, w);
   let f1 = zonoFacet(p, a1, w);
   let f2 = zonoFacet(p, a2, w);
-  let cell = min(min(f0, f1), f2);
-  let edge = min(min(abs(f0 - f1), abs(f1 - f2)), abs(f2 - f0));
-  var winner = 0.0;
-  winner = select(winner, 1.0, f1 < f0 && f1 <= f2);
-  winner = select(winner, 2.0, f2 < f0 && f2 < f1);
-  return vec4<f32>(cell, edge, winner, max(max(abs(f0 - f1), abs(f1 - f2)), abs(f2 - f0)));
+  let f3 = zonoFacet(p, a3, w);
+  let cell = min(min(f0, f1), min(f2, f3));
+  let d01 = abs(f0 - f1);
+  let d02 = abs(f0 - f2);
+  let d03 = abs(f0 - f3);
+  let d12 = abs(f1 - f2);
+  let d13 = abs(f1 - f3);
+  let d23 = abs(f2 - f3);
+  let edge = min(min(min(d01, d02), min(d03, d12)), min(d13, d23));
+
+  var winner = 0u;
+  var best = f0;
+  if (f1 < best) { best = f1; winner = 1u; }
+  if (f2 < best) { best = f2; winner = 2u; }
+  if (f3 < best) { best = f3; winner = 3u; }
+
+  var runner = select(0u, 1u, winner == 0u);
+  var second = select(f0, f1, winner == 0u);
+  if (winner != 1u && f1 < second) { second = f1; runner = 1u; }
+  if (winner != 2u && f2 < second) { second = f2; runner = 2u; }
+  if (winner != 3u && f3 < second) { runner = 3u; }
+
+  let lo = min(winner, runner);
+  let hi = max(winner, runner);
+  let pairId = f32(lo * 4u + hi);
+  let star = max(max(max(d01, d02), max(d03, d12)), max(d13, d23));
+  return vec4<f32>(cell, edge, f32(winner) + pairId * 0.125, star);
 }
 
 @compute @workgroup_size(16, 16, 1)
