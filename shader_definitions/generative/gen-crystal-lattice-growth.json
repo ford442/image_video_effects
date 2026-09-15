@@ -101,7 +101,8 @@
     "temporal-feedback",
     "semantic-alpha",
     "aces-tone-mapping",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = raw HDR display RGBA history"
 }

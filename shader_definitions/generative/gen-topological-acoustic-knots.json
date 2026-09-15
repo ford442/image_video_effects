@@ -56,5 +56,47 @@
   "updated": true,
   "id": "gen-topological-acoustic-knots",
   "url": "shaders/gen-topological-acoustic-knots.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "defect_density",
+      "name": "Defect Density",
+      "mapping": "zoom_params.x",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "defect_speed",
+      "name": "Defect Speed",
+      "mapping": "zoom_params.y",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence",
+      "mapping": "zoom_params.z",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "flow_strength",
+      "name": "Flow Strength",
+      "mapping": "zoom_params.w",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

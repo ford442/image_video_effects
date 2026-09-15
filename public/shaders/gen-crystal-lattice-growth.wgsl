@@ -4,7 +4,9 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, procedural
 //  Complexity: Medium-High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-15
+//  Ideas: twin-boundary mirror on odd arms; hopper inner-edge on each segment
+//  A packing: raw HDR display RGBA in A; ACES on writeTexture
 //  Mineral dendrites crystallise from a nucleation seed, each
 //  branch angle tuned to the golden ratio. Bass pulses growth.
 // ═══════════════════════════════════════════════════════════════════
@@ -34,7 +36,7 @@ struct Uniforms {
 fn sdSeg(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
   let pa = p - a;
   let ba = b - a;
-  let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1.0e-5), 0.0, 1.0);
   return length(pa - ba * h);
 }
 
@@ -56,6 +58,13 @@ fn crystalBranch(
     let tip = o + d * l;
     let dist = sdSeg(p, o, tip);
     glow += exp(-dist * dist / (thk * thk * 2.0)) * (1.0 - f32(i) * 0.15);
+
+    // Idea 2 — hopper face: a parallel inner edge so the segment reads hollow.
+    let nrm = vec2<f32>(-d.y, d.x);
+    let nLen = max(length(nrm), 1.0e-4);
+    let n = nrm / nLen;
+    let hop = sdSeg(p, o + n * thk * 2.4, tip + n * thk * 2.4);
+    glow += exp(-hop * hop / (thk * thk * 2.0)) * 0.42 * (1.0 - f32(i) * 0.15);
 
     // Branch: two children at ±golden angle
     let goldenAngle = 2.399963;  // ~137.5 degrees in radians
@@ -93,9 +102,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = vec2<f32>(gid.xy) / vec2<f32>(dims);
   let t = u.config.x;
 
-  let bass   = plasmaBuffer[0].x;
-  let mids   = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
   let symCount  = i32(mix(3.0, 12.0, u.zoom_params.x));
   let growRate  = mix(0.1, 1.0, u.zoom_params.y) * (1.0 + bass * 0.4);
@@ -112,11 +121,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let branchLen = (0.15 + 0.5 * growRate) * (0.8 + 0.2 * sin(t * 0.4));
   let depth = 4u;
 
-  // Radial symmetry: spawn arms at equal angles
+  // Radial symmetry: spawn arms at equal angles.
+  // Idea 1 — twin-boundary: odd arms query a reflected copy of p.
+  let twinN = vec2<f32>(cos(t * 0.07), sin(t * 0.07));
   for (var a = 0; a < symCount; a++) {
     let armAngle = f32(a) * 6.28318 / f32(symCount) + t * 0.05;
     let armDir = vec2<f32>(cos(armAngle), sin(armAngle));
-    totalGlow += crystalBranch(p, vec2<f32>(0.0), armDir, branchLen, depth, t, bass, thickness);
+    let isTwin = (a % 2) == 1;
+    let qp = select(p, p - 2.0 * twinN * dot(p, twinN), isTwin);
+    totalGlow += crystalBranch(qp, vec2<f32>(0.0), armDir, branchLen, depth, t, bass, thickness);
   }
 
   // Clicks seed short-lived secondary crystallisation fronts.
