@@ -6893,7 +6893,9 @@
       "blackbody-thermal",
       "mouse-driven",
       "HDR",
-      "exposure-burst"
+      "exposure-burst",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6931,6 +6933,40 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ray Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Exposure",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -7558,7 +7594,9 @@
       "generative",
       "raymarched",
       "blackbody-radiation",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7596,6 +7634,40 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Disk Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Jet Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Gravity Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Time Dilation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -9100,7 +9172,9 @@
       "radial-streaks",
       "blackbody-radiation",
       "relativistic",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9138,6 +9212,40 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Jump Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Low Temperature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "High Temperature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -13037,7 +13145,8 @@
       "click-reactive",
       "fast-motion",
       "temporal-trail",
-      "HDR"
+      "HDR",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -13571,7 +13680,9 @@
       "blackbody-radiation",
       "HDR",
       "physical-color",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -13609,6 +13720,40 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Samples",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
