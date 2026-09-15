@@ -6373,7 +6373,11 @@
     "updated": true,
     "id": "gen-buddhabrot-aura",
     "url": "shaders/gen-buddhabrot-aura.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "orbit_threshold",
@@ -7404,7 +7408,11 @@
     "updated": true,
     "id": "gen-cellular-automata-tapestry",
     "url": "shaders/gen-cellular-automata-tapestry.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "diffusion_a",
@@ -33047,7 +33055,49 @@
     "updated": true,
     "id": "gen-rgb-diffraction",
     "url": "shaders/gen-rgb-diffraction.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "evolution_speed",
+        "name": "Evolution Speed",
+        "mapping": "zoom_params.x",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fringe_frequency",
+        "name": "Fringe Frequency",
+        "mapping": "zoom_params.y",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
+        "mapping": "zoom_params.z",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Sentient Aether-Flora Biosphere",
@@ -33945,7 +33995,49 @@
     "updated": true,
     "id": "gen-sierpinski-tetrahedron",
     "url": "shaders/gen-sierpinski-tetrahedron.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "recursion_depth",
+        "name": "Recursion Depth",
+        "mapping": "zoom_params.x",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "rotation_speed",
+        "name": "Rotation Speed",
+        "mapping": "zoom_params.y",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "perspective",
+        "name": "Perspective",
+        "mapping": "zoom_params.z",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromatic_aberration",
+        "name": "Chromatic Aberration",
+        "mapping": "zoom_params.w",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Silica Tsunami",
@@ -35812,7 +35904,49 @@
     "updated": true,
     "id": "gen-turing-morphogenesis",
     "url": "shaders/gen-turing-morphogenesis.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "feed_rate",
+        "name": "Feed Rate",
+        "mapping": "zoom_params.x",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "evolution_speed",
+        "name": "Evolution Speed",
+        "mapping": "zoom_params.y",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "pattern_scale",
+        "name": "Pattern Scale",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "mapping": "zoom_params.w",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Velocity Bloom",
@@ -35939,7 +36073,49 @@
     "updated": true,
     "id": "gen-verlet-cloth-wind",
     "url": "shaders/gen-verlet-cloth-wind.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "wind_strength",
+        "name": "Wind Strength",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fabric_weight",
+        "name": "Fabric Weight",
+        "mapping": "zoom_params.y",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "stiffness",
+        "name": "Stiffness",
+        "mapping": "zoom_params.z",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "sheen",
+        "name": "Sheen",
+        "mapping": "zoom_params.w",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "name": "Vitreous Chrono-Chandelier",
