@@ -101,8 +101,7 @@ fn stellarField(p_in: vec3<f32>, audio: vec3<f32>) -> vec4<f32> {
     p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;
     let cellPhase = hash(cell) * 2.0 * PI;
 
-    let audio_reactivity = u.zoom_params.x;
-    let noise_amp = 0.5 + audio.z * audio_reactivity * 0.5;
+    let noise_amp = 0.5 + audio.z * 0.5;
     let n = fbm(p + time, noise_amp, 1.5);
 
     let radius = 0.8 * u.zoom_params.y;
@@ -121,7 +120,7 @@ fn stellarField(p_in: vec3<f32>, audio: vec3<f32>) -> vec4<f32> {
               * sin(polar * 3.0 + time * 0.21);
     let acousticPressure = pMode * 0.62 + gMode * 0.38;
     let bandEnergy = dot(audio, vec3<f32>(0.5, 0.3, 0.2));
-    let modeStrength = 0.045 + audio_reactivity * bandEnergy * 0.055;
+    let modeStrength = 0.045 + bandEnergy * 0.055;
     let surfaceEmboss = acousticPressure * modeStrength;
 
     let d = radialDistance - radius + n * 0.28 - surfaceEmboss;
@@ -148,18 +147,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = vec2<f32>(u.config.zw);
     let coord = vec2<i32>(global_id.xy);
     let uv = (vec2<f32>(coord) - 0.5 * res) / max(res.y, 1.0);
-    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let rawAudio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let audioGain = clamp(u.zoom_params.x, 0.0, 5.0);
+    let audio = clamp(rawAudio * audioGain, vec3<f32>(0.0), vec3<f32>(2.0));
     let previous = textureLoad(dataTextureC, coord, 0);
 
     let mouse_pos = vec2<f32>(
         (u.zoom_config.y - 0.5) * (res.x / max(res.y, 1.0)),
-        0.5 - u.zoom_config.z
+        u.zoom_config.z - 0.5
     );
     let gravity_strength = 2.0;
     let dist_to_mouse = length(uv - mouse_pos);
     let distortion = 1.0 / (1.0 + dist_to_mouse * gravity_strength);
 
-    let ro = vec3<f32>(0.0, 0.0, -5.0 + u.config.x * u.zoom_params.z);
+    let ro = vec3<f32>(0.0, 0.0, -5.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
     rd = normalize(mix(rd, normalize(vec3<f32>(mouse_pos, 0.5) - ro), distortion * 0.5));
 
@@ -171,11 +172,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let field = stellarField(p, audio);
         let distance = field.x;
         minDistance = min(minDistance, abs(distance));
-        if (distance < 0.01) {
+        if (abs(distance) < 0.01) {
             hit = true;
             break;
         }
-        travel = travel + max(distance, 0.01);
+        travel = travel + max(abs(distance), 0.01);
         p = ro + rd * travel;
         if (travel > 20.0) {
             break;
@@ -191,7 +192,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // blackbody emission and rarefaction cools it; the p/g phases travel
     // coherently, so hot highlights migrate across every repeated star.
     let acousticEnergy = dot(audio, vec3<f32>(0.5, 0.3, 0.2));
-    let thermalSwing = (650.0 + u.zoom_params.x * acousticEnergy * 1350.0) * pressure;
+    let thermalSwing = (650.0 + acousticEnergy * 1350.0) * pressure;
     let em_temp = clamp(base_temp + thermalSwing + distortion * 450.0, 1000.0, 10000.0);
     let em_col = blackbody(em_temp);
 

@@ -57,13 +57,17 @@ fn rotX(v: vec3<f32>, a: f32) -> vec3<f32> {
   return vec3<f32>(v.x, c * v.y - s * v.z, s * v.y + c * v.z);
 }
 
-// Möbius strip SDF (IQ-style approximation)
+// Rectangular Möbius-strip section. The half-angle rotates the wide and thin
+// axes once over a 4π traversal; unlike the old length(vec3(...)) expression,
+// this does not collapse algebraically into a torus tube.
 fn sdMobius(p: vec3<f32>, R: f32, w: f32) -> f32 {
-  let t = atan2(p.z, p.x);
-  let r = length(p.xz);
-  let u = t * 0.5;
-  let twist = vec3<f32>(cos(u) * (r - R), p.y, sin(u) * (r - R));
-  return length(twist) - w;
+  let angle = atan2(p.z, p.x);
+  let radial = length(p.xz) - R;
+  let halfTwist = angle * 0.5;
+  let across = cos(halfTwist) * radial + sin(halfTwist) * p.y;
+  let normal = -sin(halfTwist) * radial + cos(halfTwist) * p.y;
+  let q = abs(vec2<f32>(across, normal)) - vec2<f32>(w, w * 0.18);
+  return length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0);
 }
 
 struct MobiusInfo {
@@ -74,13 +78,17 @@ struct MobiusInfo {
 }
 
 // Helical offset: stack multiple möbius rings along Y
-fn mobiusHelixInfo(p: vec3<f32>, coils: f32, R: f32, w: f32, twist: f32) -> MobiusInfo {
+fn mobiusHelixInfo(p: vec3<f32>, coils: i32, R: f32, w: f32, twist: f32) -> MobiusInfo {
   var info = MobiusInfo(1e9, 0.0, 0.0, 0.0);
-  let n = i32(coils);
-  for (var i = 0; i < n; i = i + 1) {
+  let coilCount = f32(coils);
+  for (var i = 0; i < coils; i = i + 1) {
     let fi = f32(i);
-    let phase = fi * TAU / coils + twist;
-    let offset = vec3<f32>(sin(phase) * 0.15, fi * 0.35 - coils * 0.175, cos(phase) * 0.15);
+    let phase = fi * TAU / coilCount + twist;
+    let offset = vec3<f32>(
+      sin(phase) * 0.15,
+      fi * 0.35 - (coilCount - 1.0) * 0.175,
+      cos(phase) * 0.15
+    );
     let q = p - offset;
     let ringR = R + sin(fi * 1.3) * 0.08;
     let d = sdMobius(q, ringR, w);
@@ -88,7 +96,7 @@ fn mobiusHelixInfo(p: vec3<f32>, coils: f32, R: f32, w: f32, twist: f32) -> Mobi
       let angle = atan2(q.z, q.x);
       let radial = length(q.xz) - ringR;
       let half_twist = angle * 0.5;
-      let face = dot(vec2<f32>(radial, q.y), vec2<f32>(cos(half_twist), sin(half_twist)));
+      let face = -sin(half_twist) * radial + cos(half_twist) * q.y;
       info = MobiusInfo(d, angle, face, fi);
     }
   }
@@ -113,7 +121,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
 
-  let coilCount = mix(3.0, 8.0, u.zoom_params.x);
+  let coilCount = 3 + i32(round(clamp(u.zoom_params.x, 0.0, 1.0) * 5.0));
   let ribbonWidth = mix(0.04, 0.12, u.zoom_params.y);
   let helixRadius = mix(0.35, 0.75, u.zoom_params.z);
   let iridescence = u.zoom_params.w;
@@ -124,7 +132,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pitch = (mouse.y - 0.5) * PI * 0.5;
   p = rotY(rotX(p, pitch), yaw);
 
-  let twist = time * mix(0.3, 1.2, u.zoom_params.x) + bass * 0.5;
+  let twist = time * 0.6 + bass * 0.5;
   let mobius = mobiusHelixInfo(p, coilCount, helixRadius, ribbonWidth * 0.5, twist);
   let d = mobius.distance;
 

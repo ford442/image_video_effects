@@ -70,7 +70,7 @@ fn splitModes(p: vec3<f32>, freq: f32, complexity: f32, time: f32) -> vec3<f32> 
     let primary = standingWave(p, freq, time * 0.17);
     let adjacentFreq = freq * (1.0 + 0.42 / (complexity + 2.0));
     let adjacent = standingWave(p, adjacentFreq, -time * 0.13 + complexity * 0.19);
-    let transition = smoothstep(0.0, 1.0, fract(complexity));
+    let transition = smoothstep(0.0, 1.0, (complexity - 1.0) / 9.0);
     let exchange = 0.5 + 0.5 * sin(time * (0.42 + complexity * 0.025));
     let modeMix = clamp(0.12 + transition * 0.34 + exchange * 0.18, 0.0, 0.64);
     let pressure = mix(primary, adjacent, modeMix);
@@ -107,13 +107,21 @@ fn resonatorField(p_in: vec3<f32>, audio: vec3<f32>) -> vec4<f32> {
     var disp = 0.0;
     var f = 1.0;
     var a = 0.5;
-    for (var i = 0; i < i32(comp) && i < 5; i = i + 1) {
-        disp = disp + a * sin(dot(p, vec3<f32>(f)) + t);
+    let octavePosition = 1.0 + 4.0 * (comp - 1.0) / 9.0;
+    for (var i = 0; i < 5; i = i + 1) {
+        let octaveWeight = clamp(octavePosition - f32(i), 0.0, 1.0);
+        disp = disp + octaveWeight * a * sin(dot(p, vec3<f32>(f)) + t);
         f = f * 2.0;
         a = a * 0.5;
     }
 
-    let distance = smin(d_sphere, base_shape + disp * 0.5, 0.5);
+    // Bound the standing-wave membranes inside the spherical resonator. The
+    // old smooth union left the oscillatory scalar unbounded outside the shell.
+    let combinedPressure = base_shape + disp * 0.5;
+    let membraneDistance =
+        (abs(combinedPressure) - (0.06 + 0.025 * amp))
+        / max(freq, 1.0);
+    let distance = max(d_sphere, membraneDistance);
     return vec4<f32>(distance, modes.y, modes.z, length(p));
 }
 

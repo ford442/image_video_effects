@@ -65,8 +65,9 @@ fn map(p: vec3<f32>) -> MapResult {
 
     if (twist > 0.0) {
         let mouse = u.zoom_config.yz;
-        // Simplified twist for structure outline
-        let r = length(pos.xy - (mouse * 2.0 - 1.0) * 5.0);
+        let aspect = u.config.z / max(u.config.w, 1.0);
+        let mouseWorld = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
+        let r = length(pos.xy - mouseWorld);
         let a = twist * audioMod * exp(-r * 0.5);
         let rt = rot(a);
         let xy = vec2<f32>(pos.x * rt[0][0] + pos.y * rt[1][0], pos.x * rt[0][1] + pos.y * rt[1][1]);
@@ -79,14 +80,14 @@ fn map(p: vec3<f32>) -> MapResult {
 
     // Fractal iterations
     let complexity = clamp(u.zoom_params.x, 0.0, 1.0);
-    let iters = 4.0 + (complexity * 4.0);
+    let iterCount = 4 + i32(round(complexity * 4.0));
     var scale = 1.0;
     var terraceDistance = MAX_DIST;
     var twinSignal = 0.0;
 
     // Bismuth-like folding
     for (var i = 0; i < 8; i++) {
-        if (f32(i) > iters) { break; }
+        if (i >= iterCount) { break; }
 
         // Idea 2 — the absolute fold planes are crystallographic twin
         // boundaries. Alternating generations reverse the stronger domain.

@@ -110,7 +110,7 @@ fn map(p_in: vec3<f32>, time: f32) -> f32 {
   // Mouse Gravity Well
   if (u.zoom_config.w > 0.5) {
     let mouse_uv = u.zoom_config.yz * 2.0 - 1.0;
-    let mouse_ray = normalize(vec3<f32>(mouse_uv.x, -mouse_uv.y, -1.0));
+    let mouse_ray = normalize(vec3<f32>(mouse_uv, -1.0));
     let t_ray = dot(p, mouse_ray);
     let closest_p = mouse_ray * t_ray;
     let dist_to_ray = length(p - closest_p);
