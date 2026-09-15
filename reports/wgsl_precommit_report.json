@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-15T07:04:58.621511",
+  "timestamp": "2026-09-15T07:08:52.516926",
   "naga_bin": "/usr/local/cargo/bin/naga",
   "naga_available": true,
-  "total": 8,
-  "passed": 8,
+  "total": 5,
+  "passed": 5,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -11,21 +11,6 @@
   "workgroup_grace_skipped": 0,
   "extrabuffer_violations": 0,
   "results": [
-    {
-      "file": "public/shaders/gen-aetherial-plasma-loom.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
     {
       "file": "public/shaders/gen-hyperdimensional-bismuth-lattice.wgsl",
       "skipped": false,
@@ -57,37 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-prismatic-quantum-glass-chrysalis-engine.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
       "file": "public/shaders/gen-quantum-liquid-metal-chronosphere.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/gen-sentient-void-silk-nebula.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

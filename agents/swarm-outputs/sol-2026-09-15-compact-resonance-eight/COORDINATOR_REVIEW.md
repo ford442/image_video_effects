@@ -34,3 +34,19 @@
   TypeScript.
 - `SKIP_WASM_BUILD=1 npm run build`: PASS (optimized production build).
 - Real-GPU visual QA: external.
+
+## Post-review correction pass
+
+- Möbius SDF verified as a true half-twist rectangular strip rather than a
+  rotationally symmetric torus tube; Coil Count no longer controls speed.
+- Bismuth Complexity now selects exactly 4–8 fold generations.
+- Cymatic membranes are bounded by the resonator sphere and Complexity 1–10
+  continuously weights all five available octaves.
+- Stellar Audio Reactivity gates all bands; Orbital Speed remains orbital
+  rotation rather than camera translation.
+- Pointer coordinates were aligned to the engine contract on Bismuth,
+  Chronosphere, and Stellar Manifold.
+- Focused post-review gate: 5 passed, 0 failed.
+- Focused post-review dead-slider audit: 5 definitions, 0 new dead sliders.
+- Post-review `extraBuffer` audit: 0 new violations.
+- Post-review `SKIP_WASM_BUILD=1 npm run build`: PASS.

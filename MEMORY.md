@@ -22,6 +22,11 @@
 - Identities and saved parameter blocks kept. No new springs. Legacy C/extraBuffer
   fake audio removed. Möbius A/C packing corrected to display RGBA. Chrysalis
   Uniforms canonicalized.
+- Post-review: Möbius torus-collapse fixed to a true half-twist strip; Coil
+  Count no longer steals speed. Bismuth fold count is exactly 4–8. Cymatic
+  membranes are sphere-bounded and Complexity 1–10 weights all five octaves.
+  Stellar Audio Reactivity now gates all bands and Orbital Speed no longer
+  dollies the camera. Pointer coordinates aligned on Bismuth/Chronosphere/Stellar.
 - Gates: Naga 8/8, extraBuffer/dead sliders 0, catalog 1,367,
   SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing missing
   WASM `bridge/api.js`.

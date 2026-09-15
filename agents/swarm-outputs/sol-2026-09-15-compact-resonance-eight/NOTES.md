@@ -94,3 +94,17 @@ the saved values or slider mappings.
 The Cloud VM has no WebGPU adapter. Naga and application-level structural gates
 prove compilation and contract compatibility; composition, motion balance, and
 performance still require real-GPU review.
+
+## Post-review corrections
+
+- Möbius Helix: replaced the algebraically toroidal cross-section with a true
+  half-twist rectangular strip; quantized/centered coil count and stopped Coil
+  Count from changing animation speed.
+- Bismuth Lattice: corrected Complexity to select exactly 4–8 fold generations
+  and mapped pointer twist into aspect-correct world space.
+- Chronosphere: aligned the pointer ray with the engine's top-down mouse space.
+- Cymatic Resonator: confined nodal membranes to the spherical resonator and
+  mapped the full 1–10 Complexity range continuously onto five bounded octaves.
+- Stellar Manifold: made Audio Reactivity gate all audio influence, removed
+  camera dolly from Orbital Speed, corrected pointer Y, and made hit stepping
+  robust to signed-distance overshoot.
