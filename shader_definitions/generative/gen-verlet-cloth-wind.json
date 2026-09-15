@@ -56,5 +56,15 @@
   "updated": true,
   "id": "gen-verlet-cloth-wind",
   "url": "shaders/gen-verlet-cloth-wind.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {"id": "wind_strength", "name": "Wind Strength", "mapping": "zoom_params.x", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"id": "fabric_weight", "name": "Fabric Weight", "mapping": "zoom_params.y", "default": 0.4, "min": 0, "max": 1, "step": 0.01},
+    {"id": "stiffness", "name": "Stiffness", "mapping": "zoom_params.z", "default": 0.55, "min": 0, "max": 1, "step": 0.01},
+    {"id": "sheen", "name": "Sheen", "mapping": "zoom_params.w", "default": 0.6, "min": 0, "max": 1, "step": 0.01}
+  ]
 }
