@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Prismatic Ion Cascade
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba, chromatic-split,
-//            temporal-cascade-persistence, audio-stream-modulation, depth-scaled
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-15
+//  Ideas: cyclotron gyration on existing streams; recombination glow shell
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=rippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Stream Density, y=Cascade Speed, z=Spectral Spread, w=Ion Thickness
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -73,11 +74,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-    // Audio drives stream count dynamically
     let streamDensity = 4.0 + u.zoom_params.x * 16.0 + bass * 4.0;
     let cascadeSpeed = 0.3 + u.zoom_params.y * 2.0;
     let spectralSpread = 0.02 + u.zoom_params.z * 0.15;
@@ -88,7 +88,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p = vec2<f32>((uv.x - mouse.x) * aspect, uv.y - mouse.y);
 
     let r = length(p);
-    let theta = atan2(p.y, p.x);
+    var theta = atan2(p.y, p.x);
+    // Idea 1 — cyclotron gyration: B-field wobble grows with radius.
+    theta = theta + 0.14 * sin(r * 8.0 - time * cascadeSpeed * 3.5) * (1.0 + bass * 0.35);
 
     let warp = fbm(vec2<f32>(theta * 2.0, time * cascadeSpeed * (1.0 + mids * 0.4)));
     let bandPhase = theta * streamDensity + warp * 3.0 + time * cascadeSpeed * (1.0 + bass * 0.5);
@@ -117,8 +119,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var ionColor = vec3<f32>(ionR, ionG, ionB) * flicker;
 
-    // Temporal cascade persistence: ion trail burn-in
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    // Idea 2 — recombination glow: charge-exchange shell where streams fade.
+    let recombR = mix(0.22, 0.52, 0.45 + mids * 0.55);
+    let recomb = exp(-abs(r - recombR) * 10.0) * (1.0 - bandMask * 0.45);
+    ionColor = ionColor + vec3<f32>(0.32, 0.72, 1.15) * recomb * (0.35 + treble * 0.45);
+
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
     let trailBurn = mix(ionColor, prev * 0.92, 0.08 + bass * 0.03);
     ionColor = mix(ionColor, trailBurn, 0.5);
 
@@ -126,22 +132,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let haze = vec3<f32>(0.05, 0.08, 0.18) * outerFall * (1.0 + bass * 0.5);
     let composed = baseSample.rgb * 0.35 + ionColor * 2.2 + haze;
 
-    let sparkleSeed = hash21(floor(uv * resolution * 0.5) + floor(time * 8.0));
-    let sparkle = step(0.985, sparkleSeed) * bandMask * treble * 1.5;
+    let sparkHash = hash21(floor(uv * resolution * 0.5));
+    let sparkle = smoothstep(0.97, 1.0, sparkHash + 0.03 * sin(time * 7.0 + sparkHash * 40.0)) * bandMask * treble;
     var finalRGB = clamp(composed + vec3<f32>(sparkle), vec3<f32>(0.0), vec3<f32>(4.0));
 
-    // Depth-scaled ion intensity
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthScale = 0.6 + depth * 0.4;
     finalRGB = finalRGB * depthScale;
 
     let ionStrength = (ionR + ionG + ionB) / 3.0;
-    let alpha = clamp(baseSample.a * 0.25 + ionStrength * 0.6 + coreFall * 0.3 + bass * 0.1, 0.0, 1.0);
-
+    let alpha = clamp(baseSample.a * 0.25 + ionStrength * 0.6 + coreFall * 0.3 + recomb * 0.2 + bass * 0.1, 0.0, 1.0);
     let depthOut = clamp(1.0 - coreFall, 0.0, 1.0);
 
     finalRGB = acesToneMap(finalRGB * 1.1);
-    textureStore(writeTexture, coord, vec4<f32>(finalRGB, alpha));
+    let outCol = vec4<f32>(finalRGB, alpha);
+    textureStore(writeTexture, coord, outCol);
     textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(finalRGB, alpha));
+    textureStore(dataTextureA, coord, outCol);
 }

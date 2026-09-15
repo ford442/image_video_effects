@@ -1,6 +1,21 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-14 (alternate-branch union: unique work already on main; leftover branches deleted)
+**Last updated:** 2026-09-15 (classic field / plasma / crystal leftover six)
+
+## 2026-09-15 — Classic field / plasma / crystal leftover six (6 shaders)
+
+- IDs: gen-strange-field-flow, gen-solar-wind-ribbons, gen-prismatic-ion-cascade, gen-crystal-lattice-growth, gen-topological-acoustic-knots, gen-quasicrystal-iridescence.
+- Per shader, the ideas actually added:
+  - gen-strange-field-flow: Lyapunov stretch tint; Pickover stalks on this orbit. Modes kept. No spring.
+  - gen-solar-wind-ribbons: Parker spiral lag; Kelvin–Helmholtz scallops. Count/twist/speed/glow kept.
+  - gen-prismatic-ion-cascade: cyclotron gyration; recombination shell. Mouse origin kept.
+  - gen-crystal-lattice-growth: twin-boundary mirror; hopper inner-edges. Golden dendrites kept. HDR A kept.
+  - gen-topological-acoustic-knots: pair annihilation; Schlieren brushes. ±1/2 defects kept.
+  - gen-quasicrystal-iridescence: phason strain; Ammann lattice lines. n-fold + thin-film kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved slider names exact. No new springs.
+- #1274 already took the math/CA six — did not restamp those IDs.
+- Cards: `agents/swarm-outputs/grok-2026-09-15-classic-field-plasma-six/`.
+- Real-GPU visual QA: external.
 
 ## 2026-09-14 — Alternate-branch union + delete
 
@@ -103,7 +118,7 @@
 - Requested IDs: gen-fireworks-nocturne, gen-fireworks-ring-shell, gen-fireworks-roman-candle, gen-fireworks-smoke-bloom, gen-fireworks-strobe-shell, gen-fireworks-willow-cascade, gen-fireworks-wind-ripple, gen-fluffy-raincloud, gen-fourier-epicycles, gen-grid.
 - All 10 already have dated `Ideas:` headers and those ideas are in the WGSL (09-10 shell taxonomy, 09-11 atmospheric six, 09-06 kinetic ten A/B). JSON already tagged `upgraded-rgba`. Underscore-backed: `gen_grid.wgsl`, `gen_fluffy_raincloud.wgsl`.
 - Action: skip all. No date bump, no metadata pass, no substitute IDs.
-- Real leftover simpler-gen after 09-14 magnetic/fractal ten (mandelbox-explorer + magnetic-field-warp carded): rgb-diffraction, langton-ant, klein-bottle-walk, verlet-cloth-wind, koch-snowflake-storm, phyllotaxis-galaxy-spiral, sierpinski-tetrahedron, newton-fractal. Skip percolation (extraBuffer[0..] FFT zone).
+- Real leftover simpler-gen after 09-15 math/CA six (#1274) and this field/plasma/crystal six: belousov / protocell / hyperbolic-tree (idea-rich, metadata-pass), stardust-nebula / tessellation (already multi-technique), chronos-crystal-labyrinth (C as fake audio). Skip percolation extraBuffer[0..], tropism mycelium, physarum agents, crt-clear-zone, liquid-small, blackbody.
 - Cards: `agents/swarm-outputs/grok-2026-09-13-simpler-gen-leftover-ten/`.
 - Real-GPU visual QA: n/a (no visuals changed).
 

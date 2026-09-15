@@ -4,10 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-15
+//  Ideas: Parker spiral IMF lag in ribbonCentre; Kelvin-Helmholtz scallops on the sheet edge
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 //  Streaming ribbons of magnetised plasma — coronal mass ejection
 //  caught mid-flight, woven into curtains of aurora.
-// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -30,8 +32,12 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn aces(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
@@ -60,21 +66,14 @@ fn fbm(p: vec2<f32>) -> f32 {
   return v;
 }
 
-// Parametric ribbon centre-line at parameter s ∈ [0,1]
+// Parametric ribbon centre-line. Idea 1: Parker spiral lag grows with |s|.
 fn ribbonCentre(s: f32, t: f32, twist: f32, bass: f32, idx: f32) -> vec2<f32> {
   let phase = idx * 1.37 + t * 0.3;
-  let x = s * 2.0 - 1.0 + sin(s * 6.28 * twist + phase) * 0.25 * (1.0 + bass * 0.5);
-  let y = 0.5 * sin(s * 3.14159 + t * 0.5 + phase * 0.7) * (1.0 + bass * 0.2);
+  let rAbs = abs(s * 2.0 - 1.0) + 0.18;
+  let parker = 0.55 * rAbs;
+  let x = s * 2.0 - 1.0 + sin(s * 6.28 * twist + phase + parker) * 0.25 * (1.0 + bass * 0.5);
+  let y = 0.5 * sin(s * 3.14159 + t * 0.5 + phase * 0.7 + parker * 0.35) * (1.0 + bass * 0.2);
   return vec2<f32>(x, y);
-}
-
-fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -85,9 +84,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = vec2<f32>(gid.xy) / vec2<f32>(dims);
   let t = u.config.x;
 
-  let bass   = plasmaBuffer[0].x;
-  let mids   = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
   let nRibbons  = i32(mix(3.0, 14.0, u.zoom_params.x));
   let twist     = mix(0.5, 4.0, u.zoom_params.y);
@@ -116,26 +115,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     for (var si = 0; si < nSamples; si++) {
       let s = f32(si) * ds;
       let cen = ribbonCentre(s, t * speed, twist, bass, fi);
-      let d = length(p - cen);
-      if (d < minDist) { minDist = d; }
+      let cen2 = ribbonCentre(s + ds, t * speed, twist, bass, fi);
+      let tang = cen2 - cen;
+      let tlen = max(length(tang), 1.0e-4);
+      let perp = vec2<f32>(-tang.y, tang.x) / tlen;
+      let kh = sin(s * 18.0 + t * speed * 3.2 + fi * 1.7) * width * 0.85;
+      let d = length(p - (cen + perp * kh));
+      minDist = min(minDist, d);
     }
     let mask = exp(-minDist * minDist / (width * width * 2.0)) * glowPower;
-    // Noise-perturbed brightness along ribbon
     let detail = fbm(p * 5.0 + vec2<f32>(t * 0.1, fi * 0.4));
     col += ribbonCol * mask * (0.7 + 0.3 * detail) * (1.0 + treble * 0.2);
   }
 
-  // Stellar wind background: faint horizontal streaks
   let streakY = fract(p.y * 8.0 + t * 0.15 + bass * 0.1);
   let streak = exp(-abs(streakY - 0.5) * 40.0) * 0.06;
   col += vec3<f32>(0.3, 0.6, 1.0) * streak;
 
-  col = aces(col);
-  let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+  let mapped = acesToneMap(col * 1.05);
+  let luma = dot(mapped, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(luma * 0.9 + streak * 0.1, 0.0, 1.0);
   let depth = clamp(1.0 - length(p) * 0.4, 0.0, 1.0);
+  let finalColor = vec4<f32>(mapped, alpha);
 
-  let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture,      coord, finalColor);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA,      coord, finalColor);
