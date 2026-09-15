@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-15T04:48:31.766699",
+  "timestamp": "2026-09-15T07:28:40.420233",
   "naga_bin": "/home/runner/.cargo/bin/naga",
   "naga_available": false,
-  "total": 6,
-  "passed": 6,
+  "total": 8,
+  "passed": 8,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/chroma-kinetic-blackbody.wgsl",
+      "file": "public/shaders/gen-3d-sierpinski-chaos.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gamma-ray-burst-blackbody.wgsl",
+      "file": "public/shaders/gen-aperiodic-monotile.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-singularity-forge-blackbody.wgsl",
+      "file": "public/shaders/gen-chromatic-zonohedron.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/sim-heat-haze-blackbody.wgsl",
+      "file": "public/shaders/gen-prismatic-mobius-helix.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/stellar-plasma-blackbody.wgsl",
+      "file": "public/shaders/gen-voronoi-crystal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -87,7 +87,37 @@
       "ok": true
     },
     {
-      "file": "public/shaders/thermal-vision-blackbody.wgsl",
+      "file": "public/shaders/gen-zeta-function-landscape.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/spec-blackbody-thermal.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/thermal-touch-blackbody.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,

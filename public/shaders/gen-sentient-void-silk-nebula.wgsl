@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Sentient Void-Silk Nebula
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Sentient Void-Silk Nebula
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, temporal-feedback, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-15
+//  Ideas: three-strand braided fibrils; opposing-curl tension knots
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -102,7 +107,7 @@ fn snoise(v: vec3<f32>) -> f32 {
   return 42.0 * dot( m*m, vec4<f32>( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
 }
 
-fn curlNoise(p: vec3<f32>) -> vec3<f32> {
+fn curlNoiseRaw(p: vec3<f32>) -> vec3<f32> {
     let e = 0.1;
     let dx = vec3<f32>(e, 0.0, 0.0);
     let dy = vec3<f32>(0.0, e, 0.0);
@@ -119,19 +124,39 @@ fn curlNoise(p: vec3<f32>) -> vec3<f32> {
     let y = p_z1 - p_z0 - p_x1 + p_x0;
     let z = p_x1 - p_x0 - p_y1 + p_y0;
 
-    return normalize(vec3<f32>(x, y, z) / (2.0 * e));
+    return vec3<f32>(x, y, z) / (2.0 * e);
 }
 
+fn safeNormalize3(v: vec3<f32>) -> vec3<f32> {
+    return v / max(length(v), 0.0001);
+}
+
+fn safeNormalize2(v: vec2<f32>) -> vec2<f32> {
+    return v / max(length(v), 0.0001);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp(
+        (x * (a * x + b)) / (x * (c * x + d) + e),
+        vec3<f32>(0.0),
+        vec3<f32>(1.0)
+    );
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dimensions = textureDimensions(readTexture);
     let coords = vec2<i32>(global_id.xy);
-    if (coords.x >= i32(dimensions.x) || coords.y >= i32(dimensions.y)) { return; }
+    let dimensions = vec2<u32>(u32(u.config.z), u32(u.config.w));
+    if (global_id.x >= dimensions.x || global_id.y >= dimensions.y) { return; }
 
     let res = vec2<f32>(dimensions);
     // Base UVs
-    let base_uv = vec2<f32>(coords) / res;
+    let base_uv = (vec2<f32>(coords) + 0.5) / res;
     let uv = base_uv * 2.0 - 1.0;
 
     // Core parameters from UI
@@ -140,9 +165,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vortexStrength = u.zoom_params.z;
     let iridescence = u.zoom_params.w;
 
-    // Audio reactivity
-    let bass = extraBuffer[0];
-    let audioPull = bass * 0.5;
+    // Canonical three-band audio; no reserved extraBuffer pseudo-audio.
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audioPull = bass * 0.22;
 
     // Base 3D coordinate driven by time and uv
     let p = vec3<f32>(uv * 2.0, u.config.x * flowSpeed * 0.1);
@@ -150,25 +177,91 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Interaction logic
     var divergence = p;
     if (u.zoom_config.w > 0.0) {
-        let mouseDist = distance(uv, u.zoom_config.yz * 2.0 - 1.0);
+        let mouseDelta = uv - (u.zoom_config.yz * 2.0 - 1.0);
+        let mouseDist = max(length(mouseDelta), 0.0001);
+        let radial = mouseDelta / mouseDist;
+        let swirl = vec2<f32>(-radial.y, radial.x);
         let pull = exp(-mouseDist * 4.0) * vortexStrength;
-        divergence += pull * normalize(vec3<f32>(uv - (u.zoom_config.yz * 2.0 - 1.0), 0.0));
+        divergence.x += pull * (swirl.x * 0.52 - radial.x * 0.2);
+        divergence.y += pull * (swirl.y * 0.52 - radial.y * 0.2);
     }
 
     // Audio attraction to center
-    divergence -= normalize(vec3<f32>(uv, 0.0)) * audioPull;
-
+    divergence -= safeNormalize3(vec3<f32>(uv, 0.0)) * audioPull;
 
     // Evaluate silk field
-    let field = curlNoise(divergence * threadDensity);
+    let fieldPoint = divergence * threadDensity;
+    let rawField = curlNoiseRaw(fieldPoint);
+    let field = safeNormalize3(rawField);
+    let tangent = safeNormalize2(field.xy + vec2<f32>(0.0001, 0.0));
+    let side = vec2<f32>(-tangent.y, tangent.x);
+    let along = dot(divergence.xy, tangent);
+    let across = dot(divergence.xy, side);
 
     // Structural color
-    let tension = length(field);
-    let color = palette(tension * 0.5 + iridescence + u.config.x * 0.05);
+    let tension = clamp(length(rawField) * 0.18, 0.0, 2.5);
+    let silkPhase =
+        along * (10.0 + threadDensity * 2.5)
+        - u.config.x * flowSpeed * 0.8
+        + snoise(fieldPoint * 0.42) * 1.4;
 
-    // Additive temporal blending
-    let past = textureSampleLevel(readTexture, non_filtering_sampler, base_uv, 0.0).rgb;
-    let finalColor = mix(past, color * tension, 0.05);
+    // Idea 1 — three phase-offset fibrils orbit a shared curl tangent.
+    let braidRadius = 0.035 + 0.018 * clamp(threadDensity / 5.0, 0.0, 1.0);
+    let braidSharpness = 22.0 + threadDensity * 7.0;
+    let strand0 = exp(-pow((across - sin(silkPhase) * braidRadius) * braidSharpness, 2.0));
+    let strand1 = exp(-pow((across - sin(silkPhase + TAU / 3.0) * braidRadius) * braidSharpness, 2.0));
+    let strand2 = exp(-pow((across - sin(silkPhase + 2.0 * TAU / 3.0) * braidRadius) * braidSharpness, 2.0));
+    let braid = clamp(strand0 + strand1 + strand2, 0.0, 1.5);
+    let braidColor =
+        palette(iridescence + 0.00 + field.z * 0.12) * strand0
+        + palette(iridescence + 0.18 + field.z * 0.12) * strand1
+        + palette(iridescence + 0.36 + field.z * 0.12) * strand2;
 
-    textureStore(writeTexture, coords, vec4<f32>(finalColor, 1.0));
+    // Idea 2 — opposed neighboring curls pinch into compact knots, while
+    // a narrow, slower falloff along the tangent forms caustic tails.
+    let neighborRaw = curlNoiseRaw(fieldPoint + vec3<f32>(side * 0.18, 0.07));
+    let neighborField = safeNormalize3(neighborRaw);
+    let opposition = smoothstep(0.05, 0.82, -dot(field, neighborField));
+    let knotPhase =
+        along * (3.4 + threadDensity * 0.65)
+        + snoise(fieldPoint * 0.7 + vec3<f32>(4.7, 1.3, 2.9)) * 2.0
+        - u.config.x * flowSpeed * 0.3;
+    let knotCycle = 0.5 + 0.5 * cos(knotPhase);
+    let knotCore =
+        opposition
+        * pow(knotCycle, 18.0)
+        * exp(-pow(across * (36.0 + threadDensity * 4.0), 2.0));
+    let causticTail =
+        opposition
+        * pow(knotCycle, 3.0)
+        * exp(-pow(across * (17.0 + threadDensity * 2.0), 2.0));
+
+    let baseColor = palette(
+        tension * 0.16 + iridescence + u.config.x * 0.05 + bass * 0.025
+    );
+    var radiance = baseColor * (0.08 + tension * 0.14);
+    radiance += braidColor * (0.65 + mids * 0.18);
+    radiance += vec3<f32>(1.55, 1.28, 1.08) * knotCore * (1.0 + treble * 0.35);
+    radiance += palette(iridescence + 0.62) * causticTail * (0.32 + treble * 0.16);
+
+    // Slow exact A/C display-history blending preserves the silk drift.
+    let currentDisplay = acesToneMap(radiance);
+    let past = textureLoad(dataTextureC, coords, 0);
+    let blend = clamp(0.045 + flowSpeed * 0.012, 0.045, 0.09);
+    let finalColor = mix(past.rgb, currentDisplay, blend);
+    let currentAlpha = clamp(
+        0.08 + tension * 0.08 + braid * 0.42 + knotCore * 0.34,
+        0.0,
+        0.96
+    );
+    let finalAlpha = mix(past.a, currentAlpha, blend);
+    let depth = clamp(
+        0.18 + tension * 0.12 + braid * 0.38 + knotCore * 0.18,
+        0.0,
+        1.0
+    );
+
+    textureStore(writeTexture, coords, vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, coords, vec4<f32>(finalColor, finalAlpha));
 }

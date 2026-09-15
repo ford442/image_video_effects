@@ -1,6 +1,37 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-15 (classic geometry leftover six + pull/push union context)
+**Last updated:** 2026-09-15 (compact generative resonance eight + merge context)
+
+## 2026-09-15 — Compact generative resonance eight
+
+- IDs: gen-aetherial-plasma-loom, gen-prismatic-mobius-helix,
+  gen-hyperdimensional-bismuth-lattice, gen-sentient-void-silk-nebula,
+  gen-quantum-liquid-metal-chronosphere,
+  gen-prismatic-quantum-glass-chrysalis-engine,
+  gen-void-harmonic-cymatic-resonator,
+  gen-stellar-acoustic-resonance-manifold.
+- Per shader, the ideas actually added:
+  - plasma loom: counter-woven ribbons; reconnection knots with paired exhaust.
+  - Möbius helix: one-sided 4π traveler; orientation-seam current.
+  - bismuth lattice: fold-generation hopper terraces; twin-boundary seams.
+  - void silk: braided fibrils; opposing-curl tension knots and caustic tails.
+  - chronosphere: capillary normal modes; differential-rotation shear bands.
+  - glass chrysalis: tapered chamber ribs; internal TIR caustics on cut lips.
+  - cymatic resonator: nodal membranes; adjacent-mode splitting/seams.
+  - stellar manifold: p/g-mode shells; compression-antinode blackbody heating.
+- Identities and saved parameter blocks kept. No new springs. Legacy C/extraBuffer
+  fake audio removed. Möbius A/C packing corrected to display RGBA. Chrysalis
+  Uniforms canonicalized.
+- Post-review: Möbius torus-collapse fixed to a true half-twist strip; Coil
+  Count no longer steals speed. Bismuth fold count is exactly 4–8. Cymatic
+  membranes are sphere-bounded and Complexity 1–10 weights all five octaves.
+  Stellar Audio Reactivity now gates all bands and Orbital Speed no longer
+  dollies the camera. Pointer coordinates aligned on Bismuth/Chronosphere/Stellar.
+- Gates: Naga 8/8, extraBuffer/dead sliders 0, catalog 1,367,
+  SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing missing
+  WASM `bridge/api.js`.
+- Cards: `agents/swarm-outputs/sol-2026-09-15-compact-resonance-eight/`.
+- Real-GPU visual QA external.
 
 ## 2026-09-15 — Classic geometry leftover six (6 shaders)
 
