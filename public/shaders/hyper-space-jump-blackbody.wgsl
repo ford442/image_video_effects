@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Hyper-Space Jump Blackbody
 //  Category: advanced-hybrid
-//  Features: radial-streaks, blackbody-radiation, relativistic, HDR
+//  Features: radial-streaks, blackbody-radiation, relativistic, HDR, audio-reactive, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: hyper-space-jump, spec-blackbody-thermal
 //  Created: 2026-04-18
-//  By: Agent CB-26
+//  Upgraded: 2026-09-15
+//  Ideas: Lorentz length-contracted streaks; relativistic beaming on dir_norm chroma
+//  A packing: pre-ACES RGB + vignette alpha
 // ═══════════════════════════════════════════════════════════════════
 //  High-velocity radial streaking where each streak's luminance maps
 //  to blackbody temperature. Bright streaks burn blue-white, dim
@@ -33,7 +35,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: blackbodyColor (from spec-blackbody-thermal) ═══
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
     var r: f32;
@@ -52,7 +53,6 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b) * radiance;
 }
 
-// ═══ CHUNK: toneMapACES (from spec-blackbody-thermal) ═══
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -71,92 +71,93 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
 
-    // Parameters
-    let strength = u.zoom_params.x * 0.1;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let strength = u.zoom_params.x * 0.1 * (1.0 + bass * 0.4);
     let samples = 24;
     let center = u.zoom_config.yz;
 
-    let aspect = res.x / res.y;
+    let aspect = res.x / max(res.y, 0.001);
     let center_aspect = vec2<f32>(center.x * aspect, center.y);
     let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
 
     var dir = uv_aspect - center_aspect;
     let dist = length(dir);
-    let dir_norm = normalize(dir);
+    let dir_norm = dir / max(dist, 0.001);
     let dir_uv = uv - center;
 
     let noise = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233)) + time) * 43758.5453);
 
     var color_acc = vec3<f32>(0.0);
-    var temp_acc = 0.0;
     var weight_acc = 0.0;
 
     let decay = 0.95;
     let tempRangeLow = mix(800.0, 2500.0, u.zoom_params.y);
     let tempRangeHigh = mix(4000.0, 15000.0, u.zoom_params.z);
-    let chromaticSpread = u.zoom_params.w; // Consume parameter to fix dead slider
+    let chromaticSpread = u.zoom_params.w;
+
+    // Idea 1 — Lorentz-like stretch: tunnel elongates at the rim
+    let beta = clamp(dist * 0.85, 0.0, 0.95);
+    let gammaStretch = 1.0 / max(sqrt(1.0 - beta * beta), 0.2);
 
     for (var i = 0; i < samples; i = i + 1) {
         let f = f32(i);
-        let offset = dir_uv * (f / f32(samples)) * strength * dist * 10.0;
-        // Apply tiny chromatic spread offset to radial blur
-        let sample_uv = uv - offset + vec2<f32>(chromaticSpread * 0.001 * f * dist);
+        let inward = f / f32(samples);
+        let offset = dir_uv * inward * strength * 10.0 * gammaStretch;
 
-        if (sample_uv.x < 0.0 || sample_uv.x > 1.0 || sample_uv.y < 0.0 || sample_uv.y > 1.0) {
-            continue;
-        }
+        let sample_uv = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-        let jitter_offset = offset * (noise - 0.5) * 0.1;
-        let s_color = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset, 0.0);
+        let jitter_offset = offset * (noise - 0.5) * 0.1 * (1.0 + treble * 0.25);
 
-        // Chromatic aberration on streaks
-        let chrom_spread = u.zoom_params.w * 0.01;
-        let r = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset + dir_uv * chrom_spread * f, 0.0).r;
-        let b = textureSampleLevel(readTexture, u_sampler, sample_uv + jitter_offset - dir_uv * chrom_spread * f, 0.0).b;
+        // Idea 2 — chromatic_spread on dir_norm (not the uniform 0.001*f*dist hack)
+        let chrom_uv = vec2<f32>(dir_norm.x / aspect, dir_norm.y) * chromaticSpread * 0.012 * f;
+        let r_uv = clamp(sample_uv + jitter_offset + chrom_uv, vec2<f32>(0.0), vec2<f32>(1.0));
+        let b_uv = clamp(sample_uv + jitter_offset - chrom_uv, vec2<f32>(0.0), vec2<f32>(1.0));
+        let g_uv = clamp(sample_uv + jitter_offset, vec2<f32>(0.0), vec2<f32>(1.0));
+
+        let s_color = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0);
+        let r = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
+        let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
         let sample_color = vec3<f32>(r, s_color.g, b);
 
         let luma = dot(sample_color, vec3<f32>(0.299, 0.587, 0.114));
-        let weight = pow(decay, f) * (0.1 + smoothstep(0.3, 1.0, luma) * 2.0);
+        // Idea 2 — relativistic beaming: inward/approaching hotter, wake cooler
+        let beam = mix(0.72, 1.48, inward) * (1.0 + mids * 0.25);
+        let weight = pow(decay, f) * (0.1 + smoothstep(0.3, 1.0, luma) * 2.0) * beam;
 
-        // Map luminance to temperature for this streak sample
-        let sampleTemp = mix(tempRangeLow, tempRangeHigh, luma);
+        let sampleTemp = mix(tempRangeLow, tempRangeHigh, luma) * beam;
         let thermalColor = blackbodyColor(sampleTemp);
 
         color_acc += thermalColor * weight;
-        temp_acc += sampleTemp * weight;
         weight_acc += weight;
     }
 
     var final_color = vec3<f32>(0.0);
-    var avgTemp = tempRangeLow;
     if (weight_acc > 0.001) {
         final_color = color_acc / weight_acc;
-        avgTemp = temp_acc / weight_acc;
     } else {
         let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
         let luma = dot(base, vec3<f32>(0.299, 0.587, 0.114));
         final_color = blackbodyColor(mix(tempRangeLow, tempRangeHigh, luma));
     }
 
-    // Vignette tunnel darkening
     let vignette = 1.0 - smoothstep(0.3, 1.2, dist);
     final_color *= vignette;
 
-    // Mouse heat boost
     let mouseDown = u.zoom_config.w;
     let mouseDist = length(uv - center);
     let mouseHeat = exp(-mouseDist * mouseDist * 400.0) * mouseDown;
-    if (mouseHeat > 0.001) {
-        let hotColor = blackbodyColor(tempRangeHigh * 1.2);
-        final_color = mix(final_color, hotColor, mouseHeat * 0.5);
-    }
+    let hotColor = blackbodyColor(tempRangeHigh * 1.2);
+    final_color = mix(final_color, hotColor, select(0.0, mouseHeat * 0.5, mouseHeat > 0.001));
 
     let display = toneMapACES(final_color);
-    let alpha = vignette;
+    let alpha = clamp(vignette, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(display, alpha));
     textureStore(dataTextureA, coord, vec4<f32>(final_color, alpha));
 
-    // Clear depth for hyper-space effect
-    textureStore(writeDepthTexture, coord, vec4<f32>(0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

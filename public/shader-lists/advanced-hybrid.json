@@ -5819,7 +5819,9 @@
       "blackbody-radiation",
       "HDR",
       "physical-color",
-      "texture"
+      "texture",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5859,7 +5861,37 @@
       "artistic",
       "HDR"
     ],
-    "target_rating": 4.6
+    "target_rating": 4.6,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wax Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Surface Texture",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Melt Radius",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.5
+      },
+      {
+        "index": 3,
+        "name": "Thermal Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ]
   },
   {
     "id": "energy-shield-blackbody",
@@ -5876,7 +5908,9 @@
       "hex-grid",
       "blackbody-thermal",
       "mouse-driven",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5914,6 +5948,40 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Hex Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ripple Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Impact Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -7153,7 +7221,8 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9101,7 +9170,9 @@
       "radial-streaks",
       "blackbody-radiation",
       "relativistic",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9139,6 +9210,40 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Jump Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Low Temperature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "High Temperature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
@@ -13571,7 +13676,9 @@
       "blackbody-radiation",
       "HDR",
       "physical-color",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -13609,6 +13716,40 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Samples",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "_seeded_by": "scripts/seed_orphan_shader_defs.py"
