@@ -74,6 +74,15 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // --- SDF functions ---
 
 struct MapData {
@@ -82,6 +91,9 @@ struct MapData {
     glow: f32,
 }
 
+var<private> g_eye_off: vec3<f32> = vec3<f32>(0.0);
+var<private> g_barb: f32 = 0.0;
+
 fn map(p: vec3<f32>, time: f32, audio: f32, mouseXY: vec2<f32>, wingbeat_speed: f32, eye_intensity: f32) -> MapData {
     var d = 1000.0;
     var mat = 0.0;
@@ -89,15 +101,13 @@ fn map(p: vec3<f32>, time: f32, audio: f32, mouseXY: vec2<f32>, wingbeat_speed: 
 
     var pos = p;
 
-    // Head tracking the mouse
+    // Head tracking the mouse — rotate around the head, do not overwrite x as a look angle
     let headLookX = mouseXY.x * 0.5;
-    let headLookY = -mouseXY.y * 0.5;
+    let headLookY = mouseXY.y * 0.5;
     var headPos = pos - vec3<f32>(0.0, 1.0, 0.0);
-    let headRotMatX = rot(headLookX);
-    let headRotMatY = rot(headLookY);
-    // Apply rotations
-    headPos.x = headPos.x * headRotMatX[0][0] + headPos.z * headRotMatX[0][1];
-    headPos.z = headPos.x * headRotMatX[1][0] + headPos.z * headRotMatX[1][1];
+    let xz = rot(headLookX) * vec2<f32>(headPos.x, headPos.z);
+    headPos.x = xz.x;
+    headPos.z = xz.y;
     let newYZ = rot(headLookY) * vec2<f32>(headPos.y, headPos.z);
     headPos.y = newYZ.x;
     headPos.z = newYZ.y;
@@ -131,7 +141,10 @@ fn map(p: vec3<f32>, time: f32, audio: f32, mouseXY: vec2<f32>, wingbeat_speed: 
     let latticeScale = 0.5;
     var q = wPos;
     q = (fract(q / latticeScale + 0.5) - 0.5) * latticeScale;
-    let dFeatherCube = length(max(abs(q) - vec3<f32>(0.2, 0.05, 0.1), vec3<f32>(0.0)));
+    // Idea 1: feather barb ridges on lattice cubes
+    let barb = abs(sin(q.x * 28.0));
+    g_barb = barb;
+    let dFeatherCube = length(max(abs(q) - vec3<f32>(0.2, 0.05, 0.1), vec3<f32>(0.0))) - barb * 0.012;
 
     // Bounding volume for wings
     let dWingBox = length(max(abs(wPos) - vec3<f32>(2.0, 3.0, 0.5), vec3<f32>(0.0)));
@@ -156,6 +169,7 @@ fn map(p: vec3<f32>, time: f32, audio: f32, mouseXY: vec2<f32>, wingbeat_speed: 
         d = dEyeCore;
         mat = 2.0; // Emissive core
         glow = pow(max(0.0, 1.0 - dEyeCore), 2.0) * eye_intensity * (1.0 + audio * 2.0);
+        g_eye_off = select(eyePosR, eyePosL, length(eyePosL) < length(eyePosR));
     } else if (dEyeGlass < dOwl) {
         d = dEyeGlass;
         mat = 1.0; // Glass
@@ -189,7 +203,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(f32(id.x), f32(id.y)) - 0.5 * res) / res.y;
 
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // UI Sliders
     let wingbeat_speed = u.zoom_params.x;
@@ -197,7 +213,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let aurora_density = u.zoom_params.z;
     let glass_refraction = u.zoom_params.w;
 
-    let mouseNorm = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) / res) * 2.0 - 1.0;
+    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    let mouseNorm = mouse * 2.0 - 1.0;
 
     // Camera
     var ro = vec3<f32>(0.0, 1.0, 10.0);
@@ -255,6 +272,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             let baseColor = vec3<f32>(0.05, 0.05, 0.08); // Obsidian
             col = baseColor * diff * 0.8 + vec3<f32>(0.5, 0.8, 1.0) * spec * 0.5;
+            col += vec3<f32>(0.15, 0.25, 0.35) * g_barb * 0.4;
 
         } else if (mat == 1.0) {
             // Glass Refraction
@@ -270,6 +288,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Quantum Plasma Core
             col = mix(vec3<f32>(0.8, 0.2, 1.0), vec3<f32>(0.2, 1.0, 1.0), audio);
             col *= 2.0; // Emissive
+            // Idea 2: concentric iris rings
+            let ir = length(g_eye_off.xy);
+            let rings = abs(fract(ir * 14.0) - 0.5);
+            col *= 0.65 + 0.35 * smoothstep(0.0, 0.1, rings);
+            col += (1.0 - smoothstep(0.0, 0.035, rings)) * vec3<f32>(1.0, 0.85, 0.55) * eye_intensity * 0.35;
         }
     }
 
@@ -282,20 +305,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Aether-Glimmer Dust (Particles via noise overlay)
     let pNoise = fbm(vec3<f32>(uv * 20.0, time));
     if (pNoise > 0.8) {
-        col += vec3<f32>(0.5, 1.0, 0.8) * (pNoise - 0.8) * 5.0 * (1.0 + audio);
+        col += vec3<f32>(0.5, 1.0, 0.8) * (pNoise - 0.8) * 5.0 * (1.0 + audio + treble);
     }
 
     // Cinematic DOF / Vignette
     let vignette = 1.0 - smoothstep(0.5, 1.5, length(uv));
     col *= vignette;
 
-    // Tone mapping
-    col = col / (1.0 + col);
+    col = acesToneMap(col);
 
-    // Previous frame mix for temporal motion blur
     var prev = textureLoad(readTexture, vec2<i32>(id.xy), 0).rgb;
     let finalCol = mix(prev, col, 0.4);
+    let hit = t < 25.0;
+    let alpha = clamp(select(clamp(volDensity, 0.0, 0.35), 0.55 + totalGlow * 0.1, hit) + mids * 0.08, 0.0, 1.0);
+    let outc = vec4<f32>(finalCol, alpha);
+    let depth = select(0.0, clamp(1.0 - t / 25.0, 0.0, 1.0), hit);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(finalCol, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(id.xy), outc);
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), outc);
 }

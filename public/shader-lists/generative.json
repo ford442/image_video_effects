@@ -32393,12 +32393,57 @@
         "step": 0.01
       }
     ],
+    "params": [
+      {
+        "id": "spiral_tightness",
+        "name": "Spiral Tightness",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "plasma_bloom",
+        "name": "Plasma Bloom",
+        "mapping": "zoom_params.y",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "glass_refraction",
+        "name": "Glass Refraction",
+        "mapping": "zoom_params.z",
+        "default": 1.33,
+        "min": 1,
+        "max": 2.5,
+        "step": 0.01
+      },
+      {
+        "id": "audio_reactivity",
+        "name": "Audio Reactivity",
+        "mapping": "zoom_params.w",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
     "id": "gen-radiant-chrono-glass-nautilus",
     "url": "shaders/gen-radiant-chrono-glass-nautilus.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Radiant Cyber-Bismuth Nebula-Colossus",
@@ -32510,12 +32555,57 @@
         "step": 0.1
       }
     ],
+    "params": [
+      {
+        "id": "stag_scale",
+        "name": "Stag Scale",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "antler_complexity",
+        "name": "Antler Complexity",
+        "mapping": "zoom_params.y",
+        "default": 3,
+        "min": 1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "nebula_density",
+        "name": "Nebula Density",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "core_pulse_intensity",
+        "name": "Core Pulse Intensity",
+        "mapping": "zoom_params.w",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      }
+    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
     "id": "gen-radiant-cyber-chrono-void-stag",
     "url": "shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-radiant-cyber-plasma-astro-griffin",
@@ -32628,12 +32718,57 @@
         "step": 0.01
       }
     ],
+    "params": [
+      {
+        "id": "crystallization_density",
+        "name": "Crystallization Density",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromatic_aberration",
+        "name": "Chromatic Aberration",
+        "mapping": "zoom_params.y",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "fog_intensity",
+        "name": "Fog Intensity",
+        "mapping": "zoom_params.z",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Influence",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
     "id": "gen-radiant-quantum-crystalline-forge",
     "url": "shaders/gen-radiant-quantum-crystalline-forge.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Radiant Quantum-Plasma Kraken-Core",
@@ -32685,12 +32820,57 @@
         "step": 0.05
       }
     ],
+    "params": [
+      {
+        "id": "tentacle_twist",
+        "name": "Tentacle Twist",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "plasma_glow",
+        "name": "Plasma Glow",
+        "mapping": "zoom_params.y",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "core_heat",
+        "name": "Core Heat",
+        "mapping": "zoom_params.z",
+        "default": 1.5,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "void_depth",
+        "name": "Void Depth",
+        "mapping": "zoom_params.w",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
     "id": "gen-radiant-quantum-plasma-kraken-core",
     "url": "shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Rainbow Firefly Dance",
@@ -33564,12 +33744,57 @@
         "step": 0.01
       }
     ],
+    "params": [
+      {
+        "id": "wing_flutter_frequency",
+        "name": "Wing Flutter Frequency",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "quantum_storm_intensity",
+        "name": "Quantum Storm Intensity",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "aether_plasma_glow",
+        "name": "Aether-Plasma Glow",
+        "mapping": "zoom_params.z",
+        "default": 0.8,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "time_rift_distortion",
+        "name": "Time Rift Distortion",
+        "mapping": "zoom_params.w",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "id": "gen-sentient-aether-plasma-nebula-moth",
     "url": "shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-sentient-bismuth-hypercrystal",
@@ -33613,6 +33838,52 @@
         "max": 3,
         "step": 0.1
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Growth",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Audio React",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Twist",
+        "default": 0,
+        "min": -2,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Iridescence",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "upgraded-rgba"
     ]
   },
   {
@@ -33661,12 +33932,58 @@
         "step": 0.05
       }
     ],
+    "params": [
+      {
+        "id": "wingbeat_speed",
+        "name": "Wingbeat Speed",
+        "mapping": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "eye_intensity",
+        "name": "Eye Intensity",
+        "mapping": "zoom_params.y",
+        "default": 1,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "aurora_density",
+        "name": "Aurora Density",
+        "mapping": "zoom_params.z",
+        "default": 0.7,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "glass_refraction",
+        "name": "Glass Refraction",
+        "mapping": "zoom_params.w",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
     "id": "gen-sentient-cyber-aurora-void-owl",
     "url": "shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-sentient-cyber-chrono-void-serpent",
@@ -33901,12 +34218,57 @@
         "step": 0.1
       }
     ],
+    "params": [
+      {
+        "id": "wing_span",
+        "name": "Wing Span",
+        "mapping": "zoom_params.x",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
+        "mapping": "zoom_params.y",
+        "default": 2,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "chrono_distortion",
+        "name": "Chrono Distortion",
+        "mapping": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "nebular_density",
+        "name": "Nebular Density",
+        "mapping": "zoom_params.w",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
     "id": "gen-sentient-quantum-chrono-leviathan-moth",
     "url": "shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-sentient-void-silk-nebula",
