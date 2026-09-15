@@ -2,7 +2,7 @@
   "id": "stellar-plasma-blackbody",
   "name": "Stellar Plasma Blackbody",
   "url": "shaders/stellar-plasma-blackbody.wgsl",
-  "description": "Cosmic nebula domain-warped FBM blended with Planck's law blackbody thermal coloring. Energy intensity drives temperature mapping — cool voids glow ember-red, hot plasma cores burn blue-white with physically-correct radiance scaling.",
+  "description": "Cosmic nebula domain-warped FBM blended with Planck's law blackbody thermal coloring. Energy intensity drives temperature mapping \u2014 cool voids glow ember-red, hot plasma cores burn blue-white with physically-correct radiance scaling.",
   "tags": [
     "blackbody",
     "thermal",
