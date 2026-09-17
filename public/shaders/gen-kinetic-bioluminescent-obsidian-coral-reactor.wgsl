@@ -105,7 +105,7 @@ fn map(p: vec3<f32>, mouse_pos: vec3<f32>, audio_bass: f32) -> vec2<f32> {
 
     // Subtractions for lattice holes, using Lattice Complexity parameter
     let complexity = max(1.0, u.speed_params.y);
-    for (var i = 0.0; i < 3.0; i += 1.0) {
+    for (var i = 0.0; i < 5.0; i += 1.0) {
         if (i >= complexity) { break; }
         let s = pow(3.0, i);
         var sub_q = (fract(p * s) - 0.5) / s;
@@ -191,8 +191,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ro.y += cos(time * 0.4) * 0.5;
 
     // Look-at setup
-    let target = vec3<f32>(0.0, 0.0, ro.z + 5.0);
-    let ww = normalize(target - ro);
+    let lookAtTarget = vec3<f32>(0.0, 0.0, ro.z + 5.0);
+    let ww = normalize(lookAtTarget - ro);
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
 
