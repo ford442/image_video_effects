@@ -1,0 +1,46 @@
+{
+  "id": "gen-kinetic-bioluminescent-obsidian-coral-reactor",
+  "name": "Kinetic Bioluminescent Obsidian-Coral Reactor",
+  "description": "A mesmerizing descent through a brutalist lattice of jet-black obsidian that is continuously overgrown and consumed by a pulsing, bioluminescent cyan and magenta coral energy-fluid.",
+  "category": "generative",
+  "type": "generative",
+  "url": "shaders/gen-kinetic-bioluminescent-obsidian-coral-reactor.wgsl",
+  "params": [
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "mapping": "zoom_params.x",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "coral_density",
+      "name": "Coral Density",
+      "mapping": "zoom_params.y",
+      "default": 1.2,
+      "min": 0.5,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "id": "fluid_speed",
+      "name": "Fluid Speed",
+      "mapping": "zoom_params.z",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.05
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "mapping": "zoom_params.w",
+      "default": 2.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    }
+  ]
+}
