@@ -569,11 +569,6 @@
       "filename": "2026-09-15_aetherial-clockwork-resonance.md",
       "title": "Aetherial Clockwork Resonance",
       "added": "2026-09-15T15:35:00.352671"
-    },
-    {
-      "filename": "2026-09-16_kinetic-bioluminescent-obsidian-coral-reactor.md",
-      "title": "Kinetic Bioluminescent Obsidian-Coral Reactor",
-      "added": "2026-09-16T15:33:11.944400"
     }
   ],
   "current": null,
@@ -1086,6 +1081,13 @@
       "added": "2026-09-14T15:32:27.521166",
       "status": "completed",
       "completed_at": "2026-09-15T07:59:27.173839+00:00"
+    },
+    {
+      "filename": "2026-09-16_kinetic-bioluminescent-obsidian-coral-reactor.md",
+      "title": "Kinetic Bioluminescent Obsidian-Coral Reactor",
+      "added": "2026-09-16T15:33:11.944400",
+      "status": "completed",
+      "completed_at": "2026-09-17T08:20:54.379435+00:00"
     }
   ],
   "rejected": [],
