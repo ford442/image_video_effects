@@ -1,6 +1,73 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
+<<<<<<< HEAD
 **Last updated:** 2026-09-15 (sentient/radiant cosmic entities eight implemented)
+=======
+**Last updated:** 2026-09-15 (sentient/radiant cosmic entities eight)
+
+## 2026-09-15 — Sentient / radiant cosmic entities eight
+
+- IDs: nebula-moth, bismuth-hypercrystal, cyber-aurora-void-owl,
+  quantum-chrono-leviathan-moth, chrono-glass-nautilus, cyber-chrono-void-stag,
+  quantum-crystalline-forge, quantum-plasma-kraken-core.
+- Ideas: wing venation + trailing scale-dust; hopper terraces + riser film;
+  feather barbs + iris rings; voronoi veins + antennae; chamber septa + nacre;
+  antler pearls + hoof-trail pulses; recalescence + hopper terraces; suckers +
+  chromatophores.
+- Floor only: plasmaBuffer, UV mouse, ACES A, canonical params. Forge helper
+  deleted. Kraken zoom clamp removed. No new springs.
+- Gates: Naga 8/8, extraBuffer/dead sliders 0, catalog 1,367, build green.
+  Jest 689/6 WASM `bridge/api.js` pre-existing. Real-GPU QA external.
+- Cards: `agents/swarm-outputs/sol-2026-09-15-sentient-radiant-eight/`.
+
+## 2026-09-15 — Compact generative resonance eight
+
+- IDs: gen-aetherial-plasma-loom, gen-prismatic-mobius-helix,
+  gen-hyperdimensional-bismuth-lattice, gen-sentient-void-silk-nebula,
+  gen-quantum-liquid-metal-chronosphere,
+  gen-prismatic-quantum-glass-chrysalis-engine,
+  gen-void-harmonic-cymatic-resonator,
+  gen-stellar-acoustic-resonance-manifold.
+- Per shader, the ideas actually added:
+  - plasma loom: counter-woven ribbons; reconnection knots with paired exhaust.
+  - Möbius helix: one-sided 4π traveler; orientation-seam current.
+  - bismuth lattice: fold-generation hopper terraces; twin-boundary seams.
+  - void silk: braided fibrils; opposing-curl tension knots and caustic tails.
+  - chronosphere: capillary normal modes; differential-rotation shear bands.
+  - glass chrysalis: tapered chamber ribs; internal TIR caustics on cut lips.
+  - cymatic resonator: nodal membranes; adjacent-mode splitting/seams.
+  - stellar manifold: p/g-mode shells; compression-antinode blackbody heating.
+- Identities and saved parameter blocks kept. No new springs. Legacy C/extraBuffer
+  fake audio removed. Möbius A/C packing corrected to display RGBA. Chrysalis
+  Uniforms canonicalized.
+- Post-review: Möbius torus-collapse fixed to a true half-twist strip; Coil
+  Count no longer steals speed. Bismuth fold count is exactly 4–8. Cymatic
+  membranes are sphere-bounded and Complexity 1–10 weights all five octaves.
+  Stellar Audio Reactivity now gates all bands and Orbital Speed no longer
+  dollies the camera. Pointer coordinates aligned on Bismuth/Chronosphere/Stellar.
+- Gates: Naga 8/8, extraBuffer/dead sliders 0, catalog 1,367,
+  SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing missing
+  WASM `bridge/api.js`.
+- Cards: `agents/swarm-outputs/sol-2026-09-15-compact-resonance-eight/`.
+- Real-GPU visual QA external.
+
+## 2026-09-15 — Classic geometry leftover six (6 shaders)
+
+- IDs: gen-3d-sierpinski-chaos, gen-aperiodic-monotile, gen-chromatic-zonohedron, gen-zeta-function-landscape, gen-prismatic-mobius-helix, gen-voronoi-crystal.
+- Per shader, the ideas actually added:
+  - gen-3d-sierpinski-chaos: repeat-vertex corner flares; opposite-face chroma. Params kept. No spring.
+  - gen-aperiodic-monotile: reflected hats on odd cells; chevron brim. Relief sculpture kept.
+  - gen-chromatic-zonohedron: fourth golden-ratio generator; generator-pair face IDs. Packing lie fixed.
+  - gen-zeta-function-landscape: known-zero rails; |ζ|=1 iso-contours. Eta continuation kept.
+  - gen-prismatic-mobius-helix: half-twist seam; centerline core. Packing lie fixed.
+  - gen-voronoi-crystal: triple-junction vertices; L∞ facet flats. Existing pointer spring kept.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved slider names exact. No new springs.
+- Gates: Naga 6/6, extraBuffer 0, dead sliders 0 (3 defs with `params`; 3 use `updatedParams` only), catalog 1,367, SKIP_WASM_BUILD=1 build green. Jest 689 pass / 6 fail = pre-existing WASM `bridge/api.js`.
+- #1274/#1276 already took the morning sixes — did not restamp those IDs.
+- Cards: `agents/swarm-outputs/grok-2026-09-15-classic-geometry-six/`.
+- Real-GPU visual QA: external.
+**Last updated:** 2026-09-15 (chrono-cosmic mechanisms eight)
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
 ## 2026-09-15 — Pull/push union (ahead 1 / behind 1, origin #1278)
 
@@ -29,13 +96,22 @@
 - Gates: Naga 8/8, extraBuffer 0, dead sliders 0. Catalog 1,367 / generative 472. Jest 689/6 WASM pre-existing. SKIP_WASM_BUILD=1 build green. Real-GPU QA external.
 - Cards: `agents/swarm-outputs/sol-2026-09-15-sentient-radiant-eight/`.
 
-## 2026-09-15 — Selected chrono-cosmic mechanisms eight (not yet implemented)
+## 2026-09-15 — Chrono-cosmic mechanisms eight
 
 - IDs: gen-chronos-crystal-labyrinth, gen-aetherial-plasma-loom, gen-celestial-yggdrasil-matrix, gen-chrono-kinetic-fractal-engine, gen-celestial-clockwork-plasma-loom, gen-chronos-biomechanical-void-leviathan, gen-chronomorphic-glass-tesseract, gen-quantum-liquid-metal-chronosphere.
-- Coherent time / clockwork / loom / 4D / cosmic-mechanism family. All eight lack `Ideas:` cards and no substantive prior batch cards were found for these exact WGSL paths.
-- Do not substitute `gen-chromatic-singularity-loom`: despite no `Ideas:` line, its Kimi notes document four real existing native ideas (temporal accretion, chromatic lensing, audio thread chaos, bass mass pulse), so it is already idea-rich.
-- Implementation floor watch-outs: Chronos Crystal reads C as fake audio; several older files need honest A packing and ACES; Chronosphere has four controls under legacy `parameters`, so preserve their meanings while adding canonical metadata. Plumbing is not the upgrade.
-- Provisional native directions: refractive time faults; plasma heddle sequencing; phyllotactic Yggdrasil buds; escapement/backlash; Keplerian astrolabe gears; segmented leviathan undulation; 4D face-crossing caustics; liquid-metal capillary modes.
+- Per shader, the ideas actually added:
+  - chronos-crystal-labyrinth: refractive time-fault seams; twelve hour-line facet caustics.
+  - aetherial-plasma-loom: alternating heddle lanes; plasma shuttle necking/knots.
+  - celestial-yggdrasil-matrix: phyllotactic branch buds; cyan/gold counterflow sap pulses.
+  - chrono-kinetic-fractal-engine: escapement tooth gates; alternating backlash lag.
+  - celestial-clockwork-plasma-loom: Keplerian astrolabe gearing; over-under plasma shuttle.
+  - chronos-biomechanical-void-leviathan: vertebral phase-lag undulation; twin auroral vortex wake.
+  - chronomorphic-glass-tesseract: 4D face-crossing caustics; W-phase temporal birefringence.
+  - quantum-liquid-metal-chronosphere: capillary mode splitting; differential rotating time bands.
+- Floor: bindings / 16×16 / plasma XYZ / ACES / semantic alpha / depth / display A. Only clockwork loom reads C, with exact load and preserved display-history ownership. Chronosphere legacy `parameters` byte-structure exact plus canonical `params`; all other saved `params` exact. No new springs, persistent state, or B writes.
+- Gates: Naga 8/8, new low-slot extraBuffer writes 0, dead sliders 0/32, catalog 1,367, `SKIP_WASM_BUILD=1` build green. Jest 97/101 suites, 689/696 tests; only four pre-existing WASM `./bridge/api.js` resolver suites fail.
+- Real-GPU visual QA: external.
+- Cards: `agents/swarm-outputs/sol-2026-09-15-chrono-cosmic-eight/`.
 
 ## 2026-09-15 — Radial / BH blackbody leftover four
 

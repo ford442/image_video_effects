@@ -44,6 +44,44 @@
       "step": 0.1
     }
   ],
+  "params": [
+    {
+      "id": "stag_scale",
+      "name": "Stag Scale",
+      "mapping": "zoom_params.x",
+      "default": 1.0,
+      "min": 0.5,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "id": "antler_complexity",
+      "name": "Antler Complexity",
+      "mapping": "zoom_params.y",
+      "default": 3.0,
+      "min": 1.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "nebula_density",
+      "name": "Nebula Density",
+      "mapping": "zoom_params.z",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.05
+    },
+    {
+      "id": "core_pulse_intensity",
+      "name": "Core Pulse Intensity",
+      "mapping": "zoom_params.w",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    }
+  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -52,6 +90,7 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
+<<<<<<< HEAD
     "upgraded-rgba"
   ],
   "params": [
@@ -91,5 +130,11 @@
       "step": 0.1,
       "mapping": "zoom_params.w"
     }
+=======
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map",
+    "upgraded-rgba"
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
   ]
 }

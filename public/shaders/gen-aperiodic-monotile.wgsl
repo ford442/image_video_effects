@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Aperiodic Monotile Hat Tiling
 //  Category: generative
-//  Features: aperiodic-tiling, monotile, generative-pattern, audio-reactive, mouse-scale,
-//            edge-glow, temporal-rotation, chromatic-edge-bloom, bass-scale-pulse, upgraded-rgba, aces-tone-map
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Chunks From: aperiodic tiling + improved visual layering
-//  Created: 2026-05-23
-//  Updated: 2026-05-31
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-15
+//  Ideas: reflected hats on odd cells; chevron brim notch
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -112,19 +110,25 @@ fn hue2rgb(h: f32) -> vec3<f32> {
     return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn hatTileDistance(uv: vec2<f32>, scale: f32) -> f32 {
+// Returns (signed hat distance, chirality ±1, brim amount).
+fn hatTileField(uv: vec2<f32>, scale: f32) -> vec3<f32> {
     let p = uv * scale;
     let hex_q = p.x * 0.57735 + p.y * 0.33333;
     let hex_r = p.y * 0.66667;
-    let hex_s = -hex_q - hex_r;
     let qf = floor(hex_q);
     let rf = floor(hex_r);
-    let sf = floor(hex_s);
-    let dq = abs(hex_q - qf - 0.5);
-    let dr = abs(hex_r - rf - 0.5);
-    let ds = abs(hex_s - sf - 0.5);
-    let d = max(dq, max(dr, ds));
-    return d * 2.0 - 0.5;
+    // Idea 1 — reflected hats: odd (q,r) cells flip the local q axis.
+    let chirality = select(1.0, -1.0, ((i32(qf) + i32(rf)) & 1) == 0);
+    let localQ = (hex_q - qf - 0.5) * chirality;
+    let localR = hex_r - rf - 0.5;
+    let localS = -localQ - localR;
+    let dq = abs(localQ);
+    let dr = abs(localR);
+    let ds = abs(localS);
+    let d = max(dq, max(dr, ds)) * 2.0 - 0.5;
+    // Idea 2 — chevron brim along hex_q so cells read as hats, not hexes.
+    let brim = abs(fract(hex_q * 0.5 + hex_r * 0.25) - 0.5);
+    return vec3<f32>(d - brim * 0.22, chirality, brim);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -161,7 +165,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rot = time * rotSpeed + mouse.x * 0.5;
     let p = rot2(uv - 0.5, rot) + 0.5;
     
-    let d = hatTileDistance(p, scale);
+    let field = hatTileField(p, scale);
+    let d = field.x;
+    let chirality = field.y;
     
     let tileID = floor(p.x * scale * 0.57735) + floor(p.y * scale * 0.66667) * 137.0;
     let tileHash = hash12(vec2<f32>(tileID, fract(tileID * 0.618)));
@@ -174,7 +180,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeB = 1.0 - smoothstep(0.0, edgeWidth * 1.2, abs(d + 0.01 * treble));
     let chromaEdge = vec3<f32>(edgeR, edge, edgeB) * (1.0 + treble);
     
-    let hue = fract(tileHash + time * 0.03 + mids * 0.15 + uv.x * 0.1);
+    let hue = fract(tileHash + time * 0.03 + mids * 0.15 + uv.x * 0.1 + chirality * 0.08);
     let sat = mix(0.4, 0.9, param4 + treble * 0.3);
     let val = mix(0.15, 0.85, smoothstep(-0.3, 0.3, d) + bass * 0.2);
     

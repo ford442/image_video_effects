@@ -3,6 +3,18 @@
   "name": "Stellar-Acoustic Resonance-Manifold",
   "category": "generative",
   "url": "shaders/gen-stellar-acoustic-resonance-manifold.wgsl",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "supportsDepth": true,
+  "updated": true,
   "parameters": [
     {
       "name": "Audio Reactivity",
@@ -39,6 +51,78 @@
       "step": 100.0,
       "default": 6000.0,
       "uniform": "zoom_params.w"
+    }
+  ],
+  "params": [
+    {
+      "id": "audio-reactivity",
+      "name": "Audio Reactivity",
+      "mapping": "zoom_params.x",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "plasma-density",
+      "name": "Plasma Density",
+      "mapping": "zoom_params.y",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.05
+    },
+    {
+      "id": "orbital-speed",
+      "name": "Orbital Speed",
+      "mapping": "zoom_params.z",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "id": "core-temperature",
+      "name": "Core Temperature",
+      "mapping": "zoom_params.w",
+      "default": 6000.0,
+      "min": 1000.0,
+      "max": 10000.0,
+      "step": 100.0
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Audio Reactivity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Plasma Density",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.05
+    },
+    {
+      "index": 2,
+      "name": "Orbital Speed",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "index": 3,
+      "name": "Core Temperature",
+      "default": 6000.0,
+      "min": 1000.0,
+      "max": 10000.0,
+      "step": 100.0
     }
   ]
 }

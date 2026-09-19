@@ -53,7 +53,11 @@
   "updated": true,
   "id": "gen-celestial-yggdrasil-matrix",
   "url": "shaders/gen-celestial-yggdrasil-matrix.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "branch_complexity",

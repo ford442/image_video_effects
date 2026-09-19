@@ -1,9 +1,17 @@
 {
+<<<<<<< HEAD
   "timestamp": "2026-09-15T09:55:29.802351",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 8,
   "passed": 8,
+=======
+  "timestamp": "2026-09-17T08:40:59.100055",
+  "naga_bin": "/home/jules/.cargo/bin/naga",
+  "naga_available": true,
+  "total": 1,
+  "passed": 1,
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -12,12 +20,17 @@
   "extrabuffer_violations": 0,
   "results": [
     {
+<<<<<<< HEAD
       "file": "public/shaders/gen-radiant-chrono-glass-nautilus.wgsl",
+=======
+      "file": "public/shaders/gen-kinetic-bioluminescent-obsidian-coral-reactor.wgsl",
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
       "naga_skipped": false,
       "naga_error": "",
+<<<<<<< HEAD
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],
@@ -123,6 +136,8 @@
       "naga_ok": true,
       "naga_skipped": false,
       "naga_error": "",
+=======
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],

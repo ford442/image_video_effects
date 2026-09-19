@@ -4,6 +4,11 @@
   "category": "generative",
   "url": "shaders/gen-chrono-kinetic-fractal-engine.wgsl",
   "description": "A highly dynamic, continuously unfolding 4D mechanism where temporal gears and non-euclidean clockwork structures weave together into an infinite, hypnotic mandala of light and motion.",
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "complexity",

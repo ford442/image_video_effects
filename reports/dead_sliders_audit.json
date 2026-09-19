@@ -1,7 +1,13 @@
 {
+<<<<<<< HEAD
   "generated": "2026-09-15T07:55:32.280583+00:00",
   "defs_scanned": 8,
   "defs_with_params": 8,
+=======
+  "generated": "2026-09-15T08:36:27.227677+00:00",
+  "defs_scanned": 17,
+  "defs_with_params": 17,
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
   "new_dead_sliders": [],
   "known_dead_sliders": [],
   "errors": [],

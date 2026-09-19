@@ -3,7 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-15
+//  Ideas: phyllotactic branch buds; counterflow sap pulses
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,21 +23,11 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
     zoom_params: vec4<f32>,  // x=Branch Complexity, y=Plasma Flow, z=Gravity Warp, w=Glow Intensity
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
-}
-
 
 // --- Helper Functions ---
 fn rot(a: f32) -> mat2x2<f32> {
@@ -54,15 +46,20 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 fn map(p: vec3<f32>) -> f32 {
     var q = p;
     // Apply mouse gravity warp
-    let mouse_dist = length(q.xy - vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 5.0);
-    q += normalize(q) * smoothstep(5.0, 0.0, mouse_dist) * u.zoom_params.z;
+    let mouse_world = (u.zoom_config.yz * 2.0 - vec2<f32>(1.0)) * 3.0;
+    let mouse_delta = q.xy - mouse_world;
+    let mouse_dist = length(mouse_delta);
+    let safe_gravity_dir = select(vec2<f32>(0.0), mouse_delta / max(mouse_dist, 0.001), mouse_dist > 0.001);
+    let gravity_xy = q.xy - safe_gravity_dir * exp(-mouse_dist * 0.7) * u.zoom_params.z * 0.55;
+    q = vec3<f32>(gravity_xy, q.z);
 
     let branch_complexity = u.zoom_params.x;
     var d = length(q) - 1.0; // Base sphere
 
     // KIFS Iteration
     var scale = 1.0;
-    for (var i = 0u; i < u32(branch_complexity); i = i + 1u) {
+    let iterations = u32(round(mix(2.0, 7.0, clamp(branch_complexity, 0.0, 1.0))));
+    for (var i = 0u; i < iterations; i = i + 1u) {
         q = abs(q) - vec3<f32>(0.5, 1.0, 0.5) * scale;
         let ry = rot(u.config.x * 0.1 + f32(i) * 0.5);
         let rx = rot(u.config.x * 0.15 + f32(i) * 0.3);
@@ -119,8 +116,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
 
     // Audio reactivity: bass pulses plasma cores, treble animates the leaf swarm
-    let bass = plasmaBuffer[0].x;
-    let treble = plasmaBuffer[0].z;
+    let audio = plasmaBuffer[0].xyz;
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
     var ro = vec3<f32>(0.0, 0.0, -5.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
@@ -147,14 +146,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Audio reactive pulse (bass drives the plasma core glow)
         let audioPulse = bass * 5.0 * exp(-dist * 0.5);
 
-        // Chromatic dispersion pseudo-effect & Glow
+        // Existing plasma flow and glow.
         let baseColor = vec3<f32>(0.2, 0.5, 1.0) * flow;
         let highlight = vec3<f32>(1.0, 0.8, 0.2) * audioPulse;
         col = (baseColor + highlight) * u.zoom_params.w;
 
+        // Idea 1: golden-angle branch buds lock to branch-scale intervals.
+        let branch_angle = atan2(p.z, p.x);
+        let golden_phase = fract(p.y * 0.61803399 + branch_angle / 6.2831853);
+        let bud = pow(1.0 - clamp(abs(golden_phase - 0.5) * 12.0, 0.0, 1.0), 4.0);
+        let bud_shell = exp(-abs(length(p.xz) - (0.28 + 0.1 * sin(p.y * 2.4))) * 18.0);
+        let bud_light = bud * bud_shell * (0.35 + treble * 0.25);
+        col += vec3<f32>(0.9, 0.35, 1.0) * bud_light * u.zoom_params.w;
+
+        // Idea 2: paired sap pulses counterflow through the twisted vascular path.
+        let vascular_phase = p.y * 7.0 + branch_angle * 2.0;
+        let sap_up = pow(0.5 + 0.5 * sin(vascular_phase - u.config.x * (1.2 + u.zoom_params.y * 3.0)), 10.0);
+        let sap_down = pow(0.5 + 0.5 * sin(vascular_phase + u.config.x * (0.8 + u.zoom_params.y * 2.4) + 2.2), 12.0);
+        col += (vec3<f32>(0.05, 0.8, 1.0) * sap_up + vec3<f32>(1.0, 0.55, 0.08) * sap_down) *
+            (0.12 + mids * 0.12) * u.zoom_params.w;
+
         // Simple ambient occlusion / depth darkening
         col *= exp(-d * 0.2);
-        bodyLum = clamp(flow * 0.6 + audioPulse, 0.0, 1.0);
+        bodyLum = clamp(flow * 0.45 + audioPulse + bud_light * 0.35 + (sap_up + sap_down) * 0.12, 0.0, 1.0);
     } else {
         // Deep cosmic void background
         let bg = vec3<f32>(0.01, 0.0, 0.05) + vec3<f32>(0.1, 0.0, 0.2) * (uv.y * 0.5 + 0.5);
@@ -162,7 +176,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Orbiting particle leaves swarming with mouse (treble animates the swarm)
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    let mouse = (u.zoom_config.yz - vec2<f32>(0.5)) * vec2<f32>(res.x / res.y, 1.0);
     let m_dist = length(uv - mouse);
     let swarm = smoothstep(0.5, 0.0, m_dist) * treble;
 
@@ -173,11 +187,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Alpha: tree body luminance + swarming leaves over the void, never flat 1.0
     let alpha = clamp(select(0.0, 0.3, hit) + bodyLum * 0.6 + swarm * starHit, 0.0, 1.0);
-    let out = vec4<f32>(col, alpha);
+    let out = vec4<f32>(acesToneMap(max(col, vec3<f32>(0.0))), alpha);
 
     // Depth: raymarch hit distance (near = closer)
     let depth = select(0.0, clamp(1.0 - d / 100.0, 0.0, 1.0), hit);
-    textureStore(writeTexture, coords, applyGenerativePrimaryControls(out));
+    textureStore(writeTexture, coords, out);
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coords, out);
 }

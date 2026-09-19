@@ -5,7 +5,7 @@
 //  Complexity: Medium-High
 //  Created: 2026-05-31 — Kimi Agent (Bright batch)
 //  Upgraded: 2026-09-15
-//  Ideas: attractor-biased chaos toward the cursor-nearest vertex; iteration-age hue
+//  Ideas: attractor-biased chaos; repeat-vertex corner flares; iteration-age hue; opposite-face chroma
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -191,13 +191,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var glowAcc = 0.0;
   var count = 0.0;
   var nearestZ = 1e5;
+  var lastVi = 4u;
 
   for (var i = 0; i < numPoints; i++) {
     if (count > SATURATION_COUNT) { break; }  // pixel fully lit — stop early
     var vi = pickVertex(seedU + u32(i) * 747796405u);
-    // Idea 1: biased die — ~40% of picks snap to the attractor vertex while held
+    // Idea 1: biased die — ~40% of picks snap to the attractor vertex while held.
     let bias = hashf(f32(seedU) + f32(i) * 11.3);
     vi = select(vi, attractor, mouseDown && bias < 0.4);
+    // Idea 2: consecutive same-index picks flare the tet corners.
+    let repeatCorner = select(0.0, 1.0, vi == lastVi);
+    lastVi = vi;
     point = (point + vertices[vi]) * 0.5;
     if (i < WARMUP_ITERS) { continue; }       // convergence discard, folded in
 
@@ -212,13 +216,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let influence = 1.0 - distSq / pointRadius;
     let depthWeight = 1.0 / projZ;
-    // Idea 2: iteration-age hue — IFS depth as a second color axis
+    // Idea 3: farthest vertex names the opposite face (four-face chroma).
+    let dv0 = dot(point - vertices[0], point - vertices[0]);
+    let dv1 = dot(point - vertices[1], point - vertices[1]);
+    let dv2 = dot(point - vertices[2], point - vertices[2]);
+    let dv3 = dot(point - vertices[3], point - vertices[3]);
+    var farIdx = 0u;
+    var farD = dv0;
+    farIdx = select(farIdx, 1u, dv1 > farD); farD = max(farD, dv1);
+    farIdx = select(farIdx, 2u, dv2 > farD); farD = max(farD, dv2);
+    farIdx = select(farIdx, 3u, dv3 > farD);
     let age = f32(i) / max(f32(numPoints), 1.0);
-    let hue = fract(f32(vi) * 0.25 + hueBase + rp.y * 0.15 + age * 0.35);
+    let hue = fract(f32(vi) * 0.12 + f32(farIdx) * 0.25 + hueBase + rp.y * 0.15 + age * 0.18);
     // Point twinkle keeps the cloud from looking like flat splats.
     let twinkle = 0.85 + 0.3 * hashf(f32(seedU) + f32(i) * 3.7);
-    acc += palette(hue) * (depthWeight * influence * twinkle);
-    glowAcc += depthWeight * influence;
+    acc += palette(hue) * (depthWeight * influence * twinkle * (1.0 + repeatCorner * 2.2));
+    glowAcc += depthWeight * influence * (1.0 + repeatCorner);
     count += influence;
     nearestZ = min(nearestZ, projZ);
   }
@@ -250,8 +263,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   alpha = clamp(alpha + rippleGlow * 0.15, 0.0, 0.98);
 
   // ── Temporal accumulation (stochastic sampler converges over frames) ──
-  let temporal = acesToneMap(mix(prev.rgb * HISTORY_DECAY, color, 0.3));
-  textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
-  textureStore(writeTexture, pixel, vec4<f32>(temporal, alpha));
+  let temporal = mix(prev.rgb * HISTORY_DECAY, color, 0.3);
+  let mapped = acesToneMap(max(temporal, vec3<f32>(0.0)));
+  textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(mapped, alpha));
 }

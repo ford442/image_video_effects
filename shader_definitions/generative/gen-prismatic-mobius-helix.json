@@ -2,8 +2,14 @@
   "name": "Prismatic Möbius Helix",
   "category": "generative",
   "tags": ["generative", "geometry", "mobius", "helix", "topology", "iridescent", "thin-film", "audio-reactive"],
-  "description": "A stack of Möbius-strip rings twisted into a prismatic helix, each ribbon coated in thin-film iridescence that shifts through the full spectrum as you orbit. Bass drives the helical twist; treble adds film shimmer. Mouse controls the 3D viewing angle.",
+  "description": "A stack of Möbius-strip rings twisted into a prismatic helix, each ribbon coated in thin-film iridescence with a one-sided 4π traveler and a handed spectral current along the orientation seam. Bass drives the helical twist; treble adds film shimmer. Mouse controls the 3D viewing angle.",
   "workgroup_size": [16, 16, 1],
+  "params": [
+    { "id": "coilCount", "name": "Coil Count", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
+    { "id": "ribbonWidth", "name": "Ribbon Width", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
+    { "id": "helixRadius", "name": "Helix Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
+    { "id": "iridescence", "name": "Iridescence", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  ],
   "updatedParams": [
     { "index": 0, "name": "Coil Count", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
     { "index": 1, "name": "Ribbon Width", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
@@ -15,5 +21,6 @@
   "updated": true,
   "id": "gen-prismatic-mobius-helix",
   "url": "shaders/gen-prismatic-mobius-helix.wgsl",
-  "features": ["generative", "geometry", "audio-reactive", "mouse-driven", "iridescent"]
+  "features": ["generative", "geometry", "audio-reactive", "mouse-driven", "iridescent", "temporal-feedback", "generated-depth", "semantic-alpha", "aces-tone-map", "upgraded-rgba"],
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
 }

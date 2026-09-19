@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Zeta Function Landscape
 //  Category: generative
-//  Features: generative, audio-reactive, upgraded-rgba, aces-tone-map, temporal-smoothing, chromatic-zeros,
-//            bass-term-modulation, depth-output
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-23
-//  Upgraded: 2026-08-01 (Batch 23 — eta continuation, click waves, FFT regions)
+//  Upgraded: 2026-09-15
+//  Ideas: known Riemann-zero rails; |ζ|=1 iso-contours
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -126,23 +126,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ridge = smoothstep(0.5, 1.5, height);
     
     let zeroProximity = 1.0 / (1.0 + z_mag * z_mag * 0.5);
+
+    // Idea 1 — known-zero rails at the first Riemann ordinates, strongest at σ≈1/2.
+    let absT = abs(t);
+    let z0 = abs(absT - 14.1347);
+    let z1 = abs(absT - 21.0220);
+    let z2 = abs(absT - 25.0109);
+    let z3 = abs(absT - 30.4249);
+    let nearestOrdinate = min(min(z0, z1), min(z2, z3));
+    let critGate = clamp(1.0 - abs(sigma - 0.5) * 8.0, 0.0, 1.0);
+    let zeroRail = exp(-nearestOrdinate * nearestOrdinate * 6.0) * critGate;
+
+    // Idea 2 — |ζ|=1 iso-contours (log-magnitude rings).
+    let iso = abs(fract(log(1.0 + z_mag) * 2.4) - 0.5);
+    let isoContour = 1.0 - smoothstep(0.0, 0.06, iso);
     
     // Chromatic zeros: near zeros shift color toward cyan/purple
-    // Eight horizontal regions each listen to one valid FFT voice (bins 1-8).
+    // Eight horizontal regions each listen to one FFT bin (extraBuffer[5..12]).
     let region = min(u32(clamp(landscapeUV.x, 0.0, 0.999) * 8.0), 7u);
-    let spectralVoice = plasmaBuffer[region + 1u].x;
+    var spectralVoice = 0.0;
+    if (arrayLength(&extraBuffer) > (5u + region)) {
+        spectralVoice = extraBuffer[5u + region];
+    }
     let hue = fract(z_arg + time * 0.02 + mids * 0.1 + landscapeUV.x * 0.2 + spectralVoice * 0.08);
     let zeroHue = mix(hue, 0.5 + treble * 0.2, zeroProximity * 0.5);
     let sat = clamp(mix(0.5, 1.0, ridge + bass * 0.3 + spectralVoice * 0.08), 0.0, 1.0);
     let val = clamp(mix(0.2, 1.0, height + zeroProximity * 0.5 + spectralVoice * 0.10), 0.0, 1.5);
     
     let rgb = hue2rgb(zeroHue) * sat + vec3<f32>(1.0 - sat) * val;
+    let rgbRails = rgb + vec3<f32>(0.95, 0.82, 0.45) * zeroRail * 0.85
+                 + vec3<f32>(0.35, 0.75, 1.0) * isoContour * 0.35 * (0.4 + treble * 0.4);
     
     // Temporal smoothing: previous frame averages for landscape stability
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-    let smoothed = mix(rgb, prev, 0.08 + bass * 0.02);
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
+    let smoothed = mix(rgbRails, prev, 0.08 + bass * 0.02);
     
-    let alpha = clamp(height * 0.7 + ridge * 0.3 + bass * 0.05, 0.0, 1.0);
+    let alpha = clamp(height * 0.7 + ridge * 0.3 + zeroRail * 0.2 + bass * 0.05, 0.0, 1.0);
     let finalColor = vec4<f32>(acesToneMap((smoothed * val) * 1.1), alpha);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
