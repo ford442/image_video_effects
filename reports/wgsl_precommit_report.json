@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-17T08:40:59.100055",
+  "timestamp": "2026-09-19T07:51:20.256606",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-kinetic-bioluminescent-obsidian-coral-reactor.wgsl",
+      "file": "public/shaders/gen-neon-plasma-chrono-bloom.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
