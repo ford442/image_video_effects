@@ -1,24 +1,14 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-<<<<<<< HEAD
-**Last updated:** 2026-09-15 (sentient/radiant cosmic entities eight implemented)
-=======
-**Last updated:** 2026-09-15 (sentient/radiant cosmic entities eight)
+**Last updated:** 2026-09-19 (merge conflict cleanup on `push fix` 62f2d677)
 
-## 2026-09-15 — Sentient / radiant cosmic entities eight
+## 2026-09-19 — Merge conflict cleanup (`62f2d677` push fix)
 
-- IDs: nebula-moth, bismuth-hypercrystal, cyber-aurora-void-owl,
-  quantum-chrono-leviathan-moth, chrono-glass-nautilus, cyber-chrono-void-stag,
-  quantum-crystalline-forge, quantum-plasma-kraken-core.
-- Ideas: wing venation + trailing scale-dust; hopper terraces + riser film;
-  feather barbs + iris rings; voronoi veins + antennae; chamber septa + nacre;
-  antler pearls + hoof-trail pulses; recalescence + hopper terraces; suckers +
-  chromatophores.
-- Floor only: plasmaBuffer, UV mouse, ACES A, canonical params. Forge helper
-  deleted. Kraken zoom clamp removed. No new springs.
-- Gates: Naga 8/8, extraBuffer/dead sliders 0, catalog 1,367, build green.
-  Jest 689/6 WASM `bridge/api.js` pre-existing. Real-GPU QA external.
-- Cards: `agents/swarm-outputs/sol-2026-09-15-sentient-radiant-eight/`.
+- Merge of local `75cb037d` (`push fix`) with origin `f6dd97e6` (`#1292`) was committed with conflict markers still in the tree.
+- Overlapping sentient/radiant eight WGSL kept local implementation (venation/wake, hopper/oxide, feather lanes/iris, armor/lamellae, septa/birefringence, tine/hoof packets, twin facets/welds, suckers/peristalsis). Did not take the `#1281` restamp (scale-dust/barbs/antennae/pearls/recalescence).
+- JSON: local canonical `params` kept; origin feature tags (`generated-depth`, `semantic-alpha`, `aces-tone-map`, plus temporal-feedback where present) unioned.
+- Unique origin kept: compact resonance eight, classic geometry leftover six, chrono-cosmic eight, later catalog shaders/plans (`#1283`–`#1292`).
+- Catalog lists and search-index regenerated after the cleanup.
 
 ## 2026-09-15 — Compact generative resonance eight
 
@@ -66,8 +56,6 @@
 - #1274/#1276 already took the morning sixes — did not restamp those IDs.
 - Cards: `agents/swarm-outputs/grok-2026-09-15-classic-geometry-six/`.
 - Real-GPU visual QA: external.
-**Last updated:** 2026-09-15 (chrono-cosmic mechanisms eight)
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
 ## 2026-09-15 — Pull/push union (ahead 1 / behind 1, origin #1278)
 
@@ -80,7 +68,7 @@
 
 ## 2026-09-15 — Sentient / radiant cosmic entities eight (implemented)
 
-- Follow-on after the reserved chrono-cosmic mechanisms eight (those IDs still not implemented).
+- Follow-on after the reserved chrono-cosmic mechanisms eight (those IDs later landed as `#1280`; this eight kept the local idea set).
 - IDs: gen-sentient-aether-plasma-nebula-moth, gen-sentient-bismuth-hypercrystal, gen-sentient-cyber-aurora-void-owl, gen-sentient-quantum-chrono-leviathan-moth, gen-radiant-chrono-glass-nautilus, gen-radiant-cyber-chrono-void-stag, gen-radiant-quantum-crystalline-forge, gen-radiant-quantum-plasma-kraken-core.
 - Per shader, the ideas actually added:
   - moth: thorax-rooted plasma venation; flap-reversal ion-scale wake.

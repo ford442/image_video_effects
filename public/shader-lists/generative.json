@@ -32543,44 +32543,6 @@
         "step": 0.01
       }
     ],
-    "params": [
-      {
-        "id": "spiral_tightness",
-        "name": "Spiral Tightness",
-        "mapping": "zoom_params.x",
-        "default": 0.5,
-        "min": 0.1,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "plasma_bloom",
-        "name": "Plasma Bloom",
-        "mapping": "zoom_params.y",
-        "default": 1.5,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "glass_refraction",
-        "name": "Glass Refraction",
-        "mapping": "zoom_params.z",
-        "default": 1.33,
-        "min": 1,
-        "max": 2.5,
-        "step": 0.01
-      },
-      {
-        "id": "audio_reactivity",
-        "name": "Audio Reactivity",
-        "mapping": "zoom_params.w",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -32589,8 +32551,10 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-<<<<<<< HEAD
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -32629,12 +32593,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-=======
-      "generated-depth",
-      "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     ]
   },
   {
@@ -32747,44 +32705,6 @@
         "step": 0.1
       }
     ],
-    "params": [
-      {
-        "id": "stag_scale",
-        "name": "Stag Scale",
-        "mapping": "zoom_params.x",
-        "default": 1,
-        "min": 0.5,
-        "max": 2,
-        "step": 0.1
-      },
-      {
-        "id": "antler_complexity",
-        "name": "Antler Complexity",
-        "mapping": "zoom_params.y",
-        "default": 3,
-        "min": 1,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "nebula_density",
-        "name": "Nebula Density",
-        "mapping": "zoom_params.z",
-        "default": 0.5,
-        "min": 0.1,
-        "max": 1,
-        "step": 0.05
-      },
-      {
-        "id": "core_pulse_intensity",
-        "name": "Core Pulse Intensity",
-        "mapping": "zoom_params.w",
-        "default": 1,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -32793,8 +32713,10 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-<<<<<<< HEAD
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -32833,12 +32755,6 @@
         "step": 0.1,
         "mapping": "zoom_params.w"
       }
-=======
-      "generated-depth",
-      "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     ]
   },
   {
@@ -32952,44 +32868,6 @@
         "step": 0.01
       }
     ],
-    "params": [
-      {
-        "id": "crystallization_density",
-        "name": "Crystallization Density",
-        "mapping": "zoom_params.x",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "chromatic_aberration",
-        "name": "Chromatic Aberration",
-        "mapping": "zoom_params.y",
-        "default": 1,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "fog_intensity",
-        "name": "Fog Intensity",
-        "mapping": "zoom_params.z",
-        "default": 0.8,
-        "min": 0,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "id": "mouse_influence",
-        "name": "Mouse Influence",
-        "mapping": "zoom_params.w",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -32998,8 +32876,10 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-<<<<<<< HEAD
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -33038,12 +32918,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-=======
-      "generated-depth",
-      "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     ]
   },
   {
@@ -33096,44 +32970,6 @@
         "step": 0.05
       }
     ],
-    "params": [
-      {
-        "id": "tentacle_twist",
-        "name": "Tentacle Twist",
-        "mapping": "zoom_params.x",
-        "default": 1,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "plasma_glow",
-        "name": "Plasma Glow",
-        "mapping": "zoom_params.y",
-        "default": 2,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "core_heat",
-        "name": "Core Heat",
-        "mapping": "zoom_params.z",
-        "default": 1.5,
-        "min": 0.1,
-        "max": 3,
-        "step": 0.1
-      },
-      {
-        "id": "void_depth",
-        "name": "Void Depth",
-        "mapping": "zoom_params.w",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.05
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -33142,8 +32978,10 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-<<<<<<< HEAD
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -33182,12 +33020,6 @@
         "step": 0.05,
         "mapping": "zoom_params.w"
       }
-=======
-      "generated-depth",
-      "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     ]
   },
   {
@@ -34062,44 +33894,6 @@
         "step": 0.01
       }
     ],
-    "params": [
-      {
-        "id": "wing_flutter_frequency",
-        "name": "Wing Flutter Frequency",
-        "mapping": "zoom_params.x",
-        "default": 1,
-        "min": 0.1,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "quantum_storm_intensity",
-        "name": "Quantum Storm Intensity",
-        "mapping": "zoom_params.y",
-        "default": 0.5,
-        "min": 0,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "id": "aether_plasma_glow",
-        "name": "Aether-Plasma Glow",
-        "mapping": "zoom_params.z",
-        "default": 0.8,
-        "min": 0,
-        "max": 3,
-        "step": 0.1
-      },
-      {
-        "id": "time_rift_distortion",
-        "name": "Time Rift Distortion",
-        "mapping": "zoom_params.w",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "id": "gen-sentient-aether-plasma-nebula-moth",
     "url": "shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
     "supportsDepth": true,
@@ -34108,8 +33902,10 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-<<<<<<< HEAD
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -34148,12 +33944,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-=======
-      "generated-depth",
-      "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     ]
   },
   {
@@ -34233,11 +34023,14 @@
         "step": 0.1
       }
     ],
-<<<<<<< HEAD
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "workgroup_size": [
       16,
@@ -34245,21 +34038,8 @@
       1
     ],
     "supportsDepth": true,
-    "updated": true
-=======
-    "supportsDepth": true,
-    "supportsDof": false,
     "updated": true,
-    "features": [
-      "audio-reactive",
-      "mouse-driven",
-      "temporal-feedback",
-      "generated-depth",
-      "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
-    ]
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
+    "supportsDof": false
   },
   {
     "name": "Sentient Cyber-Aurora Void-Owl",
@@ -34307,44 +34087,6 @@
         "step": 0.05
       }
     ],
-    "params": [
-      {
-        "id": "wingbeat_speed",
-        "name": "Wingbeat Speed",
-        "mapping": "zoom_params.x",
-        "default": 1,
-        "min": 0.1,
-        "max": 3,
-        "step": 0.1
-      },
-      {
-        "id": "eye_intensity",
-        "name": "Eye Intensity",
-        "mapping": "zoom_params.y",
-        "default": 1,
-        "min": 0.5,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "aurora_density",
-        "name": "Aurora Density",
-        "mapping": "zoom_params.z",
-        "default": 0.7,
-        "min": 0.1,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "id": "glass_refraction",
-        "name": "Glass Refraction",
-        "mapping": "zoom_params.w",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.05
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -34353,8 +34095,11 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-<<<<<<< HEAD
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -34393,13 +34138,6 @@
         "step": 0.05,
         "mapping": "zoom_params.w"
       }
-=======
-      "temporal-feedback",
-      "generated-depth",
-      "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     ]
   },
   {
@@ -34635,44 +34373,6 @@
         "step": 0.1
       }
     ],
-    "params": [
-      {
-        "id": "wing_span",
-        "name": "Wing Span",
-        "mapping": "zoom_params.x",
-        "default": 1.5,
-        "min": 0.5,
-        "max": 3,
-        "step": 0.1
-      },
-      {
-        "id": "plasma_intensity",
-        "name": "Plasma Intensity",
-        "mapping": "zoom_params.y",
-        "default": 2,
-        "min": 0.1,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "chrono_distortion",
-        "name": "Chrono Distortion",
-        "mapping": "zoom_params.z",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.05
-      },
-      {
-        "id": "nebular_density",
-        "name": "Nebular Density",
-        "mapping": "zoom_params.w",
-        "default": 0.8,
-        "min": 0.1,
-        "max": 2,
-        "step": 0.1
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -34681,8 +34381,10 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-<<<<<<< HEAD
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -34721,12 +34423,6 @@
         "step": 0.1,
         "mapping": "zoom_params.w"
       }
-=======
-      "generated-depth",
-      "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     ]
   },
   {

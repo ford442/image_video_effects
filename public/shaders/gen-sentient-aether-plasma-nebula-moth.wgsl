@@ -118,35 +118,16 @@ fn fbm(p: vec3<f32>) -> f32 {
     return f;
 }
 
-fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
 // Global variables for material tracking
 var<private> g_glow: f32 = 0.0;
 var<private> g_wing_dist: f32 = 0.0;
 var<private> g_body_dist: f32 = 0.0;
-<<<<<<< HEAD
 var<private> g_vein_dist: f32 = 1.0;
 
 fn map(p_in: vec3<f32>) -> f32 {
     let time = u.config.x;
     let mouse = u.zoom_config.yz;
     let bass = plasmaBuffer[0].x;
-=======
-var<private> g_vein: f32 = 0.0;
-var<private> g_scale_dust: f32 = 0.0;
-
-fn map(p_in: vec3<f32>) -> f32 {
-    let time = u.config.x;
-    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
-    let audio = plasmaBuffer[0].x;
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     let mids = plasmaBuffer[0].y;
 
     // Parameters
@@ -155,8 +136,8 @@ fn map(p_in: vec3<f32>) -> f32 {
     let rift_dist = u.zoom_params.w;
 
     var p = p_in;
-    // Mouse interaction — UV y=0 bottom
-    p = p - vec3<f32>(mouse.x * 2.0 - 1.0, mouse.y * 2.0 - 1.0, 0.0);
+    // Mouse interaction - slightly offset the world
+    p = p - vec3<f32>(mouse.x * 2.0 - 1.0, -(mouse.y * 2.0 - 1.0), 0.0);
 
     // Base animation
     let t = time * flutter_freq;
@@ -195,26 +176,12 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Add fbm distortion for the plasma wing effect
     let distortion = fbm(wp * 3.0 - vec3<f32>(0.0, 0.0, time * 2.0)) * 0.2 * plasma_glow;
-<<<<<<< HEAD
     var wing = wing_base + distortion;
 
     // Thorax-rooted plasma venation: shallow ridges along the wing surface
     let vein = wingVeinDistance(wp);
     g_vein_dist = vein;
     wing = wing - exp(-vein * 28.0) * 0.018 * plasma_glow;
-=======
-
-    // Idea 1: wing venation ridges in wing-space (not a glass overlay)
-    let vein = pow(1.0 - abs(sin(wp.x * 11.0) * sin(wp.z * 7.0 + wp.x * 1.5)), 3.0);
-    g_vein = vein;
-
-    // Idea 2: trailing-edge scale-dust toward the posterior wing
-    let trailing = smoothstep(0.15, 1.15, -wp.z);
-    let dust = trailing * hash33(floor(wp * 42.0)).x;
-    g_scale_dust = dust;
-
-    let wing = wing_base + distortion - vein * 0.018 - dust * 0.01;
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
     // Time Rift Distortion (modifies the space around the moth)
     let rift = sin(p.x * 2.0 + t) * sin(p.y * 2.0 - t) * sin(p.z * 2.0) * rift_dist;
@@ -227,12 +194,8 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Accumulate glow
     g_glow = g_glow + 0.01 / (0.01 + abs(final_wing)) * plasma_glow;
-<<<<<<< HEAD
     g_glow = g_glow + 0.02 / (0.01 + abs(final_body)) * (bass * 2.0);
     g_glow = g_glow + 0.008 / (0.008 + vein) * plasma_glow * (0.6 + mids);
-=======
-    g_glow = g_glow + 0.02 / (0.01 + abs(final_body)) * (audio * 2.0 + mids);
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
     return min(final_body, final_wing);
 }
@@ -261,10 +224,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Camera setup
     var ro = vec3<f32>(0.0, 2.0, -6.0);
-    // Mouse orbit — UV y=0 bottom
-    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    // Mouse orbit
+    let mouse = u.zoom_config.yz;
     let mx = (mouse.x * 2.0 - 1.0) * 3.14;
-    let my = (mouse.y * 2.0 - 1.0) * 1.5;
+    let my = -(mouse.y * 2.0 - 1.0) * 1.5;
 
     var ro_yz = vec2<f32>(ro.y, ro.z);
     let tmp4 = rot2d(my) * ro_yz;
@@ -304,11 +267,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
-<<<<<<< HEAD
     let bass = plasmaBuffer[0].x;
-=======
-    let audio = plasmaBuffer[0].x;
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
@@ -359,14 +318,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Wings
             matCol = vec3<f32>(0.6, 0.2, 0.9); // Quantum purple
             matCol = matCol * (diff + 0.5); // more emissive
-<<<<<<< HEAD
             let veinMask = exp(-g_vein_dist * 22.0);
             matCol += vec3<f32>(0.25, 0.95, 0.85) * veinMask * u.zoom_params.z;
             matCol += vec3<f32>(0.55, 0.2, 0.95) * veinMask * mids * 0.4;
-=======
-            matCol += vec3<f32>(0.9, 0.7, 1.0) * g_vein * 0.35;
-            matCol += vec3<f32>(0.4, 1.0, 0.85) * g_scale_dust * (0.4 + treble);
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
         }
 
         col = matCol * ao * (1.0 + clamp(-hitD, 0.0, 0.05) * 0.2);
@@ -376,7 +330,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glowCol = vec3<f32>(0.2, 0.9, 0.7) * (g_glow * 0.02); // Auroral greens
     col = col + glowCol;
 
-<<<<<<< HEAD
     col = acesToneMap(col * 1.1);
     let hitAlpha = select(0.12, 0.55, hit);
     let alpha = clamp(hitAlpha + g_glow * 0.04 + storm * 0.2 + wake * 0.5, 0.08, 0.96);
@@ -385,13 +338,4 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, coord, outCol);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, outCol);
-=======
-    col = acesToneMap(col);
-    let alpha = clamp(select(0.0, 0.45, hit) + g_glow * 0.04 + storm * 0.25 + mids * 0.1, 0.0, 1.0);
-    let outc = vec4<f32>(col, alpha);
-    let depth = select(0.0, clamp(1.0 - t_dist / MAX_DIST, 0.0, 1.0), hit);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), outc);
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), outc);
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 }
