@@ -27040,6 +27040,70 @@
     ]
   },
   {
+    "id": "gen-neon-plasma-chrono-bloom",
+    "name": "Neon Plasma Chrono-Bloom",
+    "type": "generative",
+    "category": "generative",
+    "tags": [
+      "plasma",
+      "neon",
+      "volumetric",
+      "cyberpunk",
+      "bloom"
+    ],
+    "description": "A hyper-vibrant, time-dilated explosion of neon plasma tendrils that bloom and interlace like a digital, cyberpunk flora.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "url": "shaders/gen-neon-plasma-chrono-bloom.wgsl",
+    "features": [
+      "volumetric",
+      "mouse-interactive",
+      "audio-reactive",
+      "bloom"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "distortion_speed",
+        "name": "Distortion Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "bloom_threshold",
+        "name": "Bloom Threshold",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue_shift",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Neon Snowfall",
     "category": "generative",
     "tags": [

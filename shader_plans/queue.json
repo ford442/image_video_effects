@@ -579,11 +579,6 @@
       "filename": "2026-09-17_cryogenic-quantum-frost-nexus.md",
       "title": "Cryogenic Quantum-Frost Nexus",
       "added": "2026-09-17T15:09:35.304748"
-    },
-    {
-      "filename": "2026-09-18_neon-plasma-chrono-bloom.md",
-      "title": "Neon Plasma Chrono-Bloom",
-      "added": "2026-09-18T15:13:09.282423"
     }
   ],
   "current": null,
@@ -1103,6 +1098,13 @@
       "added": "2026-09-16T15:33:11.944400",
       "status": "completed",
       "completed_at": "2026-09-17T08:20:54.379435+00:00"
+    },
+    {
+      "filename": "2026-09-18_neon-plasma-chrono-bloom.md",
+      "title": "Neon Plasma Chrono-Bloom",
+      "added": "2026-09-19T07:57:21.408102+00:00",
+      "status": "completed",
+      "completed_at": "2026-09-19T07:57:21.408120+00:00"
     }
   ],
   "rejected": [],
