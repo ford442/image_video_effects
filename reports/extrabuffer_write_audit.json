@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
+  "generated": "2026-09-15T07:55:31.745467+00:00",
+  "files_scanned": 1411,
+=======
   "generated": "2026-09-15T08:36:27.192014+00:00",
   "files_scanned": 17,
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
   "new_violations": [],
   "known_violations": [],
   "dynamic_writes": 0,

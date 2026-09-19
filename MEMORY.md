@@ -1,5 +1,8 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
+<<<<<<< HEAD
+**Last updated:** 2026-09-15 (sentient/radiant cosmic entities eight implemented)
+=======
 **Last updated:** 2026-09-15 (sentient/radiant cosmic entities eight)
 
 ## 2026-09-15 — Sentient / radiant cosmic entities eight
@@ -64,6 +67,7 @@
 - Cards: `agents/swarm-outputs/grok-2026-09-15-classic-geometry-six/`.
 - Real-GPU visual QA: external.
 **Last updated:** 2026-09-15 (chrono-cosmic mechanisms eight)
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
 ## 2026-09-15 — Pull/push union (ahead 1 / behind 1, origin #1278)
 
@@ -74,13 +78,23 @@
 - Did not take `#1278` leftover note claiming encaustic/energy-shield/hyper-space/warp-drive are still open — those four already landed locally.
 - Honey-melt and melting-oil stay skipped (Codex idea-rich). Catalog 1,367. Real-GPU QA external.
 
-## 2026-09-15 — Selected sentient / radiant cosmic entities eight (not yet implemented)
+## 2026-09-15 — Sentient / radiant cosmic entities eight (implemented)
 
-- Follow-on selection after the reserved chrono-cosmic mechanisms eight.
+- Follow-on after the reserved chrono-cosmic mechanisms eight (those IDs still not implemented).
 - IDs: gen-sentient-aether-plasma-nebula-moth, gen-sentient-bismuth-hypercrystal, gen-sentient-cyber-aurora-void-owl, gen-sentient-quantum-chrono-leviathan-moth, gen-radiant-chrono-glass-nautilus, gen-radiant-cyber-chrono-void-stag, gen-radiant-quantum-crystalline-forge, gen-radiant-quantum-plasma-kraken-core.
-- Exact 4+4 prefix cohort of cosmic fauna/crystalline entities. All eight lack `Ideas:` headers; no substantive prior swarm cards/closeouts found; no extraBuffer[0..132].
-- Exclusions: sentient serpent/heart/flora and radiant colossus/griffin have prior substantive batch work; sentient ferro/silk use forbidden low extraBuffer slots.
-- Floor watch-outs: seven definitions need canonical `params` added without changing existing control meanings; bismuth hypercrystal reads C as fake audio; several need honest A packing and ACES. Plumbing is not the upgrade.
+- Per shader, the ideas actually added:
+  - moth: thorax-rooted plasma venation; flap-reversal ion-scale wake.
+  - bismuth: recursive hopper terraces; crystallographic oxide zoning.
+  - owl: auroral feather-current lanes; faceted cyber-iris aperture.
+  - leviathan-moth: peristaltic armor segments; frozen-time wing lamellae.
+  - nautilus: logarithmic chamber septa; birefringent growth lamellae.
+  - stag: crystal tine bifurcation; segmented chrono hoof wakes.
+  - forge: crystallographic twin facets; accretion weld seams.
+  - kraken: paired sucker-current rows; core-to-arm peristaltic discharge.
+- Floor: canonical `params` mirrored onto seven defs; bismuth C-audio → plasmaBuffer; forge `applyGenerativePrimaryControls` deleted; kraken zoom_params not clamped to 0–1; ACES display A; no new springs; extraBuffer[0..132] unused.
+- Exclusions unchanged: sentient serpent/heart/flora, radiant colossus/griffin (prior batches); sentient ferro/silk (low extraBuffer).
+- Gates: Naga 8/8, extraBuffer 0, dead sliders 0. Catalog 1,367 / generative 472. Jest 689/6 WASM pre-existing. SKIP_WASM_BUILD=1 build green. Real-GPU QA external.
+- Cards: `agents/swarm-outputs/sol-2026-09-15-sentient-radiant-eight/`.
 
 ## 2026-09-15 — Chrono-cosmic mechanisms eight
 

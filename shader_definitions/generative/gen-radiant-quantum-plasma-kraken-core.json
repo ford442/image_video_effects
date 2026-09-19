@@ -94,9 +94,51 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
+<<<<<<< HEAD
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "tentacle_twist",
+      "name": "Tentacle Twist",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "plasma_glow",
+      "name": "Plasma Glow",
+      "default": 2.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "core_heat",
+      "name": "Core Heat",
+      "default": 1.5,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "void_depth",
+      "name": "Void Depth",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05,
+      "mapping": "zoom_params.w"
+    }
+=======
     "generated-depth",
     "semantic-alpha",
     "aces-tone-map",
     "upgraded-rgba"
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
   ]
 }

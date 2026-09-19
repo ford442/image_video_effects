@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Radiant Cyber-Chrono Void-Stag
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Radiant Cyber-Chrono Void-Stag
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-15
+//  Ideas: crystal tine bifurcation; segmented chrono hoof wakes
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -83,9 +87,15 @@ fn fbm(p_in: vec3<f32>) -> f32 {
 }
 
 fn sdEllipsoid(p: vec3<f32>, r: vec3<f32>) -> f32 {
-    let k0 = length(p / r);
-    let k1 = length(p / (r * r));
+    let rr = max(r, vec3<f32>(0.001));
+    let k0 = length(p / rr);
+    let k1 = max(length(p / (rr * rr)), 0.001);
     return k0 * (k0 - 1.0) / k1;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
@@ -116,10 +126,16 @@ fn map(pos_in: vec3<f32>) -> MapResult {
     let scale = u.zoom_params.x;
     p /= scale;
 
+<<<<<<< HEAD
+    // Global transform via mouse (normalized UV, y=0 top)
+    let mx = (u.zoom_config.y - 0.5) * 6.0;
+    let my = (u.zoom_config.z - 0.5) * 6.0;
+=======
     // Global transform via mouse — UV y=0 bottom
     let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
     let mx = (mouse.x - 0.5) * 6.0;
     let my = (mouse.y - 0.5) * 6.0;
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     let p_xz_tmp = rot(-mx) * p.xz;
 p.x = p_xz_tmp.x;
 p.z = p_xz_tmp.y;
@@ -193,19 +209,26 @@ p_antler.x = p_antler_xy_tmp.x;
 p_antler.y = p_antler_xy_tmp.y;
 
     var antler_d = MAX_DIST;
-    let complexity = i32(u.zoom_params.y);
+    let complexity = i32(clamp(u.zoom_params.y, 1.0, 5.0));
     var branch_p = p_antler;
     var branch_r = 0.08;
     var branch_len = 0.6;
+    var tine_d = MAX_DIST;
 
-    // Evaluate main antler structure using multi-domain twist
-    for (var i = 0; i < 4; i++) {
-        if (i > complexity) { break; }
+    for (var i = 0; i < 5; i++) {
+        if (i >= complexity) { break; }
         let segment_d = sdCapsule(branch_p, vec3<f32>(0.0), vec3<f32>(0.0, branch_len, 0.0), branch_r);
         antler_d = smin(antler_d, segment_d, 0.05);
+<<<<<<< HEAD
+        // Crystal tine bifurcation: one bounded lateral child per enabled segment
+        let childEnd = vec3<f32>(branch_len * 0.55, branch_len * 0.25, 0.12);
+        let child_d = sdCapsule(branch_p, vec3<f32>(0.0, branch_len * 0.35, 0.0), childEnd, branch_r * 0.55);
+        tine_d = min(tine_d, child_d);
+=======
         // Idea 1: antler velvet / pearling along branches
         let pearl = length(branch_p - vec3<f32>(0.0, branch_len * 0.55, 0.0)) - branch_r * 1.85;
         antler_d = min(antler_d, pearl);
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
         branch_p.y -= branch_len;
         let branch_xy_tmp = rot(0.4 + sin(time)*0.1) * branch_p.xy;
@@ -218,6 +241,7 @@ branch_p.z = branch_yz_tmp.y;
         branch_r *= 0.7;
         branch_len *= 0.8;
     }
+    antler_d = smin(antler_d, tine_d, 0.04);
     // Crystal distortion
     let crystal_disp = sin(p_antler.x * 20.0) * sin(p_antler.y * 20.0) * sin(p_antler.z * 20.0) * 0.02;
     antler_d += crystal_disp;
@@ -253,10 +277,12 @@ branch_p.z = branch_yz_tmp.y;
     p_trail.x = abs(p_trail.x);
 
     let trail_len = 3.0;
-    // Front trails
-    var dist_to_fl = sdCapsule(p_trail, trail_p0, trail_p0 - vec3<f32>(0.0, 0.0, trail_len), 0.1);
-    // Back trails
-    var dist_to_bl = sdCapsule(p_trail, trail_p1, trail_p1 - vec3<f32>(0.0, 0.0, trail_len), 0.1);
+    let packet = fract(-p_trail.z * 0.55 + time * 2.4);
+    let packetRad = 0.06 + 0.08 * (1.0 - packet);
+    var dist_to_fl = sdCapsule(p_trail, trail_p0, trail_p0 - vec3<f32>(0.0, 0.0, trail_len), packetRad);
+    var dist_to_bl = sdCapsule(p_trail, trail_p1, trail_p1 - vec3<f32>(0.0, 0.0, trail_len), packetRad);
+    dist_to_fl += 0.04 * sin(packet * 6.2831853);
+    dist_to_bl += 0.04 * sin(packet * 6.2831853 + 1.3);
 
     trail_d = smin(dist_to_fl, dist_to_bl, 0.2);
 
@@ -383,15 +409,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let refr_col = getNebula(p, refr_rd);
             let baseColor = vec3<f32>(0.8, 0.9, 1.0); // Icy blue/white
             col = mix(refr_col, baseColor, 0.3) + spec * 2.0 + fresnel * vec3<f32>(0.5, 0.8, 1.0);
+<<<<<<< HEAD
+            let glow_intensity = plasmaBuffer[0].x + plasmaBuffer[0].y * 0.5;
+            col += vec3<f32>(0.0, 0.8, 1.0) * glow_intensity * 0.5;
+            // Tine facet catchlights from bifurcation
+            col += vec3<f32>(0.7, 0.95, 1.0) * pow(spec, 2.0) * 0.35;
+=======
             col += vec3<f32>(0.85, 0.95, 1.0) * 0.25; // velvet pearl catchlight
             col += vec3<f32>(0.0, 0.8, 1.0) * plasmaBuffer[0].x * 0.5;
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
         } else if (map_res.mat == 3) { // Core
             col = vec3<f32>(0.0, 0.8, 1.0) * 2.0; // Neon Cyan
         } else if (map_res.mat == 4) { // Trails
+<<<<<<< HEAD
+            let packet = fract(-p.z * 0.55 + u.config.x * 2.4);
+            col = vec3<f32>(1.0, 0.15 + packet * 0.4, 0.45 + (1.0 - packet) * 0.4) * (1.4 + plasmaBuffer[0].z * 0.4);
+            col *= (1.0 - fresnel);
+=======
             col = vec3<f32>(1.0, 0.0, 0.5) * 1.5; // Neon Magenta/Gold
             col *= (1.0 - fresnel); // Soften edges
             col += map_res.glow;
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
         }
     } else {
         col = getNebula(ro, rd);
@@ -399,6 +438,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Add accumulated glow from raymarching
     col += map_res.glow * 0.05;
+<<<<<<< HEAD
+    col = acesToneMap(col * 1.1);
+    let hit = map_res.d < MAX_DIST;
+    let alpha = clamp(select(0.14, 0.5, hit) + length(map_res.glow) * 0.2, 0.08, 0.96);
+    let depth = select(0.0, clamp(1.0 - map_res.d / MAX_DIST, 0.0, 1.0), hit);
+    let pix = vec2<i32>(id.xy);
+    let outCol = vec4<f32>(col, alpha);
+    textureStore(writeTexture, pix, outCol);
+    textureStore(writeDepthTexture, pix, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pix, outCol);
+=======
 
     // Tone mapping
     col = acesToneMap(col);
@@ -409,4 +459,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(id.xy), outc);
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, vec2<i32>(id.xy), outc);
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 }

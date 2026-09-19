@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Sentient Aether-Plasma Nebula-Moth
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Sentient Aether-Plasma Nebula-Moth
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-15
+//  Ideas: thorax-rooted plasma venation; flap-reversal ion-scale wake
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -38,12 +43,19 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
+fn sdEllipsoid(p: vec3<f32>, r: vec3<f32>) -> f32 {
+    let rr = max(r, vec3<f32>(0.001));
+    let k0 = length(p / rr);
+    let k1 = max(length(p / (rr * rr)), 0.001);
+    return k0 * (k0 - 1.0) / k1;
+}
+
 fn sdCappedCone(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, ra: f32, rb: f32) -> f32 {
     let rba = rb - ra;
-    let baba = dot(b - a, b - a);
+    let baba = max(dot(b - a, b - a), 1e-6);
     let papa = dot(p - a, p - a);
     let paba = dot(p - a, b - a) / baba;
-    let x = sqrt(papa - paba * paba * baba);
+    let x = sqrt(max(papa - paba * paba * baba, 0.0));
     let cax = max(0.0, x - mix(ra, rb, paba));
     let cay = abs(paba - 0.5) - 0.5;
     let k = rba * rba + baba;
@@ -54,13 +66,23 @@ fn sdCappedCone(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, ra: f32, rb: f32) -> f
     if(paba < 0.0 || paba > 1.0) {
         return s * sqrt(min(cax * cax + cay * cay * baba, cbx * cbx + cby * cby * baba));
     }
-    return s * sqrt(cbx * cbx + cby * cby * baba);
+    return s * sqrt(max(cbx * cbx + cby * cby * baba, 0.0));
 }
 
-fn sdEllipsoid(p: vec3<f32>, r: vec3<f32>) -> f32 {
-    let k0 = length(p / r);
-    let k1 = length(p / (r * r));
-    return k0 * (k0 - 1.0) / k1;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Thorax-rooted plasma venation in wing-local space (origin at thorax, +x toward tip)
+fn wingVeinDistance(wp: vec3<f32>) -> f32 {
+    let local = wp - vec3<f32>(1.2, 0.0, 0.0);
+    let span = clamp((local.x + 1.5) / 3.0, 0.0, 1.0);
+    let primary = abs(local.z) - 0.02 * span;
+    let branchA = abs(local.z - 0.35 * span * span) - 0.012;
+    let branchB = abs(local.z + 0.28 * span * span) - 0.010;
+    let vein = min(abs(primary), min(abs(branchA), abs(branchB)));
+    return vein + abs(local.y) * 0.4;
 }
 
 fn hash33(p: vec3<f32>) -> vec3<f32> {
@@ -109,6 +131,14 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 var<private> g_glow: f32 = 0.0;
 var<private> g_wing_dist: f32 = 0.0;
 var<private> g_body_dist: f32 = 0.0;
+<<<<<<< HEAD
+var<private> g_vein_dist: f32 = 1.0;
+
+fn map(p_in: vec3<f32>) -> f32 {
+    let time = u.config.x;
+    let mouse = u.zoom_config.yz;
+    let bass = plasmaBuffer[0].x;
+=======
 var<private> g_vein: f32 = 0.0;
 var<private> g_scale_dust: f32 = 0.0;
 
@@ -116,6 +146,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     let time = u.config.x;
     let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
     let audio = plasmaBuffer[0].x;
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     let mids = plasmaBuffer[0].y;
 
     // Parameters
@@ -131,7 +162,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     let t = time * flutter_freq;
 
     // Thorax / Body
-    var body = sdEllipsoid(p, vec3<f32>(0.3, 0.2 + audio * 0.1, 1.0));
+    var body = sdEllipsoid(p, vec3<f32>(0.3, 0.2 + bass * 0.1, 1.0));
 
     // Antennae
     var ap = p;
@@ -152,7 +183,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     var wp = p;
     wp.x = abs(wp.x);
     // Flapping motion
-    let flap_angle = sin(t * 15.0) * 0.8 * (1.0 + audio);
+    let flap_angle = sin(t * 15.0) * 0.8 * (1.0 + bass);
     let flap_rot = rot2d(flap_angle);
     var wp_xy = vec2<f32>(wp.x, wp.y);
     let tmp3 = flap_rot * wp_xy;
@@ -164,6 +195,14 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Add fbm distortion for the plasma wing effect
     let distortion = fbm(wp * 3.0 - vec3<f32>(0.0, 0.0, time * 2.0)) * 0.2 * plasma_glow;
+<<<<<<< HEAD
+    var wing = wing_base + distortion;
+
+    // Thorax-rooted plasma venation: shallow ridges along the wing surface
+    let vein = wingVeinDistance(wp);
+    g_vein_dist = vein;
+    wing = wing - exp(-vein * 28.0) * 0.018 * plasma_glow;
+=======
 
     // Idea 1: wing venation ridges in wing-space (not a glass overlay)
     let vein = pow(1.0 - abs(sin(wp.x * 11.0) * sin(wp.z * 7.0 + wp.x * 1.5)), 3.0);
@@ -175,6 +214,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     g_scale_dust = dust;
 
     let wing = wing_base + distortion - vein * 0.018 - dust * 0.01;
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
     // Time Rift Distortion (modifies the space around the moth)
     let rift = sin(p.x * 2.0 + t) * sin(p.y * 2.0 - t) * sin(p.z * 2.0) * rift_dist;
@@ -187,7 +227,12 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Accumulate glow
     g_glow = g_glow + 0.01 / (0.01 + abs(final_wing)) * plasma_glow;
+<<<<<<< HEAD
+    g_glow = g_glow + 0.02 / (0.01 + abs(final_body)) * (bass * 2.0);
+    g_glow = g_glow + 0.008 / (0.008 + vein) * plasma_glow * (0.6 + mids);
+=======
     g_glow = g_glow + 0.02 / (0.01 + abs(final_body)) * (audio * 2.0 + mids);
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
     return min(final_body, final_wing);
 }
@@ -243,6 +288,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hit = false;
 
     g_glow = 0.0;
+    g_vein_dist = 1.0;
 
     for (var i = 0; i < MAX_STEPS; i++) {
         p = ro + rd * t_dist;
@@ -258,50 +304,88 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
+<<<<<<< HEAD
+    let bass = plasmaBuffer[0].x;
+=======
     let audio = plasmaBuffer[0].x;
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
     // Background particle storm
     let storm_intensity = u.zoom_params.y;
+    let flutter_freq = u.zoom_params.x;
     var storm = 0.0;
+    var wake = 0.0;
     var sp = ro;
     var st = 0.0;
+    // Flap-reversal gate: ion-scale filaments at wing-tip extrema
+    let flapPhase = time * flutter_freq * 15.0;
+    let reversal = pow(clamp(abs(cos(flapPhase)), 0.0, 1.0), 8.0);
+    let flapSign = sign(sin(flapPhase) + 1e-4);
     for(var j = 0; j < 15; j++) {
         sp = ro + rd * st;
         let sv = fbm(sp * 2.0 + vec3<f32>(0.0, 0.0, time * 3.0));
         storm = storm + (sv * sv) * 0.05 * storm_intensity;
+        // Analytic wing-tip wake filaments (world-space, no extra SDF)
+        let tipY = flapSign * 1.1;
+        let tipL = vec3<f32>(-2.4, tipY, 0.15);
+        let tipR = vec3<f32>( 2.4, tipY, 0.15);
+        let trail = vec3<f32>(0.0, -flapSign * 0.4, -0.8);
+        let uL = clamp(dot(sp - tipL, trail) / 1.2, 0.0, 1.0);
+        let uR = clamp(dot(sp - tipR, trail) / 1.2, 0.0, 1.0);
+        let dL = length(sp - (tipL + trail * uL));
+        let dR = length(sp - (tipR + trail * uR));
+        wake = wake + exp(-min(dL, dR) * 9.0) * reversal * storm_intensity * 0.08;
         st = st + 1.0;
     }
-    col = col + vec3<f32>(0.1, 0.2, 0.3) * storm * (1.0 + audio);
+    col = col + vec3<f32>(0.1, 0.2, 0.3) * storm * (1.0 + bass);
+    col = col + vec3<f32>(0.35, 0.85, 1.0) * wake * (0.7 + treble);
 
     if (hit) {
         let n = calcNormal(p);
+        let ao = clamp(map(p + n * 0.1) * 10.0, 0.0, 1.0);
+        let hitD = map(p);
         let l = normalize(vec3<f32>(1.0, 2.0, -1.0));
         let diff = max(dot(n, l), 0.0);
-        let ao = clamp(map(p + n * 0.1) * 10.0, 0.0, 1.0);
 
         var matCol = vec3<f32>(0.0);
         if (g_body_dist < g_wing_dist) {
             // Thorax / body
             matCol = vec3<f32>(0.1, 0.8, 0.9); // Bioluminescent cyan
             let sub = max(0.0, map(p + l * 0.2)) * 2.0; // fake subsurface
-            matCol = matCol * (diff + 0.2 + sub * audio);
+            matCol = matCol * (diff + 0.2 + sub * bass);
         } else {
             // Wings
             matCol = vec3<f32>(0.6, 0.2, 0.9); // Quantum purple
             matCol = matCol * (diff + 0.5); // more emissive
+<<<<<<< HEAD
+            let veinMask = exp(-g_vein_dist * 22.0);
+            matCol += vec3<f32>(0.25, 0.95, 0.85) * veinMask * u.zoom_params.z;
+            matCol += vec3<f32>(0.55, 0.2, 0.95) * veinMask * mids * 0.4;
+=======
             matCol += vec3<f32>(0.9, 0.7, 1.0) * g_vein * 0.35;
             matCol += vec3<f32>(0.4, 1.0, 0.85) * g_scale_dust * (0.4 + treble);
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
         }
 
-        col = matCol * ao;
+        col = matCol * ao * (1.0 + clamp(-hitD, 0.0, 0.05) * 0.2);
     }
 
     // Add volumetric glow
     let glowCol = vec3<f32>(0.2, 0.9, 0.7) * (g_glow * 0.02); // Auroral greens
     col = col + glowCol;
 
+<<<<<<< HEAD
+    col = acesToneMap(col * 1.1);
+    let hitAlpha = select(0.12, 0.55, hit);
+    let alpha = clamp(hitAlpha + g_glow * 0.04 + storm * 0.2 + wake * 0.5, 0.08, 0.96);
+    let depth = select(0.0, clamp(1.0 - t_dist / MAX_DIST, 0.0, 1.0), hit);
+    let outCol = vec4<f32>(col, alpha);
+    textureStore(writeTexture, coord, outCol);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outCol);
+=======
     col = acesToneMap(col);
     let alpha = clamp(select(0.0, 0.45, hit) + g_glow * 0.04 + storm * 0.25 + mids * 0.1, 0.0, 1.0);
     let outc = vec4<f32>(col, alpha);
@@ -309,4 +393,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), outc);
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, vec2<i32>(global_id.xy), outc);
+>>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 }
