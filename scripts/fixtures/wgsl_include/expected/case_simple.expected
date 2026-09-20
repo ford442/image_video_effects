@@ -1,0 +1,7 @@
+// #include-expanded: _lib_a.wgsl (from case_simple.wgsl:1)
+// library A
+fn lib_a_value() -> f32 { return 1.0; }
+
+
+@compute @workgroup_size(16, 16, 1)
+fn main() { let v = lib_a_value(); }

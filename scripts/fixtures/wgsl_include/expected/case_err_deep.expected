@@ -1,0 +1,1 @@
+ERROR: #include nesting deeper than 8: case_err_deep.wgsl -> _lib_deep1.wgsl -> _lib_deep2.wgsl -> _lib_deep3.wgsl -> _lib_deep4.wgsl -> _lib_deep5.wgsl -> _lib_deep6.wgsl -> _lib_deep7.wgsl -> _lib_deep8.wgsl -> _lib_deep9.wgsl

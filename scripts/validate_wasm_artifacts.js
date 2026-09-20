@@ -15,10 +15,17 @@ const WASM_MAGIC = Buffer.from([0x00, 0x61, 0x73, 0x6d]);
 const MIN_WASM_SIZE = 50 * 1024; // 50 KB minimum size
 const MAX_WASM_SIZE = 200 * 1024; // 200 KB maximum (allows growth from typical ~96 KB)
 
+// naga_wasm links the whole naga WGSL front-end + validator, so it sits an order
+// of magnitude above the renderer artifact and needs its own band.
+const MIN_NAGA_WASM_SIZE = 400 * 1024; // 400 KB — well under a real build, catches a stub
+const MAX_NAGA_WASM_SIZE = 1500 * 1024; // 1.5 MB — allows growth from ~805 KB
+
 const artifacts = [
   { path: 'public/wasm/pixelocity_wasm.wasm', type: 'wasm', min: MIN_WASM_SIZE, max: MAX_WASM_SIZE },
   { path: 'public/wasm/pixelocity_wasm.js', type: 'js-module', min: 10 * 1024 }, // 10 KB min
   { path: 'public/wasm/wasm_bridge.js', type: 'js-glue', min: 500 }, // 500 B min (modular barrel bridge)
+  { path: 'public/wasm/naga_wasm.wasm', type: 'wasm', min: MIN_NAGA_WASM_SIZE, max: MAX_NAGA_WASM_SIZE },
+  { path: 'public/wasm/naga_wasm.js', type: 'js-glue', min: 500 }, // hand-written ABI wrapper
 ];
 
 const requiredExports = [
@@ -230,6 +237,72 @@ function checkToolchainPin() {
 }
 
 checkToolchainPin();
+
+/**
+ * naga_wasm staleness + pin (src/contracts/wgsl_validation.json).
+ * The artifact is committed and never rebuilt in CI, so the only thing standing
+ * between a Rust edit and a silently stale validator is this mtime comparison —
+ * the same guard CI applies to pixelocity_wasm.wasm.
+ */
+function checkNagaWasm() {
+  const contractPath = path.resolve('src/contracts/wgsl_validation.json');
+  if (!fs.existsSync(contractPath)) {
+    errors.push('❌ src/contracts/wgsl_validation.json: FILE NOT FOUND (naga_wasm pin)');
+    allValid = false;
+    return;
+  }
+  const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+
+  if (!/^\d+\.\d+$/.test(contract.nagaCratePin || '')) {
+    errors.push(`❌ wgsl_validation.json: nagaCratePin must be an x.y minor pin, got "${contract.nagaCratePin}"`);
+    allValid = false;
+  }
+
+  const cargoToml = path.resolve(contract.crate, 'Cargo.toml');
+  if (fs.existsSync(cargoToml)) {
+    const declared = fs.readFileSync(cargoToml, 'utf8').match(/naga\s*=\s*\{\s*version\s*=\s*"([^"]+)"/);
+    if (!declared) {
+      errors.push(`❌ ${contract.crate}/Cargo.toml: no pinned naga dependency found`);
+      allValid = false;
+    } else if (declared[1] !== contract.nagaCratePin) {
+      errors.push(
+        `❌ ${contract.crate}/Cargo.toml pins naga "${declared[1]}" but ` +
+          `wgsl_validation.json nagaCratePin is "${contract.nagaCratePin}"`,
+      );
+      allValid = false;
+    }
+  }
+
+  const artifactPath = path.resolve(contract.artifact);
+  if (!fs.existsSync(artifactPath)) return; // reported by the artifact loop above
+
+  const artifactMtime = fs.statSync(artifactPath).mtimeMs;
+  const sources = [cargoToml, ...listRustSources(path.resolve(contract.crate, 'src'))].filter((p) =>
+    fs.existsSync(p),
+  );
+  const newer = sources.filter((p) => fs.statSync(p).mtimeMs > artifactMtime);
+  if (newer.length > 0) {
+    errors.push(
+      `❌ ${contract.artifact} is older than ${newer.map((p) => path.relative(process.cwd(), p)).join(', ')} — ` +
+        `rebuild with: ${contract.rebuildCommand}`,
+    );
+    allValid = false;
+  } else {
+    console.log(`naga_wasm: ✅ artifact fresh, naga pinned to ${contract.nagaCratePin}`);
+  }
+  console.log('');
+}
+
+function listRustSources(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .flatMap((e) =>
+      e.isDirectory() ? listRustSources(path.join(dir, e.name)) : e.name.endsWith('.rs') ? [path.join(dir, e.name)] : [],
+    );
+}
+
+checkNagaWasm();
 
 // Summary
 console.log('=== Validation Summary ===\n');

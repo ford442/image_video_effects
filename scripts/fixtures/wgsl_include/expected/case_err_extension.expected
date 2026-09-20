@@ -1,0 +1,1 @@
+ERROR: case_err_extension.wgsl: #include "_lib_a.txt" — must end in .wgsl
