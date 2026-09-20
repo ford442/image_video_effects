@@ -380,6 +380,16 @@ def main() -> int:
         action="store_true",
         help="Print full JSON report to stdout",
     )
+    parser.add_argument(
+        "--skip-naga",
+        action="store_true",
+        help=(
+            "Skip naga validation and run only the workgroup/bindgroup/extraBuffer "
+            "checks. Used by CI, where naga is owned by `npm run verify:naga-wasm` "
+            "(scripts/verify-naga-wasm.mjs) — it runs the same naga minor in-process "
+            "from public/wasm/naga_wasm.wasm, so no naga binary needs installing."
+        ),
+    )
     args = parser.parse_args()
 
     if args.files:
@@ -423,11 +433,17 @@ def main() -> int:
             if fix.get("replacements"):
                 print(f"[FIX] {fix['file']}: {fix['replacements']} literal (int,int) workgroup fix(es)")
 
-    skip_naga = args.full_tree or not naga_available()
-    if not args.full_tree and not naga_available():
+    skip_naga = args.skip_naga or args.full_tree or not naga_available()
+    if args.skip_naga:
+        print(
+            "[INFO] --skip-naga: naga validation is owned by "
+            "`npm run verify:naga-wasm` (public/wasm/naga_wasm.wasm)",
+            file=sys.stderr,
+        )
+    elif not args.full_tree and not naga_available():
         print(
             f"[WARN] naga not found at {NAGA_BIN} — skipping naga step "
-            "(install with: cargo install naga-cli)",
+            "(install with: cargo install naga-cli, or run: npm run verify:naga-wasm)",
             file=sys.stderr,
         )
 

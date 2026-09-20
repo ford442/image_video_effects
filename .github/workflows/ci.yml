@@ -240,16 +240,32 @@ jobs:
       with:
         python-version: '3.12'
     
-    - name: Install naga CLI
-      run: |
-        rustup update stable
-        cargo install naga-cli --version 30.0.0
+    # Replaces `rustup update stable && cargo install naga-cli --version 30.0.0`,
+    # which cost minutes on every run. naga now ships as a committed wasm artifact
+    # (public/wasm/naga_wasm.wasm, tools/naga_wasm) pinned to the same minor, so the
+    # gate needs a Node runtime and nothing else. No npm install: the script only
+    # uses node builtins.
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+    - name: Validate WGSL with naga-wasm (changed files)
+      run: node scripts/verify-naga-wasm.mjs --base-ref origin/main
+
+    # Full catalog in ~7s. Ratcheted against src/contracts/wgsl_validation.json:
+    # a new invalid shader fails, and so does a known-bad one that starts passing
+    # without being removed from the list.
+    - name: Validate WGSL with naga-wasm (full catalog)
+      run: node scripts/verify-naga-wasm.mjs --all --report
+
+    - name: naga-wasm gate unit tests
+      run: node --test scripts/verify-naga-wasm.test.mjs
 
     - name: Full-tree workgroup convention scan
       run: python3 scripts/wgsl_precommit_gate.py --full-tree
 
     - name: Run WGSL pre-commit gate on changed files
-      run: python3 scripts/wgsl_precommit_gate.py --base origin/main
+      run: python3 scripts/wgsl_precommit_gate.py --base origin/main --skip-naga
 
     - name: Audit shader catalog hygiene (defs ↔ WGSL)
       run: python3 scripts/audit_orphan_shader_defs.py --ci-gate
@@ -279,6 +295,13 @@ jobs:
           echo "- No precommit report generated" >> "$GITHUB_STEP_SUMMARY"
         fi
         echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "## naga-wasm validation" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/naga_wasm_validation.json ]; then
+          python3 -c "import json; r=json.load(open('reports/naga_wasm_validation.json')); print(f\"- naga {r['nagaCratePin']}: {r['total']} files, {r['valid']} valid, {r['invalid']} invalid ({r['known']} known-bad, {r['new']} new)\")" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "- No naga-wasm report generated" >> "$GITHUB_STEP_SUMMARY"
+        fi
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         echo "## Orphan shader definitions" >> "$GITHUB_STEP_SUMMARY"
         if [ -f reports/orphan_shader_defs.md ]; then
           cat reports/orphan_shader_defs.md >> "$GITHUB_STEP_SUMMARY"
@@ -301,6 +324,7 @@ jobs:
         name: wgsl-gate-reports
         path: |
           reports/wgsl_precommit_report.json
+          reports/naga_wasm_validation.json
           reports/orphan_shader_defs.json
           reports/orphan_shader_defs.md
           reports/extrabuffer_write_audit.json

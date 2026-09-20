@@ -65,10 +65,35 @@ python3 scripts/new_shader.py "My Cool Effect" --category generative
 - Refuses to overwrite an existing file.
 - `--dry-run` prints the file instead of writing it.
 
+## `verify-naga-wasm.mjs`
+
+Owns naga validation. Runs the naga WGSL front-end and validator from a committed
+wasm artifact (`public/wasm/naga_wasm.wasm`, built from `tools/naga_wasm`) — no
+`naga` binary, no Rust toolchain, no GPU.
+
+```bash
+npm run verify:naga-wasm                       # files changed vs origin/main
+npm run verify:naga-wasm:all                   # whole catalog, ~7s
+node scripts/verify-naga-wasm.mjs --files public/shaders/my-effect.wgsl
+```
+
+It is ratcheted against `src/contracts/wgsl_validation.json`. 40 shaders already
+on `main` fail naga (they predate full-catalog validation) and are listed there;
+the gate fails if an unlisted shader breaks, **and** if a listed one starts
+passing without being removed. Fixing one means deleting its id and lowering
+`ratchet` — the count only goes down.
+
+See [`tools/naga_wasm/README.md`](../tools/naga_wasm/README.md).
+
 ## `wgsl_precommit_gate.py`
 
-Fast validation. Runs naga and the bindgroup checker on changed `.wgsl` files,
-or a full-tree workgroup/bindgroup scan with `--full-tree`.
+Fast validation. Runs the bindgroup checker, the workgroup-size convention check
+and the extraBuffer reserved-zone scan on changed `.wgsl` files, or a full-tree
+scan with `--full-tree`.
+
+It still shells out to a local `naga` binary when one is installed, but CI passes
+`--skip-naga`: naga is owned by `verify:naga-wasm` above, which runs the same
+naga minor in-process.
 
 Usage:
 
@@ -204,6 +229,7 @@ edits. Bindings / ACES / sliders / naga are the floor, not the upgrade.
 After each 8-shader upgrade batch:
 
 1. `python3 scripts/wgsl_precommit_gate.py --files public/shaders/<batch>.wgsl`
+   and `node scripts/verify-naga-wasm.mjs --files public/shaders/<batch>.wgsl`
 2. `npm run audit:extrabuffer` (or `--files` on batch WGSL)
 3. `npm run audit:dead-sliders -- --files <id1> <id2> …`
 4. `node scripts/generate_shader_lists.js` + duplicate check
