@@ -39,12 +39,7 @@ fn rotate(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-<<<<<<< HEAD
 var<private> g_seam: f32 = 1.0;
-=======
-var<private> g_fold: vec3<f32> = vec3<f32>(0.0);
-var<private> g_hopper: f32 = 0.0;
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
 fn mapSDF(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
@@ -75,18 +70,9 @@ fn mapSDF(p_in: vec3<f32>) -> vec2<f32> {
         scale *= s;
     }
 
-<<<<<<< HEAD
     g_seam = seam;
     let d = (length(p) - 1.0) / scale;
     return vec2<f32>(d, twin);
-=======
-    g_fold = p;
-    // Idea 2: hopper terraces on the forge crystal
-    let hopper = abs(fract(p.y * 6.0) - 0.5);
-    g_hopper = hopper;
-    let d = (length(p) - 1.0 - (0.5 - hopper) * 0.12) / scale;
-    return vec2<f32>(d, 1.0);
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -118,22 +104,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-<<<<<<< HEAD
     // Mouse Interaction: Gravity well distortion (normalized UV)
     var m = (u.zoom_config.yz - vec2<f32>(0.5)) * vec2<f32>(res.x / max(res.y, 1.0), 1.0);
     let mDist = length(uv - m);
     if (mDist < 0.5) {
         let force = (0.5 - mDist) * 2.0 * u.zoom_params.w;
         uv += normalize(uv - m + vec2<f32>(1e-4)) * force * 0.1 * sin(u.config.x * 2.0);
-=======
-    // Mouse Interaction: Gravity well distortion — UV y=0 bottom, Mouse Influence slider
-    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
-    var m = (mouse - vec2<f32>(0.5)) * vec2<f32>(res.x / res.y, 1.0);
-    let mDist = length(uv - m);
-    if (mDist < 0.5) {
-        let force = (0.5 - mDist) * 2.0 * u.zoom_params.w;
-        uv += normalize(uv - m + vec2<f32>(0.0001)) * force * 0.1 * sin(u.config.x * 2.0);
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     }
 
     let ro = vec3<f32>(0.0, 0.0, -8.0 + u.config.x * 2.0);
@@ -180,22 +156,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Iridescent chromatic dispersion based on normals and time
         let baseCol = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(u.config.x) + p.xyz * 0.5 + vec3<f32>(0.0, 2.0, 4.0));
-<<<<<<< HEAD
         let twinA = vec3<f32>(0.55, 0.85, 1.0);
         let twinB = vec3<f32>(1.0, 0.55, 0.35);
         let twinTint = mix(twinA, twinB, hitMap.y);
         col = mix(baseCol, twinTint, 0.45 * chroma) * diff + spec * vec3<f32>(1.0) + fresnel * twinTint * chroma;
         let weld = exp(-g_seam * 18.0);
         col += mix(vec3<f32>(1.0, 0.95, 0.75), vec3<f32>(0.55, 0.2, 1.0), fract(u.config.x * 0.15 + g_seam * 4.0)) * weld * (0.8 + treble);
-=======
-
-        col = baseCol * diff + spec * vec3<f32>(1.0) + fresnel * vec3<f32>(0.5, 0.8, 1.0) * chroma;
-        // Idea 1: recalescence on KIFS fold crests
-        let ax = abs(g_fold);
-        let crest = pow(1.0 - min(min(ax.x, ax.y), ax.z) / (length(g_fold) + 0.001), 4.0);
-        col += vec3<f32>(1.0, 0.32, 0.06) * crest * 1.4;
-        col += vec3<f32>(1.0, 0.55, 0.2) * (0.5 - g_hopper) * 0.35;
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     }
 
     // Add fog
@@ -208,19 +174,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Alpha: crystal surface coverage + volumetric fog density, never flat 1.0
     let alpha = clamp(select(0.0, 0.4, hit) + surfFresnel * 0.4 + clamp(glow, 0.0, 1.0) * 0.4, 0.0, 1.0);
-<<<<<<< HEAD
     let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
     let depth = select(0.0, clamp(1.0 - dO / MAX_DIST, 0.0, 1.0), hit);
     let coord = vec2<i32>(global_id.xy);
     textureStore(writeTexture, coord, out);
-=======
-    let outc = vec4<f32>(acesToneMap(col * 1.1), alpha);
-
-    // Depth: ray-march hit distance (near = closer)
-    let depth = select(0.0, clamp(1.0 - dO / MAX_DIST, 0.0, 1.0), hit);
-    let coord = vec2<i32>(global_id.xy);
-    textureStore(writeTexture, coord, outc);
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, outc);
+    textureStore(dataTextureA, coord, out);
 }

@@ -7,6 +7,15 @@ import {
   registerAdoptedRendererDevice,
 } from '../utils/adoptedGpuDevice';
 
+// naga is the primary validator now, so the component never reaches the device
+// path without it. A trivial stub is enough here — the real artifact is
+// exercised in ShaderValidator.naga.test.tsx. Plain function, not jest.fn():
+// CRA's resetMocks would strip a jest.fn implementation between tests.
+jest.mock('../utils/nagaWasm', () => ({
+  ...jest.requireActual('../utils/nagaWasm'),
+  loadNagaValidator: () => Promise.resolve({ validate: () => ({ ok: true }) }),
+}));
+
 describe('ShaderValidator device policy', () => {
   const requestAdapter = jest.fn();
   const requestDevice = jest.fn();
@@ -61,6 +70,9 @@ describe('ShaderValidator device policy', () => {
 
   it('never calls requestAdapter, requestDevice, or device.destroy when adopted device exists', async () => {
     render(<ShaderValidator />);
+    // Opt into the GPU pass: otherwise validation is GPU-less and this would
+    // pass without ever exercising ensureAdoptedDevice.
+    fireEvent.click(screen.getByLabelText(/Also compile on the GPU/));
     fireEvent.click(screen.getByText(/Run Full Validation/));
 
     await waitFor(() => {

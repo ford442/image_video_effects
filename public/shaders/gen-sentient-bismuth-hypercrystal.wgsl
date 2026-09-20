@@ -46,7 +46,6 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return -log2(res) / k;
 }
 
-<<<<<<< HEAD
 var<private> g_hopper: f32 = 0.0;
 var<private> g_facet: f32 = 0.0;
 
@@ -54,10 +53,6 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     let q = abs(p) - b;
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
-=======
-var<private> g_fold_q: vec3<f32> = vec3<f32>(0.0);
-var<private> g_hopper: f32 = 0.0;
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
 // 2. Map Function (SDF)
 fn map(p_in: vec3<f32>, time: f32, audio: f32, mouse_pos: vec3<f32>) -> f32 {
@@ -106,8 +101,6 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, mouse_pos: vec3<f32>) -> f32 {
         scale *= 1.5;
     }
 
-    g_fold_q = q;
-
     // Cuboid SDF
     let b = vec3<f32>(1.0, 1.0, 1.0) * base_scale / scale;
     d = sdBox(q, b);
@@ -126,11 +119,6 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, mouse_pos: vec3<f32>) -> f32 {
     }
     g_hopper = hopper;
     d = d + hopper * 0.35;
-
-    // Idea 1: hopper terraces — stair treads on the Menger cuboid
-    let hopper = abs(fract(q.y * 8.0) - 0.5);
-    g_hopper = hopper;
-    d -= (0.5 - hopper) * 0.035;
 
     return d;
 }
@@ -179,19 +167,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let time = u.config.x;
 
-<<<<<<< HEAD
     // Three-band audio; Audio React slider gates modulation
     let audio_react = u.zoom_params.y;
     let audio_val = (plasmaBuffer[0].x * 0.5 + plasmaBuffer[0].y * 0.3 + plasmaBuffer[0].z * 0.2) * audio_react;
-=======
-    let audio_val = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 
-    // Mouse setup — UV y=0 bottom
-    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
-    let mouse_ndc = (mouse * 2.0 - 1.0) * vec2<f32>(resolution.x / resolution.y, 1.0);
+    // Mouse setup
+    let mouse_ndc = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(resolution.x / resolution.y, -1.0);
     // Project mouse onto a plane in 3D space roughly where the object is
     let mouse_pos = vec3<f32>(mouse_ndc * 5.0, 0.0);
 
@@ -251,13 +232,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             + audio_val * 0.25 + sin(p.x * 2.0 + p.y * 3.0 + p.z * 1.5 + time) * 0.1
             + clamp(hitD, -0.05, 0.05) * 0.02;
         let irid_col = palette(film_thickness * iridescence_strength);
+
+        // Fresnel
         let fresnel = pow(1.0 - max(dot(n, v), 0.0), 5.0);
 
-        // Idea 2: stair-riser rainbow film keyed to hopper risers
-        let riser = 1.0 - smoothstep(0.0, 0.12, g_hopper);
-        let riser_film = palette(film_thickness * iridescence_strength + g_fold_q.y * 0.35 + mids);
+        // Combine lighting and iridescence
         col = irid_col * (diff + amb) + vec3<f32>(1.0) * fresnel * 0.5;
-        col = mix(col, riser_film * (0.6 + diff), riser * 0.65);
 
         // Specular
         let r_dir = reflect(-light_dir, n);
@@ -282,8 +262,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blend_factor = 0.8; // High blend for slow mutation feel
     col = mix(col, prev_color, blend_factor);
 
+    // Tonemapping
     col = acesToneMap(col);
-<<<<<<< HEAD
 
     let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
     let alpha = clamp(select(0.12, 0.42, hit) + luma * 0.45 + f32(hit) * 0.15, 0.08, 0.96);
@@ -293,12 +273,4 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, pix, outCol);
     textureStore(writeDepthTexture, pix, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, pix, outCol);
-=======
-    let alpha = clamp(select(0.12, 0.5 + (0.5 - g_hopper) * 0.4, hit) + treble * 0.08, 0.0, 1.0);
-    let outc = vec4<f32>(col, alpha);
-    let depth = select(0.0, clamp(1.0 - dO / MAX_DIST, 0.0, 1.0), hit);
-    textureStore(writeTexture, global_id.xy, outc);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, global_id.xy, outc);
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
 }

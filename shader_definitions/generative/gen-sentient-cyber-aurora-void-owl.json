@@ -44,44 +44,6 @@
       "step": 0.05
     }
   ],
-  "params": [
-    {
-      "id": "wingbeat_speed",
-      "name": "Wingbeat Speed",
-      "mapping": "zoom_params.x",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 3.0,
-      "step": 0.1
-    },
-    {
-      "id": "eye_intensity",
-      "name": "Eye Intensity",
-      "mapping": "zoom_params.y",
-      "default": 1.0,
-      "min": 0.5,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "id": "aurora_density",
-      "name": "Aurora Density",
-      "mapping": "zoom_params.z",
-      "default": 0.7,
-      "min": 0.1,
-      "max": 2.0,
-      "step": 0.05
-    },
-    {
-      "id": "glass_refraction",
-      "name": "Glass Refraction",
-      "mapping": "zoom_params.w",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -90,8 +52,11 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-<<<<<<< HEAD
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal-feedback",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map"
   ],
   "params": [
     {
@@ -130,12 +95,5 @@
       "step": 0.05,
       "mapping": "zoom_params.w"
     }
-=======
-    "temporal-feedback",
-    "generated-depth",
-    "semantic-alpha",
-    "aces-tone-map",
-    "upgraded-rgba"
->>>>>>> f6dd97e68a019af78b520bcf8959f4b8bc31c88e
   ]
 }
