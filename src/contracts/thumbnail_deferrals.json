@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "description": "Schema and policy for reports/thumbnail_deferrals.json. Enforced by scripts/verify-thumbs-deferrals.js (npm run verify:thumbs-deferrals). Add or renew entries only via scripts/defer-thumbnail.js. See docs/THUMBNAIL_DEFERRALS.md.",
+  "file": "reports/thumbnail_deferrals.json",
+  "reasons": [
+    "gpu-capture-pending",
+    "audio-only",
+    "interactive-no-still",
+    "known-magenta",
+    "other"
+  ],
+  "legacyReasonAliases": {
+    "gpu-capture pending": "gpu-capture-pending"
+  },
+  "legacyReasonNote": "The pre-contract file spelled the reason with a space. The gate rejects it; defer-thumbnail.js normalizes it on write.",
+  "entryFields": {
+    "required": ["id", "reason", "added_by", "deferred_at", "expires"],
+    "optional": ["first_deferred_at", "renewals", "capture_failure", "note"],
+    "keyOrder": ["id", "reason", "added_by", "first_deferred_at", "deferred_at", "expires", "renewals", "capture_failure", "note"],
+    "dateFormat": "YYYY-MM-DD (UTC)",
+    "renewalsDefault": 0,
+    "noteRequiredFor": ["audio-only", "interactive-no-still", "known-magenta", "other"]
+  },
+  "gpuCapturePending": {
+    "maxWindowDays": 30,
+    "windowNote": "expires - deferred_at must be 1..maxWindowDays days. deferred_at is the date of the latest (re)write and may not be in the future.",
+    "maxRenewalsWithoutEvidence": 1,
+    "renewalNote": "renewals counts how many times the entry has been renewed. Renewal number 1 needs no evidence. Every renewal beyond maxRenewalsWithoutEvidence needs a capture_failure note (min length, and a run URL or ISO date) describing a real capture attempt that failed.",
+    "captureFailureMinLength": 20,
+    "expired": "An entry whose expires date is before today fails the gate. Renew it with defer-thumbnail.js or land a real thumbnail."
+  },
+  "pendingRatchet": 1069,
+  "pendingRatchetNote": "Maximum allowed count of gpu-capture-pending entries. May only decrease: the gate fails if the count exceeds it, and (with --base-ref) if it is higher than the base branch's value. Lower it with `node scripts/defer-thumbnail.js --lower-ratchet` after removing entries.",
+  "permanentSkips": {
+    "file": "reports/thumbnail_skip_allowlist.json",
+    "note": "Permanent skips are NOT deferrals. An id listed in the skip allowlist may not also be deferred."
+  }
+}

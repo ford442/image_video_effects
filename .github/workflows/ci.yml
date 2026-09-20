@@ -458,6 +458,17 @@ jobs:
       continue-on-error: true
       run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
 
+    # Blocking (no continue-on-error): validates reports/thumbnail_deferrals.json against
+    # src/contracts/thumbnail_deferrals.json. Output goes to a file so later always() steps can report it.
+    - name: Verify thumbnail deferrals
+      id: deferrals
+      run: |
+        set +e
+        npm run verify:thumbs-deferrals -- --base-ref "origin/${{ github.base_ref }}" > /tmp/thumbs-deferrals.txt 2>&1
+        rc=$?
+        cat /tmp/thumbs-deferrals.txt
+        exit $rc
+
     - name: Report to job summary
       if: always()
       run: |
@@ -482,10 +493,16 @@ jobs:
             cat reports/thumbnail_coverage.md
             echo ""
           fi
+          echo "### Deferrals (blocking gate)"
+          echo ""
+          echo '```'
+          cat /tmp/thumbs-deferrals.txt 2>/dev/null || echo "deferral gate did not run"
+          echo '```'
+          echo ""
           echo "Check is reporting-only until healthy eligible coverage is ≥ 50%, then newly eligible missing thumbs become blocking."
           echo ""
-          echo "Tip: add a deferral in \`reports/thumbnail_deferrals.json\` (\`expires\` or \`until\`) for new shaders without a GPU capture."
-          echo "See [Thumbnail Pipeline](docs/THUMBNAIL_PIPELINE.md)."
+          echo "Tip: add or renew a deferral with \`npm run thumbs:defer -- --id <shader-id>\` (never hand-edit \`reports/thumbnail_deferrals.json\`). The deferral gate above is blocking; the coverage-regression step is not."
+          echo "See [Thumbnail Pipeline](docs/THUMBNAIL_PIPELINE.md) and [Thumbnail Deferrals](docs/THUMBNAIL_DEFERRALS.md)."
         } > /tmp/thumbs-comment.md
 
         PR="${{ github.event.pull_request.number }}"
