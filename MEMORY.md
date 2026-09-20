@@ -1,6 +1,14 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-19 (merge conflict cleanup on `push fix` 62f2d677)
+**Last updated:** 2026-09-20 (local main union: Chrono-Bloom #1291 + naga-wasm; no push)
+
+## 2026-09-20 — Merge to local `main` (no push)
+
+- Landed `feat/naga-wasm-validation` onto local `main` after unioning origin `#1291`.
+- Origin `main` (`b815fd7d` Chrono-Bloom) still had the dirty `62f2d677` conflict markers. Kept the local cleanup (`593e8ccf`) for the overlapping sentient/radiant eight. Took unique origin Chrono-Bloom WGSL + definition + completed queue entry.
+- Catalog regenerated: **1,370** (generative 475). Search-index 1,370 entries, 1,369 embeddings reused.
+- Naga-wasm + real WGSL `#include` expansion is on local `main` (`ee64841e`). Ahead of origin by 5 commits. Did not push.
+- Gates: `verify:catalog-counts` passed; `naga-wasm:test` 15/15; `verify:wgsl-include` green.
 
 ## 2026-09-19 — Merge conflict cleanup (`62f2d677` push fix)
 
