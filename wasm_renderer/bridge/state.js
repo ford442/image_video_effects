@@ -35,7 +35,9 @@ const state = {
   initEndTime: 0,
   colorFormat: 0,
   /** Slot indexes whose last setSlotShader the module did not accept. */
-  droppedSlots: /* @__PURE__ */ new Set()
+  droppedSlots: /* @__PURE__ */ new Set(),
+  /** null until a build is instantiated by init.ts (or a preloaded factory was reused). */
+  wasmArtifact: null
 };
 const INIT_STAGE_NAMES = {
   0: "None",

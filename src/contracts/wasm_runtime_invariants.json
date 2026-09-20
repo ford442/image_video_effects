@@ -1,6 +1,8 @@
 {
   "version": 1,
-  "description": "Runtime invariants from the 2026-08-30/31 Pascal/Chrome real-GPU session. Keep in sync with wasm_renderer C++ (source scan only — do not rebuild artifacts here), GpuChoresHost dispatch, historyTex probe ladder, and the shipped public/wasm/pixelocity_wasm.wasm import table. Validated by scripts/verify-device-policy-sync.js.",
+  "description": "Runtime invariants from the 2026-08-30/31 Pascal/Chrome real-GPU session. Keep in sync with wasm_renderer C++ (source scan only — do not rebuild artifacts here), GpuChoresHost dispatch, historyTex probe ladder, and the import tables of both shipped artifacts (public/wasm/pixelocity_wasm{,_jspi}.wasm). Validated by scripts/verify-device-policy-sync.js.",
+  "artifactsPendingPinnedBuild": ["public/wasm/pixelocity_wasm_jspi.wasm"],
+  "artifactsPendingPinnedBuildReason": "The JSPI artifact is not committed until someone builds it with the pinned emsdk (wasm_compile_flags.json emsdkVersion). The verifier skips pending entries while missing and fails once the file exists, so delete the entry in the same commit as the artifact.",
   "forbiddenCppSymbols": [
     {
       "symbol": "wgpuSurfacePresent",
@@ -9,7 +11,7 @@
       "alternative": "Acquire surface texture, blit, wgpuQueueSubmit, return. Do not present.",
       "globs": ["wasm_renderer/**/*.cpp"],
       "wasmImportNames": ["wgpuSurfacePresent", "_wgpuSurfacePresent"],
-      "wasmArtifact": "public/wasm/pixelocity_wasm.wasm",
+      "wasmArtifacts": ["public/wasm/pixelocity_wasm.wasm", "public/wasm/pixelocity_wasm_jspi.wasm"],
       "issue": null,
       "tracker": "memory/2026-08-31.md",
       "rationale": "PresentToSurface calling wgpuSurfacePresent hard-aborted the module after a successful adapter+device on Pascal/Chrome."

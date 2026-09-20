@@ -277,7 +277,10 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
    * Call this when the display canvas dimensions change.
    */
   resizeCanvas(newWidth: number, newHeight: number): void {
-    WasmBridge.resizeCanvas(newWidth, newHeight);
+    // Suspends (history-tex error scope); the bridge serializes and drops frames meanwhile.
+    void WasmBridge.resizeCanvas(newWidth, newHeight).catch((err: unknown) => {
+      console.error('[WASMRenderer] resizeCanvas failed:', err);
+    });
   }
 
   /**
@@ -324,7 +327,9 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
 
   setColorFormat(format: InternalColorFormat): void {
     const wasmFormat = format === 'rgba32float' ? 0 : 1;
-    WasmBridge.setColorFormat(wasmFormat);
+    void WasmBridge.setColorFormat(wasmFormat).catch((err: unknown) => {
+      console.error('[WASMRenderer] setColorFormat failed:', err);
+    });
   }
 
   getColorFormat(): InternalColorFormat {

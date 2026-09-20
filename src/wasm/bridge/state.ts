@@ -5,6 +5,7 @@ export interface EmscriptenModule {
     returnType: string | null,
     argTypes: string[],
     args: unknown[],
+    opts?: { async?: boolean },
   ): unknown;
   _malloc(size: number): number;
   _free(ptr: number): void;
@@ -14,6 +15,9 @@ export interface EmscriptenModule {
   HEAPU8: Uint8Array;
   HEAPF32: Float32Array;
 }
+
+/** Which Emscripten build is loaded (src/contracts/wasm_compile_flags.json graphs). */
+export type WasmArtifactKind = 'jspi' | 'asyncify';
 
 export type PixelocityWasmFactory = (opts: {
   locateFile: (path: string) => string;
@@ -67,6 +71,8 @@ export const state = {
   colorFormat: 0 as 0 | 1,
   /** Slot indexes whose last setSlotShader the module did not accept. */
   droppedSlots: new Set<number>(),
+  /** null until a build is instantiated by init.ts (or a preloaded factory was reused). */
+  wasmArtifact: null as WasmArtifactKind | null,
 };
 
 export const INIT_STAGE_NAMES: Record<number, string> = {

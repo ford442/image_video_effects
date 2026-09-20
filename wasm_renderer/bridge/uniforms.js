@@ -1,5 +1,6 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
+import { callSuspending, isSuspended } from "./call.js";
 import { state, wasmRef } from "./state.js";
 const SOURCE_MAP = {
   none: 0,
@@ -48,6 +49,7 @@ function applyUniformState(time, mouseX, mouseY, mouseDown, zoomP1, zoomP2, zoom
     ["number", "number", "number", "number"],
     [zoomP1, zoomP2, zoomP3, zoomP4]
   );
+  if (isSuspended()) return false;
   wasmRef.module.ccall("updateUniforms", null, [], []);
   return true;
 }
@@ -114,6 +116,7 @@ function updateAudioFrequencyBins(binsOrBass, mid, treble, energy) {
 }
 function updateDepthMap(depthData, width = 256, height = 256) {
   if (!state.initialized || !wasmRef.module) return;
+  if (isSuspended()) return;
   const floats = depthData instanceof Float32Array ? depthData : new Float32Array(depthData.buffer, depthData.byteOffset, depthData.byteLength / 4);
   const ptr = wasmRef.module._malloc(floats.byteLength);
   wasmRef.module.HEAPF32.set(floats, ptr / 4);
@@ -158,10 +161,10 @@ function getColorFormat() {
   }
   return state.colorFormat;
 }
-function setColorFormat(format) {
+async function setColorFormat(format) {
   state.colorFormat = format === 1 ? 1 : 0;
   if (state.initialized && wasmRef.module) {
-    wasmRef.module.ccall("setColorFormat", null, ["number"], [state.colorFormat]);
+    await callSuspending(wasmRef.module, "setColorFormat", null, ["number"], [state.colorFormat]);
   }
 }
 function unavailableGPUTimings() {
