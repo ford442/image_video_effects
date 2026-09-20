@@ -347,10 +347,7 @@ function verifyWasmExports() {
     fail('build.sh must invoke scripts/format-wasm-exports.js');
   }
   if (/_initWasmRenderer,_shutdownWasmRenderer/.test(cmake)) {
-    fail('CMakeLists.txt must not hardcode EXPORTED_FUNCTIONS; read wasm_exports.json');
-  }
-  if (!cmake.includes('wasm_exports.json')) {
-    fail('CMakeLists.txt must file(READ) src/contracts/wasm_exports.json');
+    fail('CMakeLists.txt must not hardcode EXPORTED_FUNCTIONS; it wraps build.sh');
   }
 }
 
@@ -386,9 +383,34 @@ function verifyWasmCompileFlags() {
   if (!buildSh.includes('emcc-version-gate.sh')) {
     fail('build.sh must run scripts/emcc-version-gate.sh before compiling');
   }
-  if (!cmake.includes('wasm_compile_flags.json')) {
-    fail('CMakeLists.txt must file(READ) src/contracts/wasm_compile_flags.json');
+  // CMake is a thin wrapper around build.sh: it must not be able to produce a
+  // third flag set (no executable target, no link options).
+  const cmakeCode = cmake.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  if (/\badd_executable\s*\(/.test(cmakeCode) || /\btarget_link_options\s*\(/.test(cmakeCode)) {
+    fail('CMakeLists.txt must not add_executable / target_link_options — it is a thin wrapper around build.sh');
   }
+  if (!/add_custom_target\s*\([\s\S]*?build\.sh/.test(cmakeCode)) {
+    fail('CMakeLists.txt must invoke build.sh via add_custom_target');
+  }
+
+  verifyWasmBuildVariants(flags);
+
+  // Async mode (ASYNCIFY / JSPI) lives only in the contract. Nothing that drives
+  // a build may spell it: build.sh, CMake, CI, npm scripts.
+  const pkg = fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8');
+  for (const [name, src, comment] of [
+    ['build.sh', buildSh, /^\s*#/],
+    ['CMakeLists.txt', cmake, /^\s*#/],
+    ['ci.yml', ci, /^\s*#/],
+    ['package.json', pkg, null],
+  ]) {
+    const code = comment ? src.split('\n').filter((l) => !comment.test(l)).join('\n') : src;
+    const m = code.match(/-s\s*(ASYNCIFY|JSPI)\w*/);
+    if (m) {
+      fail(`${name} hardcodes ${m[0]}; async mode belongs in wasm_compile_flags.json (asyncify / jspi graphs)`);
+    }
+  }
+
   for (const [name, src] of [['build.sh', buildSh], ['CMakeLists.txt', cmake]]) {
     const code = src.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
     for (const f of flags.sFlags) {
@@ -399,6 +421,94 @@ function verifyWasmCompileFlags() {
     }
     if (/--use-port=emdawnwebgpu/.test(code)) {
       fail(`${name} hardcodes --use-port; it belongs in wasm_compile_flags.json`);
+    }
+  }
+}
+
+/**
+ * Two build graphs from one contract: the top-level ASYNCIFY fallback and the
+ * `jspi` primary. Checks they differ only in the async mode, that jspiExports
+ * covers every WaitAny site, and that the bridge ccalls exactly those exports
+ * with { async: true } (src/wasm/bridge/call.ts SUSPENDING_EXPORTS).
+ */
+function verifyWasmBuildVariants(flags) {
+  if (flags.asyncifyFallback !== true) {
+    fail('wasm_compile_flags.json asyncifyFallback must be true — never ship JSPI-only');
+  }
+  if (!flags.sFlags.includes('ASYNCIFY') || flags.sFlags.some((f) => /^JSPI/.test(f))) {
+    fail('wasm_compile_flags.json top-level sFlags is the ASYNCIFY fallback: must contain ASYNCIFY and no JSPI*');
+  }
+  const j = flags.jspi;
+  if (!j || !Array.isArray(j.sFlags) || !Array.isArray(j.jspiExports)) {
+    fail('wasm_compile_flags.json must define jspi { sFlags, jspiExports, jsOutputName }');
+    return;
+  }
+  const expected = flags.sFlags.map((f) => (f === 'ASYNCIFY' ? 'JSPI' : f));
+  if (JSON.stringify(j.sFlags) !== JSON.stringify(expected)) {
+    fail(
+      `wasm_compile_flags.json jspi.sFlags must equal fallback sFlags with ASYNCIFY→JSPI.\n  expected ${JSON.stringify(expected)}\n  got      ${JSON.stringify(j.sFlags)}`,
+    );
+  }
+  if (!j.jsOutputName || j.jsOutputName === flags.jsOutputName) {
+    fail('wasm_compile_flags.json jspi.jsOutputName must be set and differ from the fallback jsOutputName');
+  }
+
+  const exportsJson = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_exports.json'), 'utf8'),
+  );
+  const exported = new Set(exportsJson.exportedFunctions);
+  const graph = j.waitAnyCallGraph || {};
+  for (const name of j.jspiExports) {
+    if (!exported.has(`_${name}`)) fail(`jspi.jspiExports ${name} is not in wasm_exports.json exportedFunctions`);
+    if (!graph[name]) fail(`jspi.waitAnyCallGraph has no path for ${name}`);
+  }
+  for (const name of Object.keys(graph)) {
+    if (!j.jspiExports.includes(name)) fail(`jspi.waitAnyCallGraph lists ${name} but jspiExports does not`);
+  }
+
+  // Every function that calls wgpuInstanceWaitAny must appear in some documented
+  // path — a new WaitAny site means a (possibly new) suspending export.
+  const graphText = Object.values(graph).join(' ');
+  for (const file of walkCppFiles(path.join(ROOT, 'wasm_renderer'))) {
+    const src = stripCppComments(fs.readFileSync(file, 'utf8'));
+    const defs = [...src.matchAll(/^[A-Za-z][\w:<>\*& ]*?WebGPURenderer::(\w+)\s*\(/gm)].map((m) => ({
+      name: m[1],
+      at: m.index,
+    }));
+    for (const call of src.matchAll(/wgpuInstanceWaitAny\s*\(/g)) {
+      const owner = defs.filter((d) => d.at < call.index).pop();
+      const rel = path.relative(ROOT, file);
+      if (!owner) {
+        fail(`${rel}: wgpuInstanceWaitAny outside a WebGPURenderer method — add its export path to jspi.waitAnyCallGraph`);
+      } else if (!new RegExp(`\\b${owner.name}\\b`).test(graphText)) {
+        fail(
+          `${rel}: ${owner.name}() calls wgpuInstanceWaitAny but is not on any jspi.waitAnyCallGraph path — find the exports that reach it and add them to jspiExports`,
+        );
+      }
+    }
+  }
+
+  const callTs = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/call.ts'), 'utf8');
+  const listMatch = callTs.match(/SUSPENDING_EXPORTS\s*=\s*\[([^\]]*)\]/);
+  if (!listMatch) {
+    fail('src/wasm/bridge/call.ts must declare SUSPENDING_EXPORTS = [...]');
+  } else {
+    const bridgeList = [...listMatch[1].matchAll(/['"](\w+)['"]/g)].map((m) => m[1]);
+    if (JSON.stringify([...bridgeList].sort()) !== JSON.stringify([...j.jspiExports].sort())) {
+      fail(
+        `call.ts SUSPENDING_EXPORTS ${JSON.stringify(bridgeList)} must equal jspi.jspiExports ${JSON.stringify(j.jspiExports)}`,
+      );
+    }
+  }
+  // No bridge module may ccall a suspending export directly (sync shape).
+  const bridgeDir = path.join(ROOT, 'src/wasm/bridge');
+  for (const name of fs.readdirSync(bridgeDir)) {
+    if (!name.endsWith('.ts') || name === 'call.ts' || name.endsWith('.test.ts')) continue;
+    const src = fs.readFileSync(path.join(bridgeDir, name), 'utf8');
+    for (const exp of j.jspiExports) {
+      if (new RegExp(`\\.ccall\\(\\s*['"]${exp}['"]`).test(src)) {
+        fail(`src/wasm/bridge/${name} ccalls '${exp}' directly — use callSuspending() from call.ts`);
+      }
     }
   }
 }
@@ -555,6 +665,19 @@ console.log(
   '✅ Device policy sync OK (limits + optional features + canvas_configure + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
 
+/** True when `rel` is tracked by git (a committed artifact, not a fresh CI build). */
+function isGitTracked(rel) {
+  try {
+    require('child_process').execFileSync('git', ['ls-files', '--error-unmatch', rel], {
+      cwd: ROOT,
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function walkCppFiles(dir) {
   const out = [];
   if (!fs.existsSync(dir)) return out;
@@ -590,10 +713,20 @@ function verifyWasmRuntimeInvariants() {
       }
     }
 
-    const artifact = path.join(ROOT, ban.wasmArtifact || 'public/wasm/pixelocity_wasm.wasm');
-    if (!fs.existsSync(artifact)) {
-      fail(`missing wasm artifact ${ban.wasmArtifact}`);
-    } else {
+    const pending = new Set(inv.artifactsPendingPinnedBuild || []);
+    for (const rel of ban.wasmArtifacts || [ban.wasmArtifact || 'public/wasm/pixelocity_wasm.wasm']) {
+      const artifact = path.join(ROOT, rel);
+      if (!fs.existsSync(artifact)) {
+        if (pending.has(rel)) {
+          console.log(`⏳ ${rel} not built yet (artifactsPendingPinnedBuild) — import table unchecked`);
+          continue;
+        }
+        fail(`missing wasm artifact ${rel}`);
+        continue;
+      }
+      if (pending.has(rel) && isGitTracked(rel)) {
+        fail(`${rel} is committed — remove it from wasm_runtime_invariants.json artifactsPendingPinnedBuild`);
+      }
       let imports;
       try {
         imports = readWasmImports(artifact);
@@ -605,7 +738,7 @@ function verifyWasmRuntimeInvariants() {
       for (const forbidden of ban.wasmImportNames || [ban.symbol]) {
         if (names.has(forbidden)) {
           fail(
-            `${ban.wasmArtifact} import table contains forbidden ${forbidden} (must be DCE'd; do not call ${ban.symbol})`,
+            `${rel} import table contains forbidden ${forbidden} (must be DCE'd; do not call ${ban.symbol})`,
           );
         }
       }

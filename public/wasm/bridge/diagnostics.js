@@ -29,6 +29,7 @@ function getDiagnostics() {
   const initMs = state.initEndTime ? state.initEndTime - state.initStartTime : null;
   return {
     initialized: state.initialized,
+    wasmArtifact: state.wasmArtifact,
     hasModule: wasmRef.module !== null,
     hasCanvas: wasmRef.canvas !== null,
     moduleHasCCall: typeof wasmRef.module?.ccall === "function",

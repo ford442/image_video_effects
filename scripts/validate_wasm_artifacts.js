@@ -15,11 +15,22 @@ const WASM_MAGIC = Buffer.from([0x00, 0x61, 0x73, 0x6d]);
 const MIN_WASM_SIZE = 50 * 1024; // 50 KB minimum size
 const MAX_WASM_SIZE = 200 * 1024; // 200 KB maximum (allows growth from typical ~96 KB)
 
-const artifacts = [
-  { path: 'public/wasm/pixelocity_wasm.wasm', type: 'wasm', min: MIN_WASM_SIZE, max: MAX_WASM_SIZE },
-  { path: 'public/wasm/pixelocity_wasm.js', type: 'js-module', min: 10 * 1024 }, // 10 KB min
-  { path: 'public/wasm/wasm_bridge.js', type: 'js-glue', min: 500 }, // 500 B min (modular barrel bridge)
-];
+// Both builds from src/contracts/wasm_compile_flags.json: ASYNCIFY fallback
+// (top-level jsOutputName) and JSPI primary (jspi.jsOutputName). A build listed in
+// wasm_runtime_invariants.json artifactsPendingPinnedBuild may be absent, and is
+// an error once present while still listed.
+const compileFlags = JSON.parse(fs.readFileSync(path.resolve('src/contracts/wasm_compile_flags.json'), 'utf8'));
+const pendingBuilds = new Set(
+  JSON.parse(fs.readFileSync(path.resolve('src/contracts/wasm_runtime_invariants.json'), 'utf8'))
+    .artifactsPendingPinnedBuild || [],
+);
+const artifacts = [];
+for (const jsName of [compileFlags.jsOutputName, compileFlags.jspi && compileFlags.jspi.jsOutputName].filter(Boolean)) {
+  const base = `public/wasm/${jsName.replace(/\.js$/, '')}`;
+  artifacts.push({ path: `${base}.wasm`, type: 'wasm', min: MIN_WASM_SIZE, max: MAX_WASM_SIZE, pendingKey: `${base}.wasm` });
+  artifacts.push({ path: `${base}.js`, type: 'js-module', min: 10 * 1024, pendingKey: `${base}.wasm` }); // 10 KB min
+}
+artifacts.push({ path: 'public/wasm/wasm_bridge.js', type: 'js-glue', min: 500 }); // 500 B min (modular barrel bridge)
 
 const requiredExports = [
   'initWasmRenderer',
@@ -29,6 +40,19 @@ const requiredExports = [
   'setSlotShader',
   'updateUniforms',
 ];
+
+/** True when `rel` is tracked by git (a committed artifact, not a fresh CI build). */
+function isGitTracked(rel) {
+  try {
+    require('child_process').execFileSync('git', ['ls-files', '--error-unmatch', rel], {
+      cwd: path.resolve('.'),
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 let errors = [];
 let warnings = [];
@@ -50,10 +74,19 @@ artifacts.forEach(artifact => {
   console.log(`Checking: ${artifact.path}`);
   
   // Check file exists
+  const pending = artifact.pendingKey && pendingBuilds.has(artifact.pendingKey);
   if (!fs.existsSync(artifactPath)) {
+    if (pending) {
+      console.log(`  ⏳ not built yet (artifactsPendingPinnedBuild in wasm_runtime_invariants.json)\n`);
+      return;
+    }
     errors.push(`❌ ${artifact.path}: FILE NOT FOUND`);
     allValid = false;
     return;
+  }
+  if (pending && isGitTracked(artifact.path)) {
+    errors.push(`❌ ${artifact.path}: committed but ${artifact.pendingKey} is still in artifactsPendingPinnedBuild — remove it`);
+    allValid = false;
   }
   
   const stats = fs.statSync(artifactPath);
@@ -148,6 +181,7 @@ function checkBridgeSkew() {
 
   const bridgeModules = [
     'api.js',
+    'call.js',
     'capture.js',
     'diagnostics.js',
     'init.js',

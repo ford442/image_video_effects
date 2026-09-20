@@ -1,5 +1,6 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
+import { callSuspending } from "./call.js";
 import { state, utf8ByteLength, wasmRef } from "./state.js";
 import { rewriteWgslStorageFormats } from "./wgslFormat.js";
 function writeUtf8(id) {
@@ -10,7 +11,7 @@ function writeUtf8(id) {
   module.stringToUTF8(id, ptr, len);
   return { ptr, free: () => module._free(ptr) };
 }
-function loadShader(id, wgslCode) {
+async function loadShader(id, wgslCode) {
   if (!state.initialized || !wasmRef.module) {
     console.error("[WASM] Renderer not initialized");
     return false;
@@ -19,11 +20,15 @@ function loadShader(id, wgslCode) {
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
   if (!idBuf || !codeBuf) return false;
-  const result = Number(
-    wasmRef.module.ccall("loadShader", "number", ["number", "number"], [idBuf.ptr, codeBuf.ptr])
-  );
-  idBuf.free();
-  codeBuf.free();
+  let result = 0;
+  try {
+    result = Number(
+      await callSuspending(wasmRef.module, "loadShader", "number", ["number", "number"], [idBuf.ptr, codeBuf.ptr])
+    );
+  } finally {
+    idBuf.free();
+    codeBuf.free();
+  }
   if (result) {
     state.activeShader = id;
     console.log(`[WASM] Loaded shader: ${id}`);
@@ -34,7 +39,7 @@ function loadShader(id, wgslCode) {
   state.loadErrorCount++;
   return false;
 }
-function reloadShader(id, wgslCode) {
+async function reloadShader(id, wgslCode) {
   if (!state.initialized || !wasmRef.module) {
     console.error("[WASM] Renderer not initialized");
     return false;
@@ -43,11 +48,15 @@ function reloadShader(id, wgslCode) {
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
   if (!idBuf || !codeBuf) return false;
-  const result = Number(
-    wasmRef.module.ccall("reloadShader", "number", ["number", "number"], [idBuf.ptr, codeBuf.ptr])
-  );
-  idBuf.free();
-  codeBuf.free();
+  let result = 0;
+  try {
+    result = Number(
+      await callSuspending(wasmRef.module, "reloadShader", "number", ["number", "number"], [idBuf.ptr, codeBuf.ptr])
+    );
+  } finally {
+    idBuf.free();
+    codeBuf.free();
+  }
   if (result) {
     console.log(`[WASM] Hot-reloaded shader: ${id}`);
     return true;
@@ -64,7 +73,7 @@ async function loadShaderFromURL(id, url) {
       throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
     }
     const wgslCode = await response.text();
-    return loadShader(id, wgslCode);
+    return await loadShader(id, wgslCode);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[WASM] Failed to fetch shader from ${url}:`, err);
@@ -80,7 +89,7 @@ async function reloadShaderFromURL(id, url) {
       throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
     }
     const wgslCode = await response.text();
-    return reloadShader(id, wgslCode);
+    return await reloadShader(id, wgslCode);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[WASM] Failed to fetch shader for reload from ${url}:`, err);

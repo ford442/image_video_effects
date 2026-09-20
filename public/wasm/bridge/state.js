@@ -33,7 +33,9 @@ const state = {
   lastLoadError: null,
   initStartTime: 0,
   initEndTime: 0,
-  colorFormat: 0
+  colorFormat: 0,
+  /** null until a build is instantiated by init.ts (or a preloaded factory was reused). */
+  wasmArtifact: null
 };
 const INIT_STAGE_NAMES = {
   0: "None",

@@ -1,3 +1,4 @@
+import { callSuspending, isSuspended } from './call.js';
 import { state, wasmRef } from './state.js';
 
 export type GPUTimings = {
@@ -84,6 +85,9 @@ function applyUniformState(
     ['number', 'number', 'number', 'number'],
     [zoomP1, zoomP2, zoomP3, zoomP4],
   );
+  // Render() reads size-dependent textures that a suspended resize/format
+  // switch has released; drop this frame instead.
+  if (isSuspended()) return false;
   wasmRef.module.ccall('updateUniforms', null, [], []);
   return true;
 }
@@ -173,6 +177,7 @@ export function updateAudioFrequencyBins(
 
 export function updateDepthMap(depthData: Float32Array | Uint8Array, width = 256, height = 256): void {
   if (!state.initialized || !wasmRef.module) return;
+  if (isSuspended()) return; // depth textures are released during a suspended resize
   const floats = depthData instanceof Float32Array
     ? depthData
     : new Float32Array(depthData.buffer, depthData.byteOffset, depthData.byteLength / 4);
@@ -231,10 +236,10 @@ export function getColorFormat(): 0 | 1 {
   return state.colorFormat;
 }
 
-export function setColorFormat(format: 0 | 1 | number): void {
+export async function setColorFormat(format: 0 | 1 | number): Promise<void> {
   state.colorFormat = format === 1 ? 1 : 0;
   if (state.initialized && wasmRef.module) {
-    wasmRef.module.ccall('setColorFormat', null, ['number'], [state.colorFormat]);
+    await callSuspending(wasmRef.module, 'setColorFormat', null, ['number'], [state.colorFormat]);
   }
 }
 

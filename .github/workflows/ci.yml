@@ -94,6 +94,8 @@ jobs:
         path: |
           public/wasm/pixelocity_wasm.js
           public/wasm/pixelocity_wasm.wasm
+          public/wasm/pixelocity_wasm_jspi.js
+          public/wasm/pixelocity_wasm_jspi.wasm
           public/wasm/wasm_bridge.js
           public/wasm/wasm_bridge.d.ts
           public/wasm/bridge

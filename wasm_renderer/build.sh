@@ -67,9 +67,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 EXPORTED="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" functions)"
 RUNTIME_METHODS="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" runtime)"
 # Toolchain pin + std/opt/port/-s flags live in src/contracts/wasm_compile_flags.json.
-mapfile -t COMPILE_FLAGS < <(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" args)
-JS_OUTPUT_NAME="$(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" output)"
-WASM_OUTPUT_NAME="${JS_OUTPUT_NAME%.js}.wasm"
+# Two variants from the same sources: "asyncify" (fallback, today's ABI) and
+# "jspi" (primary where WebAssembly.Suspending exists). Never spell the async
+# mode flags here — the contract owns them (verify:wasm-invariants).
+FLAGS_JS="$REPO_ROOT/scripts/format-wasm-compile-flags.js"
+mapfile -t VARIANTS < <(node "$FLAGS_JS" variants)
 
 bash "$REPO_ROOT/scripts/emcc-version-gate.sh"
 
@@ -90,9 +92,10 @@ bash "$REPO_ROOT/scripts/emcc-version-gate.sh"
 #
 # Compile flags review (2026-07). Flags themselves are in
 # src/contracts/wasm_compile_flags.json (2026-09) — the notes below explain them:
-#   -sASYNCIFY          — required for wgpuInstanceWaitAny (adapter/device callbacks).
-#                        Adds binary size + async transform cost; do not remove unless
-#                        emdawn moves to fully synchronous request APIs.
+#   ASYNCIFY / JSPI     — one of the two is required for wgpuInstanceWaitAny (adapter,
+#                        device, error-scope pops). The fallback graph uses ASYNCIFY
+#                        (+~31% .wasm); the jspi graph uses JSPI and lists every export
+#                        that can reach WaitAny in jspiExports. See BUILD_FLAG_EXPERIMENTS.md.
 #   -O2                 — default; -O3 trades ~5-10% size for marginal shader perf.
 #                        Benchmark before switching on priority shaders.
 #   -sALLOW_MEMORY_GROWTH — needed for 2048² rgba32f ping-pong stacks + staging.
@@ -115,19 +118,26 @@ SOURCES=(
     "$SCRIPT_DIR/audio_depth.cpp"
     "$SCRIPT_DIR/wasm_internal.cpp"
 )
-echo "Flags: ${COMPILE_FLAGS[*]}"
-em++ "${COMPILE_FLAGS[@]}" \
-    "${SOURCES[@]}" \
-    "-I$SCRIPT_DIR" \
-    -sEXPORTED_FUNCTIONS="${EXPORTED}" \
-    -sEXPORTED_RUNTIME_METHODS="${RUNTIME_METHODS}" \
-    -o "$BUILD_DIR/$JS_OUTPUT_NAME"
-
-# Copy output to public folder (repo-relative path)
 PUBLIC_WASM="$REPO_ROOT/public/wasm"
 mkdir -p "$PUBLIC_WASM"
-cp "$BUILD_DIR/$JS_OUTPUT_NAME" "$BUILD_DIR/$WASM_OUTPUT_NAME" "$PUBLIC_WASM/"
+for VARIANT in "${VARIANTS[@]}"; do
+    mapfile -t COMPILE_FLAGS < <(node "$FLAGS_JS" args --variant="$VARIANT")
+    JS_OUTPUT_NAME="$(node "$FLAGS_JS" output --variant="$VARIANT")"
+    WASM_OUTPUT_NAME="${JS_OUTPUT_NAME%.js}.wasm"
+    echo "--- variant: $VARIANT → $JS_OUTPUT_NAME"
+    echo "Flags: ${COMPILE_FLAGS[*]}"
+    em++ "${COMPILE_FLAGS[@]}" \
+        "${SOURCES[@]}" \
+        "-I$SCRIPT_DIR" \
+        -sEXPORTED_FUNCTIONS="${EXPORTED}" \
+        -sEXPORTED_RUNTIME_METHODS="${RUNTIME_METHODS}" \
+        -o "$BUILD_DIR/$JS_OUTPUT_NAME"
+    cp "$BUILD_DIR/$JS_OUTPUT_NAME" "$BUILD_DIR/$WASM_OUTPUT_NAME" "$PUBLIC_WASM/"
+    echo "   $WASM_OUTPUT_NAME: $(wc -c < "$BUILD_DIR/$WASM_OUTPUT_NAME") bytes"
+done
+
 echo "✅ WASM build complete!"
-echo "   Emscripten output: public/wasm/pixelocity_wasm.{js,wasm}"
+echo "   Emscripten output: public/wasm/pixelocity_wasm.{js,wasm} (ASYNCIFY fallback)"
+echo "                      public/wasm/pixelocity_wasm_jspi.{js,wasm} (JSPI primary)"
 echo "   Bridge copies:     public/wasm/wasm_bridge.js, src/wasm/wasm_bridge.js"
-echo "   Edit JS bridge:    src/wasm/bridge/*.js (sync via concat_bridge.sh)"
+echo "   Edit JS bridge:    src/wasm/bridge/*.ts (sync via concat_bridge.sh)"

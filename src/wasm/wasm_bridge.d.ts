@@ -5,6 +5,8 @@
 /** Diagnostic snapshot from the JS bridge layer (load/init tracking). */
 export interface WasmBridgeDiagnostics {
   initialized: boolean;
+  /** Which Emscripten build is loaded; null before init or for a preloaded factory. */
+  wasmArtifact: 'jspi' | 'asyncify' | null;
   hasModule: boolean;
   hasCanvas: boolean;
   moduleHasCCall: boolean;
@@ -51,8 +53,8 @@ export function promoteWasmCanvasVisible(canvas: HTMLCanvasElement): HTMLCanvasE
 export function getPresentCanvas(): HTMLCanvasElement | null;
 export function getPresentCanvasId(): string;
 export function shutdownWasmRenderer(): void;
-export function loadShader(id: string, wgslCode: string): boolean;
-export function reloadShader(id: string, wgslCode: string): boolean;
+export function loadShader(id: string, wgslCode: string): Promise<boolean>;
+export function reloadShader(id: string, wgslCode: string): Promise<boolean>;
 export function loadShaderFromURL(id: string, url: string): Promise<boolean>;
 export function reloadShaderFromURL(id: string, url: string): Promise<boolean>;
 export function setActiveShader(id: string): void;
@@ -92,9 +94,9 @@ export function isInitialized(): boolean;
 export function uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 export function uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 
-export function resizeCanvas(newWidth: number, newHeight: number): void;
+export function resizeCanvas(newWidth: number, newHeight: number): Promise<void>;
 /** 0=rgba32float, 1=rgba16float */
-export function setColorFormat(formatEnum: 0 | 1): void;
+export function setColorFormat(formatEnum: 0 | 1): Promise<void>;
 export function getColorFormat(): 0 | 1;
 export function captureFrame(): Promise<ImageData>;
 export function captureFrameDataUrl(): Promise<string>;
@@ -121,8 +123,8 @@ export interface WasmRenderer {
   getDiagnostics(): WasmBridgeDiagnostics;
   initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
   shutdownWasmRenderer(): void;
-  loadShader(id: string, wgslCode: string): boolean;
-  reloadShader(id: string, wgslCode: string): boolean;
+  loadShader(id: string, wgslCode: string): Promise<boolean>;
+  reloadShader(id: string, wgslCode: string): Promise<boolean>;
   loadShaderFromURL(id: string, url: string): Promise<boolean>;
   reloadShaderFromURL(id: string, url: string): Promise<boolean>;
   setActiveShader(id: string): void;
@@ -157,7 +159,7 @@ export interface WasmRenderer {
   isInitialized(): boolean;
   uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
   uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
-  resizeCanvas(newWidth: number, newHeight: number): void;
+  resizeCanvas(newWidth: number, newHeight: number): Promise<void>;
   captureFrame(): Promise<ImageData>;
   takeScreenshot(filename?: string): Promise<void>;
   startRecording(canvasElement: HTMLCanvasElement, options?: RecordingOptions): Promise<Blob>;
