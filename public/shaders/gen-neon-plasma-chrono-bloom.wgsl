@@ -2,7 +2,7 @@
 // Neon Plasma Chrono-Bloom
 // Category: generative
 // ----------------------------------------------------------------
-
+// --- COPY PASTE THIS HEADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -20,11 +20,13 @@
 struct Uniforms {
   config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
   zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Point Density, .y = Rotation Speed, .z = Point Size, .w = Color Shift
+  zoom_params: vec4<f32>,  // .x = Intensity, .y = Distortion Speed, .z = Bloom Threshold, .w = Hue Shift
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI = 3.14159265359;
+const MAX_STEPS = 64;
+const MAX_DIST = 10.0;
+const SURF_DIST = 0.01;
 
 // Rotation matrix
 fn rot(a: f32) -> mat2x2<f32> {
@@ -33,190 +35,213 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// 3D hash
-fn hash3(p: vec3<f32>) -> f32 {
-    var p2 = p;
-    p2 = fract(p2 * vec3<f32>(0.1031, 0.1030, 0.0973));
-    p2 += dot(p2, p2.yxz + 33.33);
-    return fract((p2.x + p2.y) * p2.z);
+// 3D Simplex noise
+fn mod289(x: vec4<f32>) -> vec4<f32> { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+fn permute(x: vec4<f32>) -> vec4<f32> { return mod289(((x * 34.0) + 1.0) * x); }
+fn taylorInvSqrt(r: vec4<f32>) -> vec4<f32> { return 1.79284291400159 - 0.85373472095314 * r; }
+
+fn snoise(v: vec3<f32>) -> f32 {
+    let C = vec2<f32>(1.0 / 6.0, 1.0 / 3.0);
+    let D = vec4<f32>(0.0, 0.5, 1.0, 2.0);
+
+    // First corner
+    var i = floor(v + dot(v, C.yyy));
+    let x0 = v - i + dot(i, C.xxx);
+
+    // Other corners
+    let g = step(x0.yzx, x0.xyz);
+    let l = 1.0 - g;
+    let i1 = min(g.xyz, l.zxy);
+    let i2 = max(g.xyz, l.zxy);
+
+    let x1 = x0 - i1 + C.xxx;
+    let x2 = x0 - i2 + C.yyy;
+    let x3 = x0 - D.yyy;
+
+    // Permutations
+    i = mod289(vec4<f32>(i.x, i.y, i.z, 0.0)).xyz;
+    let p = permute(permute(permute(
+             i.z + vec4<f32>(0.0, i1.z, i2.z, 1.0))
+           + i.y + vec4<f32>(0.0, i1.y, i2.y, 1.0))
+           + i.x + vec4<f32>(0.0, i1.x, i2.x, 1.0));
+
+    // Gradients: 7x7 points over a square, mapped onto an octahedron.
+    // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
+    let n_ = 0.142857142857; // 1.0/7.0
+    let ns = n_ * D.wyz - D.xzx;
+
+    let j = p - 49.0 * floor(p * ns.z * ns.z); // mod(p,7*7)
+
+    let x_ = floor(j * ns.z);
+    let y_ = floor(j - 7.0 * x_); // mod(j,N)
+
+    let x = x_ * ns.x + ns.yyyy;
+    let y = y_ * ns.x + ns.yyyy;
+    let h = 1.0 - abs(x) - abs(y);
+
+    let b0 = vec4<f32>(x.xy, y.xy);
+    let b1 = vec4<f32>(x.zw, y.zw);
+
+    let s0 = floor(b0) * 2.0 + 1.0;
+    let s1 = floor(b1) * 2.0 + 1.0;
+    let sh = -step(h, vec4<f32>(0.0));
+
+    let a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+    let a1 = b1.xzyw + s1.xzyw * sh.zzww;
+
+    var p0 = vec3<f32>(a0.xy, h.x);
+    var p1 = vec3<f32>(a0.zw, h.y);
+    var p2 = vec3<f32>(a1.xy, h.z);
+    var p3 = vec3<f32>(a1.zw, h.w);
+
+    let norm = taylorInvSqrt(vec4<f32>(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+    p0 *= norm.x;
+    p1 *= norm.y;
+    p2 *= norm.z;
+    p3 *= norm.w;
+
+    var m = max(0.6 - vec4<f32>(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), vec4<f32>(0.0));
+    m = m * m;
+    return 42.0 * dot(m * m, vec4<f32>(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
-// 3D Simplex noise approximation
-fn snoise3(x: vec3<f32>) -> f32 {
-    let p = floor(x);
-    let f = fract(x);
-    let f2 = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(mix(hash3(p), hash3(p + vec3<f32>(1.,0.,0.)), f2.x),
-            mix(hash3(p + vec3<f32>(0.,1.,0.)), hash3(p + vec3<f32>(1.,1.,0.)), f2.x), f2.y),
-        mix(mix(hash3(p + vec3<f32>(0.,0.,1.)), hash3(p + vec3<f32>(1.,0.,1.)), f2.x),
-            mix(hash3(p + vec3<f32>(0.,1.,1.)), hash3(p + vec3<f32>(1.,1.,1.)), f2.x), f2.y), f2.z
-    ) * 2.0 - 1.0;
+fn map(p: vec3<f32>, t: f32) -> f32 {
+    let intensity = u.zoom_params.x;
+    let distortionSpeed = u.zoom_params.y;
+
+    // Time dilation and gravity based on mouse
+    var localP = p;
+    var localT = t;
+    if (u.zoom_config.w > 0.0) { // Mouse down
+        let mouseUv = u.zoom_config.yz;
+        let aspect = u.config.z / u.config.w;
+        let mouseWorld = vec3<f32>((mouseUv.x * 2.0 - 1.0) * aspect, -(mouseUv.y * 2.0 - 1.0), 2.0); // Approximate ray intersection plane
+        let dToMouse = length(localP - mouseWorld);
+
+        let gravityRadius = 2.0;
+        let pull = smoothstep(gravityRadius, 0.0, dToMouse);
+
+        // Gravity pull
+        localP = mix(localP, mouseWorld, pull * 0.5 * u.zoom_params.x);
+
+        // Time dilation
+        localT -= pull * 2.0 * distortionSpeed;
+    }
+
+    // Domain warp
+    var q = localP;
+
+    let baseTime = localT * 0.2 * distortionSpeed;
+
+    var d = 0.0;
+
+    // Multi-octave 3D noise for plasma density
+    d += snoise(q * 1.0 + baseTime) * 0.5;
+    q.x += d * 0.5;
+    d += snoise(q * 2.0 - baseTime * 1.2) * 0.25;
+    q.y += d * 0.5;
+    d += snoise(q * 4.0 + baseTime * 1.5) * 0.125;
+
+    // Create branching tendrils by absolute value and subtracting from a base density
+    let tendrils = abs(d);
+
+    // Surface is where density crosses a threshold
+    let baseRadius = 0.3 * intensity;
+
+    return tendrils - baseRadius;
 }
 
-// Palette mapping
-fn palette(t: f32, hue_shift: f32) -> vec3<f32> {
+// Palette for neon colors
+fn palette(t: f32) -> vec3<f32> {
     let a = vec3<f32>(0.5, 0.5, 0.5);
     let b = vec3<f32>(0.5, 0.5, 0.5);
     let c = vec3<f32>(1.0, 1.0, 1.0);
-    // Base palette: electric pinks to deep cyans, shifted by hue_shift
-    let d = vec3<f32>(0.263, 0.416, 0.557) + hue_shift;
+    // Oscillating between electric pink, cyan, deep purple
+    // Hue shift added
+    let hueOffset = u.zoom_params.w;
+    let d = vec3<f32>(0.263, 0.416, 0.557) + hueOffset;
     return a + b * cos(6.28318 * (c * t + d));
-}
-
-// Smooth min
-fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = max(k - abs(a - b), 0.0) / k;
-    return min(a, b) - h * h * k * 0.25;
-}
-
-// Map function for raymarching
-fn map(p_in: vec3<f32>, time: f32, dist_speed: f32, intensity: f32) -> f32 {
-    var p = p_in;
-    let t = time * dist_speed;
-
-    // Domain repetition with distortion
-    p.y += sin(p.x * 2.0 + t) * 0.5 * intensity;
-    p.z += cos(p.y * 2.0 + t) * 0.5 * intensity;
-
-    // Core structure
-    let q = fract(p * 0.5) * 2.0 - 1.0;
-
-    var d1 = length(q.xy) - 0.2;
-    var d2 = length(q.yz) - 0.2;
-    var d3 = length(q.zx) - 0.2;
-
-    var d = smin(d1, smin(d2, d3, 0.5), 0.5);
-
-    // Multi-octave noise to break up the shape and act like plasma
-    d += snoise3(p * 2.0 - vec3<f32>(0.0, 0.0, t * 2.0)) * 0.3 * intensity;
-    d += snoise3(p * 4.0 + vec3<f32>(t, 0.0, 0.0)) * 0.15 * intensity;
-
-    return d;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) {
+    let res = vec2<f32>(u.config.z, u.config.w);
+    let coords = vec2<f32>(f32(global_id.x), f32(global_id.y));
+
+    if (coords.x >= res.x || coords.y >= res.y) {
         return;
     }
 
-    // Parameters
-    let intensity = u.zoom_params.x;
-    let dist_speed = u.zoom_params.y;
-    let bloom_threshold = u.zoom_params.z;
-    let hue_shift = u.zoom_params.w;
-
-    // Time and audio
-    var time = u.config.x;
+    // Audio reactivity
     let bass = extraBuffer[0];
-    let treble = extraBuffer[133];
+    let bassSmooth = extraBuffer[133];
+    let audioMod = 1.0 + bassSmooth * 0.5;
 
-    // Audio reactivity - modulates time and intensity
-    time += bass * 0.01;
-    let current_intensity = intensity * (1.0 + treble * 0.5);
-
-    let pixel = vec2<i32>(global_id.xy);
-    let uv_frag = (vec2<f32>(global_id.xy) + 0.5) / resolution;
-    let uv = (uv_frag * 2.0 - 1.0) * vec2<f32>(resolution.x / resolution.y, 1.0);
-
-    // Mouse Interaction
-    let mouse = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(resolution.x / resolution.y, -1.0);
-    let mouse_dist = length(uv - mouse);
-
-    // Local time dilation based on mouse
-    let time_dilation = smoothstep(0.5, 0.0, mouse_dist);
-    time -= time_dilation * 2.0 * u.zoom_config.w; // Slows down or shifts phase heavily on click
+    let uv = (coords - 0.5 * res) / res.y;
+    let t = u.config.x;
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 0.0, -3.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    var ro = vec3<f32>(0.0, 0.0, -2.5);
+    let lookAt = vec3<f32>(0.0, 0.0, 0.0);
+    let fwd = normalize(lookAt - ro);
+    let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
+    let up = cross(fwd, right);
+    let rd = normalize(uv.x * right + uv.y * up + 1.0 * fwd);
 
-    // Mouse orbit
-    let rx = rot(mouse.y * 1.5);
-    let ry = rot(mouse.x * 1.5);
-
-    ro.y = ro.y * rx[0][0] + ro.z * rx[0][1];
-    ro.z = ro.y * rx[1][0] + ro.z * rx[1][1];
-
-    ro.x = ro.x * ry[0][0] + ro.z * ry[0][1];
-    ro.z = ro.x * ry[1][0] + ro.z * ry[1][1];
-
-    rd.y = rd.y * rx[0][0] + rd.z * rx[0][1];
-    rd.z = rd.y * rx[1][0] + rd.z * rx[1][1];
-
-    rd.x = rd.x * ry[0][0] + rd.z * ry[0][1];
-    rd.z = rd.x * ry[1][0] + rd.z * ry[1][1];
-
-    // Gravity well distortion around mouse ray
-    if (u.zoom_config.w > 0.0) {
-        let rd_mouse = normalize(vec3<f32>(mouse, 1.0));
-        let m_dot = dot(rd, rd_mouse);
-        if (m_dot > 0.9) {
-            let pull = smoothstep(0.9, 1.0, m_dot);
-            rd = normalize(mix(rd, rd_mouse, pull * 0.5));
-        }
-    }
-
-    // Volumetric Raymarching
+    // Raymarching variables
     var p = ro;
-    var t_dist = 0.0;
-    var accum_density = 0.0;
-    var glow = vec3<f32>(0.0);
+    var totalDist = 0.0;
+    var accumulatedDensity = 0.0;
+    var emissiveGlow = 0.0;
 
-    for (var i = 0; i < 64; i++) {
-        let d = map(p, time, dist_speed, current_intensity);
+    let bloomThreshold = u.zoom_params.z;
 
-        // Volumetric accumulation
-        if (d < 0.1) {
-            let density = 0.1 - d;
-            accum_density += density;
+    // Volumetric raymarching
+    for (var i = 0; i < MAX_STEPS; i++) {
+        p = ro + rd * totalDist;
 
-            // Artificial subsurface scattering/glowing edges
-            let p_offset = p + vec3<f32>(0.05);
-            let d_offset = map(p_offset, time, dist_speed, current_intensity);
-            let grad = abs(d_offset - d);
+        let d = map(p, t);
 
-            let color_val = palette(length(p) * 0.2 + time * 0.1, hue_shift);
+        // If inside the volume (distance is negative or very small)
+        if (d < 0.05) {
+            // Accumulate density
+            let density = smoothstep(0.05, -0.1, d);
+            accumulatedDensity += density * 0.05 * audioMod; // Boosted by audio
 
-            // Bloom threshold logic
-            var lum = dot(color_val, vec3<f32>(0.299, 0.587, 0.114));
-            var bloom_factor = 1.0;
-            if (lum > bloom_threshold) {
-               bloom_factor = 2.0;
+            // Bloom accumulation for bright parts
+            if (density > bloomThreshold) {
+                emissiveGlow += (density - bloomThreshold) * 0.1;
             }
 
-            glow += color_val * density * bloom_factor * (1.0 + grad * 5.0) * 0.05;
+            // Step forward by a small amount to march through the volume
+            totalDist += 0.02;
+        } else {
+            // Step forward by the distance to the surface
+            totalDist += d;
         }
 
-        let step_size = max(abs(d) * 0.5, 0.02);
-        t_dist += step_size;
-        p = ro + rd * t_dist;
-
-        if (t_dist > 10.0 || accum_density > 2.0) {
+        if (totalDist > MAX_DIST || accumulatedDensity > 0.95) {
             break;
         }
     }
 
-    // Background
-    var bg = vec3<f32>(0.02, 0.01, 0.03); // Deep space purple/black
+    // Color mapping
+    let colorT = accumulatedDensity * 2.0 - t * 0.1;
+    var col = palette(colorT);
 
-    // Add procedural particle scattering (glowing pollen)
-    let particle_noise = snoise3(vec3<f32>(uv * 20.0, time * 0.5));
-    if (particle_noise > 0.95) {
-       bg += palette(time, hue_shift) * (particle_noise - 0.95) * 20.0 * (1.0 + bass);
-    }
+    // Apply accumulated density as opacity
+    col *= accumulatedDensity;
 
-    var col = mix(bg, glow, clamp(accum_density, 0.0, 1.0));
+    // Add procedural bloom
+    col += col * emissiveGlow * 2.0;
 
-    // Contrast and vignette
-    col = smoothstep(vec3<f32>(0.0), vec3<f32>(1.2), col);
-    let vignette = 1.0 - length(uv) * 0.5;
-    col *= vignette;
+    // Background fade (fog)
+    let fog = 1.0 - exp(-0.1 * totalDist);
+    col = mix(col, vec3<f32>(0.02, 0.0, 0.05), fog); // Deep dark purple bg
 
-    let prev = textureLoad(readTexture, pixel, 0);
-    col = mix(prev.rgb, col, 0.15); // Temporal smoothing
+    // Tonemapping and gamma correction
+    col = col / (1.0 + col);
+    col = pow(col, vec3<f32>(1.0 / 2.2));
 
-    textureStore(writeTexture, pixel, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
 }
