@@ -1,0 +1,1 @@
+ERROR: case_err_not_library.wgsl: #include "plasma-orb.wgsl" — only "_"-prefixed library files may be included, so a catalog shader cannot be inlined into another

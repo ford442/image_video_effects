@@ -27,6 +27,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -39,6 +40,11 @@ from bindgroup_checker import (  # noqa: E402
     fix_literal_two_arg_workgroup_size,
     parse_shader,
     split_workgroup_issues,
+)
+from wgsl_include import (  # noqa: E402
+    WgslIncludeError,
+    expand_wgsl_includes,
+    has_wgsl_include,
 )
 
 PROJECT_ROOT = _SCRIPTS_DIR.parent
@@ -97,17 +103,47 @@ def discover_all_shader_files() -> list[Path]:
 
 
 def run_naga(wgsl_path: Path) -> dict:
-    """Run naga on a single file. Return {'ok': bool, 'error': str}."""
-    result = subprocess.run(
-        [str(NAGA_BIN), str(wgsl_path)],
-        capture_output=True,
-        text=True,
-    )
-    ok = result.returncode == 0
-    error = ""
-    if not ok:
-        error = (result.stdout + result.stderr).strip() or "naga validation failed"
-    return {"ok": ok, "error": error}
+    """
+    Run naga on a single file. Return {'ok': bool, 'error': str}.
+
+    The naga CLI has no preprocessor, so a shader using `#include` is expanded
+    into a temp file first. `npm run verify:naga-wasm` does the same expansion
+    in-process and is what CI gates on.
+    """
+    target = wgsl_path
+    tmp = None
+    try:
+        source = wgsl_path.read_text(encoding="utf-8")
+        if has_wgsl_include(source):
+            expanded = expand_wgsl_includes(source, entry=wgsl_path.name)
+            tmp = tempfile.NamedTemporaryFile(
+                "w", suffix=".wgsl", delete=False, encoding="utf-8"
+            )
+            tmp.write(expanded)
+            tmp.close()
+            target = Path(tmp.name)
+    except WgslIncludeError as exc:
+        return {"ok": False, "error": f"#include expansion failed: {exc}"}
+    except OSError as exc:
+        return {"ok": False, "error": f"could not read file: {exc}"}
+
+    try:
+        result = subprocess.run(
+            [str(NAGA_BIN), str(target)],
+            capture_output=True,
+            text=True,
+        )
+        ok = result.returncode == 0
+        error = ""
+        if not ok:
+            error = (result.stdout + result.stderr).strip() or "naga validation failed"
+            if tmp is not None:
+                # Point diagnostics back at the real file, not the temp copy.
+                error = error.replace(str(target), f"{wgsl_path} (expanded)")
+        return {"ok": ok, "error": error}
+    finally:
+        if tmp is not None:
+            Path(tmp.name).unlink(missing_ok=True)
 
 
 def should_skip(wgsl_path: Path, content: str) -> tuple[bool, str]:

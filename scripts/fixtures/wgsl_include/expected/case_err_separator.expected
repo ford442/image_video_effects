@@ -1,0 +1,1 @@
+ERROR: case_err_separator.wgsl: #include "../secrets/_lib_a.wgsl" — public/shaders is flat, a path separator is not allowed

@@ -1,0 +1,5 @@
+// #include-expanded: _lib_a.wgsl (from case_indented.wgsl:1)
+// library A
+fn lib_a_value() -> f32 { return 1.0; }
+
+fn x() -> f32 { return lib_a_value(); }

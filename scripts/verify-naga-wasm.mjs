@@ -126,12 +126,34 @@ async function main() {
     process.exit(failed ? 1 : 0);
   }
 
+  // naga must see what the GPU sees, so includes are expanded first. The
+  // expander is the emitted bridge copy — the same code the runtime loads.
+  const { expandWgslIncludes, hasWgslInclude } = await import(
+    pathToFileURL(path.join(ROOT, 'public/wasm/bridge/wgslInclude.js')).href
+  );
+  const readLibrary = async (name) => {
+    const p = path.join(SHADER_DIR, name);
+    return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null;
+  };
+
   const started = Date.now();
   const results = [];
   for (const file of files) {
-    const source = fs.readFileSync(file, 'utf8');
-    const diag = validate(source);
-    results.push({ id: shaderId(file), file: path.relative(ROOT, file), ...diag });
+    const id = shaderId(file);
+    const rel = path.relative(ROOT, file);
+    const raw = fs.readFileSync(file, 'utf8');
+
+    let source = raw;
+    if (hasWgslInclude(raw)) {
+      try {
+        source = await expandWgslIncludes(raw, readLibrary, `${id}.wgsl`);
+      } catch (err) {
+        results.push({ id, file: rel, ok: false, kind: 'parse', message: `error: ${err.message}`, line: 0, pos: 0 });
+        continue;
+      }
+    }
+
+    results.push({ id, file: rel, ...validate(source) });
   }
   const elapsedMs = Date.now() - started;
 

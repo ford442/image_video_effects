@@ -249,6 +249,11 @@ jobs:
       with:
         node-version: '24'
 
+    # Proves the TS and Python #include expanders agree, the generated
+    # libraries match their sources, and every load path calls the expander.
+    - name: Verify WGSL include expanders
+      run: node scripts/verify-wgsl-include.mjs
+
     - name: Validate WGSL with naga-wasm (changed files)
       run: node scripts/verify-naga-wasm.mjs --base-ref origin/main
 

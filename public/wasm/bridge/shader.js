@@ -2,6 +2,7 @@
 
 import { state, utf8ByteLength, wasmRef } from "./state.js";
 import { rewriteWgslStorageFormats } from "./wgslFormat.js";
+import { expandWgslIncludes, hasWgslInclude } from "./wgslInclude.js";
 function writeUtf8(id) {
   const module = wasmRef.module;
   if (!module) return null;
@@ -10,9 +11,33 @@ function writeUtf8(id) {
   module.stringToUTF8(id, ptr, len);
   return { ptr, free: () => module._free(ptr) };
 }
+async function fetchAndExpand(id, url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+  }
+  const wgslCode = await response.text();
+  if (!hasWgslInclude(wgslCode)) return wgslCode;
+  const baseUrl = url.slice(0, url.lastIndexOf("/") + 1);
+  return expandWgslIncludes(
+    wgslCode,
+    async (name) => {
+      const res = await fetch(`${baseUrl}${name}`);
+      return res.ok ? res.text() : null;
+    },
+    `${id}.wgsl`
+  );
+}
 function loadShader(id, wgslCode) {
   if (!state.initialized || !wasmRef.module) {
     console.error("[WASM] Renderer not initialized");
+    return false;
+  }
+  if (hasWgslInclude(wgslCode)) {
+    const message = `Shader ${id} still contains an unexpanded #include \u2014 expand before loadShader()`;
+    console.error(`[WASM] ${message}`);
+    state.lastLoadError = message;
+    state.loadErrorCount++;
     return false;
   }
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
@@ -39,6 +64,13 @@ function reloadShader(id, wgslCode) {
     console.error("[WASM] Renderer not initialized");
     return false;
   }
+  if (hasWgslInclude(wgslCode)) {
+    const message = `Shader ${id} still contains an unexpanded #include \u2014 expand before reloadShader()`;
+    console.error(`[WASM] ${message}`);
+    state.lastLoadError = message;
+    state.loadErrorCount++;
+    return false;
+  }
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
@@ -59,12 +91,7 @@ function reloadShader(id, wgslCode) {
 }
 async function loadShaderFromURL(id, url) {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-    }
-    const wgslCode = await response.text();
-    return loadShader(id, wgslCode);
+    return loadShader(id, await fetchAndExpand(id, url));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[WASM] Failed to fetch shader from ${url}:`, err);
@@ -75,12 +102,7 @@ async function loadShaderFromURL(id, url) {
 }
 async function reloadShaderFromURL(id, url) {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-    }
-    const wgslCode = await response.text();
-    return reloadShader(id, wgslCode);
+    return reloadShader(id, await fetchAndExpand(id, url));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[WASM] Failed to fetch shader for reload from ${url}:`, err);
