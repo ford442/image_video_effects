@@ -1,6 +1,28 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-21 (retro-glitch ten second-pass upgrades; uncommitted)
+**Last updated:** 2026-09-21 (retro-glitch ten + liquid eight upgrades, both pushed to main)
+
+## 2026-09-21 — Liquid eight (8 shaders)
+
+- IDs: liquid-rainbow-prismatic, luma-velocity-melt, liquid, kimi_liquid_glass, liquid-oil,
+  liquid-mirror, ink-marbling, liquid-displacement.
+- Per shader, the ideas actually added (2 each, 16 distinct):
+  - liquid-rainbow-prismatic: gravity drainage + Newton's black film; dispersed caustics.
+  - luma-velocity-melt: drip pinch-off into beaded columns; depth-ledge pooling.
+  - liquid: capillary precursor ring (anomalous dispersion); foam drains into troughs.
+  - kimi_liquid_glass: total internal reflection on steep flanks; rising seed bubbles.
+  - liquid-oil: displacement wake (pointer parts the oil instead of lifting it); shear-aligned streaks.
+  - liquid-mirror: glitter path; energy-roughened reflection.
+  - ink-marbling: Jaffer's area-preserving drop map (replaces HEAD ring push); comb rake.
+  - liquid-displacement: vorticity confinement; flow-line streaks.
+- **Lesson:** the "no `Ideas:` line" proxy is leaky. 4 of 12 liquid candidates were already upgraded
+  or deliberately minimal once read (Batch 67 "A./B." comment blocks, idea-dense physics, a declared
+  clean baseline). Read every candidate before claiming it.
+- **Lesson two:** when four files share one solver template, pick each file's ideas from the physics
+  its *name* claims. Test: could you swap two cards between siblings? If yes, they're overlay.
+- Floor untouched; all raw-state files stayed raw. `upgraded-rgba` added to 5 definitions.
+- Gates: precommit 8/8; naga --all 0 new; extraBuffer/dead-sliders PASS; catalog 1370; build OK.
+- Real-GPU QA outstanding. Riskiest: liquid-displacement confinement at turbulence = 1.
 
 ## 2026-09-21 — Retro-glitch ten (10 shaders)
 
@@ -35,7 +57,7 @@
   Jest 712/6 — the 6 failures reproduce identically on a stashed clean tree (WASM-bridge ESM
   resolution, unrelated).
 - **Real-GPU visual QA: external, still outstanding.** Notes list five specific things to look at.
-- Batch folder: `agents/swarm-outputs/spark-2026-09-21-retro-glitch-ten/`. Uncommitted.
+- Batch folder: `agents/swarm-outputs/spark-2026-09-21-retro-glitch-ten/`. Pushed to main (`90339ab4`).
 
 ## 2026-09-20 — Merge to local `main` (no push)
 
