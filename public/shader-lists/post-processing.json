@@ -734,7 +734,8 @@
       "three-band-audio",
       "held-pointer",
       "click-reactive",
-      "cauchy-dispersion"
+      "cauchy-dispersion",
+      "upgraded-rgba"
     ],
     "updatedParams": [
       {
