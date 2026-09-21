@@ -1,5 +1,10 @@
-// Kimi Liquid Glass — refractive thickness field with caustic optics.
-// Raw A ownership: R=height, G=velocity, B=thickness, A=coverage.
+// ═══════════════════════════════════════════════════════════════════
+//  Kimi Liquid Glass — refractive thickness field with caustic optics.
+//  Category: liquid-effects
+//  Upgraded: 2026-09-21
+//  Ideas: total internal reflection on steep flanks; rising seed bubbles
+//  A packing: raw — R=height, G=velocity, B=thickness, A=coverage.
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -91,9 +96,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let caustic = pow(clamp(curvature + clickEnergy * 0.36, 0.0, 1.0), 2.2);
   let interference = 0.5 + 0.5 * cos(TAU * (vec3<f32>(0.88, 1.0, 1.14) * (thickness * 2.2 + time * 0.012) + vec3<f32>(0.0, 0.21, 0.43)));
   let absorption = exp(-thickness * vec3<f32>(0.22, 0.09, 0.035) * (0.6 + intensity));
-  let color = source.rgb * absorption + vec3<f32>(0.36, 0.66, 1.0) * fresnel * (0.18 + mids * 0.14)
+  var color = source.rgb * absorption + vec3<f32>(0.36, 0.66, 1.0) * fresnel * (0.18 + mids * 0.14)
     + interference * caustic * (0.12 + detail * 0.3 + treble * 0.12) + vec3<f32>(1.0, 0.82, 0.48) * lensPush * bass * 0.08;
-  let alpha = clamp(source.a + (1.0 - source.a) * coverage * (0.16 + thickness * 0.6) + fresnel * 0.08, 0.0, 1.0);
+
+  // ── Idea 1: total internal reflection ─────────────────────────────
+  // Light leaving glass for air cannot escape past the critical angle
+  // asin(1/ior). On a steep enough flank the photo is simply not
+  // transmitted; what you see is the inside of the glass reflected back —
+  // the silvery flash along every real glass or water edge. Soft mask on
+  // the Snell discriminant, using the same ior the refraction already uses.
+  let cosI = clamp(normal.z, 0.0, 1.0);
+  let kTir = 1.0 - ior * ior * (1.0 - cosI * cosI);
+  let tir = 1.0 - smoothstep(-0.08, 0.05, kTir);
+  let insideUV = clamp(uv - offset * 2.0, vec2<f32>(0.001), vec2<f32>(0.999));
+  let insideRefl = textureSampleLevel(readTexture, u_sampler, insideUV, 0.0).rgb;
+  color = mix(color, insideRefl * absorption * 1.2 + vec3<f32>(0.10, 0.13, 0.17), tir * 0.8);
+
+  // ── Idea 2: seed bubbles ──────────────────────────────────────────
+  // Glassmakers call trapped air bubbles "seeds". They rise slowly and only
+  // exist where the glass is thick enough to hold them. Each is a small
+  // diverging lens: a dark rim (TIR again, at the bubble wall) around a
+  // bright specular dot offset toward the light.
+  let bp = uv * aspectVec * (scale * 2.3) + vec2<f32>(0.0, time * speed * 0.18);
+  let bCell = floor(bp);
+  let bLocal = fract(bp) - 0.5;
+  let bSeed = hash21(bCell + vec2<f32>(17.3, 4.1));
+  let bCenter = (vec2<f32>(hash21(bCell + vec2<f32>(3.1, 8.2)), hash21(bCell + vec2<f32>(9.7, 1.3))) - 0.5) * 0.6;
+  let bRadius = mix(0.06, 0.2, hash21(bCell + vec2<f32>(5.5, 6.6)));
+  let bDist = length(bLocal - bCenter);
+  let bubblePresent = step(0.62 - detail * 0.3, bSeed) * smoothstep(0.1, 0.3, thickness);
+  let bubbleRim = smoothstep(bRadius, bRadius * 0.72, bDist) * smoothstep(bRadius * 0.35, bRadius * 0.72, bDist);
+  let bubbleGlint = smoothstep(bRadius * 0.28, 0.0, length(bLocal - bCenter + vec2<f32>(0.35, 0.35) * bRadius));
+  color = color * (1.0 - bubbleRim * 0.6 * bubblePresent) + vec3<f32>(1.0, 0.98, 0.94) * bubbleGlint * bubblePresent * 0.7;
+
+  let alpha = clamp(source.a + (1.0 - source.a) * coverage * (0.16 + thickness * 0.6) + fresnel * 0.08 + tir * 0.06, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
   let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;
   textureStore(writeDepthTexture, pixel, vec4<f32>(max(sourceDepth * 0.91, thickness * 0.24 + caustic * 0.03), 0.0, 0.0, 0.0));

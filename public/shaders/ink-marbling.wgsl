@@ -1,5 +1,10 @@
-// Ink Marbling — Batch 68 persistent pigment/thickness simulation.
-// A packs raw pigment.rgb and thickness; B is intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
+//  Ink Marbling — Batch 68 persistent pigment/thickness simulation.
+//  Category: liquid-effects
+//  Upgraded: 2026-09-21
+//  Ideas: area-preserving drop spread (Jaffer's marbling map); comb rake
+//  A packing: raw pigment.rgb + thickness; B is intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -61,7 +66,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var flow = (waveA + waveB * detail) * warpStrength * (1.0 + treble * 0.5);
   flow += swirlDir * swirlMask * (0.015 + length(velocity) * 0.08);
 
-  var drop = 0.0; var dropColor = vec3<f32>(0.0);
+  // ── Idea 2: comb rake ─────────────────────────────────────────────
+  // The tool that defines marbling. A comb of tines is drawn through the
+  // bath on a slow cycle, alternating direction each pass — that
+  // back-and-forth is the classic nonpareil pattern. Jaffer's tine-line
+  // displacement alpha * lambda / (d + lambda), d = distance to the nearest
+  // tine. Spacing rides the scale slot, rate the speed slot, strength the
+  // intensity slot, so a preset at zero intensity never rakes.
+  let rakeCycle = time * (0.04 + u.zoom_params.y * 0.08);
+  let rakePass = floor(rakeCycle);
+  let rakePhase = fract(rakeCycle);
+  let rakeActive = smoothstep(0.0, 0.08, rakePhase) * smoothstep(0.42, 0.34, rakePhase);
+  let tineSpacing = 1.0 / mix(4.0, 14.0, u.zoom_params.z);
+  let tineDist = abs(fract(p.x / tineSpacing + 0.5) - 0.5) * tineSpacing;
+  let tineLambda = tineSpacing * 0.09;
+  let rakeDir = select(1.0, -1.0, (i32(rakePass) & 1) == 1);
+  flow.y += rakeDir * rakeActive * u.zoom_params.x * 0.0012 * tineLambda / (tineDist + tineLambda);
+
+  var drop = 0.0; var dropColor = vec3<f32>(0.0); var jaffer = vec2<f32>(0.0);
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i++) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
@@ -71,11 +93,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ring = exp(-pow((d - age * 0.09) * 35.0, 2.0)) * (1.0 - age / 3.0);
     drop += core + ring * 0.45;
     dropColor += palette(fract(ripple.z * 0.17 + f32(i) * 0.13)) * (core + ring * 0.25);
-    let dir = select(vec2<f32>(0.0), (uv - ripple.xy) / max(d, 0.001), d > 0.001);
-    flow += dir / aspectVec * ring * warpStrength * 1.5;
+    // ── Idea 1: area-preserving drop spread ──────────────────────────
+    // In real marbling a new drop PUSHES every existing ring outward — that
+    // is how the concentric "stone" pattern forms. Jaffer's marbling map
+    // does it exactly: p <- c + (p - c) * sqrt(1 - R^2 / |p - c|^2). Applied
+    // per frame, as the inverse lookup, for the radius the drop grew by this
+    // frame. It replaces HEAD's ring-front push (dir * ring * warp * 1.5),
+    // which approximated the same motion and would double-count it.
+    let dv = (uv - ripple.xy) * aspectVec;
+    let r2 = dot(dv, dv);
+    let dropRMax = 0.035 + u.zoom_params.x * 0.06;
+    let dropR = dropRMax * (1.0 - exp(-age * 2.5));
+    let dropRPrev = dropRMax * (1.0 - exp(-max(age - 0.0166667, 0.0) * 2.5));
+    let dR2 = dropR * dropR - dropRPrev * dropRPrev;
+    if (r2 > dropR * dropR && r2 > 1e-6) {
+      jaffer += (dv * sqrt(max(1.0 - dR2 / r2, 0.0)) - dv) / aspectVec;
+    }
   }
 
-  let advectedUV = clamp(uv - flow - velocity * swirlMask * 0.04, vec2<f32>(0.0), vec2<f32>(1.0));
+  let advectedUV = clamp(uv - flow - velocity * swirlMask * 0.04 + jaffer, vec2<f32>(0.0), vec2<f32>(1.0));
   let advectedCoord = historyCoord(advectedUV, dims);
   let previous = textureLoad(dataTextureC, advectedCoord, 0);
   let prevL = textureLoad(dataTextureC, clamp(advectedCoord + vec2<i32>(-1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0);

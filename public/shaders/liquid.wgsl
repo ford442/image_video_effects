@@ -1,5 +1,10 @@
-// Liquid — canonical interactive capillary surface.
-// Raw A ownership: R=height, G=velocity, B=curvature foam, A=coverage.
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid — canonical interactive capillary surface.
+//  Category: liquid-effects
+//  Upgraded: 2026-09-21
+//  Ideas: capillary precursor ring (anomalous dispersion); foam drains into troughs
+//  A packing: raw — R=height, G=velocity, B=curvature foam, A=coverage.
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -63,6 +68,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let dist = length((uv - ripple.xy) * aspectVec);
       let ring = exp(-pow((dist - age * (0.16 + bass * 0.05)) * 42.0, 2.0)) * exp(-age * mix(0.85, 1.45, viscosity));
       impulse += ring * sin(age * (6.0 + mids * 3.0)) * (0.025 + rippleStrength * 0.075); clickEnergy += ring;
+      // ── Idea 1: capillary precursor ring ──────────────────────────
+      // Capillary waves have anomalous dispersion — short wavelengths
+      // outrun long ones — which is why a drop on water throws a fringe of
+      // fine ripples AHEAD of the main ring. Faster, narrower, higher
+      // frequency, and damped harder by viscosity, since viscous damping
+      // grows with k^2.
+      let capFront = age * (0.16 + bass * 0.05) * mix(1.9, 1.45, viscosity);
+      let precursor = exp(-pow((dist - capFront) * 95.0, 2.0)) * exp(-age * mix(1.6, 2.8, viscosity));
+      impulse += precursor * sin(age * 19.0 + dist * 180.0) * (0.008 + rippleStrength * 0.03);
+      clickEnergy += precursor * 0.5;
     }
   }
   let p = (uv - 0.5) * aspectVec;
@@ -72,7 +87,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   velocity = clamp(velocity * damping + laplacian * tension + (0.14 - height) * 0.014
     + capillaryNoise * turbulence * 0.0022 + impulse, -0.85, 0.85);
   height = clamp(height + velocity * mix(0.095, 0.035, viscosity), 0.01, 1.0);
-  let foam = clamp(max(c.b * mix(0.9, 0.97, viscosity), abs(laplacian) * 9.0 + abs(velocity) * 0.6 + clickEnergy * 0.38), 0.0, 1.0);
+  // ── Idea 2: foam drains into troughs ──────────────────────────────
+  // HEAD's foam only decayed where it was born. Real foam slides off crests
+  // under gravity. Semi-Lagrangian transport of B from the uphill neighbour
+  // moves it downslope, so it gathers in the troughs and lines them.
+  let slope = vec2<f32>(hR - hL, hU - hD);
+  let uphillX = select(l.b, r.b, slope.x > 0.0);
+  let uphillY = select(d.b, t.b, slope.y > 0.0);
+  let slopeX = abs(slope.x) / (abs(slope.x) + abs(slope.y) + 1e-5);
+  let drainW = clamp(length(slope) * 6.0, 0.0, 0.35) * select(0.0, 1.0, initialized);
+  let drainedFoam = mix(c.b, mix(uphillY, uphillX, slopeX), drainW);
+  let foam = clamp(max(drainedFoam * mix(0.9, 0.97, viscosity), abs(laplacian) * 9.0 + abs(velocity) * 0.6 + clickEnergy * 0.38), 0.0, 1.0);
   let coverage = clamp(max(c.a * 0.997, smoothstep(0.01, 0.11, height)), 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(height, velocity, foam, coverage));
 

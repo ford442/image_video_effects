@@ -48,7 +48,8 @@
     "spring-interaction",
     "exact-load-feedback",
     "aces-tone-map",
-    "semantic-alpha"
+    "semantic-alpha",
+    "upgraded-rgba"
   ],
   "tags": [
     "navier-stokes",
