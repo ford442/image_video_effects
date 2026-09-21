@@ -1,6 +1,12 @@
-// Pixelation Drift — Composer batch cyber/digital/glitch
-// Audio-reactive mosaic drift + chromatic pixels: spring cursor, held focus,
-// capped ripples, exact C persistence, three-band audio, ACES + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Pixelation Drift
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: block area average; block colour quantisation; drift-lit tile bevel
+//  A packing: ACES display RGBA (C is read as colour history)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -38,6 +44,19 @@ fn noise(p: vec2<f32>) -> f32 {
     mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x),
     u.y
   );
+}
+
+// A mosaic block is the AVERAGE of its area. HEAD point-sampled the block's
+// corner, so the tile flickered as the grid drifted across detail and the
+// picture dissolved at large block sizes. Four interior taps, one bilinear
+// fetch each, is enough to stabilise it without a full box reduction.
+fn blockAverage(base: vec2<f32>, span: vec2<f32>) -> vec4<f32> {
+  var acc = vec4<f32>(0.0);
+  acc += textureSampleLevel(readTexture, u_sampler, clamp(base + span * vec2<f32>(0.25, 0.25), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  acc += textureSampleLevel(readTexture, u_sampler, clamp(base + span * vec2<f32>(0.75, 0.25), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  acc += textureSampleLevel(readTexture, u_sampler, clamp(base + span * vec2<f32>(0.25, 0.75), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  acc += textureSampleLevel(readTexture, u_sampler, clamp(base + span * vec2<f32>(0.75, 0.75), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  return acc * 0.25;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -130,13 +149,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gUV = pixelatedUV;
   let bUV = clamp(pixelatedUV - vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let gSample = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
-  var color = vec3<f32>(
-    textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
-    gSample.g,
-    textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
-  );
-  var baseAlpha = gSample.a;
+  // ── Idea 1: block area average ────────────────────────────────────
+  let blockSpan = vec2<f32>(pixelSize) / resolution;
+  let rAvg = blockAverage(rUV, blockSpan);
+  let gAvg = blockAverage(gUV, blockSpan);
+  let bAvg = blockAverage(bUV, blockSpan);
+  var color = vec3<f32>(rAvg.r, gAvg.g, bAvg.b);
+  var baseAlpha = gAvg.a;
 
   if (colorBleed > 0.01) {
     let bleedOffset = vec2<f32>(
@@ -148,9 +167,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     baseAlpha = mix(baseAlpha, bleedColor.a, colorBleed * 0.3);
   }
 
+  // ── Idea 2: block colour quantisation ─────────────────────────────
+  // Position and colour quantise together — a bigger block also gets a
+  // coarser palette, which is the low-bit mosaic the effect is reaching for
+  // and which HEAD left as full-precision colour inside hard-edged tiles.
+  let quantLevels = max(2.0, floor(mix(48.0, 3.0, clamp(pixelSize / 48.0, 0.0, 1.0))));
+  color = floor(color * quantLevels + 0.5) / quantLevels;
+
+  // ── Idea 3: drift-lit tile bevel ──────────────────────────────────
+  // Light each tile's rim from the direction the grid is drifting, so the
+  // mosaic reads as tiles being pushed rather than as a flat grid overlay
+  // multiplied by a constant 1.2.
   let pixelCenter = (floor(driftedUV * resolution / pixelSize) + 0.5) * pixelSize / resolution;
+  let inBlock = (driftedUV - pixelCenter) * resolution / pixelSize;
   let edgeGlow = smoothstep(pixelSize * 0.4, pixelSize * 0.5, length((driftedUV - pixelCenter) * resolution));
-  color = mix(color, color * 1.2, edgeGlow * 0.1);
+  let driftDir = normalize(driftOffset + vec2<f32>(1e-4, 1e-4));
+  let bevel = dot(normalize(inBlock + vec2<f32>(1e-4, 1e-4)), driftDir);
+  color = color * (1.0 + bevel * edgeGlow * (0.18 + driftSpeed * 0.30));
 
   let prev = textureLoad(dataTextureC, coord, 0);
   let persistence = clamp(0.12 + bass * 0.05 + regionVoice * 0.03, 0.0, 0.35);

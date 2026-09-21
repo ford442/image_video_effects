@@ -1,6 +1,12 @@
-// CRT Phosphor Decay — Composer batch cyber/digital/glitch
-// Per-channel phosphor persistence: spring cursor, held static, capped
-// click blooms, exact C loads, three-band audio, ACES + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  CRT Phosphor Decay
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: two-rate phosphor knee; triad-aligned grain bleed; interlaced field parity
+//  A packing: ACES display RGBA (C is read as colour history)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -37,6 +43,18 @@ fn halation(uv: vec2<f32>, spread: f32) -> vec3<f32> {
   c += textureSampleLevel(readTexture, u_sampler, clamp(uv + e, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.17;
   c += textureSampleLevel(readTexture, u_sampler, clamp(uv + e * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.08;
   return c;
+}
+
+// Aperture-grille triad weights for a pixel column. HEAD sampled this with
+// fract(uv.x * resX), which is identically 0.5 for every texel and collapsed
+// the mask to a flat tint; a triad is three pixels wide, so phase off coord.x.
+fn triadMask(px: f32) -> vec3<f32> {
+  let phase = fract(px / 3.0);
+  return vec3<f32>(
+    smoothstep(0.0, 0.33, phase) * (1.0 - smoothstep(0.33, 0.66, phase)),
+    smoothstep(0.33, 0.66, phase) * (1.0 - smoothstep(0.66, 1.0, phase)),
+    smoothstep(0.66, 1.0, phase)
+  ) * 0.4 + 0.6;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -98,21 +116,46 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let luma = dot(fresh.rgb, vec3<f32>(0.299, 0.587, 0.114));
   let boosted = mix(fresh.rgb, halo, smoothstep(0.3, 0.9, luma) * 0.35 * (0.5 + depth * 0.5)) * (1.0 + bass * 0.3);
 
+  // ── Idea 3: interlaced field parity ─────────────────────────────
+  // Odd and even lines refresh on alternate fields, so at any instant half
+  // the raster is one field stale and is carried purely by the phosphor
+  // tail. Gated by the scanline slider, so a user at 0 sees a progressive
+  // frame exactly as before.
+  let fieldParity = f32(u32(floor(time * 50.0)) & 1u);
+  let rowParity = f32(u32(coord.y) & 1u);
+  let onField = 1.0 - abs(rowParity - fieldParity);
+  let refresh = 1.0 - (1.0 - onField) * 0.65 * clamp(scanlineStr, 0.0, 1.0);
+
+  // ── Idea 1: two-rate phosphor knee ──────────────────────────────
+  // P22 is not a single exponential. A hot grain sheds fast, then crosses a
+  // knee into a long low-level afterglow. Excitation is read from the
+  // history's own luma, so no new channel is claimed in A.
   let prev = textureLoad(dataTextureC, coord, 0).rgb;
-  let decayed = vec3<f32>(prev.r * decayBase, prev.g * decayBase * 0.97, prev.b * decayBase * 0.94);
-  var outCol = max(boosted, decayed);
+  let excite = dot(prev, vec3<f32>(0.299, 0.587, 0.114));
+  let hot = smoothstep(0.22, 0.52, excite);
+  let fastRate = decayBase * 0.70;
+  let tailRate = min(decayBase * 1.07, 0.994);
+  let rate = mix(tailRate, fastRate, hot);
+  let decayed = vec3<f32>(prev.r * rate, prev.g * rate * 0.97, prev.b * rate * 0.94);
+
+  // ── Idea 2: triad-aligned grain bleed ───────────────────────────
+  // Grains bleed sideways into the neighbouring stripe of the mask rather
+  // than into the pixel grid, so each neighbour is weighted by its own
+  // triad phase. Only the decayed history bleeds — never the live source —
+  // and max() keeps it a one-way spill from bright grains into dark ones.
+  let maxX = i32(resolution.x) - 1;
+  let prevL = textureLoad(dataTextureC, vec2<i32>(clamp(coord.x - 1, 0, maxX), coord.y), 0).rgb;
+  let prevR = textureLoad(dataTextureC, vec2<i32>(clamp(coord.x + 1, 0, maxX), coord.y), 0).rgb;
+  let bled = (prevL * triadMask(f32(coord.x - 1)) + prevR * triadMask(f32(coord.x + 1))) * rate * 0.5;
+  let persist = max(decayed, bled * (0.35 + 0.45 * clamp(scanlineStr, 0.0, 1.0)));
+
+  var outCol = max(boosted * refresh, persist);
 
   let scanFreq = resolution.y * 0.5 * (1.0 + treble * 0.08 + rowVoice * 0.025);
   let scanline = sin(uv.y * scanFreq) * 0.5 + 0.5;
   outCol *= mix(1.0, scanline, scanlineStr * 0.7);
 
-  let pixX = fract(uv.x * resolution.x);
-  let subMask = vec3<f32>(
-    smoothstep(0.0, 0.33, pixX) * (1.0 - smoothstep(0.33, 0.66, pixX)),
-    smoothstep(0.33, 0.66, pixX) * (1.0 - smoothstep(0.66, 1.0, pixX)),
-    smoothstep(0.66, 1.0, pixX)
-  ) * 0.4 + 0.6;
-  outCol *= mix(vec3<f32>(1.0), subMask, scanlineStr * 0.5);
+  outCol *= mix(vec3<f32>(1.0), triadMask(f32(coord.x)), scanlineStr * 0.5);
 
   let mDist = length((uv - smoothMouse) * vec2<f32>(aspect, 1.0));
   let mouseFalloff = 1.0 - smoothstep(0.0, 0.12, mDist);

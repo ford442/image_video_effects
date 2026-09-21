@@ -1,7 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  VHS Tracking — Batch 62
-//  Capstan jitter + azimuth loss: spring cursor, held tracking pull,
-//  capped dropout ripples, exact C row walk, ACES + semantic alpha.
+//  VHS Tracking
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: head-switch skew (flagging); dropout-compensator line repeat;
+//         line-alternate chroma phase
+//  A packing: raw sim state — (row walk, dropout mask, chroma phase, head band)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -131,7 +136,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let walk = clamp(0.8 * prevWalk + gaussian_noise(vec2<f32>(f32(coord.y), floor(time * 60.0))) * sigma, -0.02, 0.02);
   let capstan = 0.002 * sin(2.0 * PI * 0.1 * time + f32(coord.y) * 0.03);
   let mouseTracking = mouseDown * (uv.y - smoothMouse.y) * exp(-abs(uv.y - smoothMouse.y) * 18.0) * (0.02 + bass * 0.035) * select(1.0, 1.4, held);
-  let totalOffset = capstan + walk + mouseTracking;
+
+  // ── Idea 1: head-switch skew (flagging) ───────────────────────────
+  // After the head switches, tape tension has not settled, so the first few
+  // percent of each field bends horizontally before the servo catches it.
+  // Anchored to the same two band positions the head-switch noise uses, and
+  // driven by the Tracking Error slider that already sets the walk sigma.
+  let sinceSwitch = min(uv.y, abs(uv.y - 0.5));
+  let flagPhase = hash12(vec2<f32>(floor(time * 6.0), floor(uv.y * 2.0))) * 2.0 - 1.0;
+  let skew = exp(-sinceSwitch * 55.0) * (0.006 + u.zoom_params.x * 0.05)
+           * (0.45 + 0.55 * flagPhase) * (1.0 + bass * 0.8);
+
+  let totalOffset = capstan + walk + mouseTracking + skew;
 
   let sampleUV = clamp_uv(uv + vec2<f32>(totalOffset, 0.0));
   let source = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
@@ -153,8 +169,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   yiq.y = mix(yiq.y, chromaBlur.y, chromaMix);
   yiq.z = mix(yiq.z, chromaBlur.z, chromaMix);
 
+  // ── Idea 3: line-alternate chroma phase ───────────────────────────
+  // VHS records chroma "under" with the burst phase inverted on alternate
+  // lines. Flipping the sign by row parity turns a uniform hue wobble into
+  // the comb pattern that actually reads as chroma crawl.
   let phaseMag = (0.05 + u.zoom_params.w * 0.35 + bass * 0.25);
-  let phaseShift = sin(time * 0.7 + uv.y * 120.0) * phaseMag;
+  let lineFlip = 1.0 - 2.0 * f32(u32(coord.y) & 1u);
+  let phaseShift = sin(time * 0.7 + uv.y * 120.0) * phaseMag * lineFlip;
   var color = hue_shift(yiq_to_rgb(yiq), phaseShift);
 
   let bandWidth = 5.0 / resolution.y;
@@ -169,9 +190,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rowDrop = step(1.0 - dropoutRate * 0.08, hash12(vec2<f32>(f32(coord.y), floor(time * 50.0))));
   let seg = step(0.55, hash12(vec2<f32>(floor(uv.x * 18.0), f32(coord.y) + floor(time * 70.0))));
   let dropoutMask = rowDrop * seg * smoothstep(0.45, 0.0, abs(fract(uv.x * 18.0) - 0.5));
+  // ── Idea 2: dropout-compensator line repeat ───────────────────────
+  // A real VCR conceals a dropout by re-playing the previous line out of the
+  // DOC delay line, not by printing white noise. The hash survives only as
+  // the residue that leaks past the concealment.
+  let docUV = clamp_uv(vec2<f32>(sampleUV.x, sampleUV.y - texel.y));
+  let docLine = textureSampleLevel(readTexture, u_sampler, docUV, 0.0).rgb;
   let dropoutNoise = hash12(vec2<f32>(uv.x * 800.0, f32(coord.y) * 2.0 + floor(time * 120.0)));
-  let dropoutColor = mix(vec3<f32>(0.0), vec3<f32>(1.0), step(0.5, dropoutNoise));
-  color = mix(color, dropoutColor, dropoutMask * 0.95);
+  let docResidue = mix(vec3<f32>(0.0), vec3<f32>(1.0), step(0.5, dropoutNoise));
+  let concealed = mix(docLine, docResidue, 0.22 + u.zoom_params.z * 0.3);
+  color = mix(color, concealed, dropoutMask * 0.95);
 
   let chromaSmear = textureSampleLevel(readTexture, u_sampler, clamp_uv(sampleUV - vec2<f32>((0.003 + bass * 0.004), 0.0)), 0.0).rgb;
   let smearYiq = rgb_to_yiq(chromaSmear);

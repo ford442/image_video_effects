@@ -4,6 +4,10 @@
 // Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, aces-tone-map,
 //           feedback-echo, audio-palette, sdf-mask
 // Complexity: Medium
+// Upgraded: 2026-09-21
+// Ideas: tangential convergence error (gun ring, not one axis); warped
+//        shadow-mask moire; purity stain erased by the degauss ring
+// A packing: ACES display RGBA (C is read as a displaced colour echo)
 // Transform: canonical noise/fbm, 16x16 workgroup, unified envelope/mouse state,
 //            branchless aperture grille, hex-bloom, beam-purity RGB separation,
 //            ACES tone map, temporal feedback echo, audio-driven cosine palette,
@@ -90,6 +94,12 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
 }
 
 fn luma(rgb: vec3<f32>) -> f32 { return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722)); }
+
+fn rot2(v: vec2<f32>, a: f32) -> vec2<f32> {
+  let c = cos(a);
+  let s = sin(a);
+  return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -183,9 +193,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let displacement = dVec * field * 4.0 + curl * field * 0.4;
 
   let purityErr = field * (0.25 + clickWave * 0.55 + degauss * 0.35);
-  let beamR = clamp(uv - displacement * (1.35 + purityErr * 0.4), vec2<f32>(0.0), vec2<f32>(1.0));
+  // ── Idea 1: tangential convergence error ──────────────────────────
+  // The three guns sit on a ring 120 degrees apart, so a magnet throws each
+  // one off along its own axis and the fringing swirls around the field
+  // centre. HEAD scaled one shared displacement by 1.35 / 1.00 / 0.70,
+  // which can only ever smear the guns along a single line. Green stays the
+  // reference gun, exactly as a real convergence spec treats it.
+  let gunSwing = (0.45 + purityErr * 1.4) * clamp(field, 0.0, 1.5);
+  let beamR = clamp(uv - rot2(displacement, gunSwing * 2.0944) * (1.18 + purityErr * 0.3), vec2<f32>(0.0), vec2<f32>(1.0));
   let beamG = clamp(uv - displacement * (1.00 + purityErr * 0.1), vec2<f32>(0.0), vec2<f32>(1.0));
-  let beamB = clamp(uv - displacement * (0.70 - purityErr * 0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+  let beamB = clamp(uv - rot2(displacement, gunSwing * -2.0944) * (0.85 - purityErr * 0.2), vec2<f32>(0.0), vec2<f32>(1.0));
   var color = vec3<f32>(
     textureSampleLevel(readTexture, u_sampler, beamR, 0.0).r,
     textureSampleLevel(readTexture, u_sampler, beamG, 0.0).g,
@@ -229,7 +246,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let echo = textureLoad(dataTextureC, echoPixel, 0).rgb;
   color = mix(color, echo, 0.2 * field + 0.04 * env);
 
-  let stripe = f32(global_id.x % 3u);
+  // ── Idea 3: purity stain, erased by the degauss ring ──────────────
+  // Magnetisation leaves a colour stain on the mask, and a degauss coil is
+  // the thing that clears it. Retaining the echo's CHROMA (not its luma)
+  // where the field is strong builds that stain into the history this file
+  // already keeps; multiplying the retention by (1 - degauss) finally gives
+  // the degauss ring a job, instead of it being one more additive glow.
+  let echoLuma = luma(echo);
+  let stainChroma = echo - vec3<f32>(echoLuma);
+  let stainHold = clamp(field * 0.9 + purityErr * 0.5, 0.0, 0.85) * (1.0 - clamp(degauss * 1.8, 0.0, 1.0));
+  color = color + stainChroma * stainHold * 0.75;
+
+  // ── Idea 2: warped shadow-mask moire ──────────────────────────────
+  // HEAD locked the grille to global_id.x % 3 — to the pixel grid — so it
+  // could never beat against anything and read as a flat RGB overlay.
+  // Phasing it off the DISPLACED screen position makes the mask bunch up
+  // wherever the raster is pulled and interfere with the scan, which is the
+  // moire a magnet actually produces on a tube.
+  let maskX = (uv01.x - displacement.x * 1.6) * res.x;
+  let stripe = fract(maskX / 3.0) * 3.0;
   let grille = mix(mix(vec3<f32>(0.8, 0.8, 1.15), vec3<f32>(0.8, 1.15, 0.8), step(1.0, stripe)),
                    vec3<f32>(1.15, 0.8, 0.8), step(2.0, stripe));
   color *= mix(vec3<f32>(1.0), grille, clamp(field * 1.2, 0.0, 0.5));

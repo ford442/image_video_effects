@@ -1,6 +1,15 @@
-// Vinyl Scratch — Composer batch cyber/digital/glitch cohort 3
-// Groove cinema with spring stylus, held drag warp, click scratch bursts,
-// exact C groove-sparkle coherence, ACES + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Vinyl Scratch
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: eccentric spindle wow; radius-dependent groove pitch + label;
+//         stylus scratch marks cut by clicks
+//  A packing: ACES display RGBA. NOTE: HEAD reads C.a back as a sparkle-
+//    coherence proxy — that is the semantic alpha being reused, documented
+//    here and left intact rather than silently repacked.
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -177,12 +186,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dustAmount = 0.3 + treble * 0.2;
     let grooveLightAmount = 0.4 + bass * 0.3;
 
-    let center = vec2<f32>(0.5, 0.5);
-    let dir = uv - center;
-    let dirCorrected = vec2<f32>(dir.x * aspect, dir.y);
-    let dist = length(dirCorrected);
-    let angle = atan2(dirCorrected.y, dirCorrected.x);
-
     var rot = time * rotationSpeed;
     let scratchOffset = (smoothMouse.x - 0.5) * 10.0 * scratchAmount;
     rot = rot + scratchOffset;
@@ -199,6 +202,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     rot += clickPop * 0.5;
+
+    // ── Idea 1: eccentric spindle wow ─────────────────────────────────
+    // An off-centre spindle hole swings the whole image once per revolution
+    // — the wow every warped record has, and the thing a viewer recognises
+    // as vinyl before anything else. HEAD's "wobble" was an angular ripple
+    // at a fixed 5 Hz, which is flutter: it never locks to the platter.
+    // Orbiting the rotation centre itself at the rotation rate does.
+    let ecc = 0.014 * wobble * (1.0 + bass * 0.5);
+    let spindle = vec2<f32>(cos(rot), sin(rot)) * ecc;
+
+    let center = vec2<f32>(0.5, 0.5) + spindle;
+    let dir = uv - center;
+    let dirCorrected = vec2<f32>(dir.x * aspect, dir.y);
+    let dist = length(dirCorrected);
+    let angle = atan2(dirCorrected.y, dirCorrected.x);
+
+    // ── Idea 3: stylus scratch marks ──────────────────────────────────
+    // A click used to do nothing but kick the platter. Now the stylus also
+    // cuts: the damaged arc sits at the radius that was clicked, rides the
+    // platter (its angle advances by age x rotation rate, so it stays put
+    // in record space) and wears out over its own lifetime.
+    var scratchMark = 0.0;
+    for (var si = 0u; si < rippleCount; si = si + 1u) {
+        let rp = u.ripples[si];
+        let age = time - rp.z;
+        if (age >= 0.0 && age < 3.0) {
+            let rpDir = vec2<f32>((rp.x - 0.5) * aspect, rp.y - 0.5);
+            let rpR = length(rpDir);
+            let markAngle = atan2(rpDir.y, rpDir.x) + age * rotationSpeed;
+            var dA = angle - markAngle;
+            dA = dA - 6.28318530718 * floor((dA + 3.14159265359) / 6.28318530718);
+            let arc = exp(-abs(dA) * 9.0);
+            let radial = exp(-abs(dist - rpR) * 260.0);
+            scratchMark = max(scratchMark, arc * radial * (1.0 - age / 3.0));
+        }
+    }
 
     let wobbleOffset = sin(angle * 2.0 + time * 5.0) * 0.02 * wobble * dist * depthGroove;
 
@@ -222,9 +261,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = vec4<f32>(r, g, b, textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).a);
 
     let grooveNoise = fract(sin(dot(uv * time, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-    let grooveIntensity = (sin(dist * 400.0) * 0.5 + 0.5) * noiseIntensity * depthGroove;
+
+    // ── Idea 2: radius-dependent groove pitch and label ───────────────
+    // Real grooves tighten as the stylus works inward, and they stop dead
+    // at the label. sin(dist * 400) is a set of evenly spaced concentric
+    // rings; a pitch that scales with 1/radius, bounded by a lead-out edge
+    // and a blank label disc, is a record.
+    let labelR = 0.09;
+    let outerR = 0.52;
+    let grooveBand = smoothstep(labelR, labelR + 0.03, dist) * smoothstep(outerR + 0.05, outerR, dist);
+    let groovePitch = 300.0 * (1.0 + 0.35 / max(dist, 0.08));
+    let grooveIntensity = (sin(dist * groovePitch) * 0.5 + 0.5) * noiseIntensity * depthGroove * grooveBand;
 
     color = mix(color, vec4<f32>(grooveNoise, grooveNoise, grooveNoise, color.a), grooveIntensity * 0.2);
+
+    let labelMask = 1.0 - smoothstep(labelR - 0.012, labelR + 0.012, dist);
+    color = vec4<f32>(mix(color.rgb, color.rgb * 0.55 + vec3<f32>(0.13, 0.07, 0.035), labelMask * 0.8), color.a);
+
+    color = vec4<f32>(color.rgb + vec3<f32>(1.0, 0.96, 0.88) * scratchMark * (0.35 + scratchAmount * 0.5), color.a);
 
     // ── Vinyl dust particles ──
     let dust = vinylDust(uv, time, dist, dustAmount);
@@ -261,7 +315,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dirt = lensDirt(uv, time, brightMask);
     color = vec4<f32>(color.rgb + vec3<f32>(0.9, 0.85, 0.7) * dirt, color.a);
 
-    color.a = clamp(color.a + grooveIntensity * 0.15 + clickPop * 0.2 + bass * 0.05, 0.0, 1.0);
+    color.a = clamp(color.a + grooveIntensity * 0.15 + clickPop * 0.2 + scratchMark * 0.12 + bass * 0.05, 0.0, 1.0);
 
     var finalColor = acesToneMap(clamp(color.rgb, vec3<f32>(0.0), vec3<f32>(1.5)) * (0.95 + bass * 0.05));
     textureStore(writeTexture, coord, vec4<f32>(finalColor, color.a));

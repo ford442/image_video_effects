@@ -13,7 +13,8 @@
     "audio-reactive",
     "click-reactive",
     "temporal",
-    "aces-tone-map"
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
   "params": [
     {

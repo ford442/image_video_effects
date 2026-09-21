@@ -1,6 +1,12 @@
-// Byte Mosh — Composer batch cyber/digital/glitch
-// LFSR/GF(2) datamosh: spring cursor, held burst, capped ripples,
-// wired zoom_params, regional FFT, ACES + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Byte Mosh
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-21
+//  Ideas: motion-vector inheritance; keyframe recovery flash; row desync trail
+//  A packing: raw block state — (lfsr, burst mask, corruption age, mode)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -144,6 +150,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let blockOrigin = vec2<i32>(blockOriginU);
   let blockCenterUV = (vec2<f32>(f32(blockOriginU.x), f32(blockOriginU.y)) + vec2<f32>(4.0)) / resolution;
   let prevState = textureLoad(dataTextureC, blockOrigin, 0);
+  let leftBlock = textureLoad(dataTextureC, vec2<i32>(max(blockOrigin.x - 8, 0), blockOrigin.y), 0);
+  let upBlock = textureLoad(dataTextureC, vec2<i32>(blockOrigin.x, max(blockOrigin.y - 8, 0)), 0);
 
   var lfsr = max(u32(prevState.r * 65535.0 + 0.5), 1u);
   let prevMask = u32(prevState.g * 65535.0 + 0.5);
@@ -182,14 +190,57 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     f32(i32((lfsr >> 4u) & 31u) - 15) * (1.5 + bass * 8.0) * shiftScale,
     f32(i32((lfsr >> 9u) & 15u) - 7) * (0.5 + mids * 2.0) * shiftScale
   );
+  // ── Idea 1: motion-vector inheritance ─────────────────────────────
+  // This is what datamosh actually is: a corrupt block keeps decoding with
+  // its neighbour's motion vector, so corruption travels in connected
+  // streaks. HEAD drew an independent random offset per block, which reads
+  // as confetti. Neighbour vectors are decoded from the state already
+  // stored in C with the same bit layout, and are only trusted when that
+  // neighbour is itself corrupt (mode > 0 in the .a channel).
+  let leftLfsr = u32(leftBlock.r * 65535.0 + 0.5);
+  let upLfsr = u32(upBlock.r * 65535.0 + 0.5);
+  let leftOffset = vec2<f32>(
+    f32(i32((leftLfsr >> 4u) & 31u) - 15) * (1.5 + bass * 8.0) * shiftScale,
+    f32(i32((leftLfsr >> 9u) & 15u) - 7) * (0.5 + mids * 2.0) * shiftScale
+  );
+  let upOffset = vec2<f32>(
+    f32(i32((upLfsr >> 4u) & 31u) - 15) * (1.5 + bass * 8.0) * shiftScale,
+    f32(i32((upLfsr >> 9u) & 15u) - 7) * (0.5 + mids * 2.0) * shiftScale
+  );
+  let leftBad = step(0.16, leftBlock.a);
+  let upBad = step(0.16, upBlock.a);
+  let neighbourWeight = leftBad + upBad;
+  let neighbourOffset = (leftOffset * leftBad + upOffset * upBad) / max(neighbourWeight, 1.0);
+  let inherit = clamp(corruptionAge / 14.0, 0.0, 0.8) * f32(badState) * step(0.5, neighbourWeight);
+  let movedOffset = mix(offsetPixels, neighbourOffset, inherit);
+
+  // ── Idea 3: row desync trail ──────────────────────────────────────
+  // A bitstream error desyncs the decoder for the remainder of the scan
+  // row. The left neighbour's corruption age, minus one, is carried into
+  // this block, so each frame the desync advances one block to the right
+  // and fades out over the 63 steps the age field can hold.
+  let rowDesync = clamp(max(leftBlock.b * 63.0 - 1.0, 0.0) / 63.0, 0.0, 1.0) * leftBad;
+  let trailShift = rowDesync * (8.0 + errorRate * 40.0) * (1.0 + bass * 0.6);
+
   let mouseBias = (uv - smoothMouse) * mouseDown * (8.0 + bass * 18.0);
-  let offsetUV = (offsetPixels + mouseBias) * texel;
+  let offsetUV = (movedOffset + mouseBias + vec2<f32>(trailShift, 0.0)) * texel;
   let wrongFrameUV = clamp_uv(blockCenterUV + offsetUV);
   let wrongFrameColor = textureSampleLevel(readTexture, u_sampler, wrongFrameUV, 0.0);
   let smearColor = textureSampleLevel(readTexture, u_sampler, clamp_uv(uv + offsetUV), 0.0);
 
   var glitched = mix(sourceColor.rgb, smearColor.rgb, mix(0.25, 0.7, operationMix) + 0.45 * f32(badState));
   glitched = mix(glitched, wrongFrameColor.rgb, mix(0.75, 0.95, operationMix) * step(1.5, mode));
+  glitched = mix(glitched, smearColor.rgb, rowDesync * 0.45);
+
+  // ── Idea 2: keyframe recovery flash ───────────────────────────────
+  // An I-frame resets the decoder. On the bad -> good transition the block
+  // snaps back to clean source with a bloom proportional to how long it had
+  // been corrupt, so the effect breathes between collapse and recovery
+  // instead of sitting at a constant error rate. Rides the corruption age
+  // the state machine already tracks.
+  let recovered = (prevMode > 0.5) && !badState;
+  let keyframe = select(0.0, clamp(prevAge / 20.0, 0.25, 1.0), recovered);
+  glitched = mix(glitched, sourceColor.rgb, keyframe);
 
   var rgb8 = pack_rgb8(glitched);
   let maskR = galois_mult((burstMask >> 0u) & 0xffu, 0x1du ^ ((lfsr >> 3u) & 0xffu));
@@ -200,8 +251,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rgb8 = vec3<u32>(rgb8.x ^ maskR, rgb8.y ^ maskG, rgb8.z ^ maskB);
   }
 
-  let leftBlock = textureLoad(dataTextureC, vec2<i32>(max(blockOrigin.x - 8, 0), blockOrigin.y), 0);
-  let upBlock = textureLoad(dataTextureC, vec2<i32>(blockOrigin.x, max(blockOrigin.y - 8, 0)), 0);
   let boundary = clamp(
     abs(leftBlock.a - prevState.a) + abs(upBlock.a - prevState.a) + abs(leftBlock.g - prevState.g) + abs(upBlock.g - prevState.g),
     0.0,
@@ -222,10 +271,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fftEdge = plasmaBuffer[bandBin].x;
   let edgeGlow = boundary * (0.18 + 0.35 * treble + fftEdge * 0.12);
   finalRgb = finalRgb * scanline + rainbow * edgeGlow;
+  finalRgb = finalRgb + vec3<f32>(0.85, 0.92, 1.0) * keyframe * 0.28;
   finalRgb = acesToneMap(finalRgb * (0.95 + bass * 0.06));
 
   let luma = dot(finalRgb, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = clamp(sourceColor.a * (0.88 + 0.12 * luma) + edgeGlow * 0.05, 0.0, 1.0);
+  let alpha = clamp(sourceColor.a * (0.88 + 0.12 * luma) + edgeGlow * 0.05 + keyframe * 0.12, 0.0, 1.0);
   let stateOut = vec4<f32>(
     f32(lfsr & 0xffffu) / 65535.0,
     f32(burstMask & 0xffffu) / 65535.0,
