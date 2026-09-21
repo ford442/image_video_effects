@@ -1,4 +1,12 @@
-// Ferrofluid Monolith — magnetic liquid-metal obelisk
+// ═══════════════════════════════════════════════════════════════════
+//  Ferrofluid Monolith — magnetic liquid-metal obelisk
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-21
+//  Ideas: Rosensweig cone lattice (counter-helix breaks ridges into peaks); chrome reflects the core beam
+//  A packing: raw HDR display RGBA history (C read back as the same)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -42,7 +50,12 @@ fn mapScene(pIn: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f3
     let obelisk = sdBox(p, vec3<f32>(0.72, height, 0.72));
     let angle = atan2(p.z, p.x);
     let radial = length(p.xz);
-    let field = pow(max(sin(angle * (8.0 + floor(audio.z * 4.0)) + p.y * 4.5 - time * 2.0), 0.0), 5.0);
+    let lobes = 8.0 + floor(audio.z * 4.0);
+    let helix = pow(max(sin(angle * lobes + p.y * 4.5 - time * 2.0), 0.0), 5.0);
+    // Idea 1 — Rosensweig cone lattice: a counter-helix gates the ridges into discrete peaks,
+    // the crossed normal-field instability pattern real ferrofluid forms.
+    let crossHelix = 0.5 + 0.5 * sin(angle * lobes - p.y * 4.5 + time * 1.3);
+    let field = helix * (0.3 + 0.7 * crossHelix * crossHelix);
     let taper = smoothstep(height + 0.25, 0.0, abs(p.y));
     let spikeShell = radial - (0.72 + field * spikes * taper * (0.45 + audio.x));
     let cap = abs(p.y) - height;
@@ -121,7 +134,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let spec = pow(max(dot(reflect(-light, n), view), 0.0), 64.0);
         let chrome = vec3<f32>(0.035) + vec3<f32>(0.2, 0.32, 0.45) * diffuse + vec3<f32>(0.8, 0.9, 1.0) * (fresnel + spec);
         let core = vec3<f32>(0.12 + audio.x * 0.5, 0.45 + audio.y * 0.5, 1.2 + audio.z * 0.6) * coreGlow;
-        hdrColor = select(chrome, core, material > 1.5);
+        // Idea 2 — core-light reflection: closest approach of the reflected ray to the core axis;
+        // only the beam outside the obelisk (|y| > height) is visible, so only that part reflects.
+        let refl = reflect(rd, n);
+        let reflXZ = refl.xz;
+        let along = -dot(hitPos.xz, reflXZ) / max(dot(reflXZ, reflXZ), 0.0001);
+        let closest = length(hitPos.xz + reflXZ * max(along, 0.0));
+        let beamY = abs(hitPos.y + refl.y * max(along, 0.0));
+        let coreReflect = exp(-max(closest - 0.25, 0.0) * 14.0) * smoothstep(height - 0.1, height + 0.3, beamY) * step(0.0, along);
+        let chromeLit = chrome + core * coreReflect * (0.25 + fresnel * 0.6);
+        hdrColor = select(chromeLit, core, material > 1.5);
     }
     hdrColor += vec3<f32>(0.08, 0.35, 0.9) * min(glow, 5.0) * 0.08 * coreGlow;
 

@@ -5,7 +5,9 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-21 (was 2026-06-06)
+//  Ideas: contractile cleavage furrow at the division neck; mitotic nuclei that split ahead of the membrane
+//  A packing: ACES display RGBA, straight colour (writeTexture premultiplied as before)
 //  By: Kimi Code CLI
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -61,7 +63,8 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn cellSDF(uv: vec2<f32>, fi: f32, t: f32, bass: f32, mids: f32, treble: f32, tension: f32, divRate: f32, mouse: vec2<f32>) -> vec2<f32> {
+// Returns (membrane distance, cell id, furrow glow, nucleus distance).
+fn cellSDF(uv: vec2<f32>, fi: f32, t: f32, bass: f32, mids: f32, treble: f32, tension: f32, divRate: f32, mouse: vec2<f32>) -> vec4<f32> {
   let hv = h3(vec3<f32>(fi * 7.31, 1.0, 1.0));
   let h2v = h3(vec3<f32>(fi * 3.17, 2.0, 2.0));
   let h3v = h3(vec3<f32>(fi * 5.93, 3.0, 3.0));
@@ -81,7 +84,15 @@ fn cellSDF(uv: vec2<f32>, fi: f32, t: f32, bass: f32, mids: f32, treble: f32, te
   let d1 = length(uv - vec2<f32>(cx - split, cy)) - r1;
   let r2 = baseR * (0.85 + div * 0.15) + vibe + warp * 0.02;
   let d2 = length(uv - vec2<f32>(cx + split, cy)) - r2;
-  return vec2<f32>(smin(d1, d2, tension * (1.0 + mids * 0.5)), fi);
+  // Idea 1 — cleavage furrow: a contractile ring across the neck, strongest mid-division.
+  let furrow = 4.0 * div * (1.0 - div) * exp(-pow((uv.x - cx) / 0.012, 2.0)) * exp(-abs(uv.y - cy) * 6.0);
+  // Idea 2 — mitotic nuclei: they divide on an earlier window than the membrane, so they lead it apart.
+  let divN = smoothstep(0.12, 0.5, dp);
+  let nSplit = mix(0.0, (0.18 + bass * 0.1) * 1.1, divN);
+  let nR = baseR * 0.34;
+  let n1 = length(uv - vec2<f32>(cx - nSplit, cy)) - nR;
+  let n2 = length(uv - vec2<f32>(cx + nSplit, cy)) - nR * (0.85 + divN * 0.15);
+  return vec4<f32>(smin(d1, d2, tension * (1.0 + mids * 0.5)), fi, furrow, smin(n1, n2, 0.05));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -102,10 +113,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var d = 1000.0;
   var id = 0.0;
   var cid = 0;
+  var best = vec4<f32>(1000.0, 0.0, 0.0, 1000.0);
   for(var i = 0; i < 8; i++) {
     if(f32(i) >= cellCount) { break; }
     let b = cellSDF(uv, f32(i), t, bass, mids, treble, tension, divRate, mouse);
-    if(b.x < d) { d = b.x; id = b.y; cid = i; }
+    if(b.x < d) { d = b.x; id = b.y; cid = i; best = b; }
   }
   let e = 0.003;
   let bxp = cellSDF(uv + vec2<f32>(e, 0.0), f32(cid), t, bass, mids, treble, tension, divRate, mouse);
@@ -117,7 +129,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let normal = normalize(vec2<f32>(gx, gy));
   let light = normalize(vec2<f32>(0.3, 0.7));
   let diff = max(dot(normal, light), 0.0);
-  let fresnel = pow(1.0 - abs(d) * 6.0, 3.0);
+  // Base clamped: HEAD took pow() of a negative number for |d| > 1/6 (undefined -> NaN off-cell).
+  let fresnel = pow(max(1.0 - abs(d) * 6.0, 0.0), 3.0);
   let film = 1.0 / (1.0 + fresnel * 5.0);
   let hue = fract(film * 2.0 + id * 0.15 + t * 0.05) * 6.283;
   let irid = vec3<f32>(0.5 + 0.5 * cos(hue), 0.5 + 0.5 * cos(hue - 2.094), 0.5 + 0.5 * cos(hue + 2.094));
@@ -130,14 +143,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col += vec3<f32>(0.9, 0.95, 0.8) * fresnel * 0.8;
   col += vec3<f32>(0.2, 0.6, 0.4) * coreGlow;
   col += (h2(uv * 43758.5453 + t) - 0.5) * 0.03;
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let inside = smoothstep(0.02, -0.02, d);
+  let nucleusFill = smoothstep(0.004, -0.004, best.w) * inside;
+  let nucleusRim = exp(-abs(best.w) * 140.0) * inside;
+  col = mix(col, col * 0.3 + vec3<f32>(0.22, 0.08, 0.3), nucleusFill * 0.75);
+  col += irid * nucleusRim * (0.35 + iridescence * 0.4);
+  let furrowGlow = best.z * inside;
+  col += vec3<f32>(1.0, 0.75, 0.55) * furrowGlow * 0.9;
+  // Exact history load (HEAD sampled C with a filtering sampler at centred coords).
+  let prev = textureLoad(dataTextureC, coord, 0);
   col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
 
   let caStr = 0.003 * (1.0 + bass) + thickness * 0.001;
   col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
   col = acesToneMap(col * 1.5);
-  let alpha = clamp(thickness * fresnel * 2.0 + coreGlow * 0.5, 0.0, 1.0);
+  let alpha = clamp(thickness * fresnel * 2.0 + coreGlow * 0.5 + nucleusFill * 0.35 + furrowGlow * 0.4, 0.0, 1.0);
   let a = clamp(alpha, 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(col * a, a));
   textureStore(writeDepthTexture, coord, vec4<f32>(thickness * 0.5, 0.0, 0.0, 0.0));

@@ -86,7 +86,8 @@
     "fast-motion",
     "semantic-alpha",
     "generated-depth",
-    "oracle-sigils"
+    "oracle-sigils",
+    "upgraded-rgba"
   ],
   "tags": [
     "generative",

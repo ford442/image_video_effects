@@ -16,6 +16,6 @@
     { "index": 2, "name": "Body Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
     { "index": 3, "name": "Iridescence", "default": 0.7, "min": 0, "max": 1, "step": 0.01 }
   ],
-  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "fast-motion", "semantic-alpha", "generated-depth", "prismatic-fins"],
+  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "fast-motion", "semantic-alpha", "generated-depth", "prismatic-fins", "upgraded-rgba"],
   "tags": ["generative", "psychedelic", "serpent", "river", "prismatic", "chromatic"]
 }

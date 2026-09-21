@@ -1,4 +1,12 @@
-// Chromatic Oracle Jelly — drifting bells, watching eyes, and luminous tentacles.
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Oracle Jelly — drifting bells, watching eyes, and luminous tentacles
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: pulse-swim contraction with thrust/coast surge; pupils track the pointer and blink on seeded schedules
+//  A packing: ACES display RGBA (read back as colour history)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -70,14 +78,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seed = hash21(cell);
     local.x += sin(drift + seed * TAU + cell.y) * (0.06 + tentacleCurl * 0.12);
     local.y += cos(drift * 0.7 + seed * 4.0) * 0.05;
-    let bellDistance = length(vec2<f32>(local.x * 1.05, max(local.y + 0.08, 0.0) * 1.5));
+
+    // Idea 1 — pulse-swim: each jelly contracts (bell narrows and lengthens), surges up on the stroke,
+    // then coasts back; the net rise is the grid drift. -y is up (bells dome toward -y).
+    let swimPhase = fract(drift * 0.55 + seed * 3.7);
+    let contraction = smoothstep(0.0, 0.16, swimPhase) * (1.0 - smoothstep(0.16, 0.55, swimPhase));
+    local.y += (smoothstep(0.0, 0.45, swimPhase) - swimPhase) * (0.10 + tentacleCurl * 0.06);
+    let bellDistance = length(vec2<f32>(local.x * 1.05 * (1.0 + contraction * 0.38), max(local.y + 0.08, 0.0) * 1.5 * (1.0 - contraction * 0.22)));
     let bell = smoothstep(0.42, 0.25, bellDistance) * smoothstep(0.32, -0.22, local.y);
     let rim = exp(-abs(bellDistance - 0.34) * (35.0 + swarmDensity * 25.0)) * smoothstep(0.30, -0.12, local.y);
-    let eyeDistance = length((local - vec2<f32>(0.0, -0.07)) * vec2<f32>(1.0, 1.7));
-    let eye = exp(-eyeDistance * 22.0) * bell;
-    let pupil = exp(-eyeDistance * (65.0 + oracleChroma * 45.0));
-    let tentaclePhase = local.x * (18.0 + tentacleCurl * 30.0) + sin(local.y * 12.0 - drift * 3.0) * (1.0 + tentacleCurl * 3.0);
-    let tentacles = pow(0.5 + 0.5 * cos(tentaclePhase), 12.0) * smoothstep(-0.08, 0.48, local.y) * exp(-abs(local.x) * 2.2);
+    // Idea 2 — watching eye: the pupil turns toward the pointer inside the iris; a seeded eyelid blinks.
+    let blinkPhase = fract(time * 0.23 + seed * 7.13);
+    let lid = smoothstep(0.0, 0.022, blinkPhase) * (1.0 - smoothstep(0.034, 0.06, blinkPhase));
+    let eyeLocal = local - vec2<f32>(0.0, -0.07);
+    let eyeCenterP = p - eyeLocal / gridScale;
+    let toPointer = mouseP - eyeCenterP;
+    let gaze = toPointer / max(length(toPointer), 0.001) * min(length(toPointer) * 2.5, 1.0) * 0.045;
+    let eyeDistance = length(eyeLocal * vec2<f32>(1.0, 1.7 / max(1.0 - lid, 0.08)));
+    let eye = exp(-eyeDistance * 22.0) * bell * (1.0 - lid * 0.85);
+    let pupilDistance = length((eyeLocal - gaze) * vec2<f32>(1.0, 1.7));
+    let pupil = exp(-pupilDistance * (65.0 + oracleChroma * 45.0)) * (1.0 - lid) * bell;
+    let tentaclePhase = local.x * (18.0 + tentacleCurl * 30.0) + sin(local.y * 12.0 - drift * 3.0) * (1.0 + tentacleCurl * 3.0) * (1.0 - contraction * 0.5);
+    let tentacles = pow(0.5 + 0.5 * cos(tentaclePhase), 12.0) * smoothstep(-0.08, 0.48 + contraction * 0.22, local.y) * exp(-abs(local.x) * 2.2);
     let oracleAngle = atan2(local.y + 0.07, local.x);
     let oracleSigil = pow(0.5 + 0.5 * cos(oracleAngle * (7.0 + floor(swarmDensity * 6.0)) + drift * 2.0), 14.0) *
         exp(-abs(eyeDistance - 0.15) * (45.0 + oracleChroma * 25.0));

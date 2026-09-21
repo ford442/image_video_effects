@@ -2829,3 +2829,20 @@
 - Floor: exact C loads (frosty, static); params byte-exact; JSON only +upgraded-rgba on graphic-novel.
 - Gates: precommit 8/8, extraBuffer, dead sliders (7 scanned + graphic-novel by hand), catalogs, build; Jest same 6 known failures.
 - Notes: agents/swarm-outputs/spark-2026-09-21-artistic-surface-eight/. Not committed. Real-GPU QA external (frosty-window first).
+
+## 2026-09-21 — Generative eight (8 shaders)
+
+- IDs: gen-cosmic-velvet-hypnosis, gen-prismatic-serpent-river, gen-cyber-terminal, gen-chromatic-oracle-jelly, gen-emergent-calligraphic-weave, gen-hyperbolic-tree, gen-protocell-division, gen-ferrofluid-monolith.
+- Per shader, the ideas actually added:
+  - cosmic-velvet-hypnosis: crushed-velvet pile patches under a turning light; nested log-octave wells sinking inward.
+  - prismatic-serpent-river: finite serpents (head + tapering tail, gaps); per-channel prismatic body dispersion.
+  - cyber-terminal: 3x5 segment glyph font; white-hot flickering leader. (Trail flipped so the bright end leads.)
+  - chromatic-oracle-jelly: pulse-swim contraction + thrust/coast surge; pupils track pointer + seeded blinks.
+  - emergent-calligraphic-weave: over/under weave occlusion at crossings; dry-brush starvation into bristle streaks.
+  - hyperbolic-tree: terminal leaf discs; rotating ideal-polygon Poincaré geodesics. (Floor: fork was per-pixel hash noise → speckle; now half-plane descent.)
+  - protocell-division: cleavage furrow; mitotic nuclei leading the membrane. (Floor: pow(negative) NaN off-cell; C sampled at centred coords.)
+  - ferrofluid-monolith: Rosensweig cone lattice; chrome reflects the core beam past the caps.
+- Floor: exact C loads (tree, protocell); params byte-exact (asserted); JSON +upgraded-rgba (+ truthful mouse/audio/temporal tags on tree/protocell).
+- Gates: precommit 8/8, extraBuffer, dead sliders (6 scanned + tree/protocell by hand), catalogs 1383 unique, build; Jest 5 suites/6 tests fail identically on clean main.
+- Follow-up: 20 more `pow(1.0 - abs(` sites library-wide may have the same negative-base NaN.
+- Notes: agents/swarm-outputs/claude-2026-09-21-generative-eight/. Not committed. Real-GPU QA external (protocell + hyperbolic-tree first — biggest visual change).

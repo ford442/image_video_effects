@@ -8020,7 +8020,8 @@
       "fast-motion",
       "semantic-alpha",
       "generated-depth",
-      "oracle-sigils"
+      "oracle-sigils",
+      "upgraded-rgba"
     ],
     "tags": [
       "generative",
@@ -9704,7 +9705,8 @@
       "fast-motion",
       "semantic-alpha",
       "generated-depth",
-      "counter-spiral-moire"
+      "counter-spiral-moire",
+      "upgraded-rgba"
     ],
     "tags": [
       "generative",
@@ -10704,7 +10706,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -12902,7 +12905,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -14981,7 +14986,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -20653,7 +20660,12 @@
     "updated": true,
     "id": "gen-hyperbolic-tree",
     "url": "shaders/gen-hyperbolic-tree.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-hyperdimensional-bismuth-lattice",
@@ -31063,7 +31075,8 @@
       "fast-motion",
       "semantic-alpha",
       "generated-depth",
-      "prismatic-fins"
+      "prismatic-fins",
+      "upgraded-rgba"
     ],
     "tags": [
       "generative",
@@ -31199,7 +31212,13 @@
     "updated": true,
     "id": "gen-protocell-division",
     "url": "shaders/gen-protocell-division.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "semantic-alpha",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Psychedelic Layered Time-Stamps",

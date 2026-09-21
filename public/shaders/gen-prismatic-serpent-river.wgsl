@@ -1,4 +1,12 @@
-// Prismatic Serpent River — braided chromatic creatures flowing through space.
+// ═══════════════════════════════════════════════════════════════════
+//  Prismatic Serpent River — braided chromatic creatures flowing through space
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: finite serpents with head and tapering tail; per-channel prismatic body dispersion
+//  A packing: ACES display RGBA (read back as colour history)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -66,14 +74,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let laneY = fract(laneCoord) - 0.5;
     let slither = sin(p.x * (8.0 + bodyScale * 14.0) - time * speed + lane * 1.83) * (0.10 + bodyScale * 0.17);
     let bodyDistance = abs(laneY - slither);
-    let body = exp(-bodyDistance * (22.0 + bodyScale * 42.0));
+
+    // Idea 1 — finite serpents: each lane carries separate bodies travelling +x with the slither wave;
+    // bodyU runs tail (0) -> head (serpentLen); the girth tapers to the tail and rounds off at the head.
+    let serpentFreq = 0.55 + serpentCount * 0.35;
+    let serpentLen = 0.62 + bodyScale * 0.2;
+    let bodyU = fract(p.x * serpentFreq - time * speed * 0.07 + fract(sin(lane * 91.7) * 43758.5453));
+    let bodyS = bodyU / serpentLen;
+    let girth = select(0.0, sqrt(smoothstep(0.0, 0.6, bodyS)) * sqrt(1.0 - smoothstep(0.9, 1.0, bodyS)), bodyS < 1.0);
+    let presence = smoothstep(0.0, 0.08, girth);
+    let bodyK = (22.0 + bodyScale * 42.0) / max(girth, 0.08);
+
+    // Idea 2 — prismatic dispersion: R and B bodies solved with the slither amplitude scaled apart,
+    // so the flanks split into rainbow fringes; Iridescence sets the spread.
+    let dispersion = 0.04 + iridescence * 0.14;
+    let bodyRGB = vec3<f32>(
+        exp(-abs(laneY - slither * (1.0 + dispersion)) * bodyK),
+        exp(-bodyDistance * bodyK),
+        exp(-abs(laneY - slither * (1.0 - dispersion)) * bodyK)) * presence;
+    let body = bodyRGB.g;
+    let headDx = (serpentLen * 0.95 - bodyU) / serpentFreq;
+    let headEye = exp(-pow(headDx / 0.014, 2.0)) * exp(-bodyDistance * 70.0) * step(bodyU, serpentLen);
     let scalePhase = fract(p.x * (7.0 + bodyScale * 15.0) - time * speed * 0.42 + lane * 0.271);
     let scales = pow(0.5 + 0.5 * cos(scalePhase * TAU + laneY * 18.0), 10.0) * body;
     let eyePhase = fract(p.x * (2.0 + serpentCount * 4.0) - time * speed * 0.20 + lane * 0.131);
-    let eyes = exp(-pow((eyePhase - 0.5) / 0.045, 2.0)) * exp(-bodyDistance * 85.0);
+    let eyes = exp(-pow((eyePhase - 0.5) / 0.045, 2.0)) * exp(-bodyDistance * 85.0) * presence * 0.4 + headEye;
     let wake = exp(-abs(laneY - slither * 1.35) * 10.0) * (0.5 + 0.5 * sin(p.x * 30.0 - time * speed * 2.0));
     let finPhase = fract(p.x * (4.0 + bodyScale * 8.0) - time * speed * 0.28 + lane * 0.37);
-    let prismFins = exp(-pow((finPhase - 0.5) / 0.075, 2.0)) * exp(-abs(bodyDistance - 0.055) * 42.0);
+    let prismFins = exp(-pow((finPhase - 0.5) / 0.075, 2.0)) * exp(-abs(bodyDistance - 0.055) * 42.0) * presence;
     let riverCurrent = pow(0.5 + 0.5 * sin(p.x * 12.0 + p.y * 19.0 - time * speed * 1.3), 14.0) * exp(-abs(laneY) * 2.5);
 
     var clickShed = 0.0;
@@ -89,7 +117,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let hue = lane / max(lanes, 1.0) + scalePhase * iridescence + time * (0.04 + iridescence * 0.18);
-    var hdr = palette(hue) * body * (0.8 + iridescence * 2.0 + audio.y);
+    var hdr = palette(hue) * bodyRGB * (0.8 + iridescence * 2.0 + audio.y);
     hdr += palette(hue + 0.32) * scales * (1.3 + audio.z);
     hdr += vec3<f32>(1.0, 0.85, 0.35) * eyes * (1.4 + audio.x);
     hdr += palette(hue + 0.65) * (wake * 0.35 + clickShed * 1.8 + dragMask * 0.8);

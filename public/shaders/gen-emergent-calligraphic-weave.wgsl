@@ -1,4 +1,12 @@
-// Emergent Calligraphic Weave — layered ink-flow filaments
+// ═══════════════════════════════════════════════════════════════════
+//  Emergent Calligraphic Weave — layered ink-flow filaments
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: over/under weave occlusion at stroke crossings; dry-brush ink starvation into bristle streaks
+//  A packing: raw HDR display RGBA history (C read back as the same)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -65,6 +73,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var ink = 0.0;
     var fineInk = 0.0;
     var hueMoment = 0.0;
+    var strokeVal: array<f32, 10>;
+    var hairVal: array<f32, 10>;
+    var weaveZ: array<f32, 10>;
     for (var i = 0; i < 10; i++) {
         if (i >= strokeCount) { break; }
         let fi = f32(i);
@@ -76,11 +87,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let derivative = cos(p.x * (2.2 + fi * 0.13) + phase);
         let nib = inkWidth * mix(0.55, 1.6, abs(derivative));
         let d = abs(p.y - curve);
-        let stroke = exp(-d * d / max(nib * nib, 0.000001));
-        let hairline = exp(-abs(d - nib * 1.8) * 180.0) * 0.25;
+        // Idea 2 — dry-brush starvation: ink load runs out along the stroke and is re-dipped;
+        // a starved nib breaks into bristle streaks parallel to the stroke.
+        let load = 1.0 - fract(p.x * 0.32 + fi * 0.618 - phase * 0.04);
+        let starve = smoothstep(0.45, 0.0, load);
+        let bristle = noise2(vec2<f32>(p.x * 5.0 + fi * 11.0, (p.y - curve) / max(nib, 0.0005) * 1.6));
+        let dryBrush = smoothstep(starve * 0.75 - 0.08, starve * 0.75 + 0.08, bristle);
+        strokeVal[i] = exp(-d * d / max(nib * nib, 0.000001)) * dryBrush;
+        hairVal[i] = exp(-abs(d - nib * 1.8) * 180.0) * 0.25;
+        // Idea 1 — over/under weave: each stroke's height varies along x, so crossings alternate.
+        weaveZ[i] = sin(p.x * (3.0 + fi * 0.21) + fi * 2.39 + phase * 0.25);
+    }
+    for (var i = 0; i < 10; i++) {
+        if (i >= strokeCount) { break; }
+        var occluder = 0.0;
+        for (var j = 0; j < 10; j++) {
+            if (j >= strokeCount) { break; }
+            if (weaveZ[j] > weaveZ[i]) { occluder = max(occluder, strokeVal[j]); }
+        }
+        let cover = 1.0 - 0.85 * clamp(occluder * 1.3, 0.0, 1.0);
+        let stroke = strokeVal[i] * cover;
+        let hairline = hairVal[i] * cover;
         ink += stroke;
         fineInk += hairline;
-        hueMoment += (stroke + hairline) * (fi / max(f32(strokeCount), 1.0));
+        hueMoment += (stroke + hairline) * (f32(i) / max(f32(strokeCount), 1.0));
     }
 
     var clickInk = 0.0;

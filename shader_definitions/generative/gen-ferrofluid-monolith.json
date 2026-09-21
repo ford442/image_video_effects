@@ -21,6 +21,6 @@
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
-  "features": ["raymarched", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
+  "features": ["raymarched", "audio-reactive", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware", "mouse-driven", "upgraded-rgba"],
   "feedbackPacking": "A/C = raw HDR display RGBA history"
 }

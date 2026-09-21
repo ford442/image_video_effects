@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-21T06:53:42.255432",
+  "timestamp": "2026-09-21T08:19:00.890726",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 8,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/frosty-window.wgsl",
+      "file": "public/shaders/gen-chromatic-oracle-jelly.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/graphic_novel.wgsl",
+      "file": "public/shaders/gen-cosmic-velvet-hypnosis.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/luminance-wind.wgsl",
+      "file": "public/shaders/gen-cyber-terminal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/melting-oil.wgsl",
+      "file": "public/shaders/gen-emergent-calligraphic-weave.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/polka-dot-reveal.wgsl",
+      "file": "public/shaders/gen-ferrofluid-monolith.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/porcelain-fracture-glow.wgsl",
+      "file": "public/shaders/gen-hyperbolic-tree.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/rorschach-inkblot.wgsl",
+      "file": "public/shaders/gen-prismatic-serpent-river.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/static-reveal.wgsl",
+      "file": "public/shaders/gen-protocell-division.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
