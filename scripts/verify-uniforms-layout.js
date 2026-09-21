@@ -8,6 +8,9 @@
  *   - src/renderer/types.ts             (UNIFORM_BUFFER_LAYOUT)
  *   - wasm_renderer/renderer.h          (struct Uniforms field comments)
  *   - wasm_renderer/frame.cpp           (UpdateUniformBuffer packing comments)
+ *   - src/renderer/ShaderCompilation.ts (FALLBACK_WGSL's inline header: its Uniforms
+ *                                        struct vs the contract, its bindings vs the
+ *                                        generated public/shaders/_prelude.wgsl)
  *   - tracked authoring surfaces        (docs / agent briefs / templates must not
  *                                        claim config.y is delta_time, click count, …)
  *
@@ -332,6 +335,64 @@ function checkBindingContractDoc() {
   ok(`${rel}: Uniforms struct documented field-by-field`);
 }
 
+// ── 6. FALLBACK_WGSL in ShaderCompilation.ts ────────────────────────────────
+// The fallback shader declares its own header inline in TypeScript — the one
+// copy of the binding header that is neither generated nor included. Its
+// Uniforms struct is checked against the contract; its bindings against
+// _prelude.wgsl, which generate_shader_libs.py --check already holds to
+// bindgroup_checker.py EXPECTED_BINDINGS.
+
+function normalizeWgsl(line) {
+  return line.replace(/\s+/g, ' ').replace(/\s*([:,<>;])\s*/g, '$1').trim();
+}
+
+function checkFallbackWgsl() {
+  const rel = 'src/renderer/ShaderCompilation.ts';
+  const src = read(rel);
+  const m = src.match(/export const FALLBACK_WGSL\s*=\s*\/\*\s*wgsl\s*\*\/\s*`([\s\S]*?)`;/);
+  if (!m) {
+    fail(`${rel}: FALLBACK_WGSL template literal not found`);
+    return;
+  }
+  const wgsl = m[1];
+
+  const struct = wgsl.match(/struct\s+Uniforms\s*\{([\s\S]*?)\}/);
+  if (!struct) {
+    fail(`${rel}: FALLBACK_WGSL has no struct Uniforms`);
+  } else {
+    // One field per line; the type itself may contain a comma (array<T, N>).
+    const actual = [...struct[1].matchAll(/^\s*(\w+)\s*:\s*(.+?)\s*,?\s*(?:\/\/.*)?$/gm)].map(
+      ([, name, type]) => `${name}: ${normalizeWgsl(type)}`,
+    );
+    const expected = contract.fields.map(
+      (f) => `${f.name}: ${f.count ? `array<vec4<f32>,${f.count}>` : 'vec4<f32>'}`,
+    );
+    if (actual.join('; ') !== expected.join('; ')) {
+      fail(
+        `${rel}: FALLBACK_WGSL struct Uniforms is { ${actual.join('; ')} } but contract says ` +
+          `{ ${expected.join('; ')} }`,
+      );
+    }
+  }
+
+  const preludeRel = 'public/shaders/_prelude.wgsl';
+  const prelude = new Set(
+    read(preludeRel)
+      .split('\n')
+      .filter((l) => /^\s*@group\(/.test(l))
+      .map(normalizeWgsl),
+  );
+  const decls = wgsl.split('\n').filter((l) => /^\s*@group\(/.test(l));
+  if (!decls.length) fail(`${rel}: FALLBACK_WGSL declares no bindings`);
+  for (const decl of decls) {
+    if (!prelude.has(normalizeWgsl(decl))) {
+      fail(`${rel}: FALLBACK_WGSL declares "${decl.trim()}", which does not match ${preludeRel}`);
+    }
+  }
+
+  ok(`${rel}: FALLBACK_WGSL Uniforms + ${decls.length} bindings match contract`);
+}
+
 // ── Run ─────────────────────────────────────────────────────────────────────
 
 checkUniformBufferTs();
@@ -339,6 +400,7 @@ checkTypesTs();
 checkCpp();
 checkAuthoringSurfaces();
 checkBindingContractDoc();
+checkFallbackWgsl();
 
 for (const c of checks) console.log(`✅ ${c}`);
 
@@ -349,4 +411,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('\n✅ Uniforms layout contract in sync (TS ↔ C++ ↔ docs/briefs)');
+console.log('\n✅ Uniforms layout contract in sync (TS ↔ C++ ↔ fallback WGSL ↔ docs/briefs)');
