@@ -5,6 +5,7 @@
   "description": "Mouse-steerable coupled fluid simulation combining Navier-Stokes feedback fields with viscous fluid stirring. Mouse drags fluid creating vortex streets; click ripples inject bursts. Fluid thickness drives color absorption, blur, and glow.",
   "requiresRgba32Float": true,
   "features": [
+    "upgraded-rgba",
     "simulation",
     "mouse-driven",
     "temporal",

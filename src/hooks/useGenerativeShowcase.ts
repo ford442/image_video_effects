@@ -87,8 +87,8 @@ export function useGenerativeShowcase({
     }, []);
 
     const getShowcaseShaders = useCallback((): ShaderEntry[] => {
-        return getAttractPool(availableModes, ratedShaders);
-    }, [availableModes, ratedShaders]);
+        return getAttractPool(availableModes, ratedShaders, hasThumbnail);
+    }, [availableModes, ratedShaders, hasThumbnail]);
 
     const scheduleNextAttract = useCallback((shaderId: string) => {
         clearAttractTimer();

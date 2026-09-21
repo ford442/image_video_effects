@@ -69,6 +69,7 @@
   ],
   "feedbackPacking": "A/C = ACES display RGBA for continuous caustic irradiance persistence; B is unused; depth passes through refracted depth.",
   "features": [
+    "upgraded-rgba",
     "depth-aware",
     "temporal-feedback",
     "interactive",

@@ -1,5 +1,10 @@
 // Photonic Caustics — refractive height-field convergence with multi-spectral caustic ribbons and chromatic dispersion.
-// A/C stores ACES display RGBA for continuous caustic irradiance persistence; B is unused; depth passes through refracted depth.
+// A/C stores raw caustic irradiance (rgb) + caustic alpha; B is unused; depth passes through refracted depth.
+// Upgraded: 2026-09-21
+// Ideas: true Jacobian caustics (1/|det J| of the refraction map, per-channel IOR); Blinn-Phong
+//        glint of the cursor light on the height field
+// Floor: A used to hold ACES display (photo included) that was mixed back as irradiance, so the
+//        photo fed itself into the light every frame. A now holds irradiance only.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -111,21 +116,47 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
+  // Idea 1 — Jacobian caustics. Light through a refracting surface gathers where the
+  // refraction map compresses area: irradiance ∝ 1/|det J|, with det J ≈ 1 − k∇²h for a height
+  // field h. h = depth (2-texel Laplacian, so hard depth edges don't make lone spikes) plus a
+  // travelling ripple whose Laplacian is analytic. k follows the bend strength, and it's split
+  // per channel by the dispersion slider so caustic lines fringe in colour.
+  let hC = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let t2 = texel * 2.0;
+  let lapDepth = (textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv - vec2<f32>(t2.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r
+                + textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(t2.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r
+                + textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv - vec2<f32>(0.0, t2.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r
+                + textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(0.0, t2.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r
+                - 4.0 * hC) / (4.0 * texel.x);
+  let rippleLap = 1.2 * (sin(uv.x * 40.0 - time * 0.8 + uv.y * 9.0) + sin(uv.y * 45.0 + time * 0.9 - uv.x * 7.0))
+                + (rippleNoise - 0.5) * 3.0;
+  let bendK = (0.02 + lightSize * 0.025) * 16.0;
+  let iorRGB = vec3<f32>(ior - dispersion * 0.6, ior, ior + dispersion * 0.6);
+  let detJ = vec3<f32>(1.0) - (iorRGB - vec3<f32>(1.0)) * bendK * (clamp(lapDepth, -6.0, 6.0) * 0.5 + rippleLap);
+  let causticGain = clamp(vec3<f32>(1.0) / max(abs(detJ), vec3<f32>(0.25)), vec3<f32>(0.0), vec3<f32>(4.0));
+  let jacobianLight = (causticGain - vec3<f32>(1.0)) * intensity * (0.12 + aperture * 0.9) * 0.35;
+
   let spectral = vec3<f32>(1.15 + bass * 0.25, 0.95 + mids * 0.2, 1.25 + treble * 0.35);
   let fresh = bands * spectral * intensity * (0.08 + aperture * 0.55 + clamp(focus * 0.025, 0.0, 0.85))
-            + clickLight * vec3<f32>(0.5, 0.95, 2.0) * intensity;
+            + clickLight * vec3<f32>(0.5, 0.95, 2.0) * intensity
+            + jacobianLight;
 
   // Exact previous frame history load for continuous caustic accumulation
   let history = historyAt(uv, resolution);
   let persistence = clamp(0.85 + lightSize * 0.1 - treble * 0.02, 0.75, 0.96);
-  let irradiance = mix(fresh, history.rgb * persistence, 0.68);
+  let irradiance = max(mix(fresh, history.rgb * persistence, 0.68), vec3<f32>(0.0));
 
   // Sample underlying source with refractive displacement
   let refractUV = clamp(uv + bend + normalize(toLight + vec2<f32>(0.0001)) * clickLight * 0.008, vec2<f32>(0.0), vec2<f32>(1.0));
   let src = textureSampleLevel(readTexture, u_sampler, refractUV, 0.0);
 
   let fresnel = pow(1.0 - clamp(normal.z, 0.0, 1.0), 4.0);
-  let hdr = src.rgb * (0.75 + fresnel * 0.25) + irradiance;
+  // Idea 2 — specular glint of the cursor light on the height field (light above the surface,
+  // viewer straight on), so the surface itself reads as wet glass.
+  let lightDir = normalize(vec3<f32>(toLight, 0.35));
+  let halfVec = normalize(lightDir + vec3<f32>(0.0, 0.0, 1.0));
+  let glint = pow(max(dot(normal, halfVec), 0.0), 60.0) * intensity * 0.6 * select(1.0, 1.6, held);
+  let hdr = src.rgb * (0.75 + fresnel * 0.25) + irradiance + vec3<f32>(1.0, 0.97, 0.9) * glint;
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let causticAlpha = clamp(max(max(irradiance.r, irradiance.g), irradiance.b) * 0.4 + aperture * 0.2, 0.0, 1.0);
@@ -134,6 +165,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
 
   textureStore(writeTexture, coord, result);
-  textureStore(dataTextureA, coord, result);
+  textureStore(dataTextureA, coord, vec4<f32>(irradiance, causticAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth - causticAlpha * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

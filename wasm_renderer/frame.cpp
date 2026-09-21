@@ -156,9 +156,6 @@ void WebGPURenderer::Render() {
         anyUsesHistory = anyUsesHistory || sp.usesHistory;
     };
 
-    // Fixed output texture per slot index.
-    WGPUTexture slotOutput[MAX_SHADER_SLOTS] = { pingPong0_.get(), pingPong1_.get(), writeTexture_.get() };
-
     // Determine the first enabled slot and the last enabled slot.
     // If no slot is configured, fall back to the legacy activeShaderId_.
     int firstEnabled = -1;
@@ -255,6 +252,11 @@ void WebGPURenderer::Render() {
         // ── Multi-slot pipeline ───────────────────────────────────────────────
         // The "chain input" starts as readTexture_ (previous frame output).
         WGPUTexture chainInput = readTexture_.get();
+        // Intermediate slots alternate pingPong0_/pingPong1_; the last enabled
+        // slot writes writeTexture_ directly. Two intermediates are enough for
+        // any slot count: a chained slot reads the previous output and writes
+        // the other one, a parallel slot reads readTexture_.
+        int intermediateCount = 0;
 
         for (int i = 0; i < MAX_SHADER_SLOTS; i++) {
             if (!slots_[i].enabled || slots_[i].shaderId.empty()) continue;
@@ -267,7 +269,9 @@ void WebGPURenderer::Render() {
                                    : chainInput;          // chained: previous slot output
 
             // Which texture does this slot write to?
-            WGPUTexture writeTo = slotOutput[i];
+            WGPUTexture writeTo = (i == lastEnabled)
+                                  ? writeTexture_.get()
+                                  : ((intermediateCount++ % 2 == 0) ? pingPong0_.get() : pingPong1_.get());
 
             // Patch per-slot zoom_params before submitting this slot's pass.
             WriteSlotParams(slots_[i].params);
@@ -329,21 +333,6 @@ void WebGPURenderer::Render() {
 
             // Update chain input for the next slot (if chained).
             chainInput = writeTo;
-        }
-
-        // If the last slot did not write directly to writeTexture_, copy its
-        // output there so the render pipeline always reads from writeTexture_.
-        if (slotOutput[lastEnabled] != writeTexture_.get()) {
-            WGPUCommandEncoderDescriptor encDesc = {};
-            encDesc.label = MakeStringView("Copy Encoder");
-            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
-            CopyTex(enc, slotOutput[lastEnabled], writeTexture_.get(), W, H);
-            WGPUCommandBufferDescriptor cbDesc = {};
-            cbDesc.label = MakeStringView("Copy CmdBuf");
-            WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
-            wgpuQueueSubmit(queue_.get(), 1, &cb);
-            wgpuCommandBufferRelease(cb);
-            wgpuCommandEncoderRelease(enc);
         }
 
         // End-of-frame texture copies for temporal feedback.

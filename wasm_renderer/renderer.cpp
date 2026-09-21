@@ -164,7 +164,11 @@ void WebGPURenderer::SetActiveShader(const char* id) {
 // ─── Multi-slot shader API ────────────────────────────────────────────────────
 
 void WebGPURenderer::SetSlotShader(int slotIndex, const char* id) {
-    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return;
+    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) {
+        printf("[WASM] SetSlotShader(%d) ignored: outside 0..%d (slot_limits.json)\n",
+               slotIndex, MAX_SHADER_SLOTS - 1);
+        return;
+    }
     if (id && *id) {
         if (shaders_.find(id) == shaders_.end()) {
             printf("[WASM] Skip slot %d: shader '%s' has no valid pipeline — not submitted\n",
@@ -182,7 +186,11 @@ void WebGPURenderer::SetSlotShader(int slotIndex, const char* id) {
 }
 
 void WebGPURenderer::SetSlotParams(int slotIndex, float p1, float p2, float p3, float p4) {
-    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return;
+    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) {
+        printf("[WASM] SetSlotParams(%d) ignored: outside 0..%d (slot_limits.json)\n",
+               slotIndex, MAX_SHADER_SLOTS - 1);
+        return;
+    }
     slots_[slotIndex].params[0] = p1;
     slots_[slotIndex].params[1] = p2;
     slots_[slotIndex].params[2] = p3;
@@ -190,7 +198,11 @@ void WebGPURenderer::SetSlotParams(int slotIndex, float p1, float p2, float p3, 
 }
 
 void WebGPURenderer::SetSlotMode(int slotIndex, int mode) {
-    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return;
+    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) {
+        printf("[WASM] SetSlotMode(%d) ignored: outside 0..%d (slot_limits.json)\n",
+               slotIndex, MAX_SHADER_SLOTS - 1);
+        return;
+    }
     slots_[slotIndex].mode = (mode == 1) ? SlotMode::Parallel : SlotMode::Chained;
 }
 

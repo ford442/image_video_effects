@@ -121,8 +121,21 @@ function setActiveShader(id) {
   }
 }
 function setSlotShader(slotIndex, shaderId) {
-  if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall("setSlotShader", "number", ["number", "string"], [slotIndex, shaderId]);
+  if (!state.initialized || !wasmRef.module) return false;
+  wasmRef.module.ccall("setSlotShader", null, ["number", "string"], [slotIndex, shaderId]);
+  const accepted = !shaderId || getSlotShaderId(slotIndex) === shaderId;
+  if (accepted) {
+    state.droppedSlots.delete(slotIndex);
+  } else {
+    state.droppedSlots.add(slotIndex);
+    console.warn(
+      `[WASM] setSlotShader(${slotIndex}, "${shaderId}") dropped by the module (no valid pipeline, or the artifact has fewer slots than slot_limits.json)`
+    );
+  }
+  return accepted;
+}
+function getDroppedSlots() {
+  return state.droppedSlots;
 }
 function setSlotMode(slotIndex, mode) {
   if (!state.initialized || !wasmRef.module) return;
@@ -151,6 +164,7 @@ function getSlotState(slotIndex) {
   };
 }
 export {
+  getDroppedSlots,
   getSlotEnabled,
   getSlotMode,
   getSlotShaderId,

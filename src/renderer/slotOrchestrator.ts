@@ -8,6 +8,7 @@
 
 import { validateBindGroup } from './bindGroupValidator';
 import { resolveMultipassChain } from './multipassRegistry';
+import slotLimitsContract from '../contracts/slot_limits.json';
 
 export type SlotMode = 'chained' | 'parallel';
 
@@ -58,8 +59,20 @@ export interface SlotOrchestration {
   warnings: string[];
 }
 
-/** Maximum physical slots supported by the current renderer */
-export const PHYSICAL_SLOT_LIMIT = 6;
+/**
+ * Maximum physical slots, shared with C++ MAX_SHADER_SLOTS via
+ * src/contracts/slot_limits.json (verify:device-policy).
+ */
+export const PHYSICAL_SLOT_LIMIT: number = slotLimitsContract.maxPhysicalSlots;
+
+/** Log (and report false) when a slot index is outside the physical range. */
+export function checkPhysicalSlotIndex(backend: string, index: number): boolean {
+  if (Number.isInteger(index) && index >= 0 && index < PHYSICAL_SLOT_LIMIT) return true;
+  console.warn(
+    `[${backend}] slot ${index} ignored: outside 0..${PHYSICAL_SLOT_LIMIT - 1} (slot_limits.json)`,
+  );
+  return false;
+}
 
 /**
  * Build a dispatch + copy plan for the given slot configuration.

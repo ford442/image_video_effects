@@ -4,6 +4,10 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            hoop-rails, liquid-rainbow-caustics, semantic-alpha, ACES
 //  Complexity: High
+//  Upgraded: 2026-09-21
+//  Ideas: glass-pipe wall reflection (Fresnel toward the wall); perspective hoops/helix in 1/r
+//         with rails foreshortening into the vanishing point
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,6 +32,12 @@ struct Uniforms {
 };
 
 const TAU: f32 = 6.28318530718;
+
+fn rot2d(v: vec2<f32>, a: f32) -> vec2<f32> {
+  let c = cos(a);
+  let s = sin(a);
+  return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
 
 fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -124,7 +134,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gOffset = vec2<f32>(cos(refractG), sin(refractG)) * dispersionStrength * 0.7;
   let bOffset = vec2<f32>(cos(refractB), sin(refractB)) * dispersionStrength * 0.4;
 
-  let baseUV = clamp(uv + centeredUV * (1.0 - pow(safeDist / max(tunnelRadius, 0.001), 0.5)), vec2<f32>(0.001), vec2<f32>(0.999));
+  // Floor fix (not an idea): Twist Amount only ever steered dispersion and overlays; the
+  // sampled wall never twisted. Rotate the base sample about the tunnel axis by the slider's
+  // twist (time spin excluded, so the default twist of 0.5 samples exactly like HEAD).
+  let twistDelta = (twistAmount + held * (mouse.x - 0.5) * 1.2) * twistEnvelope;
+  let pivot = vec2<f32>(0.5 - mouseOffset.x / aspect, 0.5 - mouseOffset.y);
+  let aspectV = vec2<f32>(aspect, 1.0);
+  let headUV = uv + centeredUV * (1.0 - pow(safeDist / max(tunnelRadius, 0.001), 0.5));
+  let baseUV = clamp(pivot + rot2d((headUV - pivot) * aspectV, twistDelta) / aspectV, vec2<f32>(0.001), vec2<f32>(0.999));
 
   let rUV = clamp(baseUV + vec2<f32>(rOffset.x / aspect, rOffset.y), vec2<f32>(0.001), vec2<f32>(0.999));
   let gUV = clamp(baseUV + vec2<f32>(gOffset.x / aspect, gOffset.y), vec2<f32>(0.001), vec2<f32>(0.999));
@@ -135,9 +152,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bCol = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
   var rgb = vec3<f32>(rCol, gCol, bCol);
 
-  let hoop = smoothstep(0.07, 0.0, abs(fract(safeDist * 8.0 - time * (2.2 + bass * 1.8)) - 0.5));
-  let ribs = smoothstep(0.05, 0.0, abs(fract(newAngle / TAU * 18.0) - 0.5));
-  let helix = smoothstep(0.08, 0.0, abs(fract(newAngle / TAU * 7.0 + safeDist * 4.0 - time * 2.5) - 0.5));
+  // Idea 1 — glass-pipe wall reflection. Looking down a glass tube, the wall reflects the
+  // interior at grazing incidence: the band just inside the wall shows a radially mirrored
+  // copy of the band beside it, rising toward the wall like Fresnel does.
+  let wallBand = 0.2 * tunnelRadius;
+  let mirrorAt = tunnelRadius - wallBand;
+  let wallS = clamp((safeDist - mirrorAt) / max(wallBand, 0.001), 0.0, 1.0);
+  let wallRefl = pow(wallS, 2.5) * insideWall * step(mirrorAt, safeDist) * 0.55;
+  if (wallRefl > 0.001) {
+    let mirroredDist = max(2.0 * mirrorAt - safeDist, 0.0);
+    let cM = centeredUV * (mirroredDist / safeDist);
+    let uvM = pivot + cM / aspectV;
+    let headM = uvM + cM * (1.0 - pow(mirroredDist / max(tunnelRadius, 0.001), 0.5));
+    let reflUV = clamp(pivot + rot2d((headM - pivot) * aspectV, twistDelta) / aspectV, vec2<f32>(0.001), vec2<f32>(0.999));
+    let reflCol = textureSampleLevel(readTexture, u_sampler, reflUV, 0.0).rgb;
+    rgb = mix(rgb, reflCol * vec3<f32>(0.92, 0.97, 1.05), wallRefl);
+  }
+
+  // Idea 2 — perspective rails. A tunnel recedes in z ∝ 1/r, so hoops and the helix are
+  // spaced in 1/r: they bunch toward the vanishing point and slide outward as you fly in.
+  // Radial ribs are already perspective-correct; all three fade into the vanishing point
+  // (foreshortening) instead of aliasing there.
+  let tunnelZ = 0.35 / max(safeDist, 0.02);
+  let vanish = smoothstep(0.03, 0.16, safeDist);
+  let hoop = smoothstep(0.07, 0.0, abs(fract(tunnelZ * 3.0 + time * (0.55 + bass * 0.45)) - 0.5)) * vanish;
+  let ribs = smoothstep(0.05, 0.0, abs(fract(newAngle / TAU * 18.0) - 0.5)) * vanish;
+  let helix = smoothstep(0.08, 0.0, abs(fract(newAngle / TAU * 7.0 - tunnelZ * 0.5 - time * 2.5) - 0.5)) * vanish;
   let axial = smoothstep(0.07, 0.0, abs(fract(safeDist * 3.5 + newAngle * 0.3 - time * (3.0 + mids)) - 0.5));
 
   var clickRing = 0.0;

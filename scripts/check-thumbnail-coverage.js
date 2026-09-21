@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { loadThumbnailSkipIds } = require('./lib/thumbnailSkipAllowlist');
+const { loadRatchet, validateDeferrals } = require('./lib/thumbnailDeferrals');
 
 const ROOT = path.join(__dirname, '..');
 const LISTS_DIR = path.join(ROOT, 'public', 'shader-lists');
@@ -168,7 +169,9 @@ function writeCoverageMarkdown(report) {
     `- Skip allowlist: **${report.skip}**`,
     `- Eligible: **${report.eligible}**`,
     `- Healthy: **${report.healthy}** (${report.healthyPct}%)`,
-    `- Unexpired deferrals: **${report.deferred}**`,
+    `- Unexpired deferrals: **${report.deferred}** (do not count as coverage)`,
+    `- gpu-capture-pending: **${report.pending}** — ratchet max **${report.ratchetMax}**, target **${report.ratchetTarget}**`,
+    `- Deferral violations: **${report.deferralErrors.length}**`,
     `- Missing (no healthy PNG, no deferral): **${report.missing}**`,
     `- Newly eligible: **${report.newlyEligible}**`,
     `- Newly eligible without thumb or deferral: **${report.offending.length}**`,
@@ -176,6 +179,12 @@ function writeCoverageMarkdown(report) {
   ];
   if (report.integrityStale) {
     lines.push('Integrity audit is stale for the current PNG set; flags were not applied.');
+    lines.push('');
+  }
+  if (report.deferralErrors.length > 0) {
+    lines.push('## Deferral violations');
+    lines.push('');
+    for (const err of report.deferralErrors.slice(0, 50)) lines.push(`- ${err}`);
     lines.push('');
   }
   if (report.offending.length > 0) {
@@ -262,6 +271,15 @@ function main() {
     console.log('No newly eligible shaders in this pull request; coverage check is informational.');
   }
 
+  const ratchet = loadRatchet();
+  const deferralErrors = validateDeferrals(deferrals.all, { ratchet });
+  if (deferralErrors.length > 0) {
+    console.error(
+      `❌ Thumbnail deferral violations (${deferralErrors.length}):\n  ` + deferralErrors.slice(0, 20).join('\n  '),
+    );
+    exitCode = 1;
+  }
+
   const deletedPngs = new Set([...basePngs].filter(id => !currentPngs.has(id) && baseHealthy.has(id)));
 
   if (deletedPngs.size > 0) {
@@ -280,6 +298,10 @@ function main() {
     healthyPct: eligiblePct,
     deferred: deferrals.valid.size,
     missing: missing.length,
+    pending: deferrals.all.filter(e => e.reason === 'gpu-capture-pending').length,
+    ratchetMax: ratchet.maxGpuCapturePending,
+    ratchetTarget: ratchet.target ?? 'n/a',
+    deferralErrors,
     newlyEligible: newlyEligible.size,
     offending: offendingIds,
     integrityStale,

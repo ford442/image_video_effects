@@ -2788,3 +2788,44 @@
   catalogs 1378 unique, SKIP_WASM_BUILD=1 build green. Jest not run.
 - Notes: agents/swarm-outputs/claude-2026-09-13-luminescent-attractor-ten/. Real-GPU visual QA: external
   (stag framing change, lorenz-flow ridge flooding, phoenix-egg afterglow ghosting).
+
+## 2026-09-21 — distortion lens eight (8 shaders)
+
+- IDs: gravity-well, black-hole, heat-haze-gpt52, zoom-burst, interactive-zoom-blur, infinite-zoom-lens, bubble-lens, refraction-tunnel.
+- Ideas actually added:
+  - gravity-well: lensed far-side disk halo; Keplerian shear streaks.
+  - black-hole: frame-dragging swirl; photon-ring point-reflected secondary image.
+  - heat-haze-gpt52: inferior mirage; boundary-layer boost; held-pointer mirage pool.
+  - zoom-burst: highlight comets; zoom-ring dwell ghost.
+  - interactive-zoom-blur: depth-occluded taps; radial trail advection.
+  - infinite-zoom-lens: log-periodic Droste nesting; endless fall; frame seams.
+  - bubble-lens: inverted rear-wall reflection (Schlick at sphere incidence); Marangoni vortices.
+  - refraction-tunnel: glass-pipe wall reflection; perspective hoops/helix.
+- Floor: exact C in interactive-zoom-blur; refraction-tunnel Twist slider now twists the image. Params byte-exact, no JSON edits.
+- Gates: precommit 8/8, extraBuffer, dead sliders, catalogs, include, SKIP_WASM_BUILD=1 build; Jest only known bridge failures.
+- Notes: agents/swarm-outputs/spark-2026-09-21-distortion-lens-eight/. Real-GPU visual QA: external (infinite-zoom-lens first).
+
+## 2026-09-21 — stateful-simulation six (6 shaders)
+
+- IDs: boids, ion-stream, sim-ink-diffusion-rgba, steamy-glass, sim-fluid-feedback-coupled, photonic-caustics.
+- Ideas: boids blind spot + predator; ion-stream charge split + cyclotron; ink edge darkening + granulation;
+  steamy rivulets + beaded wipe rim; fluid buoyancy + schlieren; caustics Jacobian + glint.
+- Floor: ink depth write; photonic-caustics A packing (display → irradiance). Params byte-exact.
+- Rescues found (not changed): physarum, navier-stokes-dye, multi-turing, lenia — evidence in NOTES.
+- Notes: agents/swarm-outputs/spark-2026-09-21-sim-six/. Real-GPU QA external (photonic-caustics first).
+
+## 2026-09-21 — artistic surface eight (8 shaders)
+
+- IDs: graphic-novel, rorschach-inkblot, polka-dot-reveal, frosty-window, melting-oil, porcelain-fracture-glow, static-reveal, luminance-wind.
+- Per shader, the ideas actually added:
+  - graphic-novel: spot blacks; 45° pen hatching + crossing set; shadow-side line weight.
+  - rorschach-inkblot: fold crease pooling; press-off transfer stipple; capillary fibre feathering.
+  - polka-dot-reveal: chain-dot merge; drag-stretched dots. (Floor: jitter was per pixel, now per cell.)
+  - frosty-window: frame nucleation + creeping front (fixes the dead file: C=0 early return); meltwater runnels in A.g.
+  - melting-oil: accumulated melt from exact C (was a fixed 1 px shift); luma-weighted gravity sag. A = pre-sheen melt.
+  - porcelain-fracture-glow: crack memory in C.b ripening to gold kintsugi; stained glaze crazing by Patina Age.
+  - static-reveal: vertical-hold roll + blanking bar; multipath ghost. (Floor: threshold read mouse X.)
+  - luminance-wind: lee-side depth shelter; cat's-paw gust bands.
+- Floor: exact C loads (frosty, static); params byte-exact; JSON only +upgraded-rgba on graphic-novel.
+- Gates: precommit 8/8, extraBuffer, dead sliders (7 scanned + graphic-novel by hand), catalogs, build; Jest same 6 known failures.
+- Notes: agents/swarm-outputs/spark-2026-09-21-artistic-surface-eight/. Not committed. Real-GPU QA external (frosty-window first).

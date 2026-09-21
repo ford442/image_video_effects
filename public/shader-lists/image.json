@@ -4051,6 +4051,7 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "upgraded-rgba",
       "adaptive-contours",
       "rotated-print-screens",
       "paper-fibers",

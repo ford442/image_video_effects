@@ -7,6 +7,9 @@
 //  Created: 2026-05-30
 //  Updated: 2026-05-31
 //  By: Grok (visual flourish pass — richer lensing, accretion, and atmosphere)
+//  Upgraded: 2026-09-21
+//  Ideas: frame-dragging swirl toward the horizon; photon-ring secondary (point-reflected) image
+//  A packing: fields (dist, radius, horizonMask, alpha); C unread
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -85,9 +88,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Chromatic gravitational lensing (different wavelengths bend differently)
         let chr_amount = distortion * 0.018;
-        let offset_r = (d_vec_aspect / max(length(d_vec_aspect), 0.0001)) * (pinch_factor + chr_amount);
-        let offset_g = (d_vec_aspect / max(length(d_vec_aspect), 0.0001)) * pinch_factor;
-        let offset_b = (d_vec_aspect / max(length(d_vec_aspect), 0.0001)) * (pinch_factor - chr_amount);
+        // Idea 1 — frame dragging. A spinning hole drags space with it: the pull gains a
+        // tangential part that grows toward the horizon, so the image swirls in rather
+        // than only pinching. Holding the pointer spins it harder.
+        let radial_dir = d_vec_aspect / max(length(d_vec_aspect), 0.0001);
+        let drag_dir = vec2<f32>(-radial_dir.y, radial_dir.x);
+        let drag = 0.55 * exp(-dist_from_surface * 4.0) * (1.0 + held * 0.6);
+        let offset_r = (radial_dir + drag_dir * drag) * (pinch_factor + chr_amount);
+        let offset_g = (radial_dir + drag_dir * drag) * pinch_factor;
+        let offset_b = (radial_dir + drag_dir * drag) * (pinch_factor - chr_amount);
 
         let offset_uv_r = vec2<f32>(offset_r.x / aspect, offset_r.y);
         let offset_uv_g = vec2<f32>(offset_g.x / aspect, offset_g.y);
@@ -97,7 +106,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let sample_g = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset_uv_g, vec2<f32>(0.001,0.001), vec2<f32>(0.999,0.999)), 0.0).g;
         let sample_b = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset_uv_b, vec2<f32>(0.001,0.001), vec2<f32>(0.999,0.999)), 0.0).b;
 
-        let bg_color = vec3<f32>(sample_r, sample_g, sample_b);
+        var bg_color = vec3<f32>(sample_r, sample_g, sample_b);
+
+        // Idea 2 — photon-ring secondary image. Light that half-orbits the hole comes out
+        // on the far side, so a thin band just outside the horizon holds the whole scene
+        // point-reflected through the hole: the band's inner edge shows the distant frame,
+        // its outer edge what sits right behind the hole. Same chromatic split as the primary.
+        let ring_w = radius * 0.22 + 0.006;
+        let ring_s = clamp((dist - radius * 1.04) / ring_w, 0.0, 1.0);
+        let ring_mask = smoothstep(0.0, 0.15, ring_s) * (1.0 - smoothstep(0.7, 1.0, ring_s)) * step(0.001, radius);
+        if (ring_mask > 0.001) {
+            let mirror_dir = -(radial_dir + drag_dir * drag * 0.5);
+            let mirror_reach = mix(0.9, radius * 1.1, ring_s);
+            let mirror_uv = mouse + vec2<f32>(mirror_dir.x / aspect, mirror_dir.y) * mirror_reach;
+            let chr_uv = vec2<f32>(mirror_dir.x / aspect, mirror_dir.y) * (0.012 + chr_amount);
+            let mirror_col = vec3<f32>(
+                textureSampleLevel(readTexture, u_sampler, clamp(mirror_uv + chr_uv, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r,
+                textureSampleLevel(readTexture, u_sampler, clamp(mirror_uv, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).g,
+                textureSampleLevel(readTexture, u_sampler, clamp(mirror_uv - chr_uv, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b
+            );
+            bg_color = mix(bg_color, mirror_col * vec3<f32>(1.25, 1.05, 0.9), ring_mask * 0.8);
+        }
 
         // === Enhanced Accretion Disk with Visual Flourish ===
         let glow_falloff = exp(-dist_from_surface * 20.0);

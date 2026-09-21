@@ -11,7 +11,7 @@ const SOURCE_MAP = {
 };
 function setSlotParams(slotIndex, p1, p2, p3, p4) {
   if (!state.initialized || !wasmRef.module) return;
-  if (slotIndex >= 0 && slotIndex < state.slotParams.length) {
+  if (slotIndex >= 0) {
     state.slotParams[slotIndex] = [p1, p2, p3, p4];
   }
   wasmRef.module.ccall(

@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-21T05:17:27.411588",
+  "timestamp": "2026-09-21T06:53:42.255432",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 7,
-  "passed": 7,
+  "total": 8,
+  "passed": 8,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/optical-flow-tracer.wgsl",
+      "file": "public/shaders/frosty-window.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pp-chromatic.wgsl",
+      "file": "public/shaders/graphic_novel.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pp-sharpen.wgsl",
+      "file": "public/shaders/luminance-wind.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pp-vignette.wgsl",
+      "file": "public/shaders/melting-oil.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spatio-temporal-3d-conv.wgsl",
+      "file": "public/shaders/polka-dot-reveal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/temporal-frequency-decomposition.wgsl",
+      "file": "public/shaders/porcelain-fracture-glow.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,22 @@
       "ok": true
     },
     {
-      "file": "public/shaders/temporal-slit-scan.wgsl",
+      "file": "public/shaders/rorschach-inkblot.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/static-reveal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

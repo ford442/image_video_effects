@@ -1,6 +1,10 @@
 // Rorschach Inkblot — mirrored advected ink with chromatic diffusion memory.
 // A/C stores tone-mapped display RGBA. B and extraBuffer are unused.
 // Premium mixed-eight upgrade: 2026-08-27.
+//  Upgraded: 2026-09-21
+//  Ideas: fold crease (ink pools in the seam, paper shows the fold); press-off transfer half with
+//         ink-starved stipple; capillary feathering along paper fibres at the blot edge
+//  A packing: ACES display RGBA with ink alpha
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -126,12 +130,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sourceColor = vec3<f32>(sampleR, sampleG, sampleB);
   let sourceLuma = dot(sourceColor, vec3<f32>(0.2126, 0.7152, 0.0722));
   let organic = fbm(fieldP * 1.7 + n0 * 3.0);
-  var ink = 1.0 - smoothstep(threshold - softness, threshold + softness, sourceLuma + (organic - 0.5) * distortion);
+  let inkField = sourceLuma + (organic - 0.5) * distortion;
+  var ink = 1.0 - smoothstep(threshold - softness, threshold + softness, inkField);
+
+  // Idea 3 — capillary feathering. Just outside the blot, wet ink wicks along the paper fibres in
+  // hairline tendrils. Fibres are long, thin value-noise streaks at two crossing angles, in pixels.
+  let pixel = vec2<f32>(gid.xy);
+  let fibreA = noise(mat2x2<f32>(0.88, 0.47, -0.47, 0.88) * pixel * vec2<f32>(0.035, 0.55));
+  let fibreB = noise(mat2x2<f32>(0.62, -0.78, 0.78, 0.62) * pixel * vec2<f32>(0.04, 0.5) + 19.0);
+  let fibre = smoothstep(0.62, 0.86, max(fibreA, fibreB));
+  let wickReach = 0.05 + softness * 0.6;
+  let halo = (1.0 - smoothstep(threshold + softness, threshold + softness + wickReach, inkField)) * (1.0 - ink);
+  ink = max(ink, halo * fibre * 0.75);
+
+  // Idea 1 — fold crease. Ink runs into the crease when the paper is folded, so the seam through
+  // the blot prints darker; the bare paper shows a faint valley shadow on one side, highlight on the other.
+  let foldSide = uv.x - axis;
+  let foldDist = abs(foldSide) * aspectVec.x;
+  let crease = exp(-foldDist * 140.0);
+  ink = max(ink, crease * smoothstep(0.08, 0.45, ink) * 1.1);
+
   ink = clamp(max(ink, history.a * (0.79 + bass * 0.055)) + clickInk * 0.22 + pointerInfluence * 0.08, 0.0, 1.0);
+
+  // Idea 2 — press-off transfer. The half across the fold is a print taken off the wet half: the
+  // film is thinner and paper that didn't make contact leaves ink-starved stipple voids, so the two
+  // halves are no longer mathematically identical. C is only read left of the axis, so this never
+  // feeds back into the wet half.
+  let transferSide = smoothstep(0.0, 0.004, foldSide);
+  let contact = smoothstep(0.3, 0.46, noise(pixel * 0.31) * 0.65 + noise(pixel * 0.07 + 5.0) * 0.35 + organic * 0.12);
+  ink *= mix(1.0, (0.35 + 0.65 * contact) * 0.9, transferSide * smoothstep(0.1, 0.6, ink));
 
   let inkHue = 0.5 + 0.5 * cos(TAU * (vec3<f32>(0.03, 0.36, 0.69) + organic * 0.16 + time * 0.018 + treble * 0.04));
   let darkInk = mix(vec3<f32>(0.008, 0.006, 0.014), inkHue * (0.15 + mids * 0.09), 0.32 + treble * 0.16);
-  let paper = vec3<f32>(0.92, 0.88, 0.78) * (0.88 + n0 * 0.12);
+  let foldShade = 1.0 + sign(foldSide) * exp(-foldDist * 45.0) * 0.05 - exp(-foldDist * 260.0) * 0.07;
+  let paper = vec3<f32>(0.92, 0.88, 0.78) * (0.88 + n0 * 0.12) * foldShade;
   let normalColor = mix(paper, darkInk, ink);
   let invertedColor = mix(vec3<f32>(0.025, 0.018, 0.045), inkHue * (0.82 + bass * 0.35), 1.0 - ink);
   var hdr = mix(normalColor, invertedColor, smoothstep(0.35, 0.65, invertMode));

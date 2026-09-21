@@ -190,6 +190,7 @@ export function shutdownWasmRenderer(): void {
 
   state.initialized = false;
   state.activeShader = null;
+  state.droppedSlots.clear();
   wasmRef.module = null;
   wasmRef.canvas = null;
   console.log('[WASM] Shutdown complete');

@@ -4,6 +4,7 @@
  *
  * CI check: webgpu_limits.json ↔ TS policy ↔ device.cpp CheckLimit/requiredLimits;
  * optional feature order ↔ device.ts / device.cpp;
+ * slot_limits.json ↔ PHYSICAL_SLOT_LIMIT / MAX_SHADER_SLOTS;
  * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE /
  * build.sh / CMakeLists (no hardcoded export lists);
  * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
@@ -537,9 +538,63 @@ function verifyEmptyPlaceholder() {
   }
 }
 
+function verifySlotLimits() {
+  const file = 'src/contracts/slot_limits.json';
+  const c = JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8'));
+  const n = c.maxPhysicalSlots;
+  if (!Number.isInteger(n) || n < 1) fail(`${file} maxPhysicalSlots must be a positive integer`);
+  const [capLo, capHi] = c.qualityCapRange || [];
+  if (!(capLo >= 1 && capHi >= capLo && capHi <= n)) {
+    fail(`${file} qualityCapRange must sit inside 1..maxPhysicalSlots`);
+  }
+
+  // ── TS: PHYSICAL_SLOT_LIMIT comes from the contract, not a literal ───────
+  const ts = fs.readFileSync(path.join(ROOT, c.ts.file), 'utf8');
+  if (!/import slotLimitsContract from '\.\.\/contracts\/slot_limits\.json'/.test(ts)) {
+    fail(`${c.ts.file} must import slotLimitsContract from contracts/slot_limits.json`);
+  }
+  if (!new RegExp(`export const ${c.ts.constant}(?::\\s*number)?\\s*=\\s*slotLimitsContract\\.maxPhysicalSlots;`).test(ts)) {
+    fail(`${c.ts.file} ${c.ts.constant} must equal slotLimitsContract.maxPhysicalSlots`);
+  }
+
+  // ── TS policy: quality cap never exceeds the contract range ──────────────
+  const policy = fs.readFileSync(path.join(ROOT, 'src/config/performancePolicy.ts'), 'utf8');
+  for (const m of policy.matchAll(/maxActiveSlots:\s*(\d+)/g)) {
+    const v = parseInt(m[1], 10);
+    if (v < capLo || v > capHi) fail(`performancePolicy.ts maxActiveSlots ${v} outside ${file} qualityCapRange ${capLo}..${capHi}`);
+  }
+
+  // ── C++: MAX_SHADER_SLOTS equals the contract ────────────────────────────
+  const header = fs.readFileSync(path.join(ROOT, c.cpp.file), 'utf8');
+  const m = header.match(new RegExp(`static\\s+constexpr\\s+int\\s+${c.cpp.constant}\\s*=\\s*(\\d+)\\s*;`));
+  if (!m) {
+    fail(`${c.cpp.file} ${c.cpp.constant} not found`);
+  } else if (parseInt(m[1], 10) !== n) {
+    fail(`${c.cpp.file} ${c.cpp.constant} = ${m[1]} but ${file} maxPhysicalSlots = ${n} (TS ${c.ts.constant})`);
+  }
+
+  // Per-index output tables only cover as many slots as they list; the frame
+  // loop must pick outputs by position in the chain instead.
+  const frame = fs.readFileSync(path.join(ROOT, c.cpp.frameFile), 'utf8');
+  if (new RegExp(`\\[\\s*${c.cpp.constant}\\s*\\]\\s*=\\s*\\{`).test(frame)) {
+    fail(`${c.cpp.frameFile} must not initialise a fixed per-slot array sized ${c.cpp.constant} (breaks when the limit changes)`);
+  }
+
+  // Out-of-range slot setters log instead of returning silently.
+  const slice = fs.readFileSync(path.join(ROOT, c.cpp.sliceFile), 'utf8');
+  for (const setter of ['SetSlotShader', 'SetSlotParams', 'SetSlotMode']) {
+    const body = slice.match(new RegExp(`void WebGPURenderer::${setter}\\([\\s\\S]*?\\n\\}`));
+    const guard = body && body[0].match(new RegExp(`slotIndex >= ${c.cpp.constant}\\)\\s*\\{([\\s\\S]*?)return;`));
+    if (!guard || !/printf\(/.test(guard[1])) {
+      fail(`${c.cpp.sliceFile} ${setter} must printf before ignoring an out-of-range slot`);
+    }
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
   verifyOptionalFeatures();
   verifyCanvasConfigure();
+  verifySlotLimits();
   verifyWasmExports();
   verifyWorkgroupDispatch();
   verifyEmptyPlaceholder();
@@ -552,7 +607,7 @@ if (failed) {
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + canvas_configure + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
+  '✅ Device policy sync OK (limits + optional features + canvas_configure + slot_limits + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
 
 function walkCppFiles(dir) {

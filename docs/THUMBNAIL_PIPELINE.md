@@ -241,19 +241,22 @@ When a PR adds a shader definition but cannot provide a healthy thumbnail (e.g.,
     {
       "id": "gen-shader-name",
       "added_by": "author",
-      "pr": 1234,
-      "deferred_at": "2026-08-21",
-      "expires": "2026-09-20",
-      "reason": "pending GPU capture wave"
+      "deferred_at": "2026-09-21",
+      "expires": "2026-10-21",
+      "reason": "gpu-capture-pending"
     }
   ]
 }
 ```
 
-- `expires` (or `until`) must be ≤ 30 days from `deferred_at` when both are set
+- `reason` is one of `gpu-capture-pending | known-magenta | other` here. `audio-only` / `interactive-no-still` are permanent → `thumbnail_skip_allowlist.json`, and the gate rejects them in this file
+- `expires` (or `until`) must be ≤ 30 days from `deferred_at`; expired entries fail `npm run verify:thumbs-deferrals` (also in `verify:toolchain-foundation` and `thumbs:check-regression`). Do not bulk-bump dates
+- Renewing: set `renewals`; more than one renewal requires a `failure_note` describing the captured failure
+- `reports/thumbnail_deferral_ratchet.json` caps the `gpu-capture-pending` count (`maxGpuCapturePending`, target 200). Lower it after each wave, never raise it; it starts at the current 1069 because a literal N=200 would be red today
+- Deferrals never count as coverage. Attract pool and gallery CLIP ranking use healthy thumbnails only
 - Each deferral should correspond to an eligible shader without a healthy thumbnail
-- Expired deferrals are not honored
 - Deferrals are distinct from skip allowlist: skip IDs are permanent (unrenderable), deferrals are temporary (pending thumbnail)
+- Capture farm: `.github/workflows/thumbs-capture-farm.yml` (self-hosted `gpu` runner only, ≤80 shaders/run, integrity-gated PR)
 - After a GPU capture wave, remove deferrals for ids that now have healthy PNGs
 
 ## Related

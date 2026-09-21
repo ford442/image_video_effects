@@ -7,7 +7,7 @@
 
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
 import { Ripple, MAX_RIPPLES } from './UniformBuffer';
-import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
+import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
 import {
   initializeWebGPUDevice,
   attachDeviceLostHandler,
@@ -478,10 +478,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   setSlotShader(index: number, id: string): void {
-    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) {
-      const mode = this.slots[index]?.mode ?? 'chained';
-      this.slots[index] = { shaderId: id, enabled: !!id, mode };
-    }
+    if (!checkPhysicalSlotIndex('WebGPURenderer', index)) return;
+    const mode = this.slots[index]?.mode ?? 'chained';
+    this.slots[index] = { shaderId: id, enabled: !!id, mode };
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {

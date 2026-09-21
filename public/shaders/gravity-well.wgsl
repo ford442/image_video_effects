@@ -4,7 +4,9 @@
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, photon-sphere, relativistic-doppler
 //  Complexity: Very High
 //  Scientific: Schwarzschild-like radial lensing with photon-sphere rings, gravitational redshift, and Doppler-bright accretion flow.
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-23, 2026-09-21
+//  Ideas: lensed far-side disk halo over the shadow; Keplerian shear streaks (Ω ∝ r^-1.5)
+//  A packing: lensing fields (deflection/3, rings, diskMask, shadow); C unread
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -60,6 +62,21 @@ fn blackbodyRGB(T: f32) -> vec3<f32> {
   return clamp(vec3<f32>(r, g, b), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Idea 2 — Keplerian shear. Streaks orbit at Ω ∝ r^-1.5, so the inner disk laps the
+// outer and the pattern winds into spirals. Two phases cross-faded over a 6 s cycle keep
+// the winding bounded (otherwise it would alias into noise after a minute).
+fn keplerStreaks(angle: f32, radiusNorm: f32, omega: f32, t: f32) -> f32 {
+  let period = 6.0;
+  var acc = 0.0;
+  for (var k = 0; k < 2; k = k + 1) {
+    let cyc = fract(t / period + f32(k) * 0.5);
+    let w = 1.0 - abs(2.0 * cyc - 1.0);
+    let phase = angle - cyc * period * omega + f32(k) * 1.7;
+    acc += w * (0.5 + 0.5 * sin(phase * 7.0 + radiusNorm * 23.0 + sin(phase * 3.0 - radiusNorm * 11.0) * 1.4));
+  }
+  return acc;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -98,6 +115,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let einsteinRing = exp(-pow((r - bCrit) / max(rs * 0.18, 0.001), 2.0));
   let secondaryImage = exp(-pow((r - bCrit * 1.35) / max(rs * 0.24, 0.001), 2.0)) * smoothstep(0.8, 2.5, deflection);
 
+  let shadow = 1.0 - smoothstep(rs * 0.95, rs * 1.10, r);
+
   let tiltAngle = 0.55;
   let ct = cos(tiltAngle);
   let st = sin(tiltAngle);
@@ -121,14 +140,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let localTemp = mix(11000.0, 1800.0, radialNorm);
   let observedTemp = localTemp * doppler * gravFactor;
   let flare = 1.0 + flareGain * bass * smoothstep(0.0, 1.0, max(cosPhi, 0.0));
-  let diskEmission = blackbodyRGB(observedTemp) * diskMask * pow(doppler, 3.0) * gravFactor * flare * 1.4;
+  let diskAngle = atan2(diskPlane.y, diskPlane.x);
+  let omega = 2.2 * pow(rs * 1.6 / max(diskRadius, rs * 1.6), 1.5);
+  let streaks = keplerStreaks(diskAngle, radialNorm, omega, u.config.x);
+  let diskEmission = blackbodyRGB(observedTemp) * diskMask * pow(doppler, 3.0) * gravFactor * flare * 1.4
+    * mix(1.0, 0.35 + streaks * 1.1, 0.5);
+
+  // Idea 1 — lensed far side. Light from the disk behind the hole is bent up and over
+  // (and under) the shadow, so the back of the disk shows as a thin arc hugging the
+  // critical impact parameter, strongest perpendicular to the disk plane. It sits behind
+  // the near disk and never inside the shadow.
+  let haloWidth = max(rs * mix(0.25, 0.7, u.zoom_params.y), 0.001);
+  let haloDist = r - bCrit * 0.98;
+  let haloBand = smoothstep(-rs * 0.06, 0.0, haloDist) * exp(-max(haloDist, 0.0) / haloWidth);
+  let perpToDisk = abs(diskY) / max(r, 1e-4);
+  let haloArc = smoothstep(0.2, 0.8, perpToDisk);
+  let circTangent = vec2<f32>(-pos.y, pos.x) / max(r, 1e-4);
+  let haloBeta = sqrt(clamp(0.5 * rs / max(bCrit, rs * 1.5), 0.0, 0.92));
+  let haloGamma = 1.0 / sqrt(max(1.0 - haloBeta * haloBeta, 0.05));
+  let haloDoppler = clamp(1.0 / (haloGamma * max(1.0 - haloBeta * dot(circTangent, approachingDir), 0.1)), 0.4, 2.8);
+  let haloTemp = mix(11000.0, 1800.0, clamp(max(haloDist, 0.0) / (haloWidth * 3.0), 0.0, 1.0)) * haloDoppler * 0.8;
+  let haloEmission = blackbodyRGB(haloTemp) * haloBand * haloArc * pow(haloDoppler, 3.0) * 0.9
+    * (1.0 - diskMask) * (1.0 - shadow) * mix(1.0, 0.35 + keplerStreaks(atan2(pos.y, pos.x), 0.5, 1.4, u.config.x) * 1.1, 0.4);
 
   let ringColor = blackbodyRGB(10500.0) * (einsteinRing * 1.8 + photonRing * 1.2 * (1.0 + bass * 0.4));
   let secondaryColor = blackbodyRGB(6500.0) * secondaryImage * 0.45;
-  let shadow = 1.0 - smoothstep(rs * 0.95, rs * 1.10, r);
 
-  let finalColor = background.rgb * redTint * (1.0 - shadow) + ringColor + secondaryColor + diskEmission;
-  let finalAlpha = clamp(max(background.a, diskMask * 0.55 + einsteinRing * 0.35 + shadow), 0.0, 1.0);
+  let finalColor = background.rgb * redTint * (1.0 - shadow) + ringColor + secondaryColor + diskEmission + haloEmission;
+  let finalAlpha = clamp(max(background.a, diskMask * 0.55 + einsteinRing * 0.35 + haloBand * haloArc * 0.3 + shadow), 0.0, 1.0);
   let outDepth = clamp(backgroundDepth * (1.0 - shadow) + shadow, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));

@@ -58,7 +58,9 @@ export function reloadShaderFromURL(id: string, url: string): Promise<boolean>;
 export function setActiveShader(id: string): void;
 
 // Multi-slot shader API
-export function setSlotShader(slotIndex: number, id: string): void;
+export function setSlotShader(slotIndex: number, id: string): boolean;
+/** Slot indexes whose last setSlotShader the module did not accept. */
+export function getDroppedSlots(): ReadonlySet<number>;
 export function setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void;
 export function updateSlotParams(slotIndex: number, params: SlotZoomParamsUpdate): void;
 export function setSlotMode(slotIndex: number, mode: 0 | 1 | 'chained' | 'parallel'): void;
@@ -126,7 +128,8 @@ export interface WasmRenderer {
   loadShaderFromURL(id: string, url: string): Promise<boolean>;
   reloadShaderFromURL(id: string, url: string): Promise<boolean>;
   setActiveShader(id: string): void;
-  setSlotShader(slotIndex: number, id: string): void;
+  setSlotShader(slotIndex: number, id: string): boolean;
+  getDroppedSlots(): ReadonlySet<number>;
   setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void;
   updateSlotParams(slotIndex: number, params: SlotZoomParamsUpdate): void;
   setSlotMode(slotIndex: number, mode: 0 | 1 | 'chained' | 'parallel'): void;

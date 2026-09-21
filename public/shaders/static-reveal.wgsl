@@ -4,7 +4,10 @@
 //  Features: mouse-driven, audio-reactive, multi-layer-static, temporal,
 //            VCR tracking noise, horizontal hold instability, snow patterns,
 //            signal acquisition phase, chrominance noise
-//  Upgraded: 2026-08-21 (Batch 42 - VCR Tracking)
+//  Upgraded: 2026-09-21 (first 2026-08-21, Batch 42 - VCR Tracking)
+//  Ideas: vertical-hold roll with a blanking bar while a region is only partly locked;
+//         multipath antenna ghost that fades as the signal locks
+//  A packing: display RGB + reveal mask in alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -93,14 +96,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let noiseScale = 30.0 + u.zoom_params.w * 250.0;
 
   let mouse = u.zoom_config.yz;
-  let revealThreshold = u.zoom_config.y;
+  // Was u.zoom_config.y (mouse X), so how much the brush revealed depended on where the cursor
+  // sat horizontally. A fixed lock threshold keeps the reveal the same across the frame.
+  let revealThreshold = 0.3;
   let dist = distance((uv - mouse) * aspectVec, vec2<f32>(0.0));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthDecay = mix(0.7, 1.3, depth);
   
   let reactiveRadius = brushRadius * (1.0 + bass * 0.3 + mids * 0.1);
-  let prevMask = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).a; // Using alpha for mask
+  let prevMask = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).a; // Using alpha for mask
   let brush = smoothstep(reactiveRadius, reactiveRadius * 0.5, dist);
   let mask = clamp(max(prevMask - decaySpeed * depthDecay, brush), 0.0, 1.0);
 
@@ -141,14 +146,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Tinted snow based on signal loss
   let tintedGrain = mix(grainColor, grainColor * vec3<f32>(0.5, 0.6, 0.9), unrevealedVig) + acqFlash * 0.2;
 
-  let videoColor = textureSampleLevel(readTexture, u_sampler, dUV, 0.0).rgb;
   let revealBias = smoothstep(revealThreshold, revealThreshold + 0.2, mask);
-  
+  // Idea 1 — vertical-hold roll. A set that has horizontal lock but not vertical lock rolls the
+  // picture, with the black vertical-blanking bar passing through it. Only regions the brush has
+  // partly locked roll; fully brushed picture holds still.
+  let partialLock = smoothstep(0.02, 0.2, mask) * (1.0 - revealBias);
+  let rollY = fract(dUV.y + fract(time * 0.23) * partialLock);
+  let vUV = vec2<f32>(dUV.x, rollY);
+  let blanking = smoothstep(0.0, 0.035, rollY) * smoothstep(1.0, 0.965, rollY);
+  let videoColor = textureSampleLevel(readTexture, u_sampler, vUV, 0.0).rgb;
   // Chrominance shift in video color based on tracking
   let shiftAmount = trackingBand * (1.0 - revealBias) * 0.02;
-  let videoColorShiftR = textureSampleLevel(readTexture, u_sampler, dUV + vec2<f32>(shiftAmount, 0.0), 0.0).r;
-  let videoColorShiftB = textureSampleLevel(readTexture, u_sampler, dUV - vec2<f32>(shiftAmount, 0.0), 0.0).b;
-  let finalVideoColor = vec3<f32>(videoColorShiftR, videoColor.g, videoColorShiftB);
+  let videoColorShiftR = textureSampleLevel(readTexture, u_sampler, vUV + vec2<f32>(shiftAmount, 0.0), 0.0).r;
+  let videoColorShiftB = textureSampleLevel(readTexture, u_sampler, vUV - vec2<f32>(shiftAmount, 0.0), 0.0).b;
+  var finalVideoColor = vec3<f32>(videoColorShiftR, videoColor.g, videoColorShiftB);
+  // Idea 2 — multipath ghost. A reflected copy of the signal arrives late and prints as a faint
+  // echo displaced to the right; strong while the lock is weak, a trace once fully cleared.
+  let ghost = textureSampleLevel(readTexture, u_sampler, clamp(vUV - vec2<f32>(0.028, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let ghostAmt = 0.12 + 0.88 * (1.0 - revealBias) * smoothstep(0.02, 0.15, mask);
+  finalVideoColor = mix(finalVideoColor, finalVideoColor * 0.8 + ghost * 0.35, ghostAmt);
+  finalVideoColor *= 1.0 - (1.0 - blanking) * partialLock * 0.9;
 
   var finalColor = mix(tintedGrain, finalVideoColor, revealBias);
 

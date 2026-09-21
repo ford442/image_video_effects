@@ -187,3 +187,27 @@ describe('Thumbnail Coverage Check', () => {
     });
   });
 });
+
+describe('Deferral honesty gate', () => {
+  const { validateDeferrals } = require('./lib/thumbnailDeferrals');
+  const ok = { id: 'a', reason: 'gpu-capture-pending', deferred_at: '2026-09-01', expires: '2026-09-30' };
+  const opts = { now: '2026-09-21', ratchet: { maxGpuCapturePending: 5 } };
+
+  it('accepts a valid 30-day pending deferral', () => {
+    assert.deepStrictEqual(validateDeferrals([ok], opts), []);
+  });
+  it('rejects expired, >30-day, legacy-reason and permanent-reason entries', () => {
+    assert.ok(validateDeferrals([{ ...ok, expires: '2026-09-20' }], opts).some(e => /expired/.test(e)));
+    assert.ok(validateDeferrals([{ ...ok, expires: '2026-12-31' }], opts).some(e => /30 days/.test(e)));
+    assert.ok(validateDeferrals([{ ...ok, reason: 'gpu-capture pending' }], opts).some(e => /not in/.test(e)));
+    assert.ok(validateDeferrals([{ ...ok, reason: 'audio-only' }], opts).some(e => /allowlist/.test(e)));
+  });
+  it('requires a failure_note after more than one renewal', () => {
+    assert.ok(validateDeferrals([{ ...ok, renewals: 2 }], opts).some(e => /failure_note/.test(e)));
+    assert.deepStrictEqual(validateDeferrals([{ ...ok, renewals: 2, failure_note: 'magenta on run 3' }], opts), []);
+  });
+  it('fails when pending count exceeds the ratchet', () => {
+    const many = Array.from({ length: 6 }, (_, i) => ({ ...ok, id: `x${i}` }));
+    assert.ok(validateDeferrals(many, opts).some(e => /ratchet/.test(e)));
+  });
+});

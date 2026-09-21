@@ -154,9 +154,31 @@ export function setActiveShader(id: string): void {
   }
 }
 
-export function setSlotShader(slotIndex: number, shaderId: string): void {
-  if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall('setSlotShader', 'number', ['number', 'string'], [slotIndex, shaderId]);
+/**
+ * Assign a shader to a slot, then read the slot back. The C++ side drops an
+ * out-of-range index or a shader with no pipeline; an artifact built before
+ * slot_limits.json only has 3 slots. Any drop is warned and recorded in
+ * state.droppedSlots so share links never lose a layer silently.
+ */
+export function setSlotShader(slotIndex: number, shaderId: string): boolean {
+  if (!state.initialized || !wasmRef.module) return false;
+  wasmRef.module.ccall('setSlotShader', null, ['number', 'string'], [slotIndex, shaderId]);
+  const accepted = !shaderId || getSlotShaderId(slotIndex) === shaderId;
+  if (accepted) {
+    state.droppedSlots.delete(slotIndex);
+  } else {
+    state.droppedSlots.add(slotIndex);
+    console.warn(
+      `[WASM] setSlotShader(${slotIndex}, "${shaderId}") dropped by the module ` +
+        '(no valid pipeline, or the artifact has fewer slots than slot_limits.json)',
+    );
+  }
+  return accepted;
+}
+
+/** Slot indexes whose last setSlotShader the module did not accept. */
+export function getDroppedSlots(): ReadonlySet<number> {
+  return state.droppedSlots;
 }
 
 export function setSlotMode(slotIndex: number, mode: 0 | 1 | 'chained' | 'parallel'): void {

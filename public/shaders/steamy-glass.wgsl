@@ -1,6 +1,9 @@
 // Steamy Glass — Codex (g) condensation, droplets, and interactive clearing.
 // A/C packing: steam density, droplet mass, runoff, wipe memory.
 // B and extraBuffer are intentionally unused; C reads are exact and bounded.
+// Upgraded: 2026-09-21
+// Ideas: runoff rivulets (heavy drops release at sparse nucleation sites, run down, sweep a
+//        clear track; the runoff channel was never displayed); beaded wipe edge
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -39,6 +42,10 @@ fn sourceAt(uv: vec2<f32>) -> vec4<f32> {
     clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 }
 
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
@@ -66,7 +73,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   steam += (fogTarget - steam) * returnRate * (1.0 + audio.y * 0.35);
   var droplets = mix(state.g, average.g, 0.025);
   droplets += max(steam - 0.46, 0.0) * (0.004 + audio.z * 0.003);
-  var runoff = mix(state.b, top.b, 0.08) + droplets * 0.0008;
+  // Idea 1 — runoff rivulets. Drops grow at sparse, fixed nucleation sites until heavy, then
+  // let go: the whole droplet mass becomes a bead in `runoff` that runs down one texel per
+  // frame (it reads the texel above), picks up the droplets on its path and wipes a clear
+  // track through the steam. Tuned on a CPU port: onset ~10 s at default fog, a few % of
+  // the pane tracked at max fog, no drips in light fog.
+  let site = hash21(vec2<f32>(pixel) + vec2<f32>(0.0, 3.0)) > 0.9965;
+  let release = select(0.0, droplets, site && droplets > 0.28);
+  var runoff = max(top.b * 0.975, state.b * 0.90) + release;
+  let pickup = droplets * min(runoff, 1.0) * 0.25;
+  droplets = max(droplets - pickup - release, 0.0);
+  runoff += pickup * 0.5;
+  let track = clamp(runoff * 2.0, 0.0, 0.85);
+  steam *= 1.0 - track;
+  droplets *= 1.0 - track * 0.8;
   var wipeMemory = state.a * 0.982;
 
   let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
@@ -78,6 +98,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   steam *= 1.0 - wipe * 0.82;
   droplets *= 1.0 - wipe * 0.7;
   wipeMemory = max(wipeMemory, wipe);
+  // Idea 2 — beaded wipe edge. A wipe pushes condensate aside, so droplets pile up in beads
+  // along the rim of the wiped patch (and can later drip from it).
+  let wipeRim = wipe * (1.0 - wipe) * 4.0;
+  let bead = step(0.55, hash21(floor(vec2<f32>(pixel) / 3.0)));
+  droplets += wipeRim * 0.03 * (0.4 + bead);
 
   var clickClear = 0.0;
   let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
@@ -99,7 +124,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(dataTextureA, pixel,
     vec4<f32>(steam, droplets, runoff, wipeMemory));
 
-  let gradient = vec2<f32>(right.g - left.g, bottom.g - top.g);
+  let gradient = vec2<f32>(right.g - left.g, bottom.g - top.g)
+    + vec2<f32>(right.b - left.b, bottom.b - top.b) * 0.5;
   let refractedUV = clamp(uv + gradient * (0.018 + droplets * 0.024),
     vec2<f32>(0.0), vec2<f32>(1.0));
   var blurred = vec4<f32>(0.0);
@@ -123,6 +149,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let glint = pow(clamp(droplets, 0.0, 1.0), 1.6) *
     (0.35 + audio.z * 0.5);
   rgb += vec3<f32>(0.68, 0.9, 1.0) * glint * 0.25;
+  rgb += vec3<f32>(0.8, 0.95, 1.0) * smoothstep(0.05, 0.3, runoff) * 0.3;
   let alpha = clamp(clearSource.a * transmittance +
     (1.0 - transmittance) * 0.82 + droplets * 0.08, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(aces(rgb), alpha));
