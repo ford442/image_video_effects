@@ -1,6 +1,41 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-20 (local main union: Chrono-Bloom #1291 + naga-wasm; no push)
+**Last updated:** 2026-09-21 (retro-glitch ten second-pass upgrades; uncommitted)
+
+## 2026-09-21 — Retro-glitch ten (10 shaders)
+
+- IDs: crt-phosphor-decay, crt-magnet, vhs-tracking, signal-noise, byte-mosh, xerox-degrade,
+  ascii-flow, pixelation-drift, spectrum-bleed, vinyl-scratch.
+- **Second pass, not a first one.** All ten already had the floor; seven carried the
+  `Composer batch cyber/digital/glitch` overlay stamp whose header is §4.3 verbatim. Per §9 that
+  counts as not upgraded, so the entire batch was creative work: **0 springs, 0 ripple loops,
+  0 IQ palettes added.**
+- Per shader, the ideas actually added (3 each, 30 distinct, no idea shared between files):
+  - crt-phosphor-decay: two-rate phosphor knee; triad-aligned grain bleed; interlaced field parity.
+  - crt-magnet: tangential convergence error; warped shadow-mask moiré; purity stain erased by degauss.
+  - vhs-tracking: head-switch skew/flagging; dropout-compensator line repeat; line-alternate chroma phase.
+  - signal-noise: luma-shouldered noise; real quantisation staircase; dot crawl on vertical luma edges.
+  - byte-mosh: motion-vector inheritance; keyframe recovery flash; row desync trail.
+  - xerox-degrade: toner starvation bands; Mach-band edge halo; compounding generation loss via C.
+  - ascii-flow: ink-coverage glyph ramp; coverage-weighted glyph blend; typed-cell wake.
+  - pixelation-drift: block area average; block colour quantisation; drift-lit tile bevel.
+  - spectrum-bleed: wavelength-ordered bleed distance; chromatographic advance front; dry-edge rim.
+  - vinyl-scratch: eccentric spindle wow; radius-dependent groove pitch + label; stylus scratch marks.
+- **Lesson worth keeping:** on a second-pass batch, the best ideas come from finding the mechanism
+  the file already declares but never uses. Three landed that way — crt-magnet's degauss ring,
+  vinyl-scratch's clicks, and xerox-degrade's C history (a flat 12% blend doing nothing).
+- **Lesson two:** `crt-phosphor-decay`'s triad mask was dead code — `fract(uv.x * resX)` is
+  identically 0.5 for every texel, so the "subpixel mask" was a flat tint. Worth grepping the
+  catalog for that pattern; it is an easy one to write and impossible to see without a GPU.
+- Floor: bindings / 16×16 / exact C / A packing as documented (2 files keep raw sim state, not
+  promoted) / saved params byte-exact. Only `shader_definitions/` change is one line:
+  `upgraded-rgba` added to spectrum-bleed.
+- Gates: precommit 10/10; naga --all 1380 valid, 40 invalid (40 known, **0 new**); extraBuffer PASS;
+  dead-sliders PASS; catalog-counts 1370; wgsl-include green; SKIP_WASM_BUILD=1 build OK.
+  Jest 712/6 — the 6 failures reproduce identically on a stashed clean tree (WASM-bridge ESM
+  resolution, unrelated).
+- **Real-GPU visual QA: external, still outstanding.** Notes list five specific things to look at.
+- Batch folder: `agents/swarm-outputs/spark-2026-09-21-retro-glitch-ten/`. Uncommitted.
 
 ## 2026-09-20 — Merge to local `main` (no push)
 
