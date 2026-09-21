@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  magnetic-rgb
+//  Category: interactive-mouse
+//  Features: mouse-driven, chromatic-aberration, magnetic, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: iron-filing field-line filaments; bass-driven field surge;
+//         semantic alpha from channel divergence
+//  A packing: display RGBA passthrough (no C history)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -46,8 +55,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hasMouse = u.zoom_config.y >= 0.0;
     var center = select(vec2<f32>(0.5, 0.5), mouse, hasMouse);
 
+    // Idea 2: bass-driven field surge — the whole dipole pumps with the beat.
+    let bass = plasmaBuffer[0].x;
+
     // Params
-    let strength = u.zoom_params.x; // Field Strength
+    let strength = u.zoom_params.x * (1.0 + bass * 0.4); // Field Strength
     let radius = u.zoom_params.y;   // Effect Radius
     let swirl = u.zoom_params.z;    // Rotation/Swirl amount
     let chaos = u.zoom_params.w;    // Random jitter
@@ -114,7 +126,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var outColor = vec3<f32>(r, g, b);
 
-    // ═══ UNIQUE VISUAL IDEA: iron-filing field-line visualization ═══
+    // ═══ Idea 1: iron-filing field-line visualization ═══
     // The local magnetic field is the blend of the radial (attraction) and the
     // tangential (swirl) components. Iron filings align ALONG that field, so we
     // sample noise compressed perpendicular to the field direction — producing the
@@ -133,7 +145,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let filingColor = vec3<f32>(0.55, 0.6, 0.7); // cold iron sheen
     outColor = outColor + filingColor * filing * filingMask * 0.7;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, 1.0));
+    // Idea 3: semantic alpha from channel divergence — alpha now encodes how
+    // far the R/G/B sample taps have actually separated (the magnet's local
+    // strength at this pixel), instead of a flat opaque 1.0.
+    let divergence = (length(realOffsetR - realOffsetG) + length(realOffsetG - realOffsetB) + length(realOffsetR - realOffsetB)) / 3.0;
+    let alpha = clamp(divergence * 12.0 + filingMask * 0.3, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(outColor, alpha));
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

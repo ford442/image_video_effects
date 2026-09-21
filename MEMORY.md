@@ -2846,3 +2846,34 @@
 - Gates: precommit 8/8, extraBuffer, dead sliders (6 scanned + tree/protocell by hand), catalogs 1383 unique, build; Jest 5 suites/6 tests fail identically on clean main.
 - Follow-up: 20 more `pow(1.0 - abs(` sites library-wide may have the same negative-base NaN.
 - Notes: agents/swarm-outputs/claude-2026-09-21-generative-eight/. Not committed. Real-GPU QA external (protocell + hyperbolic-tree first — biggest visual change).
+
+## 2026-09-21 — interactive-mouse eight (8 shaders)
+
+- IDs: mouse-magnetic-pixel-sand, magnetic-rgb, mouse-julia-morph, cross-stitch, foil-impression,
+  interactive-voronoi-web, mouse-polarized-light-field, poly-art.
+- Per shader, the ideas actually added:
+  - mouse-magnetic-pixel-sand: field-line chaining (grains link into short chains); bass field pulse;
+    settling residue via new C/A feedback (raw sim, first reader/writer of C in this file).
+  - magnetic-rgb: named the pre-existing iron-filing field-line filaments; bass field surge; semantic
+    alpha from R/G/B channel-UV divergence (was hardcoded 1.0).
+  - mouse-julia-morph: orbit-trap filament glow (new trap-tracking iteration on the base view only);
+    bass-driven zoom breathing.
+  - cross-stitch: half-stitch/full-stitch luma shading (real embroidery technique); satin thread sheen;
+    subtle bass weave-tension pulse.
+  - foil-impression: anisotropic brushed-metal streaks follow the image-relief tangent under press;
+    crinkle micro-fold shimmer gated at the press boundary.
+  - interactive-voronoi-web: named the pre-existing living-neural-web (racing pulses, firing synapses);
+    bass-synchronized firing burst layered on top.
+  - mouse-polarized-light-field: chromatic fringe dispersion (per-channel fringe density, true rainbow
+    edges, not just hue); treble-driven fringe shimmer (file had zero audio use before).
+  - poly-art: finished the facet edges the file had abandoned as dead code (2nd-closest-point border
+    distance); per-facet flat-shading with a bass pulse. Bug fix: file had **no bounds guard** at all.
+- Floor: all 8 now write dataTextureA (none did before) — 7 display-RGBA passthrough, one (magnetic
+  pixel sand) genuine raw-sim feedback with a documented C read. Params byte-exact; JSON features only
+  +audio-reactive/+upgraded-rgba where the WGSL now actually does that.
+- Gates: naga-wasm 8/8, precommit gate 8/8 (bindgroup+workgroup; no CLI naga binary in this VM),
+  extraBuffer 0 new violations, dead-sliders 0 new, catalogs regenerated clean (1384 defs, 1384 unique
+  IDs), catalog-drift 105 (unchanged baseline). Jest/build **not run** — this VM has no node_modules
+  installed at all, so the JS toolchain wasn't available; noted rather than faked.
+- Notes: agents/swarm-outputs/claude-2026-09-21-mouse-interactive-eight/. Real-GPU QA external
+  (poly-art's finished edges + mouse-magnetic-pixel-sand's residue trail first — biggest visual change).

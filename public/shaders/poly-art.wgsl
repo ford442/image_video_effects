@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  poly-art
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-21
+//  Ideas: finished facet edges (perpendicular-bisector border distance);
+//         per-facet flat-shading; bug fix: added the missing bounds guard
+//  A packing: display RGBA passthrough (no history)
+// ═══════════════════════════════════════════════════════════════════
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -31,8 +40,14 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  // Bug fix: this shader had no bounds guard at all.
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+    return;
+  }
   var uv = vec2<f32>(global_id.xy) / resolution;
   var mousePos = u.zoom_config.yz;
+
+  let bass = plasmaBuffer[0].x;
 
   let cellSize = u.zoom_params.x * 50.0 + 10.0; // Cells across
   let edgeWidth = u.zoom_params.y * 0.1;
@@ -113,43 +128,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var color = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
-  // Edges
-  if (edgeWidth > 0.0) {
-      // Very simple edge check: distance to cell center vs neighbor center?
-      // Or just use the m_dist?
-      // Voronoi edges are where m_dist is equal for two neighbors.
-      // This requires 2nd closest point search.
-      // Let's skip expensive edge calculation and just use `m_dist` for a radial gradient or simple border.
-      // Or do a cheap 2nd pass.
+  // Idea 2: per-facet flat-shading — a hashed pseudo-normal per cell, lit
+  // from a fixed direction, gives each facet its own fixed brightness the
+  // way real low-poly art is flat-shaded per triangle instead of textured.
+  let cellHash = hash22(m_id);
+  let facetNormal = normalize(vec3<f32>((cellHash - vec2<f32>(0.5)) * 0.7, 1.0));
+  let lightDir = normalize(vec3<f32>(0.35, 0.55, 0.75));
+  let facetShade = clamp(dot(facetNormal, lightDir), 0.0, 1.0);
+  // Bass adds a subtle shared pulse to the facet lighting, like a beat-lit gem.
+  color = vec4<f32>(color.rgb * mix(0.6, 1.2, facetShade) * (1.0 + bass * 0.1 * facetShade), color.a);
 
+  // Idea 1: finished facet edges — the file had abandoned a 2nd-closest-point
+  // search as dead code. Finish it: the difference between the 2nd-closest
+  // and closest distances is exactly the Voronoi border distance, so
+  // `edgeWidth` now actually draws crisp polygon borders.
+  if (edgeWidth > 0.0) {
       var m_dist2 = 1.0;
       for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
            var neighbor = vec2<f32>(f32(x), f32(y));
            var point = hash22(i_st + neighbor);
            var pos = neighbor + point * randomness;
-
-           if (length(i_st + neighbor - m_id) > 0.1) { // distinct from closest
-               let distVec = (m_point + pos) * 0.5 - f_st;
-               let r = length(distVec); // Not quite right for Voronoi edge distance
-               // Correct logic for distance to edge:
-               // dot( (p2-p1), (uv - (p1+p2)/2) )
-               let p1 = m_point;
-               let p2 = pos;
-               var center = (p1 + p2) * 0.5;
-               let diff = p2 - p1;
-               let dEdge = dot( f_st - center, normalize(diff) );
-               // This is signed distance to the perpendicular bisector.
-               // We want min abs distance?
-               // Actually for Voronoi border, it's simpler to check if d is close to m_dist.
+           var d2 = length(pos - f_st);
+           if (d2 > m_dist + 0.0001) {
+               m_dist2 = min(m_dist2, d2);
            }
         }
       }
-      // Too complex for now. Let's just highlight center.
-      // color += smoothstep(0.1, 0.0, m_dist) * edgeWidth;
+      let edgeVal = m_dist2 - m_dist;
+      let edgeMask = smoothstep(edgeWidth, 0.0, edgeVal);
+      color = vec4<f32>(mix(color.rgb, color.rgb * 0.15, edgeMask), color.a);
   }
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
 
   // Pass depth
   var d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
