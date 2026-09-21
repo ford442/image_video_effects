@@ -581,11 +581,6 @@
       "added": "2026-09-17T15:09:35.304748"
     },
     {
-      "filename": "2026-09-20_bismuth-hyper-crystals.md",
-      "title": "Bismuth Hyper-Crystals",
-      "added": "2026-09-20T15:12:52.661867"
-      },
-      {
       "filename": "2026-09-19_hyper-geometric-void-glass-seraph.md",
       "title": "Hyper-Geometric Void-Glass Seraph",
       "added": "2026-09-20T06:36:12.182157"
@@ -1115,6 +1110,13 @@
       "added": "2026-09-19T07:57:21.408102+00:00",
       "status": "completed",
       "completed_at": "2026-09-20T08:07:40.882866+00:00"
+    },
+    {
+      "filename": "2026-09-20_bismuth-hyper-crystals.md",
+      "title": "Bismuth Hyper-Crystals",
+      "added": "2026-09-20T15:12:52.661867",
+      "status": "completed",
+      "completed_at": "2026-09-21T08:01:49.059717+00:00"
     }
   ],
   "rejected": [],
