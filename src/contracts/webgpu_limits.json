@@ -1,20 +1,24 @@
 {
   "version": 1,
-  "description": "Shared WebGPU minimum compute limits for Pixelocity's 14-entry bind group (bindings 0–13). Keep in sync with src/renderer/webgpuDevicePolicy.ts and wasm_renderer/device.cpp CheckLimit + requiredLimits.",
+  "description": "Shared WebGPU minimum compute limits for Pixelocity's 14-entry bind group (bindings 0–13) plus the opt-in group-1 sim ring (bind_group1.json). Keep in sync with src/renderer/webgpuDevicePolicy.ts and wasm_renderer/device.cpp CheckLimit + requiredLimits.",
   "minimumComputeLimits": {
     "maxTextureDimension2D": 8192,
+    "maxBindGroups": 2,
     "maxBindingsPerBindGroup": 14,
     "maxSampledTexturesPerShaderStage": 3,
     "maxSamplersPerShaderStage": 3,
     "maxStorageTexturesPerShaderStage": 4,
-    "maxStorageBuffersPerShaderStage": 2,
-    "maxUniformBuffersPerShaderStage": 1,
+    "maxStorageBuffersPerShaderStage": 4,
+    "maxUniformBuffersPerShaderStage": 2,
     "maxUniformBufferBindingSize": 848,
     "maxComputeWorkgroupSizeX": 16,
     "maxComputeWorkgroupSizeY": 16,
     "maxComputeInvocationsPerWorkgroup": 256
   },
   "notes": {
+    "maxBindGroups": "Group 0 (14-entry catalog contract) + opt-in group 1 sim ring (src/contracts/bind_group1.json). WebGPU base limit is 4.",
+    "maxStorageBuffersPerShaderStage": "2 in group 0 (extraBuffer, plasmaBuffer) + 2 in group 1 (simState, simIndex). Was 2 before the sim ring. WebGPU base limit is 8.",
+    "maxUniformBuffersPerShaderStage": "1 in group 0 (u) + 1 in group 1 (simParams). WebGPU base limit is 12.",
     "maxTextureDimension2D": "Comfortable floor (WebGPU base limit is 8192; minimum viable 4096). Never derive this from maxBufferSize, pixel count, width*height, or a mis-ordered init arg / heap pointer."
   },
   "cppReferences": {
@@ -22,6 +26,7 @@
     "checkLimitComment": "Adapter limits (validating against 14-entry compute contract)",
     "requiredLimitsFields": [
       "maxTextureDimension2D",
+      "maxBindGroups",
       "maxBindingsPerBindGroup",
       "maxSampledTexturesPerShaderStage",
       "maxSamplersPerShaderStage",

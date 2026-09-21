@@ -78,6 +78,7 @@ export class WebGPUFrameRenderer {
     }
 
     this.writeUniforms(state);
+    if (slotPlan.anyUsesSimRing) state.simRing?.beginFrame(state.device.queue);
 
     const encoder = state.device.createCommandEncoder({ label: 'frame' });
     this.presenter.encodeInputCopy(state, encoder);

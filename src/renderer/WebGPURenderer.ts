@@ -16,6 +16,7 @@ import {
 } from './webgpu/device';
 import { WebGPUResourcePool } from './webgpu/resources';
 import { WebGPUPipelineModule, createComputeBindGroup } from './webgpu/pipeline';
+import { SimRingPool } from './webgpu/simRing';
 import {
   setupTimestampQueries,
   buildGPUTimings,
@@ -68,6 +69,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   readonly resources = new WebGPUResourcePool();
   readonly pipeline = new WebGPUPipelineModule();
+  /** Group-1 sim ring; allocated on the first @group(1) shader (bind_group1.json). */
+  readonly simRing = new SimRingPool();
   private readonly frameRenderer = new WebGPUFrameRenderer();
   private readonly audioDepth = createAudioDepthState();
   private readonly mediaState = createMediaInputState();
@@ -146,6 +149,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       );
       if (!outcome.ok) return false;
 
+      // A new device invalidates any ring buffers from a previous (lost) one.
+      this.simRing.destroy();
       this.device = outcome.device;
       this.context = outcome.context;
       this.canvasFormat = outcome.canvasFormat;
@@ -467,7 +472,24 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   async loadShader(id: string, url: string): Promise<boolean> {
     return this.pipeline.shaderManager.loadShader(
       this.device, this.pipeline.pipelineLayout, id, url,
+      () => this.resolveSimRingPipelineLayout(),
     );
+  }
+
+  /** Two-group layout for a @group(1) shader; allocates the ring on first use. */
+  private async resolveSimRingPipelineLayout(): Promise<GPUPipelineLayout | null> {
+    const device = this.device;
+    if (!device) return null;
+    const group1 = this.pipeline.getSimRingBindGroupLayout(device);
+    const ok = await this.simRing.ensure(device, group1);
+    if (!ok || this.device !== device) return null;
+    return this.pipeline.getSimRingPipelineLayout(device);
+  }
+
+  /** Sim-ring capacity for diagnostics (null until a group-1 shader loads). */
+  getSimRingStatus(): { particles: number; index: number; truncated: boolean } | null {
+    const b = this.simRing.getBindings();
+    return b ? { particles: b.stateCount, index: b.indexCount, truncated: b.truncated } : null;
   }
 
   setActiveShader(id: string): void {
@@ -753,6 +775,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.pipeline.clear();
     this.resources.destroyWorkingTextures();
     this.resources.destroyBuffers();
+    this.simRing.destroy();
     try {
       this.context?.unconfigure();
     } catch {

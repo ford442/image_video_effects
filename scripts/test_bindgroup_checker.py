@@ -9,6 +9,7 @@ sys.path.insert(0, str(_SCRIPTS))
 
 from bindgroup_checker import (  # noqa: E402
     check_reserved_extrabuffer_writes,
+    is_sim_ring_particle_kernel,
     parse_shader,
 )
 
@@ -83,6 +84,29 @@ def test_reserved_extrabuffer_check_braceless_gate():
     assert check_reserved_extrabuffer_writes(src) == []
 
 
+_RING_DECL = "@group(1) @binding(0) var<storage, read_write> simState: array<vec4<f32>>;\n"
+
+
+def test_sim_ring_particle_kernel_allows_1d_workgroup():
+    assert is_sim_ring_particle_kernel(_RING_DECL, [[64, 1, 1]])
+
+
+def test_1d_workgroup_without_group1_is_not_exempt():
+    assert not is_sim_ring_particle_kernel("// " + _RING_DECL, [[64, 1, 1]])
+    assert not is_sim_ring_particle_kernel("@group(0) @binding(10) var<storage> e: array<f32>;", [[64, 1, 1]])
+
+
+def test_sim_ring_exception_is_limited_to_contract_sizes():
+    assert not is_sim_ring_particle_kernel(_RING_DECL, [[32, 1, 1]])
+    assert not is_sim_ring_particle_kernel(_RING_DECL, [[64, 1, 1], [4, 4, 1]])
+
+
+def test_dla_walkers_flagship_is_compatible():
+    result = parse_shader(str(_SCRIPTS.parent / "public" / "shaders" / "dla-walkers.wgsl"))
+    assert result["status"] == "compatible", result["errors"]
+    assert any("sim-ring particle kernel" in w for w in result["warnings"])
+
+
 if __name__ == "__main__":
     test_core_bindings_only_compatible()
     test_valid_binding_13_compatible()
@@ -95,4 +119,8 @@ if __name__ == "__main__":
     test_reserved_extrabuffer_check_ignores_high_indices()
     test_reserved_extrabuffer_check_ignores_equality()
     test_reserved_extrabuffer_check_braceless_gate()
+    test_sim_ring_particle_kernel_allows_1d_workgroup()
+    test_1d_workgroup_without_group1_is_not_exempt()
+    test_sim_ring_exception_is_limited_to_contract_sizes()
+    test_dla_walkers_flagship_is_compatible()
     print("test_bindgroup_checker: all passed")

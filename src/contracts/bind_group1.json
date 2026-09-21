@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "issue": "sim ring — second bind group for indexable simulation state (Physics Lab set 2)",
+  "description": "Opt-in @group(1) simulation ring. Group 0 stays the unchanged 14-entry catalog contract (src/contracts/webgpu_limits.json). A shader that declares @group(1) is compiled against a two-group pipeline layout [group0, group1]; every other shader keeps today's single-layout pipeline and never pays for group 1. The ring buffers are allocated lazily, the first time a group-1 shader compiles. Enforced by `npm run verify:device-policy` (scripts/verify-device-policy-sync.js verifyBindGroup1).",
+  "group": 1,
+  "optInJsonField": "simRing",
+  "bindings": [
+    {
+      "binding": 0,
+      "name": "simState",
+      "wgsl": "var<storage, read_write> simState: array<vec4<f32>>",
+      "bufferType": "storage",
+      "elementType": "vec4<f32>",
+      "elementBytes": 16,
+      "defaultCapacity": 65536,
+      "role": "Live particles / photons / walkers. Shaders read and write it freely; GraphRunner nodes declare it in bufferWrites."
+    },
+    {
+      "binding": 1,
+      "name": "simIndex",
+      "wgsl": "var<storage, read> simIndex: array<u32>",
+      "bufferType": "read-only-storage",
+      "elementType": "u32",
+      "elementBytes": 4,
+      "defaultCapacity": 262144,
+      "role": "Read-only snapshot: neighbour indices, spatial hash, or the previous iteration of simState. Shaders cannot write it; the host fills it with a copyBufferToBuffer(simState -> simIndex) barrier, the buffer mirror of the dataA -> dataC texture handoff."
+    },
+    {
+      "binding": 2,
+      "name": "simParams",
+      "wgsl": "var<uniform> simParams: SimParams",
+      "bufferType": "uniform",
+      "struct": "SimParams",
+      "fields": ["stateCount: u32", "indexCount: u32", "frame: u32", "truncated: u32"],
+      "sizeBytes": 16,
+      "role": "stateCount = live simState elements (after the OOM ladder), indexCount = simIndex elements, frame = frames since the ring was allocated, truncated = 1 when the ladder shrank the ring."
+    }
+  ],
+  "bufferRoles": {
+    "simState": { "shaderAccess": "read_write", "graphReads": true, "graphWrites": true },
+    "simIndex": { "shaderAccess": "read", "graphReads": true, "graphWrites": false }
+  },
+  "barrier": {
+    "copy": "simState -> simIndex",
+    "bytes": "min(simState.size, simIndex.size) — both default to 1 MiB, so the whole ring is published",
+    "when": "Before a node that lists simIndex in bufferReads, if simState was written since the last publish (including between repeats of the same node); and once after the graph if simState was written and any node reads simIndex, so the next frame starts from a published snapshot."
+  },
+  "dispatch": {
+    "nodeField": "dispatch",
+    "values": {
+      "pixels": "default — ceil(scaledW / wg.x) × ceil(scaledH / wg.y), same as every other graph node",
+      "simState": "ceil(stateCount / wg.x) × 1 — one invocation per live particle; use @workgroup_size(64, 1, 1)"
+    }
+  },
+  "requiredLimits": {
+    "maxStorageBuffersPerShaderStage": 4,
+    "maxUniformBuffersPerShaderStage": 2,
+    "maxBindGroups": 2
+  },
+  "limitsRationale": {
+    "maxStorageBuffersPerShaderStage": "group 0 uses 2 (extraBuffer, plasmaBuffer) + group 1 uses 2 (simState, simIndex). WebGPU base limit is 8.",
+    "maxUniformBuffersPerShaderStage": "group 0 uses 1 (u) + group 1 uses 1 (simParams). WebGPU base limit is 12.",
+    "maxBindGroups": "group 0 + group 1. WebGPU base limit is 4."
+  },
+  "oomLadder": {
+    "stateRungs": [65536, 32768, 16384, 4096],
+    "indexElementsPerStateElement": 4,
+    "sessionStorageKey": "px_simring_oom_cap",
+    "rule": "Allocate simState + simIndex together under an out-of-memory error scope. On OOM destroy both, latch the next rung in sessionStorage and never retry a larger rung in this tab (same discipline as px_history_oom_cap).",
+    "defaultVramBytes": 2097168,
+    "pascalNote": "Default cap is 65536 × 16 B simState (1 MiB) + 262144 × 4 B simIndex (1 MiB) + 16 B params ≈ 2 MiB — under 2% of the 2048²×8 history ring that OOMs Pascal, so the ring is not the rung that tips a GTX 10-series over."
+  },
+  "tsFiles": {
+    "contractLoader": "src/renderer/webgpu/simRing.ts",
+    "layout": "src/renderer/webgpu/simRing.ts",
+    "pipelineLayout": "src/renderer/webgpu/pipeline.ts",
+    "graphRunner": "src/renderer/GraphRunner.ts"
+  },
+  "wasm": {
+    "status": "unbound",
+    "rule": "C++ is feature-frozen until #1080. pipeline.cpp keeps bindGroupLayoutCount = 1 (group 1 unbound -> nullptr layout[1]). The WASM bridge refuses group-1 shaders before they reach LoadShader, so the module never sees an invalid pipeline and never aborts.",
+    "cppFile": "wasm_renderer/pipeline.cpp",
+    "cppMarker": "bind_group1.json: group 1 unbound",
+    "bridgeFile": "src/wasm/bridge/shader.ts",
+    "bridgeGuard": "declaresSimRing"
+  }
+}

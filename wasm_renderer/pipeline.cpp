@@ -134,6 +134,11 @@ bool WebGPURenderer::CreateBindGroupLayout() {
     WGPUPipelineLayoutDescriptor pipelineLayoutDesc = {};
     pipelineLayoutDesc.nextInChain = nullptr;
     pipelineLayoutDesc.label = MakeStringView("Compute Pipeline Layout");
+    // bind_group1.json: group 1 unbound → nullptr layout[1] until the #1080-gated
+    // port. The TS renderer adds an opt-in group-1 sim ring (simState / simIndex /
+    // simParams); here only group 0 exists, and the WASM bridge (shader.ts
+    // declaresSimRing) refuses @group(1) shaders before LoadShader so they never
+    // become an invalid pipeline. Grow this to 2 together with a group-1 BGL.
     pipelineLayoutDesc.bindGroupLayoutCount = 1;
     pipelineLayoutDesc.bindGroupLayouts = &rawLayout;
 

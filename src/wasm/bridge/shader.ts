@@ -8,6 +8,28 @@ export interface SlotState {
   mode: 'chained' | 'parallel';
 }
 
+/**
+ * bind_group1.json: C++ is feature-frozen until #1080 and builds a single-group
+ * pipeline layout (group 1 unbound). A shader that declares @group(1) would
+ * compile to an invalid pipeline there, so it is refused here, before it ever
+ * reaches the module. Mirror of declaresSimRing in src/renderer/webgpu/simRing.ts
+ * (the bridge cannot import renderer code).
+ */
+export function declaresSimRing(wgsl: string): boolean {
+  const stripped = wgsl.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  return /@group\(\s*1\s*\)/.test(stripped);
+}
+
+function refuseSimRing(id: string, wgslCode: string): boolean {
+  if (!declaresSimRing(wgslCode)) return false;
+  const message =
+    `Shader ${id} declares @group(1) (sim ring) — skipped on the WASM renderer, ` +
+    'which binds group 0 only until the #1080-gated port';
+  console.warn(`[WASM] ${message}`);
+  state.lastLoadError = message;
+  return true;
+}
+
 function writeUtf8(id: string): { ptr: number; free: () => void } | null {
   const module = wasmRef.module;
   if (!module) return null;
@@ -60,6 +82,8 @@ export function loadShader(id: string, wgslCode: string): boolean {
     return false;
   }
 
+  if (refuseSimRing(id, wgslCode)) return false;
+
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
@@ -96,6 +120,8 @@ export function reloadShader(id: string, wgslCode: string): boolean {
     state.loadErrorCount++;
     return false;
   }
+
+  if (refuseSimRing(id, wgslCode)) return false;
 
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);

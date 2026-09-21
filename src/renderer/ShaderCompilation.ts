@@ -7,6 +7,7 @@
 
 import workgroupDispatchContract from '../contracts/workgroup_dispatch.json';
 import { validateBindGroup } from './bindGroupValidator';
+import { declaresSimRing } from './webgpu/simRing';
 import { reportError } from './ErrorHandling';
 import type { InternalColorFormat } from '../config/formatPolicy';
 import {
@@ -84,6 +85,12 @@ export interface ShaderBindingUsage {
   writesDataB: boolean;
   readsDataC: boolean;
   usesHistory: boolean;
+  /**
+   * Declares @group(1) (bind_group1.json sim ring): the pipeline was built on the
+   * two-group layout and every dispatch must also set bind group 1. Exact, not
+   * conservative — a wrong `true` would bind a group the layout does not have.
+   */
+  usesSimRing: boolean;
 }
 
 /** Conservative usage assumed when a shader's source was never analyzed. */
@@ -92,6 +99,7 @@ export const CONSERVATIVE_BINDING_USAGE: ShaderBindingUsage = {
   writesDataB: true,
   readsDataC: true,
   usesHistory: true,
+  usesSimRing: false,
 };
 
 function bindingVarName(wgsl: string, binding: number): string | null {
@@ -123,6 +131,7 @@ export function analyzeShaderBindings(wgsl: string): ShaderBindingUsage {
     writesDataB: usedBeyondDeclaration(wgsl, 8),
     readsDataC: usedBeyondDeclaration(wgsl, 9),
     usesHistory: usedBeyondDeclaration(wgsl, 13),
+    usesSimRing: declaresSimRing(wgsl),
   };
 }
 

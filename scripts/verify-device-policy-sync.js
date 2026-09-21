@@ -537,7 +537,157 @@ function verifyEmptyPlaceholder() {
   }
 }
 
+/**
+ * bind_group1.json (group-1 sim ring):
+ *  - requiredLimits delta == webgpu_limits.json and == group-0 + group-1 usage;
+ *  - TS keeps a single-group default layout and a separate [group0, group1] layout;
+ *  - C++ either grows to 2 groups or documents "group 1 unbound" while the WASM
+ *    bridge refuses @group(1) shaders (#1080 freeze);
+ *  - catalog: JSON `simRing` ↔ WGSL @group(1), no graph node writes simIndex.
+ */
+function verifyBindGroup1() {
+  const file = 'src/contracts/bind_group1.json';
+  const g1 = JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8'));
+  if (g1.group !== 1) fail(`${file} group must be 1`);
+  const want = [
+    ['simState', 'storage'],
+    ['simIndex', 'read-only-storage'],
+    ['simParams', 'uniform'],
+  ];
+  want.forEach(([name, type], i) => {
+    const b = g1.bindings[i];
+    if (!b || b.binding !== i || b.name !== name || b.bufferType !== type) {
+      fail(`${file} binding ${i} must be ${name} (${type})`);
+    }
+  });
+  if (g1.bufferRoles?.simIndex?.graphWrites !== false) {
+    fail(`${file} simIndex must stay graphWrites:false (host-published by copy barrier)`);
+  }
+
+  // ── Limits: delta == webgpu_limits.json == group-0 usage + group-1 usage ──
+  const pipelineTs = fs.readFileSync(path.join(ROOT, 'src/renderer/webgpu/pipeline.ts'), 'utf8');
+  const g0Fn = pipelineTs.match(/export function createComputeBindGroupLayout\([\s\S]*?\n\}/);
+  if (!g0Fn) {
+    fail('pipeline.ts createComputeBindGroupLayout not found');
+    return;
+  }
+  const g0 = g0Fn[0];
+  const count = (src, re) => (src.match(re) || []).length;
+  const g0Storage = count(g0, /buffer:\s*\{\s*type:\s*'(?:storage|read-only-storage)'/g);
+  const g0Uniform = count(g0, /buffer:\s*\{\s*type:\s*'uniform'/g);
+  const g1Storage = g1.bindings.filter((b) => b.bufferType !== 'uniform').length;
+  const g1Uniform = g1.bindings.filter((b) => b.bufferType === 'uniform').length;
+  const need = {
+    maxStorageBuffersPerShaderStage: g0Storage + g1Storage,
+    maxUniformBuffersPerShaderStage: g0Uniform + g1Uniform,
+    maxBindGroups: 2,
+  };
+  for (const [key, value] of Object.entries(need)) {
+    if (g1.requiredLimits?.[key] !== value) {
+      fail(`${file} requiredLimits.${key} must be ${value} (group 0 + group 1), got ${g1.requiredLimits?.[key]}`);
+    }
+    if (EXPECTED_LIMITS[key] !== value) {
+      fail(`webgpu_limits.json ${key} must be ${value} for the sim ring, got ${EXPECTED_LIMITS[key]}`);
+    }
+  }
+
+  // ── TS: single-group default, two-group opt-in ──────────────────────────
+  if (!/bindGroupLayouts:\s*\[bindGroupLayout\]/.test(g0)) {
+    fail('pipeline.ts createComputeBindGroupLayout must keep a single-group pipeline layout (no group-1 cost for the catalog)');
+  }
+  const g1Fn = pipelineTs.match(/export function createSimRingPipelineLayout\([\s\S]*?\n\}/);
+  if (!g1Fn || !/bindGroupLayouts:\s*\[group0,\s*group1\]/.test(g1Fn[0])) {
+    fail('pipeline.ts createSimRingPipelineLayout must build bindGroupLayouts: [group0, group1]');
+  }
+  const simRingTs = fs.readFileSync(path.join(ROOT, g1.tsFiles.layout), 'utf8');
+  if (!/import simRingContract from '\.\.\/\.\.\/contracts\/bind_group1\.json'/.test(simRingTs) ||
+      !/simRingContract\.bindings\.map/.test(simRingTs)) {
+    fail(`${g1.tsFiles.layout} must build the group-1 layout from bind_group1.json bindings`);
+  }
+  if (!simRingTs.includes(`SIM_RING_OOM_CAP_KEY = simRingContract.oomLadder.sessionStorageKey`)) {
+    fail(`${g1.tsFiles.layout} OOM latch key must come from bind_group1.json (${g1.oomLadder.sessionStorageKey})`);
+  }
+  const rungs = g1.oomLadder.stateRungs;
+  if (rungs[0] !== g1.bindings[0].defaultCapacity ||
+      rungs.some((r, i) => i > 0 && r >= rungs[i - 1])) {
+    fail(`${file} oomLadder.stateRungs must start at simState defaultCapacity and strictly shrink`);
+  }
+  if (rungs[0] * g1.oomLadder.indexElementsPerStateElement !== g1.bindings[1].defaultCapacity) {
+    fail(`${file} simIndex defaultCapacity must equal stateRungs[0] × indexElementsPerStateElement`);
+  }
+
+  // ── C++: grow together, or document group 1 unbound + bridge refusal ────
+  const cppPipeline = fs.readFileSync(path.join(ROOT, g1.wasm.cppFile), 'utf8');
+  const cppCount = cppPipeline.match(/bindGroupLayoutCount\s*=\s*(\d+)/);
+  const bridge = fs.readFileSync(path.join(ROOT, g1.wasm.bridgeFile), 'utf8');
+  if (!cppCount) {
+    fail(`${g1.wasm.cppFile} bindGroupLayoutCount not found`);
+  } else if (cppCount[1] === '2') {
+    if (g1.wasm.status !== 'bound') fail(`${file} wasm.status must be "bound" once C++ builds 2 groups`);
+  } else {
+    if (g1.wasm.status !== 'unbound') fail(`${file} wasm.status must be "unbound" while C++ builds 1 group`);
+    if (!cppPipeline.includes(g1.wasm.cppMarker)) {
+      fail(`${g1.wasm.cppFile} must document "${g1.wasm.cppMarker}" next to bindGroupLayoutCount = 1`);
+    }
+    if (!new RegExp(`export function ${g1.wasm.bridgeGuard}\\(`).test(bridge) ||
+        count(bridge, /if \(refuseSimRing\(id, wgslCode\)\) return false;/g) !== 2) {
+      fail(`${g1.wasm.bridgeFile} must refuse @group(1) shaders in both loadShader and reloadShader`);
+    }
+  }
+  const groupRe = '/@group\\(\\s*1\\s*\\)/';
+  if (!simRingTs.includes(groupRe) || !bridge.includes(groupRe)) {
+    fail(`declaresSimRing regex ${groupRe} must match in ${g1.tsFiles.layout} and ${g1.wasm.bridgeFile}`);
+  }
+
+  // ── Catalog: JSON simRing ↔ WGSL @group(1) ──────────────────────────────
+  const shadersDir = path.join(ROOT, 'public/shaders');
+  const strip = (w) => w.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const declares = (id) => {
+    const f = path.join(shadersDir, `${id}.wgsl`);
+    return fs.existsSync(f) && /@group\(\s*1\s*\)/.test(strip(fs.readFileSync(f, 'utf8')));
+  };
+  const owned = new Set();
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!entry.name.endsWith('.json')) continue;
+      let def;
+      try { def = JSON.parse(fs.readFileSync(full, 'utf8')); } catch { continue; }
+      const nodes = def.multipass?.graph?.nodes || [];
+      const urlId = typeof def.url === 'string' ? path.basename(def.url, '.wgsl') : null;
+      const ids = [urlId, ...nodes.map((n) => n.entry)].filter(Boolean);
+      const ringNodes = nodes.filter(
+        (n) => (n.bufferReads || []).length || (n.bufferWrites || []).length || n.dispatch === 'simState',
+      );
+      for (const n of nodes) {
+        if ((n.bufferWrites || []).includes('simIndex')) {
+          fail(`${def.id}: node ${n.id} lists simIndex in bufferWrites (read-only; host-published)`);
+        }
+      }
+      if (def[g1.optInJsonField] === true) {
+        ids.forEach((id) => owned.add(id));
+        if (!ids.some(declares)) fail(`${def.id}: "${g1.optInJsonField}": true but no WGSL declares @group(1)`);
+        for (const n of ringNodes) {
+          if (!declares(n.entry)) fail(`${def.id}: node ${n.id} uses the sim ring but ${n.entry}.wgsl has no @group(1)`);
+        }
+      } else if (ringNodes.length > 0) {
+        fail(`${def.id}: graph nodes use sim-ring buffers but the JSON lacks "${g1.optInJsonField}": true`);
+      }
+    }
+  };
+  walk(path.join(ROOT, 'shader_definitions'));
+  for (const f of fs.readdirSync(shadersDir)) {
+    if (!f.endsWith('.wgsl')) continue;
+    const id = path.basename(f, '.wgsl');
+    if (declares(id) && !owned.has(id)) {
+      fail(`public/shaders/${f} declares @group(1) but no shader definition sets "${g1.optInJsonField}": true`);
+    }
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
+  verifyBindGroup1();
   verifyOptionalFeatures();
   verifyCanvasConfigure();
   verifyWasmExports();

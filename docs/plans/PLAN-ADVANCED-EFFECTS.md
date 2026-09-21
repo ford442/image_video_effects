@@ -100,6 +100,10 @@ III. Biological & Growth Algorithms
     - Use continuous positions for walkers and snap on freeze.
   - Shader tasks: `dla-walkers.wgsl` and `dla-freeze.wgsl`.
   - UI: Walker count, Attraction strength, Stickiness.
+  - **Status (2026-09-21): shipped as the first sim-ring flagship.** `dla-crystals` is a 3-node graph —
+    `dla-freeze` (pixels) → `dla-walkers` (`dispatch: "simState"`, walkers in group-1 `simState`) →
+    `dla-render`. Walker count is the ring capacity (`simParams.stateCount`, 65 536 by default, shrunk by
+    the OOM ladder), not a slider. Group-1 contract: `src/contracts/bind_group1.json`; set-2 effects build on it.
 
 9) Multiscale Turing Patterns
   - Architecture: run multiple reaction-diffusion systems seeded from DoG bands and combine.

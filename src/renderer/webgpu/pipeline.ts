@@ -15,6 +15,7 @@ import type { InternalColorFormat } from '../../config/formatPolicy';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 import { HISTORY_DEPTH } from './webgpuConstants';
+import { createSimRingBindGroupLayout, declaresSimRing } from './simRing';
 import {
   WebGPUBufferSet,
   WebGPUSamplerSet,
@@ -25,6 +26,14 @@ export interface WebGPUComputeLayout {
   bindGroupLayout: GPUBindGroupLayout;
   pipelineLayout: GPUPipelineLayout;
 }
+
+/**
+ * Resolves the two-group pipeline layout for a shader that declares @group(1),
+ * allocating the sim ring on first use. Null = ring unavailable (OOM ladder
+ * exhausted / no device); the shader then fails soft instead of compiling
+ * against a layout that cannot bind it.
+ */
+export type SimRingLayoutProvider = () => Promise<GPUPipelineLayout | null>;
 
 export interface WebGPUBlitResources {
   blitPipeline: GPURenderPipeline;
@@ -89,10 +98,22 @@ export class WebGPUShaderManager {
     pipelineLayout: GPUPipelineLayout,
     id: string,
     wgsl: string,
+    simRingLayout?: SimRingLayoutProvider,
   ): Promise<boolean> {
+    let layout = pipelineLayout;
+    if (declaresSimRing(wgsl)) {
+      const twoGroup = simRingLayout ? await simRingLayout() : null;
+      if (!twoGroup) {
+        console.warn(
+          `[WebGPU] Shader "${id}" declares @group(1) but the sim ring is unavailable — skipped`,
+        );
+        return false;
+      }
+      layout = twoGroup;
+    }
     const ok = await compileShader(
       device,
-      pipelineLayout,
+      layout,
       id,
       wgsl,
       this.pipelines,
@@ -111,12 +132,13 @@ export class WebGPUShaderManager {
     pipelineLayout: GPUPipelineLayout | null,
     id: string,
     url: string,
+    simRingLayout?: SimRingLayoutProvider,
   ): Promise<boolean> {
     if (!device || !pipelineLayout) return false;
 
     const wgsl = await fetchShaderWgsl(id, url);
     if (!wgsl) return false;
-    return this.compile(device, pipelineLayout, id, wgsl);
+    return this.compile(device, pipelineLayout, id, wgsl, simRingLayout);
   }
 }
 
@@ -152,12 +174,26 @@ export function createComputeBindGroupLayout(
     ],
   });
 
+  // Single group on purpose: the 1,360 catalog shaders that never declare
+  // @group(1) must not pay for the sim ring (see createSimRingPipelineLayout).
   const pipelineLayout = device.createPipelineLayout({
     label: 'computePL',
     bindGroupLayouts: [bindGroupLayout],
   });
 
   return { bindGroupLayout, pipelineLayout };
+}
+
+/** Two-group layout [group0, group1] for shaders that opt into the sim ring. */
+export function createSimRingPipelineLayout(
+  device: GPUDevice,
+  group0: GPUBindGroupLayout,
+  group1: GPUBindGroupLayout,
+): GPUPipelineLayout {
+  return device.createPipelineLayout({
+    label: 'computePL-simRing',
+    bindGroupLayouts: [group0, group1],
+  });
 }
 
 export function createComputeBindGroup(
@@ -372,6 +408,9 @@ export function createBlitBindGroup(
 export class WebGPUPipelineModule {
   bindGroupLayout!: GPUBindGroupLayout;
   pipelineLayout!: GPUPipelineLayout;
+  /** Lazily created on the first @group(1) shader; never built for group-0-only sessions. */
+  simRingBindGroupLayout: GPUBindGroupLayout | null = null;
+  private simRingPipelineLayout: GPUPipelineLayout | null = null;
   blitPipeline!: GPURenderPipeline;
   generativeBlitPipeline!: GPURenderPipeline;
   scaleCopyPipeline!: GPURenderPipeline;
@@ -398,6 +437,26 @@ export class WebGPUPipelineModule {
     const layout = createComputeBindGroupLayout(device, hasF32Filt, colorFormat);
     this.bindGroupLayout = layout.bindGroupLayout;
     this.pipelineLayout = layout.pipelineLayout;
+    // Group 0 changed (colour format): the two-group layout embeds it.
+    this.simRingPipelineLayout = null;
+  }
+
+  getSimRingBindGroupLayout(device: GPUDevice): GPUBindGroupLayout {
+    if (!this.simRingBindGroupLayout) {
+      this.simRingBindGroupLayout = createSimRingBindGroupLayout(device);
+    }
+    return this.simRingBindGroupLayout;
+  }
+
+  getSimRingPipelineLayout(device: GPUDevice): GPUPipelineLayout {
+    if (!this.simRingPipelineLayout) {
+      this.simRingPipelineLayout = createSimRingPipelineLayout(
+        device,
+        this.bindGroupLayout,
+        this.getSimRingBindGroupLayout(device),
+      );
+    }
+    return this.simRingPipelineLayout;
   }
 
   setupBlitPipelines(
@@ -466,5 +525,7 @@ export class WebGPUPipelineModule {
 
   clear(): void {
     this.shaderManager.clear();
+    this.simRingBindGroupLayout = null;
+    this.simRingPipelineLayout = null;
   }
 }

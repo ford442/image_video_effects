@@ -176,8 +176,8 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
     "maxPassesPerFrame": 8,
     "nodes": [
       {
-        "id": "walkers",
-        "entry": "dla-walkers",
+        "id": "freeze",
+        "entry": "dla-freeze",
         "reads": [
           "dataC"
         ],
@@ -186,14 +186,30 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         ]
       },
       {
+        "id": "walkers",
+        "entry": "dla-walkers",
+        "reads": [
+          "dataA"
+        ],
+        "writes": [
+          "dataA"
+        ],
+        "bufferReads": [
+          "simState"
+        ],
+        "bufferWrites": [
+          "simState"
+        ],
+        "dispatch": "simState"
+      },
+      {
         "id": "render",
         "entry": "dla-render",
         "reads": [
-          "dataC"
+          "dataA"
         ],
         "writes": [
-          "color",
-          "dataA"
+          "color"
         ]
       }
     ]

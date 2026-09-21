@@ -275,12 +275,13 @@ bool WebGPURenderer::CreateDevice() {
     // 8192 = webgpu_limits.json minimumComputeLimits.maxTextureDimension2D (comfortable floor).
     printf("[WASM] Adapter limits (validating against 14-entry compute contract):\n");
     CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              8192, limitsOk);
+    CheckLimit("maxBindGroups",                      limits.maxBindGroups,                      2,   limitsOk);
     CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            14,  limitsOk);
     CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    3,  limitsOk);
     CheckLimit("maxSamplersPerShaderStage",          limits.maxSamplersPerShaderStage,           3,  limitsOk);
     CheckLimit("maxStorageTexturesPerShaderStage",   limits.maxStorageTexturesPerShaderStage,    4,  limitsOk);
-    CheckLimit("maxStorageBuffersPerShaderStage",    limits.maxStorageBuffersPerShaderStage,     2,  limitsOk);
-    CheckLimit("maxUniformBuffersPerShaderStage",    limits.maxUniformBuffersPerShaderStage,     1,  limitsOk);
+    CheckLimit("maxStorageBuffersPerShaderStage",    limits.maxStorageBuffersPerShaderStage,     4,  limitsOk); // 2 group 0 + 2 group-1 sim ring
+    CheckLimit("maxUniformBuffersPerShaderStage",    limits.maxUniformBuffersPerShaderStage,     2,  limitsOk); // u + group-1 simParams
     CheckLimit("maxComputeWorkgroupSizeX",           limits.maxComputeWorkgroupSizeX,            16, limitsOk);
     CheckLimit("maxComputeWorkgroupSizeY",           limits.maxComputeWorkgroupSizeY,            16, limitsOk);
     CheckLimit("maxComputeInvocationsPerWorkgroup",  limits.maxComputeInvocationsPerWorkgroup,   256, limitsOk);
@@ -360,12 +361,13 @@ bool WebGPURenderer::CreateDevice() {
     // we don't over-request anything the adapter doesn't already offer.
     WGPULimits requiredLimits = WGPU_LIMITS_INIT;
     requiredLimits.maxTextureDimension2D             = 8192; // webgpu_limits.json comfortable floor
+    requiredLimits.maxBindGroups                     = 2;  // group 0 + bind_group1.json sim ring
     requiredLimits.maxBindingsPerBindGroup           = 14;
     requiredLimits.maxSampledTexturesPerShaderStage  = 3;
     requiredLimits.maxSamplersPerShaderStage         = 3;
     requiredLimits.maxStorageTexturesPerShaderStage  = 4;
-    requiredLimits.maxStorageBuffersPerShaderStage   = 2;
-    requiredLimits.maxUniformBuffersPerShaderStage   = 1;
+    requiredLimits.maxStorageBuffersPerShaderStage   = 4;  // 2 group 0 + 2 group 1 (bind_group1.json)
+    requiredLimits.maxUniformBuffersPerShaderStage   = 2;  // u + simParams
     requiredLimits.maxUniformBufferBindingSize       = sizeof(Uniforms);
     requiredLimits.maxComputeWorkgroupSizeX          = 16;
     requiredLimits.maxComputeWorkgroupSizeY          = 16;
@@ -611,12 +613,13 @@ bool WebGPURenderer::CreateDevice() {
         bool deviceLimitsOk = true;
         printf("[WASM] Device limits (post-creation, catches clamping):\n");
         CheckLimit("maxTextureDimension2D",             deviceLimits.maxTextureDimension2D,             8192, deviceLimitsOk);
+        CheckLimit("maxBindGroups",                     deviceLimits.maxBindGroups,                     2,   deviceLimitsOk);
         CheckLimit("maxBindingsPerBindGroup",           deviceLimits.maxBindingsPerBindGroup,           14,  deviceLimitsOk);
         CheckLimit("maxSampledTexturesPerShaderStage",  deviceLimits.maxSampledTexturesPerShaderStage,  3,   deviceLimitsOk);
         CheckLimit("maxSamplersPerShaderStage",         deviceLimits.maxSamplersPerShaderStage,         3,   deviceLimitsOk);
         CheckLimit("maxStorageTexturesPerShaderStage",  deviceLimits.maxStorageTexturesPerShaderStage,  4,   deviceLimitsOk);
-        CheckLimit("maxStorageBuffersPerShaderStage",   deviceLimits.maxStorageBuffersPerShaderStage,   2,   deviceLimitsOk);
-        CheckLimit("maxUniformBuffersPerShaderStage",   deviceLimits.maxUniformBuffersPerShaderStage,   1,   deviceLimitsOk);
+        CheckLimit("maxStorageBuffersPerShaderStage",   deviceLimits.maxStorageBuffersPerShaderStage,   4,   deviceLimitsOk);
+        CheckLimit("maxUniformBuffersPerShaderStage",   deviceLimits.maxUniformBuffersPerShaderStage,   2,   deviceLimitsOk);
         CheckLimit("maxComputeInvocationsPerWorkgroup", deviceLimits.maxComputeInvocationsPerWorkgroup, 256, deviceLimitsOk);
         if (!deviceLimitsOk) {
             printf("⚠️  Device limits were clamped below the adapter's reported limits and no\n");

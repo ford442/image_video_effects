@@ -5,6 +5,14 @@
  * JSON-aligned types; registry populated by buildMultipassRegistry.js.
  */
 
+import {
+  SIM_BUFFER_ROLES,
+  SimBufferRole,
+  WRITABLE_SIM_BUFFER_ROLES,
+} from './webgpu/simRing';
+
+export type { SimBufferRole } from './webgpu/simRing';
+
 export type TextureRole = 'read' | 'color' | 'dataA' | 'dataB' | 'dataC';
 
 export const TEXTURE_ROLES: readonly TextureRole[] = [
@@ -13,12 +21,25 @@ export const TEXTURE_ROLES: readonly TextureRole[] = [
 
 export const MAX_REPEAT = 64;
 
+/**
+ * How a node is dispatched. `pixels` (default) covers the working texture;
+ * `simState` runs one invocation per live sim-ring particle (bind_group1.json).
+ */
+export type GraphDispatchKind = 'pixels' | 'simState';
+
+export const GRAPH_DISPATCH_KINDS: readonly GraphDispatchKind[] = ['pixels', 'simState'] as const;
+
 export interface GraphNodeDef {
   id: string;
   entry: string;
   reads: TextureRole[];
   writes: TextureRole[];
   repeat?: number;
+  /** Sim-ring buffers this node reads (group 1). */
+  bufferReads?: SimBufferRole[];
+  /** Sim-ring buffers this node writes. Only simState — simIndex is host-published. */
+  bufferWrites?: SimBufferRole[];
+  dispatch?: GraphDispatchKind;
 }
 
 export interface MultipassGraphDef {
@@ -32,6 +53,13 @@ export interface CopyBarrier {
   reason: string;
 }
 
+/** Buffer mirror of the dataA → dataC handoff: publish live state to the read-only snapshot. */
+export interface BufferCopyBarrier {
+  from: 'simState';
+  to: 'simIndex';
+  reason: string;
+}
+
 export interface ExpandedDispatch {
   nodeId: string;
   entry: string;
@@ -39,6 +67,10 @@ export interface ExpandedDispatch {
   writes: TextureRole[];
   iteration: number;
   copiesBefore: CopyBarrier[];
+  bufferReads: SimBufferRole[];
+  bufferWrites: SimBufferRole[];
+  bufferCopiesBefore: BufferCopyBarrier[];
+  dispatch: GraphDispatchKind;
 }
 
 export interface GraphShaderRecord {
@@ -48,6 +80,71 @@ export interface GraphShaderRecord {
 
 function isTextureRole(v: string): v is TextureRole {
   return (TEXTURE_ROLES as readonly string[]).includes(v);
+}
+
+function isSimBufferRole(v: string): v is SimBufferRole {
+  return (SIM_BUFFER_ROLES as readonly string[]).includes(v);
+}
+
+/** True when any node touches the group-1 sim ring (buffer roles or particle dispatch). */
+export function graphUsesSimRing(graph: MultipassGraphDef): boolean {
+  return (graph.nodes ?? []).some(
+    (n) =>
+      (n.bufferReads?.length ?? 0) > 0 ||
+      (n.bufferWrites?.length ?? 0) > 0 ||
+      n.dispatch === 'simState',
+  );
+}
+
+/**
+ * simIndex holds whatever was last published (the frame seed, like dataC).
+ * It goes stale when simState is written and is refreshed by one copy before
+ * the next reader — including the next repeat of the same node.
+ */
+interface BufferState {
+  simIndexStale: boolean;
+}
+
+function bufferCopiesNeededBeforeRead(
+  bufferReads: SimBufferRole[],
+  state: BufferState,
+  nodeId: string,
+  iteration: number,
+): BufferCopyBarrier[] {
+  if (!bufferReads.includes('simIndex') || !state.simIndexStale) return [];
+  state.simIndexStale = false;
+  return [
+    {
+      from: 'simState',
+      to: 'simIndex',
+      reason: iteration > 0
+        ? `simState → simIndex (between repeats of ${nodeId})`
+        : `simState → simIndex (before ${nodeId})`,
+    },
+  ];
+}
+
+function applyBufferWrites(bufferWrites: SimBufferRole[], state: BufferState): void {
+  if (bufferWrites.includes('simState')) state.simIndexStale = true;
+}
+
+/**
+ * Trailing publish after the last dispatch: when simState was written after the
+ * last barrier and some node reads simIndex, copy once more so the next frame's
+ * first reader starts from this frame's final state (mirrors the frame-end
+ * dataA → dataC feedback copy).
+ */
+export function trailingBufferCopies(expanded: ExpandedDispatch[]): BufferCopyBarrier[] {
+  const anyIndexReader = expanded.some((d) => d.bufferReads.includes('simIndex'));
+  if (!anyIndexReader) return [];
+  const state: BufferState = { simIndexStale: false };
+  for (const d of expanded) {
+    if (d.bufferCopiesBefore.length > 0) state.simIndexStale = false;
+    applyBufferWrites(d.bufferWrites, state);
+  }
+  return state.simIndexStale
+    ? [{ from: 'simState', to: 'simIndex', reason: 'simState → simIndex (next-frame seed)' }]
+    : [];
 }
 
 /** Roles that hold simulation state across intra-frame handoff. */
@@ -164,7 +261,34 @@ export function validateGraph(
     for (const w of node.writes ?? []) {
       if (!isTextureRole(w)) errors.push(`node ${node.id}: invalid write role "${w}"`);
     }
-    if (!node.reads?.length && !node.writes?.length) {
+    for (const r of node.bufferReads ?? []) {
+      if (!isSimBufferRole(r)) errors.push(`node ${node.id}: invalid buffer read role "${r}"`);
+    }
+    for (const w of node.bufferWrites ?? []) {
+      if (!isSimBufferRole(w)) {
+        errors.push(`node ${node.id}: invalid buffer write role "${w}"`);
+      } else if (!(WRITABLE_SIM_BUFFER_ROLES as readonly string[]).includes(w)) {
+        errors.push(
+          `node ${node.id}: "${w}" is read-only in WGSL — the host publishes it from simState`,
+        );
+      }
+    }
+    if (node.dispatch !== undefined && !GRAPH_DISPATCH_KINDS.includes(node.dispatch)) {
+      errors.push(`node ${node.id}: invalid dispatch "${node.dispatch}"`);
+    }
+    if (
+      node.dispatch === 'simState' &&
+      !(node.bufferReads ?? []).includes('simState') &&
+      !(node.bufferWrites ?? []).includes('simState')
+    ) {
+      errors.push(`node ${node.id}: dispatch "simState" requires simState in bufferReads or bufferWrites`);
+    }
+    if (
+      !node.reads?.length &&
+      !node.writes?.length &&
+      !node.bufferReads?.length &&
+      !node.bufferWrites?.length
+    ) {
       errors.push(`node ${node.id}: must declare reads or writes`);
     }
   }
@@ -219,6 +343,7 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
   const result: ExpandedDispatch[] = [];
   const state = new Map<TextureRole, TextureRole | 'frameSeed'>();
   state.set('dataC', 'frameSeed');
+  const bufferState: BufferState = { simIndexStale: false };
 
   for (const node of graph.nodes) {
     const repeat = node.repeat ?? 1;
@@ -226,6 +351,9 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
       const reads = [...(node.reads ?? [])];
       const writes = alternateWrite(node.writes ?? [], i);
       const copiesBefore = copiesNeededBeforeRead(reads, state);
+      const bufferReads = [...(node.bufferReads ?? [])];
+      const bufferWrites = [...(node.bufferWrites ?? [])];
+      const bufferCopiesBefore = bufferCopiesNeededBeforeRead(bufferReads, bufferState, node.id, i);
 
       result.push({
         nodeId: node.id,
@@ -234,9 +362,14 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
         writes,
         iteration: i,
         copiesBefore,
+        bufferReads,
+        bufferWrites,
+        bufferCopiesBefore,
+        dispatch: node.dispatch ?? 'pixels',
       });
 
       applyWrites(state, writes);
+      applyBufferWrites(bufferWrites, bufferState);
     }
   }
 
@@ -267,6 +400,8 @@ export function shrinkGraphToCap(graph: MultipassGraphDef, cap: number): Multipa
     ...n,
     reads: [...(n.reads ?? [])],
     writes: [...(n.writes ?? [])],
+    bufferReads: n.bufferReads ? [...n.bufferReads] : undefined,
+    bufferWrites: n.bufferWrites ? [...n.bufferWrites] : undefined,
     repeat: n.repeat ?? 1,
   }));
 

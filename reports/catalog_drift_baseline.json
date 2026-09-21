@@ -1,7 +1,7 @@
 {
   "description": "Accepted catalog drift violation keys. CI gate fails when the audit finds keys not listed here. Shrink this file as drift is fixed; never grow it silently in CI \u2014 only via --write-baseline after intentional triage.",
   "generated": "2026-09-08T08:27:54.888253+00:00",
-  "violation_count": 105,
+  "violation_count": 107,
   "violation_keys": [
     "id-filename-mismatch|galaxy-sim|galaxy",
     "id-filename-mismatch|gen-capabilities|gen_capabilities",
@@ -52,6 +52,7 @@
     "orphan-graph-entry|chromatographic-interact|from-graph:chromatographic-fluid",
     "orphan-graph-entry|chromatographic-phase|from-graph:chromatographic-fluid",
     "orphan-graph-entry|chromatographic-render|from-graph:chromatographic-fluid",
+    "orphan-graph-entry|dla-freeze|from-graph:dla-crystals",
     "orphan-graph-entry|dla-render|from-graph:dla-crystals",
     "orphan-graph-entry|dla-walkers|from-graph:dla-crystals",
     "orphan-graph-entry|fabric-constraint|from-graph:fabric-of-reality",
@@ -88,6 +89,7 @@
     "wgsl-without-definition|chromatographic-interact|chromatographic-interact.wgsl",
     "wgsl-without-definition|chromatographic-phase|chromatographic-phase.wgsl",
     "wgsl-without-definition|chromatographic-render|chromatographic-render.wgsl",
+    "wgsl-without-definition|dla-freeze|dla-freeze.wgsl",
     "wgsl-without-definition|dla-render|dla-render.wgsl",
     "wgsl-without-definition|fabric-constraint|fabric-constraint.wgsl",
     "wgsl-without-definition|fabric-render|fabric-render.wgsl",

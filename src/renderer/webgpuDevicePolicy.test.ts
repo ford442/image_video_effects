@@ -60,12 +60,14 @@ describe('webgpuDevicePolicy', () => {
       const limits = buildRequiredLimits(1920);
       expect(limits).toMatchObject({
         maxTextureDimension2D: 8192,
+        maxBindGroups: 2,
         maxBindingsPerBindGroup: 14,
         maxSampledTexturesPerShaderStage: 3,
         maxSamplersPerShaderStage: 3,
         maxStorageTexturesPerShaderStage: 4,
-        maxStorageBuffersPerShaderStage: 2,
-        maxUniformBuffersPerShaderStage: 1,
+        // 2 group 0 + 2 group-1 sim ring (bind_group1.json); was 2 / 1 before the ring.
+        maxStorageBuffersPerShaderStage: 4,
+        maxUniformBuffersPerShaderStage: 2,
         maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE,
         maxComputeWorkgroupSizeX: 16,
         maxComputeWorkgroupSizeY: 16,
@@ -89,6 +91,15 @@ describe('webgpuDevicePolicy', () => {
       const result = assertAdapterMeetsContract(adapter, { maxCanvasDim: 1024 });
       expect(result.ok).toBe(true);
       expect(result.failures).toHaveLength(0);
+    });
+
+    it('fails an adapter that cannot hold the group-1 sim ring storage buffers', () => {
+      const result = assertAdapterMeetsContract(
+        makeAdapter({ maxStorageBuffersPerShaderStage: 2 }),
+        { maxCanvasDim: 1024 },
+      );
+      expect(result.ok).toBe(false);
+      expect(result.failures.join(' ')).toMatch(/maxStorageBuffersPerShaderStage: need >= 4/);
     });
 
     it('returns ok for NVIDIA Pascal-class maxTextureDimension2D=16384', () => {

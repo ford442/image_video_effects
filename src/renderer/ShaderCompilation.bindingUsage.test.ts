@@ -35,6 +35,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       writesDataB: false,
       readsDataC: false,
       usesHistory: false,
+      usesSimRing: false,
     });
   });
 
@@ -132,6 +133,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       writesDataB: true,
       readsDataC: true,
       usesHistory: true,
+      usesSimRing: false,
     });
   });
 });
@@ -154,6 +156,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       writesDataB: false,
       readsDataC: false,
       usesHistory: false,
+      usesSimRing: false,
     });
   });
 });

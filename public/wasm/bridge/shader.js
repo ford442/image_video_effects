@@ -3,6 +3,17 @@
 import { state, utf8ByteLength, wasmRef } from "./state.js";
 import { rewriteWgslStorageFormats } from "./wgslFormat.js";
 import { expandWgslIncludes, hasWgslInclude } from "./wgslInclude.js";
+function declaresSimRing(wgsl) {
+  const stripped = wgsl.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  return /@group\(\s*1\s*\)/.test(stripped);
+}
+function refuseSimRing(id, wgslCode) {
+  if (!declaresSimRing(wgslCode)) return false;
+  const message = `Shader ${id} declares @group(1) (sim ring) \u2014 skipped on the WASM renderer, which binds group 0 only until the #1080-gated port`;
+  console.warn(`[WASM] ${message}`);
+  state.lastLoadError = message;
+  return true;
+}
 function writeUtf8(id) {
   const module = wasmRef.module;
   if (!module) return null;
@@ -40,6 +51,7 @@ function loadShader(id, wgslCode) {
     state.loadErrorCount++;
     return false;
   }
+  if (refuseSimRing(id, wgslCode)) return false;
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
@@ -71,6 +83,7 @@ function reloadShader(id, wgslCode) {
     state.loadErrorCount++;
     return false;
   }
+  if (refuseSimRing(id, wgslCode)) return false;
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
@@ -151,6 +164,7 @@ function getSlotState(slotIndex) {
   };
 }
 export {
+  declaresSimRing,
   getSlotEnabled,
   getSlotMode,
   getSlotShaderId,

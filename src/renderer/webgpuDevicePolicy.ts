@@ -18,7 +18,8 @@ import webgpuLimitsContract from '../contracts/webgpu_limits.json';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
 /**
- * Minimum limits implied by the 14-entry compute bind group (bindings 0–13).
+ * Minimum limits implied by the 14-entry compute bind group (bindings 0–13) plus the
+ * opt-in group-1 sim ring (src/contracts/bind_group1.json: +2 storage, +1 uniform).
  * Source of truth: src/contracts/webgpu_limits.json (sync-checked in CI).
  *
  * maxTextureDimension2D is the comfortable floor (8192), never derived from
@@ -62,6 +63,7 @@ type LimitCheck = {
 
 const LIMIT_CHECKS: LimitCheck[] = [
   { name: 'maxTextureDimension2D', required: MINIMUM_COMPUTE_LIMITS.maxTextureDimension2D },
+  { name: 'maxBindGroups', required: MINIMUM_COMPUTE_LIMITS.maxBindGroups },
   { name: 'maxBindingsPerBindGroup', required: MINIMUM_COMPUTE_LIMITS.maxBindingsPerBindGroup },
   { name: 'maxSampledTexturesPerShaderStage', required: MINIMUM_COMPUTE_LIMITS.maxSampledTexturesPerShaderStage },
   { name: 'maxSamplersPerShaderStage', required: MINIMUM_COMPUTE_LIMITS.maxSamplersPerShaderStage },

@@ -328,6 +328,34 @@ DEEP_WORKGROUP_HEADER_PATTERN = re.compile(
 )
 
 
+_WORKGROUP_CONTRACT = Path(__file__).resolve().parent.parent / "src" / "contracts" / "workgroup_dispatch.json"
+SIM_RING_GROUP_PATTERN = re.compile(r'@group\(\s*1\s*\)')
+
+
+def _sim_ring_particle_sizes():
+    try:
+        with open(_WORKGROUP_CONTRACT, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return [[e["x"], e["y"], e["z"]] for e in data.get("simRingParticleSizes", [])]
+    except Exception:
+        return []
+
+
+SIM_RING_PARTICLE_SIZES = _sim_ring_particle_sizes()
+
+
+def is_sim_ring_particle_kernel(content: str, sizes) -> bool:
+    """
+    A group-1 sim-ring shader (bind_group1.json) dispatched once per particle
+    legitimately uses a 1D workgroup (workgroup_dispatch.json simRingParticleSizes).
+    """
+    stripped = re.sub(r'/\*[\s\S]*?\*/', '', content)
+    stripped = re.sub(r'//[^\n]*', '', stripped)
+    if not SIM_RING_GROUP_PATTERN.search(stripped):
+        return False
+    return bool(sizes) and all(ws in SIM_RING_PARTICLE_SIZES for ws in sizes)
+
+
 def has_deep_workgroup_marker(filepath: str, content: str) -> bool:
     """
     Detect intentional deep-workgroup shaders.
@@ -561,6 +589,10 @@ def parse_shader(filepath):
             if has_deep_workgroup_marker(filepath, content):
                 result["warnings"].append(
                     f"Non-standard workgroup size {result['workgroup_sizes']} is intentional (requiresDeepWorkgroup)"
+                )
+            elif is_sim_ring_particle_kernel(content, result["workgroup_sizes"]):
+                result["warnings"].append(
+                    f"1D workgroup {result['workgroup_sizes']} is a sim-ring particle kernel (bind_group1.json)"
                 )
             else:
                 result["workgroup_size_valid"] = False

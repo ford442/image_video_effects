@@ -10,6 +10,7 @@ describe('buildRendererDiagnostics', () => {
       truncated: 3,
       cap: 4,
       errors: [],
+      simRing: null,
     };
     const renderer = {
       initialized: true,

@@ -1664,35 +1664,39 @@
     "id": "dla-crystals",
     "name": "DLA Crystal Growth",
     "url": "shaders/dla-walkers.wgsl",
-    "description": "Physics Lab — diffusion-limited aggregation walkers freeze into fractal crystals. Click seeds, bass stickiness. graph · 2 passes · rgba32float.",
+    "description": "Physics Lab — real Brownian walkers (up to 64k particles in the group-1 sim ring) wander until they touch the crystal, then freeze into fractal dendrites. Click to plant seeds, hold to paint them; Branch Angle snaps steps onto a hex lattice for snowflake arms; bass surges stickiness. graph · 3 passes · sim ring.",
     "params": [
       {
         "id": "walkerSpeed",
         "name": "Walker Speed",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Steps per frame and step length of every walker"
       },
       {
         "id": "attractStrength",
         "name": "Attraction Strength",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Drift toward the cursor; also widens the seed brush"
       },
       {
         "id": "stickiness",
         "name": "Stickiness",
         "default": 0.7,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "Chance a walker freezes on contact (bass adds a surge)"
       },
       {
         "id": "branchAngle",
         "name": "Branch Angle",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "description": "0 = isotropic dendrites, 1 = six-fold hex-lattice snowflake arms"
       }
     ],
     "features": [
@@ -1703,6 +1707,7 @@
       "interactive",
       "mouse-driven",
       "multi-pass",
+      "particles",
       "physics",
       "simulation",
       "temporal-persistence"
@@ -1723,8 +1728,8 @@
         "maxPassesPerFrame": 8,
         "nodes": [
           {
-            "id": "walkers",
-            "entry": "dla-walkers",
+            "id": "freeze",
+            "entry": "dla-freeze",
             "reads": [
               "dataC"
             ],
@@ -1733,19 +1738,36 @@
             ]
           },
           {
+            "id": "walkers",
+            "entry": "dla-walkers",
+            "reads": [
+              "dataA"
+            ],
+            "writes": [
+              "dataA"
+            ],
+            "bufferReads": [
+              "simState"
+            ],
+            "bufferWrites": [
+              "simState"
+            ],
+            "dispatch": "simState"
+          },
+          {
             "id": "render",
             "entry": "dla-render",
             "reads": [
-              "dataC"
+              "dataA"
             ],
             "writes": [
-              "color",
-              "dataA"
+              "color"
             ]
           }
         ]
       }
-    }
+    },
+    "simRing": true
   },
   {
     "id": "double-exposure-zoom",

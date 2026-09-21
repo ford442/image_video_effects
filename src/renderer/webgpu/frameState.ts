@@ -15,6 +15,7 @@ import {
   WebGPUSamplerSet,
   WebGPUTextureSet,
 } from './resources';
+import type { SimRingFrameSource } from './simRing';
 import { WebGPUTimestampQueries } from './WebGPUTiming';
 import { ShaderSlot } from './webgpuConstants';
 
@@ -95,6 +96,8 @@ export interface WebGPUFrameState {
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   /** Mutable GPU timestamp runtime (shared with WebGPURenderer). */
   timestampRuntime: WebGPUTimestampQueries;
+  /** Group-1 sim ring (bind_group1.json); absent in minimal test states. */
+  simRing?: SimRingFrameSource;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
 }
@@ -166,6 +169,7 @@ export interface WebGPUFrameHost {
   supportsTimestampQuery: boolean;
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   timestampRuntime: WebGPUTimestampQueries;
+  simRing?: SimRingFrameSource;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
 }
@@ -217,6 +221,7 @@ export interface RendererFrameDeps {
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   timestampRuntime: WebGPUTimestampQueries;
   maxPassesPerFrame: number;
+  simRing?: SimRingFrameSource;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
 }
@@ -305,6 +310,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     get supportsTimestampQuery() { return d.supportsTimestampQuery; },
     get gpuTimings() { return d.gpuTimings; },
     get timestampRuntime() { return d.timestampRuntime; },
+    get simRing() { return d.simRing; },
     encodePreFxChores: (encoder) => d.encodePreFxChores?.(encoder),
     afterFrameSubmitChores: () => d.afterFrameSubmitChores?.(),
   };
@@ -388,6 +394,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get supportsTimestampQuery() { return h.supportsTimestampQuery; },
     get gpuTimings() { return h.gpuTimings; },
     get timestampRuntime() { return h.timestampRuntime; },
+    get simRing() { return h.simRing; },
     encodePreFxChores: (encoder) => h.encodePreFxChores?.(encoder),
     afterFrameSubmitChores: () => h.afterFrameSubmitChores?.(),
   };

@@ -17,6 +17,14 @@
       "note": "1D atomics template (_template_workgroup_atomics.wgsl)"
     }
   ],
+  "simRingParticleSizes": [
+    {
+      "x": 64,
+      "y": 1,
+      "z": 1,
+      "note": "Particle kernels on the group-1 sim ring (bind_group1.json dispatch \"simState\"): one invocation per simState element. Only allowed in shaders that declare @group(1)."
+    }
+  ],
   "deepWorkgroupExceptions": [
     {
       "x": 16,

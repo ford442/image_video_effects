@@ -6,6 +6,7 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 - TypeScript layout: [`src/renderer/webgpu/pipeline.ts`](../src/renderer/webgpu/pipeline.ts) (`createComputeBindGroupLayout`)
 - TypeScript resources: [`src/renderer/webgpu/resources.ts`](../src/renderer/webgpu/resources.ts) (`historyTex`, buffers)
 - C++ layout: [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) (`CreateBindGroupLayout`)
+- Sim ring (group 1, opt-in): [`src/contracts/bind_group1.json`](../src/contracts/bind_group1.json) ↔ [`src/renderer/webgpu/simRing.ts`](../src/renderer/webgpu/simRing.ts) ↔ `GraphRunner.ts` buffer barriers
 - Device limits: [`src/contracts/webgpu_limits.json`](../src/contracts/webgpu_limits.json) ↔ [`src/renderer/webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts) ↔ [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp)
 - Optional features: [`src/contracts/webgpu_optional_features.json`](../src/contracts/webgpu_optional_features.json) ↔ [`collectOptionalDeviceFeatures`](../src/renderer/webgpu/device.ts) ↔ `device.cpp` `requiredFeatures[3]`
 - WASM exports: [`src/contracts/wasm_exports.json`](../src/contracts/wasm_exports.json) (build.sh + CMake)
@@ -25,6 +26,7 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 | **Core contract** | Bindings **0–12** (13 WGSL declarations) — required by all shaders |
 | **Extension** | Binding **13** (`historyTexture` 2d-array) — opt-in temporal shaders (~11 shaders) |
 | **Layout size** | **14** bind-group entries (0–13); `maxBindingsPerBindGroup` must be **≥ 14** |
+| **Sim ring** | **Group 1** (`simState` / `simIndex` / `simParams`) — opt-in, only for shaders that declare `@group(1)` |
 
 ## Bind group layout (group 0)
 
@@ -125,6 +127,25 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 - Shaders that sample `@binding(13) var historyTexture` must declare the binding; others omit it
 - Copy is gated by static analysis (`analyzeShaderBindings` / C++ `AnalyzeShaderBindings`) — skipped when no shader references binding 13
 
+## Sim ring (group 1, opt-in)
+
+Group 0 is at the contract ceiling. Indexable state that is not a texture (walkers, photon pools, neighbour tables, spatial hashes) lives in a second bind group. Contract: [`src/contracts/bind_group1.json`](../src/contracts/bind_group1.json).
+
+```wgsl
+struct SimParams { stateCount: u32, indexCount: u32, frame: u32, truncated: u32 };
+@group(1) @binding(0) var<storage, read_write> simState: array<vec4<f32>>;  // particles / photons / walkers
+@group(1) @binding(1) var<storage, read>       simIndex: array<u32>;        // snapshot / neighbours / hash
+@group(1) @binding(2) var<uniform>             simParams: SimParams;
+```
+
+- **Opt-in:** a shader is on the ring iff its WGSL declares `@group(1)` (comments ignored). Its JSON must set `"simRing": true` and vice versa — `verify:device-policy` checks both directions.
+- **Zero cost for everyone else:** `createComputeBindGroupLayout` keeps a **single-group** pipeline layout. Only group-1 shaders compile against `createSimRingPipelineLayout` (`[group0, group1]`), and only their dispatches call `setBindGroup(1, …)`. The ring buffers are allocated the first time a group-1 shader compiles.
+- **simIndex is read-only in WGSL.** The host fills it with `copyBufferToBuffer(simState → simIndex)` — the buffer mirror of the `dataA → dataC` handoff. GraphRunner inserts the copy before any node listing `simIndex` in `bufferReads` when `simState` was written since the last publish (including **between repeats**), plus one trailing publish so the next frame starts from a snapshot.
+- **Graph node fields:** `bufferReads` / `bufferWrites` (`simState`, `simIndex`; only `simState` is writable) and `dispatch: "simState"` for one invocation per live particle (`ceil(stateCount / wg.x) × 1`, `@workgroup_size(64, 1, 1)` — the only 1D `main` size the bindgroup checker accepts, and only in group-1 shaders).
+- **VRAM:** default 65 536 × 16 B `simState` + 262 144 × 4 B `simIndex` + 16 B params ≈ **2 MiB** (under 2 % of the 2048² × 8 history ring that OOMs Pascal). Ladder 65 536 → 32 768 → 16 384 → 4 096 particles under an out-of-memory scope; each failure latches `px_simring_oom_cap` in `sessionStorage` and the fat size is never retried this tab. `simParams.truncated = 1` and `GraphRunReport.simRing.truncated` report a shrunk ring.
+- **extraBuffer:** ring shaders must not write `extraBuffer[0..132]` — that is exactly what the ring replaces.
+- **WASM:** C++ is feature-frozen until #1080. `pipeline.cpp` keeps `bindGroupLayoutCount = 1` (group 1 unbound); the bridge (`shader.ts` `declaresSimRing`) refuses `@group(1)` shaders before `LoadShader`, so the module never builds an invalid pipeline or aborts. Flagship: `dla-crystals`.
+
 ### Runtime format tiers (#1008)
 
 WGSL sources remain authored as **rgba32float** canonical. At pipeline compile the host rewrites bindings 2/7/8 for non-ultra tiers. See [`docs/FORMAT_TIERS.md`](FORMAT_TIERS.md).
@@ -138,12 +159,13 @@ Both backends validate adapter limits before device creation and request explici
 | Limit | Required | Notes |
 |-------|----------|-------|
 | `maxTextureDimension2D` | **8192** | Comfortable floor (`webgpu_limits.json`). Never canvas max(w,h), maxBufferSize, pixel count, or a mis-ordered init pointer. |
+| `maxBindGroups` | 2 | group 0 + opt-in group-1 sim ring |
 | `maxBindingsPerBindGroup` | 14 | 14-entry layout (0–13) |
 | `maxSampledTexturesPerShaderStage` | 3 | readTexture, dataTextureC, historyTexture |
 | `maxSamplersPerShaderStage` | 3 | filtering, non-filtering, comparison |
 | `maxStorageTexturesPerShaderStage` | 4 | write, depth write, data A/B |
-| `maxStorageBuffersPerShaderStage` | 2 | extraBuffer, plasmaBuffer |
-| `maxUniformBuffersPerShaderStage` | 1 | Uniforms |
+| `maxStorageBuffersPerShaderStage` | 4 | extraBuffer, plasmaBuffer + group-1 simState, simIndex (was 2) |
+| `maxUniformBuffersPerShaderStage` | 2 | Uniforms + group-1 simParams (was 1) |
 | `maxUniformBufferBindingSize` | sizeof(Uniforms) | TS: `UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE` |
 | `maxComputeWorkgroupSizeX` | 16 | Standard workgroup |
 | `maxComputeWorkgroupSizeY` | 16 | Standard workgroup |
@@ -157,6 +179,7 @@ Documented exceptions in that contract:
 
 - **1D helper kernels** — `@workgroup_size(64, 1, 1)` or `(256, 1, 1)` on non-`main` entry points (e.g. `update_boids` before `main`)
 - **Deep-workgroup shaders** — `(16, 16, 4)` with `requiresDeepWorkgroup: true`
+- **Sim-ring particle kernels** — `(64, 1, 1)` on `main`, only in shaders that declare `@group(1)` (`simRingParticleSizes`)
 - **`src/gpuChores/`** — 8×8 downsample kernels are exempt (not catalog FX)
 
 ### Symbol cross-reference
@@ -190,3 +213,5 @@ See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md) for canvas configure and timestam
 - [x] `maxBindingsPerBindGroup: 14` in TS + C++
 - [x] `historyHead` in `extraBuffer[4]` on both paths
 - [x] History/dataTex copies gated by shader binding usage (TS + C++)
+- [x] Group-1 sim ring on TS (single-group default layout unchanged)
+- [ ] Group-1 sim ring on C++ — documented unbound; bridge refuses `@group(1)` shaders until the #1080-gated port
