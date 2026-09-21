@@ -98,8 +98,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var dO: f32 = 0.0;
     var hit: bool = false;
     var p: vec3<f32>;
+    var steps: i32 = 0;
 
     for (var i = 0; i < MAX_STEPS; i = i + 1) {
+        steps = i;
         p = ro + rd * dO;
         let dS = map(p);
         dO = dO + dS;
@@ -134,7 +136,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = albedo * (diff * 0.5 + 0.5) + vec3<f32>(spec);
 
         // Fake AO
-        let ao = 1.0 - f32(i) / f32(MAX_STEPS);
+        let ao = 1.0 - f32(steps) / f32(MAX_STEPS);
         col = col * ao;
     }
 
