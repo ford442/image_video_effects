@@ -1,6 +1,22 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-21 (retro-glitch ten + liquid eight upgrades, both pushed to main)
+**Last updated:** 2026-09-21 (retro-glitch ten, liquid eight, post-processing seven — all on main)
+
+## 2026-09-21 — Post-processing seven (7 shaders)
+
+- IDs: pp-sharpen, pp-vignette, pp-chromatic, temporal-slit-scan, optical-flow-tracer,
+  temporal-frequency-decomposition, spatio-temporal-3d-conv.
+- Ideas (2 each, 14 distinct): anti-halo clamp + luma-only sharpen; cos^4 falloff + emulsion grain;
+  longitudinal CA + purple fringing; sub-frame interpolation + slit exposure; Shi-Tomasi + pyramidal
+  LK; Hann window + phase->hue; motion-adaptive NR + variance-driven NR.
+- **Bug found:** all 11 history-ring (binding 13) shaders hardcode an 8-layer ring; the renderer
+  may allocate 4 or 1 and wraps at that. Fixed in 4, the other 7 are an open follow-up.
+- **Lesson:** a card can be wrong. spatio-temporal-3d-conv's said "NR and sharpen"; implementing it
+  showed sharpen mode *emphasises* motion, so rejecting moved frames would kill it. Corrected in
+  BRIEFS visibly, before gating. Cards are a plan, not a contract with yourself.
+- **Lesson two:** photo tools pass the §1 test ("would a photographer still use it as X?") best
+  with ideas taken from real lens/sensor/emulsion behaviour.
+- Gates green. GPU QA outstanding; optical-flow-tracer went 150 -> ~204 fetches/pixel.
 
 ## 2026-09-21 — Liquid eight (8 shaders)
 
