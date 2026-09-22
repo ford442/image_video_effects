@@ -6170,64 +6170,45 @@
   {
     "id": "gen-bismuth-hyper-crystals",
     "name": "Bismuth Hyper-Crystals",
-    "url": "shaders/gen-bismuth-hyper-crystals.wgsl",
     "type": "generative",
     "category": "generative",
-    "description": "Witness the mesmerizing growth of non-Euclidean hopper crystals that refract light into a shifting, iridescent spectrum. This shader creates a slowly mutating, metallic fractal geometry inspired by the stepped, stair-like structure of bismuth crystals.",
-    "features": [
-      "bismuth",
-      "iridescent",
-      "metallic",
-      "audio-reactive"
-    ],
-    "tags": [
-      "3d",
-      "fractal",
-      "sdf",
-      "iridescent",
-      "bismuth",
-      "metallic"
-    ],
+    "url": "shaders/gen-bismuth-hyper-crystals.wgsl",
     "params": [
       {
-        "id": "complexity",
         "name": "Complexity",
+        "type": "slider",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Complexity of the spatial folding"
+        "uniform": "zoom_params.x"
       },
       {
-        "id": "colorShift",
         "name": "ColorShift",
+        "type": "slider",
         "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Shift in iridescence phase"
+        "uniform": "zoom_params.y"
       },
       {
-        "id": "growthSpeed",
         "name": "GrowthSpeed",
+        "type": "slider",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Speed of crystal growth rotation"
+        "uniform": "zoom_params.z"
       },
       {
-        "id": "specular",
         "name": "Specular",
+        "type": "slider",
         "default": 0.8,
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Specular highlight sharpness"
+        "uniform": "zoom_params.w"
       }
     ]
   },
