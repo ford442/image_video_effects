@@ -3,7 +3,9 @@
   "name": "Polarized Light Field",
   "url": "shaders/mouse-polarized-light-field.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "description": "Mouse controls polarization angle and birefringence over the image. Creates interference fringes, Malus-law filtering, and moiré patterns. Click ripples spawn polarization vortices.",
   "params": [

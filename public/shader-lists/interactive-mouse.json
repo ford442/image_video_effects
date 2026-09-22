@@ -1685,7 +1685,9 @@
     ],
     "features": [
       "mouse-driven",
-      "geometry"
+      "geometry",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -4365,7 +4367,8 @@
       "held-pointer",
       "click-reactive",
       "psychedelic-color",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -6602,7 +6605,9 @@
     ],
     "features": [
       "mouse-driven",
-      "voronoi"
+      "voronoi",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -8439,7 +8444,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -9445,7 +9452,9 @@
     "name": "Julia Morph",
     "url": "shaders/mouse-julia-morph.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Mouse position controls the Julia set constant c for real-time fractal morphing. Click ripples pin configurations that blend together over the input image palette.",
     "params": [
@@ -9574,7 +9583,9 @@
     "name": "Magnetic Pixel Sand",
     "url": "shaders/mouse-magnetic-pixel-sand.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Pixels behave as iron filings attracted or repelled by the mouse magnet based on their brightness. Creates flowing metallic grain patterns with ripple magnetic pulses.",
     "params": [
@@ -9845,7 +9856,9 @@
     "name": "Polarized Light Field",
     "url": "shaders/mouse-polarized-light-field.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Mouse controls polarization angle and birefringence over the image. Creates interference fringes, Malus-law filtering, and moiré patterns. Click ripples spawn polarization vortices.",
     "params": [
@@ -12740,7 +12753,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
