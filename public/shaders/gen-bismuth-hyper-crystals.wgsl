@@ -2,7 +2,6 @@
 // Bismuth Hyper-Crystals
 // Category: generative
 // ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -40,14 +39,14 @@ fn map(p_in: vec3<f32>) -> f32 {
     let mousePos = vec3<f32>((u.zoom_config.y - 0.5) * 5.0, (0.5 - u.zoom_config.z) * 5.0, 0.0);
     let distToMouse = length(p - mousePos);
 
-    // Audio reactivity: use extraBuffer[0] (bass) to modulate rotation
     let bass = extraBuffer[0];
+    let bass_mod = bass * 0.1;
 
     // Domain repetition and folding
     for(var i = 0; i < i32(u.zoom_params.x * 5.0 + 3.0); i = i + 1) {
         p = abs(p) - 1.0;
 
-        let r = rot(u.config.x * u.zoom_params.z * 0.1 + bass * 0.5);
+        let r = rot(u.config.x * u.zoom_params.z * 0.1 + bass_mod);
         let pxz = r * vec2<f32>(p.x, p.z);
         p.x = pxz.x;
         p.z = pxz.y;
@@ -73,11 +72,9 @@ fn getNormal(p: vec3<f32>) -> vec3<f32> {
     return normalize(n);
 }
 
-fn iridescence(thickness: f32) -> vec3<f32> {
-    // Audio reactivity: use extraBuffer[1] or bass to shift color phase slightly
-    let audioShift = extraBuffer[0] * 0.2;
+fn iridescence(thickness: f32, audio_phase: f32) -> vec3<f32> {
     // Thin film interference approximation
-    let phase = thickness * 5.0 + u.zoom_params.y * 3.14 + audioShift;
+    let phase = thickness * 5.0 + u.zoom_params.y * 3.14 + audio_phase;
     return 0.5 + 0.5 * cos(6.28318 * (phase + vec3<f32>(0.0, 0.33, 0.67)));
 }
 
@@ -129,14 +126,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let halfDir = normalize(lightDir + viewDir);
         let spec = pow(max(dot(n, halfDir), 0.0), u.zoom_params.w * 100.0);
 
-        // Iridescence based on position and normal
-        // Mouse interaction shifts the color locally
-        let mousePos = vec3<f32>((u.zoom_config.y - 0.5) * 5.0, (0.5 - u.zoom_config.z) * 5.0, 0.0);
-        let distToMouse = length(p - mousePos);
-        let mouseThicknessShift = max(0.0, 1.0 - distToMouse * 0.5) * 0.2;
+        let bin = u32(abs(p.y) * 10.0) % 100u;
+        let fft = extraBuffer[4u + bin];
 
-        let thickness = length(p) * 0.1 + dot(n, viewDir) * 0.5 + mouseThicknessShift;
-        let albedo = iridescence(thickness);
+        // Iridescence based on position and normal
+        let thickness = length(p) * 0.1 + dot(n, viewDir) * 0.5;
+        let albedo = iridescence(thickness, fft * 0.5);
 
         col = albedo * (diff * 0.5 + 0.5) + vec3<f32>(spec);
 
