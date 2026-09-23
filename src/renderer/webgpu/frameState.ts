@@ -38,6 +38,7 @@ export interface WebGPUFrameState {
 
   uniformBuf: GPUBuffer;
   extraBuf: GPUBuffer;
+  plasmaBuf: GPUBuffer;
   computeBindGroup: GPUBindGroup;
   blitBindGroup: GPUBindGroup;
   blitBindGroupLayout: GPUBindGroupLayout;
@@ -118,6 +119,7 @@ export interface WebGPUFrameHost {
   blitReadTex: GPUTexture;
   uniformBuf: GPUBuffer;
   extraBuf: GPUBuffer;
+  plasmaBuf: GPUBuffer;
   computeBindGroup: GPUBindGroup;
   blitBindGroup: GPUBindGroup;
   blitBindGroupLayout: GPUBindGroupLayout;
@@ -247,6 +249,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     set blitReadTex(v) { d.blitReadTex = v; },
     get uniformBuf() { return d.resources.uniformBuf; },
     get extraBuf() { return d.resources.extraBuf; },
+    get plasmaBuf() { return d.resources.plasmaBuf; },
     get computeBindGroup() { return d.computeBindGroup; },
     get blitBindGroup() { return d.pipeline.blitBindGroup; },
     set blitBindGroup(v) { d.pipeline.blitBindGroup = v; },
@@ -337,6 +340,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     set blitReadTex(v) { h.blitReadTex = v; },
     get uniformBuf() { return h.uniformBuf; },
     get extraBuf() { return h.extraBuf; },
+    get plasmaBuf() { return h.plasmaBuf; },
     get computeBindGroup() { return h.computeBindGroup; },
     get blitBindGroup() { return h.blitBindGroup; },
     set blitBindGroup(v) { h.blitBindGroup = v; },
