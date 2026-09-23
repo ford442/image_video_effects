@@ -1,6 +1,13 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-21 (filed #1299 silent plasmaBuffer + #1300 pow NaN audit)
+**Last updated:** 2026-09-23 (pulled origin #1298/#1301/#1303/#1305, pushed notes)
+
+## 2026-09-23 — Pull/push
+
+- Rebased the local notes commit onto origin `0eff2050` and fast-forwarded `main` (`0eff2050..3c5e7767`).
+- Origin kept: Bismuth Hyper-Crystals (#1298, #1303), interactive-mouse eight (#1301), digital-crease `pow` NaN fix (#1305).
+- Local notes kept: #1299 silent plasmaBuffer, #1300 pow NaN audit. No shader overlap, no conflict markers.
+- #1305 clamps one of the #1300 sites (`digital-crease`). The rest of that audit is still open.
 
 ## 2026-09-21 — Filed follow-up issues from generative eight
 
