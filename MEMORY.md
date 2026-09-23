@@ -1,6 +1,16 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-23 (pulled origin #1298/#1301/#1303/#1305, pushed notes)
+**Last updated:** 2026-09-23 (foundation audit filed #1307–#1313)
+
+## 2026-09-23 — Foundation / next-work audit
+
+User asked for progress + six GitHub issues (code changes, even large ones), not another shader swarm.
+
+- Catalog **1,370**. Upgrade batches are not the bottleneck. Healthy thumbs **20.7%** (283/1369). Deferrals expire **2026-09-29**. JS still never writes `plasmaBuffer` (**#1299**). History-ring shaders still wrap at hardcoded 8 (**#1307**). Group 0 is at the binding ceiling (**#1308**). ASYNCIFY-only, no `compile_commands.json` (**#1309**). WASM recording still Canvas2D-pumps; artifacts may be 3-slot vs contract 6 (**#1310**). Four sims are frozen, not under-upgraded (**#1312**).
+- JS/TS/C++: bridge is TypeScript SoT; C++ is modular; GraphRunner/gpu-chores stay TS until #1080. Dual canvas configure is healthy — do not rewrite. emsdk 6.0.9 pin is healthy — do not unpin.
+- Filed: **#1307** history wrap, **#1308** sim ring (land `/root/iv-simring`), **#1309** JSPI + compile_commands (land `/root/iv-jspi`), **#1310** WASM COPY_SRC/WebCodecs/6-slot rebuild, **#1312** thumbs + rescue four sims, **#1313** later compositor + `#include` migration + native Dawn/wgpu (new libs: `@xyflow/react`, Dawn+GLFW+glm or wgpu/winit).
+- Same-morning sibling issues (other session): **#1311** lifecycle/lint/root cleanup, **#1314** Engine 2.0 worker/profiler. Complementary, not duplicates.
+- Play order: **#1299 → #1307 → #1308 / #1309 / #1310 → #1312 → #1080 → #1182 / #1313**. No GraphRunner C++ until Promote. No 10-wide content swarm as the next move.
 
 ## 2026-09-23 — Pull/push
 
