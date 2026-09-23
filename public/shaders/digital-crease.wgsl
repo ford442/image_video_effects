@@ -174,7 +174,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
   // HDR specular on crease highlights
-  let creaseHighlight = pow(1.0 - abs(animatedFold) / max(foldDepth, 1e-4), 5.0) * 0.5;
+  let creaseHighlight = pow(max(1.0 - abs(animatedFold) / max(foldDepth, 1e-4), 0.0), 5.0) * 0.5;
 
   // Crease normal specular
   let creaseNormal = vec3<f32>(signFold * 0.25, 0.0, 1.0);
