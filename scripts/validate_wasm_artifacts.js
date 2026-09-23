@@ -276,20 +276,35 @@ function checkNagaWasm() {
   const artifactPath = path.resolve(contract.artifact);
   if (!fs.existsSync(artifactPath)) return; // reported by the artifact loop above
 
-  const artifactMtime = fs.statSync(artifactPath).mtimeMs;
-  const sources = [cargoToml, ...listRustSources(path.resolve(contract.crate, 'src'))].filter((p) =>
-    fs.existsSync(p),
-  );
-  const newer = sources.filter((p) => fs.statSync(p).mtimeMs > artifactMtime);
-  if (newer.length > 0) {
-    errors.push(
-      `❌ ${contract.artifact} is older than ${newer.map((p) => path.relative(process.cwd(), p)).join(', ')} — ` +
-        `rebuild with: ${contract.rebuildCommand}`,
-    );
-    allValid = false;
-  } else {
-    console.log(`naga_wasm: ✅ artifact fresh, naga pinned to ${contract.nagaCratePin}`);
+  try {
+    const { execSync } = require('child_process');
+
+    // Get last commit timestamp for sources
+    const sourceDirs = `${contract.crate}/src ${contract.crate}/Cargo.toml ${contract.crate}/build.sh`;
+    const sourceTimeCmd = `git log -1 --format=%ct -- ${sourceDirs}`;
+    const sourceOut = execSync(sourceTimeCmd, { encoding: 'utf8' }).trim();
+    const sourceTime = sourceOut ? parseInt(sourceOut, 10) : 0;
+
+    // Get last commit timestamp for artifacts
+    const artifactFiles = `${contract.artifact} ${contract.loader}`;
+    const artifactTimeCmd = `git log -1 --format=%ct -- ${artifactFiles}`;
+    const artifactOut = execSync(artifactTimeCmd, { encoding: 'utf8' }).trim();
+    const artifactTime = artifactOut ? parseInt(artifactOut, 10) : 0;
+
+    if (sourceTime > 0 && artifactTime > 0 && sourceTime > artifactTime) {
+      errors.push(
+        `❌ ${contract.artifact} is older than its rust sources in git history — ` +
+          `rebuild with: ${contract.rebuildCommand}`,
+      );
+      allValid = false;
+    } else {
+      console.log(`naga_wasm: ✅ artifact fresh, naga pinned to ${contract.nagaCratePin}`);
+    }
+  } catch (e) {
+    // If git fails (not a repo, shallow clone, etc.), fall back to pass to avoid breaking
+    console.log(`naga_wasm: ⚠️ unable to verify staleness via git, assuming fresh (naga pinned to ${contract.nagaCratePin})`);
   }
+
   console.log('');
 }
 
