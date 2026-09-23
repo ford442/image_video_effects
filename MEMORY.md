@@ -1,6 +1,12 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-21 (retro-glitch ten, liquid eight, post-processing seven — all on main)
+**Last updated:** 2026-09-21 (filed #1299 silent plasmaBuffer + #1300 pow NaN audit)
+
+## 2026-09-21 — Filed follow-up issues from generative eight
+
+- **#1299** [JS renderer never writes plasmaBuffer — shader audio is silent](https://github.com/ford442/image_video_effects/issues/1299). ~1,250 shaders read `plasmaBuffer[0].xyz`. JS `audioDepth.ts` writes extraBuffer only; C++ WASM already uploads `vec4(bass, mid, treble, 0)`. Not #1182 (that issue assumes plasmaBuffer already works). Fix is a small JS `writePlasmaBuffer` next to `writeExtraBuffer`.
+- **#1300** [audit remaining `pow(1.0 - abs(...))` sites for negative-base NaN](https://github.com/ford442/image_video_effects/issues/1300). Protocell is clamped; 21 other files / 22 call sites unreviewed. Do not blanket-clamp — some bases are already in `[0,1]`.
+- Open issues that still matter besides these: #1182 (all-slot host mapping + OSC, later), #1080 (WASM GPU evidence).
 
 ## 2026-09-21 — Post-processing seven (7 shaders)
 
@@ -2844,7 +2850,7 @@
   - ferrofluid-monolith: Rosensweig cone lattice; chrome reflects the core beam past the caps.
 - Floor: exact C loads (tree, protocell); params byte-exact (asserted); JSON +upgraded-rgba (+ truthful mouse/audio/temporal tags on tree/protocell).
 - Gates: precommit 8/8, extraBuffer, dead sliders (6 scanned + tree/protocell by hand), catalogs 1383 unique, build; Jest 5 suites/6 tests fail identically on clean main.
-- Follow-up: 20 more `pow(1.0 - abs(` sites library-wide may have the same negative-base NaN.
+- Follow-up: 20 more `pow(1.0 - abs(` sites library-wide may have the same negative-base NaN. Filed **#1299** (silent plasmaBuffer) and **#1300** (pow NaN audit).
 - Notes: agents/swarm-outputs/claude-2026-09-21-generative-eight/. Not committed. Real-GPU QA external (protocell + hyperbolic-tree first — biggest visual change).
 
 ## 2026-09-21 — interactive-mouse eight (8 shaders)

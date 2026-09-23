@@ -6,6 +6,7 @@ _Learn about the person you're helping. Update this as you go._
 - **What to call them:**
 - **Pronouns:** _(optional)_
 - **Timezone:**
+- **Filed 2026-09-21:** #1299 silent `plasmaBuffer` on the JS renderer (not #1182); #1300 library-wide `pow(1.0 - abs(...))` NaN audit after the protocell floor fix. Both from the generative-eight follow-ups.
 - **Pushed to origin/main (2026-09-21):** Fast-forwarded `feat/wasm-slot-limit-contract` `398f0071` onto `main` and pushed (`77c48f27..398f0071`). Slot-limit contract + today's distortion/sim/artistic batches + thumbs farm. No origin uniqueness to union. No conflict markers.
 - **Local main union (2026-09-20, no push):** Merged origin `#1291` Neon Plasma Chrono-Bloom onto the local conflict cleanup, then landed `feat/naga-wasm-validation`. Catalog **1,370** (generative 475). Local `main` ahead of origin by 5. Did not push.
 - **Merge conflict cleanup (2026-09-19):** `62f2d677` `push fix` had committed conflict markers. Overlapping sentient/radiant eight kept the local implementation (not the `#1281` restamp). Origin unique batches kept (resonance eight, geometry six, chrono-cosmic eight, later plans `#1283`–`#1292`). Catalog lists regenerated.
