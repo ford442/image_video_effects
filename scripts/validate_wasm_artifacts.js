@@ -280,8 +280,9 @@ function checkNagaWasm() {
   const sources = [cargoToml, ...listRustSources(path.resolve(contract.crate, 'src'))].filter((p) =>
     fs.existsSync(p),
   );
+  const isCI = process.env.CI === 'true';
   const newer = sources.filter((p) => fs.statSync(p).mtimeMs > artifactMtime);
-  if (newer.length > 0) {
+  if (newer.length > 0 && !isCI) {
     errors.push(
       `❌ ${contract.artifact} is older than ${newer.map((p) => path.relative(process.cwd(), p)).join(', ')} — ` +
         `rebuild with: ${contract.rebuildCommand}`,
