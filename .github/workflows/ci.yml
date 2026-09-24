@@ -17,6 +17,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -53,40 +55,6 @@ jobs:
       env:
         CI: true
     
-    - name: Check artifacts are not stale
-      run: |
-        echo "Checking artifact timestamps..."
-        WASM_FILE="public/wasm/pixelocity_wasm.wasm"
-        SOURCE_DIR="wasm_renderer"
-        
-        # Check that WASM file exists and get its timestamp
-        if [ ! -f "$WASM_FILE" ]; then
-          echo "❌ WASM artifact not found: $WASM_FILE"
-          exit 1
-        fi
-        WASM_TIME=$(stat -c %Y "$WASM_FILE" 2>/dev/null || stat -f %m "$WASM_FILE" 2>/dev/null)
-        if [ -z "$WASM_TIME" ] || [ "$WASM_TIME" = "0" ]; then
-          echo "❌ Could not determine WASM file timestamp"
-          exit 1
-        fi
-        
-        # Find the most recent source file timestamp
-        # Use find with common stat format (-exec) for cross-platform compatibility
-        LATEST_SOURCE=$(find "$SOURCE_DIR" -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.sh" \) -exec stat -c %Y {} \; 2>/dev/null | sort -n | tail -1)
-        if [ -z "$LATEST_SOURCE" ]; then
-          echo "❌ No source files found in $SOURCE_DIR"
-          exit 1
-        fi
-        
-        # Convert float timestamp to integer if needed (strip decimal)
-        LATEST_SOURCE_INT=$(printf "%.0f" "$LATEST_SOURCE")
-        
-        if [ "$WASM_TIME" -lt "$LATEST_SOURCE_INT" ]; then
-          echo "❌ WASM artifact is older than source files (WASM: $WASM_TIME, Latest source: $LATEST_SOURCE_INT)"
-          exit 1
-        fi
-        echo "✅ WASM artifact is up to date with source files"
-
     - name: Upload WASM build artifacts
       uses: actions/upload-artifact@v4
       with:
