@@ -1,6 +1,17 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-23 (foundation audit filed #1307–#1313)
+**Last updated:** 2026-09-26 (open issues tagged with Claude model/effort)
+
+## 2026-09-26 — Issue complexity tags (titles)
+
+All 13 open issues got a prefix on the title so agents pick the right Claude + thinking level. Rubric: sonnet 5 for bounded pattern-follow; opus 5.5 when freeze/ABI/lifecycle/architecture can silently wreck the renderer.
+
+- **claude sonnet 5 medium:** #1299 plasmaBuffer write, #1307/#1324 history-ring `textureNumLayers`
+- **claude sonnet 5 high:** #1300 `pow` NaN audit (21 sites, do not blanket-clamp)
+- **opus 5.5 low:** #1080 Promote vs Stay-B evidence session
+- **opus 5.5 medium:** #1182 VJ audio/OSC, #1308 sim-ring land, #1309 JSPI + compile_commands
+- **opus 5.5 high:** #1310 WASM COPY_SRC/WebCodecs, #1311 foundation sweep, #1312 thumbs + four frozen sims
+- **opus 5.5 extra:** #1313 include/compositor/native fork, #1314 Engine 2.0 worker/DAG/video
 
 ## 2026-09-23 — Foundation / next-work audit
 

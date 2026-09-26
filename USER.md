@@ -2,6 +2,7 @@
 
 _Learn about the person you're helping. Update this as you go._
 
+- **Issue dispatch (2026-09-26):** Open GitHub issues now carry a Claude model/effort prefix on the title. Sonnet 5 medium = mechanical pattern-follow (#1299, #1307, #1324). Sonnet 5 high = per-file judgment (#1300). Opus 5.5 low = evidence/decision (#1080). Medium = land existing design (#1182, #1308, #1309). High = multi-WP correctness / black-canvas / frozen solvers (#1310, #1311, #1312). Extra = later architecture epics (#1313, #1314).
 - **Name:**
 - **What to call them:**
 - **Pronouns:** _(optional)_
