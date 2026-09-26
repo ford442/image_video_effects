@@ -60,6 +60,13 @@ describe('summarizeWasmInitState', () => {
       .toBe('ready · adapter: intel | gen12 | Iris Xe');
   });
 
+  it('names the loaded build so JSPI vs ASYNCIFY is visible in the debug panel', () => {
+    expect(summarizeWasmInitState({ initialized: true, wasmArtifact: 'jspi', adapterInfo: 'nvidia | pascal' }))
+      .toBe('ready (jspi) · adapter: nvidia | pascal');
+    expect(summarizeWasmInitState({ initialized: true, wasmArtifact: 'asyncify', adapterInfo: 'x' }))
+      .toBe('ready (asyncify) · adapter: x');
+  });
+
   it('distinguishes partial from failed', () => {
     expect(summarizeWasmInitState({ failedStage: 5, adapterInfo: 'amd | rdna2 | 6600' }))
       .toContain('partial at Resources');

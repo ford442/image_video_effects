@@ -39,6 +39,8 @@ export interface WASMDiagnostics {
   loadErrorCount: number;
   lastLoadError: string | null;
   initTime: string;
+  /** Emscripten glue init.ts loaded: 'jspi' (pixelocity_wasm_jspi.js) or 'asyncify' (pixelocity_wasm.js). */
+  wasmArtifact: 'jspi' | 'asyncify' | null;
   /** One-line "ready / partial / failed at <stage> · adapter: …" summary for the debug panel. */
   initSummary: string;
 }
@@ -158,8 +160,10 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       loadErrorCount: bridge?.loadErrorCount ?? 0,
       lastLoadError: bridge?.lastLoadError ?? null,
       initTime: bridge?.initTime ?? 'pending',
+      wasmArtifact: bridge?.wasmArtifact ?? null,
       initSummary: summarizeWasmInitState({
         initialized: this.initialized,
+        wasmArtifact: bridge?.wasmArtifact,
         failedStage: bridge?.failedStage,
         failedStageName: bridge?.failedStageName,
         lastInitError: bridge?.lastInitError,

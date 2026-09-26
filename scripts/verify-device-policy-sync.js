@@ -461,6 +461,33 @@ function verifyWasmCompileSources(flags, buildSh) {
   if (committed !== null && committed !== compileLineReport(flags)) {
     fail('reports/wasm_compile_line.txt is stale — run npm run wasm:compile-commands');
   }
+
+  // compile_commands.json is gitignored, so gate what it would contain: one entry
+  // per source, each indexed as wasm (not host) code with the emdawn headers.
+  const { compileCommands } = require('./format-wasm-compile-flags.js');
+  const cmds = compileCommands(flags, '/EM_CACHE');
+  const indexed = cmds.map((c) => path.relative(path.join(ROOT, 'wasm_renderer'), c.file)).sort();
+  if (JSON.stringify(indexed) !== JSON.stringify(listed)) {
+    fail(`compile_commands.json must index every source.\n  indexed ${JSON.stringify(indexed)}\n  sources ${JSON.stringify(listed)}`);
+  }
+  const emdawnInclude = `-I/EM_CACHE/ports/${flags.usePort}/${flags.usePort}_pkg/webgpu/include`;
+  for (const c of cmds) {
+    for (const need of ['--target=wasm32-unknown-emscripten', '--sysroot=/EM_CACHE/sysroot', '-iwithsysroot/include/compat', emdawnInclude]) {
+      if (!c.arguments.includes(need)) fail(`compile_commands.json entry ${c.file} is missing ${need}`);
+    }
+    if (c.arguments.some((a) => a.startsWith('--use-port') || /^-s[A-Z]/.test(a))) {
+      fail(`compile_commands.json entry ${c.file} carries --use-port or -s flags; those are link-time only (USE_WEBGPU leak)`);
+    }
+  }
+  let clangd = '';
+  try {
+    clangd = fs.readFileSync(path.join(ROOT, '.clangd'), 'utf8');
+  } catch {
+    fail('.clangd missing — clangd / Cursor needs it to find the generated compile_commands.json');
+  }
+  if (clangd && !/^\s*CompilationDatabase:\s*\.\s*$/m.test(clangd)) {
+    fail('.clangd must set CompileFlags.CompilationDatabase: . (repo-root compile_commands.json)');
+  }
 }
 
 /**

@@ -56,4 +56,4 @@ em++ \
   -o wasm_renderer/build/pixelocity_wasm_jspi.js
 
 ## per-TU (compile_commands.json, IDE indexing only — no --use-port, no -s)
-em++ -std=c++20 -O2 -Iwasm_renderer -I$EM_CACHE/ports/emdawnwebgpu/emdawnwebgpu_pkg/webgpu/include -c wasm_renderer/<source>.cpp
+em++ --target=wasm32-unknown-emscripten --sysroot=$EM_CACHE/sysroot -Xclang -iwithsysroot/include/compat -std=c++20 -O2 -Iwasm_renderer -I$EM_CACHE/ports/emdawnwebgpu/emdawnwebgpu_pkg/webgpu/include -c wasm_renderer/<source>.cpp

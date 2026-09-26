@@ -62,9 +62,19 @@ const COMPILE_LINE_PATH = path.join(ROOT, 'reports', 'wasm_compile_line.txt');
  * --use-port per TU is exactly the USE_WEBGPU leak build.sh avoids. Instead the
  * port's headers go on the include path (as CMake's headers target does) and
  * every -s flag stays at link time.
+ *
+ * clangd does not run em++ to learn its target, so the wasm triple and the
+ * cache sysroot are spelled out; without them the TUs index as x86 host code
+ * (no stddef.h, no __EMSCRIPTEN__, EM_JS unexpanded).
+ * Mirrors `em++ --cflags` minus codegen-only -mllvm switches.
  */
 function perTuArgs(contract, emCache) {
   return [
+    '--target=wasm32-unknown-emscripten',
+    `--sysroot=${path.join(emCache, 'sysroot')}`,
+    // What `em++ --cflags` adds after the sysroot (xlocale.h etc. live here).
+    '-Xclang',
+    '-iwithsysroot/include/compat',
     `-std=${contract.std}`,
     contract.opt,
     `-I${RENDERER_DIR}`,
