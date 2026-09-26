@@ -395,6 +395,7 @@ function verifyWasmCompileFlags() {
   }
 
   verifyWasmBuildVariants(flags);
+  verifyWasmCompileSources(flags, buildSh);
 
   // Async mode (ASYNCIFY / JSPI) lives only in the contract. Nothing that drives
   // a build may spell it: build.sh, CMake, CI, npm scripts.
@@ -423,6 +424,42 @@ function verifyWasmCompileFlags() {
     if (/--use-port=emdawnwebgpu/.test(code)) {
       fail(`${name} hardcodes --use-port; it belongs in wasm_compile_flags.json`);
     }
+  }
+}
+
+/**
+ * One TU list: the contract's `sources` must equal the tracked wasm_renderer/*.cpp
+ * set, build.sh must read it rather than list .cpp files, and the committed
+ * human dump (reports/wasm_compile_line.txt) must match what the contract renders.
+ */
+function verifyWasmCompileSources(flags, buildSh) {
+  const { compileLineReport, COMPILE_LINE_PATH } = require('./format-wasm-compile-flags.js');
+  if (!Array.isArray(flags.sources) || flags.sources.length === 0) {
+    fail('wasm_compile_flags.json must list `sources` (translation units relative to wasm_renderer/)');
+    return;
+  }
+  const onDisk = fs
+    .readdirSync(path.join(ROOT, 'wasm_renderer'))
+    .filter((f) => f.endsWith('.cpp') && isGitTracked(`wasm_renderer/${f}`))
+    .sort();
+  const listed = [...flags.sources].sort();
+  if (JSON.stringify(onDisk) !== JSON.stringify(listed)) {
+    fail(
+      `wasm_compile_flags.json sources must equal tracked wasm_renderer/*.cpp.\n  on disk ${JSON.stringify(onDisk)}\n  listed  ${JSON.stringify(listed)}`,
+    );
+  }
+  const code = buildSh.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  if (/\w+\.cpp\b/.test(code)) {
+    fail('build.sh hardcodes a .cpp source; translation units belong in wasm_compile_flags.json sources');
+  }
+  let committed = null;
+  try {
+    committed = fs.readFileSync(COMPILE_LINE_PATH, 'utf8');
+  } catch {
+    fail('reports/wasm_compile_line.txt missing — run npm run wasm:compile-commands');
+  }
+  if (committed !== null && committed !== compileLineReport(flags)) {
+    fail('reports/wasm_compile_line.txt is stale — run npm run wasm:compile-commands');
   }
 }
 
