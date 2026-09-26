@@ -34437,6 +34437,72 @@
     "features": []
   },
   {
+    "id": "gen-sentient-holographic-neuro-lace-matrix",
+    "name": "Sentient Holographic Neuro-Lace Matrix",
+    "url": "shaders/gen-sentient-holographic-neuro-lace-matrix.wgsl",
+    "category": "generative",
+    "type": "generative",
+    "description": "A boundless, hyper-reactive lattice of luminous digital synapses that breathe, think, and evolve, seamlessly blending synthetic cyberpunk aesthetics with organic neural architecture.",
+    "features": [
+      "cyberpunk",
+      "neural",
+      "lattice",
+      "holographic",
+      "audio-reactive",
+      "organic"
+    ],
+    "tags": [
+      "cyberpunk",
+      "neural",
+      "lattice",
+      "holographic",
+      "audio-reactive",
+      "organic"
+    ],
+    "params": [
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Complexity of the lattice"
+      },
+      {
+        "id": "color_shift",
+        "name": "ColorShift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Shift the color spectrum"
+      },
+      {
+        "id": "growth_speed",
+        "name": "GrowthSpeed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z",
+        "description": "Speed of growth and pulse"
+      },
+      {
+        "id": "specular",
+        "name": "Specular",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w",
+        "description": "Specular highlight intensity"
+      }
+    ]
+  },
+  {
     "name": "Sentient Liquid-Neon Fractal-Heart",
     "category": "generative",
     "tags": [
