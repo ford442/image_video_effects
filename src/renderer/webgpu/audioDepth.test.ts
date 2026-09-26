@@ -3,6 +3,7 @@ import {
   updateAudioData,
   updateAudioFrequencyBins,
   writeExtraBuffer,
+  writePlasmaBuffer,
 } from './audioDepth';
 import { AUDIO_FFT_BINS, EXTRA_FLOATS, EXTRA_BIN_OFFSET } from './webgpuConstants';
 
@@ -33,5 +34,31 @@ describe('audioDepth', () => {
     expect(written[4]).toBe(3);
     expect(written[EXTRA_BIN_OFFSET]).toBeCloseTo(0.25);
     expect(written[EXTRA_BIN_OFFSET + 127]).toBeCloseTo(0.75);
+  });
+
+  it('writes bass/mid/treble as vec4(bass, mid, treble, 0) to plasmaBuffer[0]', () => {
+    const state = createAudioDepthState();
+    updateAudioData(state, 0.2, 0.4, 0.6);
+
+    const device = {
+      queue: { writeBuffer: jest.fn() },
+    } as unknown as GPUDevice;
+    const plasmaBuf = {} as GPUBuffer;
+
+    writePlasmaBuffer(device, plasmaBuf, state);
+
+    expect(device.queue.writeBuffer).toHaveBeenCalledTimes(1);
+    const [buf, offset, written] = (device.queue.writeBuffer as jest.Mock).mock.calls[0] as [
+      GPUBuffer,
+      number,
+      Float32Array,
+    ];
+    expect(buf).toBe(plasmaBuf);
+    expect(offset).toBe(0);
+    expect(written.length).toBe(4);
+    expect(written[0]).toBeCloseTo(0.2);
+    expect(written[1]).toBeCloseTo(0.4);
+    expect(written[2]).toBeCloseTo(0.6);
+    expect(written[3]).toBe(0);
   });
 });

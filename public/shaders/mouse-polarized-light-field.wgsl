@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  mouse-polarized-light-field
 //  Category: interactive-mouse
-//  Features: mouse-driven, interference, polarization
+//  Features: mouse-driven, interference, polarization, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Chunks From: chunk-library.md (hash12, hueShift)
 //  Created: 2026-04-18
 //  By: Agent 2C
+//  Upgraded: 2026-09-21
+//  Ideas: chromatic fringe dispersion (per-channel retardation density);
+//         treble-driven fringe shimmer
+//  A packing: display RGBA passthrough (no history)
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse controls polarization angle and birefringence across the
 //  image. Creates interference patterns, color shifts, and moiré
@@ -63,10 +67,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
 
+  let treble = plasmaBuffer[0].z;
+
   let polarizationAngle = mix(0.0, 3.14159, u.zoom_params.x);
   let birefringence = mix(0.0, 2.0, u.zoom_params.y);
   let fringeDensity = mix(5.0, 50.0, u.zoom_params.z);
   let colorMode = u.zoom_params.w;
+
+  // Idea 2: treble-driven fringe shimmer — high frequencies visibly
+  // sparkle the fringe spacing instead of leaving it perfectly static.
+  let trebleShimmer = treble * 6.0 * sin(dot(vec2<f32>(global_id.xy), vec2<f32>(0.37, 0.41)) + time * 24.0);
 
   let mousePos = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
@@ -89,9 +99,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let retardation = birefringence * (1.0 + mouseInfluence * 2.0) * mouseDist * 3.14159;
   let phase = retardation + time * 0.5;
 
-  // Interference fringe pattern
-  let fringe = cos(phase * fringeDensity + mouseDist * 20.0);
-  let fringeIntensity = fringe * fringe * 0.5 + 0.5;
+  // Idea 1: chromatic fringe dispersion — each wavelength (channel) sees a
+  // slightly different fringe spacing (not just a hue rotation), the way a
+  // real birefringent film splits interference colors into rainbow edges.
+  let dispersionAmt = birefringence * 0.18;
+  let fringeR = cos(phase * (fringeDensity * (1.0 - dispersionAmt) + trebleShimmer) + mouseDist * 20.0);
+  let fringeGc = cos(phase * (fringeDensity + trebleShimmer) + mouseDist * 20.0);
+  let fringeB = cos(phase * (fringeDensity * (1.0 + dispersionAmt) + trebleShimmer) + mouseDist * 20.0);
+  let dispersedFringe = vec3<f32>(
+    fringeR * fringeR * 0.5 + 0.5,
+    fringeGc * fringeGc * 0.5 + 0.5,
+    fringeB * fringeB * 0.5 + 0.5
+  );
 
   // Sample image
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -123,7 +142,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mix image with interference
   var finalColor = mix(filteredColor, baseColor * moire, 0.3);
-  finalColor = finalColor + vec3<f32>(0.3, 0.5, 0.7) * fringeIntensity * birefringence * 0.2;
+  finalColor = finalColor + dispersedFringe * vec3<f32>(1.0, 0.85, 0.6) * birefringence * 0.2;
 
   // Ripple vortices: transient polarization spirals
   let rippleCount = min(u32(u.config.y), 50u);
@@ -147,6 +166,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(fract(phase * 0.159), 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
   // Depth passthrough
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

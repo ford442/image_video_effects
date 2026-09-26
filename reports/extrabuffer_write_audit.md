@@ -1,6 +1,6 @@
 # extraBuffer Write Audit
 
-- Files scanned: 1414
+- Files scanned: 1415
 - **New violations (writes to [0..132]): 0**
 - Known (triaged baseline) violations: 63
 - Dynamic-index writes (unresolved, review): 23

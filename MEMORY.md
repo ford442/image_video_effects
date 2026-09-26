@@ -1,6 +1,29 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-21 (retro-glitch ten, liquid eight, post-processing seven — all on main)
+**Last updated:** 2026-09-23 (foundation audit filed #1307–#1313)
+
+## 2026-09-23 — Foundation / next-work audit
+
+User asked for progress + six GitHub issues (code changes, even large ones), not another shader swarm.
+
+- Catalog **1,370**. Upgrade batches are not the bottleneck. Healthy thumbs **20.7%** (283/1369). Deferrals expire **2026-09-29**. JS still never writes `plasmaBuffer` (**#1299**). History-ring shaders still wrap at hardcoded 8 (**#1307**). Group 0 is at the binding ceiling (**#1308**). ASYNCIFY-only, no `compile_commands.json` (**#1309**). WASM recording still Canvas2D-pumps; artifacts may be 3-slot vs contract 6 (**#1310**). Four sims are frozen, not under-upgraded (**#1312**).
+- JS/TS/C++: bridge is TypeScript SoT; C++ is modular; GraphRunner/gpu-chores stay TS until #1080. Dual canvas configure is healthy — do not rewrite. emsdk 6.0.9 pin is healthy — do not unpin.
+- Filed: **#1307** history wrap, **#1308** sim ring (land `/root/iv-simring`), **#1309** JSPI + compile_commands (land `/root/iv-jspi`), **#1310** WASM COPY_SRC/WebCodecs/6-slot rebuild, **#1312** thumbs + rescue four sims, **#1313** later compositor + `#include` migration + native Dawn/wgpu (new libs: `@xyflow/react`, Dawn+GLFW+glm or wgpu/winit).
+- Same-morning sibling issues (other session): **#1311** lifecycle/lint/root cleanup, **#1314** Engine 2.0 worker/profiler. Complementary, not duplicates.
+- Play order: **#1299 → #1307 → #1308 / #1309 / #1310 → #1312 → #1080 → #1182 / #1313**. No GraphRunner C++ until Promote. No 10-wide content swarm as the next move.
+
+## 2026-09-23 — Pull/push
+
+- Rebased the local notes commit onto origin `0eff2050` and fast-forwarded `main` (`0eff2050..3c5e7767`).
+- Origin kept: Bismuth Hyper-Crystals (#1298, #1303), interactive-mouse eight (#1301), digital-crease `pow` NaN fix (#1305).
+- Local notes kept: #1299 silent plasmaBuffer, #1300 pow NaN audit. No shader overlap, no conflict markers.
+- #1305 clamps one of the #1300 sites (`digital-crease`). The rest of that audit is still open.
+
+## 2026-09-21 — Filed follow-up issues from generative eight
+
+- **#1299** [JS renderer never writes plasmaBuffer — shader audio is silent](https://github.com/ford442/image_video_effects/issues/1299). ~1,250 shaders read `plasmaBuffer[0].xyz`. JS `audioDepth.ts` writes extraBuffer only; C++ WASM already uploads `vec4(bass, mid, treble, 0)`. Not #1182 (that issue assumes plasmaBuffer already works). Fix is a small JS `writePlasmaBuffer` next to `writeExtraBuffer`.
+- **#1300** [audit remaining `pow(1.0 - abs(...))` sites for negative-base NaN](https://github.com/ford442/image_video_effects/issues/1300). Protocell is clamped; 21 other files / 22 call sites unreviewed. Do not blanket-clamp — some bases are already in `[0,1]`.
+- Open issues that still matter besides these: #1182 (all-slot host mapping + OSC, later), #1080 (WASM GPU evidence).
 
 ## 2026-09-21 — Post-processing seven (7 shaders)
 
@@ -2844,5 +2867,36 @@
   - ferrofluid-monolith: Rosensweig cone lattice; chrome reflects the core beam past the caps.
 - Floor: exact C loads (tree, protocell); params byte-exact (asserted); JSON +upgraded-rgba (+ truthful mouse/audio/temporal tags on tree/protocell).
 - Gates: precommit 8/8, extraBuffer, dead sliders (6 scanned + tree/protocell by hand), catalogs 1383 unique, build; Jest 5 suites/6 tests fail identically on clean main.
-- Follow-up: 20 more `pow(1.0 - abs(` sites library-wide may have the same negative-base NaN.
+- Follow-up: 20 more `pow(1.0 - abs(` sites library-wide may have the same negative-base NaN. Filed **#1299** (silent plasmaBuffer) and **#1300** (pow NaN audit).
 - Notes: agents/swarm-outputs/claude-2026-09-21-generative-eight/. Not committed. Real-GPU QA external (protocell + hyperbolic-tree first — biggest visual change).
+
+## 2026-09-21 — interactive-mouse eight (8 shaders)
+
+- IDs: mouse-magnetic-pixel-sand, magnetic-rgb, mouse-julia-morph, cross-stitch, foil-impression,
+  interactive-voronoi-web, mouse-polarized-light-field, poly-art.
+- Per shader, the ideas actually added:
+  - mouse-magnetic-pixel-sand: field-line chaining (grains link into short chains); bass field pulse;
+    settling residue via new C/A feedback (raw sim, first reader/writer of C in this file).
+  - magnetic-rgb: named the pre-existing iron-filing field-line filaments; bass field surge; semantic
+    alpha from R/G/B channel-UV divergence (was hardcoded 1.0).
+  - mouse-julia-morph: orbit-trap filament glow (new trap-tracking iteration on the base view only);
+    bass-driven zoom breathing.
+  - cross-stitch: half-stitch/full-stitch luma shading (real embroidery technique); satin thread sheen;
+    subtle bass weave-tension pulse.
+  - foil-impression: anisotropic brushed-metal streaks follow the image-relief tangent under press;
+    crinkle micro-fold shimmer gated at the press boundary.
+  - interactive-voronoi-web: named the pre-existing living-neural-web (racing pulses, firing synapses);
+    bass-synchronized firing burst layered on top.
+  - mouse-polarized-light-field: chromatic fringe dispersion (per-channel fringe density, true rainbow
+    edges, not just hue); treble-driven fringe shimmer (file had zero audio use before).
+  - poly-art: finished the facet edges the file had abandoned as dead code (2nd-closest-point border
+    distance); per-facet flat-shading with a bass pulse. Bug fix: file had **no bounds guard** at all.
+- Floor: all 8 now write dataTextureA (none did before) — 7 display-RGBA passthrough, one (magnetic
+  pixel sand) genuine raw-sim feedback with a documented C read. Params byte-exact; JSON features only
+  +audio-reactive/+upgraded-rgba where the WGSL now actually does that.
+- Gates: naga-wasm 8/8, precommit gate 8/8 (bindgroup+workgroup; no CLI naga binary in this VM),
+  extraBuffer 0 new violations, dead-sliders 0 new, catalogs regenerated clean (1384 defs, 1384 unique
+  IDs), catalog-drift 105 (unchanged baseline). Jest/build **not run** — this VM has no node_modules
+  installed at all, so the JS toolchain wasn't available; noted rather than faked.
+- Notes: agents/swarm-outputs/claude-2026-09-21-mouse-interactive-eight/. Real-GPU QA external
+  (poly-art's finished edges + mouse-magnetic-pixel-sand's residue trail first — biggest visual change).
