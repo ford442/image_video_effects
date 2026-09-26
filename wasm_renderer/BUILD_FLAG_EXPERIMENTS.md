@@ -151,14 +151,25 @@ five `jspiExports` (`instrumentWasmExports` pattern). emcc 6.0.6 warns
 
 **Init time: not measured.** Needs a real GPU + Chrome (#1080 session).
 
+**Pinned build (2026-09-27, emcc 6.0.9 `4e422385`).** Both artifacts are committed from this
+build and `artifactsPendingPinnedBuild` is gone from `wasm_runtime_invariants.json`.
+
+| Variant | `.wasm` | `.js` | vs ASYNCIFY |
+|---------|--------:|------:|------------:|
+| ASYNCIFY fallback (`pixelocity_wasm`) | 150,419 B | 80,477 B | — |
+| JSPI (`pixelocity_wasm_jspi`) | 102,920 B | 76,668 B | **−47,499 B (−31.6%)** |
+
+Import tables: 57 entries each, no `wgpuSurfacePresent` in either. The JSPI module exports no
+`asyncify_*` functions; the ASYNCIFY module exports 5. The 6.0.9 ASYNCIFY `.wasm` is **not**
+byte-identical to the one it replaces (148,601 B on `main`). The fallback flags did not change;
+the difference is the toolchain bump plus the bridge-ABI change above. That is why the ASYNCIFY
+build is in the #1080 checklist too.
+
 **Still open (merge gate, needs #1080 hardware)**
 
-1. Build both with emsdk **6.0.9**, commit `pixelocity_wasm_jspi.{js,wasm}`, and in the same
-   commit delete the entry from `wasm_runtime_invariants.json` `artifactsPendingPinnedBuild`.
-   Both gates fail if it stays listed after the file is committed.
-2. On Chrome + ≥1 real GPU: `CreateDevice()` and `LoadShader` succeed on the JSPI build
+1. On Chrome + ≥1 real GPU: `CreateDevice()` and `LoadShader` succeed on the JSPI build
    (`getDiagnostics().wasmArtifact === 'jspi'`). Record init ms for both builds here.
-3. Safari and Firefox boot the ASYNCIFY build.
-4. Confirm the ASYNCIFY artifact built by 6.0.9 is byte-identical to the committed one. The
-   fallback flags did not change, but the bridge ABI did (see above).
+2. Safari and Firefox boot the ASYNCIFY build (`wasmArtifact === 'asyncify'`).
+3. Chrome with JSPI disabled (`--disable-features=WebAssemblyJSPI` or an older channel)
+   falls back to ASYNCIFY and still initializes.
 
