@@ -4,7 +4,9 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Upgraded: 2026-05-31
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
+//         hardcoded 8 — see HISTORY RING DEPTH below
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot (binding-13 infrastructure proof shader)
 //
@@ -39,7 +41,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const HISTORY_DEPTH: u32 = 8u;
 const TAU: f32 = 6.28318530718;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -74,15 +75,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
 
+  // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────────────
+  // The ring is at most 8 layers; after the VRAM probe the runtime may
+  // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED count
+  // (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked for layers
+  // that do not exist on a 4- or 1-layer device and WGSL clamped them to the
+  // last layer: scrambled frame order, silently. `reach` is the oldest age
+  // this ring can actually supply.
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
+  let reach = histDepth - 1u;
+
   // Parameters
-  let echoLayers  = clamp(u32(u.zoom_params.x * 7.0 + 1.0), 4u, HISTORY_DEPTH);
+  let echoMin     = min(4u, max(reach, 1u));
+  let echoLayers  = clamp(u32(u.zoom_params.x * 7.0 + 1.0), echoMin, max(reach, 1u));
   let warpAmt     = u.zoom_params.y * 0.06 * (1.0 + bass * 0.5);
   let colorSat    = clamp(0.4 + u.zoom_params.z * 0.6 + mids * 0.3, 0.0, 1.0);
   let blendMix    = 0.25 + u.zoom_params.w * 0.65;
 
   // historyHead: index of the slot we are about to write this frame.
-  // Slot (historyHead - age + HISTORY_DEPTH) % HISTORY_DEPTH holds the frame
-  // that is `age` frames old (age 1 = most recent stored frame).
+  // Slot (historyHead - age + histDepth) % histDepth holds the frame
+  // that is `age` frames old (age 1 = most recent stored frame), clamped
+  // to `reach` so a request never reads a layer the ring doesn't have.
   let historyHead = u32(extraBuffer[4]);
 
   // ── Base frame ──────────────────────────────────────────────────────────────
@@ -93,11 +106,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var totalWeight = 0.0;
 
   for (var age: u32 = 1u; age <= echoLayers; age = age + 1u) {
-    let layer = (historyHead + HISTORY_DEPTH - age) % HISTORY_DEPTH;
+    let layer = (historyHead + histDepth - min(age, reach)) % histDepth;
 
     // Per-layer spiral UV warp: older frames warp more
-    let t      = f32(age) / f32(HISTORY_DEPTH);
-    let angle  = time * 0.25 + f32(age) * TAU / f32(HISTORY_DEPTH);
+    let t      = f32(age) / f32(histDepth);
+    let angle  = time * 0.25 + f32(age) * TAU / f32(histDepth);
     let warpUV = uv + vec2<f32>(
       sin(angle + uv.y * 7.0 + time * 0.3) * warpAmt * t,
       cos(angle + uv.x * 7.0 + time * 0.3) * warpAmt * t
@@ -108,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let frame = textureSampleLevel(historyTexture, u_sampler, sampleUV, i32(layer), 0.0);
 
     // Per-layer hue-rotated tint
-    let hue  = fract(f32(age) / f32(HISTORY_DEPTH) + time * 0.04);
+    let hue  = fract(f32(age) / f32(histDepth) + time * 0.04);
     let tint = vec4<f32>(hsv2rgb(hue, colorSat, 1.0), 1.0);
 
     // Exponential weight: recent frames count more

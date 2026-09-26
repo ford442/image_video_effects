@@ -6,7 +6,9 @@
 //            fbm-phosphor-mask, per-channel-decay
 //  Complexity: Medium
 //  Upgraded: 2026-06-28
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
+//         hardcoded 8 — see HISTORY RING DEPTH below
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //
 //  Per-channel CRT phosphor persistence with added scanline bloom,
 //  halation glow around bright edges, and an FBM-driven phosphor
@@ -46,7 +48,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const HISTORY_DEPTH: u32 = 8u;
 const PI: f32 = 3.14159265358979323846;
 
 // ── Hash & Noise ─────────────────────────────────────────────────
@@ -151,12 +152,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   beamVel = (beamVel - omega * springTemp) * springDecay; beam = rawMouse + (springDelta + springTemp) * springDecay;
   if (hasSpring && global_id.x == 0u && global_id.y == 0u) { extraBuffer[133] = beam.x; extraBuffer[134] = beam.y; extraBuffer[135] = beamVel.x; extraBuffer[136] = beamVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
 
-  // Immediate authoritative display history plus seven older ring frames.
+  // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
+  // The ring is at most 8 layers; after the VRAM probe the runtime may
+  // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
+  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // for layers that do not exist on a 4- or 1-layer device and WGSL
+  // clamped them to the last layer: scrambled frame order, silently.
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
+  let maxAge = histDepth - 1u;
+
+  // Immediate authoritative display history plus up to seven older ring
+  // frames (fewer on a device that only got 4 or 1 layers).
   let historyDims = vec2<i32>(textureDimensions(dataTextureC));
   let immediate = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), historyDims - vec2<i32>(1)), 0);
   var burned = max(current.rgb, vec3<f32>(immediate.r * decayR, immediate.g * decayG, immediate.b * decayB));
-  for (var age: u32 = 1u; age <= 7u; age = age + 1u) {
-    let layer = (historyHead + HISTORY_DEPTH - age) % HISTORY_DEPTH;
+  for (var age: u32 = 1u; age <= min(7u, maxAge); age = age + 1u) {
+    let layer = (historyHead + histDepth - age) % histDepth;
     let hist  = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
     let f = f32(age);
     let decayed = vec3<f32>(

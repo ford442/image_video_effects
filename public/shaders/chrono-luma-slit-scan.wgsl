@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chrono Luma Slit Scan
 //  Category: post-processing
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
+//         hardcoded 8 — see HISTORY RING DEPTH below
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,8 +27,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
-
-const HISTORY_DEPTH: u32 = 8u;
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -60,9 +60,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lumaMapped = pow(clamp(luma, 0.0, 1.0), lumaGamma);
   let lumaAdjusted = clamp(lumaMapped + scanRunner * 0.08, 0.0, 1.0);
 
-  let maxAge  = 1u + u32(spread * f32(HISTORY_DEPTH - 2u));
+  // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
+  // The ring is at most 8 layers; after the VRAM probe the runtime may
+  // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
+  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // for layers that do not exist on a 4- or 1-layer device and WGSL
+  // clamped them to the last layer: scrambled frame order, silently.
+  // reach = oldest age this ring can actually supply (0 on a 1-layer ring).
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
+  let reach   = histDepth - 1u;
+  let maxAge  = 1u + u32(spread * f32(max(reach, 1u) - 1u));
   let ageFlt  = 1.0 + (1.0 - lumaAdjusted) * f32(maxAge - 1u);
-  let age     = clamp(u32(ageFlt), 1u, HISTORY_DEPTH - 1u);
+  let age     = clamp(u32(ageFlt), 1u, max(reach, 1u));
   let ageFrac = fract(ageFlt);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -82,8 +91,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let sampleUV  = clamp(uv + warpOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let layerA = i32((historyHead + HISTORY_DEPTH - age)       % HISTORY_DEPTH);
-  let layerB = i32((historyHead + HISTORY_DEPTH - age - 1u)  % HISTORY_DEPTH);
+  let layerA = i32((historyHead + histDepth - min(age, reach))       % histDepth);
+  let layerB = i32((historyHead + histDepth - min(age + 1u, reach))  % histDepth);
 
   let frameA = textureSampleLevel(historyTexture, u_sampler, sampleUV, layerA, 0.0);
   let frameB = textureSampleLevel(historyTexture, u_sampler, sampleUV, layerB, 0.0);

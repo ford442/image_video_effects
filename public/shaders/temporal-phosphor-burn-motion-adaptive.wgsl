@@ -4,7 +4,9 @@
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Medium
 //  Upgraded: 2026-07-31 (Batch 19 — mouse lens, click stamps, FFT band drift)
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
+//         hardcoded 8 — see HISTORY RING DEPTH below
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
 //
@@ -60,7 +62,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const HISTORY_DEPTH: u32 = 8u;
 const MOUSE_LENS_RADIUS: f32 = 0.3;  // aspect-corrected lens radius (uv units)
 const STAMP_FADE: f32 = 2.0;         // click-stamp lifetime in seconds
 
@@ -82,6 +83,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let decayMin    = 0.70 + u.zoom_params.z * 0.20;
   let warmStrength = u.zoom_params.w * (1.0 + mids * 0.4);
 
+  // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
+  // The ring is at most 8 layers; after the VRAM probe the runtime may
+  // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
+  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // for layers that do not exist on a 4- or 1-layer device and WGSL
+  // clamped them to the last layer: scrambled frame order, silently.
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
+  let maxAge = histDepth - 1u;
+
   let historyHead = u32(extraBuffer[4]);
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
@@ -94,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let charge = mouseMask * (0.6 + 0.4 * clamp(u.zoom_config.w, 0.0, 1.0));
 
   // Compute per-pixel motion from most recent history frame
-  let layerRecent = (historyHead + HISTORY_DEPTH - 1u) % HISTORY_DEPTH;
+  let layerRecent = (historyHead + histDepth - min(1u, maxAge)) % histDepth;
   let recent = textureSampleLevel(historyTexture, u_sampler, uv, i32(layerRecent), 0.0);
   // Cursor proximity feeds the motion term, so pointer movement itself
   // leaves a faint trail as it sweeps across the screen.
@@ -116,8 +126,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Accumulate phosphor burn (max-based; history-ring indexing is an engine contract)
   var burned = current.rgb;
-  for (var age: u32 = 1u; age <= 7u; age = age + 1u) {
-    let layer   = (historyHead + HISTORY_DEPTH - age) % HISTORY_DEPTH;
+  for (var age: u32 = 1u; age <= min(7u, maxAge); age = age + 1u) {
+    let layer   = (historyHead + histDepth - age) % histDepth;
     let hist    = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
     let decayed = hist.rgb * pow(decay, f32(age));
     burned = max(burned, decayed);
