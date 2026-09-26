@@ -70,6 +70,15 @@ plus truthful `mouse-driven` / `audio-reactive` / `temporal-feedback` / `semanti
 ## Follow-ups found, not widened into this batch
 - `grep -rn "pow(1.0 - abs(" public/shaders` → 20 more call sites. Some may have the same negative-base NaN as
   protocell. Needs a per-file read.
+  - **Resolved 2026-09-26:** all 20 remaining sites (across 19 files; `gen-verlet-cloth-wind.wgsl` has 2) were
+    read and traced back to their source, plus `digital-crease.wgsl` which was already independently clamped.
+    Every site is provably safe — the base cannot go negative — by one of two patterns: (a) the inner term is a
+    `dot()` of two vectors each run through `normalize()`/`safeNormalize()` (or a hardcoded unit vector) at the
+    exact use site, so the dot product is bounded to [-1,1]; or (b) the inner term is `sin()`/`cos()` directly, or
+    a `fract()`-derived triangle wave (`2·fract(x)-1` or `(fract(x)-0.5)·2`), both bounded to [-1,1] by
+    construction. None matched the protocell shape (an unbounded scalar scaled past 1 before `abs()`). No shader
+    files needed edits; `digital-crease.wgsl:177` was already `pow(max(1.0 - abs(animatedFold) / max(foldDepth,
+    1e-4), 0.0), 5.0)` from an earlier pass. No `params`/`updatedParams` changed.
 - Audio: `plasmaBuffer` is still never written (`audioDepth.ts:5`). Every audio term in these 8 files is silent
   in the app. No idea depends on audio.
 
