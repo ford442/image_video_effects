@@ -187,10 +187,14 @@ Ids with no healthy thumbnail and no deferral as of the baseline (gen-* unless n
 `gen-neutron-star-magnetic-spindle`, `gen-sentient-bismuth-hypercrystal`,
 `gen-sentient-void-silk-nebula`, `gen-symbiotic-cyber-mycelium`.
 
-**Deferral cliff:** all 1,069 current deferrals expire **2026-09-29**. Expiry doesn't block
-existing shaders (the gate only looks at newly eligible ids), but the report's "Missing" count
-jumps to ~1,080. Renew deferrals only for the categories in the next scheduled wave, 30 days at
-most. Never bulk-extend the whole catalog.
+**Deferral cliff (defused 2026-09-26):** expiry *is* a hard gate. `verify:thumbs-deferrals`
+fails when any entry has `expires < today`, and it runs in `verify:toolchain-foundation` on every
+push and PR, so an un-actioned expiry turns CI red on every run with no code change. All 1,069
+original deferrals were due to expire 2026-09-29. They were dispositioned once (below) rather than
+bulk-extended. Expired ids that are not renewed simply become "Missing" in the report-only
+coverage job, which is the honest meaning of expiry. **Next expiry: 2026-10-26** (all 234
+remaining entries); the gate starts warning 7 days earlier (2026-10-19) and fails on 2026-10-27.
+Renew only the categories in the next scheduled capture wave, 30 days at most, via the writer.
 
 In the picker, authors can use the dev-only **Needs thumb** filter in `ShaderGallery` to list
 shaders without a healthy thumbnail (manifest + `public/thumbnails/unhealthy.json`).
@@ -251,13 +255,78 @@ When a PR adds a shader definition but cannot provide a healthy thumbnail (e.g.,
 
 - `reason` is one of `gpu-capture-pending | known-magenta | other` here. `audio-only` / `interactive-no-still` are permanent → `thumbnail_skip_allowlist.json`, and the gate rejects them in this file
 - `expires` (or `until`) must be ≤ 30 days from `deferred_at`; expired entries fail `npm run verify:thumbs-deferrals` (also in `verify:toolchain-foundation` and `thumbs:check-regression`). Do not bulk-bump dates
-- Renewing: set `renewals`; more than one renewal requires a `failure_note` describing the captured failure
-- `reports/thumbnail_deferral_ratchet.json` caps the `gpu-capture-pending` count (`maxGpuCapturePending`, target 200). Lower it after each wave, never raise it; it starts at the current 1069 because a literal N=200 would be red today
+- Renewing: `renewals` increments and `renewed_at` is set; a second renewal requires a `failure_note` describing the captured failure. Never hand-edit this file — use the writer below
+- `reports/thumbnail_deferral_ratchet.json` caps the `gpu-capture-pending` count (`maxGpuCapturePending`, target 200). Lower it after each wave, never raise it (`defer-thumbnail.js ratchet` refuses to). It is currently 234
 - Deferrals never count as coverage. Attract pool and gallery CLIP ranking use healthy thumbnails only
 - Each deferral should correspond to an eligible shader without a healthy thumbnail
 - Deferrals are distinct from skip allowlist: skip IDs are permanent (unrenderable), deferrals are temporary (pending thumbnail)
 - Capture farm: `.github/workflows/thumbs-capture-farm.yml` (self-hosted `gpu` runner only, ≤80 shaders/run, integrity-gated PR)
 - After a GPU capture wave, remove deferrals for ids that now have healthy PNGs
+- The gate warns (exit 0) when any entry expires within 7 days, printing the count and earliest date. `THUMBS_DEFERRALS_NOW=YYYY-MM-DD` overrides "today" for reproductions and tests; CI never sets it
+
+### Deferral writer
+
+[`scripts/defer-thumbnail.js`](../scripts/defer-thumbnail.js) is the only sanctioned writer for
+`reports/thumbnail_deferrals.json`. It sorts by id, writes 2-space JSON with a trailing newline,
+and takes `--dry-run` on every subcommand (prints the diff summary, writes nothing).
+
+```bash
+node scripts/defer-thumbnail.js add <id> --reason=gpu-capture-pending|known-magenta|other [--days=N<=30]
+node scripts/defer-thumbnail.js renew <id...> | --category=<name> | --ids-file=<path>  --note="<failure_note>"
+node scripts/defer-thumbnail.js remove <id...> | --expired | --category=<name>
+node scripts/defer-thumbnail.js reclassify <id> --reason=audio-only|interactive-no-still --why="<evidence>"
+node scripts/defer-thumbnail.js ratchet [--to=N]     # lower maxGpuCapturePending; default = current pending count
+```
+
+- `--category=<name>` reads `public/shader-lists/<name>.json`; `--category=attract` reuses the
+  generator's `--priority=attract` source (`loadAttractPriorityIds` → `src/app/constants/attractShowcasePool.ts`).
+  A category only selects ids that are actually deferred.
+- `renew` sets `deferred_at` = `renewed_at` = today and `expires` = today + 30, increments
+  `renewals`, and is refused without `--note` when an id's renewals would exceed 1.
+- `reclassify` moves the id out of the deferrals into `reports/thumbnail_skip_allowlist.json`
+  (`ids` + `reasons`); `--why` must be headless evidence (e.g. the shader outputs black without audio).
+- `add` refuses permanent reasons, unknown ids, duplicates, and anything that would push
+  `gpu-capture-pending` above the ratchet. `ratchet` can only lower the cap, and not below the current pending count.
+- Tests: `scripts/defer-thumbnail.test.js` (part of `npm run thumbs:test`, temp files only).
+
+### 2026-09-29 deferral disposition (run 2026-09-26)
+
+Issue #1312 track A. No self-hosted GPU runner exists, so nothing here captured a thumbnail.
+
+| Bucket | Count | Notes |
+|---|---|---|
+| Reclassified → skip allowlist | **0** | No id could be evidenced headlessly as audio-only / interactive-no-still (see below) |
+| Renewed once (→ 2026-10-26) | **234** | generative 212 + visual-effects 22; attract 0 (no attract id is deferred, and a Jest test asserts that) |
+| Removed (now "Missing") | **835** | every other entry; all were `gpu-capture-pending` |
+| **Remaining pending** | **234** | ratchet lowered 1069 → **234** (target 200) |
+
+Reclassify evidence: the capture harness passes mouse (0.5, 0.5), no click, and a zeroed plasma
+buffer. A static sweep of all 1,069 deferred WGSL files found none that read audio without also
+using time or the input image, and none that write black unless the mouse is down. The audio-named
+candidates (`audio-*`, `gen-audio-spirograph*`, `gen-fireworks-audio-symphony`) all draw a
+visible base at zero audio (stars/idle shells, spirograph rings, image pass-through), so their
+black PNGs are capture failures, not audio-only shaders. Interactive `mouse-*`/`*-drag` shaders
+are image processors that still show the input at the harness's default mouse. Left as is.
+
+Commands, in order (all through the writer; `--note` is
+`no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave`):
+
+```bash
+N="no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+node scripts/defer-thumbnail.js renew --category=attract --note="$N"          # 0 ids deferred
+node scripts/defer-thumbnail.js renew --category=generative --note="$N"       # 212
+node scripts/defer-thumbnail.js renew --category=visual-effects --note="$N"   # 22
+THUMBS_DEFERRALS_NOW=2026-09-30 node scripts/defer-thumbnail.js remove --expired   # 835
+node scripts/defer-thumbnail.js ratchet                                        # 1069 -> 234
+```
+
+The removal ran with `THUMBS_DEFERRALS_NOW=2026-09-30` because the un-renewed entries were not
+yet expired on 2026-09-26 (they expire 09-29); a plain `remove --expired` would have removed
+nothing and left the cliff in place. This removed them three days early.
+
+Afterwards `node scripts/check-thumbnail-coverage.js` reports 283 healthy / 234 unexpired
+deferrals / 855 missing (1,372 eligible). Reproduce the cliff with
+`THUMBS_DEFERRALS_NOW=2026-09-30 node scripts/verify-thumbs-deferrals.js` (exit 0).
 
 ## Related
 
