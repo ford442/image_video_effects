@@ -220,6 +220,31 @@ GPU host or execution ceiling used for that month.
 
 Commit PNGs + `manifest.json` in category-sized PRs to keep diffs reviewable.
 
+### PNG vs healthy reconciliation (2026-09-26)
+
+`public/thumbnails/` holds **360** PNGs (not ~362), and the report's 283 healthy is correct: the
+difference is exactly the 77 integrity-flagged PNGs. Produced with
+`python3 scripts/audit_thumbnail_integrity.py` and `node scripts/thumbnail-coverage-status.js`
+(the audit's PNG fingerprint matches the committed `reports/thumbnail_integrity_audit.json`; a
+re-run changed only `generated_at`, so that file was not re-committed). Report only, no PNG was deleted.
+
+| | Count |
+|---|---|
+| Catalog ids (`public/shader-lists`) / eligible | 1,373 / 1,372 (1 skip-allowlisted) |
+| PNG files on disk | 360 |
+| Manifest entries (`public/thumbnails/manifest.json`) | 360 |
+| Flagged `black_frame` | **77** (generative 56, visual-effects 21) |
+| Flagged magenta | 0 |
+| PNG without a manifest entry | 0 |
+| Manifest entry without a PNG / not in the catalog | 0 / 0 |
+| Orphan PNG (id not in any list) | 0 |
+| **Healthy** (PNG + manifest + not flagged) | **283 = 360 − 77 (20.6% of 1,372 eligible)** |
+
+All 77 black PNGs belong to ids that are still `gpu-capture-pending` (they are part of the 234
+renewed entries), so they are counted as deferred, not as coverage. The 234 pending split into
+77 with a black PNG and 157 with no PNG at all; none of them is healthy.
+Not-healthy eligible = 1,089 = 234 deferred + 855 "Missing" (no healthy PNG, no deferral).
+
 ## CI
 
 Manual workflow: **Actions → Generate Thumbnails → Run workflow**
@@ -305,8 +330,9 @@ buffer. A static sweep of all 1,069 deferred WGSL files found none that read aud
 using time or the input image, and none that write black unless the mouse is down. The audio-named
 candidates (`audio-*`, `gen-audio-spirograph*`, `gen-fireworks-audio-symphony`) all draw a
 visible base at zero audio (stars/idle shells, spirograph rings, image pass-through), so their
-black PNGs are capture failures, not audio-only shaders. Interactive `mouse-*`/`*-drag` shaders
-are image processors that still show the input at the harness's default mouse. Left as is.
+black PNGs are capture failures, not audio-only shaders. For the interactive `mouse-*`/`*-drag`
+family the sweep found no early-out that writes black unless the mouse is down; they were not
+individually inspected beyond that, so per the owner's rule they were left as is.
 
 Commands, in order (all through the writer; `--note` is
 `no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave`):
