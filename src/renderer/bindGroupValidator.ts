@@ -10,6 +10,8 @@
  *   supports the feature — no separate variant files are loaded.
  */
 
+import { declaresBindGroup1, validateGroup1Declarations } from './webgpu/simRing';
+
 export interface BindGroupValidationResult {
   valid: boolean;
   shaderId: string;
@@ -139,6 +141,14 @@ export function validateBindGroup(
     );
     if (maxBinding > 13) {
       result.warnings.push(`Uses unexpected extended binding(s) beyond 13: ${maxBinding}`);
+    }
+  }
+
+  // 6. Opt-in @group(1) sim ring — must match src/contracts/bind_group1.json.
+  if (declaresBindGroup1(wgsl)) {
+    for (const err of validateGroup1Declarations(wgsl)) {
+      result.errors.push(err);
+      result.valid = false;
     }
   }
 
