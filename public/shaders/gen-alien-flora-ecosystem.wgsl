@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alien Flora Ecosystem
 //  Category: generative
-//  Features: multi-species-flora, audio-seasons, mouse-pollinator, depth-canopy, symbiotic
+//  Features: multi-species-flora, audio-seasons, mouse-pollinator, depth-canopy, symbiotic, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: gen-alien-flora.wgsl, alpha-multi-state-ecosystem.wgsl
 //  Created: 2026-04-18
 //  Updated: 2026-05-31
+//  Upgraded: 2026-09-27
+//  Ideas: species-1 cap vs species-2 stem; toxin allelopathy ring in the soil
+//  A packing: pre-ACES display RGBA; ACES on writeTexture
 //  By: Grok (audio-driven symbiosis + mouse as pollinator/disturber)
 // ═══════════════════════════════════════════════════════════════════
 //  Procedural alien flora terrain where each plant cell hosts a
@@ -37,6 +40,15 @@ struct Uniforms {
 const TISSUE_DENSITY: f32 = 2.5;
 const SCATTERING_COEFF: f32 = 1.8;
 const ABSORPTION_BASE: f32 = 0.3;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -134,7 +146,8 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     if (d_plant < d) {
         d = d_plant;
-        mat = 2.0;
+        // 2 = stem (species 2), 3 = cap (species 1). The blend still uses smin.
+        mat = select(3.0, 2.0, stem < cap);
     }
 
     return vec2<f32>(d, mat);
@@ -260,7 +273,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         s1 = clamp(s1, 0.0, 1.0);
         s2 = clamp(s2, 0.0, 1.0);
 
-        if (mat == 2.0) {
+        if (mat > 1.5) {
             // Plant bioluminescent colors modulated by ecosystem species
             let shift = u.zoom_params.w;
             let hue = fract(p.x * 0.1 + p.z * 0.1 + shift);
@@ -269,9 +282,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let hueColor = clamp(p_col - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
             baseColor = mix(vec3<f32>(0.2, 0.8, 0.9), hueColor, 0.5);
 
-            // Species 1 tints cyan, Species 2 tints magenta
-            baseColor = mix(baseColor, vec3<f32>(0.0, 0.8, 1.0), s1 * 0.4);
-            baseColor = mix(baseColor, vec3<f32>(1.0, 0.2, 0.6), s2 * 0.3);
+            // Idea: cap takes species 1 (cyan), stem takes species 2 (magenta).
+            if (mat > 2.5) {
+                baseColor = mix(baseColor, vec3<f32>(0.0, 0.8, 1.0), s1 * 0.7);
+            } else {
+                baseColor = mix(baseColor, vec3<f32>(1.0, 0.2, 0.6), s2 * 0.7);
+            }
 
             let glow = u.zoom_params.z;
             baseColor = baseColor * glow;
@@ -280,9 +296,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             baseColor = mix(vec3<f32>(0.08, 0.15, 0.08), vec3<f32>(0.15, 0.35, 0.15), resourceLevel);
             // Toxin purple tint
             baseColor = mix(baseColor, vec3<f32>(0.3, 0.0, 0.4), eco.a * 0.3);
+            // Idea: allelopathy ring — dead soil at the cell edge where toxin is high.
+            let cellFract = fract(p.xz / density);
+            let edge = min(min(cellFract.x, 1.0 - cellFract.x), min(cellFract.y, 1.0 - cellFract.y));
+            let ring = smoothstep(0.18, 0.02, edge) * clamp(eco.a * 8.0, 0.0, 1.0);
+            baseColor = mix(baseColor, vec3<f32>(0.10, 0.02, 0.06), ring);
         }
 
-        if (mat == 2.0) {
+        if (mat > 1.5) {
             let sss = subsurfaceScattering(n, lightDir, -rd, thickness, baseColor);
             baseColor += sss;
         }
@@ -295,7 +316,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = mix(color, fogColor, fogAmount);
         alpha = calculateOrganicAlpha(mat, thickness, n, lightDir);
         lifeForceOut = (s1 + s2) * 0.4 + seasonBloom * 0.3;
-        if (mat == 2.0 && u.zoom_params.z > 0.7) {
+        if (mat > 1.5 && u.zoom_params.z > 0.7) {
             alpha = mix(alpha, 0.75, 0.3);
         }
     } else {
@@ -307,6 +328,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lifeForce = lifeForceOut;
     let finalAlpha = clamp(alpha * (0.8 + lifeForce), 0.0, 1.1);
     let a = clamp(finalAlpha, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * a, a));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
+    let coord = vec2<i32>(global_id.xy);
+    textureStore(dataTextureA, coord, vec4<f32>(color, a));
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), a));
+    textureStore(writeDepthTexture, coord, vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }

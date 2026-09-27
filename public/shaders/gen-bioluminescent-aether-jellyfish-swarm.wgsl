@@ -1,9 +1,13 @@
-// ----------------------------------------------------------------
-// Bioluminescent Aether-Jellyfish Swarm
-// Category: generative
-// Features: audio-reactive, upgraded-rgba, temporal
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Bioluminescent Aether-Jellyfish Swarm
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, temporal, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: bell-contraction jet propulsion pulsing per cell; stinger-tip glow
+//         at tentacle endpoints; startle flash on strong mouse repulsion
+//  A packing: display RGBA (temporal color history)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -120,18 +124,27 @@ fn bioluminescentGlow(intensity: f32) -> vec3<f32> {
 }
 
 // Jellyfish Body Modeling
-fn mapJellyfish(p_in: vec3<f32>, cell_id: vec3<f32>, t: f32, audio_propulsion: f32) -> f32 {
+// Returns (distance, distance-to-nearest-tentacle-tip) so shading can pick up
+// stinger-tip proximity without re-deriving the tentacle geometry.
+fn mapJellyfish(p_in: vec3<f32>, cell_id: vec3<f32>, t: f32, audio_propulsion: f32) -> vec2<f32> {
     var p = p_in;
 
     // Perturb points slightly to simulate organic breathing/pulse
     let noise_val = snoise(p * 2.0 + t * 0.5) * 0.05 * audio_propulsion;
     p += noise_val;
 
+    // Bell-contraction jet propulsion: the bell pulses between a contracted
+    // and relaxed radius per cell (thrust/coast swim cycle), instead of a
+    // fixed sphere, so the swarm visibly swims by contraction.
+    let swimPhase = sin(t * 1.6 + cell_id.x * 6.283 + cell_id.y * 3.14159);
+    let contraction = 0.5 + 0.5 * swimPhase;
+    let bellRadius = mix(0.32, 0.42, contraction) + audio_propulsion * 0.03;
+
     // Bell (main body)
-    let bell_sphere = sdSphere(p - vec3<f32>(0.0, 0.2, 0.0), 0.4);
+    let bell_sphere = sdSphere(p - vec3<f32>(0.0, 0.2, 0.0), bellRadius);
 
     // Create the hollow underneath of the bell using a subtracted sphere
-    let hollow_sphere = sdSphere(p - vec3<f32>(0.0, -0.1, 0.0), 0.35);
+    let hollow_sphere = sdSphere(p - vec3<f32>(0.0, -0.1, 0.0), bellRadius * 0.875);
     let bell = max(bell_sphere, -hollow_sphere);
 
     // Central bioluminescent core
@@ -147,20 +160,30 @@ fn mapJellyfish(p_in: vec3<f32>, cell_id: vec3<f32>, t: f32, audio_propulsion: f
     let wave = sin(p.y * 3.0 - t * 2.0 + cell_id.x * 10.0) * 0.1;
     let wave2 = cos(p.y * 2.5 - t * 1.5 + cell_id.y * 10.0) * 0.1;
 
-    let t1 = sdCapsule(p, vec3<f32>(0.1, 0.0, 0.0), vec3<f32>(0.1 + wave, -tentacle_length, wave2), 0.02);
-    let t2 = sdCapsule(p, vec3<f32>(-0.1, 0.0, 0.0), vec3<f32>(-0.1 + wave2, -tentacle_length, wave), 0.02);
-    let t3 = sdCapsule(p, vec3<f32>(0.0, 0.0, 0.1), vec3<f32>(wave, -tentacle_length, -wave2), 0.02);
-    let t4 = sdCapsule(p, vec3<f32>(0.0, 0.0, -0.1), vec3<f32>(-wave2, -tentacle_length, -wave), 0.02);
+    let tip1 = vec3<f32>(0.1 + wave, -tentacle_length, wave2);
+    let tip2 = vec3<f32>(-0.1 + wave2, -tentacle_length, wave);
+    let tip3 = vec3<f32>(wave, -tentacle_length, -wave2);
+    let tip4 = vec3<f32>(-wave2, -tentacle_length, -wave);
+
+    let t1 = sdCapsule(p, vec3<f32>(0.1, 0.0, 0.0), tip1, 0.02);
+    let t2 = sdCapsule(p, vec3<f32>(-0.1, 0.0, 0.0), tip2, 0.02);
+    let t3 = sdCapsule(p, vec3<f32>(0.0, 0.0, 0.1), tip3, 0.02);
+    let t4 = sdCapsule(p, vec3<f32>(0.0, 0.0, -0.1), tip4, 0.02);
 
     let tentacles = min(min(t1, t2), min(t3, t4));
 
     d = smin(d, tentacles, 0.05);
 
-    return d;
+    // Stinger-tip glow support: distance from this sample point to the
+    // nearest tentacle endpoint, used later by bioluminescentGlow() in shading.
+    let tipDist = min(min(length(p - tip1), length(p - tip2)), min(length(p - tip3), length(p - tip4)));
+
+    return vec2<f32>(d, tipDist);
 }
 
 // Global scene mapping (Swarm domain repetition)
-fn mapScene(pos: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec2<f32> {
+// Returns (distance, materialId, tipProximity, repulseMagnitude).
+fn mapScene(pos: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec4<f32> {
     // Determine grid size based on Swarm Density parameter
     let density = u.zoom_params.x;
     let spacing = mix(5.0, 1.5, density / 30.0); // Larger density -> smaller spacing
@@ -183,6 +206,7 @@ fn mapScene(pos: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec2<f32> {
 
     let dist_to_mouse = length(cell_center - mouse_pos);
     let repulse = normalize(cell_center - mouse_pos + vec3<f32>(0.001)) * (1.0 / (1.0 + dist_to_mouse * 1.5));
+    let repulseMag = length(repulse);
 
     // Add movement and drift
     let propulsion_speed = u.zoom_params.y * (1.0 + mids * 0.5);
@@ -202,10 +226,10 @@ fn mapScene(pos: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec2<f32> {
     let dir = normalize(vec3<f32>(drift_x, 1.0, drift_z));
 
     // Evaluate geometry for this cell
-    let dist = mapJellyfish(local_p, hash, t, audio_val);
+    let jelly = mapJellyfish(local_p, hash, t, audio_val);
 
     // Material ID: 1.0 for jelly
-    return vec2<f32>(dist, 1.0);
+    return vec4<f32>(jelly.x, 1.0, jelly.y, repulseMag);
 }
 
 // Raymarching
@@ -286,6 +310,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let aequorin_glow = bioluminescentGlow(sss * bio_intensity * audio_pulse);
         final_color = mix(bg_color, bio_glow + aequorin_glow + vec3<f32>(dif * 0.1), sss * 0.8 + 0.2);
 
+        // Re-evaluate the scene once at the hit point to pick up stinger-tip
+        // proximity and repulsion strength for the two ideas below.
+        let sceneAtHit = mapScene(p, time, mids, bass);
+        let tipProximity = sceneAtHit.z;
+        let repulseMag = sceneAtHit.w;
+
+        // Stinger-tip glow: brighten tentacle endpoints with the same
+        // aequorin glow function used on the bell.
+        let stingerGlow = exp(-tipProximity * 45.0);
+        final_color += bioluminescentGlow(stingerGlow * bio_intensity * 0.8) * 1.2;
+
+        // Startle flash: a jellyfish pushed hard by the mouse repulsion
+        // flashes its bell instead of only being shoved aside.
+        let startle = smoothstep(0.35, 0.85, repulseMag);
+        final_color += bioluminescentGlow(startle * bio_intensity) * 1.1;
+
         // Fog/Depth fade
         final_color = mix(final_color, bg_color, clamp(dist / 30.0, 0.0, 1.0));
     } else {
@@ -308,15 +348,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     final_color = acesToneMap(final_color);
     final_color = pow(final_color, vec3<f32>(1.0/2.2));
 
-    // Temporal feedback
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv_01, 0.0);
+    // Temporal feedback — exact previous-frame state, no filtering
+    let prev = textureLoad(dataTextureC, tex_coords, 0);
     let decay = 0.96;
     let temporal = mix(prev.rgb * decay, final_color, 0.25);
 
     // Semantic alpha
     let alpha = clamp(length(temporal) * 1.2, 0.2, 0.95);
 
+    // Real hit depth (0 = camera-near, 1 = background/no hit)
+    let depthVal = select(1.0, clamp(dist / 30.0, 0.0, 0.995), dist > 0.0);
+
     textureStore(dataTextureA, tex_coords, vec4<f32>(temporal, alpha));
     textureStore(writeTexture, tex_coords, vec4<f32>(temporal, alpha));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

@@ -1,12 +1,18 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cosmic Slime Mold
 //  Category: generative
-//  Features: slime-mold, cosmic, organic, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: slime-mold, cosmic, organic, audio-reactive, mouse-interactive,
+//             semantic-alpha, temporal-feedback, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-09-27
+//  Ideas: persistent growth-memory accumulator in extraBuffer[133] — a
+//         well-fed colony stays visibly larger across the session instead of
+//         resetting the moment the pointer lifts; mature-colony core glow
+//         lights up thick trunks once growth memory crosses a threshold
+//  A packing: exact HDR temporal history (unchanged)
 // ═══════════════════════════════════════════════════════════════════
+//  History: Kimi Agent (Bright batch, 2026-06-01)
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -199,6 +205,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scale = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
 
+    // Idea: persistent growth memory. extraBuffer[133] is a single-writer
+    // accumulator (written once below at pixel (0,0)) that rises while the
+    // colony is fed and decays slowly otherwise, so the colony's baseline
+    // size actually persists across the session instead of only pulsing
+    // while the pointer is held.
+    let hasGrowthMemory = arrayLength(&extraBuffer) >= 139u;
+    let growthMemory = select(0.0, extraBuffer[133], hasGrowthMemory);
+
     var col = vec3<f32>(0.0);
 
     // Dark cosmic background
@@ -238,7 +252,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let growthPhase = fract(time * 0.06 * speed + fv * 0.17);
         let growthPulse = smoothstep(0.0, 0.3, growthPhase) * (1.0 - smoothstep(0.7, 1.0, growthPhase));
         let extraGrowth = mouseDown * 0.5 * (1.0 + 0.5 * sin(time * 4.0 * speed));
-        let growth = growthPhase + extraGrowth;
+        let growth = growthPhase + extraGrowth + growthMemory * 0.01;
 
         // Vein distance field
         let vDist = veinStructure(scaledP, seed, scale, time);
@@ -272,6 +286,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Glow around veins
         let glowMask = smoothstep(veinWidth * 4.0, 0.0, vDist) * growth * 0.3;
         col += veinColor * glowMask * intensity * 0.8;
+
+        // Idea (continued): mature-colony core glow — once growth memory
+        // crosses a threshold, thick trunks pick up a warm established-colony
+        // glow distinct from the cool neon vein palette
+        let matureGlow = smoothstep(10.0, 25.0, growthMemory) * smoothstep(veinWidth * 2.5, 0.0, vDist) * 0.4;
+        col += vec3<f32>(1.0, 0.85, 0.5) * matureGlow * intensity;
     }
 
     // ---- FEEDER ZONES AT MOUSE ----
@@ -324,4 +344,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - alpha * 0.8, 0.0, 1.0), 0.0, 0.0, 0.0));
+
+    // Idea (continued): single-writer update of the growth-memory accumulator.
+    if (hasGrowthMemory && global_id.x == 0u && global_id.y == 0u) {
+        let feedRate = select(0.0, 0.5, mouseDown > 0.5);
+        let nextMemory = clamp(growthMemory * 0.997 + feedRate * 0.02, 0.0, 30.0);
+        extraBuffer[133] = nextMemory;
+    }
 }

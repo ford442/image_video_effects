@@ -1,8 +1,14 @@
-// ----------------------------------------------------------------
-// Bioluminescent Neural Lattice
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Bioluminescent Neural Lattice
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, temporal-feedback, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-27
+//  Ideas: bass-triggered synapse firing pulses race along the lattice edges;
+//         bioluminescent afterglow via real dataTextureA/C temporal memory;
+//         treble shimmer on the closest-approach ambient glow
+//  A packing: display RGBA (afterglow-blended), C read back for temporal memory
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -28,6 +34,7 @@ struct Uniforms {
 const MAX_STEPS: i32 = 80;
 const MAX_DIST: f32 = 20.0;
 const SURF_DIST: f32 = 0.01;
+const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
 // --- UTILS ---
@@ -74,13 +81,42 @@ fn voronoi_edges(p: vec3<f32>, t: f32) -> f32 {
         }
     }
 
-    // Convert to distance field from edges (approximation)
-    // Actually we want distance to points, but smoothed out
     return sqrt(res);
 }
 
+// Same as voronoi_edges, but also returns a stable per-cell hash id (.y) so the
+// caller can phase a "firing" signal differently per synapse cluster.
+fn voronoi_edges_id(p: vec3<f32>, t: f32) -> vec2<f32> {
+    let n = floor(p);
+    let f = fract(p);
+
+    var res = 8.0;
+    var idh = 0.0;
+
+    for (var k = -1; k <= 1; k++) {
+        for (var j = -1; j <= 1; j++) {
+            for (var i = -1; i <= 1; i++) {
+                let b = vec3<f32>(f32(i), f32(j), f32(k));
+                let o = hash33(n + b);
+
+                let anim_o = 0.5 + 0.5 * sin(t + 6.2831 * o);
+                let r = b - f + anim_o;
+
+                let d = dot(r, r);
+                if (d < res) {
+                    res = d;
+                    idh = o.x;
+                }
+            }
+        }
+    }
+
+    return vec2<f32>(sqrt(res), idh);
+}
+
 // --- SDF ---
-fn map(p_in: vec3<f32>, time: f32, audio_data: f32, u_zoom: vec4<f32>) -> vec2<f32> {
+// Returns .x = surface distance, .y = combined voronoi value (for palette), .z = fire pulse (Idea 1)
+fn map(p_in: vec3<f32>, time: f32, bass: f32, u_zoom: vec4<f32>) -> vec3<f32> {
     var p = p_in;
     let synapse_density = u_zoom.x;
     let pulse_speed = u_zoom.y;
@@ -104,23 +140,25 @@ fn map(p_in: vec3<f32>, time: f32, audio_data: f32, u_zoom: vec4<f32>) -> vec2<f
     let t = time * pulse_speed * 0.2;
 
     // Create the lattice from voronoi
-    // We invert it so the points become the empty space and the edges become the solid structure
-    let d1 = voronoi_edges(p, t);
+    let v1 = voronoi_edges_id(p, t);
     let d2 = voronoi_edges(p + vec3<f32>(1.5, 0.5, -0.5), t * 1.1);
 
     // Combine and scale back
-    let combined = smin(d1, d2, 0.5);
+    let combined = smin(v1.x, d2, 0.5);
 
     // Distance to network structure
-    // We want a thick lattice, so subtract a radius
     var base_dist = (0.7 - combined) / synapse_density;
 
-    // Audio perturbation (pulsing along the network)
-    // We'll use position and time to create waves
-    let wave = sin(p.x * 2.0 + p.y * 1.5 + p.z * 0.5 - time * pulse_speed * 5.0);
-    base_dist -= wave * audio_data * 0.1 / synapse_density;
+    // Idea 1: bass-triggered synapse firing. Each lattice cell gets its own phase
+    // offset (v1.y), and the phase is swept by raymarch depth (p.z) so a firing
+    // event reads as a narrow bright flash racing along the tunnel rather than a
+    // uniform blink. Loudness both speeds up firing and brightens the flash.
+    let fire_speed = pulse_speed * (1.0 + bass * 1.2);
+    let fire_phase = fract(time * fire_speed * 0.6 - p.z * 0.12 + v1.y * 6.0);
+    let fire_pulse = pow(max(sin(PI * fire_phase), 0.0), 10.0) * clamp(bass * 1.5, 0.0, 1.0);
+    base_dist -= fire_pulse * 0.15 / synapse_density;
 
-    return vec2<f32>(base_dist, combined);
+    return vec3<f32>(base_dist, combined, fire_pulse);
 }
 
 // Branchless cosine palette
@@ -154,17 +192,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow_intensity = u_zoom.z;
     let color_shift = u_zoom.w;
 
-    // Audio Reactivity (low frequencies)
-    let audio_low = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.1, 0.5), 0.0).r;
-    let audio_mid = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(0.5, 0.5), 0.0).r;
-    let audio_val = audio_low * 2.0 + audio_mid * 0.5;
+    // Real audio reactivity (bass drives firing + camera shake, mids drive the
+    // ambient pulse, treble drives the closest-approach shimmer below).
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Camera
     var ro = vec3<f32>(0.0, 0.0, -1.0 + time * 0.5);
     var ta = ro + vec3<f32>(0.0, 0.0, 1.0);
 
-    // Very slight camera shake from audio
-    ro += vec3<f32>(sin(time * 10.0), cos(time * 11.0), 0.0) * audio_val * 0.02;
+    // Very slight camera shake from bass
+    ro += vec3<f32>(sin(time * 10.0), cos(time * 11.0), 0.0) * bass * 0.02;
 
     // Camera matrix
     let cw = normalize(ta - ro);
@@ -176,11 +215,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var d0 = 0.0;
     var p = vec3<f32>(0.0);
     var glow = vec3<f32>(0.0);
+    var fire_glow = vec3<f32>(0.0);
     var min_dist = 100.0;
 
     for (var i = 0; i < MAX_STEPS; i++) {
         p = ro + rd * d0;
-        let map_res = map(p, time, audio_val, u_zoom);
+        let map_res = map(p, time, bass, u_zoom);
         let d = map_res.x;
 
         // Track minimum distance for glow
@@ -189,20 +229,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
 
         // Volumetric accumulation
-        // The closer we are to the surface, the more it glows
         let glow_factor = exp(-d * 4.0);
 
         // Base color maps to the structure value (map_res.y)
         var col_val = palette(map_res.y * 2.0 + time * 0.1, color_shift);
 
-        // Audio adds energy pulses
+        // Ambient synapse hum, now keyed to mids so it reads distinctly from
+        // the sharper bass-triggered firing pulses below
         let pulse = sin(p.z * 10.0 - time * 20.0) * 0.5 + 0.5;
-        col_val += vec3<f32>(0.2, 0.5, 1.0) * pulse * audio_val * 2.0;
+        col_val += vec3<f32>(0.2, 0.5, 1.0) * pulse * mids * 2.0;
 
         glow += col_val * glow_factor * 0.03 * glow_intensity;
 
+        // Idea 1 (continued): render the firing pulse as a bright cyan-white
+        // spark, distinct from the palette-driven ambient glow above
+        fire_glow += vec3<f32>(0.6, 0.9, 1.0) * map_res.z * glow_factor * 0.05;
+
         // Step forward
-        // We step slightly slower to gather more volume
         d0 += max(d * 0.8, 0.01);
 
         if (d < SURF_DIST || d0 > MAX_DIST) {
@@ -217,15 +260,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fog = 1.0 - exp(-d0 * 0.1);
 
     // Final composite
-    var col = mix(glow, bg_col, fog);
+    var col = mix(glow + fire_glow, bg_col, fog);
 
-    // Add ambient glow from closest approach
+    // Idea 3: treble-driven shimmer on the ambient closest-approach glow
     let ambient = palette(min_dist, color_shift) * exp(-min_dist * 2.0) * glow_intensity;
-    col += ambient * 0.2;
+    col += ambient * 0.2 * (1.0 + treble * 0.6);
 
     // Tone mapping (simple exposure/ACES fit approx)
     col = col * 1.5;
     col = col / (1.0 + col);
 
-    textureStore(writeTexture, id, vec4<f32>(col, 1.0));
+    // Idea 2: bioluminescent afterglow. dataTextureA/C now carry the real
+    // display history (previously a dead binding), so recently-lit regions
+    // keep a decaying glow rather than vanishing the instant the ray moves on.
+    let prevA = textureLoad(dataTextureC, id, 0);
+    let afterglow_decay = clamp(0.78 + glow_intensity * 0.08, 0.7, 0.95);
+    let trailed = max(col, prevA.rgb * afterglow_decay);
+
+    let lum = dot(trailed, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let alpha = clamp(lum * 1.4, 0.15, 1.0);
+
+    textureStore(writeTexture, id, vec4<f32>(trailed, alpha));
+    textureStore(dataTextureA, id, vec4<f32>(trailed, alpha));
+
+    let depth_norm = clamp(d0 / MAX_DIST, 0.0, 1.0);
+    textureStore(writeDepthTexture, id, vec4<f32>(depth_norm, 0.0, 0.0, 0.0));
 }

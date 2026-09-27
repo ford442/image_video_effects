@@ -11,8 +11,8 @@
 //    gallery of intricate lace-work patterns — butterflies, snowflakes,
 //    spirographs — as the attractor topology continuously transforms.
 //    Temporal Monte Carlo builds density per frame; bass warps geometry.
-//  Upgraded: 2026-09-06
-//  Ideas: local stretch tint from |p'−p|; dwell rings from iteration index
+//  Upgraded: 2026-09-27
+//  Ideas: local stretch tint from |p'−p|; dwell rings from iteration index; critical curves; antipodal ghost
 //  A packing: accumulated density, hue phase, tube depth, alpha (raw)
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=speed_a, y=speed_b, z=glow_radius(+tube radius), w=decay
@@ -182,9 +182,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ddy = p.y - splatPos.y;
         let d2 = ddx * ddx + ddy * ddy;
         let g = exp(-d2 * invR2);
+        // Antipodal ghost: the same orbit also ticks −p.
+        let adx = p.x + splatPos.x;
+        let ady = p.y + splatPos.y;
+        let gAnti = exp(-(adx * adx + ady * ady) * invR2) * 0.42;
         // Parameter-channel split
-        contribR += g * (1.0 + sin(f32(i) * 0.1 + a) * 0.3);
-        contribB += g * (1.0 + cos(f32(i) * 0.1 + c) * 0.3);
+        contribR += (g + gAnti) * (1.0 + sin(f32(i) * 0.1 + a) * 0.3);
+        contribB += (g + gAnti) * (1.0 + cos(f32(i) * 0.1 + c) * 0.3);
         // Idea 1 — local stretch; Idea 2 — dwell weight
         stretchAccum += g * stretch;
         dwellAccum += g * (f32(i) / 127.0);
@@ -256,6 +260,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var col     = mix(coolCol, warmCol, chromaMix);
     col += palette(hueOff + 0.12, 0.0) * clamp(stretchAccum * 6.0, 0.0, 0.45);
     col += palette(dwellAccum + hueOff, 0.25) * clamp(dwellAccum * 1.8, 0.0, 0.35) * (0.5 + mids * 0.4);
+    // Critical curves of the map: cos(a y) = 0 or cos(c x) = 0. Display only.
+    let crit = smoothstep(0.12, 0.0, abs(cos(a * splatPos.y))) + smoothstep(0.12, 0.0, abs(cos(c * splatPos.x)));
+    col += palette(hueOff + 0.5, 0.05) * clamp(crit, 0.0, 1.5) * 0.16;
     col += palette(hueOff + 0.6, 0.1) * glow3d * (1.0 + bass);   // tube aura bleed
     col = mix(col, tubeCol * 1.4, select(0.0, 0.85, hit));       // branchless composite
     col += palette(hueOff + clickEnergy * 0.35, 0.3) * clickEnergy * (0.25 + treble * 0.45);

@@ -4,8 +4,8 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Medium
 //  Scientific: Greenberg-Hastings excitable media with cardinal-wave triggering, refractory cooling, and bass-driven spontaneous ignition
-//  Upgraded: 2026-09-06
-//  Ideas: cardinal chirality on firing; just-fired refractory halo
+//  Upgraded: 2026-09-27
+//  Ideas: cardinal chirality on firing; just-fired refractory halo; pacemaker vs wave; cooldown ticks
 //  A packing: raw state, firingMask, refractoryProgress, bloom
 // ═══════════════════════════════════════════════════════════════════
 
@@ -201,14 +201,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     select(0.0, 1.0, s == 1) + select(0.0, 0.35, w == 1)
   );
   let firingTint = mix(firingColor, normalize(chirality + vec3<f32>(0.15)) * 1.1, firingMask * 0.45);
+  // Pacemaker: firing with no cardinal neighbor. Wave fires keep the chirality tint.
+  let pacemaker = firingMask * select(0.0, 1.0, cardFiring == 0);
+  let firingShown = mix(firingTint, vec3<f32>(1.0, 0.78, 0.28), pacemaker * 0.7);
   let refractoryColor = mix(vec3<f32>(0.95, 0.85, 0.12), vec3<f32>(0.12, 0.05, 0.55), clamp(rpCurve * cooldownBoost, 0.0, 1.0));
   let tracerColor = mix(vec3<f32>(1.0, 0.35, 0.95), vec3<f32>(0.25, 1.0, 0.85), treble * 0.45);
 
   var generatedColor = mix(restColor, refractoryColor, refractoryMask);
-  generatedColor = mix(generatedColor, firingTint, firingMask);
+  generatedColor = mix(generatedColor, firingShown, firingMask);
   // Idea 2 — just-fired halo (first refractory step)
   let justFired = select(0.0, 1.0, nextState == 2);
   generatedColor += vec3<f32>(1.0, 0.92, 0.55) * justFired * 0.4;
+  // Cooldown ticks: later refractory states, discrete bands. Halo stays at state 2.
+  let laterRefr = select(0.0, 1.0, nextState >= 3);
+  let evenTick = select(0.0, 1.0, (nextState & 1) == 0);
+  generatedColor += vec3<f32>(0.22, 0.48, 0.92) * laterRefr * evenTick * 0.24;
+  generatedColor += vec3<f32>(0.55, 0.22, 0.72) * laterRefr * (1.0 - evenTick) * 0.18;
   generatedColor += vec3<f32>(1.0, 0.96, 0.72) * bloom * 0.4;
   generatedColor += vec3<f32>(0.16, 0.44, 1.0) * bloom * (1.0 - firingMask) * 0.28;
   generatedColor += vec3<f32>(0.08, 0.12, 0.22) * smoothstep(0.2, 1.0, mids) * (1.0 - refractoryMask) * 0.15;

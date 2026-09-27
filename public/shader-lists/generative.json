@@ -2649,7 +2649,8 @@
       "click-reactive",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2701,7 +2702,9 @@
       "fluid",
       "bioluminescent",
       "plasma",
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "organic",
@@ -3118,7 +3121,7 @@
     "name": "Aetherial Plasma Loom",
     "url": "/shaders/gen-aetherial-plasma-loom.wgsl",
     "category": "generative",
-    "description": "A ray-integrated, FBM-warped plasma loom with alternating heddle lanes and bright shuttle-necking knots.",
+    "description": "A ray-integrated, FBM-warped plasma loom with alternating heddle lanes, bright shuttle-necking knots, and a genuine dataTextureC afterglow.",
     "workgroup_size": [
       16,
       16,
@@ -3227,7 +3230,8 @@
       "audio-seasons",
       "mouse-pollinator",
       "depth-canopy",
-      "symbiotic"
+      "symbiotic",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3466,7 +3470,10 @@
     "updated": true,
     "id": "gen-alpha-aurora",
     "url": "shaders/gen-alpha-aurora.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "band_speed",
@@ -3965,7 +3972,11 @@
     "updated": true,
     "id": "gen-astral-silk-chrono-weaver-arachnid",
     "url": "shaders/gen-astral-silk-chrono-weaver-arachnid.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "web_glow",
@@ -4072,7 +4083,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "depth-output",
-      "hdr-ready"
+      "hdr-ready",
+      "upgraded-rgba",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -5175,7 +5188,8 @@
       "palette",
       "audio-reactive",
       "mouse-driven",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
@@ -5320,7 +5334,13 @@
     "updated": true,
     "id": "gen-bioluminescent-aether-jellyfish-swarm",
     "url": "shaders/gen-bioluminescent-aether-jellyfish-swarm.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "swarm_density",
@@ -5424,7 +5444,11 @@
       "sprung-orbit-camera",
       "bounded-volumetric-beams",
       "click-pulsar-shells",
-      "depth-output"
+      "depth-output",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5491,6 +5515,11 @@
     ],
     "updated": true,
     "supportsDepth": true,
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -5588,7 +5617,9 @@
       "sdf-normals",
       "temporal-history",
       "ripple-interactive",
-      "generated-depth"
+      "generated-depth",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5722,7 +5753,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "description": "An octahedral crystal lattice woven through an organic neural field, firing fast. Hollow shells carry strut greeble, pulses race the pathways at a treble-driven rate, and emission is graded through a psychedelic spectrum. The spring-smoothed cursor is a gravity well that bends the whole structure toward it, holding deepens the pull and draws the camera in, and clicks fire synapse bursts across the net.",
+    "description": "An octahedral crystal lattice woven through an organic neural field, firing fast. Hollow shells carry strut greeble, pulses race the pathways at a treble-driven rate, and emission is graded through a psychedelic spectrum. Every hollow cage holds a core charged by the membrane passing through its cell, glowing through shells and membranes like lantern paper. The cursor is a gravity well that bends the whole structure toward it, holding deepens the pull and draws the camera in, and clicks fire synapse bursts and send a spin cascade rolling through the cage.",
     "updatedParams": [
       {
         "index": 0,
@@ -5763,6 +5794,11 @@
       16,
       16,
       1
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5846,7 +5882,51 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Synapse Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Pulse Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = display RGBA, afterglow-blended (max of current frame and decayed history)"
   },
   {
     "name": "Bioluminescent Reaction-Diffusion",
@@ -6005,7 +6085,13 @@
     "updated": true,
     "id": "gen-biomechanical-hive",
     "url": "shaders/gen-biomechanical-hive.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = raw HDR display RGBA history (pre-ACES); growth-memory afterglow",
     "params": [
       {
         "id": "cell_density",
@@ -6101,7 +6187,13 @@
     "updated": true,
     "id": "gen-bioreactor-bloom",
     "url": "shaders/gen-bioreactor-bloom.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "cell_scale",
@@ -6153,7 +6245,6 @@
       "metallic",
       "iridescent",
       "geometry",
-      "fractal",
       "alpha-transmission",
       "audio",
       "music"
@@ -6203,7 +6294,11 @@
     "updated": true,
     "id": "gen-bismuth-crystal-citadel",
     "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "terrace_step_size",
@@ -6254,7 +6349,9 @@
       "bismuth",
       "iridescent",
       "metallic",
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "3d",
@@ -6472,7 +6569,10 @@
     "updated": true,
     "id": "gen-brutalist-monument",
     "url": "shaders/gen-brutalist-monument.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "sun_angle",
@@ -6674,7 +6774,14 @@
     "updated": true,
     "id": "gen-celestial-aether-seraphim-wings",
     "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = display RGBA (same as writeTexture), exact texel history",
     "params": [
       {
         "id": "fractal_spread",
@@ -7110,7 +7217,11 @@
     "updated": true,
     "id": "gen-celestial-nanite-swarm-nebula",
     "url": "shaders/gen-celestial-nanite-swarm-nebula.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "swarm_density",
@@ -7325,7 +7436,8 @@
       "spring-dynamics",
       "audio-reactive",
       "mouse-driven",
-      "aces-tone-mapping"
+      "aces-tone-mapping",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7422,7 +7534,12 @@
     "updated": true,
     "id": "gen-celestial-weave",
     "url": "shaders/gen-celestial-weave.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "weave_scale",
@@ -8035,7 +8152,13 @@
     "updated": true,
     "id": "gen-chromatic-metamorphosis",
     "url": "shaders/gen-chromatic-metamorphosis.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "morph_speed",
@@ -8231,7 +8354,11 @@
     "updated": true,
     "id": "gen-chromatic-singularity-loom",
     "url": "shaders/gen-chromatic-singularity-loom.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "loom_intensity",
@@ -8620,7 +8747,9 @@
       }
     ],
     "features": [
+      "upgraded-rgba",
       "audio-reactive",
+      "mouse-driven",
       "interactive-mouse",
       "raymarching",
       "volumetric",
@@ -8847,7 +8976,7 @@
       "automata",
       "audio-reactive"
     ],
-    "description": "",
+    "description": "A clockwork aether loom: a 12-tooth sun gear and an 8-tooth planet mesh and roll while their teeth run a Rule 90 cellular automaton, lit teeth passing bits across the mesh each tooth pitch; glowing aether threads braid across the frame and wrap onto the turning gear rims, leaving echo trails and a chromatic smear.",
     "workgroup_size": [
       16,
       16,
@@ -8892,7 +9021,11 @@
     "updated": true,
     "id": "gen-chronodynamic-aether-weaver-automata",
     "url": "shaders/gen-chronodynamic-aether-weaver-automata.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "thread_count",
@@ -9265,7 +9398,11 @@
     "updated": true,
     "id": "gen-chronos-labyrinth",
     "url": "shaders/gen-chronos-labyrinth.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Chronos Monolith Resonator",
@@ -9692,44 +9829,6 @@
       16,
       1
     ],
-    "params": [
-      {
-        "id": "intensity",
-        "name": "Intensity",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
-      },
-      {
-        "id": "speed",
-        "name": "Speed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
-      },
-      {
-        "id": "scale",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
-      },
-      {
-        "id": "color_shift",
-        "name": "Color Shift",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
-      }
-    ],
     "updatedParams": [
       {
         "index": 0,
@@ -9769,7 +9868,51 @@
     "updated": true,
     "id": "gen-cosmic-slime-mold",
     "url": "shaders/gen-cosmic-slime-mold.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "semantic-alpha",
+      "temporal-feedback",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "id": "gen-cosmic-velvet-hypnosis",
@@ -10398,7 +10541,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -10624,7 +10769,7 @@
     ],
     "updated": true,
     "category": "generative",
-    "description": "A crystalline void-spider weaving at speed: a skittering articulated gait, a faceted plated carapace, and three tiers of web thread down to fine cross-bracing filaments. The nebula and the weaver are both graded through a psychedelic crystalline spectrum. The spring-smoothed cursor drags the gravity field, holding lunges the camera in, and clicks snap the web into expanding rings.",
+    "description": "A crystalline void-spider hanging from its own dragline in front of an fbm nebula: eight knee-bent legs step in an alternating tetrapod gait, and the web's lattice nodes only condense where the nebula gas is dense, glowing in its colour. Gravity Distortion warps the space and sags the silk; the cursor drags the weaver, holding lunges the camera in, and clicks send rings through the web.",
     "tags": [
       "fast-motion",
       "psychedelic",
@@ -10649,7 +10794,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba",
+      "mouse-driven"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -11066,6 +11213,8 @@
     "id": "gen-cybernetic-crystalline-neuro-lattice",
     "url": "shaders/gen-cybernetic-crystalline-neuro-lattice.wgsl",
     "features": [
+      "upgraded-rgba",
+      "mouse-driven",
       "raymarched",
       "audio-reactive",
       "mouse-interactive",
@@ -11288,7 +11437,8 @@
       "depth-aware",
       "ripple-reactive",
       "semantic-alpha",
-      "aces-tone-mapping"
+      "aces-tone-mapping",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },

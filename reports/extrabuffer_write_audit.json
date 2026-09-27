@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-27T04:36:57.174079+00:00",
+  "generated": "2026-09-27T10:36:27.495614+00:00",
   "files_scanned": 1417,
   "new_violations": [],
   "known_violations": [
@@ -12,16 +12,8 @@
       "class": "reserved"
     },
     {
-      "file": "public/shaders/gen-alpha-aurora.wgsl",
-      "line": 185,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
       "file": "public/shaders/gen-bioreactor-bloom.wgsl",
-      "line": 126,
+      "line": 132,
       "expr": "0",
       "op": "=",
       "index": 0,

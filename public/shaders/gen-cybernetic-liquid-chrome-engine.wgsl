@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Cybernetic Liquid-Chrome Engine
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Cybernetic Liquid-Chrome Engine
+//  Category: generative
+//  Features: raymarch, audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: V8 firing-order crank (each cell is a cylinder of a two-bank 1-8-4-3-6-5-7-2 crankshaft, the camera flies down the vee between the banks); compression ignition (the plunging piston crushes the KIFS core and the core flashes diesel-orange at firing TDC, decaying over the power stroke); ignition heat shimmer (combustion heat along the ray wobbles the exact C chrome-trail fetch, rising like hot air)
+//  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR for the advected chrome smear
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -33,13 +38,9 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 
-fn rotX(angle: f32) -> mat2x2<f32> {
-    let s = sin(angle);
-    let c = cos(angle);
-    return mat2x2<f32>(c, -s, s, c);
-}
-
-fn rotY(angle: f32) -> mat2x2<f32> {
+// Plane rotation (HEAD had identical rotX/rotY copies; both were applied to a
+// 2D sub-vector, so a single helper is the same math).
+fn rot2(angle: f32) -> mat2x2<f32> {
     let s = sin(angle);
     let c = cos(angle);
     return mat2x2<f32>(c, -s, s, c);
@@ -60,7 +61,30 @@ fn sdCappedCylinder(p: vec3<f32>, h: f32, r: f32) -> f32 {
     return min(max(d.x, d.y), 0.0) + length(max(d, vec2<f32>(0.0)));
 }
 
-fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
+// Idea 1: V8 firing-order crank. Cell (i, k) of the x/z repeat is one cylinder
+// of a two-bank V8: even x-columns are the odd bank (1,3,5,7), odd columns the
+// even bank (2,4,6,8), four rows along z. Each cylinder's crank is offset by
+// its slot in the 1-8-4-3-6-5-7-2 firing order (90 deg of crank per slot over a
+// 720 deg four-stroke cycle). Phase comes from time only; audio never enters.
+// Returns x = surge (-1 at the firing plunge), y = ignition flash, z = crush.
+fn crankState(cell: vec2<f32>, t: f32) -> vec3<f32> {
+    var firePos = array<f32, 8>(0.0, 7.0, 3.0, 2.0, 5.0, 4.0, 6.0, 1.0);
+    let bank = cell.x - 2.0 * floor(cell.x * 0.5);
+    let row = cell.y - 4.0 * floor(cell.y * 0.25);
+    let cyl = u32(clamp(2.0 * row + bank, 0.0, 7.0));
+    let crank = t * 2.4 - firePos[cyl] * 1.5707963;
+    let cycle = crank - 12.566371 * floor(crank / 12.566371); // 0..4pi, 0 = firing TDC
+    let surge = -cos(crank);
+    // Idea 2: compression ignition. Flash at firing TDC, decaying over the
+    // power stroke; crush only on the compression/power pair (cos^2(cycle/4)
+    // is 1 at firing TDC and 0 at the exhaust/intake overlap TDC).
+    let flash = exp(-cycle * 1.8);
+    let gate = 0.5 + 0.5 * cos(cycle * 0.5);
+    let crush = (0.5 - 0.5 * surge) * gate;
+    return vec3<f32>(surge, flash, crush);
+}
+
+fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>, ign_glow: ptr<function, f32>) -> f32 {
     let objectScale = mix(0.68, 1.5, clamp(u.zoom_params.z, 0.0, 1.0));
     var p = p_in / objectScale;
     let t = u.config.x * mix(0.45, 2.8, clamp(u.zoom_params.y, 0.0, 1.0));
@@ -68,20 +92,27 @@ fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
 
     // Domain repetition
     let spacing = 8.0;
+    let cell = floor(vec2<f32>(p.x, p.z) / spacing + 0.5);
     p.x = (fract(p.x / spacing + 0.5) - 0.5) * spacing;
     p.z = (fract(p.z / spacing + 0.5) - 0.5) * spacing;
 
+    // Idea 1: this cell's cylinder state in the firing order.
+    let crankS = crankState(cell, t);
+
     // KIFS fold inner core
+    // Idea 2: the plunging piston crushes the core - the fold offset squashes
+    // vertically and bulges sideways as the firing stroke compresses.
+    let foldOffset = vec3<f32>(0.5 + 0.1 * crankS.z, 0.5 - 0.24 * crankS.z, 0.5 + 0.1 * crankS.z);
     var p_kifs = p;
     let complexity = 4;
     for(var i=0; i<complexity; i++) {
-        p_kifs = abs(p_kifs) - vec3<f32>(0.5, 0.5, 0.5);
-        let rx = rotX(0.5);
+        p_kifs = abs(p_kifs) - foldOffset;
+        let rx = rot2(0.5);
         let pYZ = rx * vec2<f32>(p_kifs.y, p_kifs.z);
         p_kifs.y = pYZ.x;
         p_kifs.z = pYZ.y;
 
-        let ry = rotY(0.5);
+        let ry = rot2(0.5);
         let pXZ = ry * vec2<f32>(p_kifs.x, p_kifs.z);
         p_kifs.x = pXZ.x;
         p_kifs.z = pXZ.y;
@@ -90,8 +121,9 @@ fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
     // Base structural elements
     let base_box = sdBox(p - vec3<f32>(0.0, -2.0, 0.0), vec3<f32>(2.0, 1.0, 2.0));
 
-    // Piston
-    let surge = sin(t * 2.4 + p_in.x * 0.24 + p_in.z * 0.19);
+    // Piston - Idea 1: per-cylinder crank phase replaces HEAD's arbitrary
+    // sin(t*2.4 + p_in.x*0.24 + p_in.z*0.19) wave. Bass still scales the stroke.
+    let surge = crankS.x;
     let piston_h = 1.0 + surge * (0.8 + audio * 2.8);
     let piston = sdCappedCylinder(p - vec3<f32>(0.0, piston_h, 0.0), 2.0, 0.8);
 
@@ -103,7 +135,10 @@ fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
     d = smin(d, core, 2.0);
 
     // Plasma glow based on core distance
-    *global_glow += 0.008 / (0.012 + abs(core)) * (0.45 + u.zoom_params.x * 1.4);
+    let coreGlow = 0.008 / (0.012 + abs(core)) * (0.45 + u.zoom_params.x * 1.4);
+    *global_glow += coreGlow;
+    // Idea 2: the same core glow, gated by this cylinder's ignition flash.
+    *ign_glow += coreGlow * crankS.y;
 
     return d * objectScale;
 }
@@ -111,10 +146,11 @@ fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = vec2<f32>(1.0, -1.0) * 0.001;
     var dummy: f32 = 0.0;
-    var d1: f32 = 0.0; d1 = map(p + e.xyy, &dummy);
-    var d2: f32 = 0.0; d2 = map(p + e.yyx, &dummy);
-    var d3: f32 = 0.0; d3 = map(p + e.yxy, &dummy);
-    var d4: f32 = 0.0; d4 = map(p + e.xxx, &dummy);
+    var dummyIgn: f32 = 0.0;
+    var d1: f32 = 0.0; d1 = map(p + e.xyy, &dummy, &dummyIgn);
+    var d2: f32 = 0.0; d2 = map(p + e.yyx, &dummy, &dummyIgn);
+    var d3: f32 = 0.0; d3 = map(p + e.yxy, &dummy, &dummyIgn);
+    var d4: f32 = 0.0; d4 = map(p + e.xxx, &dummy, &dummyIgn);
 
     return normalize(
         e.xyy * d1 +
@@ -133,19 +169,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = (coords - 0.5 * res) / res.y;
+    uv.y = -uv.y; // storage y runs down; HEAD rendered the engine upside down
 
     let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
     let speed = clamp(u.zoom_params.y, 0.0, 1.0);
     let mouseInfluence = clamp(u.zoom_params.w, 0.0, 1.0);
 
-    // Chromatic aberration at screen edges during high audio
+    // Bass breathes a barrel lens (monochrome scale; HEAD called it chromatic
+    // aberration, but it scales all channels together).
     let audio = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let distFromCenter = length(uv);
     uv *= 1.0 - (distFromCenter * audio * 0.1);
 
-    // Timestamped clicks kick the conveyor and ring the chrome housing.
+    // Timestamped clicks ring the chrome housing (shading only - HEAD also added
+    // this per-pixel ring into the camera travel, which tore the image).
     var clickDrive = 0.0;
     let uv01 = (coords + vec2<f32>(0.5)) / res;
     let aspect = res.x / max(res.y, 1.0);
@@ -159,26 +198,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    // Camera
-    let cameraTravel = u.config.x * (1.6 + speed * 6.0 + audio * 1.8) + clickDrive * 0.65;
-    var ro = vec3<f32>(0.0, 4.0, -10.0 + (cameraTravel - 8.0 * floor(cameraTravel / 8.0)));
+    // Camera - per-frame and pixel-independent. HEAD multiplied absolute time by
+    // bass (teleports with the music), added the per-pixel click ring (a torn
+    // image) and flew through the piston column (inside geometry ~64% of the
+    // time at defaults, numpy port). Now: time-only phase; the camera rides the
+    // vee between the two cylinder banks (cell x = 4, clear of every core/piston
+    // for all Scale/bass values) and wraps every 4 rows = one full firing pattern.
+    // Speed still scales the rate (moving the slider jumps phase, as at HEAD).
+    let objectScale = mix(0.68, 1.5, clamp(u.zoom_params.z, 0.0, 1.0));
+    let cameraTravel = u.config.x * (1.6 + speed * 6.0);
+    let laneZ = cameraTravel - 32.0 * floor(cameraTravel / 32.0);
+    let ro = vec3<f32>(4.0, 4.6, laneZ) * objectScale;
     var rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
 
-    // Mouse Interaction
+    // Mouse Interaction - steers the look (pitch/yaw) instead of orbiting the
+    // camera into the pistons.
     let mouse = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0) * mouseInfluence;
 
-    let rx = rotX(-mouse.y * 1.5 + 0.5);
-    let roYZ = rx * vec2<f32>(ro.y, ro.z);
-    ro.y = roYZ.x;
-    ro.z = roYZ.y;
+    let rx = rot2(-mouse.y * 1.2 - 0.5);
     let rdYZ = rx * vec2<f32>(rd.y, rd.z);
     rd.y = rdYZ.x;
     rd.z = rdYZ.y;
 
-    let ry = rotY(mouse.x * 1.5);
-    let roXZ = ry * vec2<f32>(ro.x, ro.z);
-    ro.x = roXZ.x;
-    ro.z = roXZ.y;
+    let ry = rot2(mouse.x * 1.5);
     let rdXZ = ry * vec2<f32>(rd.x, rd.z);
     rd.x = rdXZ.x;
     rd.z = rdXZ.y;
@@ -187,11 +229,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var d = 0.0;
     var t = 0.0;
     var global_glow = 0.0;
+    var ign_glow = 0.0;
     var hit = false;
 
     for (var i = 0; i < 100; i++) {
         var p = ro + rd * t;
-        d = map(p, &global_glow);
+        d = map(p, &global_glow, &ign_glow);
         if (d < 0.001) { hit = true; break; }
         if (t > 80.0) { break; }
         t += max(abs(d), 0.002);
@@ -199,6 +242,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var col = vec3<f32>(0.0);
     var p = ro + rd * t;
+    var surfaceHeat = 0.0;
 
     if (hit) {
         var n = calcNormal(p);
@@ -219,6 +263,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let diff = max(dot(n, lightDir), 0.0);
         let spec = pow(max(dot(reflect(-lightDir, n), viewDir), 0.0), 32.0);
         col = col * (diff * 0.5 + 0.5) + vec3<f32>(spec) * chrome_reflectivity;
+
+        // Idea 2: the firing cylinder's chrome goes combustion-hot, strongest
+        // near the core and fading over the power stroke.
+        let pc = p / objectScale;
+        let hitCell = floor(vec2<f32>(pc.x, pc.z) / 8.0 + 0.5);
+        let tMap = u.config.x * mix(0.45, 2.8, speed);
+        let hitFlash = crankState(hitCell, tMap).y;
+        let local = pc - vec3<f32>(hitCell.x * 8.0, 0.0, hitCell.y * 8.0);
+        let nearCore = clamp((4.0 - length(local)) / 3.0, 0.0, 1.0);
+        surfaceHeat = hitFlash * nearCore;
+        col += vec3<f32>(1.0, 0.45, 0.12) * surfaceHeat * (0.9 + intensity * 0.6) * (0.5 + 0.5 * diff);
     }
 
     // Iridescent plasma glow with chromatic dispersion
@@ -229,6 +284,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     let boundedGlow = min(global_glow, 8.0);
     col += glowCol * boundedGlow * 0.045 * (0.65 + intensity * 1.1 + audio * 1.8);
+    // Idea 2: diesel-orange ignition glow from the core that just fired.
+    let ignGlow = min(ign_glow, 8.0);
+    col += vec3<f32>(1.0, 0.42, 0.1) * ignGlow * 0.09 * (0.65 + intensity * 1.1);
 
     // High-speed reflection bands stretch along the engine conveyor.
     let streakPhase = (uv.x * 19.0 + uv.y * 8.0) - cameraTravel * 3.5;
@@ -245,7 +303,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyVelocity = vec2<f32>(mouse.x * 2.0, -(2.0 + speed * 5.0 + audio * 2.0));
     let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
     let coord = vec2<i32>(global_id.xy);
-    let historyCoord = clamp(coord - vec2<i32>(historyVelocity), vec2<i32>(0), maxCoord);
+    // Idea 3: ignition heat shimmer - combustion heat on this ray wobbles the
+    // exact C fetch (biased upward: hot air rises), so the chrome smear boils
+    // above the cylinders that just fired and stays still over cold ones.
+    let heat = clamp(ignGlow * 0.3 + surfaceHeat, 0.0, 1.0);
+    let fc = vec2<f32>(coord);
+    let shimmer = vec2<f32>(
+        sin(fc.y * 0.19 + fc.x * 0.05 + u.config.x * 17.0),
+        cos(fc.x * 0.23 - fc.y * 0.07 - u.config.x * 13.0) + 1.2
+    ) * heat * 3.0;
+    let historyCoord = clamp(coord - vec2<i32>(historyVelocity) + vec2<i32>(round(shimmer)), vec2<i32>(0), maxCoord);
     let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
     let hdrColor = clamp(col * (0.68 + intensity * 0.72) + history * (0.23 + speed * 0.17), vec3<f32>(0.0), vec3<f32>(6.0));
     let alpha = clamp(select(0.02, 0.28 + length(hdrColor) * 0.2, hit) + chromeStreak * 0.18 + clickDrive * 0.08, 0.02, 0.97);

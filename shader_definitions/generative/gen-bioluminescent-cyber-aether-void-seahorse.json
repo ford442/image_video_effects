@@ -22,7 +22,9 @@
     "sdf-normals",
     "temporal-history",
     "ripple-interactive",
-    "generated-depth"
+    "generated-depth",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {

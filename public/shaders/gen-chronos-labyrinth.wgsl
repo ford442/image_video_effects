@@ -11,6 +11,9 @@
 //            aces-tone-map, upgraded-rgba, depth-aware, temporal-feedback, chromatic-aberration,
 //            hue-preserve-clamp, ign-dither, distance-lod
 //  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: stair nosing on each tread; shift-ghost smear of the previous cell pose
+//  A packing: rift echo, depth, material, alpha
 //  Created: 2026-05-10
 //  By: Claude Sonnet 4.6 (swarm optimization pass 2026-05-31; F1 flagship deep upgrade 2026-06-07)
 //  upgraded-rgba
@@ -148,6 +151,10 @@ fn sdStaircase(p: vec3<f32>, steps: i32, width: f32, height: f32, depth: f32) ->
         let step_pos = p - vec3<f32>(0.0, fi * step_h, fi * step_d);
         let step_box = vec3<f32>(width, step_h * 0.5, step_d * 0.5);
         d = min(d, sdBox(step_pos, step_box));
+        // Idea: stair nosing — a thin lip on the front of each tread.
+        let nose_pos = step_pos - vec3<f32>(0.0, step_h * 0.42, -step_d * 0.48);
+        let nose = sdBox(nose_pos, vec3<f32>(width * 0.98, step_h * 0.07, step_d * 0.1));
+        d = min(d, nose);
     }
     return d;
 }
@@ -171,6 +178,37 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 }
 
 // The Map function - defines the labyrinth geometry
+fn structureDist(rq: vec3<f32>, structure_type: f32, cell_hash: f32) -> f32 {
+    var d = 1000.0;
+    if (structure_type < 1.0) {
+        d = sdBox(rq, vec3<f32>(1.2, 0.3, 1.2));
+        let corridor = sdBox(rq, vec3<f32>(0.4, 2.0, 0.4));
+        d = max(d, -corridor);
+    } else if (structure_type < 2.0) {
+        let stair_steps = 6;
+        if (cell_hash > 0.5) {
+            d = sdStaircase(rq, stair_steps, 0.8, 1.5, 1.5);
+        } else {
+            let rqz = rotZ(rq, PI * 0.5);
+            d = sdStaircase(rqz, stair_steps, 0.6, 1.2, 1.2);
+        }
+    } else if (structure_type < 3.0) {
+        let platform = sdBox(rq - vec3<f32>(0.0, -0.8, 0.0), vec3<f32>(1.5, 0.2, 1.5));
+        let pillar1 = sdBox(rq - vec3<f32>(1.0, 0.0, 1.0), vec3<f32>(0.15, 1.0, 0.15));
+        let pillar2 = sdBox(rq - vec3<f32>(-1.0, 0.0, -1.0), vec3<f32>(0.15, 1.0, 0.15));
+        let pillar3 = sdBox(rq - vec3<f32>(1.0, 0.0, -1.0), vec3<f32>(0.15, 1.0, 0.15));
+        let pillar4 = sdBox(rq - vec3<f32>(-1.0, 0.0, 1.0), vec3<f32>(0.15, 1.0, 0.15));
+        d = min(platform, min(pillar1, min(pillar2, min(pillar3, pillar4))));
+    } else {
+        let arch = sdBox(rq, vec3<f32>(0.8, 2.0, 0.8));
+        let arch_cut = sdTorus(vec3<f32>(rq.x, rq.y - 1.5, rq.z), vec2<f32>(0.6, 0.25));
+        let side_cut = sdBox(rq, vec3<f32>(0.3, 2.0, 1.0));
+        d = max(arch, -arch_cut);
+        d = max(d, -side_cut);
+    }
+    return d;
+}
+
 fn map(p: vec3<f32>) -> vec2<f32> {
     var time = u.config.x;
     let bass = g_bass;
@@ -194,42 +232,15 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Determine structure type based on cell hash
     let structure_type = floor(cell_hash * 4.0); // 0-3 different structures
     
-    var d = 1000.0;
-    var mat_id = 1.0; // Default wall material
-    
-    // Create different structures based on parity/type
-    if (structure_type < 1.0) {
-        // Central block with corridor
-        d = sdBox(rq, vec3<f32>(1.2, 0.3, 1.2));
-        let corridor = sdBox(rq, vec3<f32>(0.4, 2.0, 0.4));
-        d = max(d, -corridor); // Subtract corridor
-    } else if (structure_type < 2.0) {
-        // Staircase structure
-        let stair_steps = 6;
-        // Alternate staircase orientations
-        if (cell_hash > 0.5) {
-            d = sdStaircase(rq, stair_steps, 0.8, 1.5, 1.5);
-        } else {
-            // Sideways staircase
-            let rqz = rotZ(rq, PI * 0.5);
-            d = sdStaircase(rqz, stair_steps, 0.6, 1.2, 1.2);
-        }
-    } else if (structure_type < 3.0) {
-        // Platform with pillars
-        let platform = sdBox(rq - vec3<f32>(0.0, -0.8, 0.0), vec3<f32>(1.5, 0.2, 1.5));
-        let pillar1 = sdBox(rq - vec3<f32>(1.0, 0.0, 1.0), vec3<f32>(0.15, 1.0, 0.15));
-        let pillar2 = sdBox(rq - vec3<f32>(-1.0, 0.0, -1.0), vec3<f32>(0.15, 1.0, 0.15));
-        let pillar3 = sdBox(rq - vec3<f32>(1.0, 0.0, -1.0), vec3<f32>(0.15, 1.0, 0.15));
-        let pillar4 = sdBox(rq - vec3<f32>(-1.0, 0.0, 1.0), vec3<f32>(0.15, 1.0, 0.15));
-        d = min(platform, min(pillar1, min(pillar2, min(pillar3, pillar4))));
-    } else {
-        // Arched corridor
-        let arch = sdBox(rq, vec3<f32>(0.8, 2.0, 0.8));
-        let arch_cut = sdTorus(vec3<f32>(rq.x, rq.y - 1.5, rq.z), vec2<f32>(0.6, 0.25));
-        let side_cut = sdBox(rq, vec3<f32>(0.3, 2.0, 1.0));
-        d = max(arch, -arch_cut);
-        d = max(d, -side_cut);
-    }
+    var d = structureDist(rq, structure_type, cell_hash);
+    var mat_id = select(1.0, 1.25, structure_type >= 1.0 && structure_type < 2.0);
+
+    // Idea: shift ghost — the same cell a short step earlier in the rotation.
+    let prevShift = shift_time - 0.28;
+    var rqPrev = rotY(q, prevShift + cell_hash * 6.28);
+    rqPrev = rotX(rqPrev, prevShift * 0.7);
+    let dGhost = structureDist(rqPrev, structure_type, cell_hash);
+    d = min(d, dGhost + 0.06);
     
     // Masonry greeble — block coursing and chamfered edges carved into every wall
     let course = sin(rq.y * 26.0) * sin(rq.x * 18.0 + rq.z * 18.0);
@@ -475,6 +486,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Masonry coursing readback — surfaces the greeble carved in map()
             let coursing = 0.5 + 0.5 * sin(p.y * 26.0) * sin((p.x + p.z) * 18.0);
             base_color *= 0.82 + coursing * 0.36;
+
+            // Stair nosing reads darker where the tread lip faces both up and out.
+            if (mat > 1.1 && mat < 1.4) {
+                let lip = smoothstep(0.35, 0.7, n.y) * smoothstep(0.35, 0.75, length(n.xz));
+                base_color *= 1.0 - lip * 0.5;
+            }
 
             roughness = mix(0.9, 0.1, material_blend); // Stone rough, obsidian smooth
         } else {

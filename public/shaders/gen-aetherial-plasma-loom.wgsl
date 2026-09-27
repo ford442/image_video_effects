@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Aetherial Plasma Loom
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: alternating heddle lanes; plasma shuttle necking
+//  Upgraded: 2026-09-27
+//  Ideas: alternating heddle lanes; plasma shuttle necking; warp thread-memory ghosting from exact C history; weft-catch spark where heddle lift meets shuttle pinch
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -146,6 +146,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var density = 0.0;
     var heddle_light = 0.0;
     var shuttle_light = 0.0;
+    var spark_light = 0.0;
     var first_depth = 10.0;
     let max_steps = 60;
 
@@ -161,6 +162,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             density += contribution;
             heddle_light += contribution * sample.y;
             shuttle_light += contribution * sample.z;
+            // Idea: weft-catch spark — a lane raised (heddle) AND the shuttle
+            // passing through it (shuttle) at the same point is a real catch,
+            // so multiply the two already-returned fields instead of a new SDF term.
+            spark_light += contribution * sample.y * sample.z * 4.0;
             first_depth = min(first_depth, t);
         }
 
@@ -184,17 +189,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         final_color = (col + weave_color * 0.45) * density * core_bright * 0.045;
         final_color += vec3<f32>(1.0, 0.78, 0.3) * shuttle_knot * core_bright *
             (0.15 + audio.z * 0.08);
+        final_color += vec3<f32>(1.0, 0.95, 0.6) * clamp(spark_light / max(density, 0.001), 0.0, 2.0) *
+            core_bright * 0.12;
     }
 
     // Subtle background
     final_color += vec3<f32>(0.05, 0.0, 0.1) * (1.0 - length(clip));
+
+    let coord = vec2<i32>(id.xy);
+
+    // Idea: warp thread-memory ghosting — dataTextureC was declared but never
+    // read; a genuine exact texel read now lets heddle lanes leave a faint
+    // persistent afterglow between frames, like a loom holding thread memory.
+    let history = textureLoad(dataTextureC, coord, 0);
+    final_color += history.rgb * 0.1 * clamp(1.0 - density * 0.2, 0.0, 1.0);
 
     let normalized_density = clamp(density * 0.1, 0.0, 1.0);
     let display = vec4<f32>(
         acesToneMap(max(final_color, vec3<f32>(0.0))),
         clamp(normalized_density * 0.8 + shuttle_light * 0.08, 0.0, 1.0)
     );
-    let coord = vec2<i32>(id.xy);
     let source_depth = textureLoad(readDepthTexture, coord, 0).r;
     let has_volume = first_depth < 10.0;
     let depth = select(source_depth, clamp(1.0 - first_depth / 10.0, 0.0, 1.0), has_volume);
